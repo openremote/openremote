@@ -263,6 +263,9 @@ export class OrMwcTable extends LitElement {
     @property({type: Number})
     public paginationSize: number = 10;
 
+    @property({type: Number})
+    public totalCount?: number;
+
     @state()
     protected _dataTable?: MDCDataTable;
 
@@ -306,8 +309,12 @@ export class OrMwcTable extends LitElement {
             "mdc-data-table__fullheight": !!this.config.fullHeight,
             "has-sticky-first-column": !!this.config.stickyFirstColumn
         }
-        // Only show pagination if enabled in config, and when "the amount of rows doesn't fit on the page".
-        const showPagination = this.config.pagination?.enable && (!!this.rowsTemplate || (this.rows && (this.rows.length > this.paginationSize)));
+        // Only show pagination if enabled in config, and when the amount of rows doesn't fit on the page using the
+        // smallest page size available; comparing against the smallest size (rather than the selected one) ensures the
+        // rows-per-page control stays visible after selecting a page size larger than the row count.
+        const paginationOptions = this.config.pagination?.options || [10, 25, 100];
+        const minPageSize = Math.min(...paginationOptions, this.paginationSize);
+        const showPagination = this.config.pagination?.enable && (!!this.rowsTemplate || ((this.totalCount ?? this.rows?.length ?? 0) > minPageSize));
         const tableWidth = this.shadowRoot?.firstElementChild?.clientWidth;
         return html`
             <div class="${classMap(tableClasses)}">
@@ -432,7 +439,7 @@ export class OrMwcTable extends LitElement {
                 </div>
                 <!-- Pagination HTML, shown on the bottom right. Same as Material Design spec -->
                 ${when(showPagination, () => {
-                    const options = this.config.pagination?.options || [10, 25, 100];
+                    const options = paginationOptions;
                     return html`
                         <div class="mdc-data-table__pagination">
                             <div class="mdc-data-table__pagination-trailing">
@@ -647,36 +654,40 @@ export class OrMwcTable extends LitElement {
     // HTML for the controls on the bottom of the table.
     // Includes basic pagination for browsing pages, with calculations of where to go.
     async getPaginationControls(): Promise<TemplateResult> {
+        return this.renderPaginationControls(this.paginationIndex, (page) => {
+            this.paginationIndex = page;
+        });
+    }
+
+    /**
+     * Renders the bottom pagination controls for the given (zero-based) current page. Navigation is delegated to
+     * {@link goToPage} so subclasses can drive pagination differently (e.g. this component's local
+     * `paginationIndex`, or server-side pagination via an event).
+     */
+    protected async renderPaginationControls(page: number, goToPage: (page: number) => void): Promise<TemplateResult> {
         const max: number = await this.getRowCount();
-        const start: number = (this.paginationIndex * this.paginationSize) + 1;
-        let end: number = this.paginationIndex * this.paginationSize + this.paginationSize;
-        if (end > max) {
-            end = max;
-        }
+        const start: number = page * this.paginationSize + 1;
+        const end: number = Math.min(page * this.paginationSize + this.paginationSize, max);
+        const isFirst: boolean = page === 0;
+        const isLast: boolean = end >= max;
+        const lastPage: number = Math.max(0, Math.ceil(max / this.paginationSize) - 1);
         return html`
             <div class="mdc-data-table__pagination-navigation">
                 <div class="mdc-data-table__pagination-total">
                     <span>${start}-${end} of ${max}</span>
                 </div>
                 <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
-                              data-first-page="true" icon="page-first" .disabled="${this.paginationIndex == 0}"
-                              @or-mwc-input-changed="${() => this.paginationIndex = 0}"></or-mwc-input>
+                              data-first-page="true" icon="page-first" .disabled="${isFirst}"
+                              @or-mwc-input-changed="${() => goToPage(0)}"></or-mwc-input>
                 <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
-                              data-prev-page="true" icon="chevron-left" .disabled="${this.paginationIndex == 0}"
-                              @or-mwc-input-changed="${() => this.paginationIndex--}"></or-mwc-input>
+                              data-prev-page="true" icon="chevron-left" .disabled="${isFirst}"
+                              @or-mwc-input-changed="${() => goToPage(page - 1)}"></or-mwc-input>
                 <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
-                              data-next-page="true" icon="chevron-right"
-                              .disabled="${this.paginationIndex * this.paginationSize + this.paginationSize >= max}"
-                              @or-mwc-input-changed="${() => this.paginationIndex++}"></or-mwc-input>
+                              data-next-page="true" icon="chevron-right" .disabled="${isLast}"
+                              @or-mwc-input-changed="${() => goToPage(page + 1)}"></or-mwc-input>
                 <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
-                              data-last-page="true" icon="page-last"
-                              .disabled="${this.paginationIndex * this.paginationSize + this.paginationSize >= max}"
-                              @or-mwc-input-changed="${async () => {
-                                  let pages: number = max / this.paginationSize;
-                                  pages = pages.toString().includes('.') ? Math.floor(pages) : (pages - 1);
-                                  this.paginationIndex = pages;
-                              }}"
-                ></or-mwc-input>
+                              data-last-page="true" icon="page-last" .disabled="${isLast}"
+                              @or-mwc-input-changed="${() => goToPage(lastPage)}"></or-mwc-input>
             </div>
         `;
     }

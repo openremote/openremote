@@ -19,3 +19,17 @@
  */
 import css from "./index.css";
 export default css;
+
+/**
+ * Shared styling for components rendered in shadow DOM (where the global theme CSS can't reach).
+ * Add to a component's `static styles` via `unsafeCSS(globals)`.
+ */
+export const globals = `
+    h4 {
+        margin: 0;
+        padding-bottom: var(--lumo-space-m);
+        font-size: var(--lumo-font-size-l);
+        font-weight: 600;
+        line-height: 125.303%;
+    }
+`;

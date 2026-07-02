@@ -34,17 +34,15 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface NotificationResource {
 
     /**
-     * Gets all sent notifications that have been sent to the specified targets; optionally limiting the scope of the
-     * request by {@link AbstractNotificationMessage} type and/or sent datetime. If type(s) or timestamp are not set
-     * then it is assumed no type or time constraint is required. Can also provide a list of notification IDs to get
-     * specific notifications.
-     * <p>
-     * Only the superuser can call this operation.
+     * Gets sent notifications matching the supplied criteria; optionally limiting the scope by {@link
+     * AbstractNotificationMessage} type, sent datetime, realm, target user/asset, {@link Notification.Source} and/or
+     * pagination (offset/limit). Restricted users only ever see notifications they sent or that target them or their
+     * realm; non-superusers are limited to a realm they can access (their own when none is specified).
      */
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    @Operation(operationId = "getNotifications", summary = "Retrieve all sent notifications by targets")
+    @RolesAllowed({Constants.READ_ADMIN_ROLE, Constants.READ_NOTIFICATIONS_ROLE})
+    @Operation(operationId = "getNotifications", summary = "Retrieve sent notifications matching the supplied criteria")
     SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
                                         @QueryParam("id") Long id,
                                         @QueryParam("type") String type,
@@ -52,7 +50,12 @@ public interface NotificationResource {
                                         @QueryParam("to") Long toTimestamp,
                                         @QueryParam("realmId") String realmId,
                                         @QueryParam("userId") String userId,
-                                        @QueryParam("assetId") String assetId);
+                                        @QueryParam("assetId") String assetId,
+                                        @QueryParam("source") Notification.Source source,
+                                        @QueryParam("sort") SentNotification.SortField sort,
+                                        @QueryParam("descending") Boolean descending,
+                                        @QueryParam("offset") Integer offset,
+                                        @QueryParam("limit") Integer limit);
     // RT: Was using lists here but they don't work with JSAPI because GWT doesn't use JSArrays for lists - another
     // reason to get away from GWT
 //    SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
@@ -145,4 +148,22 @@ public interface NotificationResource {
                                   @QueryParam("targetId") String targetId,
                                   @PathParam("notificationId") Long notificationId,
                                   JsonNode acknowledgement);
+
+    /**
+     * Counts sent notifications matching the supplied criteria; uses the same scoping and access rules as
+     * {@link #getNotifications}.
+     */
+    @GET
+    @Path("count")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ADMIN_ROLE, Constants.READ_NOTIFICATIONS_ROLE})
+    @Operation(operationId = "getNotificationsCount", summary = "Count sent notifications matching the supplied criteria")
+    long getNotificationsCount(@BeanParam RequestParams requestParams,
+                               @QueryParam("type") String type,
+                               @QueryParam("from") Long fromTimestamp,
+                               @QueryParam("to") Long toTimestamp,
+                               @QueryParam("realmId") String realmId,
+                               @QueryParam("userId") String userId,
+                               @QueryParam("assetId") String assetId,
+                               @QueryParam("source") Notification.Source source);
 }

@@ -21,6 +21,7 @@ package org.openremote.manager.notification;
 
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -29,11 +30,15 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.NotificationEvent;
 import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.notification.RepeatFrequency;
 import org.openremote.model.notification.SentNotification;
@@ -69,6 +74,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     protected ManagerIdentityService identityService;
     protected MessageBrokerService messageBrokerService;
     protected ExecutorService executorService;
+    protected ClientEventService clientEventService;
     protected Map<String, NotificationHandler> notificationHandlerMap = new HashMap<>();
 
     @Override
@@ -81,6 +87,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         this.timerService = container.getService(TimerService.class);
         this.persistenceService = container.getService(PersistenceService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
+        this.clientEventService = container.getService(ClientEventService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.messageBrokerService = container.getService(MessageBrokerService.class);
         executorService = container.getExecutor();
@@ -95,6 +102,21 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         container.getService(AssetStorageService.class),
                         container.getService(ManagerIdentityService.class))
         );
+        clientEventService.addSubscriptionAuthorizer((realm, authContext, eventSubscription) -> {
+            if (!eventSubscription.isEventType(NotificationEvent.class) || authContext == null) {
+                return false;
+            }
+
+            if (!authContext.isSuperUser()) {
+                @SuppressWarnings("unchecked")
+                EventSubscription<NotificationEvent> subscription = (EventSubscription<NotificationEvent>) eventSubscription;
+                subscription.setFilter(new RealmFilter<>(authContext.getAuthenticatedRealmName()));
+            }
+
+            return true;
+        });
+
+        
     }
 
     @Override
@@ -151,16 +173,22 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     AtomicReference<String> sourceId = new AtomicReference<>("");
                     boolean isSuperUser = false;
                     boolean isRestrictedUser = false;
+                    AtomicReference<String> notificationRealm = new AtomicReference<>();
 
                     switch (source) {
-                        case INTERNAL -> isSuperUser = true;
+                        case INTERNAL -> {
+                            isSuperUser = true;
+                            notificationRealm.set("master");
+                        }
                         case CLIENT -> {
                             AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
                             if (authContext == null) {
                                 // Anonymous clients cannot send notifications
                                 throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
                             }
+                            // Client notifications are scoped to the caller's authenticated realm
                             realm = authContext.getAuthenticatedRealmName();
+                            notificationRealm.set(realm);
                             userId = authContext.getUserId();
                             sourceId.set(userId);
                             isSuperUser = authContext.isSuperUser();
@@ -169,6 +197,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         case GLOBAL_RULESET -> isSuperUser = true;
                         case REALM_RULESET -> {
                             realm = exchange.getIn().getHeader(Notification.HEADER_SOURCE_ID, String.class);
+                            notificationRealm.set(realm);
                             sourceId.set(realm);
                         }
                         case ASSET_RULESET -> {
@@ -176,6 +205,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                             sourceId.set(assetId);
                             Asset<?> asset = assetStorageService.find(assetId, false);
                             realm = asset.getRealm();
+                            notificationRealm.set(realm);
                         }
                     }
 
@@ -217,6 +247,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                     .setTarget(target.getType())
                                     .setTargetId(target.getId())
                                     .setMessage(notification.getMessage())
+                                    .setRealm(resolveTargetRealm(target, notificationRealm.get()))
                                     .setSentOn(timerService.getNow());
 
                                 sentNotification = em.merge(sentNotification);
@@ -267,9 +298,36 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             .logStackTrace(false)
             .handled(true)
             .process(exchange -> {
-                // Just notify sender in case of RequestReply
+                // Log the failure reason; notify sender in case of RequestReply
+                Exception exception = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+                if (exception instanceof NotificationProcessingException) {
+                    LOG.warning("Notification processing failed: " + exception.getMessage());
+                } else {
+                    LOG.log(Level.WARNING, "Notification processing failed", exception);
+                }
                 exchange.getMessage().setBody(false);
             });
+    }
+
+    /**
+     * Resolves the realm a {@link SentNotification} should be stored against from its target so cross-realm
+     * notifications are visible in the recipient's realm; falls back to the sender's realm when the target
+     * cannot be resolved (e.g. {@link Notification.TargetType#CUSTOM} targets).
+     */
+    protected String resolveTargetRealm(Notification.Target target, String fallbackRealm) {
+        switch (target.getType()) {
+            case REALM:
+                return target.getId();
+            case USER:
+                User user = identityService.getIdentityProvider().getUser(target.getId());
+                if (user != null && user.getRealm() != null) return user.getRealm();
+                break;
+            case ASSET:
+                Asset<?> asset = assetStorageService.find(target.getId(), false);
+                if (asset != null) return asset.getRealm();
+                break;
+        }
+        return fallbackRealm != null ? fallbackRealm : "master";
     }
 
     public boolean sendNotification(Notification notification) {
@@ -321,19 +379,113 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> em.find(SentNotification.class, notificationId));
     }
 
-    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
-        StringBuilder builder = new StringBuilder();
-        builder.append("select n from SentNotification n where 1=1");
+    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, SentNotification.SortField sort, boolean descending, Integer offset, Integer limit, AuthContext authContext) throws IllegalArgumentException {
+        StringBuilder builder = new StringBuilder("select n from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
-        builder.append(" order by n.sentOn asc");
+        buildNotificationCriteria(builder, parameters, ids, types, from, to, realmIds, userIds, assetIds, source, authContext);
+        builder.append(buildOrderBy(sort, descending));
+
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
             IntStream.rangeClosed(1, parameters.size())
-                    .forEach(i -> query.setParameter(i, parameters.get(i-1)));
+                    .forEach(i -> query.setParameter(i, parameters.get(i - 1)));
+            if (offset != null && offset > 0) {
+                query.setFirstResult(offset);
+            }
+            if (limit != null && limit > 0) {
+                query.setMaxResults(limit);
+            }
             return query.getResultList();
-
         });
+    }
+
+    public long getNotificationsCount(List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, AuthContext authContext) throws IllegalArgumentException {
+        StringBuilder builder = new StringBuilder("select count(n) from SentNotification n where 1=1");
+        List<Object> parameters = new ArrayList<>();
+        buildNotificationCriteria(builder, parameters, null, types, from, to, realmIds, userIds, assetIds, source, authContext);
+
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<Long> query = entityManager.createQuery(builder.toString(), Long.class);
+            IntStream.rangeClosed(1, parameters.size())
+                    .forEach(i -> query.setParameter(i, parameters.get(i - 1)));
+            return query.getSingleResult();
+        });
+    }
+
+    /**
+     * Builds the {@code order by} clause for {@link #getNotifications}. Each {@link SentNotification.SortField} maps
+     * to a fixed persisted column (never a caller-supplied string) so ordering is injection-safe; a null sort keeps
+     * the default of newest-sent first. Status orders by whether the notification has been delivered.
+     */
+    protected String buildOrderBy(SentNotification.SortField sort, boolean descending) {
+        if (sort == null) {
+            return " order by n.sentOn desc";
+        }
+        String direction = descending ? " desc" : " asc";
+        return switch (sort) {
+            case TITLE -> " order by n.name" + direction;
+            case SOURCE -> " order by n.source" + direction;
+            // pending (no deliveredOn) sorts before delivered when ascending
+            case STATUS -> " order by case when n.deliveredOn is null then 0 else 1 end" + direction;
+            case SENT_ON -> " order by n.sentOn" + direction;
+            case DELIVERED_ON -> " order by n.deliveredOn" + direction;
+        };
+    }
+
+    /**
+     * Appends the shared filter criteria used by {@link #getNotifications} and {@link #getNotificationsCount}.
+     * Restricted callers are additionally limited to notifications they sent, that target them, or that target
+     * their realm; any other caller with access sees all notifications matching the criteria.
+     */
+    protected void buildNotificationCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, AuthContext authContext) {
+        int idx = 1;
+
+        if (ids != null && !ids.isEmpty()) {
+            builder.append(" AND n.id IN ?").append(idx++);
+            parameters.add(ids);
+        }
+        if (types != null && !types.isEmpty()) {
+            builder.append(" AND n.type IN ?").append(idx++);
+            parameters.add(types);
+        }
+        if (from != null) {
+            builder.append(" AND n.sentOn >= ?").append(idx++);
+            parameters.add(from);
+        }
+        if (to != null) {
+            builder.append(" AND n.sentOn <= ?").append(idx++);
+            parameters.add(to);
+        }
+        if (source != null) {
+            builder.append(" AND n.source = ?").append(idx++);
+            parameters.add(source);
+        }
+        if (realmIds != null && !realmIds.isEmpty()) {
+            builder.append(" AND n.realm IN ?").append(idx++);
+            parameters.add(realmIds);
+        }
+        if (assetIds != null && !assetIds.isEmpty()) {
+            builder.append(" AND n.target = ?").append(idx++).append(" AND n.targetId IN ?").append(idx++);
+            parameters.add(Notification.TargetType.ASSET);
+            parameters.add(assetIds);
+        } else if (userIds != null && !userIds.isEmpty()) {
+            builder.append(" AND n.target = ?").append(idx++).append(" AND n.targetId IN ?").append(idx++);
+            parameters.add(Notification.TargetType.USER);
+            parameters.add(userIds);
+        }
+
+        // Only restricted users are limited to notifications they sent, that target them, or that target their realm;
+        // any other caller with access (read:notifications / read:admin / superuser) sees all of them
+        if (authContext != null && identityService.getIdentityProvider().isRestrictedUser(authContext)) {
+            builder.append(" AND (n.sourceId = ?").append(idx++)
+                .append(" OR (n.target = ?").append(idx++).append(" AND n.targetId = ?").append(idx++).append(")")
+                .append(" OR (n.target = ?").append(idx++).append(" AND n.targetId = ?").append(idx++).append("))");
+            parameters.add(authContext.getUserId());
+            parameters.add(Notification.TargetType.USER);
+            parameters.add(authContext.getUserId());
+            parameters.add(Notification.TargetType.REALM);
+            parameters.add(authContext.getAuthenticatedRealmName());
+        }
     }
 
     public void removeNotification(Long id) {
@@ -344,12 +496,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         );
     }
 
-    public void removeNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public void removeNotifications(List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
 
         StringBuilder builder = new StringBuilder();
         builder.append("delete from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, true);
+        processCriteria(builder, parameters, ids, types, from, to, realmIds, userIds, assetIds, true);
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery(builder.toString());
@@ -359,7 +511,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         });
     }
 
-    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds, boolean isRemove) {
+    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, boolean isRemove) {
         boolean hasIds = ids != null && !ids.isEmpty();
         boolean hasTypes = types != null && !types.isEmpty();
         boolean hasRealms = realmIds != null && !realmIds.isEmpty();
@@ -383,7 +535,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             counter++;
         }
 
-        if (isRemove && fromTimestamp == null && toTimestamp == null && counter == 0) {
+        if (isRemove && from == null && to == null && counter == 0) {
             LOG.fine("No filters set for remove notifications request so not allowed");
             throw new IllegalArgumentException("No criteria specified");
         }
@@ -401,18 +553,18 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             parameters.add(types);
         }
 
-        if (fromTimestamp != null) {
+        if (from != null) {
             builder.append(" AND n.sentOn >= ?")
                     .append(parameters.size() + 1);
 
-            parameters.add(Instant.ofEpochMilli(fromTimestamp));
+            parameters.add(from);
         }
 
-        if (toTimestamp != null) {
+        if (to != null) {
             builder.append(" AND n.sentOn <= ?")
                     .append(parameters.size() + 1);
 
-            parameters.add(Instant.ofEpochMilli(toTimestamp));
+            parameters.add(to);
         }
 
         if (hasAssets) {
@@ -443,6 +595,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             parameters.add(realmIds);
         }
     }
+
 
     protected Instant getRepeatAfterTimestamp(Notification notification, Instant lastSend) {
         Instant timestamp = null;

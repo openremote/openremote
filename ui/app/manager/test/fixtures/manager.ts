@@ -16,7 +16,7 @@ import {
     type TestFixture,
     withPage,
 } from "@openremote/test";
-import { AssetsPage, InsightsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
+import { AssetsPage, InsightsPage, NotificationsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
 import { MwcInput, MwcMenu } from "../../../../component/or-mwc-components/test/fixtures";
@@ -39,6 +39,7 @@ export class Manager {
     public assets: Asset[] = [];
     public rules: number[] = [];
     public dashboards: string[] = [];
+    public provisionedUsers: { realm: string; id: string }[] = [];
 
     constructor(readonly page: Page, readonly baseURL: string) {
         this.managerHost = process.env.managerUrl || "http://localhost:8080";
@@ -161,6 +162,62 @@ export class Manager {
             })
         ).data;
         return access_token;
+    }
+
+    /**
+     * Build an axios request config authenticated as the master-realm admin, for REST setup calls.
+     */
+    async adminConfig(): Promise<AxiosRequestConfig<any>> {
+        const token = await this.getAccessToken("master", admin.username, admin.password);
+        return { headers: { Authorization: `Bearer ${token}` } };
+    }
+
+    /**
+     * Provision a user with client roles (and optionally a password/email) in the given realm via REST, returning
+     * the created user. Unlike {@link createUser} this is stateless (it doesn't touch `this.realm`/`this.user`), so
+     * it can set up arbitrary users for e.g. access-control tests. Defaults to the admin config when none is given.
+     * @param realm The realm to create the user in
+     * @param user The username, client roles, and optional initial password/email
+     * @param config The axios request config
+     */
+    async provisionUser(
+        realm: string,
+        { username, roles = [], password, email }: { username: string; roles?: string[]; password?: string; email?: string },
+        config?: AxiosRequestConfig<any>
+    ): Promise<UserModel | undefined> {
+        config ??= await this.adminConfig();
+        const user = await this.api.UserResource.create(realm, { username, email, enabled: true } as UserModel, config)
+            .then((r) => r.data)
+            .catch(() => undefined);
+
+        if (user?.id) {
+            // track for teardown so provisioned users don't leak between tests/runs
+            this.provisionedUsers.push({ realm, id: user.id });
+            if (roles.length > 0) {
+                await this.api.UserResource.updateUserClientRoles(realm, user.id, this.clientId, roles, config);
+            }
+            if (password) {
+                await this.api.UserResource.updatePassword(realm, user.id, { value: password }, config);
+            }
+        }
+        return user;
+    }
+
+    /**
+     * Deletes all users provisioned via {@link provisionUser} (across realms). Called by {@link cleanUp}.
+     * @param config The axios request config
+     */
+    async deleteUsers(config?: AxiosRequestConfig<any>) {
+        config ??= await this.adminConfig();
+        for (const { realm, id } of this.provisionedUsers) {
+            try {
+                const response = await this.api.UserResource.deleteUser(realm, id, config);
+                expect(response.status).toBe(204);
+            } catch (e) {
+                console.warn("Could not delete user: ", id, e);
+            }
+        }
+        this.provisionedUsers = [];
     }
 
     /**
@@ -305,8 +362,7 @@ export class Manager {
      */
     async createAsset(asset: Asset, config?: AxiosRequestConfig<any>) {
         if (!config) {
-            const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
-            config = { headers: { Authorization: `Bearer ${access_token}` } };
+            config = await this.adminConfig();
         }
         await rest.api.AssetResource.create(asset, config)
             .then((response) => {
@@ -325,8 +381,7 @@ export class Manager {
      */
     async updateAsset(asset: Asset, config?: AxiosRequestConfig<any>) {
         if (!config) {
-            const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
-            config = { headers: { Authorization: `Bearer ${access_token}` } };
+            config = await this.adminConfig();
         }
         await rest.api.AssetResource.update(asset.id!, asset, config)
             .then((response) => {
@@ -350,8 +405,7 @@ export class Manager {
         realm: string,
         { user, role, assets }: { user?: UserModel; role?: Role; assets?: Asset[] | DefaultAssets } = {}
     ) {
-        const access_token = await this.getAccessToken("master", admin.username, admin.password);
-        const config = { headers: { Authorization: `Bearer ${access_token}` } };
+        const config = await this.adminConfig();
 
         this.realm = realm;
 
@@ -448,8 +502,7 @@ export class Manager {
      *  Clean up the environment
      */
     async cleanUp() {
-        const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
-        const config = { headers: { Authorization: `Bearer ${access_token}` } };
+        const config = await this.adminConfig();
 
         if (this.dashboards.length > 0) {
             await this.deleteDashboards(config);
@@ -461,6 +514,10 @@ export class Manager {
 
         if (this.assets.length > 0) {
             await this.deleteAssets(config);
+        }
+
+        if (this.provisionedUsers.length > 0) {
+            await this.deleteUsers(config);
         }
 
         if (this.role && this.realm) {
@@ -486,6 +543,7 @@ function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; sha
 interface PageFixtures {
     assetsPage: AssetsPage;
     insightsPage: InsightsPage;
+    notificationsPage: NotificationsPage;
     realmsPage: RealmsPage;
     rolesPage: RolesPage;
     rulesPage: RulesPage;
@@ -510,6 +568,7 @@ export const test = base.extend<Fixtures>({
     // Pages
     assetsPage: withManager(AssetsPage),
     insightsPage: withManager(InsightsPage),
+    notificationsPage: withManager(NotificationsPage),
     realmsPage: withManager(RealmsPage),
     rolesPage: withManager(RolesPage),
     rulesPage: withManager(RulesPage),

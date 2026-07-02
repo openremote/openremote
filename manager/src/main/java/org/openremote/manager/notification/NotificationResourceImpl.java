@@ -20,7 +20,9 @@
 package org.openremote.manager.notification;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -34,8 +36,11 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
+
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -62,30 +67,36 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
+    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long from, Long to, String realmId, String userId, String assetId, Notification.Source source, SentNotification.SortField sort, Boolean descending, Integer offset, Integer limit) {
+        AuthContext authContext = getAuthContext();
+        realmId = resolveAndAuthoriseRealm(authContext, realmId);
+
         try {
-            return notificationService.getNotifications(
+            List<SentNotification> notifications = notificationService.getNotifications(
                 id != null ? Collections.singletonList(id) : null,
                 type != null ? Collections.singletonList(type) : null,
-                fromTimestamp,
-                toTimestamp,
+                from != null ? Instant.ofEpochMilli(from) : null,
+                to != null ? Instant.ofEpochMilli(to) : null,
                 realmId != null ? Collections.singletonList(realmId) : null,
                 userId != null ? Collections.singletonList(userId) : null,
-                assetId != null ? Collections.singletonList(assetId) : null
-            ).toArray(new SentNotification[0]);
+                assetId != null ? Collections.singletonList(assetId) : null,
+                source, sort, descending != null && descending, offset, limit, authContext
+            );
+            sanitiseNotifications(notifications, authContext);
+            return notifications.toArray(new SentNotification[0]);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
     }
 
     @Override
-    public void removeNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
+    public void removeNotifications(RequestParams requestParams, Long id, String type, Long from, Long to, String realmId, String userId, String assetId) {
         try {
             notificationService.removeNotifications(
                 id != null ? Collections.singletonList(id) : null,
                 type != null ? Collections.singletonList(type) : null,
-                fromTimestamp,
-                toTimestamp,
+                from != null ? Instant.ofEpochMilli(from) : null,
+                to != null ? Instant.ofEpochMilli(to) : null,
                 realmId != null ? Collections.singletonList(realmId) : null,
                 userId != null ? Collections.singletonList(userId) : null,
                 assetId != null ? Collections.singletonList(assetId) : null);
@@ -175,7 +186,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                 LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that doesn't exist or isn't public");
                 throw new WebApplicationException("Anonymous request can only update public assets not linked to a user", FORBIDDEN);
             }
-
+            // TODO : What is meant by the message below?
             // Disabled until console permissions finalised
 //            if (assetStorageService.isUserAsset(asset.getId())) {
 //                LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that is linked to one or more users");
@@ -218,4 +229,73 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             }
         }
     }
+
+    @Override
+    public long getNotificationsCount(RequestParams requestParams, String type, Long from, Long to, String realmId, String userId, String assetId, Notification.Source source) {
+        AuthContext authContext = getAuthContext();
+        realmId = resolveAndAuthoriseRealm(authContext, realmId);
+
+        try {
+            return notificationService.getNotificationsCount(
+                type != null ? Collections.singletonList(type) : null,
+                from != null ? Instant.ofEpochMilli(from) : null,
+                to != null ? Instant.ofEpochMilli(to) : null,
+                realmId != null ? Collections.singletonList(realmId) : null,
+                userId != null ? Collections.singletonList(userId) : null,
+                assetId != null ? Collections.singletonList(assetId) : null,
+                source, authContext
+            );
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Resolves the realm to query and verifies the caller may access it. Superusers may query any realm (or all
+     * realms when {@code realmId} is null); other callers default to their own realm and may not query a realm they
+     * cannot access (which would otherwise let them read another realm's notifications by passing its ID).
+     */
+    protected String resolveAndAuthoriseRealm(AuthContext authContext, String realmId) {
+        if (authContext == null || authContext.isSuperUser()) {
+            return realmId;
+        }
+        if (realmId == null) {
+            return authContext.getAuthenticatedRealmName();
+        }
+        if (!managerIdentityService.getIdentityProvider().isRealmActiveAndAccessible(authContext, realmId)) {
+            throw new WebApplicationException("Realm '" + realmId + "' is nonexistent, inactive or inaccessible", FORBIDDEN);
+        }
+        return realmId;
+    }
+
+    /**
+     * Strips identifiers the caller isn't allowed to see: source/target user IDs without read:users and target asset
+     * IDs without read:assets.
+     */
+    protected void sanitiseNotifications(List<SentNotification> notifications, AuthContext authContext) {
+        boolean canReadUsers = authContext != null && (authContext.isSuperUser()
+            || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
+            || authContext.hasResourceRole(Constants.READ_USERS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
+        boolean canReadAssets = authContext != null && (authContext.isSuperUser()
+            || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
+            || authContext.hasResourceRole(Constants.READ_ASSETS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
+
+        if (canReadUsers && canReadAssets) {
+            return;
+        }
+
+        notifications.forEach(n -> {
+            if (!canReadUsers) {
+                n.setSourceId(null);
+                if (n.getTarget() == Notification.TargetType.USER) {
+                    n.setTargetId(null);
+                }
+            }
+            if (!canReadAssets && n.getTarget() == Notification.TargetType.ASSET) {
+                n.setTargetId(null);
+            }
+        });
+    }
+
+
 }

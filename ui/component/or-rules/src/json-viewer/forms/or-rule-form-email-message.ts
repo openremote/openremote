@@ -57,7 +57,7 @@ export class OrRuleFormEmailMessage extends translate(i18next)(LitElement) {
                 </or-vaadin-text-field>
                 <or-vaadin-text-area value=${this.message?.html} required style="min-height: 200px;" 
                                      @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "html")}>
-                    <or-translate slot="label" value="message"></or-translate>
+                    <or-translate slot="label" value="body"></or-translate>
                 </or-vaadin-text-area>
             </div>
         `

@@ -32,6 +32,18 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 @Table(name = "NOTIFICATION")
 public class SentNotification {
 
+    /**
+     * Columns that {@link SentNotification}s can be ordered by server-side; each maps to a fixed persisted column
+     * (see the notification service) so ordering stays injection-safe and consistent across paginated results.
+     */
+    public enum SortField {
+        TITLE,
+        SOURCE,
+        STATUS,
+        SENT_ON,
+        DELIVERED_ON
+    }
+
     @Id
     @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
@@ -58,6 +70,10 @@ public class SentNotification {
     @Column(name = "SOURCE", length = 50)
     @Enumerated(EnumType.STRING)
     protected Notification.Source source;
+
+    @NotNull
+    @Column(name = "REALM", nullable = false, updatable = false)
+    protected String realm;
 
     @Column(name = "SOURCE_ID", length = 43)
     protected String sourceId;
@@ -188,6 +204,16 @@ public class SentNotification {
         this.acknowledgement = acknowledgement;
         return this;
     }
+
+    public String getRealm() {
+        return realm;
+    }
+
+    public SentNotification setRealm(String realm) {
+        this.realm = realm;
+        return this;
+    }
+
 
     public String getError() {
         return error;

@@ -73,6 +73,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     protected AssetStorageService assetStorageService;
     protected GatewayService gatewayService;
     protected boolean valid;
+    protected boolean devMode;
     protected Map<String, String> consoleFCMTokenMap = new ConcurrentHashMap<>();
     protected Set<String> fcmTokenBlacklist = Collections.synchronizedSet(new HashSet<>());
 
@@ -85,6 +86,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         this.managerIdentityService = container.getService(ManagerIdentityService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.gatewayService = container.getService(GatewayService.class);
+        this.devMode = container.isDevMode();
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
         String firebaseConfigFilePath = container.getConfig().get(OR_FIREBASE_CONFIG_FILE);
@@ -289,11 +291,23 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             });
         }
 
+        if (devMode && mappedTargets.isEmpty() && targets != null && !targets.isEmpty()) {
+            // Keep the no-targets behaviour identical to production but make the dropped notification visible
+            LOG.info("Dev mode: no console asset targets mapped for push notification, original targets=["
+                + targets.stream().map(Object::toString).collect(Collectors.joining(",")) + "], message=" + message);
+        }
+
         return mappedTargets;
     }
 
     @Override
     public void sendMessage(long id, Notification.Source source, String sourceId, Notification.Target target, AbstractNotificationMessage message) throws Exception {
+
+        if (devMode && !valid) {
+            // FCM not configured; log the notification instead of sending so the sent record is still created
+            LOG.info("Dev mode: FCM not configured so skipping push notification send: id=" + id + ", target=" + target + ", message=" + message);
+            return;
+        }
 
         Notification.TargetType targetType = target.getType();
         String targetId = target.getId();
@@ -361,7 +375,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
     @Override
     public boolean isValid() {
-        return valid;
+        // In dev mode the handler is always valid so notifications are processed and persisted even without FCM config
+        return valid || devMode;
     }
 
     public void sendMessage(Message message) throws Exception {
@@ -403,13 +418,13 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         WebpushConfig.Builder webpushConfigBuilder = WebpushConfig.builder();
 
         if (!dataOnly) {
-            // Don't set basic notification on Android if there is data so even if app is in background we can show a custom notification
-            // with actions that use the actions from the data
-            if (pushMessage.getData() != null || pushMessage.getAction() != null || pushMessage.getButtons() != null) {
-                androidConfigBuilder.putData("or-title", pushMessage.getTitle());
-                if (pushMessage.getBody() != null) {
-                    androidConfigBuilder.putData("or-body", pushMessage.getBody());
-                }
+            // The OpenRemote console builds the Android notification from this data (rather than a basic FCM
+            // notification) so it can show a custom notification with actions even when the app is in the background.
+            // Always include the title/body: a plain push with no data/action/buttons would otherwise arrive with
+            // nothing for the Android console to display.
+            androidConfigBuilder.putData("or-title", pushMessage.getTitle());
+            if (pushMessage.getBody() != null) {
+                androidConfigBuilder.putData("or-body", pushMessage.getBody());
             }
 
             // Use alert dictionary for apns

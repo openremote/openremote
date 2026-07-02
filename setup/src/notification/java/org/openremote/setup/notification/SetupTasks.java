@@ -17,23 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-@import "@vaadin/vaadin-lumo-styles/components/dialog.css";
+package org.openremote.setup.notification;
 
-@media lumo_components_dialog-overlay-internal {
-    :host::part(overlay) {
-        width: 100%;
-    }
-    :host(:not([has-footer])) [part="content"] {
-      padding: 0 var(--lumo-space-l) var(--lumo-space-l) !important;
-    }
-}
+import org.openremote.model.Container;
+import org.openremote.model.setup.Setup;
 
-:root::before,
-:host::before {
-  --_lumo-vaadin-dialog-overlay-inject: 1;
-  --_lumo-vaadin-dialog-overlay-inject-modules:
-    lumo_mixins_overlay,
-    lumo_mixins_resizable-overlay,
-    lumo_components_dialog-overlay,
-    lumo_components_dialog-overlay-internal;
+import java.util.Arrays;
+import java.util.List;
+
+public class SetupTasks implements org.openremote.model.setup.SetupTasks {
+
+    @Override
+    public List<Setup> createTasks(Container container, String setupType, boolean keycloakEnabled) {
+        KeycloakNotificationSetup keycloakSetup = new KeycloakNotificationSetup(container);
+        return Arrays.asList(
+            keycloakSetup,
+            new ManagerNotificationSetup(container, keycloakSetup)
+        );
+    }
 }

@@ -2139,6 +2139,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
+    "@openremote/theme": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"

@@ -67,11 +67,11 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
             <form style="display:grid">
                 <or-vaadin-text-field id="push-title" value=${message.title} required
                                       @change=${(ev: Event) => onchange(ev, message).then(msg => this._onTitleChange(this._pushTitleElem!, msg))}>
-                    <or-translate slot="label" value="subject"></or-translate>
+                    <or-translate slot="label" value="title"></or-translate>
                 </or-vaadin-text-field>
                 <or-vaadin-text-area id="push-body" value=${message.body} required style="min-height: 200px;"
                                      @change=${(ev: Event) => onchange(ev, message).then(msg => this._onBodyChange(this._pushBodyElem!, msg))}>
-                    <or-translate slot="label" value="message"></or-translate>
+                    <or-translate slot="label" value="body"></or-translate>
                 </or-vaadin-text-area>
                 <or-vaadin-text-field id="push-url" value=${message.action?.url}
                                       @change=${(ev: Event) => onchange(ev, message).then(msg => this._onActionUrlChange(this._pushUrlElem!, msg))}>
