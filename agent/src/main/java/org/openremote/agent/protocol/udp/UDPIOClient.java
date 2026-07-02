@@ -113,6 +113,5 @@ public class UDPIOClient<T> extends AbstractNettyIOClient<T> {
     protected void configureChannel() {
         super.configureChannel();
         bootstrap.option(ChannelOption.SO_BROADCAST, true);
-        bootstrap.option(ChannelOption.SO_REUSEADDR, true);
     }
 }
