@@ -43,7 +43,8 @@ Stories call `getORStorybookHelpers(tagName)` (from `ui/component/storybook-util
 ### Component testing
 
 Component tests use Playwright component testing (`@sand4rt/experimental-ct-web`). They live in each package's `test/*.test.ts`, import `{ ct, expect }` from `@openremote/test`, and `mount(ComponentClass, { props, slots, on })`. Run them with
- `npm test` in the package (which does `tsc -b && playwright test`). A few non-obvious gotchas that cost real time:
+ `npm test` in the package (which does `tsc -b && playwright test`). Prefer web-first, role-based assertions (`getByRole("checkbox", { name }).toBeChecked()`, `toHaveCount(...)`) over poking at JS properties (`toHaveJSProperty`) or internal l
+ocators. A few non-obvious gotchas that cost real time:
 
 - **Custom elements used as slotted/appended children must be eagerly registered.** Playwright CT turns each imported component into a *lazy* dynamic import that only runs when that component is `mount()`ed, so a child element that is never m
 ounted itself (e.g. `or-vaadin-toggle` slotted inside `or-vaadin-checkbox-group`) never gets `customElements.define`d and stays an inert, unupgraded tag — it appends to the DOM but does not render. Register such elements eagerly in the shared
@@ -55,4 +56,7 @@ rray equality, and prove "emits nothing" with `not.toContain(true)` rather than 
 - **Vaadin `<prop>-changed` events do not bubble or compose**, so a listener on a parent/group will not catch a child field's event — attach it to the field itself.
 - **The default slot must be an array of single-element strings.** The CT runner builds each slot via `createContextualFragment(str).firstChild`, so a single string containing multiple elements silently keeps only the first; pass `slots: { de
 fault: ["<a>…</a>", "<b>…</b>"] }`.
+- **Vaadin's `theme` is attribute-only.** `ThemePropertyMixin` derives a read-only `_theme` from the `theme` *attribute*; there is no writable reflecting `theme` property. So `mount(..., { props: { theme: "vertical" } })` sets an ignored JS p
+roperty and the `:host([theme~='vertical'])` styles never apply (e.g. a "vertical" checkbox-group stays horizontal). Set it as an attribute instead: `await component.evaluate((el) => el.setAttribute("theme", "vertical"))`. (In Storybook/Lit t
+emplates `theme="vertical"` is already a real attribute, so it works there.)
 - The `on` handler type is `Record<string, Function>`, so typed handler params are fine.
