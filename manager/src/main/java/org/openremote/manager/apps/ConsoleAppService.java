@@ -27,8 +27,12 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryIteratorException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -64,14 +68,36 @@ public class ConsoleAppService implements ContainerService {
     }
 
     public String[] getInstalled() throws Exception {
-        return Stream.concat(
-                Files.list(managerWebService.getBuiltInAppDocRoot()),
-                Files.list(managerWebService.getCustomAppDocRoot()))
+        return Stream.of(
+                listAppDocRoot(managerWebService.getBuiltInAppDocRoot()),
+                listAppDocRoot(managerWebService.getCustomAppDocRoot()))
+            .flatMap(List::stream)
             .filter(Files::isDirectory)
             .filter(path -> !new File(path.toString(), ".appignore").exists())
             .map(dir -> dir.getFileName().toString())
             .distinct()
             .toArray(String[]::new);
+    }
+
+    private List<Path> listAppDocRoot(Path appDocRoot) {
+        if (appDocRoot == null) {
+            LOG.warning("App doc root is not configured, assuming no installed apps");
+            return List.of();
+        }
+
+        try {
+            if (!Files.isDirectory(appDocRoot)) {
+                LOG.warning("App doc root does not exist, is not a directory, or cannot be accessed; assuming no installed apps: " + appDocRoot.toAbsolutePath());
+                return List.of();
+            }
+
+            try (Stream<Path> apps = Files.list(appDocRoot)) {
+                return apps.toList();
+            }
+        } catch (IOException | DirectoryIteratorException | SecurityException ex) {
+            LOG.log(Level.WARNING, "App doc root cannot be listed, assuming no installed apps: " + appDocRoot.toAbsolutePath(), ex);
+            return List.of();
+        }
     }
 
     public Path getConsoleAppDocRoot() {

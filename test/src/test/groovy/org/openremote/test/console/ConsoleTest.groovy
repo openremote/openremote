@@ -141,6 +141,39 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         Files.deleteIfExists(customDocRoot)
     }
 
+    def "Apps endpoint treats missing app doc root as empty"() {
+        given: "a built-in app doc root and a missing custom app doc root"
+        def builtInDocRoot = Files.createTempDirectory("apps-builtin-")
+        def customDocRootParent = Files.createTempDirectory("apps-missing-custom-")
+        def customDocRoot = customDocRootParent.resolve("missing")
+        Files.createDirectories(builtInDocRoot.resolve("appBuiltin"))
+
+        def container = startContainer(defaultConfig() << [
+                (ManagerWebService.OR_APP_DOCROOT)       : builtInDocRoot.toString(),
+                (ManagerWebService.OR_CUSTOM_APP_DOCROOT): customDocRoot.toString()
+        ], defaultServices())
+        def requestTarget = getClientApiTarget(serverUri(serverPort), MASTER_REALM).path("apps")
+
+        when: "requesting the apps list"
+        def response = requestTarget.request().get()
+
+        then: "the missing root is ignored and apps from the available root are returned"
+        response.withCloseable { r ->
+            assert r.status == 200
+            def appList = parse(r.readEntity(String.class)).orElse("") as String
+            appList.contains("appBuiltin")
+            return true
+        }
+
+        cleanup:
+        if (response != null) {
+            response.close()
+        }
+        Files.deleteIfExists(builtInDocRoot.resolve("appBuiltin"))
+        Files.deleteIfExists(builtInDocRoot)
+        Files.deleteIfExists(customDocRootParent)
+    }
+
     def "Apps info endpoint returns info for custom apps"() {
         given: "a custom app doc root with an info.json file"
         def customDocRoot = Files.createTempDirectory("apps-info-custom-")
