@@ -93,18 +93,26 @@ ct("State: on is checked", async ({ mount }) => {
   await expect(component.getByRole("checkbox", { name: "On" })).toBeChecked();
 });
 
-ct("State: disabled cannot be toggled and emits nothing", async ({ mount }) => {
+ct("State: disabled cannot be toggled and emits no change event", async ({ mount }) => {
   const checkedChanges: boolean[] = [];
+  let changeCount = 0;
   const component = await mount(OrVaadinToggle, {
     props: { label: "Disabled", disabled: true },
-    on: { "checked-changed": (detail: { value: boolean }) => checkedChanges.push(detail.value) },
+    on: {
+      change: () => {
+        changeCount += 1;
+      },
+      "checked-changed": (detail: { value: boolean }) => checkedChanges.push(detail.value),
+    },
   });
 
   const input = component.getByRole("checkbox", { name: "Disabled" });
   await expect(input).toBeDisabled();
   await input.click({ force: true });
   await expect(input).not.toBeChecked();
-  // Only the initial checked-changed(false) may be present; interaction must never switch it on.
+  // The click must fire no `change` event (which has no mount-time noise); and `checked-changed`
+  // must never carry `true` (a single checked-changed(false) may be emitted once at mount).
+  expect(changeCount).toBe(0);
   expect(checkedChanges).not.toContain(true);
 });
 
@@ -115,17 +123,25 @@ ct("State: disabled + on stays checked", async ({ mount }) => {
   await expect(input).toBeChecked();
 });
 
-ct("State: readonly does not change on click and emits nothing", async ({ mount }) => {
+ct("State: readonly does not change on click and emits no change event", async ({ mount }) => {
   const checkedChanges: boolean[] = [];
+  let changeCount = 0;
   const component = await mount(OrVaadinToggle, {
     props: { label: "Readonly", readonly: true },
-    on: { "checked-changed": (detail: { value: boolean }) => checkedChanges.push(detail.value) },
+    on: {
+      change: () => {
+        changeCount += 1;
+      },
+      "checked-changed": (detail: { value: boolean }) => checkedChanges.push(detail.value),
+    },
   });
 
   const input = component.getByRole("checkbox", { name: "Readonly" });
   await input.click({ force: true });
   await expect(input).not.toBeChecked();
-  // Only the initial checked-changed(false) may be present; interaction must never switch it on.
+  // The click must fire no `change` event (which has no mount-time noise); and `checked-changed`
+  // must never carry `true` (a single checked-changed(false) may be emitted once at mount).
+  expect(changeCount).toBe(0);
   expect(checkedChanges).not.toContain(true);
 });
 
