@@ -48,7 +48,7 @@ ocators. A few non-obvious gotchas that cost real time:
 
 - **Custom elements used as slotted/appended children must be eagerly registered.** Playwright CT turns each imported component into a *lazy* dynamic import that only runs when that component is `mount()`ed, so a child element that is never m
 ounted itself (e.g. `or-vaadin-toggle` slotted inside `or-vaadin-checkbox-group`) never gets `customElements.define`d and stays an inert, unupgraded tag — it appends to the DOM but does not render. Register such elements eagerly in the shared
- browser bootstrap `ui/test/playwright/index.js` (where icons/theme are also registered) with a side-effect import.
+ browser bootstrap `ui/test/playwright/index.js` (where icons/theme are also registered) with a side-effect import. When you do, also add that component's package to `ui/test/package.json` dependencies, otherwise it is an undeclared dependency (knip fails and the module may not resolve) — e.g. registering `or-vaadin-toggle` requires `@openremote/or-vaadin-components` in `ui/test`.
 - **The `on` handler receives `event.detail`, not the event** (`listener(event.detail)`). Assert event values via events whose detail carries them — for Vaadin fields that is the `<prop>-changed` notify event (detail `{ value }`); the native
 `change` event has no useful detail so it can only be counted.
 - **Vaadin fires an initial `<prop>-changed` at mount** (notify-on-first-commit), so a freshly mounted toggle emits `checked-changed(false)` before any interaction. Assert on the user-driven transitions (e.g. the last two values), not exact-a
