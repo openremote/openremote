@@ -68,9 +68,14 @@ import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
 
 import java.sql.*;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -97,16 +102,6 @@ import static org.openremote.model.value.MetaItemType.ACCESS_PUBLIC_READ;
 import static org.openremote.model.value.MetaItemType.ACCESS_RESTRICTED_READ;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService {
-
-    protected static class DatapointChunkRange {
-        final protected Timestamp start;
-        final protected Timestamp end;
-
-        protected DatapointChunkRange(Timestamp start, Timestamp end) {
-            this.start = start;
-            this.end = end;
-        }
-    }
 
     protected static class PreparedAssetQuery {
 
@@ -143,7 +138,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public static final int PRIORITY = MED_PRIORITY;
     public static final String OR_ASSET_DELETE_DATAPOINT_BATCH_THRESHOLD = "OR_ASSET_DELETE_DATAPOINT_BATCH_THRESHOLD";
     public static final int OR_ASSET_DELETE_DATAPOINT_BATCH_THRESHOLD_DEFAULT = 100000;
-    protected static final int ASSET_DATAPOINT_DELETE_CHUNK_BATCH_SIZE = 5;
+    public static final String OR_ASSET_DELETE_DATAPOINT_BATCH_WEEKS = "OR_ASSET_DELETE_DATAPOINT_BATCH_WEEKS";
+    public static final int OR_ASSET_DELETE_DATAPOINT_BATCH_WEEKS_DEFAULT = 4;
+    protected static final long FAILED_ASSET_DELETE_RETRY_PERIOD_HOURS = 1L;
 //    protected static final Field assetParentNameField;
 //    protected static final Field assetParentTypeField;
 //
@@ -249,9 +246,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
     protected ExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected final LockByKey assetLocks = new LockByKey();
     protected final AtomicReference<CompletableFuture<Void>> pendingAssetDeleteFuture = new AtomicReference<>(CompletableFuture.completedFuture(null));
+    protected final AtomicReference<Timestamp> oldestAssetDatapointChunkStart = new AtomicReference<>();
+    protected final Set<String> failedAssetDeleteIds = Collections.synchronizedSet(new LinkedHashSet<>());
+    protected ScheduledFuture<?> failedAssetDeleteRetryFuture;
     protected int assetDeleteDatapointBatchThreshold;
+    protected int assetDeleteDatapointBatchWeeks;
     protected volatile boolean pendingAssetDeleteStopping;
 
     /**
@@ -339,10 +341,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
         executorService = container.getExecutor();
+        scheduledExecutorService = container.getScheduledExecutor();
         assetDeleteDatapointBatchThreshold = getInteger(
             container.getConfig(),
             OR_ASSET_DELETE_DATAPOINT_BATCH_THRESHOLD,
             OR_ASSET_DELETE_DATAPOINT_BATCH_THRESHOLD_DEFAULT);
+        assetDeleteDatapointBatchWeeks = Math.max(1, getInteger(
+            container.getConfig(),
+            OR_ASSET_DELETE_DATAPOINT_BATCH_WEEKS,
+            OR_ASSET_DELETE_DATAPOINT_BATCH_WEEKS_DEFAULT));
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, this);
 
         clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
@@ -400,6 +407,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     @Override
     public void start(Container container) throws Exception {
         pendingAssetDeleteStopping = false;
+        failedAssetDeleteRetryFuture = scheduledExecutorService.scheduleAtFixedRate(
+            this::retryFailedAssetDeletes,
+            FAILED_ASSET_DELETE_RETRY_PERIOD_HOURS,
+            FAILED_ASSET_DELETE_RETRY_PERIOD_HOURS,
+            TimeUnit.HOURS);
         requestPendingAssetDeleteProcessing();
     }
 
@@ -407,6 +419,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public void stop(Container container) throws Exception {
         pendingAssetDeleteStopping = true;
         pendingAssetDeleteFuture.get().cancel(false);
+        if (failedAssetDeleteRetryFuture != null) {
+            failedAssetDeleteRetryFuture.cancel(false);
+            failedAssetDeleteRetryFuture = null;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -931,26 +947,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         throw new IllegalArgumentException("Cannot delete one or more requested assets as they either have children or don't exist");
                     }
 
-                    int markedPending = em.createNativeQuery("update asset set delete_pending = true where id in (:ids) and delete_pending is false")
-                        .setParameter("ids", ids)
-                        .executeUpdate();
-
                     if (LOG.isLoggable(FINE)) {
-                        LOG.fine("Marked assets as pending deletion: count=" + markedPending + ", ids=" + ids);
+                        LOG.fine("Marked assets as pending deletion: count=" + assets.size() + ", ids=" + ids);
                     }
 
                     assets.forEach(asset -> asset.setDeletePending(true));
                 });
 
-                assets.forEach(asset ->
-                    persistenceService.publishPersistenceEvent(
-                        PersistenceEvent.Cause.DELETE,
-                        asset,
-                        null,
-                        null,
-                        null));
-
-                requestPendingAssetDeleteProcessing(assets.stream().map(Asset::getId).toList());
+                requestPendingAssetDeleteProcessing(ids);
             } catch (Exception e) {
                 LOG.log(SEVERE, "Failed to delete one or more requested assets: " + Arrays.toString(assetIds.toArray()), e);
                 return false;
@@ -976,29 +980,56 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         Map<String, Long> datapointCounts = findAssetDatapointCounts(orderedAssetIds);
-        long start = System.currentTimeMillis();
-
         LOG.info("Scheduling pending asset delete processing: count=" + orderedAssetIds.size());
 
-        pendingAssetDeleteFuture.updateAndGet(existingFuture -> {
-            CompletableFuture<Void> chainedFuture = existingFuture.exceptionally(ex -> null);
+        pendingAssetDeleteFuture.updateAndGet(existingFuture ->
+                existingFuture
+                    .exceptionally(ex -> null)
+                    .thenRunAsync(() -> {
+                        for (String assetId : orderedAssetIds) {
+                            if (pendingAssetDeleteStopping) {
+                                return;
+                            }
+                            deletePendingAssetAndDatapoints(assetId, datapointCounts.getOrDefault(assetId, 0L));
+                        }
+                    }
+                    , executorService));
+    }
 
-            for (String assetId : orderedAssetIds) {
-                long datapointCount = datapointCounts.getOrDefault(assetId, 0L);
-                chainedFuture = chainedFuture.thenRunAsync(
-                    () -> deletePendingAsset(assetId, datapointCount),
-                    executorService);
+    protected void retryFailedAssetDeletes() {
+        if (pendingAssetDeleteStopping) {
+            return;
+        }
+
+        List<String> failedAssetIds;
+        synchronized (failedAssetDeleteIds) {
+            if (failedAssetDeleteIds.isEmpty()) {
+                return;
             }
+            failedAssetIds = new ArrayList<>(failedAssetDeleteIds);
+            failedAssetDeleteIds.clear();
+        }
 
-            return chainedFuture.whenComplete((result, throwable) -> {
-                if (throwable != null) {
-                    // TODO: Raise an alarm for asset deletion failure.
-                    LOG.log(SEVERE, "Pending asset delete processing failed; processing stopped", throwable);
-                } else {
-                    LOG.info("Pending asset delete processing finished: count=" + orderedAssetIds.size() + ", durationMillis=" + (System.currentTimeMillis() - start));
-                }
-            });
-        });
+        LOG.info("Retrying failed pending asset deletes: count=" + failedAssetIds.size());
+        requestPendingAssetDeletionRetry(failedAssetIds);
+    }
+
+    protected void requestPendingAssetDeletionRetry(List<String> assetIds) {
+        if (pendingAssetDeleteStopping || assetIds.isEmpty()) {
+            return;
+        }
+
+        pendingAssetDeleteFuture.updateAndGet(existingFuture ->
+            existingFuture
+                .exceptionally(ex -> null)
+                .thenRunAsync(() -> {
+                    for (String assetId : assetIds) {
+                        if (pendingAssetDeleteStopping) {
+                            return;
+                        }
+                        deletePendingAsset(assetId);
+                    }
+                }, executorService));
     }
 
     @SuppressWarnings("unchecked")
@@ -1035,59 +1066,76 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return datapointCounts;
     }
 
-    protected void deletePendingAsset(String assetId, long datapointCount) {
+    protected void deletePendingAssetAndDatapoints(String assetId, long datapointCount) {
         long start = System.currentTimeMillis();
 
         if (datapointCount > assetDeleteDatapointBatchThreshold) {
-            LOG.info("Deleting asset datapoints before asset deletion: assetId=" + assetId + ", datapoints=" + datapointCount + ", threshold=" + assetDeleteDatapointBatchThreshold);
-            deleteAssetDatapointsByAsset(assetId);
+            LOG.fine("Purging asset datapoints before asset deletion: assetId=" + assetId + ", datapoints=" + datapointCount + ", threshold=" + assetDeleteDatapointBatchThreshold);
+            try {
+                deleteAssetDatapointsByAsset(assetId);
+                LOG.fine("Purged asset datapoints: assetId=" + assetId + ", durationMillis=" + (System.currentTimeMillis() - start));
+            } catch (Exception e) {
+                LOG.log(WARNING, "Failed to purge asset datapoints before asset deletion, continuing with asset deletion so FK cascade can clean up: assetId=" + assetId, e);
+            }
         }
 
         if (pendingAssetDeleteStopping) {
             return;
         }
 
-        AtomicReference<Asset<?>> deletedAsset = new AtomicReference<>();
-        persistenceService.doTransaction(em -> {
-            em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
-            Asset<?> asset = em.find(Asset.class, assetId);
+        deletePendingAsset(assetId);
+    }
 
-            if (asset == null) {
-                return;
-            }
+    protected void deletePendingAsset(String assetId) {
+        if (pendingAssetDeleteStopping) {
+            return;
+        }
 
-            deletedAsset.set(asset);
-            em.remove(asset);
-            em.flush();
-        });
+        try {
+            persistenceService.doTransaction(em -> {
+                // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
+                // and the minimum supported TimescaleDB version includes that fix.
+                em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
+                Asset<?> asset = em.find(Asset.class, assetId);
 
-        Asset<?> asset = deletedAsset.get();
-        if (asset != null) {
-            persistenceService.publishPersistenceEvent(
-                PersistenceEvent.Cause.DELETE_FINISHED,
-                asset,
-                null,
-                null,
-                null);
+                if (asset == null) {
+                    return;
+                }
 
-            LOG.info("Deleted pending asset: assetId=" + assetId + ", durationMillis=" + (System.currentTimeMillis() - start));
+                em.remove(asset);
+                em.flush();
+            });
+
+            failedAssetDeleteIds.remove(assetId);
+        } catch (Exception e) {
+            failedAssetDeleteIds.add(assetId);
+            // TODO: Raise an alarm for asset deletion failure.
+            LOG.log(SEVERE, "Failed to delete pending asset, queued for retry: assetId=" + assetId, e);
         }
     }
 
     protected void deleteAssetDatapointsByAsset(String assetId) {
-        List<DatapointChunkRange> chunkRanges = findAssetDatapointChunkRanges();
+        Timestamp oldestChunkStart = findOldestAssetDatapointChunkStart();
 
-        if (chunkRanges.isEmpty()) {
+        if (oldestChunkStart == null) {
             if (LOG.isLoggable(FINE)) {
                 LOG.fine("No asset datapoint chunks found for pending asset delete: assetId=" + assetId);
             }
             return;
         }
 
-        for (int i = 0; i < chunkRanges.size() && !pendingAssetDeleteStopping; i += ASSET_DATAPOINT_DELETE_CHUNK_BATCH_SIZE) {
-            int endIndex = Math.min(i + ASSET_DATAPOINT_DELETE_CHUNK_BATCH_SIZE, chunkRanges.size());
-            DatapointChunkRange first = chunkRanges.get(i);
-            DatapointChunkRange last = chunkRanges.get(endIndex - 1);
+        if (pendingAssetDeleteStopping) {
+            return;
+        }
+
+        Timestamp rangeStart = oldestChunkStart;
+        Timestamp finalEnd = new Timestamp(timerService.getCurrentTimeMillis());
+
+        while (rangeStart.before(finalEnd) && !pendingAssetDeleteStopping) {
+            Instant nextEnd = rangeStart.toInstant().plus((long) assetDeleteDatapointBatchWeeks * 7L, ChronoUnit.DAYS);
+            Timestamp rangeEnd = Timestamp.from(nextEnd.isBefore(finalEnd.toInstant()) ? nextEnd : finalEnd.toInstant());
+            Timestamp batchStart = rangeStart;
+            Timestamp batchEnd = rangeEnd;
             long start = System.currentTimeMillis();
 
             int deleted = persistenceService.doReturningTransaction(em ->
@@ -1095,38 +1143,44 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         "delete from " + AssetDatapoint.TABLE_NAME + " where entity_id = :assetId and timestamp >= :rangeStart and timestamp < :rangeEnd"
                     )
                     .setParameter("assetId", assetId)
-                    .setParameter("rangeStart", first.start)
-                    .setParameter("rangeEnd", last.end)
+                    .setParameter("rangeStart", batchStart)
+                    .setParameter("rangeEnd", batchEnd)
                     .executeUpdate()
             );
 
             if (LOG.isLoggable(FINE)) {
-                LOG.fine("Deleted asset datapoints for pending asset: assetId=" + assetId + ", chunkBatchStart=" + first.start + ", chunkBatchEnd=" + last.end + ", rows=" + deleted + ", durationMillis=" + (System.currentTimeMillis() - start));
+                LOG.fine("Deleted asset datapoints for pending asset: assetId=" + assetId + ", chunkRangeStart=" + batchStart + ", chunkRangeEnd=" + batchEnd + ", rows=" + deleted + ", durationMillis=" + (System.currentTimeMillis() - start));
             }
+
+            rangeStart = rangeEnd;
         }
     }
 
-    @SuppressWarnings("unchecked")
-    protected List<DatapointChunkRange> findAssetDatapointChunkRanges() {
-        return persistenceService.doReturningTransaction(em -> {
-            List<Object[]> results = em.createNativeQuery(
+    protected Timestamp findOldestAssetDatapointChunkStart() {
+        Timestamp cachedStart = oldestAssetDatapointChunkStart.get();
+        if (cachedStart != null) {
+            return cachedStart;
+        }
+
+        Timestamp start = persistenceService.doReturningTransaction(em ->
+            (Timestamp) em.createNativeQuery(
                     """
-                    select range_start::timestamp, range_end::timestamp
+                    select min(range_start::timestamp)
                     from timescaledb_information.chunks
                     where hypertable_schema = current_schema()
                       and hypertable_name = :hypertableName
                       and range_start is not null
-                      and range_end is not null
-                    order by range_start::timestamp
                     """
                 )
                 .setParameter("hypertableName", AssetDatapoint.TABLE_NAME)
-                .getResultList();
+                .getSingleResult()
+        );
 
-            return results.stream()
-                .map(row -> new DatapointChunkRange((Timestamp) row[0], (Timestamp) row[1]))
-                .toList();
-        });
+        if (start == null) {
+            return null;
+        }
+
+        return oldestAssetDatapointChunkStart.compareAndSet(null, start) ? start : oldestAssetDatapointChunkStart.get();
     }
 
     public boolean isUserAsset(String assetId) {

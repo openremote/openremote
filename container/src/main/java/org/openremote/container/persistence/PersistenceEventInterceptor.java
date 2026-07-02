@@ -27,6 +27,7 @@ import org.hibernate.Interceptor;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 import org.openremote.model.PersistenceEvent;
+import org.openremote.model.asset.Asset;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -67,13 +68,36 @@ public class PersistenceEventInterceptor implements Interceptor {
                                 Object[] currentState, Object[] previousState,
                                 String[] propertyNames, Type[] types)
         throws CallbackException {
-        persistenceEvents.add(new PersistenceEvent<>(
-            PersistenceEvent.Cause.UPDATE,
-            entity,
-            propertyNames,
-            currentState,
-            previousState
-        ));
+        if (isAssetDeletePendingUpdate(entity, currentState, previousState, propertyNames)) {
+            // Assets are soft deleted but we still want a delete event to maintain existing behaviour
+            persistenceEvents.add(new PersistenceEvent<>(
+                    PersistenceEvent.Cause.DELETE,
+                    entity,
+                    null,
+                    currentState));
+        } else {
+            persistenceEvents.add(new PersistenceEvent<>(
+                    PersistenceEvent.Cause.UPDATE,
+                    entity,
+                    propertyNames,
+                    currentState,
+                    previousState
+            ));
+        }
+        return false;
+    }
+
+    protected boolean isAssetDeletePendingUpdate(Object entity, Object[] currentState, Object[] previousState, String[] propertyNames) {
+        if (!(entity instanceof Asset<?>) || currentState == null || previousState == null || propertyNames == null) {
+            return false;
+        }
+
+        for (int i = 0; i < propertyNames.length; i++) {
+            if (i < currentState.length && i < previousState.length && Asset.DELETE_PENDING_PROPERTY_NAME.equals(propertyNames[i])) {
+                return Boolean.TRUE.equals(currentState[i]) && !Boolean.TRUE.equals(previousState[i]);
+            }
+        }
+
         return false;
     }
 
@@ -83,8 +107,13 @@ public class PersistenceEventInterceptor implements Interceptor {
                          Object[] state,
                          String[] propertyNames,
                          Type[] types) {
+        PersistenceEvent.Cause cause = PersistenceEvent.Cause.DELETE;
+        if (entity instanceof Asset<?>) {
+            // Assets are soft deleted first; physical removal is signalled separately.
+            cause = PersistenceEvent.Cause.DELETE_FINISHED;
+        }
         persistenceEvents.add(new PersistenceEvent<>(
-            PersistenceEvent.Cause.DELETE,
+            cause,
             entity,
             propertyNames,
             state
