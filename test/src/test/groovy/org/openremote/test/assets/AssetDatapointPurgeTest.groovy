@@ -4,7 +4,6 @@ import org.hibernate.cfg.AvailableSettings
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
-import org.openremote.manager.datapoint.AssetPredictedDatapointService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
@@ -20,7 +19,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
-import static java.util.concurrent.TimeUnit.DAYS
 import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_WEEKS
 
 class AssetDatapointPurgeTest extends Specification implements ManagerContainerTrait {
@@ -38,6 +36,7 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
         def persistenceService = container.getService(PersistenceService.class)
+        def originalMaxTuplesDecompressedPerDmlTransaction = getMaxTuplesDecompressedPerDmlTransaction(persistenceService)
 
         and: "the schema name is retrieved"
         def schemaName = persistenceService.persistenceUnitProperties.getProperty(AvailableSettings.DEFAULT_SCHEMA)
@@ -47,24 +46,34 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
         stopPseudoClock()
         advancePseudoClock(Instant.ofEpochMilli(getClockTimeOf(container)).truncatedTo(ChronoUnit.HOURS).plus(1, ChronoUnit.HOURS).toEpochMilli() - getClockTimeOf(container), TimeUnit.MILLISECONDS, container)
 
+        and: "the datapoint attributes are defined"
+        def attributeNames = (1..10).collect { "attribute${it}" }
+
         when: "a test asset is created with multiple attributes"
         def testAsset = new ThingAsset("Hypercore Test Asset")
                 .setRealm(keycloakTestSetup.realmMaster.name)
-        testAsset.addOrReplaceAttributes(
-                new Attribute<>("temperature", ValueType.NUMBER),
-                new Attribute<>("humidity", ValueType.NUMBER),
-                new Attribute<>("pressure", ValueType.NUMBER),
-                new Attribute<>("co2", ValueType.NUMBER)
-        )
+        testAsset.addOrReplaceAttributes(numberAttributes(attributeNames))
         testAsset = assetStorageService.merge(testAsset)
 
         then: "the asset should be created"
         testAsset.id != null
         getLOG().info("Created test asset with ID: ${testAsset.id}")
 
+        when: "ten assets for segment delete verification are created with the same attributes"
+        def segmentDeleteAssets = (1..10).collect { index ->
+            def asset = new ThingAsset("Hypercore Segment Delete Asset ${index}")
+                    .setRealm(keycloakTestSetup.realmMaster.name)
+            asset.addOrReplaceAttributes(numberAttributes(attributeNames))
+            assetStorageService.merge(asset)
+        }
+        def segmentDeleteAssetIds = segmentDeleteAssets.collect { it.id }
+
+        then: "the segment delete assets should be created"
+        segmentDeleteAssets.every { it.id != null }
+        getLOG().info("Created ${segmentDeleteAssets.size()} segment delete assets with IDs: ${segmentDeleteAssetIds}")
+
         when: "25.000 datapoints are inserted across multiple attributes with some within the 4-week retention window"
         def totalDatapoints = 25_000
-        def attributeNames = ["temperature", "humidity", "pressure", "co2"]
         def datapointsPerAttribute = (totalDatapoints / attributeNames.size()) as int
         def recentDatapointsPerAttribute = (datapointsPerAttribute * 0.2) as int
         def oldDatapointsPerAttribute = datapointsPerAttribute - recentDatapointsPerAttribute
@@ -99,6 +108,18 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
             }
         }
 
+        def segmentDeleteDatapointsPerAttribute = 250
+        segmentDeleteAssets.eachWithIndex { asset, assetIndex ->
+            attributeNames.each { attributeName ->
+                def datapoints = []
+                for (int index = 0; index < segmentDeleteDatapointsPerAttribute; index++) {
+                    def timestamp = oldBaseTimestamp.plus(index * 30, ChronoUnit.SECONDS).toEpochMilli()
+                    datapoints.add(new ValueDatapoint<>(timestamp, 100.0 + assetIndex + index))
+                }
+                assetDatapointService.upsertValues(asset.id, attributeName, datapoints)
+            }
+        }
+
         def insertEndTime = System.currentTimeMillis()
         def insertDuration = (insertEndTime - insertStartTime) / 1000.0
         getLOG().info("Finished inserting ${totalDatapoints} datapoints in ${insertDuration} seconds")
@@ -113,6 +134,7 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
             assert count >= totalDatapoints * 0.99 // Allow for 1% margin
             getLOG().info("Verified ${count} datapoints stored")
         }
+        countDatapoints(persistenceService, segmentDeleteAssetIds, attributeNames) == segmentDeleteDatapointsPerAttribute * attributeNames.size() * segmentDeleteAssets.size()
 
         when: "storage usage is measured before enabling hypercore"
         def orDatabaseSizeBefore = persistenceService.doReturningTransaction { em ->
@@ -164,6 +186,15 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
 
         then: "storage should be smaller after hypercore"
         orDatabaseSizeBefore > orDatabaseSizeAfter
+
+        when: "the segment-delete assets are deleted from compressed chunks with a low decompression limit"
+        setMaxTuplesDecompressedPerDmlTransaction(persistenceService, 100)
+        def segmentDeleteSucceeded = assetStorageService.delete(segmentDeleteAssetIds)
+        def segmentDeleteDatapointsAfterDelete = countDatapoints(persistenceService, segmentDeleteAssetIds, attributeNames)
+
+        then: "TimescaleDB should delete full segments without decompressing chunks"
+        segmentDeleteSucceeded
+        segmentDeleteDatapointsAfterDelete == 0
 
         when: "Purging will be called, count datapoints before purging"
         def countBeforePurge = 0
@@ -242,5 +273,42 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
 
         then: "No exception should have occurred"
         true
+
+        cleanup: "restore TimescaleDB decompression limit"
+        if (persistenceService != null && originalMaxTuplesDecompressedPerDmlTransaction != null) {
+            setMaxTuplesDecompressedPerDmlTransaction(persistenceService, originalMaxTuplesDecompressedPerDmlTransaction)
+        }
+    }
+
+    private static Attribute<?>[] numberAttributes(List<String> attributeNames) {
+        return attributeNames.collect { new Attribute<>(it, ValueType.NUMBER) } as Attribute<?>[]
+    }
+
+    private static long countDatapoints(PersistenceService persistenceService, List<String> assetIds, List<String> attributeNames) {
+        return persistenceService.doReturningTransaction { em ->
+            def query = em.createNativeQuery("""
+                SELECT count(*)
+                FROM asset_datapoint
+                WHERE entity_id = ANY(string_to_array(:assetIds, ','))
+                  AND attribute_name = ANY(string_to_array(:attributeNames, ','));
+            """)
+            query.setParameter("assetIds", assetIds.join(","))
+            query.setParameter("attributeNames", attributeNames.join(","))
+            return (query.getSingleResult() as Number).longValue()
+        }
+    }
+
+    private static String getMaxTuplesDecompressedPerDmlTransaction(PersistenceService persistenceService) {
+        return persistenceService.doReturningTransaction { em ->
+            em.createNativeQuery("SHOW timescaledb.max_tuples_decompressed_per_dml_transaction").getSingleResult() as String
+        }
+    }
+
+    private static void setMaxTuplesDecompressedPerDmlTransaction(PersistenceService persistenceService, Object limit) {
+        persistenceService.doTransaction { em ->
+            def query = em.createNativeQuery("SELECT set_config('timescaledb.max_tuples_decompressed_per_dml_transaction', :limit, false)")
+            query.setParameter("limit", limit.toString())
+            query.getSingleResult()
+        }
     }
 }
