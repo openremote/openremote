@@ -38,3 +38,21 @@ Stories call `getORStorybookHelpers(tagName)` and `setCustomElementsManifest(cus
 Storybook covers any component under `ui/component/` (e.g. `or-chart`, `or-map`, `or-mwc-components`, `or-tree-menu`, `or-vaadin-components`). For each component package the stories live in that package's own `stories/` dir (`ui/component/<pkg>/stories/<name>.stories.ts`), and the human-readable docs are MDX under `ui/app/storybook/docs/components/<name>.mdx`. To add a component, copy an existing pair from the same package, keeping the relative story import in the MDX and the `ComponentDocs` block.
 
 Stories call `getORStorybookHelpers(tagName)` (from `ui/component/storybook-utils.js`) and `setCustomElementsManifest(customElements)` off the package's own `../custom-elements.json`. That manifest is generated per-package by `npm run analyze` (cem), so a newly added component will render but show no args/argTypes/description until you regenerate its package's manifest. `custom-elements.json` (and `custom-elements-jsx.d.ts`) are generated and untracked.
+
+
+### Component testing
+
+Component tests use Playwright component testing (`@sand4rt/experimental-ct-web`). They live in each package's `test/*.test.ts`, import `{ ct, expect }` from `@openremote/test`, and `mount(ComponentClass, { props, slots, on })`. Run them with
+ `npm test` in the package (which does `tsc -b && playwright test`). A few non-obvious gotchas that cost real time:
+
+- **Custom elements used as slotted/appended children must be eagerly registered.** Playwright CT turns each imported component into a *lazy* dynamic import that only runs when that component is `mount()`ed, so a child element that is never m
+ounted itself (e.g. `or-vaadin-toggle` slotted inside `or-vaadin-checkbox-group`) never gets `customElements.define`d and stays an inert, unupgraded tag — it appends to the DOM but does not render. Register such elements eagerly in the shared
+ browser bootstrap `ui/test/playwright/index.js` (where icons/theme are also registered) with a side-effect import.
+- **The `on` handler receives `event.detail`, not the event** (`listener(event.detail)`). Assert event values via events whose detail carries them — for Vaadin fields that is the `<prop>-changed` notify event (detail `{ value }`); the native
+`change` event has no useful detail so it can only be counted.
+- **Vaadin fires an initial `<prop>-changed` at mount** (notify-on-first-commit), so a freshly mounted toggle emits `checked-changed(false)` before any interaction. Assert on the user-driven transitions (e.g. the last two values), not exact-a
+rray equality, and prove "emits nothing" with `not.toContain(true)` rather than `toEqual([])`.
+- **Vaadin `<prop>-changed` events do not bubble or compose**, so a listener on a parent/group will not catch a child field's event — attach it to the field itself.
+- **The default slot must be an array of single-element strings.** The CT runner builds each slot via `createContextualFragment(str).firstChild`, so a single string containing multiple elements silently keeps only the first; pass `slots: { de
+fault: ["<a>…</a>", "<b>…</b>"] }`.
+- The `on` handler type is `Record<string, Function>`, so typed handler params are fine.
