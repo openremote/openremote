@@ -8,6 +8,12 @@ import HttpBackend from "i18next-http-backend";
 import { IconSets, OrIconSet, createMdiIconSet, createSvgIconSet } from "@openremote/or-icon";
 import { AssetEventCause, AssetModelUtil, ClientRole } from "@openremote/model";
 
+// Eagerly register web components that are used as slotted/appended children (rather than mounted
+// as the test root). Playwright CT lazy-imports a component's module only when it is `mount()`ed, so
+// a custom element that only appears inside another mounted component would otherwise never be
+// `customElements.define`d and would not upgrade (e.g. or-vaadin-toggle inside or-vaadin-checkbox-group).
+import "@openremote/or-vaadin-components/or-vaadin-toggle";
+
 const style = document.createElement("style");
 style.textContent = themeCss;
 document.head.appendChild(style);
