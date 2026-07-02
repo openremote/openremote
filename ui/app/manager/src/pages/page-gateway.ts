@@ -9,6 +9,7 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {AttributeDescriptor, AttributePredicate, ClientRole, ConnectionStatus, GatewayAttributeFilter, GatewayConnection, GatewayConnectionStatusEvent, LogicGroupOperator, GatewayAssetSyncRule} from "@openremote/model";
 import manager, {DefaultColor1, DefaultColor3} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {OrVaadinToggle} from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
 import {OrAssetTypeAttributePicker, OrAssetTypeAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
@@ -282,9 +283,9 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 <div style="gap: 20px;">
                     <div>
                         <or-translate value="enabled"></or-translate>
-                        <or-mwc-input .type="${InputType.SWITCH}" .value="${!connection.disabled}" ?disabled="${disabled}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("disabled", !e.detail.value)}"
-                        ></or-mwc-input>
+                        <or-vaadin-toggle .checked="${!connection.disabled}" ?disabled="${disabled}"
+                                      @change="${(e: Event) => this._setConnectionProperty("disabled", !(e.currentTarget as OrVaadinToggle).checked)}"
+                        ></or-vaadin-toggle>
                     </div>
                     <or-vaadin-button theme="primary" ?disabled=${!this._dirty || !this._invalid || disabled}
                                       @click=${() => this._save()}>

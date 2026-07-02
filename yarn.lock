@@ -2209,6 +2209,7 @@ __metadata:
     "@vaadin/text-area": "npm:~25.1.4"
     "@vaadin/text-field": "npm:~25.1.4"
     "@vaadin/time-picker": "npm:~25.1.4"
+    "@vaadin/vaadin-themable-mixin": "npm:~25.1.4"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -2249,6 +2250,7 @@ __metadata:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
+    "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/util": "workspace:*"
     "@playwright/experimental-ct-core": "npm:1.59.1"
     "@playwright/test": "npm:1.59.1"
