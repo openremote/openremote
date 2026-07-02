@@ -137,7 +137,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         // BUILD FROM
         sb.append(" FROM public.user_entity u join PUBLIC.REALM r on r.ID = u.REALM_ID");
         if (userQuery.assets != null || userQuery.pathPredicate != null) {
-            sb.append(" join user_asset_link ua on ua.user_id = u.id");
+            sb.append(" join user_asset_link ua on ua.user_id = u.id join asset a on a.id = ua.asset_id and a.delete_pending is false");
         }
 
         // BUILD WHERE

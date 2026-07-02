@@ -181,6 +181,7 @@ public class AssetQuery implements Serializable {
     public String[] userIds;
     public String[] types;
     public LogicGroup<AttributePredicate> attributes;
+    public Boolean includeDeletePending;
     // Ordering
     public OrderBy orderBy;
     public int limit;
@@ -381,6 +382,15 @@ public class AssetQuery implements Serializable {
         return attributeValue(name, new NumberPredicate(d, operator));
     }
 
+    public AssetQuery includeDeletePending(boolean includeDeletePending) {
+        this.includeDeletePending = includeDeletePending;
+        return this;
+    }
+
+    public boolean isIncludeDeletePending() {
+        return includeDeletePending != null && includeDeletePending;
+    }
+
     public AssetQuery orderBy(OrderBy orderBy) {
         this.orderBy = orderBy;
         return this;
@@ -408,6 +418,7 @@ public class AssetQuery implements Serializable {
                 ", userId='" + Arrays.toString(userIds) + '\'' +
                 ", type=" + Arrays.toString(types) +
                 ", attribute=" + (attributes != null ? attributes.toString() : "null") +
+                ", includeDeletePending=" + includeDeletePending +
                 ", orderBy=" + orderBy +
                 ", limit=" + limit +
                 ", offset=" + offset +

@@ -75,6 +75,7 @@ public class Container implements org.openremote.model.Container {
     protected MeterRegistry meterRegistry;
 
     protected Thread waitingThread;
+    protected boolean running;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
 
     /**
@@ -150,13 +151,14 @@ public class Container implements org.openremote.model.Container {
     }
 
     public boolean isRunning() {
-        return waitingThread != null;
+        return running;
     }
 
     public synchronized void start() throws Exception {
         if (isRunning())
             return;
         LOG.log(INFO, ">>> Starting runtime container...");
+        running = true;
         try {
             for (ContainerService service : getServices()) {
                 LOG.log(INFO, "Initializing service: " + service.getClass().getName());
@@ -176,6 +178,7 @@ public class Container implements org.openremote.model.Container {
             }
         } catch (Exception ex) {
             LOG.log(ERROR, ">>> Runtime container startup failed", ex);
+            stop();
             throw ex;
         }
         LOG.log(INFO, ">>> Runtime container startup complete");
@@ -211,11 +214,16 @@ public class Container implements org.openremote.model.Container {
             LOG.log(WARNING, "Exception thrown whilst trying to stop executor", e);
         }
 
-        Metrics.globalRegistry.remove(meterRegistry);
-        PrometheusRegistry.defaultRegistry.clear();
+        if (meterRegistry != null) {
+            Metrics.globalRegistry.remove(meterRegistry);
+            PrometheusRegistry.defaultRegistry.clear();
+        }
         meterRegistry = null;
-        waitingThread.interrupt();
+        if (waitingThread != null) {
+            waitingThread.interrupt();
+        }
         waitingThread = null;
+        running = false;
         LOG.log(INFO, "<<< Runtime container stopped");
     }
 

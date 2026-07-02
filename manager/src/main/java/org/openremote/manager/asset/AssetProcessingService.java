@@ -44,7 +44,6 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.event.Event;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;

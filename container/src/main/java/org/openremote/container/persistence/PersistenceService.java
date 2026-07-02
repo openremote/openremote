@@ -63,6 +63,7 @@ import org.openremote.model.security.User;
 import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.util.VersionUtil;
 
 import javax.sql.DataSource;
 import java.io.File;
@@ -72,6 +73,10 @@ import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -242,6 +247,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     public static final int OR_DB_POOL_MAX_SIZE_DEFAULT = 20;
     public static final String OR_DB_CONNECTION_TIMEOUT_SECONDS = "OR_DB_CONNECTION_TIMEOUT_SECONDS";
     public static final int OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
+    public static final String TIMESCALE_DB_MIN_VERSION = "2.21.0";
     public static final String OR_STORAGE_DIR = "OR_STORAGE_DIR";
     public static final String OR_STORAGE_DIR_DEFAULT = "tmp";
     public static final String OR_DB_FLYWAY_OUT_OF_ORDER = "OR_DB_FLYWAY_OUT_OF_ORDER";
@@ -352,6 +358,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
     @Override
     public void start(Container container) throws Exception {
+        verifyTimescaleDbVersion();
+
         // Register standard entity classes and also any Entity ClassProviders
         List<String> entityClasses = new ArrayList<>(50);
         entityClasses.add(Asset.class.getName());
@@ -477,6 +485,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         switch (cause) {
             case CREATE -> publishPersistenceEvent(cause, currentEntity, null, null, null);
             case DELETE -> publishPersistenceEvent(cause, previousEntity, null, null, null);
+            case DELETE_FINISHED -> publishPersistenceEvent(cause, currentEntity, null, null, null);
             case UPDATE -> {
                 List<String> propertyNames = new ArrayList<>(propertyFields.length);
                 List<Object> currentState = new ArrayList<>(propertyFields.length);
@@ -582,6 +591,42 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         MigrateResult result = flyway.migrate();
         LOG.info("Applied database schema migrations: " + result.migrationsExecuted);
         flyway.validate();
+    }
+
+    protected void verifyTimescaleDbVersion() {
+        Object dataSourceProperty = persistenceUnitProperties.get(AvailableSettings.DATASOURCE);
+
+        if (!(dataSourceProperty instanceof DataSource dataSource)) {
+            String msg = "Cannot validate TimescaleDB extension version as no database DataSource is configured";
+            LOG.severe(msg);
+            throw new IllegalStateException(msg);
+        }
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'");
+             ResultSet resultSet = statement.executeQuery()) {
+
+            if (!resultSet.next()) {
+                String msg = "TimescaleDB extension is missing; please use a postgres image with TimescaleDB "
+                    + TIMESCALE_DB_MIN_VERSION + " or newer.";
+                LOG.severe(msg);
+                throw new IllegalStateException(msg);
+            }
+
+            String timescaleDbVersion = resultSet.getString(1);
+            if (!VersionUtil.isVersionGreaterOrEqual(timescaleDbVersion, TIMESCALE_DB_MIN_VERSION)) {
+                String msg = "TimescaleDB extension version " + timescaleDbVersion + " is not supported; version "
+                    + TIMESCALE_DB_MIN_VERSION + " or newer is required.";
+                LOG.severe(msg);
+                throw new IllegalStateException(msg);
+            }
+
+            LOG.info("TimescaleDB extension version detected: " + timescaleDbVersion);
+        } catch (SQLException ex) {
+            String msg = "Failed to validate TimescaleDB extension version";
+            LOG.log(Level.SEVERE, msg, ex);
+            throw new IllegalStateException(msg, ex);
+        }
     }
 
     protected void appendSchemaLocations(List<String> locations) {
