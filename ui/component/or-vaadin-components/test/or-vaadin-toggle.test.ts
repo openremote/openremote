@@ -166,10 +166,10 @@ ct("Group (vertical): renders grouped toggles with their checked state", async (
   });
 
   await expect(component).toContainText("Notifications");
-  await expect(component.locator("or-vaadin-toggle")).toHaveCount(3);
-  await expect(component.locator('or-vaadin-toggle[value="email"]')).toHaveJSProperty("checked", true);
-  await expect(component.locator('or-vaadin-toggle[value="sms"]')).toHaveJSProperty("checked", false);
-  await expect(component.locator('or-vaadin-toggle[value="push"]')).toHaveJSProperty("checked", true);
+  await expect(component.getByRole("checkbox")).toHaveCount(3);
+  await expect(component.getByRole("checkbox", { name: "Email" })).toBeChecked();
+  await expect(component.getByRole("checkbox", { name: "SMS" })).not.toBeChecked();
+  await expect(component.getByRole("checkbox", { name: "Push" })).toBeChecked();
 });
 
 ct("Group (vertical): a child toggle switches independently when clicked", async ({ mount }) => {
@@ -185,11 +185,11 @@ ct("Group (vertical): a child toggle switches independently when clicked", async
     },
   });
 
-  const email = component.locator('or-vaadin-toggle[value="email"]');
-  const sms = component.locator('or-vaadin-toggle[value="sms"]');
-  await email.getByRole("checkbox").click();
-  await expect(email).toHaveJSProperty("checked", true);
-  await expect(sms).toHaveJSProperty("checked", false);
+  const email = component.getByRole("checkbox", { name: "Email" });
+  const sms = component.getByRole("checkbox", { name: "SMS" });
+  await email.click();
+  await expect(email).toBeChecked();
+  await expect(sms).not.toBeChecked();
 });
 
 ct("Group (horizontal): renders grouped toggles in a row layout", async ({ mount }) => {
@@ -204,11 +204,11 @@ ct("Group (horizontal): renders grouped toggles in a row layout", async ({ mount
     },
   });
 
-  await expect(component.locator("or-vaadin-toggle")).toHaveCount(3);
+  await expect(component.getByRole("checkbox")).toHaveCount(3);
 
   // Under the theme the group is horizontal by default: the toggles share a row (same top edge).
-  const first = await component.locator('or-vaadin-toggle[value="email"]').boundingBox();
-  const second = await component.locator('or-vaadin-toggle[value="sms"]').boundingBox();
+  const first = await component.getByRole("checkbox", { name: "Email" }).boundingBox();
+  const second = await component.getByRole("checkbox", { name: "SMS" }).boundingBox();
   expect(first).not.toBeNull();
   expect(second).not.toBeNull();
   expect(Math.abs(first!.y - second!.y)).toBeLessThan(4);
