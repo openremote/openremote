@@ -21,100 +21,56 @@ package org.openremote.manager.setup.database;
 
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.admin.client.resource.RolesResource;
-import org.keycloak.admin.client.resource.ClientResource;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.container.security.IdentityProvider;
-import org.openremote.model.Constants;
 
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.UriBuilder;
-
-import java.util.List;
-import java.util.logging.Logger;
+import java.sql.Statement;
 
 /**
- * Flyway migration script to add write:services and read:services roles using
- * Keycloak
- * admin API.
+ * Flyway migration that adds the {@code read:services} and {@code write:services} client roles for every
+ * {@code openremote} client. The roles are inserted straight into the Keycloak {@code keycloak_role} table rather
+ * than via the Keycloak admin API, so the migration doesn't depend on Keycloak being reachable or on admin
+ * credentials, and runs transactionally.
+ * <p>
+ * This must stay a Java migration and not be converted to a {@code .sql} file. Flyway records the applied type
+ * (JDBC) and a null checksum for {@link BaseJavaMigration}s; a {@code .sql} file for the same version is type SQL
+ * with a real checksum, so converting it would fail validation with a checksum/type mismatch on any database that
+ * already applied this (released) version. The body may still be edited freely - Java migrations have no checksum,
+ * so changing the SQL below doesn't affect already-migrated databases.
  */
 public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
 
-    private static final Logger LOG = Logger.getLogger(V20250916_01__AddServiceRoles.class.getName());
-
     @Override
     public void migrate(Context context) throws Exception {
+        String sql = """
+            DO $$
+            DECLARE
+                v_client RECORD;
+            BEGIN
+                FOR v_client IN
+                    SELECT id, realm_id
+                    FROM client
+                    WHERE client_id = 'openremote'
+                LOOP
+                    IF NOT EXISTS (
+                        SELECT 1 FROM keycloak_role
+                        WHERE name = 'read:services' AND client = v_client.id
+                    ) THEN
+                        INSERT INTO keycloak_role (id, client_realm_constraint, client_role, description, name, realm_id, client)
+                        VALUES (gen_random_uuid()::varchar(36), v_client.id, true, 'View services', 'read:services', v_client.realm_id, v_client.id);
+                    END IF;
 
-        // Build the keycloak URL
-        UriBuilder uriBuilder = UriBuilder.fromPath("/")
-                .scheme("http")
-                .host(System.getenv().getOrDefault(KeycloakIdentityProvider.OR_KEYCLOAK_HOST,
-                        KeycloakIdentityProvider.OR_KEYCLOAK_HOST_DEFAULT))
-                .port(Integer.parseInt(System.getenv().getOrDefault(KeycloakIdentityProvider.OR_KEYCLOAK_PORT,
-                        String.valueOf(KeycloakIdentityProvider.OR_KEYCLOAK_PORT_DEFAULT))));
+                    IF NOT EXISTS (
+                        SELECT 1 FROM keycloak_role
+                        WHERE name = 'write:services' AND client = v_client.id
+                    ) THEN
+                        INSERT INTO keycloak_role (id, client_realm_constraint, client_role, description, name, realm_id, client)
+                        VALUES (gen_random_uuid()::varchar(36), v_client.id, true, 'Write service data', 'write:services', v_client.realm_id, v_client.id);
+                    END IF;
+                END LOOP;
+            END $$;
+            """;
 
-        String path = System.getenv().getOrDefault(KeycloakIdentityProvider.OR_KEYCLOAK_PATH,
-                KeycloakIdentityProvider.OR_KEYCLOAK_PATH_DEFAULT);
-
-        if (path != null && !path.isBlank()) {
-            uriBuilder.path(path);
+        try (Statement statement = context.getConnection().createStatement()) {
+            statement.execute(sql);
         }
-
-        String keycloakUrl = uriBuilder.build().toString();
-        String adminUser = Constants.MASTER_REALM_ADMIN_USER;
-        String adminPassword = System.getenv().getOrDefault(IdentityProvider.OR_ADMIN_PASSWORD,
-                IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT);
-
-        // Get the keycloak instance
-        try (Keycloak keycloak = Keycloak.getInstance(
-                keycloakUrl,
-                Constants.MASTER_REALM,
-                adminUser,
-                adminPassword,
-                KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID)) {
-
-            // Get all available realms
-            List<String> realmNames = keycloak.realms().findAll().stream()
-                    .map(RealmRepresentation::getRealm)
-                    .toList();
-
-            // For every realm, check if the openremote client has the write:services and
-            // read:services roles added
-            for (String realmName : realmNames) {
-                RealmResource realm = keycloak.realm(realmName);
-
-                List<ClientRepresentation> clients = realm.clients().findByClientId(Constants.KEYCLOAK_CLIENT_ID);
-
-                if (clients.isEmpty()) {
-                    LOG.warning("Client '" + Constants.KEYCLOAK_CLIENT_ID + "' not found in realm " + realmName
-                            + ", skipping role creation.");
-                    continue; // Skip realms without the openremote client
-                }
-                ClientResource clientResource = realm.clients().get(clients.get(0).getId());
-                RolesResource clientRoles = clientResource.roles();
-                createRoleIfNotExists(clientRoles, "write:services", "Write service data");
-                createRoleIfNotExists(clientRoles, "read:services", "View services");
-            }
-        }
-    }
-
-    // Create the role if it doesn't exist by handling the NotFoundException
-    private void createRoleIfNotExists(RolesResource roles, String roleName, String description) {
-        try {
-            roles.get(roleName).toRepresentation();
-        } catch (NotFoundException e) {
-            roles.create(new RoleRepresentation(roleName, description, false));
-        }
-    }
-
-    // Since its a code migration, no DB transaction is needed
-    @Override
-    public boolean canExecuteInTransaction() {
-        return false;
     }
 }
