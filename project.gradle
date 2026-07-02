@@ -93,16 +93,14 @@ exit \$status
                 Files.setPosixFilePermissions(path, perms)
             } catch (Exception ignored) {}
 
-            if (project == rootProject) {
-                tasks.configureEach { task ->
-                    if (task.name in ['encryptFiles', 'decryptFiles']) {
-                        task.notCompatibleWithConfigurationCache("GradleFileEncrypt stores javax.crypto.SecretKey/SecretKeySpec task state")
-                    }
+            tasks.configureEach { task ->
+                if (task.name in ['encryptFiles', 'decryptFiles']) {
+                    task.notCompatibleWithConfigurationCache("GradleFileEncrypt stores javax.crypto.SecretKey/SecretKeySpec task state")
+                }
 
-                    if (task.name in ['findSonatypeStagingRepository', 'closeSonatypeStagingRepository', 'releaseSonatypeStagingRepository', 'closeAndReleaseSonatypeStagingRepository' ]) {
-                        // See: https://github.com/gradle-nexus/publish-plugin/issues/221
-                        task.notCompatibleWithConfigurationCache("Gradle Nexus Publish plugin task keeps Gradle Task/Project state")
-                    }
+                if (task.name in ['findSonatypeStagingRepository', 'closeSonatypeStagingRepository', 'releaseSonatypeStagingRepository', 'closeAndReleaseSonatypeStagingRepository' ]) {
+                    // See: https://github.com/gradle-nexus/publish-plugin/issues/221
+                    task.notCompatibleWithConfigurationCache("Gradle Nexus Publish plugin task keeps Gradle Task/Project state")
                 }
             }
 
