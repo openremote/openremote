@@ -25,7 +25,6 @@ import groovy.lang.Script;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.Rules;
-import org.kohsuke.groovy.sandbox.GroovyValueFilter;
 import org.kohsuke.groovy.sandbox.SandboxTransformer;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -67,14 +66,6 @@ import static org.openremote.model.rules.RulesetStatus.VALIDITY_PERIOD_ERROR;
 
 public class RulesetDeployment {
 
-    // TODO Finish groovy sandbox
-    static class GroovyDenyAllFilter extends GroovyValueFilter {
-        @Override
-        public Object filterReceiver(Object receiver) {
-            throw new SecurityException("Not allowed: " + receiver);
-        }
-    }
-
     public static final int DEFAULT_RULE_PRIORITY = 1000;
 
     static final protected GroovyShell groovyShell;
@@ -110,6 +101,7 @@ public class RulesetDeployment {
     final protected Alarms alarmsFacade;
     final protected HistoricDatapoints historicDatapointsFacade;
     final protected PredictedDatapoints predictedDatapointsFacade;
+    final protected GroovySandboxReporter groovySandboxReporter;
     final protected List<ScheduledFuture<?>> scheduledRuleActions = Collections.synchronizedList(new ArrayList<>());
     final protected RulesEngine<?> rulesEngine;
     protected final Logger LOG;
@@ -124,7 +116,8 @@ public class RulesetDeployment {
     public RulesetDeployment(Ruleset ruleset, RulesEngine<?> rulesEngine, TimerService timerService,
                              AssetStorageService assetStorageService, ExecutorService executorService, ScheduledExecutorService scheduledExecutorService,
                              Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
-                             Alarms alarmsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
+                             Alarms alarmsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade,
+                             GroovySandboxReporter groovySandboxReporter) {
         this.ruleset = ruleset;
         this.rulesEngine = rulesEngine;
         this.timerService = timerService;
@@ -138,6 +131,7 @@ public class RulesetDeployment {
         this.alarmsFacade = alarmsFacade;
         this.historicDatapointsFacade = historicDatapointsFacade;
         this.predictedDatapointsFacade = predictedDatapointsFacade;
+        this.groovySandboxReporter = groovySandboxReporter;
 
         String ruleCategory = ruleset.getClass().getSimpleName() + "-" + ruleset.getId();
         LOG = SyslogCategory.getLogger(SyslogCategory.RULES, RulesEngine.class.getName() + "." + ruleCategory);
@@ -320,9 +314,7 @@ public class RulesetDeployment {
 
     protected boolean compileRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
         try {
-            // TODO Implement sandbox
-            // new DenyAll().register();
-            Script script = groovyShell.parse(ruleset.getRules());
+            Script script = parseGroovyScript(ruleset);
             Binding binding = new Binding();
             RulesBuilder rulesBuilder = new RulesBuilder();
             binding.setVariable("LOG", LOG);
@@ -342,7 +334,7 @@ public class RulesetDeployment {
             }
 
             script.setBinding(binding);
-            script.run();
+            runGroovyScript(script);
             for (Rule rule : rulesBuilder.build()) {
                 LOG.finest("Registering groovy rule: " + rule.getName());
                 rules.register(rule);
@@ -354,6 +346,40 @@ public class RulesetDeployment {
             setError(e);
             return false;
         }
+    }
+
+    protected void runGroovyScript(Script script) {
+        if (groovySandboxReporter == null) {
+            script.run();
+            return;
+        }
+
+        ReportingGroovyInterceptor interceptor = new ReportingGroovyInterceptor(
+            groovySandboxReporter,
+            ruleset,
+            GroovySandboxPhase.DEPLOYMENT
+        );
+        interceptor.register();
+        try {
+            script.run();
+        } finally {
+            interceptor.unregister();
+        }
+    }
+
+    protected Script parseGroovyScript(Ruleset ruleset) {
+        if (groovySandboxReporter == null) {
+            return groovyShell.parse(ruleset.getRules());
+        }
+
+        ReportingGroovyCompilationCustomizer.reportGrapeAnnotations(groovySandboxReporter, ruleset, ruleset.getRules());
+        GroovyShell reportingGroovyShell = new GroovyShell(
+            new CompilerConfiguration().addCompilationCustomizers(
+                new SandboxTransformer(),
+                new ReportingGroovyCompilationCustomizer(groovySandboxReporter, ruleset)
+            )
+        );
+        return reportingGroovyShell.parse(ruleset.getRules());
     }
 
     protected boolean compileRulesFlow(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {

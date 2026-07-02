@@ -354,6 +354,21 @@ services:
       # Configure the limit of data points that can be exported to CSV. Defaults to 1 million data points.
       # OR_DATA_POINTS_EXPORT_LIMIT: 10000000
 
+      # Enable Groovy rules sandbox report-only instrumentation. Supported values: OFF, REPORT. Defaults to OFF.
+      # REPORT mode observes Groovy source constructs and runtime operations but never blocks rule deployment or execution.
+      # Reports are written to logger category: org.openremote.rules.GroovySandboxReport
+      # Signature summaries include the ruleset id, version, name, type, phase, operation, receiver type, member,
+      # argument types, classification, cumulative count, and pending count since the previous report.
+      # OR_RULES_GROOVY_SANDBOX_MODE: REPORT
+
+      # Maximum period between Groovy sandbox report summaries in minutes. Defaults to 60. Only signatures with new
+      # activity since the previous report are logged; reports are also flushed when a ruleset version is removed.
+      # OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES: 60
+
+      # Maximum number of unique Groovy sandbox signatures retained per ruleset version. Defaults to 1000. When the cap
+      # is reached, new signatures for that ruleset version are dropped and a warning is logged once.
+      # OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET: 1000
+
       # App id for the API of OpenWeather: https://openweathermap.org
       # OR_OPEN_WEATHER_API_APP_ID
 

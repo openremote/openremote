@@ -63,7 +63,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -73,6 +76,7 @@ import static java.util.logging.Level.SEVERE;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.model.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 
 /**
@@ -106,6 +110,12 @@ public class RulesService extends RouteBuilder implements ContainerService {
     public static final int OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT = 50000; // Just under a minute to catch 1 min timer rules
     public static final String OR_RULES_QUICK_FIRE_MILLIS = "OR_RULES_QUICK_FIRE_MILLIS";
     public static final int OR_RULES_QUICK_FIRE_MILLIS_DEFAULT = 3000;
+    public static final String OR_RULES_GROOVY_SANDBOX_MODE = "OR_RULES_GROOVY_SANDBOX_MODE";
+    public static final GroovySandboxMode OR_RULES_GROOVY_SANDBOX_MODE_DEFAULT = GroovySandboxMode.OFF;
+    public static final String OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES = "OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES";
+    public static final int OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES_DEFAULT = 60;
+    public static final String OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET = "OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET";
+    public static final int OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET_DEFAULT = 1000;
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
     protected final AtomicReference<RulesEngine<GlobalRuleset>> globalEngine = new AtomicReference<>();
     protected final Map<String, RulesEngine<RealmRuleset>> realmEngines = new ConcurrentHashMap<>();
@@ -138,6 +148,11 @@ public class RulesService extends RouteBuilder implements ContainerService {
     protected final Map<AttributeRef, AttributeEvent> preInitAttributeEvents = new LinkedHashMap<>();
     protected long tempFactExpirationMillis;
     protected long quickFireMillis;
+    protected GroovySandboxMode groovySandboxMode = OR_RULES_GROOVY_SANDBOX_MODE_DEFAULT;
+    protected int groovySandboxReportIntervalMinutes = OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES_DEFAULT;
+    protected int groovySandboxReportMaxSignaturesPerRuleset = OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET_DEFAULT;
+    protected GroovySandboxReporter groovySandboxReporter;
+    protected ScheduledFuture<?> groovySandboxReportTimer;
     protected boolean initDone;
     protected boolean startDone;
     protected io.micrometer.core.instrument.Timer rulesFiringTimer;
@@ -167,6 +182,21 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
         tempFactExpirationMillis = getInteger(container.getConfig(), OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS, OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT);
         quickFireMillis = getInteger(container.getConfig(), OR_RULES_QUICK_FIRE_MILLIS, OR_RULES_QUICK_FIRE_MILLIS_DEFAULT);
+        groovySandboxMode = GroovySandboxMode.fromConfig(getString(container.getConfig(), OR_RULES_GROOVY_SANDBOX_MODE, OR_RULES_GROOVY_SANDBOX_MODE_DEFAULT.name()));
+        groovySandboxReportIntervalMinutes = getPositiveInteger(
+            container.getConfig(),
+            OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES,
+            OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES_DEFAULT
+        );
+        groovySandboxReportMaxSignaturesPerRuleset = getPositiveInteger(
+            container.getConfig(),
+            OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET,
+            OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET_DEFAULT
+        );
+        groovySandboxReporter = groovySandboxMode == GroovySandboxMode.REPORT
+            ? new GroovySandboxReporter(timerService, groovySandboxReportMaxSignaturesPerRuleset)
+            : null;
+        logGroovySandboxReportConfig();
 
         if (initDone) {
             return;
@@ -222,6 +252,16 @@ public class RulesService extends RouteBuilder implements ContainerService {
         initDone = true;
     }
 
+    protected static int getPositiveInteger(Map<String, String> config, String key, int defaultValue) {
+        int value = getInteger(config, key, defaultValue);
+
+        if (value <= 0) {
+            throw new IllegalArgumentException("Configuration value '" + key + "' must be greater than zero");
+        }
+
+        return value;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public void configure() throws Exception {
@@ -261,6 +301,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
     @Override
     public void start(Container container) throws Exception {
         startDone = false;
+        startGroovySandboxReporter();
 
         if (!geofenceAssetAdapters.isEmpty()) {
             LOG.fine("GeofenceAssetAdapters found: " + geofenceAssetAdapters.size());
@@ -347,6 +388,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
+        stopGroovySandboxReporter();
+
         for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
             try {
                 geofenceAssetAdapter.stop(container);
@@ -373,6 +416,41 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
         for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
             geofenceAssetAdapter.stop(container);
+        }
+    }
+
+    protected void startGroovySandboxReporter() {
+        if (groovySandboxReporter == null || groovySandboxReportTimer != null) {
+            return;
+        }
+
+        groovySandboxReportTimer = scheduledExecutorService.scheduleAtFixedRate(
+            groovySandboxReporter::flushAll,
+            groovySandboxReportIntervalMinutes,
+            groovySandboxReportIntervalMinutes,
+            TimeUnit.MINUTES
+        );
+    }
+
+    protected void logGroovySandboxReportConfig() {
+        if (groovySandboxReporter == null) {
+            return;
+        }
+
+        LOG.log(Level.INFO, "Groovy sandbox report mode enabled: logger= {0}, intervalMinutes= {1}, maxSignaturesPerRuleset= {2}",
+                new Object[] { GroovySandboxReporter.LOGGER_NAME, groovySandboxReportIntervalMinutes, groovySandboxReportMaxSignaturesPerRuleset });
+    }
+
+    protected void stopGroovySandboxReporter() {
+        ScheduledFuture<?> reportTimer = groovySandboxReportTimer;
+        groovySandboxReportTimer = null;
+
+        if (reportTimer != null) {
+            reportTimer.cancel(false);
+        }
+
+        if (groovySandboxReporter != null) {
+            groovySandboxReporter.flushAll();
         }
     }
 
@@ -564,7 +642,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     assetPredictedDatapointService,
                     new RulesEngineId<>(),
                     locationPredicateRulesConsumer,
-                    rulesFiringTimer
+                    rulesFiringTimer,
+                    groovySandboxReporter
                 );
                 globalEngine.set(engine);
             }
@@ -616,7 +695,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     assetPredictedDatapointService,
                     new RulesEngineId<>(ruleset.getRealm()),
                     locationPredicateRulesConsumer,
-                    rulesFiringTimer
+                    rulesFiringTimer,
+                    groovySandboxReporter
                 );
                 realmEngines.put(ruleset.getRealm(), realmRulesEngine);
 
@@ -698,7 +778,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     assetPredictedDatapointService,
                     new RulesEngineId<>(ruleset.getRealm(), ruleset.getAssetId()),
                     locationPredicateRulesConsumer,
-                    rulesFiringTimer
+                    rulesFiringTimer,
+                    groovySandboxReporter
                 );
                 assetEngines.put(ruleset.getAssetId(), assetRulesEngine);
 
