@@ -35,7 +35,7 @@ jobs:
           platforms: linux/amd64,linux/aarch64
 
       - name: Install Buildx
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
       - name: Parse tags and evaluate conditions
         id: meta
