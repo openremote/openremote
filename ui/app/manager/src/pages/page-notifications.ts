@@ -83,8 +83,9 @@ export class NotificationService {
 
             return typeof response.data === 'number' ? response.data : 0;
         } catch (err: unknown) {
-            console.error('Failed to fetch notification count:', err);
-            return 0;
+            const error = err as AxiosError;
+            console.error('Failed to fetch notification count:', error);
+            throw error;
         }
     }
 

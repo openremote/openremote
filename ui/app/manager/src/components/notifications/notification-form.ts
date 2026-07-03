@@ -355,11 +355,6 @@ export class NotificationForm extends LitElement {
         this._targetType = this.notification.target || NotificationTargetType.ASSET;
         this._targets = this.notification.targetId ? [this.notification.targetId] : [];
 
-        // Load target options based on type
-        if (this.readonly) {
-            await this._onTargetTypeChanged(this._targetType);
-        }
-
         await this.requestUpdate();
     }
 
@@ -461,7 +456,7 @@ export class NotificationForm extends LitElement {
         if (manager.hasRole("read:assets") || manager.hasRole("read:admin")) {
             allowedTargetTypes.push({label: i18next.t("asset_plural"), value: NotificationTargetType.ASSET});
         }
-        if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
+        if (!manager.isRestrictedUser() && (manager.hasRole("read:users") || manager.hasRole("read:admin"))) {
             allowedTargetTypes.unshift({label: i18next.t("user_plural"), value: NotificationTargetType.USER});
         }
         if (!manager.isRestrictedUser() && manager.hasRole("read:admin")) {
