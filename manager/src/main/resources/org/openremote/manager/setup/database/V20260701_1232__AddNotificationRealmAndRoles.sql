@@ -29,30 +29,58 @@ UPDATE NOTIFICATION SET realm = 'master' WHERE realm IS NULL;
 ALTER table NOTIFICATION
     ALTER COLUMN realm SET NOT NULL;
 
--- add read:notifications and write:notifications Keycloak client roles for all openremote clients
+-- add read:notifications and write:notifications Keycloak client roles for all openremote clients, and add them to
+-- the existing "read"/"write" composite client roles so users assigned only the broad composites inherit them (as
+-- defined by ClientRole.READ / ClientRole.WRITE: read -> read:notifications, write -> read:notifications + write:notifications)
 DO $$
 DECLARE
     v_client RECORD;
+    v_read_notif_id  keycloak_role.id%TYPE;
+    v_write_notif_id keycloak_role.id%TYPE;
+    v_read_id        keycloak_role.id%TYPE;
+    v_write_id       keycloak_role.id%TYPE;
 BEGIN
     FOR v_client IN
         SELECT id, realm_id
         FROM client
         WHERE client_id = 'openremote'
     LOOP
-        IF NOT EXISTS (
-            SELECT 1 FROM keycloak_role
-            WHERE name = 'read:notifications' AND client = v_client.id
-        ) THEN
+        -- read:notifications leaf role (create if missing, then capture its id)
+        SELECT id INTO v_read_notif_id FROM keycloak_role WHERE name = 'read:notifications' AND client = v_client.id;
+        IF v_read_notif_id IS NULL THEN
+            v_read_notif_id := gen_random_uuid()::varchar(36);
             INSERT INTO keycloak_role (id, client_realm_constraint, client_role, description, name, realm_id, client)
-            VALUES (gen_random_uuid()::varchar(36), v_client.id, true, 'Read notifications', 'read:notifications', v_client.realm_id, v_client.id);
+            VALUES (v_read_notif_id, v_client.id, true, 'Read notifications', 'read:notifications', v_client.realm_id, v_client.id);
         END IF;
 
-        IF NOT EXISTS (
-            SELECT 1 FROM keycloak_role
-            WHERE name = 'write:notifications' AND client = v_client.id
-        ) THEN
+        -- write:notifications leaf role (create if missing, then capture its id)
+        SELECT id INTO v_write_notif_id FROM keycloak_role WHERE name = 'write:notifications' AND client = v_client.id;
+        IF v_write_notif_id IS NULL THEN
+            v_write_notif_id := gen_random_uuid()::varchar(36);
             INSERT INTO keycloak_role (id, client_realm_constraint, client_role, description, name, realm_id, client)
-            VALUES (gen_random_uuid()::varchar(36), v_client.id, true, 'Write notification data', 'write:notifications', v_client.realm_id, v_client.id);
+            VALUES (v_write_notif_id, v_client.id, true, 'Write notification data', 'write:notifications', v_client.realm_id, v_client.id);
+        END IF;
+
+        -- wire the leaf roles into the "read"/"write" composite roles (composite_role links parent -> child role id)
+        SELECT id INTO v_read_id FROM keycloak_role WHERE name = 'read' AND client = v_client.id;
+        SELECT id INTO v_write_id FROM keycloak_role WHERE name = 'write' AND client = v_client.id;
+
+        IF v_read_id IS NOT NULL AND NOT EXISTS (
+            SELECT 1 FROM composite_role WHERE composite = v_read_id AND child_role = v_read_notif_id
+        ) THEN
+            INSERT INTO composite_role (composite, child_role) VALUES (v_read_id, v_read_notif_id);
+        END IF;
+
+        IF v_write_id IS NOT NULL AND NOT EXISTS (
+            SELECT 1 FROM composite_role WHERE composite = v_write_id AND child_role = v_read_notif_id
+        ) THEN
+            INSERT INTO composite_role (composite, child_role) VALUES (v_write_id, v_read_notif_id);
+        END IF;
+
+        IF v_write_id IS NOT NULL AND NOT EXISTS (
+            SELECT 1 FROM composite_role WHERE composite = v_write_id AND child_role = v_write_notif_id
+        ) THEN
+            INSERT INTO composite_role (composite, child_role) VALUES (v_write_id, v_write_notif_id);
         END IF;
     END LOOP;
 END $$;
