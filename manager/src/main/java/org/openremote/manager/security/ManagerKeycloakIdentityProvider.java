@@ -155,6 +155,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             String keycloakPath = getString(container.getConfig(), OR_KEYCLOAK_PATH, OR_KEYCLOAK_PATH_DEFAULT);
             enableAuthProxy(container.getService(WebService.class), keycloakPath);
         }
+        // Reconcile existing openremote clients with any newly-defined ClientRole roles; runs on every boot so
+        // roles added to the enum reach already-created clients on upgrade (SetupService only runs on clean installs)
+        syncAllClientRoles();
     }
 
     @Override
@@ -1309,6 +1312,76 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 composites.add(rolesResource.get(composite.getValue()).toRepresentation());
             }
             rolesResource.get(clientRole.getValue()).addComposites(composites);
+        }
+    }
+
+    /**
+     * Reconcile every realm's openremote client roles against {@link ClientRole}. Runs on every startup so roles
+     * added to the enum reach existing clients on upgrade; on a clean install the clients don't exist yet (they are
+     * created later by KeycloakInitSetup), so those realms are simply skipped. Each realm is isolated so a single
+     * failure can't abort startup.
+     */
+    protected void syncAllClientRoles() {
+        Realm[] realms;
+        try {
+            realms = getRealms();
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to list realms for client role sync; skipping", e);
+            return;
+        }
+
+        for (Realm realm : realms) {
+            try {
+                getRealms(realmsResource ->
+                    withClientResource(realm.getName(), KEYCLOAK_CLIENT_ID, realmsResource,
+                        (clientRepresentation, clientResource) -> {
+                            syncClientRoles(clientResource.roles());
+                            return null;
+                        },
+                        () -> null)); // realm has no openremote client yet -> nothing to sync
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Failed to sync client roles for realm: " + realm.getName(), e);
+            }
+        }
+    }
+
+    /**
+     * Idempotent, additive version of {@link #addDefaultRoles}: creates any {@link ClientRole} that is missing and
+     * ensures each composite role contains its children ({@code addComposites} is idempotent server-side). Never
+     * removes roles, so out-of-band/custom client roles are left untouched. Safe to run repeatedly.
+     */
+    protected void syncClientRoles(RolesResource rolesResource) {
+        Map<String, RoleRepresentation> existing = rolesResource.list().stream()
+            .collect(Collectors.toMap(RoleRepresentation::getName, r -> r, (a, b) -> a));
+
+        boolean created = false;
+        for (ClientRole clientRole : ClientRole.values()) {
+            if (!existing.containsKey(clientRole.getValue())) {
+                rolesResource.create(clientRole.getRepresentation());
+                created = true;
+            }
+        }
+
+        // Refresh so composite wiring can resolve representations (with ids) of any roles just created
+        if (created) {
+            existing = rolesResource.list().stream()
+                .collect(Collectors.toMap(RoleRepresentation::getName, r -> r, (a, b) -> a));
+        }
+
+        for (ClientRole clientRole : ClientRole.values()) {
+            if (clientRole.getComposites() == null) {
+                continue;
+            }
+            List<RoleRepresentation> children = new ArrayList<>();
+            for (ClientRole composite : clientRole.getComposites()) {
+                RoleRepresentation child = existing.get(composite.getValue());
+                if (child != null) {
+                    children.add(child);
+                }
+            }
+            if (!children.isEmpty()) {
+                rolesResource.get(clientRole.getValue()).addComposites(children);
+            }
         }
     }
 
