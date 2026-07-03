@@ -39,13 +39,9 @@ def generateTypeScriptTask = tasks.named("generateTypeScript") {
     dependsOn resolveTask(":ui:component:model:generateTypeScript")
 }
 
-clean {
-    doLast {
-        def dir = new File("${projectDir}/dist")
-        dir.deleteDir()
-        def libs = new File("${projectDir}/lib")
-        libs.deleteDir()
-    }
+tasks.named('clean', Delete) {
+    delete layout.projectDirectory.dir('dist')
+    delete layout.projectDirectory.dir('lib')
 }
 
 tasks.register('npmBuild', Exec) {

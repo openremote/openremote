@@ -16,7 +16,7 @@ on:
         description: 'Delete data before starting'
         type: boolean
       COMMIT:
-        description: 'Repo branch or commit SHA to checkout'
+        description: 'Repo branch or commit SHA to checkout. WARNING: Picking an older commit may cause pipeline failures if build/deploy steps are missing or incompatible.'
       OR_HOSTNAME:
         description: 'Host to deploy to (e.g. demo.openremote.app)'
       OR_ADMIN_PASSWORD:
@@ -48,6 +48,8 @@ jobs:
     needs: is-main-repo
     if: ${{ needs.is-main-repo.outputs.value == 'true' }}
     uses: "./.github/workflows/install-dist.yml"
+    with:
+      COMMIT: ${{ inputs.COMMIT }}
 
   deployment:
     name: Deployment
@@ -56,4 +58,5 @@ jobs:
     uses: "./.github/workflows/deployment.yml"
     with:
       INPUTS: ${{ toJSON(inputs) }}
+      COMMIT: ${{ inputs.COMMIT }}
     secrets: inherit
