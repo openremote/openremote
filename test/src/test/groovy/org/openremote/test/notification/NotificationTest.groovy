@@ -196,13 +196,13 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             assert notificationMessages.count { m -> m instanceof PushNotificationMessage && m.title == "Test Action" && m.body == "Click to cancel" && m.action != null } == 3
         }
 
-        when: "a regular user sends a push notification to an entire realm"
+        when: "a regular user without write:notifications sends a push notification to an entire realm"
         testuser2NotificationResource.sendNotification(null, notification)
 
-        then: "no notification should have been sent"
+        then: "the request should be forbidden (no write:notifications role)"
         WebApplicationException ex = thrown()
         ex.response.withCloseable { r ->
-            assert r.status == 400
+            assert r.status == 403
             return true
         }
 
@@ -254,10 +254,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         when: "an anonymous user sends a push notification to a user"
         anonymousNotificationResource.sendNotification(null, notification)
 
-        then: "no notification should have been sent"
+        then: "the request should be forbidden (no write:notifications role)"
         ex = thrown()
         ex.response.withCloseable { r ->
-            assert r.status == 400
+            assert r.status == 403
             return true
         }
 
@@ -289,19 +289,18 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             return true
         }
 
-        when: "a regular user sends a push notification to the console assets in the same realm"
+        when: "a regular user without write:notifications sends a push notification to the console assets in the same realm"
         notificationIds.clear()
         advancePseudoClock(1, TimeUnit.HOURS, container)
         testuser2NotificationResource.sendNotification(null, notification)
 
-        then: "the notification should have been sent (inc. testuser2 as message was direct to console)"
-        conditions.eventually {
-            assert notificationIds.size() == 4
-            assert notificationTargetIds.contains(testuser2Console.id)
-            assert notificationTargetIds.contains(testuser3Console1.id)
-            assert notificationTargetIds.contains(testuser3Console2.id)
-            assert notificationTargetIds.contains(anonymousConsole.id)
+        then: "the request should be forbidden and no notification sent (write:notifications is now required to send)"
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
         }
+        notificationIds.size() == 0
 
         when: "a notification is sent using the same mechanism as an asset ruleset"
         notificationIds.clear()
@@ -406,9 +405,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         and: "all notifications sent to consoles in the building realm should be available via the REST API"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id, null, null, null, null, null).length == 3
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id, null, null, null, null, null).length == 2
             notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null, null, null)
-            assert notifications.length == 6
+            assert notifications.length == 5
             assert notifications.every {n ->
                 PushNotificationMessage pushMessage = n.message as PushNotificationMessage
                 pushMessage.getTitle() == "Test Action" &&
@@ -417,8 +416,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                         n.deliveredOn == null &&
                         n.acknowledgedOn == null
             }
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 8
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null, null, null).length == 4
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 7
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null, null, null).length == 3
         }
 
         when: "the admin user marks a Building console notification as delivered and requests the notifications for Building consoles"
@@ -427,7 +426,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         then: "the notification should have been updated"
         conditions.eventually {
             notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null, null, null)
-            assert notifications.length == 6
+            assert notifications.length == 5
             assert notifications.count {n -> n.deliveredOn != null} == 1
         }
 
@@ -437,7 +436,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         then: "the notification should have been updated"
         conditions.eventually {
             notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null, null, null)
-            assert notifications.length == 6
+            assert notifications.length == 5
             assert notifications.count {n -> n.deliveredOn != null && n.acknowledgedOn != null && n.acknowledgement == "\"dismissed\""} == 1
         }
 
@@ -517,7 +516,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null, null, null).length == 0
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 0
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null, null, null).length == 4
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null, null, null).length == 3
         }
 
         when: "the admin user removes notifications by type and the notifications are retrieved again"

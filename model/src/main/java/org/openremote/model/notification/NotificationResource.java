@@ -117,6 +117,7 @@ public interface NotificationResource {
     @POST
     @Path("alert")
     @Consumes(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE, Constants.WRITE_NOTIFICATIONS_ROLE})
     @Operation(operationId = "sendNotification", summary = "Send a notification to one or more targets")
     void sendNotification(@BeanParam RequestParams requestParams,
                           Notification notification);
