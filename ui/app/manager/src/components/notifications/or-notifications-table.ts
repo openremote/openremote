@@ -238,7 +238,10 @@ export class OrNotificationsTable extends OrMwcTable {
             const message = notification.message as PushNotificationMessage | EmailNotificationMessage;
             const isEmail = message?.type === "email";
             const title = isEmail ? (message as EmailNotificationMessage).subject : (message as PushNotificationMessage)?.title;
-            const body = isEmail ? (message as EmailNotificationMessage).html : (message as PushNotificationMessage)?.body;
+            // Emails may carry a plain-text body instead of html (EmailNotificationHandler supports both); fall back to it
+            const body = isEmail
+                ? ((message as EmailNotificationMessage).html ?? (message as EmailNotificationMessage).text)
+                : (message as PushNotificationMessage)?.body;
             return {
                 content: [
                     this.getTitleContent(notification, title),

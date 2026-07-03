@@ -587,7 +587,7 @@ export class NotificationForm extends LitElement {
                     style="flex: 1;"
                     min-rows="4"
                     ?readonly="${inputDisabled}"
-                    value="${message.html || ''}"
+                    value="${message.html ?? message.text ?? ''}"
                     @change="${(ev: Event) => this._updateMessage({html: (ev.currentTarget as HTMLInputElement).value})}">
                 <or-translate slot="label" value="body"></or-translate>
             </or-vaadin-text-area>
