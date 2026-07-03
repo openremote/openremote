@@ -48,7 +48,9 @@ import java.util.logging.Logger;
 
 /**
  * Flyway migration that adds the {@code read:services} and {@code write:services} client roles to the
- * {@code openremote} client of every realm, using the Keycloak admin API.
+ * {@code openremote} client of every realm, using the Keycloak admin API, and wires them into the existing
+ * {@code read}/{@code write} composite roles (matching ClientRole.READ / ClientRole.WRITE:
+ * read -> read:services, write -> read:services + write:services).
  * <p>
  * It authenticates with the stored manager credentials written to {@code <OR_STORAGE_DIR>/manager/keycloak-credentials.json}
  * (the {@code manager-keycloak} super-user that the identity provider provisions on first startup) rather than the
@@ -107,6 +109,14 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
                 RolesResource clientRoles = clientResource.roles();
                 createRoleIfNotExists(clientRoles, "write:services", "Write service data");
                 createRoleIfNotExists(clientRoles, "read:services", "View services");
+
+                // Add the leaf roles to the existing "read"/"write" composites so users assigned only the broad
+                // composites inherit them, matching ClientRole.READ / ClientRole.WRITE
+                // (read -> read:services, write -> read:services + write:services).
+                RoleRepresentation readSvc = clientRoles.get("read:services").toRepresentation();
+                RoleRepresentation writeSvc = clientRoles.get("write:services").toRepresentation();
+                addToComposite(clientRoles, "read", readSvc);
+                addToComposite(clientRoles, "write", readSvc, writeSvc);
             }
         }
     }
@@ -166,6 +176,15 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
             roles.get(roleName).toRepresentation();
         } catch (NotFoundException e) {
             roles.create(new RoleRepresentation(roleName, description, false));
+        }
+    }
+
+    // Add child roles to the named composite role; addComposites is idempotent so re-running is safe
+    private void addToComposite(RolesResource roles, String compositeName, RoleRepresentation... children) {
+        try {
+            roles.get(compositeName).addComposites(List.of(children));
+        } catch (NotFoundException e) {
+            LOG.warning("Composite role '" + compositeName + "' not found; skipping composite wiring");
         }
     }
 
