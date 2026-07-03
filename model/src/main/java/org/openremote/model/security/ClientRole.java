@@ -51,6 +51,9 @@ public enum ClientRole {
     WRITE_INSIGHTS(Constants.WRITE_INSIGHTS_ROLE, "Write dashboard data"),
     WRITE_ALARMS(Constants.WRITE_ALARMS_ROLE, "Write alarm data"),
 
+    READ_SYNC(Constants.READ_SYNC, "Read sync test"),
+    WRITE_SYNC(Constants.WRITE_SYNC, "Write sync test"),
+
     READ("read", "Read all data", new ClientRole[]{
         READ_ADMIN,
         READ_LOGS,
@@ -60,7 +63,8 @@ public enum ClientRole {
         READ_RULES,
         READ_INSIGHTS,
         READ_ALARMS,
-        READ_SERVICES
+        READ_SERVICES,
+        READ_SYNC
     }),
 
     WRITE("write", "Write all data", new ClientRole[]{
@@ -73,6 +77,7 @@ public enum ClientRole {
         READ_INSIGHTS,
         READ_ALARMS,
         READ_SERVICES,
+        READ_SYNC,
         WRITE_USER,
         WRITE_ADMIN,
         WRITE_LOGS,
@@ -81,7 +86,8 @@ public enum ClientRole {
         WRITE_RULES,
         WRITE_INSIGHTS,
         WRITE_ALARMS,
-        WRITE_SERVICES
+        WRITE_SERVICES,
+        WRITE_SYNC
     });
 
     // Only individual roles, not composites

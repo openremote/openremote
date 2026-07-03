@@ -38,6 +38,8 @@ public interface Constants {
     String READ_INSIGHTS_ROLE = "read:insights";
     String READ_ALARMS_ROLE = "read:alarms";
     String READ_SERVICES_ROLE = "read:services";
+    String READ_SYNC = "read:sync";
+    String WRITE_SYNC = "write:sync";
     String WRITE_SERVICES_ROLE = "write:services";
     String WRITE_USER_ROLE = "write:user";
     String WRITE_ADMIN_ROLE = "write:admin";
