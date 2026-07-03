@@ -641,7 +641,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, GatewayAsset requestingGatewayAsset, String userName) throws IllegalStateException, ConstraintViolationException {
 
         if (LOG.isLoggable(Level.FINEST)) {
-            LOG.finest("Merging asset: " + asset);
+            LOG.finest("Asset merge: " + asset.toStringAll());
+        } else {
+            LOG.fine("Asset merge: " + asset);
         }
 
         long startTime = System.currentTimeMillis();
@@ -749,19 +751,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
               Asset<?> parent = find(em, asset.getParentId(), true);
 
               // The parent must exist
-              if (parent == null) {
+              if (parent == null || parent.isDeletePending()) {
                  String msg = "Asset parent not found: asset=" + asset;
                  LOG.warning(msg);
                  throw new IllegalStateException(msg);
               }
 
-              if (parent.isDeletePending()) {
-                 String msg = "Asset parent is pending deletion: asset=" + asset;
-                 LOG.warning(msg);
-                 throw new IllegalStateException(msg);
-              }
-
-              // The parent can not be a child of the asset
+              // The parent cannot be a child of the asset
               if (parent.pathContains(asset.getId())) {
                  String msg = "Asset parent cannot be a descendant of the asset: asset=" + asset;
                  LOG.warning(msg);
@@ -861,9 +857,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
               updatedAsset = em.merge(asset);
            }
 
-           if (LOG.isLoggable(FINE)) {
-              LOG.fine("Asset merge took: " + (System.currentTimeMillis() - startTime) + "ms");
+           String msgPrefix = existingAsset != null ? "Asset updated: " : "Asset created: ";
+           if (LOG.isLoggable(Level.FINEST)) {
+              LOG.finest(msgPrefix + asset.toStringAll());
+           } else {
+              LOG.info(msgPrefix + asset);
            }
+
+           LOG.finest(() -> "Asset merge took: " + (System.currentTimeMillis() - startTime) + "ms");
 
            if (user != null) {
               createUserAssetLinks(em, Collections.singletonList(new UserAssetLink(user.getRealm(), user.getId(), updatedAsset.getId())));
@@ -895,6 +896,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public boolean delete(List<String> assetIds, boolean skipGatewayCheck) {
 
         List<String> ids = new ArrayList<>(assetIds);
+
+        LOG.info(() -> "Asset deletion: count=" + assetIds.size() + ", IDs=" + String.join(", ", assetIds));
 
         if (!skipGatewayCheck) {
 
@@ -947,11 +950,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         throw new IllegalArgumentException("Cannot delete one or more requested assets as they either have children or don't exist");
                     }
 
-                    if (LOG.isLoggable(FINE)) {
-                        LOG.fine("Marked assets as pending deletion: count=" + assets.size() + ", ids=" + ids);
-                    }
-
-                    assets.forEach(asset -> asset.setDeletePending(true));
+                    assets.forEach(asset -> {
+                        if (LOG.isLoggable(Level.FINEST)) {
+                            LOG.finest("Asset delete: " + asset.toStringAll());
+                        } else {
+                            LOG.fine("Asset delete: " + asset);
+                        }
+                        asset.setDeletePending(true);
+                    });
                 });
 
                 requestPendingAssetDeleteProcessing(ids);
@@ -980,7 +986,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         Map<String, Long> datapointCounts = findAssetDatapointCounts(orderedAssetIds);
-        LOG.info("Scheduling pending asset delete processing: count=" + orderedAssetIds.size());
+        LOG.fine("Scheduling asset deletion: count=" + orderedAssetIds.size() + ", IDs=" + String.join(", ", orderedAssetIds));
 
         pendingAssetDeleteFuture.updateAndGet(existingFuture ->
                 existingFuture
@@ -1062,7 +1068,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     row -> ((Number) row[1]).longValue()));
         });
 
-        LOG.info("Counted asset datapoints for pending asset delete: assetCount=" + assetIds.size() + ", durationMillis=" + (System.currentTimeMillis() - start));
+        LOG.finer("Counted asset datapoints for pending asset delete: assetCount=" + assetIds.size() + ", durationMillis=" + (System.currentTimeMillis() - start));
         return datapointCounts;
     }
 
@@ -1070,12 +1076,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         long start = System.currentTimeMillis();
 
         if (datapointCount > assetDeleteDatapointBatchThreshold) {
-            LOG.fine("Purging asset datapoints before asset deletion: assetId=" + assetId + ", datapoints=" + datapointCount + ", threshold=" + assetDeleteDatapointBatchThreshold);
+            LOG.fine("Purging asset datapoints: assetId=" + assetId + ", datapoints=" + datapointCount + ", threshold=" + assetDeleteDatapointBatchThreshold);
             try {
                 deleteAssetDatapointsByAsset(assetId);
                 LOG.fine("Purged asset datapoints: assetId=" + assetId + ", durationMillis=" + (System.currentTimeMillis() - start));
             } catch (Exception e) {
-                LOG.log(WARNING, "Failed to purge asset datapoints before asset deletion, continuing with asset deletion so FK cascade can clean up: assetId=" + assetId, e);
+                LOG.log(WARNING, "Purge asset datapoints failed: assetId=" + assetId, e);
             }
         }
 
@@ -1300,7 +1306,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     /**
      * Returns a map of asset IDs with the respective hasChildren flag.
      * 
-     * It check whether any of the assetIds is set as a parentId in the Asset table.
+     * It checks whether any of the assetIds is set as a parentId in the Asset table.
      * 
      * @param assetIds The list of asset IDs to check.
      * @return A map of asset IDs with the respective hasChildren flag.
@@ -1728,11 +1734,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (loadedAsset == null) {
                     return;
                 }
-                if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("Asset created: " + loadedAsset.toStringAll());
-                } else {
-                    LOG.fine("Asset created: " + loadedAsset);
-                }
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null)
                 );
@@ -1754,7 +1755,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             case UPDATE -> {
                 boolean nonAttributeChange = persistenceEvent.getPropertyNames().size() > 1 || !persistenceEvent.hasPropertyChanged("attributes");
                 boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
-                LOG.finest(() -> "Asset updated: " + persistenceEvent);
 
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.UPDATE, asset, persistenceEvent.getPropertyNames().toArray(String[]::new))
@@ -1804,11 +1804,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     });
             }
             case DELETE -> {
-                if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("Asset deleted: " + asset.toStringAll());
-                } else {
-                    LOG.fine("Asset deleted: " + asset);
-                }
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.DELETE, asset, null)
                 );
