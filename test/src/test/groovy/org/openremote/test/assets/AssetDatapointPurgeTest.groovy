@@ -43,7 +43,7 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def originalAssetStorageService = container.getService(AssetStorageService.class)
         def assetStorageService = Spy(originalAssetStorageService)
-        container.services.put(AssetStorageService.class, assetStorageService)
+        container.@services.put(AssetStorageService.class, assetStorageService)
         def assetDatapointService = container.getService(AssetDatapointService.class)
         def messageBrokerService = container.getService(MessageBrokerService.class)
         def persistenceService = container.getService(PersistenceService.class)
@@ -374,7 +374,7 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
             assetStorageService.assetDeleteDatapointBatchWeeks = originalAssetDeleteDatapointBatchWeeks
         }
         if (container != null && originalAssetStorageService != null) {
-            container.services.put(AssetStorageService.class, originalAssetStorageService)
+            container.@services.put(AssetStorageService.class, originalAssetStorageService)
         }
         if (persistenceService != null && originalMaxTuplesDecompressedPerDmlTransaction != null) {
             setMaxTuplesDecompressedPerDmlTransaction(persistenceService, originalMaxTuplesDecompressedPerDmlTransaction)

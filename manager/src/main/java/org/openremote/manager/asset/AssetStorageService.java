@@ -69,6 +69,8 @@ import org.postgresql.util.PGobject;
 
 import java.sql.*;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -249,7 +251,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ScheduledExecutorService scheduledExecutorService;
     protected final LockByKey assetLocks = new LockByKey();
     protected final AtomicReference<CompletableFuture<Void>> pendingAssetDeleteFuture = new AtomicReference<>(CompletableFuture.completedFuture(null));
-    protected final AtomicReference<Timestamp> oldestAssetDatapointChunkStart = new AtomicReference<>();
+    protected final AtomicReference<LocalDateTime> oldestAssetDatapointChunkStart = new AtomicReference<>();
     protected final Set<String> failedAssetDeleteIds = Collections.synchronizedSet(new LinkedHashSet<>());
     protected ScheduledFuture<?> failedAssetDeleteRetryFuture;
     protected int assetDeleteDatapointBatchThreshold;
@@ -1123,7 +1125,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     protected void deleteAssetDatapointsByAsset(String assetId) {
-        Timestamp oldestChunkStart = findOldestAssetDatapointChunkStart();
+        LocalDateTime oldestChunkStart = findOldestAssetDatapointChunkStart();
 
         if (oldestChunkStart == null) {
             LOG.fine("No asset datapoint chunks found for pending asset delete: assetId=" + assetId);
@@ -1134,14 +1136,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return;
         }
 
-        Timestamp rangeStart = oldestChunkStart;
-        Timestamp finalEnd = new Timestamp(timerService.getCurrentTimeMillis());
+        LocalDateTime rangeStart = oldestChunkStart;
+        LocalDateTime finalEnd = LocalDateTime.ofInstant(timerService.getNow(), ZoneId.systemDefault());
 
-        while (rangeStart.before(finalEnd) && !pendingAssetDeleteStopping) {
-            Instant nextEnd = rangeStart.toInstant().plus((long) assetDeleteDatapointBatchWeeks * 7L, ChronoUnit.DAYS);
-            Timestamp rangeEnd = Timestamp.from(nextEnd.isBefore(finalEnd.toInstant()) ? nextEnd : finalEnd.toInstant());
-            Timestamp batchStart = rangeStart;
-            Timestamp batchEnd = rangeEnd;
+        while (rangeStart.isBefore(finalEnd) && !pendingAssetDeleteStopping) {
+            LocalDateTime nextEnd = rangeStart.plus((long) assetDeleteDatapointBatchWeeks * 7L, ChronoUnit.DAYS);
+            LocalDateTime rangeEnd = nextEnd.isBefore(finalEnd) ? nextEnd : finalEnd;
+            LocalDateTime batchStart = rangeStart;
+            LocalDateTime batchEnd = rangeEnd;
             long start = System.currentTimeMillis();
 
             int deleted = persistenceService.doReturningTransaction(em ->
@@ -1162,21 +1164,23 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected Timestamp findOldestAssetDatapointChunkStart() {
-        Timestamp cachedStart = oldestAssetDatapointChunkStart.get();
+    protected LocalDateTime findOldestAssetDatapointChunkStart() {
+        LocalDateTime cachedStart = oldestAssetDatapointChunkStart.get();
         if (cachedStart != null) {
             return cachedStart;
         }
 
-        Timestamp start = persistenceService.doReturningTransaction(em ->
-            (Timestamp) em.createNativeQuery(
+        LocalDateTime start = persistenceService.doReturningTransaction(em ->
+            em.unwrap(Session.class)
+                .createNativeQuery(
                     """
                     select min(range_start::timestamp)
                     from timescaledb_information.chunks
                     where hypertable_schema = current_schema()
                       and hypertable_name = :hypertableName
                       and range_start is not null
-                    """
+                    """,
+                    LocalDateTime.class
                 )
                 .setParameter("hypertableName", AssetDatapoint.TABLE_NAME)
                 .getSingleResult()
