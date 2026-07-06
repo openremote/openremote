@@ -39,16 +39,9 @@ public class AttributeSerializerJackson2 extends StdSerializer<Attribute<?>> {
         if (value.getType() != null) {
             gen.writeStringField("type", value.getType().getName());
         }
-        if (value.getMeta() != null && !value.getMeta().isEmpty()) {
-            gen.writeObjectField("meta", value.getMeta());
-        }
-        value.getValue().ifPresent(v -> {
-            try {
-                gen.writeObjectField("value", v);
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        });
+        // Always write meta and value (even when null/empty) to match the Jackson 3 model serializer
+        provider.defaultSerializeField("meta", value.getMeta(), gen);
+        provider.defaultSerializeField("value", value.getValue().orElse(null), gen);
         value.getTimestamp().ifPresent(timestamp -> {
             try {
                 gen.writeNumberField("timestamp", timestamp);
