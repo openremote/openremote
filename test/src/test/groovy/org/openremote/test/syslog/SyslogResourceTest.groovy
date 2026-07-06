@@ -66,7 +66,7 @@ class SyslogResourceTest extends Specification implements ManagerContainerTrait 
 
     private String createUserToken(container, KeycloakTestSetup keycloakTestSetup, String roleName, ClientRole role) {
         def username = "syslog-test-${roleName}"
-        keycloakTestSetup.createUser(
+        def user = keycloakTestSetup.createUser(
             MASTER_REALM,
             username,
             username,
@@ -76,6 +76,8 @@ class SyslogResourceTest extends Specification implements ManagerContainerTrait 
             true,
             [role] as ClientRole[]
         )
+
+        userId = user.id
         authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, username, username)
     }
 
