@@ -1016,7 +1016,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             failedAssetDeleteIds.clear();
         }
 
-        LOG.info("Retrying failed pending asset deletes: count=" + failedAssetIds.size());
+        LOG.fine("Retrying failed pending asset deletes: count=" + failedAssetIds.size());
         requestPendingAssetDeletionRetry(failedAssetIds);
     }
 
@@ -1097,6 +1097,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return;
         }
 
+        LOG.fine("Deleting asset: assetId=" + assetId);
+
         try {
             persistenceService.doTransaction(em -> {
                 // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
@@ -1124,9 +1126,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         Timestamp oldestChunkStart = findOldestAssetDatapointChunkStart();
 
         if (oldestChunkStart == null) {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("No asset datapoint chunks found for pending asset delete: assetId=" + assetId);
-            }
+            LOG.fine("No asset datapoint chunks found for pending asset delete: assetId=" + assetId);
             return;
         }
 
@@ -1725,7 +1725,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected void publishModificationEvents(PersistenceEvent<Asset<?>> persistenceEvent) {
+    protected void  publishModificationEvents(PersistenceEvent<Asset<?>> persistenceEvent) {
         Asset<?> asset = persistenceEvent.getEntity();
         switch (persistenceEvent.getCause()) {
             case CREATE -> {
