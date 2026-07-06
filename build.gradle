@@ -101,26 +101,43 @@ tasks.named('unitTestReport').configure {
     }
 }
 
-def getBackendProjects = {
-    subprojects.findAll { !it.path.startsWith(':ui') && it.pluginManager.hasPlugin('java') }
+def backendProjects = subprojects.findAll {
+    !it.path.startsWith(':ui') && it.pluginManager.hasPlugin('java')
 }
 
-def getActiveTestTasks = {
-    getBackendProjects().collectMany { it.tasks.withType(Test) }.findAll { it.name == 'test' }
+def backendTestTasks = backendProjects.collectMany { backendProject ->
+    backendProject.tasks.withType(Test).matching { it.name == 'test' }.toList()
+}
+
+def backendTestTaskPaths = backendTestTasks.collect { it.path }
+
+def jacocoExecutionDataFiles = backendTestTasks.collect { testTask ->
+    testTask.extensions.findByType(JacocoTaskExtension)?.destinationFile
+}.findAll { it != null }
+
+def backendSourceDirs = backendProjects.collectMany {
+    it.sourceSets.main.allJava.srcDirs
+}
+
+def backendClassDirs = backendProjects.collectMany {
+    it.sourceSets.main.output.classesDirs.files
 }
 
 tasks.register('checkCoverageDataExists') {
     group = 'reporting'
-    mustRunAfter(getBackendProjects().collect { "${it.path}:test" })
+
+    mustRunAfter(backendTestTaskPaths)
+
+    inputs.files(jacocoExecutionDataFiles).optional()
+
     doLast {
-        def testTasks = getActiveTestTasks()
-        def allJacocoResultsExist = testTasks.every {
-            it.extensions.findByType(JacocoTaskExtension)?.destinationFile?.exists()
+        def missingJacocoResults = jacocoExecutionDataFiles.findAll {
+            !it.exists()
         }
-        // Check if any of the configured execution data files exist on disk
-        if (!allJacocoResultsExist) {
+
+        if (!missingJacocoResults.empty) {
             println "Please run the following tasks to be able to generate a report."
-            println "Required tasks: ${testTasks.collect { it.path }.join(', ')}"
+            println "Required tasks: ${backendTestTaskPaths.join(', ')}"
             println "Run: gradle test -x npmTest checkCoverageDataExists"
             throw new StopExecutionException()
         }
@@ -132,29 +149,21 @@ tasks.register('checkCoverageDataExists') {
 tasks.register('combinedCoverageReport', JacocoReport) {
     group = 'reporting'
     description = 'Generates a unified coverage report for all Unit and Integration tests'
-    dependsOn('checkCoverageDataExists')
-    mustRunAfter(getBackendProjects().collect { "${it.path}:test" })
+
+    dependsOn tasks.named('checkCoverageDataExists')
+    mustRunAfter(backendTestTaskPaths)
 
     reports {
         xml.required = true
         html.required = true
     }
 
-    executionData.setFrom(project.provider {
-        getActiveTestTasks().collect {
-            it.extensions.findByType(JacocoTaskExtension)?.destinationFile
-        }.findAll { it != null && it.exists() }
-    })
+    executionData.setFrom(jacocoExecutionDataFiles)
 
-    sourceDirectories.setFrom(project.provider {
-        getBackendProjects().collectMany { it.sourceSets.main.allJava.srcDirs }
-    })
+    sourceDirectories.setFrom(backendSourceDirs)
 
-    classDirectories.setFrom(project.provider {
-        def dirs = getBackendProjects().collectMany { it.sourceSets.main.output.classesDirs.files }
-        files(dirs).asFileTree.matching {
-            include 'org/openremote/**'
-        }
+    classDirectories.setFrom(files(backendClassDirs).asFileTree.matching {
+        include 'org/openremote/**'
     })
 
     doLast {
@@ -289,28 +298,7 @@ subprojects {
             info.exceptionFormat = debug.exceptionFormat
         }
 
-        addTestListener(new TestListener() {
-            @Override
-            void beforeSuite(TestDescriptor suite) {}
-
-            @Override
-            void afterSuite(TestDescriptor desc, TestResult result) {
-                if (!desc.parent) { // will match the outermost suite
-                    def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
-                    def startItem = '|  ', endItem = '  |'
-                    def repeatLength = startItem.length() + output.length() + endItem.length()
-                    println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
-                }
-            }
-
-            @Override
-            void beforeTest(TestDescriptor desc) {}
-
-            @Override
-            void afterTest(TestDescriptor desc, TestResult result) {
-                logger.lifecycle "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
-            }
-        })
+        addTestListener(new TestSummaryListener())
     }
 
     afterEvaluate { proj ->

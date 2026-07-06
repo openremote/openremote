@@ -38,7 +38,7 @@ public interface SyslogResource {
     @GET
     @Path("event")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_RULES_ROLE})
+    @RolesAllowed({Constants.READ_LOGS_ROLE})
     @Operation(operationId = "getEvents", summary = "Retrieve the syslog events")
     @SuppressWarnings({"unusable-by-js"})
     Response getEvents(@BeanParam RequestParams requestParams, @QueryParam("level") SyslogLevel level, @QueryParam("per_page") Integer perPage, @QueryParam("page") Integer page, @QueryParam("from") Long from, @QueryParam("to") Long to, @QueryParam("category") List<SyslogCategory> categories, @QueryParam("subCategory") List<String> subCategories);

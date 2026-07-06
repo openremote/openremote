@@ -7,9 +7,11 @@ tasks.register("installBrowsers", Exec) {
     commandLine npmCommand("npx"), "playwright", "install", "chromium"
 }
 
+def yarnInstallRequested = gradle.startParameter.taskNames.any {
+    it == "yarnInstall" || it == ":yarnInstall" || it.endsWith(":yarnInstall")
+}
+
 tasks.register('installTestDeps', Exec) {
-    onlyIf {
-        !gradle.taskGraph.hasTask(":yarnInstall")
-    }
+    onlyIf { !yarnInstallRequested }
     commandLine npmCommand("yarn"), "workspaces", "focus", "@openremote/test", "@openremote/model", "@openremote/rest", "@openremote/core"
 }

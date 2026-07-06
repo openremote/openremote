@@ -1,9 +1,7 @@
-tasks.register('clean') {
-    doLast {
-        delete "dist"
-        delete "lib"
-        delete "tsconfig.tsbuildinfo"
-    }
+tasks.register('clean', Delete) {
+    delete layout.projectDirectory.dir('dist')
+    delete layout.projectDirectory.dir('lib')
+    delete layout.projectDirectory.file('tsconfig.tsbuildinfo')
 }
 
 tasks.register('npmAnalyze', Exec) {

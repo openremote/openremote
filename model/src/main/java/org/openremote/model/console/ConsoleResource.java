@@ -44,8 +44,9 @@ public interface ConsoleResource {
      * stored in the appropriate {@link ConsoleAsset} {@link Attribute}s.
      * <p>
      * This is a public endpoint and allows the registration of consoles anonymously; if there is an authenticated user
-     * registering the console  then the console asset will be linked to that user. If multiple users login on the same
-     * console then it will be associated with each user (i.e. a 1-many relationship).
+     * registering the console then the console asset will be linked to that user.
+     * If it was previously linked to another user, that link is removed first.
+     * A console is linked to at most one user, the last one that performed a registration.
      */
     @POST
     @Path("register")

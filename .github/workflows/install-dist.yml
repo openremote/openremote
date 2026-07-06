@@ -3,6 +3,9 @@ name: Install Dist
 on:
   workflow_call:
     inputs:
+      COMMIT:
+        type: string
+        description: 'Repo branch or commit SHA to checkout'
       skip:
         type: boolean
         description: Skip condition to allow branch protection checks to pass
@@ -24,6 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ inputs.COMMIT }}
           lfs: true # Enable Git LFS plugin to fetch *.mbtiles
 
       - name: Check if main repo

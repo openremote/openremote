@@ -26,6 +26,7 @@ import org.postgresql.copy.CopyManager;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.Timestamp;
@@ -255,13 +256,14 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                 persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
                     String tempTableName = "tmp_export_attributes";
                     String tempBoundsTableName = "tmp_export_bounds";
+                    List<ExportColumn> exportColumns = getExportColumns(attributeRefs);
 
                     // Create temp tables and insert parameters safely via PreparedStatement
                     // to prevent SQL injection (instead of string-interpolating IDs into the query).
                     try (Statement statement = connection.createStatement()) {
                         // We have 2 different tables because for attribute_name, we have one entry per exported attribute
                         statement.execute(
-                            "create temp table " + tempTableName + " (entity_id text, attribute_name text) on commit drop"
+                            "create temp table " + tempTableName + " (ordinal integer, entity_id text, attribute_name text, column_key text) on commit drop"
                         );
                         // but for timestamps, we always have only one row, as the export period is the same for all attributes
                         statement.execute(
@@ -270,11 +272,14 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                     }
 
                     try (PreparedStatement insertStatement = connection.prepareStatement(
-                        "insert into " + tempTableName + " (entity_id, attribute_name) values (?, ?)"
+                        "insert into " + tempTableName + " (ordinal, entity_id, attribute_name, column_key) values (?, ?, ?, ?)"
                     )) {
-                        for (AttributeRef attributeRef : attributeRefs) {
-                            insertStatement.setString(1, validateAssetId(attributeRef.getId()));
-                            insertStatement.setString(2, attributeRef.getName());
+                        for (ExportColumn exportColumn : exportColumns) {
+                            AttributeRef attributeRef = exportColumn.attributeRef();
+                            insertStatement.setInt(1, exportColumn.ordinal());
+                            insertStatement.setString(2, validateAssetId(attributeRef.getId()));
+                            insertStatement.setString(3, attributeRef.getName());
+                            insertStatement.setString(4, exportColumn.columnKey());
                             insertStatement.addBatch();
                         }
                         insertStatement.executeBatch();
@@ -289,11 +294,14 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                     }
 
                     // Build the COPY ... TO STDOUT query based on format
-                    String copyQuery = buildCopyToStdoutQuery(tempTableName, tempBoundsTableName, format, attributeRefs);
+                    String copyQuery = buildCopyToStdoutQuery(tempTableName, tempBoundsTableName, format, exportColumns);
 
                     try {
                         PGConnection pgConnection = connection.unwrap(PGConnection.class);
                         CopyManager copyManager = pgConnection.getCopyAPI();
+                        if (isCrosstabFormat(format)) {
+                            out.write(buildCrosstabCsvHeader(exportColumns).getBytes(StandardCharsets.UTF_8));
+                        }
                         copyManager.copyOut(copyQuery, out);
                         out.flush();
                     } catch (IOException e) {
@@ -327,21 +335,16 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
      * Uses a temporary table for safe attribute filtering (SQL injection prevention).
      */
     private String buildCopyToStdoutQuery(String tempTableName, String tempBoundsTableName,
-                                          DatapointExportFormat format, AttributeRef[] attributeRefs) {
-        final String TO_STDOUT_WITH_CSV_FORMAT = ") TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER ',');";
+                                          DatapointExportFormat format, List<ExportColumn> exportColumns) {
+        final String TO_STDOUT_WITH_CSV_HEADER_FORMAT = ") TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER ',');";
+        final String TO_STDOUT_WITH_CSV_FORMAT = ") TO STDOUT WITH (FORMAT CSV, DELIMITER ',');";
 
-        if (format == DatapointExportFormat.CSV_CROSSTAB || format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
-            Set<String> headers = getAttributeHeaders(attributeRefs);
+        if (isCrosstabFormat(format)) {
+            String categoryQuery = "select column_key from " + tempTableName + " order by ordinal";
 
-            // Category query using VALUES clause with dollar-quoting to avoid escaping issues
-            String categoryValues = headers.stream()
-                    .map(header -> "('" + header.replace("'", "''") + "')")
-                    .collect(Collectors.joining(", "));
-            String categoryQuery = "SELECT header FROM (VALUES " + categoryValues + ") AS t(header)";
-
-            // Column definitions for crosstab result
-            String attributeColumns = headers.stream()
-                    .map(header -> "\"" + header + "\" text")
+            // Column definitions for crosstab result use generated identifiers only.
+            String attributeColumns = exportColumns.stream()
+                    .map(exportColumn -> exportColumn.columnKey() + " text")
                     .collect(Collectors.joining(", "));
 
             // Inner SELECT query for crosstab (uses escaped quotes since it's inside a string argument)
@@ -349,34 +352,32 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             if (format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
                 innerQuery = String.format(
                         "select public.time_bucket(''1 minute'', ad.timestamp) as bucket_timestamp, " +
-                        "a.name || '' : '' || ad.attribute_name as header, " +
+                        "t.column_key as category, " +
                         "CASE " +
                         "  WHEN jsonb_typeof((array_agg(ad.value))[1]) = ''number'' THEN " +
                         "    round(avg((ad.value#>>''{}'')::numeric) FILTER (WHERE jsonb_typeof(ad.value) = ''number''), 3)::text " +
                         "  ELSE (array_agg(ad.value ORDER BY ad.timestamp DESC) FILTER (WHERE jsonb_typeof(ad.value) != ''number''))[1]#>>''{}''" +
                         "END as value " +
                         "from asset_datapoint ad " +
-                        "join asset a on ad.entity_id = a.id " +
                         "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
                         "cross join %s b " +
                         "where ad.timestamp >= b.from_timestamp and ad.timestamp <= b.to_timestamp " +
-                        "group by bucket_timestamp, header " +
-                        "order by bucket_timestamp, header",
+                        "group by bucket_timestamp, category " +
+                        "order by bucket_timestamp, category",
                         tempTableName, tempBoundsTableName);
             } else {
                 innerQuery = String.format(
-                        "select ad.timestamp, a.name || '' : '' || ad.attribute_name as header, ad.value " +
+                        "select ad.timestamp, t.column_key as category, ad.value " +
                         "from asset_datapoint ad " +
-                        "join asset a on ad.entity_id = a.id " +
                         "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
                         "cross join %s b " +
                         "where ad.timestamp >= b.from_timestamp and ad.timestamp <= b.to_timestamp " +
-                        "order by ad.timestamp, header",
+                        "order by ad.timestamp, category",
                         tempTableName, tempBoundsTableName);
             }
 
             return String.format(
-                    "copy (select * from crosstab('%s', $cat$%s$cat$) as ct(timestamp timestamp, %s)%s",
+                    "copy (select * from crosstab('%s', '%s') as ct(timestamp timestamp, %s)%s",
                     innerQuery, categoryQuery, attributeColumns, TO_STDOUT_WITH_CSV_FORMAT);
         } else {
             // Plain CSV format using temp table join
@@ -385,26 +386,70 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                     "from asset_datapoint ad " +
                     "join asset a on ad.entity_id = a.id " +
                     "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
-                    "cross join %s b " +
-                    "where ad.timestamp >= b.from_timestamp and ad.timestamp <= b.to_timestamp " +
-                    "order by ad.timestamp desc",
-                    tempTableName, tempBoundsTableName);
-            return "copy (" + innerQuery + TO_STDOUT_WITH_CSV_FORMAT;
+                        "cross join %s b " +
+                        "where ad.timestamp >= b.from_timestamp and ad.timestamp <= b.to_timestamp " +
+                        "order by ad.timestamp desc",
+                        tempTableName, tempBoundsTableName);
+            return "copy (" + innerQuery + TO_STDOUT_WITH_CSV_HEADER_FORMAT;
         }
     }
 
     /**
-     * Function for building CSV attribute headers when format will make
-     * a separate column per attribute.
-     * Uses TreeSet for alphabetical ordering required by crosstab queries.
+     * Function for building crosstab columns when format will make a separate column per attribute.
+     * Uses display-label ordering to preserve existing crosstab output ordering, but keeps those labels
+     * out of SQL syntax by assigning generated column keys.
      */
-    private Set<String> getAttributeHeaders(AttributeRef[] attributeRefs) {
-        Set<String> headers = new TreeSet<>();
-        Arrays.stream(attributeRefs).forEach(attr -> {
-            String assetName = assetStorageService.findNames(attr.getId()).toString().replaceAll("(^\\[|\\]$)", "");
-            headers.add(assetName + " : " + attr.getName());
-        });
-        return headers;
+    private List<ExportColumn> getExportColumns(AttributeRef[] attributeRefs) {
+        List<ExportColumn> sortedColumns = Arrays.stream(attributeRefs)
+                .map(attr -> new ExportColumn(-1, attr, getDisplayHeader(attr), null))
+                .sorted(Comparator
+                        .comparing(ExportColumn::displayHeader)
+                        .thenComparing(exportColumn -> exportColumn.attributeRef().getId())
+                        .thenComparing(exportColumn -> exportColumn.attributeRef().getName()))
+                .collect(Collectors.toList());
+
+        List<ExportColumn> exportColumns = new ArrayList<>(sortedColumns.size());
+        for (int i = 0; i < sortedColumns.size(); i++) {
+            ExportColumn exportColumn = sortedColumns.get(i);
+            exportColumns.add(new ExportColumn(
+                    i,
+                    exportColumn.attributeRef(),
+                    exportColumn.displayHeader(),
+                    "col_" + i
+            ));
+        }
+        return exportColumns;
+    }
+
+    private String getDisplayHeader(AttributeRef attributeRef) {
+        List<String> assetNames = assetStorageService.findNames(attributeRef.getId());
+        String assetName = assetNames.isEmpty() ? "" : assetNames.get(0);
+        return assetName + " : " + attributeRef.getName();
+    }
+
+    private static String buildCrosstabCsvHeader(List<ExportColumn> exportColumns) {
+        List<String> headers = new ArrayList<>(exportColumns.size() + 1);
+        headers.add("timestamp");
+        exportColumns.stream()
+                .map(ExportColumn::displayHeader)
+                .forEach(headers::add);
+        return headers.stream()
+                .map(AssetDatapointService::escapeCsvField)
+                .collect(Collectors.joining(",")) + "\n";
+    }
+
+    private static String escapeCsvField(String field) {
+        if (field == null) {
+            return "";
+        }
+        if (field.indexOf(',') < 0 && field.indexOf('"') < 0 && field.indexOf('\n') < 0 && field.indexOf('\r') < 0) {
+            return field;
+        }
+        return "\"" + field.replace("\"", "\"\"") + "\"";
+    }
+
+    private static boolean isCrosstabFormat(DatapointExportFormat format) {
+        return format == DatapointExportFormat.CSV_CROSSTAB || format == DatapointExportFormat.CSV_CROSSTAB_MINUTE;
     }
 
     /**
@@ -437,6 +482,9 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     protected record ExportQuery(String query, Map<Integer, Object> parameters) {
+    }
+
+    private record ExportColumn(int ordinal, AttributeRef attributeRef, String displayHeader, String columnKey) {
     }
 
     private static String validateAssetId(String assetId) {
