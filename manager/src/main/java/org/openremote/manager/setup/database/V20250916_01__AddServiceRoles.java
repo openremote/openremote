@@ -158,6 +158,12 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
                 ManagerKeycloakIdentityProvider.OR_KEYCLOAK_GRANT_FILE,
                 ManagerKeycloakIdentityProvider.OR_KEYCLOAK_GRANT_FILE_DEFAULT);
 
+        if (grantFile == null || grantFile.isBlank()) {
+            // An empty/blank OR_KEYCLOAK_GRANT_FILE would resolve to the storage dir itself, which is readable but
+            // not a grant file; treat it as "no grant file configured".
+            return null;
+        }
+
         Path grantPath = Paths.get(storageDir).resolve(grantFile);
         if (!Files.isReadable(grantPath)) {
             return null;
