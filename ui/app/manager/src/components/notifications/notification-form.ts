@@ -142,14 +142,6 @@ export class NotificationForm extends LitElement {
             overflow: auto;
         }
 
-        h4 {
-            margin: 0;
-            padding-bottom: var(--lumo-space-m);
-            font-size: var(--lumo-font-size-l);
-            font-weight: 600;
-            line-height: 125.303%;
-        }
-
         :host([readonly]) .form-container {
             opacity: 0.9;
         }
