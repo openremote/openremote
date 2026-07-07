@@ -1030,7 +1030,7 @@ public class ValueUtil {
             }
         }
         if (attributeDescriptor != null && attributeDescriptor.getConstraints() != null) {
-            if (validateConstraints(valueDescriptor.getArrayDimensions(), attributeDescriptor.getConstraints(), context, constraintBuilderProvider, now, value)) {
+            if (validateConstraints(valueDescriptor != null ? valueDescriptor.getArrayDimensions() : null, attributeDescriptor.getConstraints(), context, constraintBuilderProvider, now, value)) {
                 valid = false;
             }
         }

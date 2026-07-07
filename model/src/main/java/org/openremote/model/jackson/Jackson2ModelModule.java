@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
@@ -64,6 +65,9 @@ public class Jackson2ModelModule extends SimpleModule {
             ) {
                 if (ValueDescriptor.class.isAssignableFrom(beanDesc.getBeanClass())) {
                     return new ValueDescriptor.ValueDescriptorDeserializerJackson2(deserializer);
+                }
+                if (Asset.class.isAssignableFrom(beanDesc.getBeanClass())) {
+                    return new AssetDeserializerJackson2(deserializer, beanDesc.getBeanClass());
                 }
                 return deserializer;
             }

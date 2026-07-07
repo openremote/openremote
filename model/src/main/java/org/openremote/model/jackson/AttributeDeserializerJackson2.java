@@ -25,9 +25,11 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
@@ -61,7 +63,18 @@ public class AttributeDeserializerJackson2 extends StdDeserializer<Attribute<?>>
         }
 
         ValueDescriptor<?> valueDescriptor = null;
-        if (node.hasNonNull("type")) {
+
+        // Primary: resolve type from asset type info context set by AssetDeserializerJackson2 (mirrors Jackson3 path)
+        AssetTypeInfo assetTypeInfo = (AssetTypeInfo) context.getAttribute(AssetDeserializerJackson2.ASSET_TYPE_INFO_ATTRIBUTE);
+        if (assetTypeInfo != null) {
+            AttributeDescriptor<?> attributeDescriptor = assetTypeInfo.getAttributeDescriptors().get(attributeName);
+            if (attributeDescriptor != null) {
+                valueDescriptor = attributeDescriptor.getType();
+            }
+        }
+
+        // Fallback: resolve type from explicit "type" field in JSON
+        if (valueDescriptor == null && node.hasNonNull("type")) {
             valueDescriptor = ValueUtil.getValueDescriptor(node.get("type").asText()).orElse(null);
         }
 
