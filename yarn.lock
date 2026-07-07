@@ -2510,7 +2510,7 @@ __metadata:
     "@typescript-eslint/parser": "npm:^8.61.1"
     "@wc-toolkit/cem-inheritance": "npm:~1.2.2"
     "@wc-toolkit/jsx-types": "npm:~1.5.3"
-    "@wc-toolkit/storybook-helpers": "npm:^10.0.0"
+    "@wc-toolkit/storybook-helpers": "npm:^10.4.0"
     "@webcomponents/webcomponentsjs": "npm:^2.6.0"
     cross-env: "npm:^7.0.3"
     css-loader: "npm:^7.1.2"
@@ -4824,16 +4824,6 @@ __metadata:
   dependencies:
     "@prettier/sync": "npm:^0.6.1"
   checksum: 10c0/fcafb7626b74e310f0e289924ff22599a27840399800af2d03c8c392914941cfea64d79d4e298d9f3b4096d96b88c22e587d47614a48928886323d9e98ac28e5
-  languageName: node
-  linkType: hard
-
-"@wc-toolkit/storybook-helpers@npm:^10.0.0":
-  version: 10.0.0
-  resolution: "@wc-toolkit/storybook-helpers@npm:10.0.0"
-  peerDependencies:
-    lit: ^2.0.0 || ^3.0.0
-    storybook: ">=10.0.0-0 <11.0.0-0"
-  checksum: 10c0/b35cd84e6888277057a5309d605f787d0794cf6fcd5db2a877fb59a0f89b6fe82311c9a6dd2a369a27e574cc07adbba59dda393287da44bfd247d77d9828db7c
   languageName: node
   linkType: hard
 
