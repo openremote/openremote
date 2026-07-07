@@ -52,6 +52,7 @@ import {
 } from "@openremote/model";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-drawer";
+import "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 import "./or-rule-viewer";
 import "./or-rule-group-viewer";
 import "./or-rule-tree";
@@ -59,7 +60,7 @@ import "./flow-viewer/flow-viewer";
 import {OrRuleViewer} from "./or-rule-viewer";
 import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
 import type {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showOkCancelDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {OrRuleTree, RuleTreeNode} from "./or-rule-tree";
 import {OrTreeDragEvent} from "@openremote/or-tree-menu";
@@ -906,8 +907,18 @@ export class OrRules extends translate(i18next)(LitElement) {
 
     protected _confirmContinue(action: (ok: boolean) => void) {
         if (this._viewer?.modified) {
-            showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueRulesetModified"), i18next.t("discard"))
-                .then((ok) => action(ok));
+            showOkCancelDialog(this.shadowRoot!, html`
+                <or-vaadin-confirm-dialog @cancel=${() => action(false)} @confirm=${() => action(true)}>
+                    <or-translate slot="header" value="loseChanges"></or-translate>
+                    <or-translate value="confirmContinueRulesetModified"></or-translate>
+                    <or-vaadin-button slot="cancel-button">
+                        <or-translate value="cancel"></or-translate>
+                    </or-vaadin-button>
+                    <or-vaadin-button slot="confirm-button" theme="primary">
+                        <or-translate value="discard"></or-translate>
+                    </or-vaadin-button>
+                </or-vaadin-confirm-dialog>
+            `);
         } else {
             action(true);
         }
