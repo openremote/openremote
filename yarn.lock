@@ -1944,7 +1944,6 @@ __metadata:
     maplibre-gl: "npm:~5.19.0"
     moment: "npm:^2.29.4"
     reselect: "npm:^4.1.8"
-    typescript: "npm:5.8.3"
   languageName: unknown
   linkType: soft
 
