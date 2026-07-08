@@ -132,7 +132,7 @@ public class TokenVerifierImpl implements TokenVerifier {
             // Only allow super users to cross realms
             String authRealm = principal.getRealm();
             if (!Objects.equals(authRealm, realm)) {
-                if (!principal.hasRealmRole(Constants.SUPER_USER_REALM_ROLE)) {
+                if (!Constants.MASTER_REALM.equals(authRealm) || !principal.hasRealmRole(Constants.SUPER_USER_REALM_ROLE)) {
                     throw new AuthenticationException("Invalid token realm");
                 }
             }
