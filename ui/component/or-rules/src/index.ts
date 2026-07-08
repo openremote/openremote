@@ -60,7 +60,7 @@ import "./flow-viewer/flow-viewer";
 import {OrRuleViewer} from "./or-rule-viewer";
 import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
 import type {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
+import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {OrRuleTree, RuleTreeNode} from "./or-rule-tree";
 import {OrTreeDragEvent} from "@openremote/or-tree-menu";
@@ -907,16 +907,9 @@ export class OrRules extends translate(i18next)(LitElement) {
 
     protected _confirmContinue(action: (ok: boolean) => void) {
         if (this._viewer?.modified) {
-            showOkCancelDialog(this.shadowRoot!, html`
+            showConfirmDialog(this.shadowRoot!, html`
                 <or-vaadin-confirm-dialog @cancel=${() => action(false)} @confirm=${() => action(true)}>
-                    <or-translate slot="header" value="loseChanges"></or-translate>
-                    <or-translate value="confirmContinueRulesetModified"></or-translate>
-                    <or-vaadin-button slot="cancel-button">
-                        <or-translate value="cancel"></or-translate>
-                    </or-vaadin-button>
-                    <or-vaadin-button slot="confirm-button" theme="primary">
-                        <or-translate value="discard"></or-translate>
-                    </or-vaadin-button>
+                    ${getConfirmDialogContent("error", "loseChanges", "confirmContinueRulesetModified", "discard", "cancel")}
                 </or-vaadin-confirm-dialog>
             `);
         } else {
