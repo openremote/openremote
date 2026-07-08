@@ -53,7 +53,7 @@ export const Primary: Story = {
     args: {
         label: "Toggle",
         checked: true,
-        helperText: "Helper text shown below the toggle"
+        "helper-text": "Helper text shown below the toggle"
     }
 };
 
