@@ -19,11 +19,16 @@
  */
 package org.openremote.manager.setup;
 
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.Container;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
 import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.DEFAULT_CLIENTS;
@@ -32,9 +37,11 @@ import static org.openremote.model.Constants.*;
 public class KeycloakCleanSetup extends AbstractKeycloakSetup {
 
     private static final Logger LOG = Logger.getLogger(KeycloakCleanSetup.class.getName());
+    private final AssetStorageService assetStorageService;
 
     public KeycloakCleanSetup(Container container) {
         super(container);
+        this.assetStorageService = container.getService(AssetStorageService.class);
     }
 
     @Override
@@ -48,6 +55,7 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
         LOG.info("Deleting all non-master realms");
         Arrays.stream(keycloakProvider.getRealms()).forEach(realm -> {
             if (!realm.getName().equals(MASTER_REALM)) {
+                deleteRealmAssets(realm.getName());
                 keycloakProvider.deleteRealm(realm.getName());
             }
         });
@@ -79,5 +87,34 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
             LOG.info("Deleting IDP: " + idp.getAlias());
             keycloakProvider.deleteIdentityProvider(MASTER_REALM, idp.getAlias());
         });
+    }
+
+    protected void deleteRealmAssets(String realm) {
+        List<String> assetIds = assetStorageService.findAll(new AssetQuery()
+                .select(new AssetQuery.Select().excludeAttributes())
+                .realm(new RealmPredicate(realm))
+                .includeDeletePending(true))
+            .stream()
+            .map(Asset::getId)
+            .toList();
+
+        if (assetIds.isEmpty()) {
+            return;
+        }
+
+        LOG.info("Deleting all assets in realm '" + realm + "': count=" + assetIds.size());
+        boolean deleted;
+        try {
+            deleted = assetStorageService.deleteUntilFinished(assetIds, true).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while deleting all assets in realm '" + realm + "'", e);
+        } catch (ExecutionException e) {
+            throw new IllegalStateException("Failed to delete all assets in realm '" + realm + "'", e);
+        }
+
+        if (!deleted) {
+            throw new IllegalStateException("Failed to delete all assets in realm '" + realm + "'");
+        }
     }
 }
