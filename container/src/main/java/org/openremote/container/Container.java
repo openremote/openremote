@@ -75,7 +75,7 @@ public class Container implements org.openremote.model.Container {
     protected MeterRegistry meterRegistry;
 
     protected Thread waitingThread;
-    protected boolean running;
+    protected volatile boolean running;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
 
     /**
@@ -158,7 +158,6 @@ public class Container implements org.openremote.model.Container {
         if (isRunning())
             return;
         LOG.log(INFO, ">>> Starting runtime container...");
-        running = true;
         try {
             for (ContainerService service : getServices()) {
                 LOG.log(INFO, "Initializing service: " + service.getClass().getName());
@@ -178,14 +177,19 @@ public class Container implements org.openremote.model.Container {
             }
         } catch (Exception ex) {
             LOG.log(ERROR, ">>> Runtime container startup failed", ex);
-            stop();
+            stop(true);
             throw ex;
         }
+        running = true;
         LOG.log(INFO, ">>> Runtime container startup complete");
     }
 
     public synchronized void stop() {
-        if (!isRunning())
+        stop(false);
+    }
+
+    private void stop(boolean force) {
+        if (!force && !isRunning())
             return;
         LOG.log(INFO, "<<< Stopping runtime container...");
 
@@ -230,9 +234,11 @@ public class Container implements org.openremote.model.Container {
     /**
      * Starts the container and a non-daemon thread that waits forever.
      */
-    public void startBackground() throws Exception {
+    public synchronized void startBackground() throws Exception {
         start();
-        waitingThread = startWaitingThread();
+        if (waitingThread == null || !waitingThread.isAlive()) {
+            waitingThread = startWaitingThread();
+        }
     }
 
     static Thread startWaitingThread() {
