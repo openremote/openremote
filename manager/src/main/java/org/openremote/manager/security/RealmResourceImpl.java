@@ -141,6 +141,8 @@ public class RealmResourceImpl extends ManagerWebResource implements RealmResour
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, Response.Status.CONFLICT);
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
         }

@@ -1022,7 +1022,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     });
                 });
 
-                return DeleteResult.accepted(queueAssetsDeletion(ids));
+                return DeleteResult.accepted(queueAssetsDeletion(assets.stream().map(Asset::getId).toList()));
             } catch (Exception e) {
                 LOG.log(SEVERE, "Failed to delete one or more requested assets: " + Arrays.toString(assetIds.toArray()), e);
                 return DeleteResult.rejected();

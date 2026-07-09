@@ -1,18 +1,25 @@
 package org.openremote.test.rules
 
+import jakarta.ws.rs.WebApplicationException
+import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.query.AssetQuery
+import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.RealmRuleset
+import org.openremote.model.security.RealmResource
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+
+import java.util.concurrent.TimeUnit
 
 import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
@@ -20,6 +27,7 @@ import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_P
 import static org.openremote.model.Constants.*
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
 import static org.openremote.model.rules.RulesetStatus.*
+import static jakarta.ws.rs.core.Response.Status.CONFLICT
 
 class BasicRulesDeploymentTest extends Specification implements ManagerContainerTrait {
 
@@ -35,6 +43,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def identityService = container.getService(ManagerIdentityService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
         and: "some test rulesets have been imported"
@@ -48,6 +57,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
         )
+        def realmResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RealmResource.class)
 
         expect: "the rules engines to be ready"
         conditions.eventually {
@@ -247,8 +257,25 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert !realmBuildingEngine.isError()
         }
 
-        when: "a realm is deleted"
-        identityService.getIdentityProvider().deleteRealm(realmBuilding.getName())
+        when: "a realm containing assets is deleted"
+        realmResource.delete(null, realmBuilding.getName())
+
+        then: "the delete is rejected with a conflict"
+        WebApplicationException ex = thrown()
+        try {
+            assert ex.response.status == CONFLICT.statusCode
+        } finally {
+            ex.response.close()
+        }
+
+        when: "the realm assets are deleted and the realm delete is retried"
+        def buildingAssetIds = assetStorageService.findAll(new AssetQuery()
+            .select(new AssetQuery.Select().excludeAttributes())
+            .realm(new RealmPredicate(realmBuilding.getName())))
+            .collect { it.id }
+
+        assert assetStorageService.deleteUntilFinished(buildingAssetIds).get(10, TimeUnit.SECONDS)
+        realmResource.delete(null, realmBuilding.getName())
 
         then: "the realms rule engine should stop and all asset rule engines in this realm should also stop"
         conditions.eventually {

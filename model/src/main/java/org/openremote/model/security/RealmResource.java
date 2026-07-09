@@ -20,6 +20,8 @@
 package org.openremote.model.security;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
@@ -84,5 +86,12 @@ public interface RealmResource {
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @Operation(operationId = "deleteRealm", summary = "Delete a realm")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Realm deleted"),
+        @ApiResponse(responseCode = "403", description = "User is not allowed to delete realms"),
+        @ApiResponse(responseCode = "404", description = "Realm does not exist"),
+        @ApiResponse(responseCode = "405", description = "The master realm cannot be deleted"),
+        @ApiResponse(responseCode = "409", description = "Realm cannot be deleted while it still contains assets")
+    })
     void delete(@BeanParam RequestParams requestParams, @PathParam("name") String realm);
 }
