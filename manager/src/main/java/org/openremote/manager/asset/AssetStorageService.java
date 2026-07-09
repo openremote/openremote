@@ -895,6 +895,31 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return delete(assetIds, false);
     }
 
+    public boolean isDeletePending(String assetId) {
+        if (isNullOrEmpty(assetId)) {
+            throw new IllegalArgumentException("Can't query null or empty asset identifier");
+        }
+
+        Asset<?> asset = find(new AssetQuery()
+            .ids(assetId)
+            .includeDeletePending(true)
+            .select(new Select().excludeAttributes())
+        );
+
+        return asset != null && asset.isDeletePending();
+    }
+
+    public boolean canDeleteAssetsSynchronously(Collection<String> assetIds) {
+        if (assetIds == null || assetIds.isEmpty()) {
+            return true;
+        }
+
+        return findAssetDatapointCounts(assetIds)
+            .values()
+            .stream()
+            .allMatch(this::canDeleteAssetSynchronously);
+    }
+
     public boolean delete(List<String> assetIds, boolean skipGatewayCheck) {
 
         List<String> ids = new ArrayList<>(assetIds);
@@ -915,6 +940,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (!gatewayIds.isEmpty()) {
                 // Handle gateway asset deletion in a special way
+                LOG.fine("Deleting gateway assets: IDs=" + String.join(",", gatewayIds));
                 ids.removeAll(gatewayIds);
                 for (String gatewayId : gatewayIds) {
                     try {
@@ -1050,7 +1076,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         );
     }
 
-    protected Map<String, Long> findAssetDatapointCounts(List<String> assetIds) {
+    protected boolean canDeleteAssetSynchronously(long datapointCount) {
+        return datapointCount <= assetDeleteDatapointBatchThreshold;
+    }
+
+    protected Map<String, Long> findAssetDatapointCounts(Collection<String> assetIds) {
         if (assetIds.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -1077,7 +1107,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected void deletePendingAssetAndDatapoints(String assetId, long datapointCount) {
         long start = System.currentTimeMillis();
 
-        if (datapointCount > assetDeleteDatapointBatchThreshold) {
+        if (!canDeleteAssetSynchronously(datapointCount)) {
             LOG.fine("Purging asset datapoints: assetId=" + assetId + ", datapoints=" + datapointCount + ", threshold=" + assetDeleteDatapointBatchThreshold);
             try {
                 deleteAssetDatapointsByAsset(assetId);

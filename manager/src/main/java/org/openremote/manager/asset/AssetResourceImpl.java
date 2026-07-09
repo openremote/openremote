@@ -245,6 +245,34 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
+    public boolean isDeletePending(RequestParams requestParams, String assetId) {
+        try {
+            Asset<?> asset = assetStorageService.find(new AssetQuery()
+                .ids(assetId)
+                .includeDeletePending(true)
+                .select(new AssetQuery.Select().excludeAttributes())
+            );
+
+            if (asset == null) {
+                return false;
+            }
+
+            if (!isSuperUser() && !asset.getRealm().equals(getAuthenticatedRealmName())) {
+                return false;
+            }
+
+            if (!isRealmActiveAndAccessible(asset.getRealm())) {
+                LOG.fine("Forbidden access (realm '" + asset.getRealm() + "' nonexistent, inactive or inaccessible) for user: " + getUsername());
+                return false;
+            }
+
+            return asset.isDeletePending();
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, BAD_REQUEST);
+        }
+    }
+
+    @Override
     public Asset<?> get(RequestParams requestParams, String assetId) {
         return get(requestParams, assetId, true);
     }

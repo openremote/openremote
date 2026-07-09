@@ -475,7 +475,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             .collect(Collectors.toList());
 
         gatewayAssetIds.add(gatewayId);
-
+        LOG.info("Deleting gateway asset and descendants: IDs=" + String.join(",", gatewayAssetIds));
         return assetStorageService.delete(gatewayAssetIds, true);
     }
 

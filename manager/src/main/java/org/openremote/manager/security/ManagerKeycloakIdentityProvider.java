@@ -957,6 +957,18 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
 
         realmCache.invalidate(realmName);
+
+        List<String> assetIds = assetStorageService.findAll(new AssetQuery()
+                .select(new AssetQuery.Select().excludeAttributes())
+                .realm(new RealmPredicate(realmName)))
+            .stream()
+            .map(Asset::getId)
+            .toList();
+
+        if (!assetStorageService.canDeleteAssetsSynchronously(assetIds)) {
+            throw new IllegalStateException("Cannot delete realm '" + realmName + "' because one or more assets require asynchronous datapoint purge");
+        }
+
         persistenceService.doTransaction(entityManager -> {
 
             // Delete gateway connections
@@ -980,7 +992,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             query.executeUpdate();
 
             // Delete Assets
-            List<String> assetIds = assetStorageService.findAll(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).realm(new RealmPredicate(realmName))).stream().map(Asset::getId).toList();
             assetStorageService.delete(assetIds);
         });
 
