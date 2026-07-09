@@ -122,6 +122,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
+    public record DeleteResult(boolean accepted, CompletableFuture<Boolean> completion) {
+
+        public static DeleteResult rejected() {
+            return new DeleteResult(false, CompletableFuture.completedFuture(false));
+        }
+
+        public static DeleteResult accepted(CompletableFuture<Boolean> completion) {
+            return new DeleteResult(true, completion);
+        }
+    }
+
     public interface ParameterBinder extends BiConsumer<EntityManager, org.hibernate.query.Query<Object>> {
 
         @Override
@@ -889,7 +900,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     /**
-     * @return <code>true</code> if the assets were deleted, false if any of the assets still have children and can't be deleted.
+     * @return <code>true</code> if all assets were accepted for deletion and marked as delete pending,
+     * <code>false</code> if any asset still has children, doesn't exist, or can't be marked delete pending.
      */
     public boolean delete(List<String> assetIds) {
         return delete(assetIds, false);
@@ -910,6 +922,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     public boolean delete(List<String> assetIds, boolean skipGatewayCheck) {
+        return deleteWithResult(assetIds, skipGatewayCheck).accepted();
+    }
+
+    public CompletableFuture<Boolean> deleteUntilFinished(List<String> assetIds) {
+        return deleteUntilFinished(assetIds, false);
+    }
+
+    public CompletableFuture<Boolean> deleteUntilFinished(List<String> assetIds, boolean skipGatewayCheck) {
+        DeleteResult result = deleteWithResult(assetIds, skipGatewayCheck);
+        return result.accepted() ? result.completion() : CompletableFuture.completedFuture(false);
+    }
+
+    public DeleteResult deleteWithResult(List<String> assetIds, boolean skipGatewayCheck) {
 
         List<String> ids = new ArrayList<>(assetIds);
 
@@ -931,20 +956,40 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // Handle gateway asset deletion in a special way
                 LOG.fine("Deleting gateway assets: IDs=" + String.join(",", gatewayIds));
                 ids.removeAll(gatewayIds);
+                CompletableFuture<Boolean> gatewayDeleteFuture = CompletableFuture.completedFuture(true);
                 for (String gatewayId : gatewayIds) {
+                    DeleteResult gatewayDeleteResult;
                     try {
-                        boolean deleted = gatewayService.deleteGateway(gatewayId);
-                        if (!deleted) {
-                            return false;
-                        }
+                        gatewayDeleteResult = gatewayService.deleteGatewayUntilFinished(gatewayId);
                     } catch (Exception e) {
                         LOG.log(WARNING, "Failed to delete gateway asset: " + gatewayId, e);
-                        return false;
+                        return DeleteResult.rejected();
                     }
+                    if (!gatewayDeleteResult.accepted()) {
+                        return DeleteResult.rejected();
+                    }
+                    gatewayDeleteFuture = gatewayDeleteFuture.thenCombine(
+                        gatewayDeleteResult.completion()
+                            .exceptionally(ex -> {
+                                LOG.log(WARNING, "Failed to delete gateway asset: " + gatewayId, ex);
+                                return false;
+                            }),
+                        (deleted, gatewayDeleted) -> deleted && gatewayDeleted);
                 }
+                DeleteResult assetDeleteResult = markAssetsForDeletionAndQueue(ids, assetIds);
+                if (!assetDeleteResult.accepted()) {
+                    return DeleteResult.rejected();
+                }
+                return DeleteResult.accepted(gatewayDeleteFuture.thenCombine(
+                    assetDeleteResult.completion(),
+                    (gatewaysDeleted, assetsDeleted) -> gatewaysDeleted && assetsDeleted));
             }
         }
 
+        return markAssetsForDeletionAndQueue(ids, assetIds);
+    }
+
+    protected DeleteResult markAssetsForDeletionAndQueue(List<String> ids, List<String> assetIds) {
         if (!ids.isEmpty()) {
             try {
                 // Get locks for each asset ID
@@ -977,31 +1022,32 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     });
                 });
 
-                queueAssetsDeletion(ids);
+                return DeleteResult.accepted(queueAssetsDeletion(ids));
             } catch (Exception e) {
                 LOG.log(SEVERE, "Failed to delete one or more requested assets: " + Arrays.toString(assetIds.toArray()), e);
-                return false;
+                return DeleteResult.rejected();
             } finally {
                 // Release all of the locks
                 ids.forEach(assetLocks::unlock);
             }
         }
-        return true;
+        return DeleteResult.accepted(CompletableFuture.completedFuture(true));
     }
 
     protected void queueAssetsDeletion() {
         queueAssetsDeletion(findPendingDeleteAssetIds());
     }
 
-    protected void queueAssetsDeletion(List<String> orderedAssetIds) {
+    protected CompletableFuture<Boolean> queueAssetsDeletion(List<String> orderedAssetIds) {
         if (pendingAssetDeleteStopping) {
-            return;
+            return CompletableFuture.completedFuture(false);
         }
 
         if (orderedAssetIds.isEmpty()) {
-            return;
+            return CompletableFuture.completedFuture(true);
         }
 
+        CompletableFuture<Boolean> deleteResult = new CompletableFuture<>();
         Map<String, Long> datapointCounts = findAssetDatapointCounts(orderedAssetIds);
         LOG.fine("Scheduling asset deletion: count=" + orderedAssetIds.size() + ", IDs=" + String.join(", ", orderedAssetIds));
 
@@ -1009,14 +1055,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 existingFuture
                     .exceptionally(ex -> null)
                     .thenRunAsync(() -> {
+                        boolean allDeleted = true;
                         for (String assetId : orderedAssetIds) {
                             if (pendingAssetDeleteStopping) {
+                                deleteResult.complete(false);
                                 return;
                             }
-                            doAssetDeletion(assetId, datapointCounts.getOrDefault(assetId, 0L));
+                            allDeleted = doAssetDeletion(assetId, datapointCounts.getOrDefault(assetId, 0L)) && allDeleted;
                         }
+                        deleteResult.complete(allDeleted);
                     }
-                    , executorService));
+                    , executorService)
+                    .exceptionally(ex -> {
+                        LOG.log(SEVERE, "Failed to process queued asset deletions", ex);
+                        deleteResult.complete(false);
+                        return null;
+                    }));
+
+        return deleteResult;
     }
 
     protected void retryFailedAssetDeletes() {
@@ -1093,7 +1149,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return datapointCounts;
     }
 
-    protected void doAssetDeletion(String assetId, long datapointCount) {
+    protected boolean doAssetDeletion(String assetId, long datapointCount) {
         long start = System.currentTimeMillis();
 
         if (deleteAssetDatapointsBeforeAsset(datapointCount)) {
@@ -1107,15 +1163,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         if (pendingAssetDeleteStopping) {
-            return;
+            return false;
         }
 
-        deletePendingAsset(assetId);
+        return deletePendingAsset(assetId);
     }
 
-    protected void deletePendingAsset(String assetId) {
+    protected boolean deletePendingAsset(String assetId) {
         if (pendingAssetDeleteStopping) {
-            return;
+            return false;
         }
 
         LOG.fine("Deleting asset: assetId=" + assetId);
@@ -1136,10 +1192,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             });
 
             failedAssetDeleteIds.remove(assetId);
+            return true;
         } catch (Exception e) {
             failedAssetDeleteIds.add(assetId);
             // TODO: Raise an alarm for asset deletion failure.
             LOG.log(SEVERE, "Failed to delete pending asset, queued for retry: assetId=" + assetId, e);
+            return false;
         }
     }
 
