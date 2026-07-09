@@ -20,7 +20,7 @@
     "@wc-toolkit/jsx-types": "~1.5.3",
     "@wc-toolkit/storybook-helpers": "^10.4.0",
     "@webcomponents/webcomponentsjs": "^2.6.0",
-    "cross-env": "^7.0.3",
+    "cross-env": "^10.1.0",
     "css-loader": "^7.1.2",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
