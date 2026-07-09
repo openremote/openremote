@@ -48,7 +48,6 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.gateway.GatewayConnection;
@@ -956,18 +955,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             throw new NotFoundException("Realm does not exist: " + realmName);
         }
 
-        realmCache.invalidate(realmName);
+        int assetCount = assetStorageService.count(new AssetQuery()
+            .realm(new RealmPredicate(realmName))
+            .includeDeletePending(true));
 
-        List<String> assetIds = assetStorageService.findAll(new AssetQuery()
-                .select(new AssetQuery.Select().excludeAttributes())
-                .realm(new RealmPredicate(realmName)))
-            .stream()
-            .map(Asset::getId)
-            .toList();
-
-        if (!assetStorageService.canDeleteAssetsSynchronously(assetIds)) {
-            throw new IllegalStateException("Cannot delete realm '" + realmName + "' because one or more assets require asynchronous datapoint purge");
+        if (assetCount > 0) {
+            throw new IllegalStateException("Cannot delete realm '" + realmName + "' because it still contains assets");
         }
+
+        realmCache.invalidate(realmName);
 
         persistenceService.doTransaction(entityManager -> {
 
@@ -991,8 +987,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             query.setParameter(1, realmName);
             query.executeUpdate();
 
-            // Delete Assets
-            assetStorageService.delete(assetIds);
         });
 
         LOG.fine("Deleting realm: " + realmName);

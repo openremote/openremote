@@ -414,7 +414,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             FAILED_ASSET_DELETE_RETRY_PERIOD_HOURS,
             FAILED_ASSET_DELETE_RETRY_PERIOD_HOURS,
             TimeUnit.HOURS);
-        requestPendingAssetDeleteProcessing();
+        queueAssetsDeletion();
     }
 
     @Override
@@ -909,17 +909,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return asset != null && asset.isDeletePending();
     }
 
-    public boolean canDeleteAssetsSynchronously(Collection<String> assetIds) {
-        if (assetIds == null || assetIds.isEmpty()) {
-            return true;
-        }
-
-        return findAssetDatapointCounts(assetIds)
-            .values()
-            .stream()
-            .allMatch(this::canDeleteAssetSynchronously);
-    }
-
     public boolean delete(List<String> assetIds, boolean skipGatewayCheck) {
 
         List<String> ids = new ArrayList<>(assetIds);
@@ -988,7 +977,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     });
                 });
 
-                requestPendingAssetDeleteProcessing(ids);
+                queueAssetsDeletion(ids);
             } catch (Exception e) {
                 LOG.log(SEVERE, "Failed to delete one or more requested assets: " + Arrays.toString(assetIds.toArray()), e);
                 return false;
@@ -1000,11 +989,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return true;
     }
 
-    protected void requestPendingAssetDeleteProcessing() {
-        requestPendingAssetDeleteProcessing(findPendingDeleteAssetIds());
+    protected void queueAssetsDeletion() {
+        queueAssetsDeletion(findPendingDeleteAssetIds());
     }
 
-    protected void requestPendingAssetDeleteProcessing(List<String> orderedAssetIds) {
+    protected void queueAssetsDeletion(List<String> orderedAssetIds) {
         if (pendingAssetDeleteStopping) {
             return;
         }
@@ -1024,7 +1013,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             if (pendingAssetDeleteStopping) {
                                 return;
                             }
-                            deletePendingAssetAndDatapoints(assetId, datapointCounts.getOrDefault(assetId, 0L));
+                            doAssetDeletion(assetId, datapointCounts.getOrDefault(assetId, 0L));
                         }
                     }
                     , executorService));
@@ -1076,8 +1065,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         );
     }
 
-    protected boolean canDeleteAssetSynchronously(long datapointCount) {
-        return datapointCount <= assetDeleteDatapointBatchThreshold;
+    protected boolean deleteAssetDatapointsBeforeAsset(long datapointCount) {
+        return datapointCount > assetDeleteDatapointBatchThreshold;
     }
 
     protected Map<String, Long> findAssetDatapointCounts(Collection<String> assetIds) {
@@ -1104,13 +1093,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return datapointCounts;
     }
 
-    protected void deletePendingAssetAndDatapoints(String assetId, long datapointCount) {
+    protected void doAssetDeletion(String assetId, long datapointCount) {
         long start = System.currentTimeMillis();
 
-        if (!canDeleteAssetSynchronously(datapointCount)) {
+        if (deleteAssetDatapointsBeforeAsset(datapointCount)) {
             LOG.fine("Purging asset datapoints: assetId=" + assetId + ", datapoints=" + datapointCount + ", threshold=" + assetDeleteDatapointBatchThreshold);
             try {
-                deleteAssetDatapointsByAsset(assetId);
+                deleteAssetDatapoints(assetId);
                 LOG.fine("Purged asset datapoints: assetId=" + assetId + ", durationMillis=" + (System.currentTimeMillis() - start));
             } catch (Exception e) {
                 LOG.log(WARNING, "Purge asset datapoints failed: assetId=" + assetId, e);
@@ -1154,7 +1143,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected void deleteAssetDatapointsByAsset(String assetId) {
+    protected void deleteAssetDatapoints(String assetId) {
         LocalDateTime oldestChunkStart = findOldestAssetDatapointChunkStart();
 
         if (oldestChunkStart == null) {
