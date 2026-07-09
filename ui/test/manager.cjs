@@ -26,16 +26,17 @@ console.log("Starting OpenRemote Manager...");
 console.log(`Classpath: ${classPath}`);
 
 // --- Prepare Java arguments ---
-// We split OR_JAVA_OPTS by space if it exists, or use the default JVM options defined in our Dockerfile
-const javaOpts = process.env.OR_JAVA_OPTS ? process.env.OR_JAVA_OPTS.split(" ") : [
-    "-Xms500m",
-    "-Xmx2g",
+// We split JAVA_OPTS by space if it exists, or use the default JVM options defined in our Dockerfile
+const javaOpts = process.env.JAVA_OPTS ? process.env.JAVA_OPTS.split(" ") : [
+    "-XX:InitialRAMPercentage=75.0",
+    "-XX:MaxRAMPercentage=75.0",
     "-XX:NativeMemoryTracking=summary",
     "-Xlog:all=warning:stdout:uptime,level,tags",
     "-XX:+HeapDumpOnOutOfMemoryError",
     "-XX:HeapDumpPath=./dump.hprof",
 ];
-const args = [...javaOpts, "-cp", classPath, "org.openremote.manager.Main"];
+const javaOptsAppend = process.env.JAVA_OPTS_APPEND ? process.env.JAVA_OPTS_APPEND.split(" ") : []
+const args = [...javaOpts, ...javaOptsAppend, "-cp", classPath, "org.openremote.manager.Main"];
 
 // --- Execute Java ---
 const child = spawn("java", args, {

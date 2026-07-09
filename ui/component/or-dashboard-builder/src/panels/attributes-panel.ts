@@ -74,6 +74,22 @@ export class AttributesSelectEvent extends CustomEvent<{ assets: Asset[], attrib
     }
 }
 
+export class AttributeReplaceEvent extends CustomEvent<{ oldRef: AttributeRef, newRef: AttributeRef }> {
+
+    public static readonly NAME = "attribute-replace";
+
+    constructor(oldRef: AttributeRef, newRef: AttributeRef) {
+        super(AttributeReplaceEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                oldRef: oldRef,
+                newRef: newRef
+            }
+        });
+    }
+}
+
 const styling = css`
     #attribute-list {
         overflow: auto;
@@ -171,6 +187,21 @@ const styling = css`
     .button-action:hover {
         --or-icon-fill: var(--or-icon-fill--hover, var(--or-app-color4));
     }
+
+    .attribute-list-item.broken {
+        opacity: 0.7;
+    }
+
+    .attribute-list-item.broken .attribute-list-item-label > .broken-label {
+        color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+        font-style: italic;
+    }
+    
+    .attribute-list-item.broken .attribute-list-item-actions,
+    .attribute-list-item.broken .button-action {
+        visibility: visible;
+        position: unset;
+    }
 `;
 
 @customElement("attributes-panel")
@@ -184,6 +215,9 @@ export class AttributesPanel extends LitElement {
 
     @property({type: Boolean})
     public onlyDataAttrs = false;
+
+    @property({type: Boolean})
+    public includePredictedDataAttrs = false;
 
     @property()
     protected attributeFilter?: (attribute: Attribute<any>) => boolean;
@@ -200,6 +234,9 @@ export class AttributesPanel extends LitElement {
     @state()
     protected loadedAssets: Asset[] = [];
 
+    @state()
+    protected _assetsLoading = false;
+
     static get styles(): CSSResult[] {
         return [styling, style];
     }
@@ -212,6 +249,7 @@ export class AttributesPanel extends LitElement {
             this.attributeRefs = [];
         }
         if (changedProps.has("attributeRefs") && this.attributeRefs) {
+            this._assetsLoading = true;
             this.loadAssets().then(assets => {
 
                 // Only dispatch event when it CHANGED, so not from 'undefined' to [];
@@ -219,6 +257,8 @@ export class AttributesPanel extends LitElement {
                     this.dispatchEvent(new AttributesSelectEvent(assets, this.attributeRefs));
                 }
 
+            }).finally(() => {
+                this._assetsLoading = false;
             });
         }
     }
@@ -231,6 +271,35 @@ export class AttributesPanel extends LitElement {
         if (this.attributeRefs != null) {
             this.attributeRefs = this.attributeRefs.filter(ar => ar !== attributeRef);
         }
+    }
+
+    protected replaceWidgetAttribute(oldRef: AttributeRef) {
+        const dialog = showDialog(new OrAssetAttributePicker()
+            .setMultiSelect(false)
+            .setShowOnlyDatapointAttrs(this.onlyDataAttrs)
+            .setShowPredictedDataAttrs(this.includePredictedDataAttrs)
+            .setAttributeFilter(this.attributeFilter));
+        dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
+            const newRef: AttributeRef | undefined = (event.detail as AttributeRef[])?.[0];
+            if (!newRef) {
+                return;
+            }
+            const index = this.attributeRefs.findIndex(ar => ar.id === oldRef.id && ar.name === oldRef.name);
+            if (index < 0) {
+                return;
+            }
+            // Guard against creating a duplicate reference.
+            if (this.attributeRefs.some(ar => ar.id === newRef.id && ar.name === newRef.name)) {
+                showSnackbar(undefined, "dashboard.attributeAlreadyAdded");
+                return;
+            }
+            // Notify listeners first so they can migrate per-attribute config (colors, axis, ...) before
+            // the list change propagates as a regular attribute-select event.
+            this.dispatchEvent(new AttributeReplaceEvent(oldRef, newRef));
+            const updated = [...this.attributeRefs];
+            updated[index] = newRef;
+            this.attributeRefs = updated;
+        });
     }
 
     protected async loadAssets(): Promise<Asset[]> {
@@ -269,9 +338,9 @@ export class AttributesPanel extends LitElement {
     protected openAttributeSelector(attributeRefs: AttributeRef[], multi: boolean, onlyDataAttrs = true, attributeFilter?: (attribute: Attribute<any>) => boolean) {
         let dialog: OrAssetAttributePicker;
         if (attributeRefs != null) {
-            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(onlyDataAttrs).setAttributeFilter(attributeFilter));
+            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(onlyDataAttrs).setShowPredictedDataAttrs(this.includePredictedDataAttrs).setAttributeFilter(attributeFilter));
         } else {
-            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(onlyDataAttrs));
+            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(onlyDataAttrs).setShowPredictedDataAttrs(this.includePredictedDataAttrs));
         }
         dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
             this.attributeRefs = event.detail;
@@ -284,15 +353,15 @@ export class AttributesPanel extends LitElement {
                 ${when(this.attributeRefs.length > 0, () => html`
 
                     <div id="attribute-list">
-                        ${guard([this.attributeRefs, this.loadedAssets, this.attributeActionCallback, this.attributeLabelCallback], () => html`
+                        ${guard([this.attributeRefs, this.loadedAssets, this.attributeActionCallback, this.attributeLabelCallback, this._assetsLoading], () => html`
                             ${map(this.attributeRefs.map(attributeRef => {
                                 const asset = this.getLoadedAsset(attributeRef);
                                 const attribute = asset?.attributes?.[attributeRef.name!];
                                 const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset?.type, attributeRef.name, attribute);
                                 const label = Util.getAttributeLabel(attribute, descriptors[0], asset?.type, true);
                                 return { asset, attribute, attributeRef, label };
-                                
-                            }).sort(Util.sortByString(x => x.label)), ({asset, attribute, attributeRef, label}) => {
+
+                            }).sort(Util.sortByString(x => x.label || x.attributeRef.name || "")), ({asset, attribute, attributeRef, label}) => {
                                 if (asset && attribute && attributeRef && label) {
                                     return html`
                                         <div class="attribute-list-item">
@@ -314,9 +383,23 @@ export class AttributesPanel extends LitElement {
                                             ${this._getAttributeActionsTemplate(asset, attributeRef)}
                                         </div>
                                     `;
-                                } else {
-                                    return undefined;
                                 }
+                                // Reference points to an attribute that no longer resolves.
+                                if (!this._assetsLoading && attributeRef) {
+                                    return html`
+                                        <div class="attribute-list-item broken">
+                                            <div class="attribute-list-item-icon">
+                                                <or-icon icon="link-variant-off"></or-icon>
+                                            </div>
+                                            <div class="attribute-list-item-label">
+                                                <or-translate class="broken-label" value="brokenReference"></or-translate>
+                                                <span style="color:grey;">${Util.camelCaseToSentenceCase(attributeRef.name) ?? ""}</span>
+                                            </div>
+                                            ${this._getBrokenAttributeActionsTemplate(attributeRef)}
+                                        </div>
+                                    `;
+                                }
+                                return undefined;
                             })}
                         `)}
                     </div>
@@ -342,6 +425,19 @@ export class AttributesPanel extends LitElement {
                         action => this._getAttributeActionTemplate(action, asset, attributeRef)
                 ))}
                 <!-- Remove attribute button -->
+                <button class="button-action" title="${i18next.t("delete")}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
+                    <or-icon icon="close-circle"></or-icon>
+                </button>
+            </div>
+        `;
+    }
+
+    protected _getBrokenAttributeActionsTemplate(attributeRef: AttributeRef): TemplateResult {
+        return html`
+            <div class="attribute-list-item-actions">
+                <button class="button-action" title="${i18next.t("dashboard.replaceAttribute")}" @click="${() => this.replaceWidgetAttribute(attributeRef)}">
+                    <or-icon icon="swap-horizontal"></or-icon>
+                </button>
                 <button class="button-action" title="${i18next.t("delete")}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
                     <or-icon icon="close-circle"></or-icon>
                 </button>

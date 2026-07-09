@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { customElement } from "lit/decorators.js";
-import { Icon } from "@vaadin/icon";
-import { OrVaadinComponent } from "./util";
-import "@vaadin/icons";
-import "@vaadin/vaadin-lumo-styles/vaadin-iconset.js";
+import {customElement} from "lit/decorators.js";
+import {Badge} from "@vaadin/badge";
+import {OrVaadinComponent} from "./util";
+import {type LitElement} from "lit";
 
-@customElement("or-vaadin-icon")
-export class OrVaadinIcon extends Icon implements OrVaadinComponent {}
+@customElement("or-vaadin-badge")
+export class OrVaadinBadge extends (Badge as new () => Badge & LitElement) implements OrVaadinComponent {
+}

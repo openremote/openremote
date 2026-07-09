@@ -195,11 +195,6 @@ export class OrHeader extends LitElement {
                 display: inline-block;
                 line-height: var(--internal-or-header-height);
             }
-    
-            or-mwc-menu {
-                margin-right: 10px;
-                display: block;
-            }
             
             .or-language-container {
                 display: flex;

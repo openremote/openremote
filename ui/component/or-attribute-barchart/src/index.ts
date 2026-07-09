@@ -42,7 +42,6 @@ import {isAxiosError} from "@openremote/rest";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {cache} from "lit/directives/cache.js";
-import "@openremote/or-mwc-components/or-mwc-menu";
 import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import {when} from "lit/directives/when.js";
@@ -689,7 +688,16 @@ export class OrAttributeBarChart extends LitElement {
                 ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
                     const asset: Asset | undefined = this.assets[assetIndex];
                     if (!asset) {
-                        return html`Error`;
+                        // Broken reference: kept in the legend to indicate the config is broken
+                        return html`
+                            <div class="attribute-list-item ${this.denseLegend ? "attribute-list-item-dense" : undefined}">
+                                <span style="margin-right: 10px; --or-icon-width: 20px;"><or-icon icon="link-variant-off"></or-icon></span>
+                                <div class="attribute-list-item-label ${this.denseLegend ? "attribute-list-item-label-dense" : undefined}">
+                                    <or-translate style="font-size:12px; color:grey; font-style: italic;" value="brokenReference"></or-translate>
+                                    <span style="font-size:12px; color:grey;">${Util.camelCaseToSentenceCase(attr.name) ?? ''}</span>
+                                </div>
+                            </div>
+                        `;
                     }
                     const colourIndex = index % this.colors.length;
                     const color = this.attributeColors.find(x => x[0].id === asset.id && x[0].name === attr.name)?.[1];
@@ -992,6 +1000,9 @@ export class OrAttributeBarChart extends LitElement {
             promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
                 const asset = this.assets[assetIndex];
+                if (!asset) {
+                    return;
+                }
                 const shownOnRightAxis = !!this.attributeConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
                 const color = this.attributeColors.find(x => x[0].id === asset.id && x[0].name === attribute.name)?.[1];
                 const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);

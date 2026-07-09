@@ -6,7 +6,9 @@ import {
     commonAttrs,
     getRGBColor,
     rgbToHex,
+    assetWithPredictedAndStoredDatapoints,
 } from "./fixtures/data/assets.js";
+import { users } from "./fixtures/data/users";
 import { expect } from "@openremote/test";
 
 test.use({ storageState: userStatePath });
@@ -152,6 +154,124 @@ test("Create a Map widget with text thresholds", async ({ manager, shared, page,
     await expect
         .poll(() => page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor).then(rgbToHex))
         .toBe("000000");
+});
+
+test("Replace broken chart references while preserving custom colors", async ({ manager, shared, page, insightsPage }) => {
+    await shared.interceptResponse<Dashboard>("**/dashboard", (dashboard) => {
+        if (dashboard) manager.dashboards.push(dashboard.id!);
+    });
+
+    // Provision the asset that the charts will reference (and that we later delete).
+    // Reuse an existing insights asset; it has a "power" attribute with stored datapoints.
+    const referencedAsset = assets[0];
+    await manager.setup("smartcity", { assets: [referencedAsset] });
+    await manager.goToRealmStartPage("smartcity");
+    await manager.navigateToTab("Insights");
+
+    // Build a Line Chart and a Bar Chart referencing "Power", colour them, and save
+    await expect(insightsPage.getDashboardListItems()).toHaveCount(0);
+    await page.click(".mdi-plus >> nth=0");
+    await expect(insightsPage.getDashboardListItems()).toHaveCount(1);
+
+    // Drop both widgets while the widget palette is available (no widget selected yet)
+    await insightsPage.dragAndDropWidget("Line Chart", [0, 0]);
+    await expect(insightsPage.getWidgets()).toHaveCount(1);
+    await insightsPage.dragAndDropWidget("Bar Chart", [6, 0]);
+    await expect(insightsPage.getWidgets()).toHaveCount(2);
+    const lineWidget = insightsPage.getWidgets({ hasText: "Line Chart" }).first();
+    const barWidget = insightsPage.getWidgets({ hasText: "Bar Chart" }).first();
+
+    // Line chart: add the Power attribute and give it a custom red colour
+    await insightsPage.selectWidget(lineWidget);
+    await expect(insightsPage.getWidgetSettings({ hasText: "Line Chart" })).toBeVisible();
+    await insightsPage.resizeWidgetTo(lineWidget, [6, 6]);
+    await insightsPage.addAttributes(referencedAsset.name!, ["Power"]);
+    await expect(insightsPage.getWidgetAttributes()).toHaveCount(1);
+    await insightsPage.setAttributeColor("#ff0000");
+    await expect(insightsPage.getAttributeColorInput()).toHaveValue("#ff0000");
+    // Change the custom colour a second time; to make sure that works.
+    await insightsPage.setAttributeColor("#0000ff");
+    await expect(insightsPage.getAttributeColorInput()).toHaveValue("#0000ff");
+
+    // Bar chart: add the Power attribute and give it a custom green colour
+    await insightsPage.selectWidget(barWidget);
+    await expect(insightsPage.getWidgetSettings({ hasText: "Bar Chart" })).toBeVisible();
+    await insightsPage.resizeWidgetTo(barWidget, [12, 6], { force: true });
+    await insightsPage.addAttributes(referencedAsset.name!, ["Power"]);
+    await expect(insightsPage.getWidgetAttributes()).toHaveCount(1);
+    await insightsPage.setAttributeColor("#00ff00");
+    await expect(insightsPage.getAttributeColorInput()).toHaveValue("#00ff00");
+    // Change the custom colour a second time; to make sure that works.
+    await insightsPage.setAttributeColor("#ffc400");
+    await expect(insightsPage.getAttributeColorInput()).toHaveValue("#ffc400");
+
+    // Save the dashboard
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+
+    // Delete the referenced asset, then reload to force the charts to re-resolve
+    const adminToken = await manager.getAccessToken("master", "admin", users.admin.password!);
+    await manager.deleteAssets({ headers: { Authorization: `Bearer ${adminToken}` } });
+    await page.reload();
+    await expect(insightsPage.getBuilder()).toBeVisible();
+    await expect(insightsPage.getPreview()).toBeVisible();
+    await expect(insightsPage.getPreview()).toHaveJSProperty("isLoading", false);
+    await expect(insightsPage.getWidgets()).toHaveCount(2);
+
+    // Both widget legends should show "Broken Reference" instead of dropping the attribute
+    await expect(insightsPage.getBrokenReferences()).toHaveCount(2);
+
+    // Both settings panels should show a broken attribute row with the replace action
+    await insightsPage.selectWidget(lineWidget);
+    await expect(insightsPage.getBrokenAttributeRows()).toHaveCount(1);
+    await insightsPage.selectWidget(barWidget);
+    await expect(insightsPage.getBrokenAttributeRows()).toHaveCount(1);
+
+    // Create the replacement asset and replace the broken references
+    await manager.createAsset(assetWithPredictedAndStoredDatapoints);
+
+    // Line chart: the replace picker enables predicted attributes, so BOTH are offered.
+    // Replace with the predicted-only "energyImportTotal".
+    await insightsPage.selectWidget(lineWidget);
+    const linePicker = await insightsPage.openReplacePicker(insightsPage.getBrokenAttributeRows().first());
+    await linePicker.getByText("Import Asset").click();
+    await expect(linePicker.getByText("Energy export total")).toBeVisible();
+    await expect(linePicker.getByText("Energy import total")).toBeVisible();
+    await linePicker.getByText("Energy import total").click();
+    await linePicker.getByRole("button", { name: "Add" }).click();
+    await expect(linePicker).toBeHidden();
+
+    // Line chart broken row should now be replaced and the custom colour migrated to the new ref
+    await expect(insightsPage.getBrokenAttributeRows()).toHaveCount(0);
+    await expect(insightsPage.getWidgetAttributes()).toHaveCount(1);
+    await expect(insightsPage.getWidgetAttributes().first()).toContainText("Import Asset");
+    await expect(insightsPage.getAttributeColorInput()).toHaveValue("#0000ff");
+    const lineColors = await insightsPage.getAttributeColors();
+    expect(lineColors).toHaveLength(1);
+    expect(lineColors[0][0].name).toBe("energyImportTotal");
+    expect(lineColors[0][1]).toBe("#0000ff");
+
+    // Bar chart: the replace picker does NOT enable predicted attributes, so the
+    // predicted-only "energyImportTotal" must be absent; only the stored
+    // "energyExportTotal" is offered.
+    await insightsPage.selectWidget(barWidget);
+    const barPicker = await insightsPage.openReplacePicker(insightsPage.getBrokenAttributeRows().first());
+    await barPicker.getByText("Import Asset").click();
+    await expect(barPicker.getByText("Energy export total")).toBeVisible();
+    await expect(barPicker.getByText("Energy import total")).toHaveCount(0);
+    await barPicker.getByText("Energy export total").click();
+    await barPicker.getByRole("button", { name: "Add" }).click();
+    await expect(barPicker).toBeHidden();
+
+    // Bar chart: broken row should be replaced and the custom colour migrated to the new ref
+    await expect(insightsPage.getBrokenAttributeRows()).toHaveCount(0);
+    await expect(insightsPage.getWidgetAttributes()).toHaveCount(1);
+    await expect(insightsPage.getWidgetAttributes().first()).toContainText("Import Asset");
+    await expect(insightsPage.getAttributeColorInput()).toHaveValue("#ffc400");
+    const barColors = await insightsPage.getAttributeColors();
+    expect(barColors).toHaveLength(1);
+    expect(barColors[0][0].name).toBe("energyExportTotal");
+    expect(barColors[0][1]).toBe("#ffc400");
 });
 
 test.afterEach(async ({ manager }) => {

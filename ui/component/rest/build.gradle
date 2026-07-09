@@ -28,17 +28,20 @@ dependencies {
 
 //project.task(Collections.singletonMap(Task.TASK_TYPE, cz.habarta.typescript.generator.gradle.GenerateTask), "generateTypescriptModelInfo")
 //generateTypescriptModelInfo createTSGeneratorConfigForModel("$buildDir/model.ts")
+generateTypeScript createTSGeneratorConfigForClient(
+    "src/restclient.ts",
+    new File("${project(":ui:component:model").projectDir}/src/typescript-generator-info.json")
+)
 
-generateTypeScript createTSGeneratorConfigForClient("src/restclient.ts", new File("${project(":ui:component:model").projectDir}/src/typescript-generator-info.json"))
-generateTypeScript.dependsOn resolveTask(":ui:component:model:generateTypeScript")
+def generateTypeScriptTask = tasks.named("generateTypeScript") {
+    // Work around typescript-generator exposing non-serializable configuration objects as Gradle task inputs.
+    doNotTrackState("typescript-generator uses non-serializable task input types")
+    dependsOn resolveTask(":ui:component:model:generateTypeScript")
+}
 
-clean {
-    doLast {
-        def dir = new File("${projectDir}/dist")
-        dir.deleteDir()
-        def libs = new File("${projectDir}/lib")
-        libs.deleteDir()
-    }
+tasks.named('clean', Delete) {
+    delete layout.projectDirectory.dir('dist')
+    delete layout.projectDirectory.dir('lib')
 }
 
 tasks.register('npmBuild', Exec) {
@@ -47,8 +50,13 @@ tasks.register('npmBuild', Exec) {
     commandLine npmCommand("yarn"), "run", "build"
 }
 
-build.dependsOn generateTypeScript, npmBuild
-npmBuild.dependsOn generateTypeScript
+tasks.named("build") {
+    dependsOn generateTypeScriptTask, tasks.named("npmBuild")
+}
+
+tasks.named("npmBuild") {
+    dependsOn generateTypeScriptTask
+}
 
 tasks.register('prepareUi') {
     dependsOn clean, build, npmPrepare

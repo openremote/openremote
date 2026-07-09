@@ -64,6 +64,9 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
     static AlarmResource regularUserResource
 
     @Shared
+    static AlarmResource buildingUserResource
+
+    @Shared
     static KeycloakTestSetup keycloakTestSetup
 
     @Shared
@@ -116,6 +119,16 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         superAdminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, superAdminAccessToken).proxy(AlarmResource.class)
 
+        def buildingUserAccessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
+        )
+
+        buildingUserResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, buildingUserAccessToken).proxy(AlarmResource.class)
+
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
         def throwPushHandlerException = false
         EmailNotificationHandler mockPushNotificationHandler = Spy(emailNotificationHandler)
@@ -137,9 +150,11 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
     def cleanup() {
         // Remove all alarms
-        def alarms = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
-        if (alarms.length > 0) {
-            adminResource.removeAlarms(null, (List<Long>) alarms.collect { it.id })
+        [MASTER_REALM, keycloakTestSetup.realmBuilding.name].each { realm ->
+            def alarms = superAdminResource.getAlarms(null, realm, null, null, null)
+            if (alarms.length > 0) {
+                superAdminResource.removeAlarms(null, (List<Long>) alarms.collect { it.id })
+            }
         }
 
         // Clear notifications
@@ -415,6 +430,67 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
             assert r.status == 403
             return true
         }
+    }
+
+    // Delete alarms from another realm as non-super-user
+    def "should not bulk delete alarms from another realm"() {
+        given:
+        def masterAlarm = adminResource.createAlarm(null, new Alarm("Master alarm", "Master content", Severity.MEDIUM, null, MASTER_REALM), null)
+
+        when:
+        buildingUserResource.removeAlarms(null, [masterAlarm.id])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+
+        and:
+        adminResource.getAlarm(null, masterAlarm.id) != null
+
+        when:
+        buildingUserResource.getAlarm(null, masterAlarm.id)
+
+        then:
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+
+        when:
+        buildingUserResource.removeAlarm(null, masterAlarm.id)
+
+        then:
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+    }
+
+    // Delete alarms in a mixed-realm bulk request as non-super-user
+    def "should not bulk delete any alarms when one alarm belongs to another realm"() {
+        given:
+        def buildingRealm = keycloakTestSetup.realmBuilding.name
+        def buildingAlarm = buildingUserResource.createAlarm(null, new Alarm("Building alarm", "Building content", Severity.MEDIUM, null, buildingRealm), null)
+        def masterAlarm = adminResource.createAlarm(null, new Alarm("Master alarm", "Master content", Severity.MEDIUM, null, MASTER_REALM), null)
+
+        when:
+        buildingUserResource.removeAlarms(null, [buildingAlarm.id, masterAlarm.id])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+
+        and:
+        buildingUserResource.getAlarm(null, buildingAlarm.id) != null
+        adminResource.getAlarm(null, masterAlarm.id) != null
     }
 
     // Delete empty or null alarms

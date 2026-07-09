@@ -31,7 +31,7 @@
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-vaadin-components": "workspace:*",
-    "@reduxjs/toolkit": "^1.8.1",
+    "@reduxjs/toolkit": "^2.12.0",
     "@webcomponents/webcomponentsjs": "^2.6.0",
     "lit": "^3.3.1",
     "navigo": "^8.11.1",

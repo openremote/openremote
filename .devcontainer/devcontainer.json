@@ -1,0 +1,27 @@
+{
+  "name": "OpenRemote DevContainer",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "remoteUser": "root",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/git-lfs:1": {},
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "jdkDistro": "open",
+      "installGradle": "true",
+      "installGroovy": "true"
+    }
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.gradle,target=/root/.gradle,type=bind"
+  ],
+  "forwardPorts": [ 8080 ],
+  "postCreateCommand": "./gradlew clean installDist",
+  "postStartCommand": "docker compose -p openremote -f profile/dev-testing.yml up -d",
+  "remoteEnv": {
+    "GRADLE_USER_HOME": "/root/.gradle"
+  }
+}

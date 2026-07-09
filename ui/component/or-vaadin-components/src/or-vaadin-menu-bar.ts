@@ -23,7 +23,7 @@ import {customElement} from "lit/decorators.js";
 import {OrVaadinComponent} from "./util";
 import "@vaadin/menu-bar";
 
-export {MenuBarItem} from "@vaadin/menu-bar";
+export {MenuBarItem, SubMenuItem} from "@vaadin/menu-bar";
 
 export function createMenuBarItem(content: TemplateResult) {
     const item = document.createElement("vaadin-menu-bar-item");

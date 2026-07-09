@@ -138,6 +138,15 @@ export class Manager {
         await this.page.waitForURL("**/auth/realms/**");
     }
 
+    async resetLocale(realm: string, username: Usernames, password: string) {
+        const token = await this.getAccessToken(realm, username, password);
+        await this.axios.put(
+            `${this.managerHost}/api/${realm}/user/locale`,
+            JSON.stringify("en"),
+            { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+        );
+    }
+
     async getAccessToken(realm: string, username: Usernames, password: string) {
         const data = new URLSearchParams();
         data.append("client_id", this.clientId);

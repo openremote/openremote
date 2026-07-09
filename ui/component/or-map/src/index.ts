@@ -1,18 +1,36 @@
-import manager, {EventCallback} from "@openremote/core";
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+import manager, { EventCallback } from "@openremote/core";
 import {html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {IControl, LngLat, LngLatLike, GeolocateControl} from "maplibre-gl";
+import {IControl, LngLat, LngLatLike} from "maplibre-gl";
 import {style} from "./style";
 import "./markers/or-map-marker";
 import "./markers/or-map-marker-asset";
 import "@openremote/or-vaadin-components/or-vaadin-text-field"
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
-import {
-    InputType,
+import type {
     ValueInputProviderGenerator,
     ValueInputTemplateFunction
-} from "@openremote/or-mwc-components/or-mwc-input";
+} from "@openremote/or-vaadin-components/value-input-provider";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
@@ -20,9 +38,10 @@ import debounce from "lodash.debounce";
 import { AttributeEvent, GeoJsonConfig } from "@openremote/model";
 import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
 import { AssetMap } from "./asset-map";
-import { CenterControl } from "./controls/center";
+import { OrMapCenterControl } from "./controls/center";
+import { OrMapGeolocateControl } from "./controls/geolocate";
 import { ifDefined } from "lit-html/directives/if-defined.js";
-import type { AssetWithLocation, ClusterConfig, ControlPosition, MapEventDetail, MapGeocoderEventDetail } from "./types";
+import type { AssetWithLocation, ClusterConfig, ControlPosition, MapEventDetail, MapFilter } from "./types";
 
 // Re-exports
 export {Util, LngLatLike, LngLat};
@@ -31,7 +50,9 @@ export * from "./markers/or-map-marker-asset";
 export * from "./markers/or-cluster-marker";
 export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
-export * from "./or-map-legend";
+export * from "./controls/legend";
+export * from "./controls/preset-filter";
+export * from "./controls/geocoder";
 export type * from "./types";
 
 export class OrMapLoadedEvent extends CustomEvent<void> {
@@ -78,21 +99,6 @@ export class OrMapLongPressEvent extends CustomEvent<MapEventDetail> {
     }
 }
 
-export class OrMapGeocoderChangeEvent extends CustomEvent<MapGeocoderEventDetail> {
-
-    public static readonly NAME = "or-map-geocoder-change";
-
-    constructor(geocode: any) {
-        super(OrMapGeocoderChangeEvent.NAME, {
-            detail: {
-                geocode
-            },
-            bubbles: true,
-            composed: true
-        });
-    }
-}
-
 export class OrMapMarkersChangedEvent extends CustomEvent<AssetWithLocation[]> {
 
     public static readonly NAME = "or-map-markers-changed";
@@ -111,7 +117,6 @@ declare global {
         [OrMapClickedEvent.NAME]: OrMapClickedEvent;
         [OrMapLoadedEvent.NAME]: OrMapLoadedEvent;
         [OrMapLongPressEvent.NAME]: OrMapLongPressEvent;
-        [OrMapGeocoderChangeEvent.NAME]: OrMapGeocoderChangeEvent;
         [OrMapMarkersChangedEvent.NAME]: OrMapMarkersChangedEvent;
     }
 }
@@ -121,8 +126,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
     const disabled = !!(options && options.disabled);
     const readonly = !!(options && options.readonly);
     const compact = !!(options && options.compact);
-    const comfortable = !!(options && options.comfortable);
-    const centerControl = new CenterControl();
+    const centerControl = new OrMapCenterControl();
 
     const valueChangeHandler = (value: LngLatLike | undefined) => {
         if (!valueChangeNotifier) {
@@ -139,6 +143,19 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
 
     const coordinatesControl = new CoordinatesControl(disabled, valueChangeHandler);
     let pos: { lng: number, lat: number } | null | undefined;
+
+    // Indirection so the stable geolocate instance can call the per-render setPos.
+    let _setPos: ((lngLat: LngLatLike | null) => void) | undefined;
+    const controls: (IControl | [IControl, ControlPosition?])[] = [
+        [centerControl, "bottom-right"],
+        [coordinatesControl, "top-left"],
+    ];
+    if (!readonly) {
+        const userLocationControl = new OrMapGeolocateControl((currentLocation: GeolocationPosition) => {
+            _setPos?.(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
+        });
+        controls.push([userLocationControl, "bottom-right"]);
+    }
 
     const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
         let center: number[] | undefined;
@@ -157,7 +174,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
 
         let dialog: OrMwcDialog | undefined;
 
-        const setPos = (lngLat: LngLatLike | null) => {
+        _setPos = (lngLat: LngLatLike | null) => {
             if (readonly || disabled) {
                 return;
             }
@@ -176,27 +193,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                 valueChangeHandler(pos as LngLatLike);
             }
         };
-
-        const controls = [[centerControl, "bottom-left"], [coordinatesControl, "top-right"]]
-
-        if (!readonly) {
-
-            const userLocationControl = new GeolocateControl({
-                positionOptions: {
-                    enableHighAccuracy: true
-                },
-                showAccuracyCircle: false,
-                showUserLocation: false
-            });
-        
-            userLocationControl.on('geolocate', (currentLocation: GeolocationPosition) => {
-                setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
-            });
-            userLocationControl.on('outofmaxbounds', (currentLocation: GeolocationPosition) => {
-                setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
-            });
-            controls.push([userLocationControl, "bottom-left"]);
-        }
+        const setPos = _setPos;
 
         let content = html`
             <or-map id="geo-json-point-map" class="or-map" @or-map-long-press="${(ev: OrMapLongPressEvent) => {setPos(ev.detail.lngLat);}}" .center="${center}" .controls="${controls}" .showGeoCodingControl=${!readonly}>
@@ -268,10 +265,6 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     <or-vaadin-button theme="icon" @click=${onClick}>
                         <or-icon icon="crosshairs-gps"></or-icon>
                     </or-vaadin-button>
-                    <!--<div style="display: flex">
-                        <or-mwc-input .comfortable="${comfortable}" .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeHandler)(e)}"></or-mwc-input>
-                        <or-mwc-input style="width: unset" .type="${InputType.BUTTON}" compact icon="crosshairs-gps" @or-mwc-input-changed="${onClick}"></or-mwc-input>
-                    </div>-->
                 </div>
             `;
         }
@@ -344,6 +337,12 @@ export class OrMap extends LitElement {
     @property({type: Array})
     public boundary: string[] = [];
 
+    @property({type: Array})
+    public filters?: MapFilter[];
+
+    @property({type: Boolean})
+    public showLegend: boolean = true;
+
     public controls?: (IControl | [IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
@@ -372,7 +371,7 @@ export class OrMap extends LitElement {
     }
 
     public updateAttribute(event: AttributeEvent) {
-        this._map?.updateAttribute(event)
+        this._map?.updateAttribute(event);
     }
 
     public removeAssets(ids: string[]) {
@@ -404,9 +403,6 @@ export class OrMap extends LitElement {
             <div id="container">
                 <div id="map"></div>
                 <slot></slot>
-                <a id="openremote" href="https://openremote.io/" target="_blank">
-                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAABGdBTUEAAYagMeiWXwAAAAJiS0dEAP+Hj8y/AAAESUlEQVRIx5XVbWzdZRnH8c//f07POe36sK7SrYXZjYGzbBokOqd4QtKATdnMDFFSkoFzmWGRQOAFSoYnsBSzxBdmGsN4Y7LEFwZkUdHpDoja/AnJjBvp1sm2upW5PtAV+zBS+7Tz//tiLe0emPF+d9/39fvmunJf9+8K3HBF1drFzurVn5+5XkTwPwBNOt1s0pCjDnnT+Xzy/wOa5jaXnLLfLwzlF0WENwaYckyvUTHS1tnjl+6JFqk+JoMOqqy2JqjPVpXP1k7U1+Ty8paBPk97NX/pYwEdgZUetNkdlirDrHGnyv6y5r3lm4M2WVzwpJfz8XUBHTntnrJO6qqLWE9u/125zBNq0WebN/PXAjqq/cBOVWDasCEsd5MsmEzt/3xP+S6fwNsezPdfBejI6fCEDMa95oAT/t31pVxDQ6p6oy2WYSb18w0D2V3Klez2w3y8CNAR2G6vShxXUCxMkXLvS7Y6E/5+3emaJ92JqezzG+8M2nHW/flTi59xladU4phtfluYgnsDWUt8Nv7+8UfO73UUuenvDLxuCKu0RQt90BFo14wxzzpamD8uExtHSsu5HSP7XMCtZ5uTPyO0SdVCBlXahHjNG4WFrGY9Y4tXzODL7zb7NYJS64eHzWK92xYAa9yBKa8Wphf0xaQ4XOz0qF9JhMnXh//mIm4dnDSMOusWALepwQUnrm2t4pi9hrGyP+ccloxV6kOZFemoWi2mOpclaQycqGlt9R8XHS/GixinnVWvbDpjDEEpNpdnWrtd+HvZWzMQT9xjj1iXzUau6MPS9X9NKOeTmqzPpZWwfMkEKnza2ivimqxCKZjQa9BMmFI2D+gxibql4z7EiobYOSy1o7V6Xt1aYacGvD/7lse1+GZ9t0Zc8kHaGcOa1K6o+FePL1iy7K7wYHy70FZa9+qVWOm7tgslfpecKcy46GS0xXKM6g6d14VU+RfTnRJ8Y223w8j4tkMOOeR1j6nAMT8tzkCUcvlbn3ImbJn0RyWC+1af1Iv6ukcbf+aIRKDR3b5ipVCiy+PenaupWRsSfzCWim0ftUmdiqrJwWLpbmk3196UfXG0X6NKIWKDXva0I0UQZT2nRaDfc/mhgCj0PS9ImZzefbg5fliIvuTA++/0ZaYDTDqqpzhn6lHoW36iSuLHnslfCiBqdMBGDI6/0LUhfkgGiWFbC29c+epRaJMX3YJuD+R75l15wG4DaKh5dsPJsj0GXLaawavkWY/MyUcU/JOPHCkK7fAjNZiIf/PeX/vWx1814muF0Y/EKWs95mFVuKhgX352EYAoY5vnNSDRF/9p/MgHfQ2dldNIqbPeJm2aBBix20vzg26RpUUpLfb43FxZU4YMmEJGoxXKQeIfCg4uzMkrTDVitZ0ecst1B05i0Cv26Vk8H68JjFKabXa/Zkul5w5Lxp120EHdlyu/AQCiQI1P+YxaGcwY1+20kasnM/wXCa5/Ik1hKTEAAAAldEVYdGRhdGU6Y3JlYXRlADIwMTktMDgtMjBUMTU6MTc6NTUrMDA6MDCwJSdSAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDE5LTA4LTIwVDE1OjE3OjU1KzAwOjAwwXif7gAAAABJRU5ErkJggg==" />
-                </a>
             </div>
         `;
     }
@@ -418,6 +414,12 @@ export class OrMap extends LitElement {
         }
         if (changedProperties.has("boundary") && this.showBoundaryBoxControl){
             this._map?.createBoundaryBox(this.boundary)
+        }
+        if (changedProperties.has("filters")) {
+            this._map?.setFilters(this.filters);
+        }
+        if (changedProperties.has("showLegend")) {
+            this._map?.setShowLegend(this.showLegend);
         }
     }
 
@@ -437,7 +439,7 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new AssetMap(this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson, this.cluster)
+            this._map = new AssetMap(this.shadowRoot!, this._mapContainer, this, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson, this.cluster, this.filters, this.showLegend)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
                 .setControls(this.controls)

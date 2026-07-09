@@ -20,7 +20,7 @@
 import { customElement } from "lit/decorators.js";
 import { MultiSelectComboBox } from "@vaadin/multi-select-combo-box";
 import { OrVaadinComponent } from "./util";
-import { LitElement, PropertyValues } from "lit";
+import { LitElement } from "lit";
 
 @customElement("or-vaadin-multi-select-combo-box")
 export class OrVaadinMultiSelectComboBox extends (MultiSelectComboBox as new () => MultiSelectComboBox & LitElement) implements OrVaadinComponent {

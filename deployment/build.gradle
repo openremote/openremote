@@ -9,14 +9,9 @@ dependencies {
     managerRuntime project(':manager')
 }
 
-tasks.register('license') {
-    doLast {
-        def sourceFile = file("${rootDir}/LICENSE.txt")
-        def outputFile = layout.buildDirectory.file("image/manager/app/LICENSE.txt").get().asFile
-
-        outputFile.parentFile.mkdirs()
-        outputFile.text = sourceFile.text
-    }
+tasks.register('license', Copy) {
+    from(rootProject.layout.projectDirectory.file("LICENSE.txt"))
+    into(layout.buildDirectory.dir("image/manager/app"))
 }
 
 tasks.register('installDist', Copy) {

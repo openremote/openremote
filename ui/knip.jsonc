@@ -13,6 +13,7 @@
         // AND stops Knip from flagging them as "Unlisted" when used by other workspaces.
         "@custom-elements-manifest/analyzer",
         "@rspack/cli",
+        "@types/eslint-scope",
         "@typescript-eslint/eslint-plugin",
         "@typescript-eslint/parser",
         "@wc-toolkit/cem-inheritance",

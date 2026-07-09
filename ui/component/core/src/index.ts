@@ -54,7 +54,8 @@ export enum OREvent {
     CONSOLE_READY = "CONSOLE_READY",
     TRANSLATE_INIT = "TRANSLATE_INIT",
     TRANSLATE_LANGUAGE_CHANGED = "TRANSLATE_LANGUAGE_CHANGED",
-    DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED"
+    DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED",
+    LOGIN = "LOGIN"
 }
 
 export interface LoginOptions {
@@ -986,6 +987,12 @@ export class Manager implements EventProviderFactory {
                 }
                 this._onAuthenticated();
                 this._createTokenUpdateInterval();
+
+                const currentSession = this._keycloak.tokenParsed?.session_state;
+                if (currentSession && sessionStorage.getItem("or-session") !== currentSession) {
+                    sessionStorage.setItem("or-session", currentSession);
+                    this._emitEvent(OREvent.LOGIN);
+                }
 
             } else if (this.config.autoLogin) {
                 this.login();
