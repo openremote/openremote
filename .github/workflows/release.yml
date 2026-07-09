@@ -73,8 +73,6 @@ jobs:
 
       - name: Create release (manager image)
         run: |
-          git push --follow-tags
-          gh workflow run ci_cd.yml -R openremote/extensions --ref $RELEASED_VERSION
           gh release create $RELEASED_VERSION -R openremote/extensions --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
