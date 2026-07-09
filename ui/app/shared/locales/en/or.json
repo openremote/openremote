@@ -827,6 +827,7 @@
   },
   "realmDeleteConfirm": "Warning! this will delete everything in this realm, type the realm name '{{realmName}}' to confirm.",
   "realmDeleteFailed": "Failed to delete realm",
+  "realmDeleteFailedHasAssets": "Failed to delete realm because it still contains assets",
   "addRule": "Add rule",
   "rulesetStatus": {
     "DEPLOYED": "Successfully deployed",
