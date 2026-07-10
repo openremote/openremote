@@ -1,4 +1,4 @@
-package org.openremote.manager.datapoint
+package org.openremote.test.datapoint
 
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery
 import org.openremote.model.datapoint.query.AssetDatapointQuery

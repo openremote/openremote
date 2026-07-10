@@ -998,7 +998,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 List<Asset<?>> assets = new ArrayList<>();
                 persistenceService.doTransaction(em -> {
                     assets.addAll(em
-                        .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and not child.id in :ids) and a.id in :ids", Asset.class)
+                        .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and child.deletePending is false and not child.id in :ids) and a.id in :ids", Asset.class)
                         .setParameter("ids", ids)
                         .getResultList().stream()
                         .map(asset -> (Asset<?>) asset)
@@ -1176,6 +1176,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         LOG.fine("Deleting asset: assetId=" + assetId);
 
+        AtomicReference<Boolean> blockedByFailedPath = new AtomicReference<>(false);
+
         try {
             persistenceService.doTransaction(em -> {
                 // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
@@ -1187,9 +1189,22 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     return;
                 }
 
+                synchronized (failedAssetDeleteIds) {
+                    if (blockedByFailedPath.updateAndGet(blocked -> failedAssetDeleteIds.stream()
+                        .anyMatch(failedAssetId -> !failedAssetId.equals(assetId) && asset.pathContains(failedAssetId)))) {
+                        return;
+                    }
+                }
+
                 em.remove(asset);
                 em.flush();
             });
+
+            if (blockedByFailedPath.get()) {
+                failedAssetDeleteIds.add(assetId);
+                LOG.fine("Asset delete skipped because a failed pending delete asset is in its path: assetId=" + assetId);
+                return false;
+            }
 
             failedAssetDeleteIds.remove(assetId);
             return true;
