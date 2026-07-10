@@ -59,6 +59,15 @@ registerStyles("or-vaadin-toggle", css`
     }
 
     /*
+     * The Vaadin base styles give the label a 500 font weight. Lumo resets that for the checkbox,
+     * but that reset is keyed off 'is' (overridden here), so restore the default weight ourselves.
+     */
+    :host [part='label'],
+    :host([has-label]) ::slotted([slot='label']) {
+        font-weight: 400;
+    }
+
+    /*
      * Turn the square checkbox part into a pill-shaped track. Selectors are deliberately prefixed
      * with :host(...) to out-specify the Vaadin/Lumo base rules (e.g. the base hides the ::after
      * marker with a high-specificity ':host(:not([checked])) [part=checkbox]::after { opacity: 0 }'
