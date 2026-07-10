@@ -53,6 +53,7 @@ registerStyles("or-vaadin-toggle", css`
         --or-toggle-track-on-color: var(--lumo-primary-color, #47a942);
         --or-toggle-knob-color: var(--lumo-base-color, #ffffff);
         --or-toggle-gap: 6px;
+        --or-toggle-transition-duration: 0.15s;
 
         align-items: center;
         --vaadin-checkbox-gap: var(--or-toggle-gap);
@@ -81,7 +82,7 @@ registerStyles("or-vaadin-toggle", css`
         border: none;
         border-radius: var(--or-toggle-radius);
         background: var(--or-toggle-track-off-color);
-        transition: background-color 0.15s ease-in-out;
+        transition: background-color var(--or-toggle-transition-duration, 0.15s) ease-in-out;
     }
 
     :host([checked]) [part='checkbox'] {
@@ -107,7 +108,7 @@ registerStyles("or-vaadin-toggle", css`
         -webkit-mask: none;
         filter: none;
         transform: translateY(-50%);
-        transition: left 0.15s ease-in-out;
+        transition: left var(--or-toggle-transition-duration, 0.15s) ease-in-out;
     }
 
     :host(:not([checked])) [part='checkbox']::after {
@@ -141,6 +142,7 @@ registerStyles("or-vaadin-toggle", css`
  * @cssprop --or-toggle-track-on-color - Track color in the on state.
  * @cssprop --or-toggle-knob-color - Color of the knob.
  * @cssprop --or-toggle-gap - Gap between the track and the label.
+ * @cssprop --or-toggle-transition-duration - Duration of the track color and knob slide transitions.
  */
 @customElement("or-vaadin-toggle")
 export class OrVaadinToggle extends (Checkbox as new () => Checkbox & LitElement) implements OrVaadinComponent {
