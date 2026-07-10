@@ -24,8 +24,8 @@ import { OrVaadinToggleGroup } from "@openremote/or-vaadin-components/or-vaadin-
 
 /*
  * These tests mirror the scenarios in `stories/or-vaadin-toggle.stories.ts`:
- * the Primary story, every variant of the "States & attributes" story, and the
- * "Toggle group" story (vertical + horizontal).
+ * the Primary, "Disabled & Readonly", "Helper text" and "Groups"
+ * (vertical + horizontal) stories.
  *
  * Note: the component-test runner (@sand4rt/experimental-ct-web) forwards only
  * `event.detail` to `on` handlers, so the boolean state that comes through is
@@ -35,15 +35,13 @@ import { OrVaadinToggleGroup } from "@openremote/or-vaadin-components/or-vaadin-
 
 // --- Primary ---------------------------------------------------------------
 
-ct("Primary: renders label, checked state and helper text", async ({ mount }) => {
+ct("Primary: renders label and checked state", async ({ mount }) => {
   const component = await mount(OrVaadinToggle, {
-    props: { label: "Toggle", checked: true, helperText: "Helper text shown below the toggle" },
+    props: { label: "Toggle", checked: true },
   });
 
   await expect(component.getByRole("checkbox", { name: "Toggle" })).toBeChecked();
   await expect(component).toContainText("Toggle");
-  await expect(component).toContainText("Helper text shown below the toggle");
-  await expect(component).toHaveAttribute("has-helper");
 });
 
 // --- Events ----------------------------------------------------------------
@@ -81,7 +79,7 @@ ct("Events: change + checked-changed emit the new value on user toggle", async (
   await expect.poll(() => checkedChanges.slice(-2)).toEqual([true, false]);
 });
 
-// --- States & attributes ---------------------------------------------------
+// --- States ------------------------------------------------------------------
 
 ct("State: off (default) is unchecked", async ({ mount }) => {
   const component = await mount(OrVaadinToggle, { props: { label: "Off (default)" } });
@@ -150,6 +148,15 @@ ct("State: readonly + on stays checked", async ({ mount }) => {
   await expect(component.getByRole("checkbox", { name: "Readonly on" })).toBeChecked();
 });
 
+ct("Helper text: renders below the toggle", async ({ mount }) => {
+  const component = await mount(OrVaadinToggle, {
+    props: { label: "Toggle", helperText: "Helper text shown below the toggle" },
+  });
+
+  await expect(component).toContainText("Helper text shown below the toggle");
+  await expect(component).toHaveAttribute("has-helper");
+});
+
 ct("State: required reflects the required attribute", async ({ mount }) => {
   const component = await mount(OrVaadinToggle, { props: { label: "Required", required: true } });
   await expect(component).toHaveAttribute("required");
@@ -161,7 +168,7 @@ ct("State: renders without a label", async ({ mount }) => {
   await expect(component).not.toHaveAttribute("has-label");
 });
 
-// --- Toggle group ----------------------------------------------------------
+// --- Groups ----------------------------------------------------------------
 
 ct("Group (vertical): stacks grouped toggles and reflects their checked state", async ({ mount }) => {
   const component = await mount(OrVaadinToggleGroup, {

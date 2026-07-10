@@ -52,39 +52,43 @@ const meta: Meta = {
 export const Primary: Story = {
     args: {
         label: "Toggle",
-        checked: true,
-        "helper-text": "Helper text shown below the toggle"
+        checked: true
     }
 };
 
-/** Every attribute-driven visual state of the toggle in a single view. */
-export const States: Story = {
-    name: "States & attributes",
+/** Disabled and readonly toggles, in both the off and on state. */
+export const DisabledReadonly: Story = {
+    name: "Disabled & Readonly",
     parameters: {
-        title: "States & attributes",
-        summary: "The toggle covers the standard checkbox states. Use `checked` for the on/off value, `disabled` to block interaction, `readonly` to show a non-editable value, and `required` for validation. The label comes from the `label` attribute and is optional."
+        title: "Disabled & Readonly",
+        summary: "Use `disabled` to block interaction entirely and `readonly` to show a value that cannot be edited. Both combine with `checked`.",
+        docs: {
+            story: {
+                height: "130px"
+            }
+        }
     },
     render: () => html`
         <div style="display: grid; grid-template-columns: repeat(2, max-content); gap: 24px 64px; padding: 8px;">
-            <or-vaadin-toggle label="Off (default)"></or-vaadin-toggle>
-            <or-vaadin-toggle label="On" checked></or-vaadin-toggle>
             <or-vaadin-toggle label="Disabled, off" disabled></or-vaadin-toggle>
             <or-vaadin-toggle label="Disabled, on" checked disabled></or-vaadin-toggle>
             <or-vaadin-toggle label="Readonly, off" readonly></or-vaadin-toggle>
             <or-vaadin-toggle label="Readonly, on" checked readonly></or-vaadin-toggle>
-            <or-vaadin-toggle label="Required" required></or-vaadin-toggle>
-            <or-vaadin-toggle label="With helper text" checked helper-text="Additional context shown below the toggle"></or-vaadin-toggle>
-            <or-vaadin-toggle checked title="No label"></or-vaadin-toggle>
         </div>
     `
 };
 
 /** Several toggles combined inside a toggle group, in both orientations. */
-export const Group: Story = {
-    name: "Toggle group",
+export const Groups: Story = {
+    name: "Groups",
     parameters: {
-        title: "Grouped toggles",
-        summary: "Multiple toggles can be combined inside an `<or-vaadin-toggle-group>` to share a group label, helper text and validation. Under the theme the group is horizontal by default; use `theme=\"vertical\"` to stack them."
+        title: "Groups",
+        summary: "Multiple toggles can be combined inside an `<or-vaadin-toggle-group>` to share a group label, helper text and validation. Under the theme the group is horizontal by default; use `theme=\"vertical\"` to stack them.",
+        docs: {
+            story: {
+                height: "280px"
+            }
+        }
     },
     render: () => html`
         <div style="display: flex; flex-direction: column; gap: 32px; padding: 8px;">
@@ -103,7 +107,27 @@ export const Group: Story = {
     `
 };
 
-export const examples = [States, Group];
+/** Helper text gives extra context below the toggle. */
+export const HelperText: Story = {
+    name: "Helper text",
+    parameters: {
+        title: "Helper text",
+        summary: "Use `helper-text` to show additional context below the toggle, for example to explain why a choice is `required`.",
+        docs: {
+            story: {
+                height: "110px"
+            }
+        }
+    },
+    render: () => html`
+        <div style="display: grid; grid-template-columns: repeat(2, max-content); gap: 24px 64px; padding: 8px;">
+            <or-vaadin-toggle label="With helper text" checked helper-text="Additional context shown below the toggle"></or-vaadin-toggle>
+            <or-vaadin-toggle label="Required" required helper-text="This choice is required"></or-vaadin-toggle>
+        </div>
+    `
+};
+
+export const examples = [DisabledReadonly, Groups, HelperText];
 
 export {customElements, packageJson};
 
