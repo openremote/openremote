@@ -15,9 +15,10 @@ import { beforeMount } from "@sand4rt/experimental-ct-web/hooks";
 // test declares such components via `hooksConfig.components` (see `ComponentHooksConfig`); their
 // import refs are resolved here, which runs their modules and registers them before the mount.
 beforeMount(async ({ hooksConfig }) => {
-    for (const component of hooksConfig?.components ?? []) {
+    const components = Array.isArray(hooksConfig?.components) ? hooksConfig.components : [];
+    for (const component of components) {
         if (component?.__pw_type === "importRef") {
-            await window.__pwRegistry.resolveImportRef(component);
+            await window.__pwRegistry?.resolveImportRef(component);
         }
     }
 });
