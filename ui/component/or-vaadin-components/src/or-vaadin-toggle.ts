@@ -43,19 +43,19 @@ import {type LitElement} from "lit";
  */
 registerStyles("or-vaadin-toggle", css`
     :host {
-        /* Theme variables with standalone fallbacks */
-        --_or-toggle-track-width: 30px;
-        --_or-toggle-track-height: 20px;
-        --_or-toggle-knob-size: 14px;
-        --_or-toggle-knob-inset: 3px;
-        --_or-toggle-radius: var(--lumo-border-radius-l, 12px);
-        --_or-toggle-track-off-color: var(--lumo-contrast-30pct, #c4c8c4);
-        --_or-toggle-track-on-color: var(--lumo-primary-color, #47a942);
-        --_or-toggle-knob-color: var(--lumo-base-color, #ffffff);
-        --_or-toggle-gap: 6px;
+        /* Public variables, overridable by consumers; the values are defaults with standalone fallbacks */
+        --or-toggle-track-width: 30px;
+        --or-toggle-track-height: 20px;
+        --or-toggle-knob-size: 14px;
+        --or-toggle-knob-inset: 3px;
+        --or-toggle-radius: var(--lumo-border-radius-l, 12px);
+        --or-toggle-track-off-color: var(--lumo-contrast-30pct, #c4c8c4);
+        --or-toggle-track-on-color: var(--lumo-primary-color, #47a942);
+        --or-toggle-knob-color: var(--lumo-base-color, #ffffff);
+        --or-toggle-gap: 6px;
 
         align-items: center;
-        --vaadin-checkbox-gap: var(--_or-toggle-gap);
+        --vaadin-checkbox-gap: var(--or-toggle-gap);
     }
 
     /*
@@ -75,17 +75,17 @@ registerStyles("or-vaadin-toggle", css`
      */
     :host [part='checkbox'] {
         box-sizing: border-box;
-        width: var(--_or-toggle-track-width);
-        min-width: var(--_or-toggle-track-width);
-        height: var(--_or-toggle-track-height);
+        width: var(--or-toggle-track-width);
+        min-width: var(--or-toggle-track-width);
+        height: var(--or-toggle-track-height);
         border: none;
-        border-radius: var(--_or-toggle-radius);
-        background: var(--_or-toggle-track-off-color);
+        border-radius: var(--or-toggle-radius);
+        background: var(--or-toggle-track-off-color);
         transition: background-color 0.15s ease-in-out;
     }
 
     :host([checked]) [part='checkbox'] {
-        background: var(--_or-toggle-track-on-color);
+        background: var(--or-toggle-track-on-color);
     }
 
     :host([disabled]) {
@@ -98,11 +98,11 @@ registerStyles("or-vaadin-toggle", css`
         position: absolute;
         inset: auto;
         top: 50%;
-        width: var(--_or-toggle-knob-size);
-        height: var(--_or-toggle-knob-size);
+        width: var(--or-toggle-knob-size);
+        height: var(--or-toggle-knob-size);
         min-width: 0;
         border-radius: 50%;
-        background: var(--_or-toggle-knob-color);
+        background: var(--or-toggle-knob-color);
         mask: none;
         -webkit-mask: none;
         filter: none;
@@ -112,16 +112,16 @@ registerStyles("or-vaadin-toggle", css`
 
     :host(:not([checked])) [part='checkbox']::after {
         opacity: 1;
-        left: var(--_or-toggle-knob-inset);
+        left: var(--or-toggle-knob-inset);
     }
 
     :host([checked]) [part='checkbox']::after {
         opacity: 1;
-        left: calc(var(--_or-toggle-track-width) - var(--_or-toggle-knob-size) - var(--_or-toggle-knob-inset));
+        left: calc(var(--or-toggle-track-width) - var(--or-toggle-knob-size) - var(--or-toggle-knob-inset));
     }
 
     :host([focus-ring]) [part='checkbox'] {
-        outline: 2px solid var(--_or-toggle-track-on-color);
+        outline: 2px solid var(--or-toggle-track-on-color);
         outline-offset: 2px;
     }
 `);
@@ -132,6 +132,15 @@ registerStyles("or-vaadin-toggle", css`
  * @customElement "or-vaadin-toggle"
  * @fires {Event} change - Fired when the toggle is switched on or off by the user.
  * @fires {CustomEvent} checked-changed - Fired when the `checked` property changes.
+ * @cssprop --or-toggle-track-width - Width of the track.
+ * @cssprop --or-toggle-track-height - Height of the track.
+ * @cssprop --or-toggle-knob-size - Diameter of the sliding knob.
+ * @cssprop --or-toggle-knob-inset - Distance between the knob and the track edge.
+ * @cssprop --or-toggle-radius - Border radius of the track.
+ * @cssprop --or-toggle-track-off-color - Track color in the off state.
+ * @cssprop --or-toggle-track-on-color - Track color in the on state.
+ * @cssprop --or-toggle-knob-color - Color of the knob.
+ * @cssprop --or-toggle-gap - Gap between the track and the label.
  */
 @customElement("or-vaadin-toggle")
 export class OrVaadinToggle extends (Checkbox as new () => Checkbox & LitElement) implements OrVaadinComponent {
