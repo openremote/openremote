@@ -45,6 +45,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.logging.Logger;
@@ -209,8 +210,9 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
      * entry is absent. On an upgrade it already exists from a previous startup. Using the client table rather
      * than {@code PUBLIC.REALM} avoids a false negative: a freshly initialized Keycloak always contains the
      * {@code master} realm, so {@code PUBLIC.REALM} is never empty even on a genuine clean install.
-     * Falls back to {@code true} if the table can't be queried, since in that case {@code KeycloakInitSetup}
-     * will create the roles.
+     * Only a missing table (SQLSTATE 42P01) is treated as a clean install; any other query failure assumes
+     * an upgrade, so a transient error can't silently skip the backfill (the caller then falls back to
+     * explicit admin credentials or fails loudly).
      */
     private boolean isCleanInstall(Context context) {
         try (Statement statement = context.getConnection().createStatement();
@@ -218,9 +220,13 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
                         "SELECT COUNT(*) FROM public.client WHERE client_id = '" + Constants.KEYCLOAK_CLIENT_ID + "'")) {
             resultSet.next();
             return resultSet.getInt(1) == 0;
-        } catch (Exception ex) {
-            LOG.warning("Could not query Keycloak client table: " + ex.getMessage() + "; assuming clean install");
-            return true;
+        } catch (SQLException ex) {
+            if ("42P01".equals(ex.getSQLState())) { // undefined_table: Keycloak schema not created yet
+                LOG.info("Keycloak client table does not exist; assuming clean install");
+                return true;
+            }
+            LOG.warning("Could not query Keycloak client table: " + ex.getMessage() + "; assuming upgrade");
+            return false;
         }
     }
 
