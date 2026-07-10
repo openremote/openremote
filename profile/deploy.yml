@@ -303,6 +303,10 @@ services:
       OR_EXECUTOR_THREADS_MIN:
       OR_EXECUTOR_THREADS_MAX:
 
+      # Enable/disable execution of Groovy rulesets; when disabled they can still be created, edited and deleted
+      # but will not be compiled or executed by the manager.
+      OR_RULES_GROOVY_EXECUTION_ENABLED: ${OR_RULES_GROOVY_EXECUTION_ENABLED:-true}
+
       # The minimum number of threads that will be used to process incoming auto provisioning messages
       OR_AUTO_PROVISIONING_THREADS_MIN:
       # The maximum number of threads that will be used to process incoming auto provisioning messages

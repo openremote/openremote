@@ -110,6 +110,7 @@ public class RulesetDeployment {
     final protected Alarms alarmsFacade;
     final protected HistoricDatapoints historicDatapointsFacade;
     final protected PredictedDatapoints predictedDatapointsFacade;
+    final protected boolean groovyRulesExecutionEnabled;
     final protected List<ScheduledFuture<?>> scheduledRuleActions = Collections.synchronizedList(new ArrayList<>());
     final protected RulesEngine<?> rulesEngine;
     protected final Logger LOG;
@@ -124,7 +125,8 @@ public class RulesetDeployment {
     public RulesetDeployment(Ruleset ruleset, RulesEngine<?> rulesEngine, TimerService timerService,
                              AssetStorageService assetStorageService, ExecutorService executorService, ScheduledExecutorService scheduledExecutorService,
                              Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
-                             Alarms alarmsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
+                             Alarms alarmsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade,
+                             boolean groovyRulesExecutionEnabled) {
         this.ruleset = ruleset;
         this.rulesEngine = rulesEngine;
         this.timerService = timerService;
@@ -138,6 +140,7 @@ public class RulesetDeployment {
         this.alarmsFacade = alarmsFacade;
         this.historicDatapointsFacade = historicDatapointsFacade;
         this.predictedDatapointsFacade = predictedDatapointsFacade;
+        this.groovyRulesExecutionEnabled = groovyRulesExecutionEnabled;
 
         String ruleCategory = ruleset.getClass().getSimpleName() + "-" + ruleset.getId();
         LOG = SyslogCategory.getLogger(SyslogCategory.RULES, RulesEngine.class.getName() + "." + ruleCategory);
@@ -163,6 +166,12 @@ public class RulesetDeployment {
         if (!ruleset.isEnabled()) {
             LOG.finest("Ruleset is disabled: " + ruleset.getName());
             status = DISABLED;
+        }
+
+        if (ruleset.getLang() == Ruleset.Lang.GROOVY && !groovyRulesExecutionEnabled) {
+            LOG.info("Groovy ruleset execution is disabled; skipping compilation for ruleset: " + ruleset.getName());
+            status = DISABLED;
+            return;
         }
 
         if (!compile()) {
