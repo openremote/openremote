@@ -4,3 +4,4 @@
 FROM alpine:latest
 
 ADD image /deployment
+RUN mkdir -p /deployment/manager/extensions
