@@ -40,7 +40,8 @@ ct("Primary: renders label and checked state", async ({ mount }) => {
     props: { label: "Toggle", checked: true },
   });
 
-  await expect(component.getByRole("checkbox", { name: "Toggle" })).toBeChecked();
+  // The toggle is exposed to assistive technology with the `switch` role, not `checkbox`.
+  await expect(component.getByRole("switch", { name: "Toggle" })).toBeChecked();
   await expect(component).toContainText("Toggle");
 });
 
@@ -62,7 +63,7 @@ ct("Events: change + checked-changed emit the new value on user toggle", async (
     },
   });
 
-  const input = component.getByRole("checkbox", { name: "Toggle" });
+  const input = component.getByRole("switch", { name: "Toggle" });
   await expect(input).not.toBeChecked();
 
   // Turn on
@@ -83,12 +84,12 @@ ct("Events: change + checked-changed emit the new value on user toggle", async (
 
 ct("State: off (default) is unchecked", async ({ mount }) => {
   const component = await mount(OrVaadinToggle, { props: { label: "Off (default)" } });
-  await expect(component.getByRole("checkbox", { name: "Off (default)" })).not.toBeChecked();
+  await expect(component.getByRole("switch", { name: "Off (default)" })).not.toBeChecked();
 });
 
 ct("State: on is checked", async ({ mount }) => {
   const component = await mount(OrVaadinToggle, { props: { label: "On", checked: true } });
-  await expect(component.getByRole("checkbox", { name: "On" })).toBeChecked();
+  await expect(component.getByRole("switch", { name: "On" })).toBeChecked();
 });
 
 ct("State: disabled cannot be toggled and emits no change event", async ({ mount }) => {
@@ -104,7 +105,7 @@ ct("State: disabled cannot be toggled and emits no change event", async ({ mount
     },
   });
 
-  const input = component.getByRole("checkbox", { name: "Disabled" });
+  const input = component.getByRole("switch", { name: "Disabled" });
   await expect(input).toBeDisabled();
   await input.click({ force: true });
   await expect(input).not.toBeChecked();
@@ -116,7 +117,7 @@ ct("State: disabled cannot be toggled and emits no change event", async ({ mount
 
 ct("State: disabled + on stays checked", async ({ mount }) => {
   const component = await mount(OrVaadinToggle, { props: { label: "Disabled on", checked: true, disabled: true } });
-  const input = component.getByRole("checkbox", { name: "Disabled on" });
+  const input = component.getByRole("switch", { name: "Disabled on" });
   await expect(input).toBeDisabled();
   await expect(input).toBeChecked();
 });
@@ -134,7 +135,7 @@ ct("State: readonly does not change on click and emits no change event", async (
     },
   });
 
-  const input = component.getByRole("checkbox", { name: "Readonly" });
+  const input = component.getByRole("switch", { name: "Readonly" });
   await input.click({ force: true });
   await expect(input).not.toBeChecked();
   // The click must fire no `change` event (which has no mount-time noise); and `checked-changed`
@@ -145,7 +146,7 @@ ct("State: readonly does not change on click and emits no change event", async (
 
 ct("State: readonly + on stays checked", async ({ mount }) => {
   const component = await mount(OrVaadinToggle, { props: { label: "Readonly on", checked: true, readonly: true } });
-  await expect(component.getByRole("checkbox", { name: "Readonly on" })).toBeChecked();
+  await expect(component.getByRole("switch", { name: "Readonly on" })).toBeChecked();
 });
 
 ct("Helper text: renders below the toggle", async ({ mount }) => {
@@ -164,7 +165,7 @@ ct("State: required reflects the required attribute", async ({ mount }) => {
 
 ct("State: renders without a label", async ({ mount }) => {
   const component = await mount(OrVaadinToggle, { props: { checked: true } });
-  await expect(component.getByRole("checkbox")).toBeChecked();
+  await expect(component.getByRole("switch")).toBeChecked();
   await expect(component).not.toHaveAttribute("has-label");
 });
 
@@ -190,14 +191,14 @@ ct("Group (vertical): stacks grouped toggles and reflects their checked state", 
   await component.evaluate((el) => el.setAttribute("theme", "vertical"));
 
   await expect(component).toContainText("Notifications");
-  await expect(component.getByRole("checkbox")).toHaveCount(3);
-  await expect(component.getByRole("checkbox", { name: "Email" })).toBeChecked();
-  await expect(component.getByRole("checkbox", { name: "SMS" })).not.toBeChecked();
-  await expect(component.getByRole("checkbox", { name: "Push" })).toBeChecked();
+  await expect(component.getByRole("switch")).toHaveCount(3);
+  await expect(component.getByRole("switch", { name: "Email" })).toBeChecked();
+  await expect(component.getByRole("switch", { name: "SMS" })).not.toBeChecked();
+  await expect(component.getByRole("switch", { name: "Push" })).toBeChecked();
 
   // The vertical theme stacks the toggles: shared left edge, increasing top.
-  const email = await component.getByRole("checkbox", { name: "Email" }).boundingBox();
-  const sms = await component.getByRole("checkbox", { name: "SMS" }).boundingBox();
+  const email = await component.getByRole("switch", { name: "Email" }).boundingBox();
+  const sms = await component.getByRole("switch", { name: "SMS" }).boundingBox();
   expect(email).not.toBeNull();
   expect(sms).not.toBeNull();
   expect(Math.abs(email!.x - sms!.x)).toBeLessThan(4);
@@ -218,8 +219,8 @@ ct("Group: a child toggle switches independently when clicked", async ({ mount }
     },
   });
 
-  const email = component.getByRole("checkbox", { name: "Email" });
-  const sms = component.getByRole("checkbox", { name: "SMS" });
+  const email = component.getByRole("switch", { name: "Email" });
+  const sms = component.getByRole("switch", { name: "SMS" });
   await email.click();
   await expect(email).toBeChecked();
   await expect(sms).not.toBeChecked();
@@ -238,11 +239,11 @@ ct("Group (horizontal): renders grouped toggles in a row layout", async ({ mount
     },
   });
 
-  await expect(component.getByRole("checkbox")).toHaveCount(3);
+  await expect(component.getByRole("switch")).toHaveCount(3);
 
   // Under the theme the group is horizontal by default: the toggles share a row (same top edge).
-  const first = await component.getByRole("checkbox", { name: "Email" }).boundingBox();
-  const second = await component.getByRole("checkbox", { name: "SMS" }).boundingBox();
+  const first = await component.getByRole("switch", { name: "Email" }).boundingBox();
+  const second = await component.getByRole("switch", { name: "SMS" }).boundingBox();
   expect(first).not.toBeNull();
   expect(second).not.toBeNull();
   expect(Math.abs(first!.y - second!.y)).toBeLessThan(4);
@@ -275,7 +276,7 @@ ct("Styling: track is a 30x20 pill that changes color when toggled on", async ({
   await expect(track).toHaveCSS("height", "20px");
 
   const offColor = await track.evaluate((el) => getComputedStyle(el).backgroundColor);
-  await component.getByRole("checkbox").click();
+  await component.getByRole("switch").click();
   await expect(track).not.toHaveCSS("background-color", offColor);
 });
 
@@ -289,7 +290,7 @@ ct("Styling: knob is visible in both states and slides when toggled", async ({ m
     .poll(() => getKnobStyles(track))
     .toEqual({ width: "14px", height: "14px", opacity: "1", left: "3px" });
 
-  await component.getByRole("checkbox").click();
+  await component.getByRole("switch").click();
 
   // On state: still visible, slid to the right (track width - knob size - inset).
   await expect

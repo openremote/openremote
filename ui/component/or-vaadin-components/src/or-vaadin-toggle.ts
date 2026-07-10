@@ -26,8 +26,8 @@ import {type LitElement} from "lit";
 /*
  * The toggle reuses the Vaadin `<vaadin-checkbox>` as its base, so it inherits the checkbox's
  * behaviour, form participation, accessibility and `checked` / `readonly` / `disabled` states.
- * Only the visuals differ: the `checkbox` part is restyled into a pill-shaped track with a
- * sliding knob.
+ * Only the visuals and the exposed role differ: the `checkbox` part is restyled into a pill-shaped
+ * track with a sliding knob, and the input is exposed as a `switch` to assistive technology.
  *
  * The styles are applied through Vaadin's `registerStyles()` rather than a `static get styles()`
  * override, because `finalizeStyles()` injects `static` styles BEFORE the (Lumo) theme injector,
@@ -149,5 +149,15 @@ export class OrVaadinToggle extends (Checkbox as new () => Checkbox & LitElement
 
     static get is() {
         return "or-vaadin-toggle";
+    }
+
+    /**
+     * Exposes the control to assistive technology as a switch instead of a checkbox, matching its
+     * on/off semantics (and the `role="switch"` of the or-mwc-input switch it replaces). The native
+     * checkbox input keeps mapping its checked state to `aria-checked`.
+     */
+    protected override _inputElementChanged(input: HTMLElement, oldInput: HTMLElement) {
+        super._inputElementChanged(input, oldInput);
+        input?.setAttribute("role", "switch");
     }
 }

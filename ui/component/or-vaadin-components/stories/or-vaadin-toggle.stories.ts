@@ -44,7 +44,7 @@ const meta: Meta = {
         },
         docs: {
             subtitle: `<${tagName}>`,
-            description: "Toggle is an input field representing a binary on/off choice. It reuses the Vaadin checkbox as its base, so it supports the same states (checked, disabled, readonly, required) and events (`change`, `checked-changed`)."
+            description: "Toggle is an input field representing a binary on/off choice. It reuses the Vaadin checkbox as its base, so it supports the same states (checked, disabled, readonly, required) and events (`change`, `checked-changed`), while being exposed to assistive technology as a switch."
         }
     }
 };
