@@ -191,10 +191,12 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
      * bootstrap).
      */
     private OAuthPasswordGrant loadAdminFallbackCredentials() {
-        if (!System.getenv().containsKey(IdentityProvider.OR_ADMIN_PASSWORD)) {
+        String adminPassword = System.getenv(IdentityProvider.OR_ADMIN_PASSWORD);
+        if (adminPassword == null || adminPassword.isBlank()) {
+            // Set-but-blank would only produce a guaranteed 401; treat it the same as "not provided" so the
+            // caller fails with the clearer missing-credentials message instead.
             return null;
         }
-        String adminPassword = System.getenv(IdentityProvider.OR_ADMIN_PASSWORD);
         return new OAuthPasswordGrant(
                 null,
                 KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID,
