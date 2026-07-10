@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { ct, expect } from "@openremote/test";
+import { ct, expect, type Locator } from "@openremote/test";
 
 import { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import { OrVaadinToggleGroup } from "@openremote/or-vaadin-components/or-vaadin-toggle-group";
@@ -247,4 +247,64 @@ ct("Group (horizontal): renders grouped toggles in a row layout", async ({ mount
   expect(second).not.toBeNull();
   expect(Math.abs(first!.y - second!.y)).toBeLessThan(4);
   expect(second!.x).toBeGreaterThan(first!.x);
+});
+
+// --- Styling -----------------------------------------------------------------
+
+/*
+ * Image snapshots are not used in this repo, so the toggle's key visual invariants are asserted
+ * through computed styles instead. This guards the restyled shadow internals against Vaadin
+ * upgrades: a change in the base checkbox styles could otherwise e.g. hide the knob in the off
+ * state or restore the 500 label weight without any of the behavioural tests failing.
+ * The expected values are the defaults of the public `--or-toggle-*` variables.
+ */
+
+/** Reads the computed styles of the sliding knob (the `::after` pseudo-element of the track). */
+function getKnobStyles(track: Locator) {
+  return track.evaluate((el) => {
+    const style = getComputedStyle(el, "::after");
+    return { width: style.width, height: style.height, opacity: style.opacity, left: style.left };
+  });
+}
+
+ct("Styling: track is a 30x20 pill that changes color when toggled on", async ({ mount }) => {
+  const component = await mount(OrVaadinToggle, { props: { label: "Toggle" } });
+  const track = component.locator("[part='checkbox']");
+
+  await expect(track).toHaveCSS("width", "30px");
+  await expect(track).toHaveCSS("height", "20px");
+
+  const offColor = await track.evaluate((el) => getComputedStyle(el).backgroundColor);
+  await component.getByRole("checkbox").click();
+  await expect(track).not.toHaveCSS("background-color", offColor);
+});
+
+ct("Styling: knob is visible in both states and slides when toggled", async ({ mount }) => {
+  const component = await mount(OrVaadinToggle, { props: { label: "Toggle" } });
+  const track = component.locator("[part='checkbox']");
+
+  // Off state: the knob must be visible at the left inset. The Vaadin base styles hide the
+  // checkmark marker when unchecked, which must not apply to the knob.
+  await expect
+    .poll(() => getKnobStyles(track))
+    .toEqual({ width: "14px", height: "14px", opacity: "1", left: "3px" });
+
+  await component.getByRole("checkbox").click();
+
+  // On state: still visible, slid to the right (track width - knob size - inset).
+  await expect
+    .poll(() => getKnobStyles(track))
+    .toEqual({ width: "14px", height: "14px", opacity: "1", left: "13px" });
+});
+
+ct("Styling: label uses the default 400 font weight", async ({ mount }) => {
+  // The Vaadin base styles set a 500 label weight that Lumo normally resets; the toggle
+  // restores the default weight itself because the Lumo reset is keyed off the overridden `is`.
+  const component = await mount(OrVaadinToggle, { props: { label: "Toggle" } });
+  await expect(component.locator("[part='label']")).toHaveCSS("font-weight", "400");
+});
+
+ct("Styling: disabled dims the whole toggle", async ({ mount }) => {
+  const component = await mount(OrVaadinToggle, { props: { label: "Disabled", disabled: true } });
+  await expect(component).toHaveCSS("opacity", "0.5");
 });
