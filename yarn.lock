@@ -2250,7 +2250,6 @@ __metadata:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
-    "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/util": "workspace:*"
     "@playwright/experimental-ct-core": "npm:1.59.1"
     "@playwright/test": "npm:1.59.1"

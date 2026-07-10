@@ -173,6 +173,8 @@ ct("State: renders without a label", async ({ mount }) => {
 ct("Group (vertical): stacks grouped toggles and reflects their checked state", async ({ mount }) => {
   const component = await mount(OrVaadinToggleGroup, {
     props: { label: "Notifications" },
+    // The slotted toggles are not `mount()`ed themselves, so declare them for eager registration.
+    hooksConfig: { components: [OrVaadinToggle] },
     slots: {
       // The default slot must be an array: the CT runner keeps only `fragment.firstChild` per string.
       default: [
@@ -207,6 +209,7 @@ ct("Group: a child toggle switches independently when clicked", async ({ mount }
   // reach a group-level listener - the per-toggle event flow is covered by the "Events" test above.
   const component = await mount(OrVaadinToggleGroup, {
     props: { label: "Notifications" },
+    hooksConfig: { components: [OrVaadinToggle] },
     slots: {
       default: [
         '<or-vaadin-toggle label="Email" value="email"></or-vaadin-toggle>',
@@ -225,6 +228,7 @@ ct("Group: a child toggle switches independently when clicked", async ({ mount }
 ct("Group (horizontal): renders grouped toggles in a row layout", async ({ mount }) => {
   const component = await mount(OrVaadinToggleGroup, {
     props: { label: "Notifications" },
+    hooksConfig: { components: [OrVaadinToggle] },
     slots: {
       default: [
         '<or-vaadin-toggle label="Email" value="email" checked></or-vaadin-toggle>',
