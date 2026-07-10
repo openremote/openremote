@@ -75,8 +75,7 @@ registerStyles("or-vaadin-toggle", css`
         transition: background-color 0.15s ease-in-out;
     }
 
-    :host([checked]) [part='checkbox'],
-    :host([indeterminate]) [part='checkbox'] {
+    :host([checked]) [part='checkbox'] {
         background: var(--_or-toggle-track-on-color);
     }
 
@@ -102,13 +101,12 @@ registerStyles("or-vaadin-toggle", css`
         transition: left 0.15s ease-in-out;
     }
 
-    :host(:not([checked], [indeterminate])) [part='checkbox']::after {
+    :host(:not([checked])) [part='checkbox']::after {
         opacity: 1;
         left: var(--_or-toggle-knob-inset);
     }
 
-    :host([checked]) [part='checkbox']::after,
-    :host([indeterminate]) [part='checkbox']::after {
+    :host([checked]) [part='checkbox']::after {
         opacity: 1;
         left: calc(var(--_or-toggle-track-width) - var(--_or-toggle-knob-size) - var(--_or-toggle-knob-inset));
     }

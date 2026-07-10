@@ -150,11 +150,6 @@ ct("State: readonly + on stays checked", async ({ mount }) => {
   await expect(component.getByRole("checkbox", { name: "Readonly on" })).toBeChecked();
 });
 
-ct("State: indeterminate reflects the indeterminate attribute", async ({ mount }) => {
-  const component = await mount(OrVaadinToggle, { props: { label: "Indeterminate", indeterminate: true } });
-  await expect(component).toHaveAttribute("indeterminate");
-});
-
 ct("State: required reflects the required attribute", async ({ mount }) => {
   const component = await mount(OrVaadinToggle, { props: { label: "Required", required: true } });
   await expect(component).toHaveAttribute("required");

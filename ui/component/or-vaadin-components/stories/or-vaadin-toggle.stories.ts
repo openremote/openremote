@@ -44,7 +44,7 @@ const meta: Meta = {
         },
         docs: {
             subtitle: `<${tagName}>`,
-            description: "Toggle is an input field representing a binary on/off choice. It reuses the Vaadin checkbox as its base, so it supports the same states (checked, disabled, readonly, indeterminate, required) and events (`change`, `checked-changed`)."
+            description: "Toggle is an input field representing a binary on/off choice. It reuses the Vaadin checkbox as its base, so it supports the same states (checked, disabled, readonly, required) and events (`change`, `checked-changed`)."
         }
     }
 };
@@ -62,7 +62,7 @@ export const States: Story = {
     name: "States & attributes",
     parameters: {
         title: "States & attributes",
-        summary: "The toggle covers the standard checkbox states. Use `checked` for the on/off value, `disabled` to block interaction, `readonly` to show a non-editable value, `indeterminate` for a mixed state, and `required` for validation. The label comes from the `label` attribute and is optional."
+        summary: "The toggle covers the standard checkbox states. Use `checked` for the on/off value, `disabled` to block interaction, `readonly` to show a non-editable value, and `required` for validation. The label comes from the `label` attribute and is optional."
     },
     render: () => html`
         <div style="display: grid; grid-template-columns: repeat(2, max-content); gap: 24px 64px; padding: 8px;">
@@ -72,7 +72,6 @@ export const States: Story = {
             <or-vaadin-toggle label="Disabled, on" checked disabled></or-vaadin-toggle>
             <or-vaadin-toggle label="Readonly, off" readonly></or-vaadin-toggle>
             <or-vaadin-toggle label="Readonly, on" checked readonly></or-vaadin-toggle>
-            <or-vaadin-toggle label="Indeterminate" indeterminate></or-vaadin-toggle>
             <or-vaadin-toggle label="Required" required></or-vaadin-toggle>
             <or-vaadin-toggle label="With helper text" checked helper-text="Additional context shown below the toggle"></or-vaadin-toggle>
             <or-vaadin-toggle checked title="No label"></or-vaadin-toggle>
