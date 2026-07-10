@@ -1180,9 +1180,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         try {
             persistenceService.doTransaction(em -> {
-                // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
-                // and the minimum supported TimescaleDB version includes that fix.
-                em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
+                useCustomQueryPlansForTimescaleDelete(em);
                 Asset<?> asset = em.find(Asset.class, assetId);
 
                 if (asset == null) {
@@ -1216,6 +1214,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
+    // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
+    // and the minimum supported TimescaleDB version includes that fix.
+    protected void useCustomQueryPlansForTimescaleDelete(EntityManager em) {
+        em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
+    }
+
     protected void deleteAssetDatapoints(String assetId) {
         LocalDateTime oldestChunkStart = findOldestAssetDatapointChunkStart();
 
@@ -1238,15 +1242,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             LocalDateTime batchEnd = rangeEnd;
             long start = System.currentTimeMillis();
 
-            int deleted = persistenceService.doReturningTransaction(em ->
-                em.createNativeQuery(
+            int deleted = persistenceService.doReturningTransaction(em -> {
+                useCustomQueryPlansForTimescaleDelete(em);
+                return em.createNativeQuery(
                         "delete from " + AssetDatapoint.TABLE_NAME + " where entity_id = :assetId and timestamp >= :rangeStart and timestamp < :rangeEnd"
                     )
                     .setParameter("assetId", assetId)
                     .setParameter("rangeStart", batchStart)
                     .setParameter("rangeEnd", batchEnd)
-                    .executeUpdate()
-            );
+                    .executeUpdate();
+            });
 
             if (LOG.isLoggable(FINE)) {
                 LOG.fine("Deleted asset datapoints for pending asset: assetId=" + assetId + ", chunkRangeStart=" + batchStart + ", chunkRangeEnd=" + batchEnd + ", rows=" + deleted + ", durationMillis=" + (System.currentTimeMillis() - start));
