@@ -105,8 +105,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
     const format: ValueFormat | undefined = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType));
 
-    // A boolean rendered as an on/off toggle is now natively supported by or-vaadin-toggle, so it no longer needs the or-mwc-input fallback.
-    const supportsVaadinInput = (type: InputType) => (OrVaadinInput.TEMPLATES.has(type) && (type === InputType.SWITCH || !format?.asOnOff));
+    const supportsVaadinInput = (type: InputType) => OrVaadinInput.TEMPLATES.has(type);
 
     // Enforces which value types are supported making SUPPORTED_WELLKNOWN_VALUE_TYPES the single source of truth through type checking
     let _exhaustiveTypeCheck: never
