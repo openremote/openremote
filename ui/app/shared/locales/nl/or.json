@@ -823,6 +823,7 @@
   "rulesetStatus": {
     "DEPLOYED": "Succesvol aangemaakt",
     "NOSTATUS": "Uitgeschakeld",
+    "DISABLED": "Uitgeschakeld",
     "LOOP_ERROR": "Loop fout",
     "COMPILATION_ERROR": "Compilatiefout",
     "EXECUTION_ERROR": "Uitvoeringsfout",
