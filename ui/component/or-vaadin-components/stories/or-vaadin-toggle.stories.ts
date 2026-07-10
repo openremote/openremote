@@ -23,7 +23,7 @@ import customElements from "../custom-elements.json" with {type: "json"};
 import packageJson from "../package.json" with {type: "json"};
 import {html} from "lit";
 import "../src/or-vaadin-toggle";
-import "../src/or-vaadin-checkbox-group";
+import "../src/or-vaadin-toggle-group";
 
 const tagName = "or-vaadin-toggle";
 type Story = StoryObj;
@@ -79,31 +79,26 @@ export const States: Story = {
     `
 };
 
-/** Several toggles combined inside a checkbox group, in both orientations. */
+/** Several toggles combined inside a toggle group, in both orientations. */
 export const Group: Story = {
     name: "Toggle group",
     parameters: {
         title: "Grouped toggles",
-        summary: "Multiple toggles can be combined inside an `<or-vaadin-checkbox-group>` to share a group label, helper text and validation. Under the theme the group is horizontal by default; use `theme=\"vertical\"` to stack them."
+        summary: "Multiple toggles can be combined inside an `<or-vaadin-toggle-group>` to share a group label, helper text and validation. Under the theme the group is horizontal by default; use `theme=\"vertical\"` to stack them."
     },
     render: () => html`
-        <style>
-            or-vaadin-checkbox-group::part(group-field) {
-                gap: 2px 12px; /* row-gap (vertical) / column-gap (horizontal) */
-            }
-        </style>
         <div style="display: flex; flex-direction: column; gap: 32px; padding: 8px;">
-            <or-vaadin-checkbox-group label="Notifications (vertical)" theme="vertical" helper-text="Choose how you want to be notified">
+            <or-vaadin-toggle-group label="Notifications (vertical)" theme="vertical" helper-text="Choose how you want to be notified">
                 <or-vaadin-toggle label="Email" value="email" checked></or-vaadin-toggle>
                 <or-vaadin-toggle label="SMS" value="sms"></or-vaadin-toggle>
                 <or-vaadin-toggle label="Push" value="push" checked></or-vaadin-toggle>
-            </or-vaadin-checkbox-group>
+            </or-vaadin-toggle-group>
 
-            <or-vaadin-checkbox-group label="Notifications (horizontal)" helper-text="Choose how you want to be notified">
+            <or-vaadin-toggle-group label="Notifications (horizontal)" helper-text="Choose how you want to be notified">
                 <or-vaadin-toggle label="Email" value="email" checked></or-vaadin-toggle>
                 <or-vaadin-toggle label="SMS" value="sms"></or-vaadin-toggle>
                 <or-vaadin-toggle label="Push" value="push" checked></or-vaadin-toggle>
-            </or-vaadin-checkbox-group>
+            </or-vaadin-toggle-group>
         </div>
     `
 };

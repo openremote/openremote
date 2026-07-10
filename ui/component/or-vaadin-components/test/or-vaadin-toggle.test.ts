@@ -20,7 +20,7 @@
 import { ct, expect } from "@openremote/test";
 
 import { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
-import { OrVaadinCheckboxGroup } from "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
+import { OrVaadinToggleGroup } from "@openremote/or-vaadin-components/or-vaadin-toggle-group";
 
 /*
  * These tests mirror the scenarios in `stories/or-vaadin-toggle.stories.ts`:
@@ -164,7 +164,7 @@ ct("State: renders without a label", async ({ mount }) => {
 // --- Toggle group ----------------------------------------------------------
 
 ct("Group (vertical): stacks grouped toggles and reflects their checked state", async ({ mount }) => {
-  const component = await mount(OrVaadinCheckboxGroup, {
+  const component = await mount(OrVaadinToggleGroup, {
     props: { label: "Notifications" },
     slots: {
       // The default slot must be an array: the CT runner keeps only `fragment.firstChild` per string.
@@ -198,7 +198,7 @@ ct("Group (vertical): stacks grouped toggles and reflects their checked state", 
 ct("Group: a child toggle switches independently when clicked", async ({ mount }) => {
   // Note: Vaadin's `checked-changed` is dispatched without `bubbles`/`composed`, so it does not
   // reach a group-level listener - the per-toggle event flow is covered by the "Events" test above.
-  const component = await mount(OrVaadinCheckboxGroup, {
+  const component = await mount(OrVaadinToggleGroup, {
     props: { label: "Notifications" },
     slots: {
       default: [
@@ -216,7 +216,7 @@ ct("Group: a child toggle switches independently when clicked", async ({ mount }
 });
 
 ct("Group (horizontal): renders grouped toggles in a row layout", async ({ mount }) => {
-  const component = await mount(OrVaadinCheckboxGroup, {
+  const component = await mount(OrVaadinToggleGroup, {
     props: { label: "Notifications" },
     slots: {
       default: [

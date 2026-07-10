@@ -21,11 +21,21 @@ Running `./gradlew clean` deletes the root `tmp/` directory that is mounted into
 
 Vaadin-based components live in `ui/component/or-vaadin-components/src/` as thin wrappers that extend a Vaadin class and re-register it under an `or-vaadin-<name>` tag, e.g. `export class OrVaadinX extends (X as new () => X & LitElement)` with `@customElement("or-vaadin-x")`. Keep all `@vaadin/*` dependency versions aligned.
 
-**Styling the component's shadow-DOM internals (`[part='...']`) — do NOT use `static get styles()`.** Vaadin's `ThemableMixin.finalizeStyles()` injects `static` styles *before* the Lumo theme injector, so the theme overrides them and nothing appears to apply. Styles registered via `registerStyles()` are injected *after* the injector, so they always win. Recipe (see `or-vaadin-toggle.ts`):
+#### Styling the component's shadow-DOM internals
+
+Pick the approach by how much of the base component you need to keep. The base + Lumo styles are keyed off the element's `static get is()`, so a wrapper that does *not* override `is` still reports the base tag (e.g. `vaadin-checkbox-group`) and inherits the full base + Lumo theme.
+
+**Small tweaks to an existing component (preferred default).** For small visual tweaks to an existing component, do NOT override `is`, since that detaches the element from the base + Lumo styles keyed off `is` and strips the inherited theme/layout entirely. Instead, apply the styles in the following ways:
+- Add the rules to a theme module in `ui/component/theme/src/components/or-vaadin-<name>.css` and `@import` it from that dir's `index.css`.
+- Reach shadow parts from *outside* with an external `::part()` rule keyed on the real tag name, e.g. `or-vaadin-<tag>::part(<part>) { … }`. Such a rule is invisible to the `is`-based lookup, so it scopes cleanly to that tag only (see `or-vaadin-toggle-group.ts` and its theme `or-vaadin-toggle-group.css`).
+
+**A component that fully owns its visuals via `registerStyles()`.** Only when the component re-implements the look from scratch (so it has no inherited theme to preserve) override `is` and register styles from its own module — do NOT use `static get styles()`. Vaadin's `ThemableMixin.finalizeStyles()` injects `static` styles *before* the Lumo theme injector, so the theme overrides them and nothing appears to apply; styles registered via `registerStyles()` are injected *after* the injector, so they always win. Recipe (see `or-vaadin-toggle.ts`):
 - Call `registerStyles("or-vaadin-<tag>", css\`...\`)` from `@vaadin/vaadin-themable-mixin/register-styles.js` at module top (before the element is finalized).
-- Override `static get is() { return "or-vaadin-<tag>"; }`. The base class reports its own tag (e.g. `vaadin-checkbox`), and `registerStyles`/`getStylesForThis()` key off `is`; without this the styles either don't match or leak onto every instance of the base component.
+- Override `static get is() { return "or-vaadin-<tag>"; }`. The base class reports its own tag (e.g. `vaadin-checkbox`), and `registerStyles`/`getStylesForThis()` key off `is`; without this the styles either don't match or leak onto every instance of the base component. (This same override is what detaches the element from the base theme — acceptable here because the component re-styles everything itself.)
 - Out-specify base rules with `:host(...)` prefixes (e.g. the checkbox base hides its marker with `:host(:not([checked])) [part='checkbox']::after { opacity: 0 }`).
-- Give every themed CSS var a hard-coded fallback (e.g. `var(--lumo-primary-color, #47a942)`) so the component also looks correct standalone, with no theme loaded. Theme integration otherwise lives in `ui/component/theme/src/components/` via Lumo module injection.
+- Give every themed CSS var a hard-coded fallback (e.g. `var(--lumo-primary-color, #47a942)`) so the component also looks correct standalone, with no theme loaded.
+
+#### Registering an input type in the input pipeline
 
 To make an input type usable through the input pipeline, register it in `or-vaadin-input.ts` (`TEMPLATES` map + a `getXTemplate`, and `nativeValue` if it is a boolean that exposes `checked` instead of `value`) and update `value-input-provider.ts` (boolean/checked types use the `checked` attribute, not `value`).
 
