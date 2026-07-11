@@ -24,22 +24,35 @@ import "@openremote/or-icon";
 
 export const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(-?\\d+\\.?\\d*)[ ]*$";
 
+export function commitCoordinatesInputValue(e: Event, valueChangedHandler: (value: LngLat | undefined) => void) {
+    const input = e.target as HTMLInputElement;
+    if (input.readOnly || input.disabled || input.hasAttribute("readonly") || input.hasAttribute("disabled")) {
+        return;
+    }
+
+    if (!input.value) {
+        valueChangedHandler(undefined);
+        return;
+    }
+
+    const lngLatArr = input.value.split(/[ ,]/).filter(v => !!v);
+    if (lngLatArr.length !== 2) {
+        return;
+    }
+
+    const lng = Number(lngLatArr[0]);
+    const lat = Number(lngLatArr[1]);
+    if (!Number.isFinite(lng) || !Number.isFinite(lat) || lat < -90 || lat > 90) {
+        return;
+    }
+
+    valueChangedHandler(new LngLat(lng, lat));
+}
+
 export function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | undefined) => void) {
     return (e: KeyboardEvent) => {
         if (e.code === "Enter" || e.code === "NumpadEnter") {
-            const valStr = (e.target as any).value as string;
-            let value: LngLat | undefined = !valStr ? undefined : {} as LngLat;
-
-            if (valStr) {
-                const lngLatArr = valStr.split(/[ ,]/).filter(v => !!v);
-                if (lngLatArr.length === 2) {
-                    value = new LngLat(
-                        Number.parseFloat(lngLatArr[0]),
-                        Number.parseFloat(lngLatArr[1])
-                    );
-                }
-            }
-            valueChangedHandler(value);
+            commitCoordinatesInputValue(e, valueChangedHandler);
         }
     };
 }
@@ -64,6 +77,7 @@ export class CoordinatesControl extends OrMapBaseControl {
         if (this._value != null) (input as any).value = this._value;
         input.setAttribute("pattern", CoordinatesRegexPattern);
         input.addEventListener("keyup", getCoordinatesInputKeyHandler(this._valueChangedHandler) as EventListener);
+        input.addEventListener("change", (e) => commitCoordinatesInputValue(e, this._valueChangedHandler));
 
         const icon = document.createElement("or-icon") as HTMLElement;
         icon.setAttribute("icon", "mdi:crosshairs");

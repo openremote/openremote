@@ -36,7 +36,7 @@ import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 import debounce from "lodash.debounce";
 import { AttributeEvent, GeoJsonConfig } from "@openremote/model";
-import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
+import { commitCoordinatesInputValue, CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
 import { AssetMap } from "./asset-map";
 import { OrMapCenterControl } from "./controls/center";
 import { OrMapGeolocateControl } from "./controls/geolocate";
@@ -259,7 +259,8 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     }
                 </style>
                 <div id="geo-json-point-input-compact-wrapper">
-                    <or-vaadin-text-field style="width: auto;" value=${ifDefined(centerStr)} pattern=${CoordinatesRegexPattern}
+                    <or-vaadin-text-field style="width: auto;" value=${ifDefined(centerStr)} pattern=${CoordinatesRegexPattern} ?readonly=${readonly} ?disabled=${disabled || sending || loading}
+                                         @change="${(e: Event) => commitCoordinatesInputValue(e, valueChangeHandler)}"
                                          @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeHandler)(e)}">
                     </or-vaadin-text-field>
                     <or-vaadin-button theme="icon" @click=${onClick}>
