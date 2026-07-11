@@ -594,6 +594,7 @@
   "rulesetStatus": {
     "DEPLOYED": "Успішно розгорнуто",
     "NOSTATUS": "Вимкнено",
+    "DISABLED": "Вимкнено",
     "LOOP_ERROR": "Помилка в циклі",
     "COMPILATION_ERROR": "Помилка компіляції",
     "EXECUTION_ERROR": "Помилка виконання",
