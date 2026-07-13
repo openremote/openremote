@@ -74,7 +74,7 @@ export class Console {
         // Look for existing console registration in local storage or just create a new one
         let consoleReg: ConsoleRegistration = Console._createConsoleRegistration();
 
-        let consoleRegStr = window.localStorage.getItem("OpenRemoteConsole:" + realm);
+        let consoleRegStr = window.localStorage.getItem(this._storageKey);
         if (consoleRegStr) {
             try {
                 let storedRegObj = JSON.parse(consoleRegStr);
@@ -237,7 +237,7 @@ export class Console {
         if (index >= 0) {
             this._pendingProviderEnables.splice(index, 1);
             if (this._pendingProviderEnables.length === 0) {
-                this.sendRegistration();
+                this.sendRegistration().catch(() => undefined);
                 this._callCompletedCallback();
             }
         }
@@ -311,41 +311,71 @@ export class Console {
         console.debug("Sending registration in: " + delay + "ms");
 
         return new Promise((resolve, reject) => {
-            this._registrationTimer = window.setTimeout(() => {
+            this._registrationTimer = window.setTimeout(async () => {
                 this._registrationTimer = null;
                 console.debug("Console: updating registration");
 
                 try {
-                    // Ensure console name, platform, version and providers are not null
-                    if (!this._registration.name) {
-                        this._registration.name = "Console";
-                    }
-                    if (!this._registration.platform) {
-                        this._registration.platform = "N/A";
-                    }
-                    if (!this._registration.version) {
-                        this._registration.version = "N/A"
-                    }
-                    if (!this._registration.providers) {
-                        this._registration.providers = {};
-                    }
-                    manager.rest.api.ConsoleResource.register(this._registration).then((response: AxiosResponse<ConsoleRegistration>) => {
-                        if (response.status !== 200) {
-                            throw new Error("Failed to register console");
-                        }
-
-                        this._registration = response.data;
-                        console.debug("Console: registration successful");
-                        console.debug("Console: updating locally stored registration");
-                        window.localStorage.setItem("OpenRemoteConsole:" + this._realm, JSON.stringify(this._registration));
-                        resolve();
-                    });
+                    await this._sendRegistration(true);
+                    resolve();
                 } catch (e) {
-                    console.error("Failed to register console");
-                    reject("Failed to register console");
+                    console.error("Failed to register console", e);
+                    reject(e);
                 }
-            },);
+            }, delay);
         });
+    }
+
+    protected async _sendRegistration(retryOnStaleRegistration: boolean): Promise<void> {
+        this._normaliseRegistration();
+
+        const hadRegistrationId = !!this._registration.id;
+
+        try {
+            const response: AxiosResponse<ConsoleRegistration> = await manager.rest.api.ConsoleResource.register(this._registration);
+            if (response.status !== 200) {
+                throw new Error("Failed to register console");
+            }
+
+            this._registration = response.data;
+            console.debug("Console: registration successful");
+            console.debug("Console: updating locally stored registration");
+            window.localStorage.setItem(this._storageKey, JSON.stringify(this._registration));
+        } catch (e) {
+            if (retryOnStaleRegistration && hadRegistrationId && Console._isStaleRegistrationResponse(e)) {
+                console.warn("Console registration ID is stale or cannot be claimed; creating a new console registration");
+                window.localStorage.removeItem(this._storageKey);
+                delete this._registration.id;
+                await this._sendRegistration(false);
+                return;
+            }
+            throw e;
+        }
+    }
+
+    protected _normaliseRegistration() {
+        // Ensure console name, platform, version and providers are not null
+        if (!this._registration.name) {
+            this._registration.name = "Console";
+        }
+        if (!this._registration.platform) {
+            this._registration.platform = "N/A";
+        }
+        if (!this._registration.version) {
+            this._registration.version = "N/A"
+        }
+        if (!this._registration.providers) {
+            this._registration.providers = {};
+        }
+    }
+
+    protected get _storageKey(): string {
+        return "OpenRemoteConsole:" + this._realm;
+    }
+
+    protected static _isStaleRegistrationResponse(e: any): boolean {
+        const status = e && e.response ? e.response.status : undefined;
+        return status === 403 || status === 409;
     }
 
     public storeData(key: string, value: any) {
