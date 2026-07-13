@@ -237,7 +237,7 @@ export class Console {
         if (index >= 0) {
             this._pendingProviderEnables.splice(index, 1);
             if (this._pendingProviderEnables.length === 0) {
-                this.sendRegistration(2000).catch(() => undefined);
+                this.sendRegistration().catch(() => undefined);
                 this._callCompletedCallback();
             }
         }
