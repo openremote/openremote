@@ -37,16 +37,12 @@ public interface AssetInfo {
     @JsonProperty
     String[] getPath();
 
-    @JsonProperty
     String[] getAttributeNames();
 
-    @JsonProperty
     String getAssetName();
 
-    @JsonProperty
     String getAssetType();
 
-    @JsonProperty
     Class<? extends Asset> getAssetClass();
 
     @JsonProperty
