@@ -2433,6 +2433,7 @@ __metadata:
     "@vaadin/text-area": "npm:~25.1.4"
     "@vaadin/text-field": "npm:~25.1.4"
     "@vaadin/time-picker": "npm:~25.1.4"
+    "@vaadin/vaadin-themable-mixin": "npm:~25.1.4"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
