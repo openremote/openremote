@@ -254,8 +254,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'org.ow2.asm:asm:9.5'
-        classpath 'org.ow2.asm:asm-tree:9.5'
+        classpath 'org.ow2.asm:asm:9.10.1'
+        classpath 'org.ow2.asm:asm-tree:9.10.1'
     }
 }
 
