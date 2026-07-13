@@ -171,17 +171,15 @@ ct("State: renders without a label", async ({ mount }) => {
 
 // --- Groups ----------------------------------------------------------------
 
-ct("Group (vertical): stacks grouped toggles and reflects their checked state", async ({ mount }) => {
+ct("Group (vertical): stacks grouped toggles in a column layout", async ({ mount }) => {
   const component = await mount(OrVaadinToggleGroup, {
     props: { label: "Notifications" },
-    // The slotted toggles are not `mount()`ed themselves, so declare them for eager registration.
     hooksConfig: { components: [OrVaadinToggle] },
     slots: {
-      // The default slot must be an array: the CT runner keeps only `fragment.firstChild` per string.
       default: [
-        '<or-vaadin-toggle label="Email" value="email" checked></or-vaadin-toggle>',
+        '<or-vaadin-toggle label="Email" value="email"></or-vaadin-toggle>',
         '<or-vaadin-toggle label="SMS" value="sms"></or-vaadin-toggle>',
-        '<or-vaadin-toggle label="Push" value="push" checked></or-vaadin-toggle>',
+        '<or-vaadin-toggle label="Push" value="push"></or-vaadin-toggle>',
       ],
     },
   });
@@ -192,9 +190,6 @@ ct("Group (vertical): stacks grouped toggles and reflects their checked state", 
 
   await expect(component).toContainText("Notifications");
   await expect(component.getByRole("switch")).toHaveCount(3);
-  await expect(component.getByRole("switch", { name: "Email" })).toBeChecked();
-  await expect(component.getByRole("switch", { name: "SMS" })).not.toBeChecked();
-  await expect(component.getByRole("switch", { name: "Push" })).toBeChecked();
 
   // The vertical theme stacks the toggles: shared left edge, increasing top.
   const email = await component.getByRole("switch", { name: "Email" }).boundingBox();
@@ -203,6 +198,63 @@ ct("Group (vertical): stacks grouped toggles and reflects their checked state", 
   expect(sms).not.toBeNull();
   expect(Math.abs(email!.x - sms!.x)).toBeLessThan(4);
   expect(sms!.y).toBeGreaterThan(email!.y);
+});
+
+ct("Group: registers toggles as group items and tracks the group value", async ({ mount }) => {
+  // Guards the `__filterCheckboxes` override in `or-vaadin-checkbox-group`: without it, Vaadin only
+  // registers literal `vaadin-checkbox` tags and the group `value` would stay empty.
+  const component = await mount(OrVaadinToggleGroup, {
+    props: { label: "Notifications" },
+    hooksConfig: { components: [OrVaadinToggle] },
+    slots: {
+      default: [
+        '<or-vaadin-toggle label="Email" value="email"></or-vaadin-toggle>',
+        '<or-vaadin-toggle label="SMS" value="sms"></or-vaadin-toggle>',
+        '<or-vaadin-toggle label="Push" value="push"></or-vaadin-toggle>',
+      ],
+    },
+  });
+
+  await expect.poll(() => component.evaluate((el: any) => el.value)).toEqual([]);
+
+  await component.getByRole("switch", { name: "Email" }).click();
+  await expect.poll(() => component.evaluate((el: any) => el.value)).toEqual(["email"]);
+
+  await component.getByRole("switch", { name: "Push" }).click();
+  await expect.poll(() => component.evaluate((el: any) => el.value)).toEqual(["email", "push"]);
+
+  await component.getByRole("switch", { name: "SMS" }).click();
+  await expect.poll(() => component.evaluate((el: any) => el.value)).toEqual(["email", "push", "sms"]);
+
+  await component.getByRole("switch", { name: "Email" }).click();
+  await expect.poll(() => component.evaluate((el: any) => el.value)).toEqual(["push", "sms"]);
+});
+
+ct("Group: disabled and readonly propagate to the slotted toggles", async ({ mount }) => {
+  const component = await mount(OrVaadinToggleGroup, {
+    props: { label: "Notifications" },
+    hooksConfig: { components: [OrVaadinToggle] },
+    slots: {
+      default: [
+        '<or-vaadin-toggle label="Email" value="email"></or-vaadin-toggle>',
+        '<or-vaadin-toggle label="SMS" value="sms"></or-vaadin-toggle>',
+      ],
+    },
+  });
+
+  await component.evaluate((el: any) => {
+    el.disabled = true;
+  });
+  await expect(component.getByRole("switch", { name: "Email" })).toBeDisabled();
+  await expect(component.getByRole("switch", { name: "SMS" })).toBeDisabled();
+
+  await component.evaluate((el: any) => {
+    el.disabled = false;
+    el.readonly = true;
+  });
+  const email = component.getByRole("switch", { name: "Email" });
+  await email.click({ force: true });
+  await expect(email).not.toBeChecked();
 });
 
 ct("Group: a child toggle switches independently when clicked", async ({ mount }) => {
@@ -232,9 +284,9 @@ ct("Group (horizontal): renders grouped toggles in a row layout", async ({ mount
     hooksConfig: { components: [OrVaadinToggle] },
     slots: {
       default: [
-        '<or-vaadin-toggle label="Email" value="email" checked></or-vaadin-toggle>',
+        '<or-vaadin-toggle label="Email" value="email"></or-vaadin-toggle>',
         '<or-vaadin-toggle label="SMS" value="sms"></or-vaadin-toggle>',
-        '<or-vaadin-toggle label="Push" value="push" checked></or-vaadin-toggle>',
+        '<or-vaadin-toggle label="Push" value="push"></or-vaadin-toggle>',
       ],
     },
   });
