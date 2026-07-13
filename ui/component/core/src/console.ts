@@ -174,7 +174,7 @@ export class Console {
 
             // Get an ID for this console if it doesn't have one
             if (!this._registration.id) {
-                await this.sendRegistration(0);
+                await this.sendRegistration();
             }
 
             this._initialised = true;
@@ -237,7 +237,7 @@ export class Console {
         if (index >= 0) {
             this._pendingProviderEnables.splice(index, 1);
             if (this._pendingProviderEnables.length === 0) {
-                this.sendRegistration().catch(() => undefined);
+                this.sendRegistration(2000).catch(() => undefined);
                 this._callCompletedCallback();
             }
         }
@@ -299,14 +299,12 @@ export class Console {
     }
 
     // Uses a delayed mechanism to avoid excessive calls to the server during enabling providers
-    public sendRegistration(delay?: number): Promise<void> {
+    public sendRegistration(delay: number = 0): Promise<void> {
 
         if (this._registrationTimer) {
             window.clearTimeout(this._registrationTimer);
             this._registrationTimer = null;
         }
-
-        delay = delay !== undefined ? delay : 2000;
 
         console.debug("Sending registration in: " + delay + "ms");
 
