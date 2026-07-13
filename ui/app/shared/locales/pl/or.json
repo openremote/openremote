@@ -1108,6 +1108,7 @@
   "rulesetStatus": {
     "DEPLOYED": "Wdrożono pomyślnie",
     "NOSTATUS": "Wyłączony",
+    "DISABLED": "Wyłączony",
     "LOOP_ERROR": "Błąd pętli",
     "COMPILATION_ERROR": "Błąd kompilacji",
     "EXECUTION_ERROR": "Błąd wykonania",

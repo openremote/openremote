@@ -831,6 +831,7 @@
   "rulesetStatus": {
     "DEPLOYED": "Successfully deployed",
     "NOSTATUS": "Disabled",
+    "DISABLED": "Disabled",
     "LOOP_ERROR": "Loop error",
     "COMPILATION_ERROR": "Compilation error",
     "EXECUTION_ERROR": "Execution error",

@@ -579,6 +579,7 @@
   "rulesetStatus": {
     "DEPLOYED": "Instalat cu succes",
     "NOSTATUS": "Dezactivat",
+    "DISABLED": "Dezactivat",
     "LOOP_ERROR": "Eroare de buclă",
     "COMPILATION_ERROR": "Eroare de compilare",
     "EXECUTION_ERROR": "Eroare de execuție",
