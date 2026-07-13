@@ -62,12 +62,10 @@ import java.util.logging.Logger;
  * create those manager credentials; reusing the stored grant here keeps the migration working even when the admin
  * password isn't available (e.g. rotated or unset after bootstrap).
  * <p>
- * When the credentials file is absent the migration distinguishes a clean install (no {@code openremote} Keycloak
- * client exists yet; {@code KeycloakInitSetup} will create it and its roles after Flyway) from an upgrade (the
- * client already exists from a previous startup). On a clean install it simply skips. On an upgrade
- * it falls back to {@code OR_ADMIN_PASSWORD}, but only when that is explicitly set, so a rotated/unset admin
- * password doesn't silently leave the roles uncreated; if neither credential source is available on an upgrade the
- * migration fails rather than recording itself as applied without doing the work.
+ * On a clean install the migration skips entirely; {@code KeycloakInitSetup} will create the roles after Flyway.
+ * On an upgrade, if the stored credentials are unavailable, it falls back to {@code OR_ADMIN_PASSWORD} only when
+ * that is explicitly set, so a rotated/unset admin password doesn't silently leave the roles uncreated. If neither
+ * credential source is available the migration fails rather than recording itself as applied without doing the work.
  * <p>
  * This must stay a Java migration and not be converted to a {@code .sql} file: Flyway records a {@code BaseJavaMigration}
  * as type JDBC with a null checksum, whereas a {@code .sql} file for the same version is type SQL with a real checksum,
@@ -81,18 +79,18 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
     @Override
     public void migrate(Context context) throws Exception {
 
+        // On a clean install KeycloakInitSetup will add the roles after Flyway completes.
+        if (isCleanInstall(context)) {
+            LOG.info("Clean install detected; skipping service role migration "
+                    + "(KeycloakInitSetup will create read:services and write:services roles on first startup)");
+            return;
+        }
+
+        // Upgrade path: resolve credentials to authenticate against Keycloak.
         OAuthPasswordGrant credentials = loadStoredCredentials();
         if (credentials == null) {
-            // No stored credentials: either a clean install (the openremote clients don't exist yet and
-            // KeycloakInitSetup will create these roles) or an upgrade where the grant file was wiped/unreadable.
-            if (isCleanInstall(context)) {
-                LOG.info("No stored keycloak credentials and clean install detected; "
-                        + "skipping service role backfill (KeycloakInitSetup will create the roles)");
-                return;
-            }
-            // Upgrade with missing credentials: fall back to OR_ADMIN_PASSWORD only when it is explicitly set,
-            // so a rotated/unset admin password doesn't silently skip the backfill. Otherwise fail loudly so
-            // Flyway does not record this migration as applied without having created the roles.
+            // Stored grant file is absent or unreadable; fall back to OR_ADMIN_PASSWORD only when explicitly set
+            // so a rotated/unset admin password doesn't silently skip the migration.
             credentials = loadAdminFallbackCredentials();
             if (credentials == null) {
                 throw new RuntimeException(
