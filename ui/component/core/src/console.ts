@@ -298,15 +298,12 @@ export class Console {
         return deferred.promise;
     }
 
-    // Uses a delayed mechanism to avoid excessive calls to the server during enabling providers
-    public sendRegistration(delay: number = 0): Promise<void> {
+    public sendRegistration(): Promise<void> {
 
         if (this._registrationTimer) {
             window.clearTimeout(this._registrationTimer);
             this._registrationTimer = null;
         }
-
-        console.debug("Sending registration in: " + delay + "ms");
 
         return new Promise((resolve, reject) => {
             this._registrationTimer = window.setTimeout(async () => {
@@ -320,7 +317,7 @@ export class Console {
                     console.error("Failed to register console", e);
                     reject(e);
                 }
-            }, delay);
+            });
         });
     }
 
