@@ -69,7 +69,7 @@ spec:
               value: "{{ .Values.or.hostname }}"
             - name: KC_HOSTNAME_PORT
               value: "{{ .Values.or.port }}"
-            - name: KEYCLOAK_ADMIN_PASSWORD
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: openremote-secret

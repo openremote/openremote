@@ -57,7 +57,7 @@ services:
       postgresql:
         condition: service_healthy
     environment:
-      KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
       KC_DB_POOL_MAX_SIZE: ${KC_DB_POOL_MAX_SIZE:-38}

@@ -415,7 +415,7 @@ services:
       #KC_PROXY_HEADERS: ${KC_PROXY_HEADERS:-xforwarded}
       #KC_PROXY: ${KC_PROXY:-edge}
       # Configure main user credentials (only on first startup)
-      KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
       # Custom startup options (see keycloak documentation)
       KEYCLOAK_START_COMMAND:
       KEYCLOAK_START_OPTS:
