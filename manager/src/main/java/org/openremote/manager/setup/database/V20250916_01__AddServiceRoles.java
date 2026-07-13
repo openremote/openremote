@@ -35,6 +35,7 @@ import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.NotFoundException;
@@ -94,7 +95,7 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
             credentials = loadAdminFallbackCredentials();
             if (credentials == null) {
                 throw new RuntimeException(
-                        "Cannot backfill service roles: stored keycloak credentials are missing/unreadable and "
+                        "Cannot add service roles: stored keycloak credentials are missing/unreadable and "
                                 + IdentityProvider.OR_ADMIN_PASSWORD + " is not explicitly set. Either mount the "
                                 + "storage volume containing <OR_STORAGE_DIR>/"
                                 + ManagerKeycloakIdentityProvider.OR_KEYCLOAK_GRANT_FILE_DEFAULT
@@ -102,7 +103,7 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
                                 + " to the current admin password so the migration can authenticate against Keycloak.");
             }
             LOG.warning("Stored keycloak credentials not available; falling back to "
-                    + IdentityProvider.OR_ADMIN_PASSWORD + " to backfill service roles");
+                    + IdentityProvider.OR_ADMIN_PASSWORD + " to add service roles");
         }
 
         String keycloakUrl = buildKeycloakUrl();
@@ -131,24 +132,21 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
                 }
                 ClientResource clientResource = realm.clients().get(clients.get(0).getId());
                 RolesResource clientRoles = clientResource.roles();
-                createRoleIfNotExists(clientRoles, "write:services", "Write service data");
-                createRoleIfNotExists(clientRoles, "read:services", "View services");
+                createRoleIfNotFound(clientRoles, ClientRole.WRITE_SERVICES);
+                createRoleIfNotFound(clientRoles, ClientRole.READ_SERVICES);
 
-                // Add the leaf roles to the existing "read"/"write" composites so users assigned only the broad
-                // composites inherit them, matching ClientRole.READ / ClientRole.WRITE
-                // (read -> read:services, write -> read:services + write:services).
-                RoleRepresentation readSvc = clientRoles.get("read:services").toRepresentation();
-                RoleRepresentation writeSvc = clientRoles.get("write:services").toRepresentation();
-                addToComposite(clientRoles, "read", readSvc);
-                addToComposite(clientRoles, "write", readSvc, writeSvc);
+                RoleRepresentation readServices = clientRoles.get(ClientRole.READ_SERVICES.getValue()).toRepresentation();
+                RoleRepresentation writeServices = clientRoles.get(ClientRole.WRITE_SERVICES.getValue()).toRepresentation();
+                addToComposite(clientRoles, "read", readServices);
+                addToComposite(clientRoles, "write", readServices, writeServices);
             }
         }
     }
 
     /**
-     * Loads the stored manager credentials the same way the identity provider does: the {@code OR_KEYCLOAK_GRANT_FILE}
-     * (a JSON-serialised {@link OAuthGrant}) resolved relative to {@code OR_STORAGE_DIR}. Returns {@code null} if the
-     * file is absent or doesn't hold a usable password grant.
+     * Loads the stored manager credentials, similar to {@link ManagerKeycloakIdentityProvider}: it reads
+     * {@code OR_KEYCLOAK_GRANT_FILE} (a JSON-serialised {@link OAuthGrant}) resolved relative to {@code OR_STORAGE_DIR}.
+     * Returns {@code null} if the file is absent or doesn't hold a usable password grant.
      */
     private OAuthPasswordGrant loadStoredCredentials() {
         String storageDir = System.getenv().getOrDefault(
@@ -158,8 +156,6 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
                 ManagerKeycloakIdentityProvider.OR_KEYCLOAK_GRANT_FILE_DEFAULT);
 
         if (grantFile == null || grantFile.isBlank()) {
-            // An empty/blank OR_KEYCLOAK_GRANT_FILE would resolve to the storage dir itself, which is readable but
-            // not a grant file; treat it as "no grant file configured".
             return null;
         }
 
@@ -191,8 +187,6 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
     private OAuthPasswordGrant loadAdminFallbackCredentials() {
         String adminPassword = System.getenv(IdentityProvider.OR_ADMIN_PASSWORD);
         if (adminPassword == null || adminPassword.isBlank()) {
-            // Set-but-blank would only produce a guaranteed 401; treat it the same as "not provided" so the
-            // caller fails with the clearer missing-credentials message instead.
             return null;
         }
         return new OAuthPasswordGrant(
@@ -205,14 +199,16 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
     }
 
     /**
-     * Heuristic for a clean install: no {@code openremote} client exists yet in Keycloak's {@code public.client}
-     * table. On a clean install {@code KeycloakInitSetup} hasn't run yet (it runs after Flyway), so the client
-     * entry is absent. On an upgrade it already exists from a previous startup. Using the client table rather
-     * than {@code PUBLIC.REALM} avoids a false negative: a freshly initialized Keycloak always contains the
-     * {@code master} realm, so {@code PUBLIC.REALM} is never empty even on a genuine clean install.
-     * Only a missing table (SQLSTATE 42P01) is treated as a clean install; any other query failure assumes
-     * an upgrade, so a transient error can't silently skip the backfill (the caller then falls back to
-     * explicit admin credentials or fails loudly).
+     * Heuristic for a clean install based on whether the {@code openremote} client exists in Keycloak's
+     * {@code public.client} table:
+     * <ul>
+     *   <li>No row: clean install — {@code KeycloakInitSetup} hasn't run yet (it runs after Flyway).</li>
+     *   <li>Row present: upgrade — the client was created by a previous startup.</li>
+     *   <li>Table missing (SQLSTATE 42P01): clean install — Keycloak schema not initialised yet.</li>
+     *   <li>Any other query failure: assume upgrade, so a transient error can't silently skip the migration.</li>
+     * </ul>
+     * {@code PUBLIC.REALM} is not used because a freshly initialised Keycloak always contains the {@code master}
+     * realm, so that table is never empty even on a clean install.
      */
     private boolean isCleanInstall(Context context) {
         try (Statement statement = context.getConnection().createStatement();
@@ -248,19 +244,17 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
         return uriBuilder.build().toString();
     }
 
-    // Create the role if it doesn't exist by handling the NotFoundException
-    private void createRoleIfNotExists(RolesResource roles, String roleName, String description) {
+    private void createRoleIfNotFound(RolesResource roles, ClientRole role) {
         try {
-            roles.get(roleName).toRepresentation();
+            roles.get(role.getValue()).toRepresentation();
         } catch (NotFoundException e) {
-            roles.create(new RoleRepresentation(roleName, description, false));
+            roles.create(new RoleRepresentation(role.getValue(), role.getDescription(), false));
         }
     }
 
-    // Add child roles to the named composite role; addComposites is idempotent so re-running is safe
     private void addToComposite(RolesResource roles, String compositeName, RoleRepresentation... children) {
         try {
-            roles.get(compositeName).addComposites(List.of(children));
+            roles.get(compositeName).addComposites(List.of(children)); // addComposites is idempotent
         } catch (NotFoundException e) {
             LOG.warning("Composite role '" + compositeName + "' not found; skipping composite wiring");
         }
