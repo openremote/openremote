@@ -36,28 +36,53 @@ interface ReplayDatapoint {
     value: any;
 }
 
+// Cache keyed by data array reference so re-renders return the same string object.
+// Lit's property binding uses === to detect changes, so an identical reference
+// prevents setting .value on the textarea (and its expensive internal string scan).
+const textCache = new WeakMap<ReplayDatapoint[], string>();
+
 function datapointsToText(data: ReplayDatapoint[] | undefined): string {
     if (!Array.isArray(data) || data.length === 0) return "";
-    return data.map(dp => `${dp.timestamp}, ${dp.value}`).join("\n");
+    const cached = textCache.get(data);
+    if (cached !== undefined) return cached;
+    const parts = new Array<string>(data.length);
+    for (let i = 0; i < data.length; i++) {
+        parts[i] = `${data[i].timestamp}, ${data[i].value}`;
+    }
+    const text = parts.join("\n");
+    textCache.set(data, text);
+    return text;
 }
 
 function textToDatapoints(text: string): ReplayDatapoint[] {
-    return text.split("\n")
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .flatMap(line => {
-            const commaIdx = line.indexOf(",");
-            if (commaIdx < 0) return [];
-            const timestamp = Number(line.slice(0, commaIdx).trim());
-            if (isNaN(timestamp)) return [];
-            const valueStr = line.slice(commaIdx + 1).trim();
-            let value: any = valueStr;
-            const num = Number(valueStr);
-            if (valueStr !== "" && !isNaN(num)) value = num;
-            else if (valueStr === "true") value = true;
-            else if (valueStr === "false") value = false;
-            return [{ timestamp, value }];
-        });
+    const result: ReplayDatapoint[] = [];
+    const len = text.length;
+    let lineStart = 0;
+
+    while (lineStart < len) {
+        let lineEnd = text.indexOf("\n", lineStart);
+        if (lineEnd === -1) lineEnd = len;
+
+        if (lineEnd > lineStart) {
+            const commaIdx = text.indexOf(",", lineStart);
+            if (commaIdx !== -1 && commaIdx < lineEnd) {
+                const timestamp = Number(text.slice(lineStart, commaIdx).trim());
+                if (!isNaN(timestamp)) {
+                    const valueStr = text.slice(commaIdx + 1, lineEnd).trim();
+                    const num = Number(valueStr);
+                    const value: any = (valueStr !== "" && !isNaN(num)) ? num
+                        : valueStr === "true" ? true
+                        : valueStr === "false" ? false
+                        : valueStr;
+                    result.push({ timestamp, value });
+                }
+            }
+        }
+
+        lineStart = lineEnd + 1;
+    }
+
+    return result;
 }
 
 const replayDataTester: RankedTester = rankWith(
