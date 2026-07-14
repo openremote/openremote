@@ -439,17 +439,22 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         if (_changedProperties.has("attribute")) {
-            const oldAttr = {..._changedProperties.get("attribute") as Attribute<any>};
+            const oldAttr = _changedProperties.get("attribute") as Attribute<any>;
             const attr = this.attribute;
 
             if (oldAttr && attr) {
                 const oldValue = oldAttr.value;
                 const oldTimestamp = oldAttr.timestamp;
 
-                // Compare attributes ignoring the timestamp and value
-                oldAttr.value = attr.value;
-                oldAttr.timestamp = attr.timestamp;
-                if (Util.objectsEqual(oldAttr, attr)) {
+                // Structural check: name, type, and meta reference must all match.
+                // Live value updates arrive as shallow copies of the attribute ({...attr}),
+                // so meta keeps the same reference and this check is O(1).
+                // A full asset reload produces a new meta reference, which is sufficient
+                // to detect a structural change without deep-comparing large meta values.
+                const structurallyEqual = oldAttr.name === attr.name
+                    && oldAttr.type === attr.type
+                    && oldAttr.meta === attr.meta;
+                if (structurallyEqual) {
                     // Compare value and timestamp
                     if (oldValue !== attr.value || oldTimestamp !== attr.timestamp) {
                         this._onAttributeValueChanged(oldValue, attr.value, attr.timestamp);
