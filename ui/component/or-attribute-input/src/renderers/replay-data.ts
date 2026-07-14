@@ -91,7 +91,7 @@ const replayDataRenderer = (state: JsonFormsStateContext, props: ControlProps) =
         <or-vaadin-text-area
             label="${props.label}"
             helper-text="Format: seconds, value — one entry per line"
-            style="width: 100%; min-height: 120px;"
+            style="width: 100%;"
             .value="${textValue}"
             @change="${onChanged}"
         ></or-vaadin-text-area>

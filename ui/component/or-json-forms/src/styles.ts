@@ -6,6 +6,10 @@ export const baseStyle = css`
     :host {
         flex: 1;
     }
+
+    or-vaadin-text-area {
+        height: 152px;
+    }
     
     .item-container {
         display: flex;
