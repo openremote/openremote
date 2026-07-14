@@ -167,6 +167,7 @@ WORKDIR /opt/app
 ADD lib /opt/app/lib
 ADD web /opt/web
 ADD map /opt/map
+ADD deployment /deployment
 
 EXPOSE 8080
 EXPOSE 1883
