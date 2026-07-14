@@ -8,6 +8,21 @@ import HttpBackend from "i18next-http-backend";
 import { IconSets, OrIconSet, createMdiIconSet, createSvgIconSet } from "@openremote/or-icon";
 import { AssetEventCause, AssetModelUtil, ClientRole } from "@openremote/model";
 
+import { beforeMount } from "@sand4rt/experimental-ct-web/hooks";
+
+// Playwright CT imports a component's module only when it is `mount()`ed, so a custom element that
+// only appears as a slotted/appended child inside the mounted component would never be defined. A
+// test declares such components via `hooksConfig.components` (see `ComponentHooksConfig`); their
+// import refs are resolved here, which runs their modules and registers them before the mount.
+beforeMount(async ({ hooksConfig }) => {
+    const components = Array.isArray(hooksConfig?.components) ? hooksConfig.components : [];
+    for (const component of components) {
+        if (component?.__pw_type === "importRef") {
+            await window.__pwRegistry?.resolveImportRef(component);
+        }
+    }
+});
+
 const style = document.createElement("style");
 style.textContent = themeCss;
 document.head.appendChild(style);
