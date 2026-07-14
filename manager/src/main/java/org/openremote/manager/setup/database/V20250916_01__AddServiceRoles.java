@@ -137,8 +137,8 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
 
                 RoleRepresentation readServices = clientRoles.get(ClientRole.READ_SERVICES.getValue()).toRepresentation();
                 RoleRepresentation writeServices = clientRoles.get(ClientRole.WRITE_SERVICES.getValue()).toRepresentation();
-                addToComposite(clientRoles, "read", readServices);
-                addToComposite(clientRoles, "write", readServices, writeServices);
+                addToComposite(clientRoles, ClientRole.READ.getValue(), readServices);
+                addToComposite(clientRoles, ClientRole.WRITE.getValue(), readServices, writeServices);
             }
         }
     }
