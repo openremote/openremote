@@ -30,29 +30,22 @@ export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitEleme
         return super._onEnter(ev);
     }
 
-    // Vaadin's default _updateHeight reads inputElement.scrollHeight on every value change,
-    // which is an O(content lines) layout reflow — catastrophic for large datasets.
-    // When --or-text-area-height is set on the host, use it directly (O(1) CSS variable
-    // read, no layout). Without it, fall back to a minimal auto-grow so other text areas
-    // still work normally.
+    // Vaadin's default _updateHeight reads scrollHeight on every value change — O(content lines).
+    // When --or-text-area-height is set, size via CSS variable (O(1)) instead.
     _updateHeight(): void {
         if (!this.inputElement) return;
         const h = window.getComputedStyle(this).getPropertyValue("--or-text-area-height").trim();
         if (h) {
-            // Set the same height on both the vaadin-input-container (part="input-field")
-            // and the inner textarea. Without this, Lumo's default height on the container
-            // is smaller than 'h', the textarea overflows it, and a second scrollbar appears.
-            // Inline style always wins over Lumo's CSS.
+            // Expand the vaadin-input-container to the target height and suppress its scrollbar.
+            // Lumo's default container height is smaller than h, which would cause a second scrollbar.
             const inputField = this.shadowRoot?.querySelector<HTMLElement>('[part~="input-field"]');
             if (inputField) {
                 inputField.style.height = h;
                 inputField.style.overflowY = "hidden";
-                const cs = window.getComputedStyle(inputField);
-                const paddingV = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
-                this.inputElement.style.height = `${parseFloat(h) - paddingV}px`;
-            } else {
-                this.inputElement.style.height = h;
             }
+            // height:100% resolves to the container's content box (h minus its padding),
+            // so the textarea fits exactly without a separate padding calculation.
+            this.inputElement.style.height = "100%";
             this.inputElement.style.overflowY = "auto";
             return;
         }
