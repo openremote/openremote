@@ -28,6 +28,7 @@ import "./or-vaadin-select";
 import "./or-vaadin-slider";
 import "./or-vaadin-text-field";
 import "./or-vaadin-text-area";
+import "./or-vaadin-toggle";
 
 /**
  * Function to register properties (get/setter) of a CustomElement to the child Vaadin element.
@@ -78,6 +79,7 @@ export class OrVaadinInput extends LitElement {
         [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
         [InputType.RANGE, OrVaadinInput.getSliderTemplate],
         [InputType.SELECT, OrVaadinInput.getSelectTemplate],
+        [InputType.SWITCH, OrVaadinInput.getSwitchTemplate],
         [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
         [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate]
     ]);
@@ -162,7 +164,8 @@ export class OrVaadinInput extends LitElement {
      */
     public get nativeValue(): any {
         switch (this.type) {
-            case InputType.CHECKBOX: {
+            case InputType.CHECKBOX:
+            case InputType.SWITCH: {
                 return (this._elem as HTMLInputElement | undefined)?.checked;
             }
             default: {
@@ -268,6 +271,10 @@ export class OrVaadinInput extends LitElement {
 
     public static getSliderTemplate(onChange?: (e: Event) => void) {
         return html`<or-vaadin-slider id="elem" @change=${onChange}></or-vaadin-slider>`
+    }
+
+    public static getSwitchTemplate(onChange?: (e: Event) => void) {
+        return html`<or-vaadin-toggle id="elem" @change=${onChange}></or-vaadin-toggle>`;
     }
 
     public static getTextAreaTemplate(onChange?: (e: Event) => void) {
