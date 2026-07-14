@@ -66,7 +66,7 @@ public class Realm {
     @Column(name = "NAME")
     protected String name;
 
-    @Formula("(select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = ID and ra.name = 'displayNameHtml')")
+    @Column(name = "DISPLAY_NAME")
     protected String displayName;
 
     @Column(name = "ENABLED")
