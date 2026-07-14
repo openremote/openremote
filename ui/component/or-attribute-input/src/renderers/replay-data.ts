@@ -47,42 +47,65 @@ function datapointsToText(data: ReplayDatapoint[] | undefined): string {
     if (cached !== undefined) return cached;
     const parts = new Array<string>(data.length);
     for (let i = 0; i < data.length; i++) {
-        parts[i] = `${data[i].timestamp}, ${data[i].value}`;
+        // JSON-encode the value so non-primitives and typed strings ("5", "true")
+        // survive the text round trip. Numbers/booleans render bare, strings quoted.
+        parts[i] = `${data[i].timestamp}, ${JSON.stringify(data[i].value)}`;
     }
     const text = parts.join("\n");
     textCache.set(data, text);
     return text;
 }
 
-function textToDatapoints(text: string): ReplayDatapoint[] {
-    const result: ReplayDatapoint[] = [];
+interface ParseResult {
+    datapoints: ReplayDatapoint[];
+    /** 1-based line number of the first invalid line, or null when all lines parsed. */
+    invalidLine: number | null;
+}
+
+function textToDatapoints(text: string): ParseResult {
+    const datapoints: ReplayDatapoint[] = [];
     const len = text.length;
     let lineStart = 0;
+    let line = 0;
 
     while (lineStart < len) {
         let lineEnd = text.indexOf("\n", lineStart);
         if (lineEnd === -1) lineEnd = len;
+        line++;
 
         if (lineEnd > lineStart) {
             const commaIdx = text.indexOf(",", lineStart);
             if (commaIdx !== -1 && commaIdx < lineEnd) {
-                const timestamp = Number(text.slice(lineStart, commaIdx).trim());
-                if (!isNaN(timestamp)) {
-                    const valueStr = text.slice(commaIdx + 1, lineEnd).trim();
-                    const num = Number(valueStr);
-                    const value: any = (valueStr !== "" && !isNaN(num)) ? num
-                        : valueStr === "true" ? true
-                        : valueStr === "false" ? false
-                        : valueStr;
-                    result.push({ timestamp, value });
+                const timestampStr = text.slice(lineStart, commaIdx).trim();
+                const timestamp = Number(timestampStr);
+                // Explicit empty check: Number("") is 0, not NaN.
+                if (timestampStr === "" || !Number.isFinite(timestamp)) {
+                    return { datapoints, invalidLine: line };
                 }
+                const valueStr = text.slice(commaIdx + 1, lineEnd).trim();
+                const num = Number(valueStr);
+                let value: any;
+                if (valueStr !== "" && !isNaN(num)) {
+                    value = num;
+                } else {
+                    // JSON covers booleans, quoted strings, objects/arrays;
+                    // anything else is treated leniently as a bare string.
+                    try {
+                        value = JSON.parse(valueStr);
+                    } catch {
+                        value = valueStr;
+                    }
+                }
+                datapoints.push({ timestamp, value });
+            } else if (text.slice(lineStart, lineEnd).trim() !== "") {
+                return { datapoints, invalidLine: line };
             }
         }
 
         lineStart = lineEnd + 1;
     }
 
-    return result;
+    return { datapoints, invalidLine: null };
 }
 
 const replayDataTester: RankedTester = rankWith(
@@ -98,8 +121,18 @@ const replayDataRenderer = (state: JsonFormsStateContext, props: ControlProps) =
     };
 
     const onChanged = (event: Event) => {
-        const text = (event.target as HTMLInputElement).value;
-        const datapoints = textToDatapoints(text);
+        const textArea = event.target as HTMLInputElement & { invalid: boolean; errorMessage: string };
+        const { datapoints, invalidLine } = textToDatapoints(textArea.value);
+        if (invalidLine !== null) {
+            // Don't commit: the data stays untouched and, since no state changes,
+            // the textarea keeps the user's draft instead of dropping bad lines.
+            // Requires manualValidation, otherwise Vaadin's focusout auto-validation
+            // (which runs after this change handler) resets invalid to false.
+            textArea.errorMessage = `Invalid entry on line ${invalidLine}, expected: seconds, value`;
+            textArea.invalid = true;
+            return;
+        }
+        textArea.invalid = false;
         props.handleChange(props.path, datapoints.length > 0 ? datapoints : undefined);
     };
 
@@ -117,6 +150,7 @@ const replayDataRenderer = (state: JsonFormsStateContext, props: ControlProps) =
             label="${props.label}"
             helper-text="Format: seconds, value — one entry per line"
             style="width: 100%;"
+            .manualValidation="${true}"
             .value="${textValue}"
             @change="${onChanged}"
         ></or-vaadin-text-area>
