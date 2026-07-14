@@ -19,11 +19,21 @@ type ComponentSlots = Record<string, ComponentSlot> & { default?: ComponentSlot 
 
 type ComponentEvents = Record<string, (detail: any) => void>;
 
+export interface ComponentHooksConfig {
+    /**
+     * Components used by the mounted markup as slotted/appended children rather than as the test
+     * root. Playwright CT only imports the `mount()`ed component, so components listed here are
+     * imported (and thereby registered with `customElements.define`) by the `beforeMount` hook in
+     * `playwright/index.js` before the test mounts.
+     */
+    components?: (new (...args: any[]) => HTMLElement)[];
+}
+
 export interface MountOptions<HooksConfig, Component extends HTMLElement> {
     props?: ComponentProps<Component>;
     slots?: ComponentSlots;
     on?: ComponentEvents;
-    hooksConfig?: HooksConfig;
+    hooksConfig?: HooksConfig & ComponentHooksConfig;
 }
 
 export interface MountResult<Component extends HTMLElement> extends Locator {

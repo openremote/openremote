@@ -20,6 +20,7 @@
 package org.openremote.manager.asset.console;
 
 import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.WebApplicationException;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -46,6 +47,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static jakarta.ws.rs.core.Response.Status.CONFLICT;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 
 public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleResource {
 
@@ -78,7 +82,12 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
             throw new BadRequestException("Invalid realm");
         }
 
+        if (isAuthenticated() && !isRealmAccessibleByUser(getRequestRealmName())) {
+            throw new WebApplicationException("Console can only be registered in an accessible realm", FORBIDDEN);
+        }
+
         ConsoleAsset consoleAsset = null;
+        boolean existingConsole = false;
 
         // If console registration has an id and asset exists then ensure asset type is console
         if (!TextUtil.isNullOrEmpty(consoleRegistration.getId())) {
@@ -86,7 +95,23 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
             if (existingAsset != null && !(existingAsset instanceof ConsoleAsset)) {
                 throw new BadRequestException("Console registration ID is not for a Console asset: " + consoleRegistration.getId());
             }
+            if (existingAsset == null) {
+                throw new WebApplicationException("Console registration ID does not exist: " + consoleRegistration.getId(), CONFLICT);
+            }
             consoleAsset = (ConsoleAsset) existingAsset;
+            existingConsole = true;
+        }
+
+        if (existingConsole) {
+            if (!Objects.equals(consoleAsset.getRealm(), getRequestRealmName())) {
+                throw new WebApplicationException("Console registration ID is not in the request realm: " + consoleRegistration.getId(), FORBIDDEN);
+            }
+            if (!isAuthenticated()) {
+                throw new WebApplicationException("Anonymous requests cannot update existing console registrations", FORBIDDEN);
+            }
+            if (assetStorageService.findUserAssetLinks(getAuthenticatedRealmName(), getUserId(), consoleAsset.getId()).isEmpty()) {
+                throw new WebApplicationException("User is not linked to this console registration", FORBIDDEN);
+            }
         }
 
         boolean mergeConsole = false;
@@ -130,13 +155,8 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         }
         consoleRegistration.setId(consoleAsset.getId());
 
-        // If authenticated link the console to this user only
-        if (isAuthenticated()) {
-            List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(getAuthenticatedRealmName(), null, consoleAsset.getId());
-            List<UserAssetLink> otherUserAssetLinks = userAssetLinks.stream().filter(link -> !getUserId().equals(link.getId().getUserId())).toList();
-            if (!otherUserAssetLinks.isEmpty()) {
-                assetStorageService.deleteUserAssetLinks(otherUserAssetLinks);
-            }
+        // New authenticated legacy registrations are linked to this user. Existing registrations must already be linked.
+        if (isAuthenticated() && !existingConsole) {
             assetStorageService.storeUserAssetLinks(List.of(new UserAssetLink(getAuthenticatedRealmName(), getUserId(), consoleAsset.getId())));
         }
 
