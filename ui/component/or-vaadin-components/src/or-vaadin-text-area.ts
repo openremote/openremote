@@ -23,7 +23,7 @@ import {OrVaadinComponent} from "./util";
 import {type LitElement} from "lit";
 
 @customElement("or-vaadin-text-area")
-export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitElement) implements OrVaadinComponent {
+export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitElement & { _updateHeight(): void }) implements OrVaadinComponent {
 
     override _onEnter(ev: KeyboardEvent) {
         this.dispatchEvent(new CustomEvent("submit", {bubbles: true, composed: true}));
@@ -32,7 +32,7 @@ export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitEleme
 
     // Vaadin's default _updateHeight reads scrollHeight on every value change — O(content lines).
     // When --or-text-area-height is set, size via CSS variable (O(1)) instead.
-    _updateHeight(): void {
+    override _updateHeight(): void {
         if (!this.inputElement) return;
         const h = window.getComputedStyle(this).getPropertyValue("--or-text-area-height").trim();
         if (h) {
@@ -49,11 +49,9 @@ export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitEleme
             this.inputElement.style.overflowY = "auto";
             return;
         }
-        // Auto-grow fallback for text areas without a fixed height.
-        this.inputElement.style.height = "auto";
-        const sh = this.inputElement.scrollHeight;
-        if (sh > 0) {
-            this.inputElement.style.height = `${sh}px`;
-        }
+        // Without the CSS variable, keep Vaadin's stock auto-grow behavior
+        // (scrollbar-flicker minimization, scroll-position preservation) so
+        // other or-vaadin-text-area users are unaffected by this override.
+        super._updateHeight();
     }
 }
