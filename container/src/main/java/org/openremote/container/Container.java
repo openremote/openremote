@@ -75,6 +75,7 @@ public class Container implements org.openremote.model.Container {
     protected MeterRegistry meterRegistry;
 
     protected Thread waitingThread;
+    protected volatile boolean running;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
 
     /**
@@ -150,7 +151,7 @@ public class Container implements org.openremote.model.Container {
     }
 
     public boolean isRunning() {
-        return waitingThread != null;
+        return running;
     }
 
     public synchronized void start() throws Exception {
@@ -176,13 +177,19 @@ public class Container implements org.openremote.model.Container {
             }
         } catch (Exception ex) {
             LOG.log(ERROR, ">>> Runtime container startup failed", ex);
+            stop(true);
             throw ex;
         }
+        running = true;
         LOG.log(INFO, ">>> Runtime container startup complete");
     }
 
     public synchronized void stop() {
-        if (!isRunning())
+        stop(false);
+    }
+
+    private void stop(boolean force) {
+        if (!force && !isRunning())
             return;
         LOG.log(INFO, "<<< Stopping runtime container...");
 
@@ -211,20 +218,27 @@ public class Container implements org.openremote.model.Container {
             LOG.log(WARNING, "Exception thrown whilst trying to stop executor", e);
         }
 
-        Metrics.globalRegistry.remove(meterRegistry);
-        PrometheusRegistry.defaultRegistry.clear();
+        if (meterRegistry != null) {
+            Metrics.globalRegistry.remove(meterRegistry);
+            PrometheusRegistry.defaultRegistry.clear();
+        }
         meterRegistry = null;
-        waitingThread.interrupt();
+        if (waitingThread != null) {
+            waitingThread.interrupt();
+        }
         waitingThread = null;
+        running = false;
         LOG.log(INFO, "<<< Runtime container stopped");
     }
 
     /**
      * Starts the container and a non-daemon thread that waits forever.
      */
-    public void startBackground() throws Exception {
+    public synchronized void startBackground() throws Exception {
         start();
-        waitingThread = startWaitingThread();
+        if (waitingThread == null || !waitingThread.isAlive()) {
+            waitingThread = startWaitingThread();
+        }
     }
 
     static Thread startWaitingThread() {
