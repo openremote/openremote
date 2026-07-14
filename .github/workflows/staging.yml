@@ -204,6 +204,8 @@ jobs:
     with:
       version: ${{ needs.install-dist.outputs.npmTag }}
       is_release: ${{ steps.get-version-details.outputs.is_release }}
+    secrets:
+      GH_EXTENSION_TOKEN: ${{ secrets.GH_EXTENSION_TOKEN }}
 
   deployment:
     name: Deploy

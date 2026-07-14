@@ -6,6 +6,9 @@ on:
         type: string
       is_release:
         type: boolean
+    secrets:
+      GH_EXTENSION_TOKEN:
+        required: true
 
 jobs:
   check-artifacts:
@@ -22,16 +25,18 @@ jobs:
   create-extensions-release:
     name: Create new release in openremote/extensions
     runs-on: ubuntu-latest
+    needs: check-artifacts
     if: ${{ inputs.is_release == true }}
     steps:
       - run: gh release create $VERSION -R openremote/extensions --generate-notes
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_EXTENSION_TOKEN }}
           VERSION: ${{ inputs.version }}
 
   trigger-extensions-ci-cd:
     name: Run CI/CD in openremote/extensions
     runs-on: ubuntu-latest
+    needs: check-artifacts
     steps:
       - run: gh workflow run ci_cd.yml -R openremote/extensions -f VERSION="$VERSION" -f IS_RELEASE="$IS_RELEASE"
         env:
