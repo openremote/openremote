@@ -196,6 +196,15 @@ jobs:
     secrets:
       NPM_AUTH_TOKEN: ${{ secrets._TEMP_NPM_AUTH_TOKEN }}
 
+  extensions:
+    name: Extensions
+    needs: [install-dist, publish-maven, publish-npm]
+    if: ${{ !failure() && !cancelled() }}
+    uses: "./.github/workflows/extensions.yml"
+    with:
+      version: ${{ needs.install-dist.outputs.npmTag }}
+      is_release: ${{ steps.get-version-details.outputs.is_release }}
+
   deployment:
     name: Deploy
     needs: [detect-changes, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]

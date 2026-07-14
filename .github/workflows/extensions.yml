@@ -1,0 +1,40 @@
+name: Extensions
+on:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+      is_release:
+        type: boolean
+
+jobs:
+  check-artifacts:
+    name: Check if artifacts are available
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - run: |
+          chmod +x .ci_cd/check_artifacts.sh
+          .ci_cd/check_artifacts.sh "$VERSION"
+        env:
+          VERSION: ${{ inputs.version }}
+
+  create-extensions-release:
+    name: Create new release in openremote/extensions
+    runs-on: ubuntu-latest
+    if: ${{ inputs.is_release == true }}
+    steps:
+      - run: gh release create $VERSION -R openremote/extensions --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+
+  trigger-extensions-ci-cd:
+    name: Run CI/CD in openremote/extensions
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh workflow run ci_cd.yml -R openremote/extensions -f VERSION="$VERSION" -f IS_RELEASE="$IS_RELEASE"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          IS_RELEASE: ${{ inputs.is_release }}
