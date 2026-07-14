@@ -5,4 +5,3 @@ FROM alpine:latest
 
 RUN mkdir -p /deployment/manager/extensions
 ADD image /deployment
-
