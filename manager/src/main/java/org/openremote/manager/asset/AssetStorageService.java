@@ -888,6 +888,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     }
 
                     assets.sort(Comparator.comparingInt((Asset<?> asset) -> asset.getPath() == null ? 0 : asset.getPath().length).reversed());
+
+                    // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
+                    // and the minimum supported TimescaleDB version includes that fix.
+                    em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
+
                     assets.forEach(em::remove);
                     em.flush();
                 });
