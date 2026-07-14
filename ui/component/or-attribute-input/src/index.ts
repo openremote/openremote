@@ -164,7 +164,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, clea
                 return
             }
 
-            if (!Util.objectsEqual(dataAndErrors.data, prevValue)) {
+            if (dataAndErrors.data !== prevValue) {
                 prevValue = dataAndErrors.data;
                 const errors = !!dataAndErrors.errors?.length;
                 valueChangeNotifier({ value: dataAndErrors.data, errors });
@@ -451,7 +451,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 oldAttr.timestamp = attr.timestamp;
                 if (Util.objectsEqual(oldAttr, attr)) {
                     // Compare value and timestamp
-                    if (!Util.objectsEqual(oldValue, attr.value) || oldTimestamp !== attr.timestamp) {
+                    if (oldValue !== attr.value || oldTimestamp !== attr.timestamp) {
                         this._onAttributeValueChanged(oldValue, attr.value, attr.timestamp);
                     } else if (_changedProperties.size === 1) {
                         // Only the attribute has 'changed' and we've handled it so don't perform update

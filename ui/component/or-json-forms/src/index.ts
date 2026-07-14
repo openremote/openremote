@@ -177,7 +177,7 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
             const data = this.core!.data;
             const errors = this.core!.errors;
 
-            if (this.onChange && (!Util.objectsEqual(data, this.previousData, true) || (errors && !Util.objectsEqual(errors, this.previousErrors, true)))) {
+            if (this.onChange && (data !== this.previousData || errors !== this.previousErrors)) {
                 this.previousErrors = errors || [];
                 this.previousData = data;
                 this.onChange({data: data, errors: errors});
