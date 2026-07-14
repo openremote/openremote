@@ -9,7 +9,9 @@ export const baseStyle = css`
 
     or-vaadin-text-area {
         height: 152px;
+        --or-text-area-height: 108px;
     }
+
     
     .item-container {
         display: flex;
