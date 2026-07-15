@@ -203,7 +203,7 @@ jobs:
     uses: "./.github/workflows/extensions.yml"
     with:
       version: ${{ needs.install-dist.outputs.npmTag }}
-      is_release: ${{ steps.get-version-details.outputs.is_release }}
+      is_release: ${{ needs.detect-changes.outputs.is_release }}
     secrets:
       GH_EXTENSIONS_TOKEN: ${{ secrets._TEMP_GH_EXTENSIONS_TOKEN }}
 
