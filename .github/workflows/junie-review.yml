@@ -1,0 +1,81 @@
+name: Junie
+
+on:
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  junie:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@junie-agent')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@junie-agent')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@junie-agent')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@junie-agent') || contains(github.event.issue.title, '@junie-agent')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: @actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 200
+          lfs: 'true'
+
+      - name: Run Junie
+        id: junie
+        uses: JetBrains/junie-github-action@9984d81c22dd88b3e6c76800f278f32f6849ed75 # v1.5.9
+        with:
+          google_api_key: ${{ secrets.GOOGLE_API_KEY }}
+          # Alternatively, write your custom review instructions in the prompt field
+          # instead of using the built-in "code-review" value
+          #prompt: 'code-review'
+          prompt: |
+            Your task is to:
+            1. Get the Pull Request diff using `git diff origin/${{ github.event.pull_request.base.ref }}`
+            2. Review this diff according to the criteria below
+            3. Output summary following the template below using `submit` action
+            4. Offer inline code suggestions where appropriate
+
+            ## Review Criteria
+
+            ```
+            **Security:**
+            - SQL injection, XSS, exposed secrets
+            - Authentication/authorization issues
+            - Input validation vulnerabilities
+
+            **Performance:**
+            - N+1 queries, memory leaks
+            - Inefficient algorithms (nested loops, etc.)
+            - Blocking operations
+
+            **Code Quality:**
+            - Complexity, duplication, naming
+            - Missing tests for new logic
+            - Undocumented complex logic
+            ```
+
+            ## Summary template
+
+            ```
+            ## 🎯 Summary
+            [2-3 sentences overall assessment]
+
+            ## ⚠️ Issues Found
+            [Each issue: File:line, Severity (Critical/High/Medium/Low), Description, Suggested fix with code example]
+
+            ## ✨ Highlights
+            [1-2 things done well]
+
+            ## 📋 Checklist
+            - [ ] Security: No vulnerabilities
+            - [ ] Tests: Adequate coverage
+            - [ ] Performance: No bottlenecks
+            - [ ] Documentation: Complex logic explained
+
+            ## Additional instructions
+            - Strictly follow the plan above (`Your task is to:` section)
+            - You are not expected to explore the repo. Do review solely based on the downloaded diff
+            - You are not expected to run any code or any commands except `git diff`
