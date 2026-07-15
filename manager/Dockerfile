@@ -168,7 +168,6 @@ ADD lib /opt/app/lib
 ADD web /opt/web
 ADD map /opt/map
 
-
 EXPOSE 8080
 EXPOSE 1883
 
