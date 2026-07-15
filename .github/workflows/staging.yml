@@ -198,7 +198,7 @@ jobs:
 
   extensions:
     name: Extensions
-    needs: [detect-changes, publish-maven, publish-npm]
+    needs: [detect-changes, install-dist, publish-maven, publish-npm]
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/extensions.yml"
     with:
