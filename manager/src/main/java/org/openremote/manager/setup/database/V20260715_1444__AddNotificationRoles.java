@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -24,20 +24,20 @@ import org.openremote.model.security.ClientRole;
 import java.util.List;
 
 /**
- * Flyway migration that adds the {@code read:services} and {@code write:services} client roles to the
+ * Flyway migration that adds the {@code read:notifications} and {@code write:notifications} client roles to the
  * {@code openremote} client of every realm and wires them into the existing {@code read}/{@code write} composite
  * roles. See {@link AbstractKeycloakRolesMigration} for the credential handling and why this must stay a Java
  * migration.
  */
-public class V20250916_01__AddServiceRoles extends AbstractKeycloakRolesMigration {
+public class V20260715_1444__AddNotificationRoles extends AbstractKeycloakRolesMigration {
 
     @Override
     protected List<ClientRole> getReadRoles() {
-        return List.of(ClientRole.READ_SERVICES);
+        return List.of(ClientRole.READ_NOTIFICATIONS);
     }
 
     @Override
     protected List<ClientRole> getWriteRoles() {
-        return List.of(ClientRole.WRITE_SERVICES);
+        return List.of(ClientRole.WRITE_NOTIFICATIONS);
     }
 }
