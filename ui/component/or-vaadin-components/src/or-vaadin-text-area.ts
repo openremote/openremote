@@ -26,7 +26,10 @@ import {type LitElement} from "lit";
 export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitElement & { _updateHeight(): void }) implements OrVaadinComponent {
 
     override _onEnter(ev: KeyboardEvent) {
-        this.dispatchEvent(new CustomEvent("submit", {bubbles: true, composed: true}));
+        // Shift+Enter inserts a newline without submitting the value.
+        if (!ev.shiftKey) {
+            this.dispatchEvent(new CustomEvent("submit", {bubbles: true, composed: true}));
+        }
         return super._onEnter(ev);
     }
 
