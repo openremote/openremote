@@ -112,7 +112,7 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
     return i18next.t("updatedWithDate", { date: new Date(timestamp) });
 }
 
-const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry, schedulerRendererRegistryEntry, replayDataRendererRegistryEntry];
+export const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry, schedulerRendererRegistryEntry, replayDataRendererRegistryEntry];
 
 const schemas = new Map<string, unknown>();
 const inflightRequests = new Map<string, Promise<unknown>>();
