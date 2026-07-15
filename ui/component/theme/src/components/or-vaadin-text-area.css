@@ -19,15 +19,6 @@
  */
 @import "@vaadin/vaadin-lumo-styles/components/text-area.css";
 
-
-/* Resize doesn't work */
-/*@media lumo_components_text-area-internal {
-    :host::part(input-field) {
-        resize: vertical;
-        overflow: auto;
-    }
-}*/
-
 :root::before,
 :host::before {
   --_lumo-vaadin-text-area-inject: 1;
@@ -39,6 +30,5 @@
     lumo_mixins_field-helper,
     lumo_mixins_field-base,
     lumo_components_text-area,
-/* lumo_components_text-area-internal, */
     lumo_mixins_field-internal;
 }
