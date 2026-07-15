@@ -331,6 +331,12 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 margin-left: 4px;
                 --or-icon-width: 20px;
             }
+
+            or-vaadin-input {
+                /* Fixed input-area height enables the O(1) sizing path in or-vaadin-text-area.
+                   The host height stays content-driven so label/helper/error rows aren't clipped. */
+                --or-text-area-height: 96px;
+            }
         `];
     }
 
