@@ -2,22 +2,22 @@
 	"push": {
 		"master": {
 			"distribute": {
-				"docker": "develop",
-				"npm": "$version-snapshot"
+				"docker": "develop-core",
+				"npm": "$version-core-snapshot"
 			},
 			"deploy": {
-				"managerTag": "develop",
+				"managerTag": "develop-core",
 				"environment": "staging"
 			}
 		}
 	},
 	"release": {
 		"distribute": {
-			"docker": "latest,$version",
-			"npm": "$version"
+			"docker": "latest-core,$version-core",
+			"npm": "$version-core"
 		},
 		"deploy": {
-			"managerTag": "latest",
+			"managerTag": "latest-core",
 			"environment": "demo"
 		}
 	}

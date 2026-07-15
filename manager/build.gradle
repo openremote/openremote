@@ -199,7 +199,7 @@ configurations {
 }
 
 dependencies {
-    demoExtension project(":extension:demo-setup")
+    demoExtension api("io.openremote.extension:openremote-demo-setup:${project.version}")
 }
 
 tasks.named("run", JavaExec) {
