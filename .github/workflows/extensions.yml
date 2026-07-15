@@ -7,7 +7,7 @@ on:
       is_release:
         type: boolean
     secrets:
-      GH_EXTENSION_TOKEN:
+      GH_EXTENSIONS_TOKEN:
         required: true
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
     steps:
       - run: gh release create $VERSION -R openremote/extensions --generate-notes
         env:
-          GH_TOKEN: ${{ secrets.GH_EXTENSION_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_EXTENSIONS_TOKEN }}
           VERSION: ${{ inputs.version }}
 
   trigger-extensions-ci-cd:
