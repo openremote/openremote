@@ -105,7 +105,7 @@ tasks.withType(Zip) {
 distributions {
     main {
         contents {
-            exclude("**/openremote-demo-setup-*.jar", "**/openremote-energy-extension-*.jar")
+            exclude("**/openremote-demo-setup-extension-*.jar", "**/openremote-energy-extension-*.jar")
             from(project.projectDir) {
                 include("*Dockerfile", "entrypoint.sh", "heapdump-rename.sh")
             }
@@ -200,7 +200,7 @@ configurations {
 }
 
 dependencies {
-    demoExtension api("io.openremote.extension:openremote-demo-setup:${project.version}")
+    demoExtension api("io.openremote.extension:openremote-demo-setup-extension:${project.version}")
 }
 
 tasks.named("run", JavaExec) {
