@@ -105,6 +105,7 @@ tasks.withType(Zip) {
 distributions {
     main {
         contents {
+            exclude("**/openremote-demo-setup-*.jar", "**/openremote-energy-extension-*.jar")
             from(project.projectDir) {
                 include("*Dockerfile", "entrypoint.sh", "heapdump-rename.sh")
             }
@@ -214,12 +215,4 @@ tasks.named("run", JavaExec) {
             }
         })
     }
-}
-
-tasks.named('installDist') {
-    def excludedJars = configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
-            .findAll { it.moduleVersion.id.name in ['openremote-demo-setup', 'openremote-energy-extension'] }
-            .collect { it.file.name }
-
-    exclude { it.file.name in excludedJars }
 }
