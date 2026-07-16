@@ -93,15 +93,6 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
             // Stored grant file is absent or unreadable; fall back to OR_ADMIN_PASSWORD only when explicitly set
             // so a rotated/unset admin password doesn't silently skip the migration.
             credentials = loadAdminFallbackCredentials();
-            if (credentials == null) {
-                throw new RuntimeException(
-                        "Cannot add service roles: stored keycloak credentials are missing/unreadable and "
-                                + IdentityProvider.OR_ADMIN_PASSWORD + " is not explicitly set. Either mount the "
-                                + "storage volume containing <OR_STORAGE_DIR>/"
-                                + ManagerKeycloakIdentityProvider.OR_KEYCLOAK_GRANT_FILE_DEFAULT
-                                + " or set " + IdentityProvider.OR_ADMIN_PASSWORD
-                                + " to the current admin password so the migration can authenticate against Keycloak.");
-            }
             LOG.warning("Stored keycloak credentials not available; falling back to "
                     + IdentityProvider.OR_ADMIN_PASSWORD + " to add service roles");
         }
@@ -185,10 +176,8 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
      * bootstrap).
      */
     private OAuthPasswordGrant loadAdminFallbackCredentials() {
-        String adminPassword = System.getenv(IdentityProvider.OR_ADMIN_PASSWORD);
-        if (adminPassword == null || adminPassword.isBlank()) {
-            return null;
-        }
+        String adminPassword = System.getenv().getOrDefault(IdentityProvider.OR_ADMIN_PASSWORD,
+                IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT);
         return new OAuthPasswordGrant(
                 null,
                 KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID,
