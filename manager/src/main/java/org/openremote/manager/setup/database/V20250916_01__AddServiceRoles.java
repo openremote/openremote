@@ -45,9 +45,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -79,13 +76,6 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
 
     @Override
     public void migrate(Context context) throws Exception {
-
-        // On a clean install KeycloakInitSetup will add the roles after Flyway completes.
-        if (isCleanInstall(context)) {
-            LOG.info("Clean install detected; skipping service role migration "
-                    + "(KeycloakInitSetup will create read:services and write:services roles on first startup)");
-            return;
-        }
 
         // Upgrade path: resolve credentials to authenticate against Keycloak.
         OAuthPasswordGrant credentials = loadStoredCredentials();
@@ -185,34 +175,6 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
                 "openid",
                 Constants.MASTER_REALM_ADMIN_USER,
                 adminPassword);
-    }
-
-    /**
-     * Heuristic for a clean install based on whether the {@code openremote} client exists in Keycloak's
-     * {@code public.client} table:
-     * <ul>
-     *   <li>No row: clean install — {@code KeycloakInitSetup} hasn't run yet (it runs after Flyway).</li>
-     *   <li>Row present: upgrade — the client was created by a previous startup.</li>
-     *   <li>Table missing (SQLSTATE 42P01): clean install — Keycloak schema not initialised yet.</li>
-     *   <li>Any other query failure: assume upgrade, so a transient error can't silently skip the migration.</li>
-     * </ul>
-     * {@code PUBLIC.REALM} is not used because a freshly initialised Keycloak always contains the {@code master}
-     * realm, so that table is never empty even on a clean install.
-     */
-    private boolean isCleanInstall(Context context) {
-        try (Statement statement = context.getConnection().createStatement();
-                ResultSet resultSet = statement.executeQuery(
-                        "SELECT COUNT(*) FROM public.client WHERE client_id = '" + Constants.KEYCLOAK_CLIENT_ID + "'")) {
-            resultSet.next();
-            return resultSet.getInt(1) == 0;
-        } catch (SQLException ex) {
-            if ("42P01".equals(ex.getSQLState())) { // undefined_table: Keycloak schema not created yet
-                LOG.info("Keycloak client table does not exist; assuming clean install");
-                return true;
-            }
-            LOG.warning("Could not query Keycloak client table: " + ex.getMessage() + "; assuming upgrade");
-            return false;
-        }
     }
 
     private String buildKeycloakUrl() {
