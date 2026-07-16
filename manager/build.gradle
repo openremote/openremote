@@ -105,6 +105,7 @@ tasks.withType(Zip) {
 distributions {
     main {
         contents {
+            exclude("**/openremote-demo-setup-*.jar", "**/openremote-energy-extension-*.jar")
             from(project.projectDir) {
                 include("*Dockerfile", "entrypoint.sh", "heapdump-rename.sh")
             }
