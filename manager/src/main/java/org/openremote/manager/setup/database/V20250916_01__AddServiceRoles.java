@@ -30,12 +30,14 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityProvider;
+import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.NotFoundException;
@@ -45,9 +47,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -63,10 +62,10 @@ import java.util.logging.Logger;
  * create those manager credentials; reusing the stored grant here keeps the migration working even when the admin
  * password isn't available (e.g. rotated or unset after bootstrap).
  * <p>
- * On a clean install the migration skips entirely; {@code KeycloakInitSetup} will create the roles after Flyway.
- * On an upgrade, if the stored credentials are unavailable, it falls back to {@code OR_ADMIN_PASSWORD} only when
- * that is explicitly set, so a rotated/unset admin password doesn't silently leave the roles uncreated. If neither
- * credential source is available the migration fails rather than recording itself as applied without doing the work.
+ * When {@code OR_IDENTITY_PROVIDER} is not {@code keycloak} (e.g. the basic identity provider) the migration skips
+ * entirely, as there is no Keycloak to talk to. If the stored credentials are unavailable, it falls back to
+ * {@code OR_ADMIN_PASSWORD}, or to the default admin password when that is unset or blank, so a clean install
+ * (where the stored grant file doesn't exist yet) can still complete the migration.
  * <p>
  * This must stay a Java migration and not be converted to a {@code .sql} file: Flyway records a {@code BaseJavaMigration}
  * as type JDBC with a null checksum, whereas a {@code .sql} file for the same version is type SQL with a real checksum,
@@ -80,30 +79,18 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
     @Override
     public void migrate(Context context) throws Exception {
 
-        // On a clean install KeycloakInitSetup will add the roles after Flyway completes.
-        if (isCleanInstall(context)) {
-            LOG.info("Clean install detected; skipping service role migration "
-                    + "(KeycloakInitSetup will create read:services and write:services roles on first startup)");
+        String identityProvider = System.getenv().getOrDefault(
+                IdentityService.OR_IDENTITY_PROVIDER, IdentityService.OR_IDENTITY_PROVIDER_DEFAULT);
+        if (!IdentityService.OR_IDENTITY_PROVIDER_DEFAULT.equals(identityProvider)) {
+            LOG.info("Identity provider is '" + identityProvider + "'; skipping service role migration");
             return;
         }
 
         // Upgrade path: resolve credentials to authenticate against Keycloak.
         OAuthPasswordGrant credentials = loadStoredCredentials();
         if (credentials == null) {
-            // Stored grant file is absent or unreadable; fall back to OR_ADMIN_PASSWORD only when explicitly set
-            // so a rotated/unset admin password doesn't silently skip the migration.
+            // Stored grant file is absent or unreadable; fall back to OR_ADMIN_PASSWORD or, when unset, the default admin password
             credentials = loadAdminFallbackCredentials();
-            if (credentials == null) {
-                throw new RuntimeException(
-                        "Cannot add service roles: stored keycloak credentials are missing/unreadable and "
-                                + IdentityProvider.OR_ADMIN_PASSWORD + " is not explicitly set. Either mount the "
-                                + "storage volume containing <OR_STORAGE_DIR>/"
-                                + ManagerKeycloakIdentityProvider.OR_KEYCLOAK_GRANT_FILE_DEFAULT
-                                + " or set " + IdentityProvider.OR_ADMIN_PASSWORD
-                                + " to the current admin password so the migration can authenticate against Keycloak.");
-            }
-            LOG.warning("Stored keycloak credentials not available; falling back to "
-                    + IdentityProvider.OR_ADMIN_PASSWORD + " to add service roles");
         }
 
         String keycloakUrl = buildKeycloakUrl();
@@ -185,9 +172,15 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
      * bootstrap).
      */
     private OAuthPasswordGrant loadAdminFallbackCredentials() {
+        // Blank values are treated as absent, matching Config.init which filters them from the runtime config
         String adminPassword = System.getenv(IdentityProvider.OR_ADMIN_PASSWORD);
-        if (adminPassword == null || adminPassword.isBlank()) {
-            return null;
+        if (TextUtil.isNullOrEmpty(adminPassword)) {
+            adminPassword = IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT;
+            LOG.warning("Stored keycloak credentials not available and " + IdentityProvider.OR_ADMIN_PASSWORD
+                    + " is not set; using the default admin password to add service roles");
+        } else {
+            LOG.warning("Stored keycloak credentials not available; falling back to "
+                    + IdentityProvider.OR_ADMIN_PASSWORD + " to add service roles");
         }
         return new OAuthPasswordGrant(
                 null,
@@ -196,34 +189,6 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
                 "openid",
                 Constants.MASTER_REALM_ADMIN_USER,
                 adminPassword);
-    }
-
-    /**
-     * Heuristic for a clean install based on whether the {@code openremote} client exists in Keycloak's
-     * {@code public.client} table:
-     * <ul>
-     *   <li>No row: clean install — {@code KeycloakInitSetup} hasn't run yet (it runs after Flyway).</li>
-     *   <li>Row present: upgrade — the client was created by a previous startup.</li>
-     *   <li>Table missing (SQLSTATE 42P01): clean install — Keycloak schema not initialised yet.</li>
-     *   <li>Any other query failure: assume upgrade, so a transient error can't silently skip the migration.</li>
-     * </ul>
-     * {@code PUBLIC.REALM} is not used because a freshly initialised Keycloak always contains the {@code master}
-     * realm, so that table is never empty even on a clean install.
-     */
-    private boolean isCleanInstall(Context context) {
-        try (Statement statement = context.getConnection().createStatement();
-                ResultSet resultSet = statement.executeQuery(
-                        "SELECT COUNT(*) FROM public.client WHERE client_id = '" + Constants.KEYCLOAK_CLIENT_ID + "'")) {
-            resultSet.next();
-            return resultSet.getInt(1) == 0;
-        } catch (SQLException ex) {
-            if ("42P01".equals(ex.getSQLState())) { // undefined_table: Keycloak schema not created yet
-                LOG.info("Keycloak client table does not exist; assuming clean install");
-                return true;
-            }
-            LOG.warning("Could not query Keycloak client table: " + ex.getMessage() + "; assuming upgrade");
-            return false;
-        }
     }
 
     private String buildKeycloakUrl() {
