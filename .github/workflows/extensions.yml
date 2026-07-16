@@ -42,4 +42,4 @@ jobs:
     steps:
       - run: gh workflow run ci_cd.yml -R openremote/extensions -f VERSION="${{ inputs.version }}" -f IS_RELEASE="${{ inputs.is_release }}"
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_EXTENSIONS_TOKEN }}
