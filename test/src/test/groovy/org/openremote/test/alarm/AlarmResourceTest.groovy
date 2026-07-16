@@ -101,7 +101,7 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         regularUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AlarmResource.class)
         adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
 
-        User alarmsReadWriteUser = keycloakTestSetup.createUser(MASTER_REALM, "alarmsrwuser1", "alarmsrwuser1", "Alarms R/W", "User", "alarmsrwuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES)
+        User alarmsReadWriteUser = keycloakTestSetup.createUser(MASTER_REALM, "alarmsrwuser1", "alarmsrwuser1", "Alarms RW", "User", "alarmsrwuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES)
         alarmsReadWriteUserId = alarmsReadWriteUser.getId();
 
         User superUser = keycloakTestSetup.createUser(MASTER_REALM, "testuser4", "testuser4", "Demo4", "Demo4", null, true, new ClientRole[] {ClientRole.WRITE, ClientRole.READ});

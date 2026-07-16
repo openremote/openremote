@@ -382,11 +382,20 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
                     userRepresentation = convert(user, UserRepresentation.class);
                     RealmResource realmResource = realmsResource.realm(realm);
-                    Response response = realmResource.users().create(userRepresentation);
-                    String location = response.getHeaderString(Headers.LOCATION_STRING);
-                    response.close();
-                    if (!response.getStatusInfo().equals(Response.Status.CREATED) || TextUtil.isNullOrEmpty(location)) {
-                        throw new BadRequestException("Failed to create user: User=" + user);
+                    String location;
+                    String error = null;
+                    Response.StatusType status;
+
+                    try (Response response = realmResource.users().create(userRepresentation)) {
+                        location = response.getHeaderString(Headers.LOCATION_STRING);
+                        status = response.getStatusInfo();
+                        if (!status.equals(Response.Status.CREATED) || TextUtil.isNullOrEmpty(location)) {
+                            error = response.readEntity(String.class);
+                        }
+                    }
+
+                    if (!status.equals(Response.Status.CREATED) || TextUtil.isNullOrEmpty(location)) {
+                        throw new BadRequestException("Failed to create user: User=" + user + ", Error=" + error);
                     }
                     String[] locationArr = location.split("/");
                     String userId = locationArr.length > 0 ? locationArr[locationArr.length - 1] : null;
