@@ -37,6 +37,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.NotFoundException;
@@ -174,8 +175,11 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
      * bootstrap).
      */
     private OAuthPasswordGrant loadAdminFallbackCredentials() {
-        String adminPassword = System.getenv().getOrDefault(IdentityProvider.OR_ADMIN_PASSWORD,
-                IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT);
+        // Blank values are treated as absent, matching Config.init which filters them from the runtime config
+        String adminPassword = System.getenv(IdentityProvider.OR_ADMIN_PASSWORD);
+        if (TextUtil.isNullOrEmpty(adminPassword)) {
+            adminPassword = IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT;
+        }
         return new OAuthPasswordGrant(
                 null,
                 KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID,
