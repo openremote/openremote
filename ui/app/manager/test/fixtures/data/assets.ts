@@ -5,10 +5,6 @@ export const notes = { name: "notes", type: "text" };
 export const location = { name: "location", type: "GEO_JSONPoint" };
 export const commonAttrs = { notes, location };
 
-export const assetMap = {
-    "Battery": "Electricity Battery Asset",
-    "Solar Panel": "PV Solar Asset"
-};
 const assets = [
     {
         name: "Battery",
@@ -113,43 +109,6 @@ export const assetWithPredictedAndStoredDatapoints: Asset = {
     },
 };
 
-type AssetNames = (typeof assets)[number]["name"];
-
-export const assetPatches: Record<
-    AssetNames,
-    {
-        attribute1: string;
-        attribute2: string;
-        attribute3: string;
-        value1: string;
-        value2: string;
-        value3: string;
-        x: number;
-        y: number;
-    }
-> = {
-    Battery: {
-        attribute1: "energyLevel",
-        attribute2: "power",
-        attribute3: "powerSetpoint",
-        value1: "30",
-        value2: "50",
-        value3: "70",
-        x: 705,
-        y: 210,
-    },
-    "Solar Panel": {
-        attribute1: "panelPitch",
-        attribute2: "power",
-        attribute3: "powerForecast",
-        value1: "30",
-        value2: "70",
-        value3: "100",
-        x: 600,
-        y: 200,
-    },
-};
-
 export type DefaultAssets = typeof assets;
 export default assets;
 
@@ -158,6 +117,18 @@ export const thing: Asset = {
     realm: "smartcity",
     type: "ThingAsset",
     attributes: { ...commonAttrs },
+};
+
+export const weather: Asset = {
+    name: "Weather",
+    realm: "smartcity",
+    type: "ThingAsset",
+    attributes: {
+        ...commonAttrs,
+        temperature: { name: "temperature", type: "number", meta: { readOnly: true } },
+        humidity: { name: "humidity", type: "positiveInteger", meta: { readOnly: false } },
+        rainfall: { name: "rainfall", type: "number" },
+    },
 };
 
 export const agent: Asset = {
