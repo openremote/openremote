@@ -24,6 +24,7 @@ import jakarta.persistence.PersistenceException;
 import jakarta.persistence.TypedQuery;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.model.Constants;
@@ -68,8 +69,15 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     public static final Logger LOG = Logger.getLogger(AlarmService.class.getName());
 
+    public static class AlarmAssetLinkRealmMismatchException extends IllegalArgumentException {
+        public AlarmAssetLinkRealmMismatchException(String message) {
+            super(message);
+        }
+    }
+
     private Container container;
     private ClientEventService clientEventService;
+    private AssetStorageService assetStorageService;
     private ManagerIdentityService identityService;
     private NotificationService notificationService;
     private PersistenceService persistenceService;
@@ -84,6 +92,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     public void init(Container container) throws Exception {
         this.container = container;
         this.clientEventService = container.getService(ClientEventService.class);
+        this.assetStorageService = container.getService(AssetStorageService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.notificationService = container.getService(NotificationService.class);
         this.persistenceService = container.getService(PersistenceService.class);
@@ -167,6 +176,26 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
+     * Throws an {@link EntityNotFoundException} if any asset does not exist, or an
+     * {@link AlarmAssetLinkRealmMismatchException} if any asset does not belong to {@code realm}.
+     */
+    protected void validateAssetsInRealm(String realm, Collection<String> assetIds) {
+        validateAssetIds(assetIds);
+        Set<String> uniqueAssetIds = new HashSet<>(assetIds);
+        Map<String, String> assetRealms = assetStorageService.getAssetRealms(uniqueAssetIds);
+
+        if (assetRealms.size() != uniqueAssetIds.size()) {
+            throw new EntityNotFoundException("One or more assets do not exist");
+        }
+
+        for (String assetId : uniqueAssetIds) {
+            if (!Objects.equals(realm, assetRealms.get(assetId))) {
+                throw new AlarmAssetLinkRealmMismatchException("Asset '" + assetId + "' is not in realm '" + realm + "'");
+            }
+        }
+    }
+
+    /**
      * Sends an alarm. Callers are responsible for enforcing realm authorization.
      */
     public SentAlarm sendAlarm(Alarm alarm, List<String> assetIds) {
@@ -176,6 +205,10 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         Objects.requireNonNull(alarm.getSeverity(), "Alarm severity cannot be null");
         Objects.requireNonNull(alarm.getSource(), "Source cannot be null");
         Objects.requireNonNull(alarm.getSourceId(), "Source ID cannot be null");
+
+        if (assetIds != null && !assetIds.isEmpty()) {
+            validateAssetsInRealm(alarm.getRealm(), assetIds);
+        }
 
         Instant timestamp = Instant.ofEpochMilli(timerService.getCurrentTimeMillis());
         SentAlarm sentAlarm = persistenceService.doReturningTransaction(entityManager -> entityManager.merge(new SentAlarm()
@@ -331,31 +364,30 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Links multiple assets to an existing alarm.
+     * Links multiple assets to an existing alarm. Callers are responsible for enforcing realm authorization.
      */
     public void linkAssets(List<String> assetIds, String realm, Long alarmId) {
-        linkAssets(assetIds.stream().map(assetId -> new AlarmAssetLink(realm, alarmId, assetId)).toList());
-    }
-
-    /**
-     * Links multiple assets to existing alarms. Callers are responsible for enforcing realm authorization.
-     */
-    public void linkAssets(List<AlarmAssetLink> links) {
-        Set<Long> alarmIds = links.stream().map(link -> link.getId().getAlarmId()).collect(Collectors.toSet());
-        validateAlarmIds(alarmIds);
-
-        Set<String> assetIds = links.stream().map(link -> link.getId().getAssetId()).collect(Collectors.toSet());
+        validateAlarmId(alarmId);
         validateAssetIds(assetIds);
+        if (TextUtil.isNullOrEmpty(realm)) {
+            throw new IllegalArgumentException("Missing realm");
+        }
+
+        SentAlarm alarm = getAlarm(alarmId);
+        if (!Objects.equals(realm, alarm.getRealm())) {
+            throw new AlarmAssetLinkRealmMismatchException("Alarm '" + alarmId + "' is not in realm '" + realm + "'");
+        }
+        validateAssetsInRealm(realm, assetIds);
 
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
             PreparedStatement st = connection.prepareStatement("""
                     insert into ALARM_ASSET_LINK (sentalarm_id, realm, asset_id, created_on) values (?, ?, ?, ?)
                     on conflict (sentalarm_id, realm, asset_id) do nothing
                     """);
-            for (AlarmAssetLink link : links) {
-                st.setLong(1, link.getId().getAlarmId());
-                st.setString(2, link.getId().getRealm());
-                st.setString(3, link.getId().getAssetId());
+            for (String assetId : assetIds) {
+                st.setLong(1, alarmId);
+                st.setString(2, realm);
+                st.setString(3, assetId);
                 st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
                 st.addBatch();
             }
