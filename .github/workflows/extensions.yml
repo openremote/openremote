@@ -1,4 +1,5 @@
 name: Extensions
+
 on:
   workflow_call:
     inputs:
@@ -9,6 +10,10 @@ on:
     secrets:
       GH_EXTENSIONS_TOKEN:
         required: true
+
+permissions:
+  actions: write
+  contents: read
 
 jobs:
   check-artifacts:
@@ -21,7 +26,7 @@ jobs:
           .ci_cd/check_artifacts.sh "${{ inputs.version }}" "${{ inputs.is_release }}"
 
   create-extensions-release:
-    name: Create new release in openremote/extensions
+    name: Create release
     runs-on: ubuntu-latest
     needs: check-artifacts
     if: ${{ inputs.is_release == 'true' }}
@@ -31,7 +36,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_EXTENSIONS_TOKEN }}
 
   trigger-extensions-ci-cd:
-    name: Run CI/CD in openremote/extensions
+    name: Run CI/CD
     runs-on: ubuntu-latest
     needs: check-artifacts
     steps:
