@@ -13,11 +13,6 @@ plugins {
 }
 
 dependencies {
-    // TODO: Remove this as shouldn't build custom project code into this package
-    def customModel = findProject(":model")
-    if (customModel != null) {
-        implementation customModel
-    }
     compileOnly project(":model-util")
     implementation project(":model")
     implementation libs.typescriptGeneratorCore

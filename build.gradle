@@ -193,7 +193,7 @@ scmVersion {
 
 allprojects {
     apply from: "${findProject(':openremote') != null ? project(':openremote').projectDir : rootDir}/project.gradle"
-    version = scmVersion.version
+    version = rootProject.scmVersion.version
 }
 
 // Uncomment the following to configure files to be encrypted/decrypted
@@ -236,7 +236,7 @@ tasks.register('checkFilesGitIgnoredNew', Exec) {
     args.add('git')
     args.add('check-ignore')
     args.add('-q')
-    args.addAll(project.getProperties().get('gradleFileEncrypt').plainFiles)
+    args.addAll(project.extensions.getByName('gradleFileEncrypt').plainFiles.files)
 
     commandLine args
 }
