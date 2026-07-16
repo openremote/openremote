@@ -939,6 +939,13 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     realmResource.roles().create(new RoleRepresentation(realmRole.getName(), realmRole.getDescription(), false));
                 });
 
+                // Since Keycloak 26.7.0 Verify Profile is enabled for new realms but not the master realm
+                RequiredActionProviderRepresentation requiredActionConfigRepresentation = realmResource.flows().getRequiredAction("VERIFY_PROFILE");
+                requiredActionConfigRepresentation.setEnabled(false);
+                realmResource.flows().updateRequiredAction("VERIFY_PROFILE", requiredActionConfigRepresentation);
+
+                // Since Keycloak 26.7.0 Unmanaged user attributes are disabled for new realms but not the master realm
+
                 // Auto create the standard openremote client
                 ClientRepresentation clientRepresentation = generateOpenRemoteClientRepresentation();
                 createUpdateClient(realm.getName(), clientRepresentation);
