@@ -198,11 +198,11 @@ jobs:
 
   extensions:
     name: Extensions
-    needs: [detect-changes, install-dist, publish-maven, publish-npm]
+    needs: [detect-changes, publish-maven, publish-npm]
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/extensions.yml"
     with:
-      version: ${{ needs.install-dist.outputs.npmTag }}
+      version: ${{ needs.detect-changes.outputs.version_with_qualifier }}
       is_release: ${{ needs.detect-changes.outputs.is_release }}
     secrets:
       GH_EXTENSIONS_TOKEN: ${{ secrets._TEMP_GH_EXTENSIONS_TOKEN }}
