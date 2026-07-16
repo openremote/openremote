@@ -1000,6 +1000,26 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         });
     }
 
+    /**
+     * Returns the realm for each asset ID that exists.
+     */
+    public Map<String, String> getAssetRealms(Collection<String> assetIds) {
+        if (assetIds == null || assetIds.isEmpty()) {
+            return Map.of();
+        }
+        return persistenceService.doReturningTransaction(entityManager -> {
+            List<Object[]> result = entityManager.createQuery("""
+                    select a.id, a.realm from Asset a
+                    where a.id in :assetIds
+                    """, Object[].class)
+                .setParameter("assetIds", assetIds)
+                .getResultList();
+            Map<String, String> realms = new HashMap<>();
+            result.forEach(row -> realms.put((String) row[0], (String) row[1]));
+            return realms;
+        });
+    }
+
     public boolean isDescendantAsset(String parentAssetId, String assetId) {
         return isDescendantAssets(parentAssetId, Collections.singletonList(assetId));
     }
