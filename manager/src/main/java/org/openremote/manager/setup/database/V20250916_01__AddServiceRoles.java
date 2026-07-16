@@ -30,6 +30,7 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityProvider;
+import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
@@ -60,8 +61,8 @@ import java.util.logging.Logger;
  * create those manager credentials; reusing the stored grant here keeps the migration working even when the admin
  * password isn't available (e.g. rotated or unset after bootstrap).
  * <p>
- * On a clean install the migration skips entirely; {@code KeycloakInitSetup} will create the roles after Flyway.
- * On an upgrade, if the stored credentials are unavailable, it falls back to {@code OR_ADMIN_PASSWORD} only when
+ * When {@code OR_IDENTITY_PROVIDER} is not {@code keycloak} (e.g. the basic identity provider) the migration skips
+ * entirely, as there is no Keycloak to talk to. If the stored credentials are unavailable, it falls back to {@code OR_ADMIN_PASSWORD} only when
  * that is explicitly set, so a rotated/unset admin password doesn't silently leave the roles uncreated. If neither
  * credential source is available the migration fails rather than recording itself as applied without doing the work.
  * <p>
@@ -76,6 +77,13 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
 
     @Override
     public void migrate(Context context) throws Exception {
+
+        String identityProvider = System.getenv().getOrDefault(
+                IdentityService.OR_IDENTITY_PROVIDER, IdentityService.OR_IDENTITY_PROVIDER_DEFAULT);
+        if (!IdentityService.OR_IDENTITY_PROVIDER_DEFAULT.equals(identityProvider)) {
+            LOG.info("Identity provider is '" + identityProvider + "'; skipping service role migration");
+            return;
+        }
 
         // Upgrade path: resolve credentials to authenticate against Keycloak.
         OAuthPasswordGrant credentials = loadStoredCredentials();
