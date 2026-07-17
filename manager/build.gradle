@@ -11,6 +11,10 @@ application {
     mainClass = "org.openremote.manager.Main"
 }
 
+configurations {
+    demoExtension
+}
+
 dependencies {
 
     api project(":container")
@@ -55,6 +59,8 @@ dependencies {
 
     implementation libs.sshdNetty
 
+    demoExtension "io.openremote.extension:openremote-demo-setup-extension:${project.version}"
+
     testImplementation libs.groovyAll
     testImplementation platform(libs.spockBom)
     testImplementation libs.spockCore
@@ -64,6 +70,9 @@ dependencies {
 }
 
 sourceSets {
+    main {
+        runtimeClasspath += configurations.demoExtension
+    }
     test {
         groovy.srcDirs = ['test/src/groovy']
     }
@@ -105,7 +114,6 @@ tasks.withType(Zip) {
 distributions {
     main {
         contents {
-            exclude("**/openremote-demo-setup-extension-*.jar", "**/openremote-energy-extension-*.jar")
             from(project.projectDir) {
                 include("*Dockerfile", "entrypoint.sh", "heapdump-rename.sh")
             }
@@ -195,13 +203,6 @@ publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
 sourcesJar.dependsOn(setVersionProperties)
 
-configurations {
-    demoExtension
-}
-
-dependencies {
-    demoExtension api("io.openremote.extension:openremote-demo-setup-extension:${project.version}")
-}
 
 tasks.named("run", JavaExec) {
     def setupType = System.getenv("OR_SETUP_TYPE")
