@@ -476,7 +476,8 @@ export class NotificationForm extends LitElement {
         if (!manager.isRestrictedUser() && (manager.hasRole("read:users") || manager.hasRole("read:admin"))) {
             allowedTargetTypes.unshift({label: i18next.t("user_plural"), value: NotificationTargetType.USER});
         }
-        if (!manager.isRestrictedUser() && manager.hasRole("read:admin")) {
+        // Realm targets only work for superusers
+        if (manager.isSuperUser()) {
             allowedTargetTypes.push({label: i18next.t("realm_plural"), value: NotificationTargetType.REALM});
         }
 
