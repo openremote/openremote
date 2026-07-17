@@ -419,14 +419,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     /**
      * Builds the {@code order by} clause for {@link #getNotifications}. Each {@link SentNotification.SortField} maps
      * to a fixed persisted column (never a caller-supplied string) so ordering is injection-safe; a null sort keeps
-     * the default of newest-sent first. Status orders by the derived sent/delivered/error state.
+     * the default of newest-sent first. Status orders by the derived sent/delivered/error state. Every ordering
+     * ends with an id tie-breaker so paginated requests return a stable sequence.
      */
     protected String buildOrderBy(SentNotification.SortField sort, boolean descending) {
-        if (sort == null) {
-            return " order by n.sentOn desc";
-        }
-        String direction = descending ? " desc" : " asc";
-        return switch (sort) {
+        String direction = sort == null || descending ? " desc" : " asc";
+        String orderBy = switch (sort == null ? SentNotification.SortField.SENT_ON : sort) {
             case TITLE -> " order by n.name" + direction;
             case SOURCE -> " order by n.source" + direction;
             // sent (0) sorts before delivered (1) before error (2) when ascending
@@ -434,6 +432,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             case SENT_ON -> " order by n.sentOn" + direction;
             case DELIVERED_ON -> " order by n.deliveredOn" + direction;
         };
+        // Secondary id sort keeps pagination stable when rows tie on the sorted column
+        return orderBy + ", n.id" + direction;
     }
 
     /**
