@@ -55,7 +55,7 @@ const sources = [
 
 export class NotificationService {
 
-    async getNotifications(realm: string, fromDate?: number, toDate?: number, source?: NotificationSource, offset?: number, limit?: number, sort?: SentNotificationSortField, descending?: boolean): Promise<SentNotification[]> {
+    async getNotifications(realm: string, fromDate?: number, toDate?: number, source?: NotificationSource, offset?: number, limit?: number, sort?: SentNotificationSortField, descending?: boolean, signal?: AbortSignal): Promise<SentNotification[]> {
         try {
             const timeRange = fromDate && toDate ?
                 {fromDate, toDate} :
@@ -71,7 +71,7 @@ export class NotificationService {
                     descending,
                     offset,
                     limit
-                });
+                }, {signal});
 
             if (!response.data) {
                 console.warn("No data in response:", response);
@@ -80,13 +80,14 @@ export class NotificationService {
 
             return response.data;
         } catch (err: unknown) {
-            const error = err as AxiosError;
-            console.error('Failed to fetch notifications:', error);
-            throw error;
+            if (!signal?.aborted) {
+                console.error('Failed to fetch notifications:', err);
+            }
+            throw err;
         }
     }
 
-    async getNotificationsCount(realm: string, fromDate?: number, toDate?: number, source?: NotificationSource): Promise<number> {
+    async getNotificationsCount(realm: string, fromDate?: number, toDate?: number, source?: NotificationSource, signal?: AbortSignal): Promise<number> {
         try {
             const timeRange = fromDate && toDate ?
                 {fromDate, toDate} :
@@ -98,13 +99,14 @@ export class NotificationService {
                     to: timeRange.toDate,
                     realmId: realm,
                     source
-                });
+                }, {signal});
 
             return typeof response.data === 'number' ? response.data : 0;
         } catch (err: unknown) {
-            const error = err as AxiosError;
-            console.error('Failed to fetch notification count:', error);
-            throw error;
+            if (!signal?.aborted) {
+                console.error('Failed to fetch notification count:', err);
+            }
+            throw err;
         }
     }
 
@@ -320,6 +322,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected _createForm?: NotificationForm;
 
     protected _loading: boolean = false;
+    protected _loadAbortController?: AbortController;
 
     protected notificationService: NotificationService;
 
@@ -363,9 +366,12 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected async _loadData() {
-        if (this._loading || !this.realm) {
+        if (!this.realm) {
             return;
         }
+        this._loadAbortController?.abort();
+        const abortController = new AbortController();
+        this._loadAbortController = abortController;
         this._loading = true;
 
         try {
@@ -394,8 +400,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
             const offset = this._currentPage * this._pageSize;
 
             const [data, count] = await Promise.all([
-                this.notificationService.getNotifications(this.realm, timeRange.fromDate, timeRange.toDate, source, offset, this._pageSize, this._sortField, this._sortDescending),
-                this.notificationService.getNotificationsCount(this.realm, timeRange.fromDate, timeRange.toDate, source)
+                this.notificationService.getNotifications(this.realm, timeRange.fromDate, timeRange.toDate, source, offset, this._pageSize, this._sortField, this._sortDescending, abortController.signal),
+                this.notificationService.getNotificationsCount(this.realm, timeRange.fromDate, timeRange.toDate, source, abortController.signal)
             ]);
 
             this._data = data;
@@ -403,10 +409,16 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
             this.requestUpdate();
         } catch (err: unknown) {
+            if (abortController.signal.aborted) {
+                return;
+            }
             console.error("Failed to load notifications:", err);
             showSnackbar(undefined, i18next.t("loadingNotificationFailed"));
         } finally {
-            this._loading = false;
+            // Only the latest request may clear the loading flag
+            if (this._loadAbortController === abortController) {
+                this._loading = false;
+            }
         }
     }
 
