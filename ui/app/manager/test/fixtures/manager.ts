@@ -41,10 +41,16 @@ import { CollapsiblePanel } from "../../../../component/or-components/test/fixtu
 import { MwcInput, MwcMenu } from "../../../../component/or-mwc-components/test/fixtures";
 import { JsonForms } from "../../../../component/or-json-forms/test/fixtures";
 import { AssetTree } from "../../../../component/or-asset-tree/test/fixtures";
-import { type AxiosRequestConfig } from "axios";
+import { isAxiosError, type AxiosRequestConfig } from "axios";
 
 export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
 export const userStatePath = path.join(__dirname, "data/.auth/user.json");
+
+/** Logs a warning for a failed HTTP request; any other error is a test bug and is rethrown to fail the test. */
+function warnOnHttpError(e: unknown, message: string, ...context: unknown[]) {
+    if (!isAxiosError(e)) throw e;
+    console.warn(message, ...context, e.response?.status ?? e.message);
+}
 
 export class Manager {
     private readonly clientId = "openremote";
@@ -230,10 +236,10 @@ export class Manager {
         config ??= await this.adminConfig();
         for (const { realm, id } of this.provisionedUsers) {
             try {
-                const response = await this.api.UserResource.deleteUser(realm, id, config);
+                const response = await this.api.UserResource.delete(realm, id, config);
                 expect(response.status).toBe(204);
             } catch (e) {
-                console.warn("Could not delete user: ", id, e);
+                warnOnHttpError(e, "Could not delete user: ", id);
             }
         }
         this.provisionedUsers = [];
@@ -285,7 +291,7 @@ export class Manager {
             expect(response.status).toBe(200);
             return response.data;
         } catch (e) {
-            console.error("Failed to get roles", e.response.status);
+            warnOnHttpError(e, "Failed to get roles");
         }
     }
 
@@ -311,7 +317,7 @@ export class Manager {
             expect(response.status).toBe(204);
             this.role = newRole;
         } catch (e) {
-            console.error("Failed to create role", e.response.status);
+            warnOnHttpError(e, "Failed to create role");
         }
     }
 
@@ -328,7 +334,7 @@ export class Manager {
             expect(response.status).toBe(200);
             this.user = response.data;
         } catch (e) {
-            console.error("Failed to create user", e.response.status);
+            warnOnHttpError(e, "Failed to create user");
         }
     }
 
@@ -350,7 +356,7 @@ export class Manager {
             );
             expect(response.status).toBe(204);
         } catch (e) {
-            console.error("Failed to update users' roles", e.response.status);
+            warnOnHttpError(e, "Failed to update users' roles");
         }
     }
 
@@ -370,7 +376,7 @@ export class Manager {
             );
             expect(response.status).toBe(204);
         } catch (e) {
-            console.error("Failed to reset user password", e.response.status);
+            warnOnHttpError(e, "Failed to reset user password");
         }
     }
 
@@ -389,7 +395,8 @@ export class Manager {
                 this.assets.push(response.data);
             })
             .catch((e) => {
-                expect(e.response.status, { message: "Failed to create asset" }).toBe(409);
+                if (!isAxiosError(e)) throw e;
+                expect(e.response?.status, { message: "Failed to create asset" }).toBe(409);
             });
     }
 
@@ -408,7 +415,8 @@ export class Manager {
                 this.assets = [...this.assets.filter((a) => a.id !== response.data.id), response.data as Asset];
             })
             .catch((e) => {
-                expect(e.response.status, { message: "Failed to update asset" }).toBe(409);
+                if (!isAxiosError(e)) throw e;
+                expect(e.response?.status, { message: "Failed to update asset" }).toBe(409);
             });
     }
 
@@ -463,7 +471,7 @@ export class Manager {
                 expect(response.status).toBe(204);
                 this.dashboards.splice(i, 1);
             } catch (e) {
-                console.warn("Could not delete dashboard: ", id, e);
+                warnOnHttpError(e, "Could not delete dashboard: ", id);
             }
         }
     }
@@ -479,7 +487,7 @@ export class Manager {
                 expect(response.status).toBe(204);
                 this.rules.splice(i, 1);
             } catch (e) {
-                console.warn("Could not delete realm rule: ", id, e);
+                warnOnHttpError(e, "Could not delete realm rule: ", id);
             }
         }
     }
@@ -495,7 +503,7 @@ export class Manager {
             expect(response.status).toBe(204);
             this.assets = [];
         } catch (e) {
-            console.warn("Could not delete asset(s): ", assetIds, e);
+            warnOnHttpError(e, "Could not delete asset(s): ", assetIds);
         }
     }
 
@@ -513,7 +521,7 @@ export class Manager {
             expect(response.status).toBe(204);
             delete this.role;
         } catch (e) {
-            console.warn("Could not update roles: ", this.role, e);
+            warnOnHttpError(e, "Could not update roles: ", this.role);
         }
     }
 
