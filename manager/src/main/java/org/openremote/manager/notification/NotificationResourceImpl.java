@@ -271,8 +271,9 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     /**
-     * Strips identifiers the caller isn't allowed to see: source/target user IDs without read:users and target asset
-     * IDs without read:assets.
+     * Strips identifiers the caller isn't allowed to see: user IDs (CLIENT source, USER target) without read:users
+     * and asset IDs (ASSET_RULESET source, ASSET target) without read:assets. REALM_RULESET source IDs are realm
+     * names and stay visible; realm access is enforced separately.
      */
     protected void sanitiseNotifications(List<SentNotification> notifications, AuthContext authContext) {
         boolean canReadUsers = authContext != null && (authContext.isSuperUser()
@@ -288,13 +289,20 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
 
         notifications.forEach(n -> {
             if (!canReadUsers) {
-                n.setSourceId(null);
+                if (n.getSource() == Notification.Source.CLIENT) {
+                    n.setSourceId(null);
+                }
                 if (n.getTarget() == Notification.TargetType.USER) {
                     n.setTargetId(null);
                 }
             }
-            if (!canReadAssets && n.getTarget() == Notification.TargetType.ASSET) {
-                n.setTargetId(null);
+            if (!canReadAssets) {
+                if (n.getSource() == Notification.Source.ASSET_RULESET) {
+                    n.setSourceId(null);
+                }
+                if (n.getTarget() == Notification.TargetType.ASSET) {
+                    n.setTargetId(null);
+                }
             }
         });
     }

@@ -1201,9 +1201,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notifSent.every { it.source == Notification.Source.REALM_RULESET }
         notifSent.every { it.realm == buildingRealm }
         notifSent.every { (it.message as EmailNotificationMessage).subject == "Realm access test" }
-        // without read:users/read:assets the recipient and source ids are stripped
+        // without read:users the recipient ids are stripped; realm ruleset source ids are realm names and stay visible
         notifSent.every { it.targetId == null }
-        notifSent.every { it.sourceId == null }
+        notifSent.every { it.sourceId == buildingRealm }
 
         when: "a non-restricted building user requests notifications for the master realm they cannot access"
         def otherRealmResponse = requestNotificationsByRealm(buildingRealm, notifUserAccessToken, MASTER_REALM)
