@@ -383,10 +383,10 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> em.find(SentNotification.class, notificationId));
     }
 
-    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, SentNotification.SortField sort, boolean descending, Integer offset, Integer limit, AuthContext authContext) throws IllegalArgumentException {
+    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, SentNotification.SortField sort, boolean descending, Integer offset, Integer limit, AuthContext authContext, boolean restricted) throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder("select n from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        buildNotificationCriteria(builder, parameters, ids, types, from, to, realmIds, userIds, assetIds, source, authContext);
+        buildNotificationCriteria(builder, parameters, ids, types, from, to, realmIds, userIds, assetIds, source, authContext, restricted);
         builder.append(buildOrderBy(sort, descending));
 
         return persistenceService.doReturningTransaction(entityManager -> {
@@ -403,10 +403,10 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         });
     }
 
-    public long getNotificationsCount(List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, AuthContext authContext) throws IllegalArgumentException {
+    public long getNotificationsCount(List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, AuthContext authContext, boolean restricted) throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder("select count(n) from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        buildNotificationCriteria(builder, parameters, null, types, from, to, realmIds, userIds, assetIds, source, authContext);
+        buildNotificationCriteria(builder, parameters, null, types, from, to, realmIds, userIds, assetIds, source, authContext, restricted);
 
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<Long> query = entityManager.createQuery(builder.toString(), Long.class);
@@ -441,7 +441,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
      * Restricted callers are additionally limited to notifications they sent, that target them, or that target
      * their realm; any other caller with access sees all notifications matching the criteria.
      */
-    protected void buildNotificationCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, AuthContext authContext) {
+    protected void buildNotificationCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, AuthContext authContext, boolean restricted) {
         int idx = 1;
 
         if (ids != null && !ids.isEmpty()) {
@@ -479,8 +479,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
 
         // Only restricted users are limited to notifications they sent, that target them, or that target their realm;
-        // any other caller with access (read:notifications / read:admin / superuser) sees all of them
-        if (authContext != null && identityService.getIdentityProvider().isRestrictedUser(authContext)) {
+        // any other caller with access (read:notifications / read:admin / superuser) sees all of them. Whether the
+        // caller is restricted is decided by the caller (resource layer) so authorization logic stays in one place.
+        if (restricted && authContext != null) {
             builder.append(" AND (n.sourceId = ?").append(idx++)
                 .append(" OR (n.target = ?").append(idx++).append(" AND n.targetId = ?").append(idx++).append(")")
                 .append(" OR (n.target = ?").append(idx++).append(" AND n.targetId = ?").append(idx++).append("))");

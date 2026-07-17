@@ -80,7 +80,8 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                 realmId != null ? Collections.singletonList(realmId) : null,
                 userId != null ? Collections.singletonList(userId) : null,
                 assetId != null ? Collections.singletonList(assetId) : null,
-                source, sort, descending != null && descending, offset, limit, authContext
+                source, sort, descending != null && descending, offset, limit, authContext,
+                managerIdentityService.getIdentityProvider().isRestrictedUser(authContext)
             );
             sanitiseNotifications(notifications, authContext);
             return notifications.toArray(new SentNotification[0]);
@@ -243,7 +244,8 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                 realmId != null ? Collections.singletonList(realmId) : null,
                 userId != null ? Collections.singletonList(userId) : null,
                 assetId != null ? Collections.singletonList(assetId) : null,
-                source, authContext
+                source, authContext,
+                managerIdentityService.getIdentityProvider().isRestrictedUser(authContext)
             );
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
