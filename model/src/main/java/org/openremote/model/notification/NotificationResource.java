@@ -56,16 +56,6 @@ public interface NotificationResource {
                                         @QueryParam("descending") Boolean descending,
                                         @QueryParam("offset") Integer offset,
                                         @QueryParam("limit") Integer limit);
-    // RT: Was using lists here but they don't work with JSAPI because GWT doesn't use JSArrays for lists - another
-    // reason to get away from GWT
-//    SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
-//                                        @QueryParam("id") List<Long> ids,
-//                                        @QueryParam("type") List<String> types,
-//                                        @QueryParam("from") Long fromTimestamp,
-//                                        @QueryParam("to") Long toTimestamp,
-//                                        @QueryParam("realmId") List<String> realmIds,
-//                                        @QueryParam("userId") List<String> userIds,
-//                                        @QueryParam("assetId") List<String> assetIds);
 
     /**
      * Removes all sent notifications that have been sent to the specified targets; optionally limiting the scope of the
@@ -86,16 +76,6 @@ public interface NotificationResource {
                              @QueryParam("realmId") String realmId,
                              @QueryParam("userId") String userId,
                              @QueryParam("assetId") String assetId);
-    // RT: Was using lists here but they don't work with JSAPI because GWT doesn't use JSArrays for lists - another
-    // reason to get away from GWT
-//    void removeNotifications(@BeanParam RequestParams requestParams,
-//                             @QueryParam("id") List<Long> ids,
-//                             @QueryParam("type") List<String> types,
-//                             @QueryParam("from") Long fromTimestamp,
-//                             @QueryParam("to") Long toTimestamp,
-//                             @QueryParam("realmId") List<String> realmIds,
-//                             @QueryParam("userId") List<String> userIds,
-//                             @QueryParam("assetId") List<String> assetIds);
 
     /**
      * Remove a specific sent notification by ID.
