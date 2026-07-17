@@ -359,7 +359,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     get name(): string {
-        return "notifications_other"
+        return "notification_other"
     }
 
     protected async _loadData() {
