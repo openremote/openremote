@@ -140,8 +140,8 @@ export class OrNotificationsTable extends OrMwcTable {
                 }
 
                 .status-error {
-                    color: var(--or-notification-status-pending-color,rgb(231, 126, 126));
-                    background: var(--or-notification-status-pending-bg, rgba(143, 126, 231, 0.1));
+                    color: var(--or-notification-status-error-color, rgb(231, 126, 126));
+                    background: var(--or-notification-status-error-bg, rgba(231, 126, 126, 0.1));
                 }
 
                 .title-wrapper {
@@ -333,22 +333,21 @@ export class OrNotificationsTable extends OrMwcTable {
     }
 
     protected getStatusContent(notification: SentNotification): TemplateResult {
-        const isDelivered = !!notification.deliveredOn;
+        const isError = !!notification.error;
+        const isDelivered = !isError && !!notification.deliveredOn;
 
         const classes = {
-            "notification-status": true, 
+            "notification-status": true,
+            "status-error": isError,
             "status-delivered": isDelivered,
-            "status-pending": !isDelivered
+            "status-pending": !isError && !isDelivered
         };
 
-
-        const result = html`
-            <span class="${classMap(classes)}">
-                ${isDelivered ? i18next.t("delivered") : i18next.t("pending")}
-            </span> 
+        return html`
+            <span class="${classMap(classes)}" title="${notification.error || ""}">
+                ${i18next.t(isError ? "error" : isDelivered ? "delivered" : "pending")}
+            </span>
         `;
-
-        return result;
     }
 
     protected getDateContent(date?: number): TemplateResult {
