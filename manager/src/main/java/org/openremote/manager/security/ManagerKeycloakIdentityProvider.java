@@ -35,6 +35,7 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
+import org.keycloak.representations.userprofile.config.UPConfig;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -945,6 +946,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 realmResource.flows().updateRequiredAction("VERIFY_PROFILE", requiredActionConfigRepresentation);
 
                 // Since Keycloak 26.7.0 Unmanaged user attributes are disabled for new realms but not the master realm
+                UserProfileResource userProfileResource = realmResource.users().userProfile();
+                UPConfig upConfig = userProfileResource.getConfiguration();
+                upConfig.setUnmanagedAttributePolicy(UPConfig.UnmanagedAttributePolicy.ADMIN_EDIT);
+                userProfileResource.update(upConfig);
 
                 // Auto create the standard openremote client
                 ClientRepresentation clientRepresentation = generateOpenRemoteClientRepresentation();

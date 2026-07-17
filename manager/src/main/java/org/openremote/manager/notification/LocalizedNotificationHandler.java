@@ -184,6 +184,7 @@ public class LocalizedNotificationHandler extends RouteBuilder implements Notifi
             }
 
         }
+
         // If target locale is not set yet, or there is no message available for that locale,
         // use the default language configured in the notification message
         if (TextUtil.isNullOrEmpty(targetLocale) || !localizedMessage.getMessages().containsKey(targetLocale)) {

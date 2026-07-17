@@ -89,7 +89,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
     }
 
     public User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, ClientRole[] roles) {
-        return  createUser(realm, username, pasnsword, firstName, lastName, email, enabled, false, false, roles);
+        return  createUser(realm, username, password, firstName, lastName, email, enabled, false, false, roles);
     }
 
     public User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, boolean emailNotificationsDisabled, boolean pushNotificationsDisabled, ClientRole[] roles) {
