@@ -436,7 +436,9 @@ export class NotificationForm extends LitElement {
         const source = (canReadUsers && this.notification.sourceId) ?
             `${this._normalizeValue(this.notification.source)}, ${this.notification.sourceId}` :
             this._normalizeValue(this.notification.source);
-        const status = this.notification.deliveredOn ? i18next.t("delivered") : i18next.t("pending");
+        const status = this.notification.error ? i18next.t("error")
+            : this.notification.deliveredOn ? i18next.t("delivered")
+            : i18next.t("sent");
         const sent = this.notification.sentOn ? new Date(this.notification.sentOn).toLocaleString() : '-';
         const delivered = this.notification.deliveredOn ? new Date(this.notification.deliveredOn).toLocaleString() : '-';
 

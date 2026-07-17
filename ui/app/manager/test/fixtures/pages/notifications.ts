@@ -50,6 +50,11 @@ export class NotificationsPage implements BasePage {
         return this.getRows().filter({ hasText: text });
     }
 
+    /** The status badge (Sent/Delivered/Error) of the (first) row containing the given text. */
+    getStatusBadge(rowText: string): Locator {
+        return this.getRowByText(rowText).first().locator(".notification-status");
+    }
+
     // --- Header / filters --------------------------------------------------
 
     getCreateButton(): Locator {

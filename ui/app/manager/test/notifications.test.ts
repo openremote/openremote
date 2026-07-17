@@ -211,6 +211,50 @@ test("should show the correct data in the notification details dialog", async ({
 });
 
 /**
+ * @given Logged into the "master" realm as "admin"
+ * @and Three notifications seeded via REST: a plain send, one marked delivered, and one whose send failed
+ * @when Navigated to the "Notifications" page
+ * @then Their rows show the "Sent", "Delivered" and "Error" status badges respectively
+ * @and The error badge carries the failure reason as its tooltip
+ */
+test("should show the sent, delivered and error statuses in the table", async ({ manager, notificationsPage }) => {
+    const config = await manager.adminConfig();
+    const now = Date.now();
+
+    // Sent: a plain seed persists without delivery confirmation (dev mode skips the actual SMTP send)
+    const sentSubject = await seedNotification(manager, "master", `E2E sent ${now}`);
+
+    // Delivered: seed another and mark its per-user rows delivered via the REST API
+    const deliveredSubject = await seedNotification(manager, "master", `E2E delivered ${now}`);
+    const seeded = (await manager.api.NotificationResource.getNotifications({
+        from: now - 60_000,
+        to: now + 60_000,
+        realmId: "master",
+    }, config)).data.filter((n) => n.name === deliveredSubject);
+    expect(seeded.length).toBeGreaterThan(0);
+    for (const n of seeded) {
+        await manager.api.NotificationResource.notificationDelivered(n.id!, { targetId: n.targetId! }, config);
+    }
+
+    // Error: a custom target without any address persists the notification, then fails with "no recipients"
+    // (the send request itself returns a 400 after the row is stored, so swallow it)
+    const errorSubject = `E2E error ${now}`;
+    await manager.api.NotificationResource.sendNotification({
+        name: errorSubject,
+        message: { type: "email", subject: errorSubject, html: "<p>seed</p>" } as EmailNotificationMessage,
+        targets: [{ type: NotificationTargetType.CUSTOM, id: "to:" }],
+    } as Notification, config).catch(() => {});
+
+    await manager.goToRealmStartPage("master");
+    await notificationsPage.goto();
+
+    await expect(notificationsPage.getStatusBadge(sentSubject)).toHaveText("Sent");
+    await expect(notificationsPage.getStatusBadge(deliveredSubject)).toHaveText("Delivered");
+    await expect(notificationsPage.getStatusBadge(errorSubject)).toHaveText("Error");
+    await expect(notificationsPage.getStatusBadge(errorSubject)).toHaveAttribute("title", /no recipients/i);
+});
+
+/**
  * Each test logs in as a freshly-created "smartcity" user with a specific permission set (REST setup) and asserts
  * the distinct UI condition that permission set should produce on the notifications page.
  */

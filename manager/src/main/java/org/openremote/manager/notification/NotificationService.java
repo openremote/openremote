@@ -419,7 +419,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     /**
      * Builds the {@code order by} clause for {@link #getNotifications}. Each {@link SentNotification.SortField} maps
      * to a fixed persisted column (never a caller-supplied string) so ordering is injection-safe; a null sort keeps
-     * the default of newest-sent first. Status orders by whether the notification has been delivered.
+     * the default of newest-sent first. Status orders by the derived sent/delivered/error state.
      */
     protected String buildOrderBy(SentNotification.SortField sort, boolean descending) {
         if (sort == null) {
@@ -429,8 +429,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return switch (sort) {
             case TITLE -> " order by n.name" + direction;
             case SOURCE -> " order by n.source" + direction;
-            // pending (no deliveredOn) sorts before delivered when ascending
-            case STATUS -> " order by case when n.deliveredOn is null then 0 else 1 end" + direction;
+            // sent (0) sorts before delivered (1) before error (2) when ascending
+            case STATUS -> " order by case when n.error is not null then 2 when n.deliveredOn is not null then 1 else 0 end" + direction;
             case SENT_ON -> " order by n.sentOn" + direction;
             case DELIVERED_ON -> " order by n.deliveredOn" + direction;
         };

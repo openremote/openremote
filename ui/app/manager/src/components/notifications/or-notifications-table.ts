@@ -134,9 +134,9 @@ export class OrNotificationsTable extends OrMwcTable {
                     background: var(--or-notification-status-delivered-bg, rgba(34, 160, 107, 0.1));
                 }
     
-                .status-pending {
-                    color: var(--or-notification-status-pending-color, #8F7EE7);
-                    background: var(--or-notification-status-pending-bg, rgba(143, 126, 231, 0.1));
+                .status-sent {
+                    color: var(--or-notification-status-sent-color, #8F7EE7);
+                    background: var(--or-notification-status-sent-bg, rgba(143, 126, 231, 0.1));
                 }
 
                 .status-error {
@@ -340,12 +340,13 @@ export class OrNotificationsTable extends OrMwcTable {
             "notification-status": true,
             "status-error": isError,
             "status-delivered": isDelivered,
-            "status-pending": !isError && !isDelivered
+            // Delivery can only be confirmed by consoles acknowledging a push
+            "status-sent": !isError && !isDelivered
         };
 
         return html`
             <span class="${classMap(classes)}" title="${notification.error || ""}">
-                ${i18next.t(isError ? "error" : isDelivered ? "delivered" : "pending")}
+                ${i18next.t(isError ? "error" : isDelivered ? "delivered" : "sent")}
             </span>
         `;
     }
