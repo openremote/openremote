@@ -302,6 +302,10 @@ export class NotificationForm extends LitElement {
 
         this._targetType = type;
         this._targetOptions = [];
+        // Drop any previously selected targets; they belong to the previous target type (or realm) and would
+        // otherwise be submitted as ids of the new type
+        this._targets = [];
+        this._selectedAssetIds = [];
 
         switch (type) {
             case NotificationTargetType.USER:
