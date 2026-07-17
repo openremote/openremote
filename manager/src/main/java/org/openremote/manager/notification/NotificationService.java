@@ -178,7 +178,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     switch (source) {
                         case INTERNAL -> {
                             isSuperUser = true;
-                            notificationRealm.set("master");
+                            notificationRealm.set(Constants.MASTER_REALM);
                         }
                         case CLIENT -> {
                             AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
@@ -194,7 +194,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                             isSuperUser = authContext.isSuperUser();
                             isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext);
                         }
-                        case GLOBAL_RULESET -> isSuperUser = true;
+                        case GLOBAL_RULESET -> {
+                            isSuperUser = true;
+                            // Global rulesets are realm-less, so unresolvable targets are stored under the master realm
+                            notificationRealm.set(Constants.MASTER_REALM);
+                        }
                         case REALM_RULESET -> {
                             realm = exchange.getIn().getHeader(Notification.HEADER_SOURCE_ID, String.class);
                             notificationRealm.set(realm);
@@ -327,7 +331,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                 if (asset != null) return asset.getRealm();
                 break;
         }
-        return fallbackRealm != null ? fallbackRealm : "master";
+        return fallbackRealm != null ? fallbackRealm : Constants.MASTER_REALM;
     }
 
     public boolean sendNotification(Notification notification) {
