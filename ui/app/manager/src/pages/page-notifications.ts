@@ -124,23 +124,13 @@ export class NotificationService {
     }
 
     async getAssetsDetails(assetIds: string[]): Promise<Asset[]> {
-        try {
-            const response = await manager.rest.api.AssetResource.queryAssets({ ids: assetIds });
-            return response.status === 200 ? response.data || [] : [];
-        } catch (err) {
-            console.warn(`Failed to fetch assets details:`, err);
-            return [];
-        }
+        const response = await manager.rest.api.AssetResource.queryAssets({ ids: assetIds });
+        return response.data || [];
     }
 
     async getUsersDetails(userIds: string[]): Promise<User[]> {
-        try {
-            const response = await manager.rest.api.UserResource.query({ ids: userIds });
-            return response.status === 200 ? response.data || [] : [];
-        } catch (err) {
-            console.warn(`Failed to fetch users details:`, err);
-            return [];
-        }
+        const response = await manager.rest.api.UserResource.query({ ids: userIds });
+        return response.data || [];
     }
 
     hasUserReadPermissions(): boolean {

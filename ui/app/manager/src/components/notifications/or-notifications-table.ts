@@ -209,6 +209,9 @@ export class OrNotificationsTable extends OrMwcTable {
     @state()
     protected targetDetailsMap: Map<string, {name: string, type: string, link: string}> = new Map();
 
+    // Map keys whose lookup failed; their cached fallback entries are retried on the next resolve
+    protected failedTargetKeys: Set<string> = new Set();
+
     protected getTargetMapKey(targetId: string, targetType: string): string {
         return `${targetType}:${targetId}`;
     }
@@ -368,6 +371,11 @@ export class OrNotificationsTable extends OrMwcTable {
     }
 
     protected async resolveAllTargetDetails(notifications: SentNotification[]) {
+        // Drop entries cached by failed lookups so they get requested again; entries for deleted
+        // targets stay cached since they can never resolve
+        this.failedTargetKeys.forEach(key => this.targetDetailsMap.delete(key));
+        this.failedTargetKeys.clear();
+
         const assetIds = new Set<string>();
         const userIds = new Set<string>();
 
@@ -383,51 +391,54 @@ export class OrNotificationsTable extends OrMwcTable {
 
         if (assetIds.size === 0 && userIds.size === 0) return;
 
-        const canReadAssets = this.notificationService.hasAssetReadPermissions();
-        const canReadUsers = this.notificationService.hasUserReadPermissions();
+        // Each kind handles its own failure so a failing asset request cannot discard user results (and vice versa)
+        await Promise.all([
+            this.resolveTargetDetails(assetIds, NotificationTargetType.ASSET, "asset",
+                this.notificationService.hasAssetReadPermissions(),
+                ids => this.notificationService.getAssetsDetails(ids),
+                asset => ({ id: asset.id!, name: asset.name || asset.id!, link: `#/${getAssetsRoute(false, asset.id!)}` })),
+            this.resolveTargetDetails(userIds, NotificationTargetType.USER, "user",
+                this.notificationService.hasUserReadPermissions(),
+                ids => this.notificationService.getUsersDetails(ids),
+                user => ({ id: user.id!, name: user.username, link: `#/${getUsersRoute(user.id!)}` })),
+        ]);
+        this.requestUpdate();
+    }
 
-        // Store raw IDs for targets we cannot resolve due to missing permissions
-        if (!canReadAssets) {
-            assetIds.forEach(id => {
-                this.targetDetailsMap.set(this.getTargetMapKey(id, NotificationTargetType.ASSET), { name: "-", type: "asset", link: "" });
-            });
-        }
-        if (!canReadUsers) {
-            userIds.forEach(id => {
-                this.targetDetailsMap.set(this.getTargetMapKey(id, NotificationTargetType.USER), { name: "-", type: "user", link: "" });
-            });
+    protected async resolveTargetDetails<T>(
+        ids: Set<string>,
+        targetType: NotificationTargetType,
+        type: string,
+        canRead: boolean,
+        fetchDetails: (ids: string[]) => Promise<T[]>,
+        toEntry: (item: T) => { id: string, name: string, link: string }
+    ) {
+        if (ids.size === 0) return;
+
+        // Hide targets the caller has no permission to resolve
+        if (!canRead) {
+            ids.forEach(id => this.targetDetailsMap.set(this.getTargetMapKey(id, targetType), { name: "-", type, link: "" }));
+            return;
         }
 
         try {
-            const [assets, users] = await Promise.all([
-                canReadAssets && assetIds.size > 0
-                    ? this.notificationService.getAssetsDetails(Array.from(assetIds))
-                    : Promise.resolve([]),
-                canReadUsers && userIds.size > 0
-                    ? this.notificationService.getUsersDetails(Array.from(userIds))
-                    : Promise.resolve([]),
-            ]);
-
-            assets.forEach((asset) => {
-                this.targetDetailsMap.set(this.getTargetMapKey(asset.id!, NotificationTargetType.ASSET), {
-                    name: asset.name || asset.id!,
-                    type: "asset",
-                    link: `#/${getAssetsRoute(false, asset.id!)}`,
-                });
+            (await fetchDetails(Array.from(ids))).forEach(item => {
+                const { id, name, link } = toEntry(item);
+                this.targetDetailsMap.set(this.getTargetMapKey(id, targetType), { name, type, link });
             });
-
-            users.forEach((user) => {
-                this.targetDetailsMap.set(this.getTargetMapKey(user.id!, NotificationTargetType.USER), {
-                    name: user.username,
-                    type: "user",
-                    link: `#/${getUsersRoute(user.id!)}`,
-                });
-            });
-
-            this.requestUpdate();
         } catch (err) {
-            console.error("Failed to resolve bulk target details", err);
+            console.error(`Failed to resolve ${type} target details`, err);
+            ids.forEach(id => this.failedTargetKeys.add(this.getTargetMapKey(id, targetType)));
         }
+
+        // Ids that resolved to nothing (deleted target or failed lookup) fall back to the raw id
+        // without a link, so they don't stay in a permanent loading state
+        ids.forEach(id => {
+            const key = this.getTargetMapKey(id, targetType);
+            if (!this.targetDetailsMap.has(key)) {
+                this.targetDetailsMap.set(key, { name: id, type, link: "" });
+            }
+        });
     }
 
     protected onRowClick(ev: MouseEvent, item: NotificationTableRow) {
