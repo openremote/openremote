@@ -29,8 +29,11 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.notification.AbstractNotificationMessage;
+import org.openremote.model.notification.LocalizedNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationResource;
+import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.ValueUtil;
@@ -271,9 +274,11 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     /**
-     * Strips identifiers the caller isn't allowed to see: user IDs (CLIENT source, USER target) without read:users
-     * and asset IDs (ASSET_RULESET source, ASSET target) without read:assets. REALM_RULESET source IDs are realm
-     * names and stay visible; realm access is enforced separately.
+     * Strips data the caller isn't allowed to see: user IDs (CLIENT source, USER target) and CUSTOM target IDs
+     * (which can contain email addresses) without read:users, asset IDs (ASSET_RULESET source, ASSET target)
+     * without read:assets. REALM_RULESET source IDs are realm
+     * names and stay visible; realm access is enforced separately. Delivery details stored on the message after
+     * handler resolution (push device tokens) are stripped for every caller.
      */
     protected void sanitiseNotifications(List<SentNotification> notifications, AuthContext authContext) {
         boolean canReadUsers = authContext != null && (authContext.isSuperUser()
@@ -283,29 +288,42 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
             || authContext.hasResourceRole(Constants.READ_ASSETS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
 
-        if (canReadUsers && canReadAssets) {
-            return;
-        }
-
-        notifications.forEach(n -> {
-            if (!canReadUsers) {
-                if (n.getSource() == Notification.Source.CLIENT) {
-                    n.setSourceId(null);
-                }
-                if (n.getTarget() == Notification.TargetType.USER) {
-                    n.setTargetId(null);
-                }
-            }
-            if (!canReadAssets) {
-                if (n.getSource() == Notification.Source.ASSET_RULESET) {
-                    n.setSourceId(null);
-                }
-                if (n.getTarget() == Notification.TargetType.ASSET) {
-                    n.setTargetId(null);
-                }
-            }
-        });
+        notifications.forEach(n -> sanitiseNotification(n, canReadUsers, canReadAssets));
     }
 
+    protected void sanitiseNotification(SentNotification n, boolean canReadUsers, boolean canReadAssets) {
+        sanitiseMessage(n.getMessage());
+
+        if (!canReadUsers) {
+            if (n.getSource() == Notification.Source.CLIENT) {
+                n.setSourceId(null);
+            }
+            // Custom targets can carry raw email addresses
+            if (n.getTarget() == Notification.TargetType.USER || n.getTarget() == Notification.TargetType.CUSTOM) {
+                n.setTargetId(null);
+            }
+        }
+        if (!canReadAssets) {
+            if (n.getSource() == Notification.Source.ASSET_RULESET) {
+                n.setSourceId(null);
+            }
+            if (n.getTarget() == Notification.TargetType.ASSET) {
+                n.setTargetId(null);
+            }
+        }
+    }
+
+    /**
+     * Removes delivery-only fields from a stored message: push messages carry the resolved FCM device token in
+     * their target after sending, which must never leave the server. Recurses into localized messages.
+     */
+    protected void sanitiseMessage(AbstractNotificationMessage message) {
+        if (message instanceof PushNotificationMessage pushMessage) {
+            pushMessage.setTarget(null);
+            pushMessage.setTargetType(null);
+        } else if (message instanceof LocalizedNotificationMessage localizedMessage && localizedMessage.getMessages() != null) {
+            localizedMessage.getMessages().values().forEach(this::sanitiseMessage);
+        }
+    }
 
 }
