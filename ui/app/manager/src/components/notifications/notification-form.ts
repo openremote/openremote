@@ -205,14 +205,8 @@ export class NotificationForm extends LitElement {
         }
         await Promise.all(promises);
 
-        if (canReadAssets) {
-            this._targetOptions = (this._assets || []).map(asset => ({
-                label: asset.name,
-                value: asset.id
-            }));
-        } else if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
-            this._targetType = NotificationTargetType.USER;
-        }
+        // Select the initial target type through the shared path so its option list is populated too
+        await this._onTargetTypeChanged(canReadAssets ? NotificationTargetType.ASSET : NotificationTargetType.USER);
     }
 
     updated(changedProps: Map<string, any>) {

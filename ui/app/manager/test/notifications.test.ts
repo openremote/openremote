@@ -294,6 +294,25 @@ test.describe("Role-Based Access Control", () => {
     });
 
     /**
+     * @given A "smartcity" user with write:notifications and read:users but no asset read permission
+     * @when The create dialog is opened for the first time
+     * @then The target type is forced to Users and the recipient checkbox list is populated
+     */
+    test("should list user recipients on first open for a user who cannot read assets", async ({ page, manager, notificationsPage }) => {
+        await ensureRecipient(manager, "smartcity", await manager.adminConfig());
+        await createUserAndLogin(manager, page, {
+            realm: "smartcity",
+            username: "e2e-user-sender",
+            roles: ["read:notifications", "write:notifications", "read:users"],
+        });
+
+        await notificationsPage.goto();
+        await notificationsPage.openCreateDialog();
+        await expect(notificationsPage.getCreateForm().locator("#target")
+            .getByRole("checkbox", { name: RECIPIENT_USERNAME })).toBeVisible();
+    });
+
+    /**
      * @given A notification seeded into "smartcity" (REST) and a "smartcity" user with read:notifications only
      * @when That user opens the notification's details dialog
      * @then The recipient type is shown, but the recipient's identity is sanitised away (shown as "-")
