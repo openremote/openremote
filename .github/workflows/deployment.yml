@@ -112,7 +112,7 @@ jobs:
 
           if inputs is not None and inputs != '':
             inputs = json.loads(inputs)
-          if eventName == 'workflow_call' and callerInputs is not None and callerInputs != 'null':
+          if eventName == 'workflow_dispatch' and callerInputs is not None and callerInputs != 'null':
             os.system(f"echo 'Processing caller inputs'")
             inputs = json.loads(callerInputs)
 
