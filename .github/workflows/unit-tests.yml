@@ -24,7 +24,7 @@ jobs:
 
       - name: Check if main repo
         id: is_main_repo
-        uses: openremote/openremote/.github/actions/check-if-main-repo@9ea22e19db6711afd711f39517fe25509b018803
+        uses: openremote/openremote/.github/actions/check-if-main-repo@5beec5454f28eda1dd25331c9ce1d5b430266f7e
 
       - name: Run unit tests
         timeout-minutes: 20
