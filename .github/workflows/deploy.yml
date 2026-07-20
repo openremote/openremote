@@ -1,4 +1,10 @@
-# This workflow only exists to allow manual deployments e.g. to test servers.
+# Deployment entry point for the openremote manager. It handles two callers:
+#   - workflow_dispatch: a user manually deploying (e.g. to a test server). Inputs may override
+#     the deployment target (see the Sanitize step in deployment.yml).
+#   - repository_dispatch (event_type 'deploy'): automated deploys triggered from another repo
+#     (the extensions pipeline) via the REST dispatches API. The target is resolved dynamically
+#     from .ci_cd/ci_cd.json and is never sanitized. client_payload may provide 'commit' (the
+#     branch/tag/SHA to check out, which also drives snapshot-vs-release detection).
 #
 # It leverages existing reusable workflows similar to the staging.yml environment workflow but unlike the staging.yml workflow
 # it only includes the required jobs for deployments: install-dist, build-manager-image and deploy.
@@ -21,6 +27,10 @@ on:
         description: 'Host to deploy to (e.g. demo.openremote.app)'
       OR_ADMIN_PASSWORD:
         description: 'Admin password override'
+
+  # Automated trigger from another repo (e.g. the extensions pipeline)
+  repository_dispatch:
+    types: [deploy]
 
   workflow_call:
     inputs:
@@ -49,7 +59,7 @@ jobs:
     if: ${{ needs.is-main-repo.outputs.value == 'true' }}
     uses: "./.github/workflows/install-dist.yml"
     with:
-      COMMIT: ${{ inputs.COMMIT }}
+      COMMIT: ${{ inputs.COMMIT || github.event.client_payload.commit }}
 
   deployment:
     name: Deployment
@@ -58,5 +68,5 @@ jobs:
     uses: "./.github/workflows/deployment.yml"
     with:
       INPUTS: ${{ toJSON(inputs) }}
-      COMMIT: ${{ inputs.COMMIT }}
+      COMMIT: ${{ inputs.COMMIT || github.event.client_payload.commit }}
     secrets: inherit

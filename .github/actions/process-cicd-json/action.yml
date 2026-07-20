@@ -66,14 +66,16 @@ runs:
 
         if eventName == "push" and refType == "branch" and isinstance(eventConfig, dict):
           eventConfig = eventConfig.get(refName)
-        
+
         if eventConfig is not None:
           deploys = eventConfig.get('deploy')
-        
-          if eventName == "workflow_dispatch" and isinstance(deploys, dict):
+
+          # repository_dispatch is the automation entry point (e.g. the extensions pipeline);
+          # its deploy target is snapshot or release depending on the checked out version
+          if eventName == "repository_dispatch" and isinstance(deploys, dict):
             deploys = deploys["release"] if isRelease else deploys["snapshot"]
 
-          if eventName == "workflow_dispatch" and isRelease:
+          if eventName == "repository_dispatch" and isRelease:
             distributeConfig = data.get("release")
           else:
             distributeConfig = eventConfig

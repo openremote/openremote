@@ -171,6 +171,12 @@ jobs:
           inputEnv = os.getenv('INPUT_ENVIRONMENT')
           managerVersion = os.getenv('MANAGER_VERSION')
 
+          # The deployment target defaults to the ci_cd.json computed value and is kept as-is for
+          # automatic deploys: push, tag/release, and repository_dispatch (the extensions pipeline
+          # triggers deploy.yml via repository_dispatch, which surfaces here as event_name
+          # 'repository_dispatch'). Only a user-initiated workflow_dispatch sanitizes, overriding
+          # the target with the requested environment/tag so a human can deploy to a test server.
+          # openremote org only.
           if eventName == 'workflow_dispatch' and refType != 'tag' and repoOwner == 'openremote':
             if isMainRepo:
               tag=inputTag

@@ -7,7 +7,7 @@
       }
     }
   },
-  "workflow_dispatch": {
+  "repository_dispatch": {
     "deploy": {
       "snapshot": {
         "managerTag": "develop",
