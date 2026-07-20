@@ -196,6 +196,17 @@ jobs:
     secrets:
       NPM_AUTH_TOKEN: ${{ secrets._TEMP_NPM_AUTH_TOKEN }}
 
+  extensions:
+    name: Extensions
+    needs: [detect-changes, publish-maven, publish-npm]
+    if: ${{ !failure() && !cancelled() }}
+    uses: "./.github/workflows/extensions.yml"
+    with:
+      version: ${{ needs.detect-changes.outputs.version_with_qualifier }}
+      is_release: ${{ needs.detect-changes.outputs.is_release }}
+    secrets:
+      GH_EXTENSIONS_TOKEN: ${{ secrets._TEMP_GH_EXTENSIONS_TOKEN }}
+
   deployment:
     name: Deploy
     needs: [detect-changes, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]

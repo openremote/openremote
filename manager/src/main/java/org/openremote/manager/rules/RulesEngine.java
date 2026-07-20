@@ -262,7 +262,7 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-        deployment = new RulesetDeployment(ruleset, this, timerService, assetStorageService, executorService, scheduledExecutorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade);
+        deployment = new RulesetDeployment(ruleset, this, timerService, assetStorageService, executorService, scheduledExecutorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade, rulesService.isGroovyRulesExecutionEnabled());
         deployment.init();
         deployments.put(ruleset.getId(), deployment);
         publishRulesetStatus(deployment);

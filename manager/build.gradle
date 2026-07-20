@@ -1,11 +1,13 @@
 import java.nio.file.Paths
 
-apply plugin: "java-library"
-apply plugin: "groovy"
-apply plugin: "application"
-apply plugin: "distribution"
-apply plugin: "maven-publish"
-apply plugin: "signing"
+plugins {
+    id 'java-library'
+    id 'groovy'
+    id 'application'
+    id 'distribution'
+    id 'maven-publish'
+    id 'signing'
+}
 
 application {
     mainClass = "org.openremote.manager.Main"
@@ -105,6 +107,7 @@ tasks.withType(Zip) {
 distributions {
     main {
         contents {
+            exclude("**/openremote-demo-setup-extension-*.jar", "**/openremote-energy-extension-*.jar")
             from(project.projectDir) {
                 include("*Dockerfile", "entrypoint.sh", "heapdump-rename.sh")
             }
@@ -199,7 +202,7 @@ configurations {
 }
 
 dependencies {
-    demoExtension project(":extension:demo-setup")
+    demoExtension api("io.openremote.extension:openremote-demo-setup-extension:${project.version}")
 }
 
 tasks.named("run", JavaExec) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,17 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.extension.energy.model;
+import { customElement } from "lit/decorators.js";
+import { OrVaadinCheckboxGroup } from "./or-vaadin-checkbox-group";
+import "./or-vaadin-toggle";
 
-import org.openremote.model.AssetModelProvider;
-
-/**
- * Provides the energy asset classes.
+/*
+ * A checkbox-group specialised for `<or-vaadin-toggle>` children. It exists only to give the toggle
+ * group its own tag so the spacing between toggles can be set (in the theme) without committing the
+ * shared `<or-vaadin-checkbox-group>` to a gap value (still undecided for checkboxes).
  */
-public class EnergyModelProvider implements AssetModelProvider {
-
-    @Override
-    public boolean useAutoScan() {
-        return true;
-    }
-}
+@customElement("or-vaadin-toggle-group")
+export class OrVaadinToggleGroup extends OrVaadinCheckboxGroup {}

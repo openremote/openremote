@@ -136,6 +136,10 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
                 throw new ForbiddenException("Realm '" + alarm.getRealm() + "' is nonexistent, inactive or inaccessible");
             }
             return alarmService.sendAlarm(alarm, assetIds);
+        } catch (EntityNotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (AlarmService.AlarmAssetLinkRealmMismatchException e) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
         } catch (NullPointerException e) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         } catch (ForbiddenException e) {
@@ -179,18 +183,37 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
                 throw new IllegalArgumentException("No AlarmAssetLink objects were provided.");
             }
             Set<String> realms = links.stream().map(link -> link.getId().getRealm()).collect(Collectors.toSet());
+            Set<Long> alarmIds = links.stream().map(link -> link.getId().getAlarmId()).collect(Collectors.toSet());
 
-            if (!isRealmActiveAndAccessible(realms.stream().findFirst().orElse(null))) {
-                throw new ForbiddenException("Realm '" + realms.stream().findFirst() + "' is nonexistent, inactive or inaccessible");
+            if (alarmIds.size() > 1) {
+                throw new IllegalArgumentException("AlarmAssetLink objects must all have the same alarm ID");
             }
-            alarmService.linkAssets(links);
+
+            if (realms.size() > 1) {
+                throw new IllegalArgumentException("AlarmAssetLink objects must all have the same realm");
+            }
+            for (String realm : realms) {
+                if (TextUtil.isNullOrEmpty(realm)) {
+                    throw new IllegalArgumentException("Missing realm");
+                }
+                if (!isRealmActiveAndAccessible(realm)) {
+                    throw new ForbiddenException("Realm '" + realm + "' is nonexistent, inactive or inaccessible");
+                }
+            }
+
+            Long alarmId = alarmIds.iterator().next();
+            String realm = realms.iterator().next();
+            List<String> assetIds = links.stream().map(link -> link.getId().getAssetId()).toList();
+
+            alarmService.linkAssets(assetIds, realm, alarmId);
         } catch (EntityNotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         } catch (ForbiddenException e) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
+        } catch (AlarmService.AlarmAssetLinkRealmMismatchException e) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
         } catch (NullPointerException | IllegalArgumentException e) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
     }
-
 }
