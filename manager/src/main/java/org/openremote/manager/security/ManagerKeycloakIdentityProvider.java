@@ -1278,6 +1278,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         // Service-internal network (between manager and keycloak service containers) does not use SSL
         realmRepresentation.setSslRequired(SslRequired.NONE.toString());
 
+        // Internationalization must be enabled for locale attribute to be persisted
+        realmRepresentation.setInternationalizationEnabled(true);
+
         // Configure SMTP
         String host = container.getConfig().getOrDefault(OR_EMAIL_HOST, null);
         if (!TextUtil.isNullOrEmpty(host) && (realmRepresentation.getSmtpServer() == null || realmRepresentation.getSmtpServer().isEmpty())) {

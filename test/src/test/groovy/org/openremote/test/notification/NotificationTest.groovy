@@ -970,10 +970,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         when: "testuser1 sets their language back to dutch"
         testuser1.setAttribute(User.LOCALE_ATTRIBUTE, "nl")
-        identityService.getIdentityProvider().createUpdateUser(MASTER_REALM, testuser1, null, true)
+        testuser1 = identityService.getIdentityProvider().createUpdateUser(MASTER_REALM, testuser1, null, true)
 
         then: "we should see the new value in the user attributes"
-        identityService.getIdentityProvider().getUser()
+        testuser1.getAttributeMap().get(User.LOCALE_ATTRIBUTE).getFirst() == "nl"
 
         /* ----------- */
 
@@ -1017,14 +1017,14 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         and: "the complex notification is sent"
         adminNotificationResource.sendNotification(null, complexNotification)
 
-        then: "it should return a BAD_REQUEST because the admin user doesn't get the email notification"
+        then: "it should return a BAD_REQUEST because the admin user doesn't get the email notification and the test user doesn't get the push notification"
         thrown(BadRequestException)
 
         and: "the other notifications should be sent correctly through email and with push"
         conditions.eventually {
             assert localizedNotificationMessages.size() == 3
             assert localizedNotificationTargetIds.size() == 3
-            assert pushNotificationMessages.size() == 2
+            assert pushNotificationMessages.size() == 1
             assert sentEmails.size() == 1
         }
 
