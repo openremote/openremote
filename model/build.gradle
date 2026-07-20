@@ -1,6 +1,8 @@
-apply plugin: "java-library"
-apply plugin: "maven-publish"
-apply plugin: "signing"
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+}
 
 dependencies {
     api libs.jacksonDatabind
