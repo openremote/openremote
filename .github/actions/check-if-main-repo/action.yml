@@ -30,10 +30,16 @@ runs:
           echo "value=false" >> $GITHUB_OUTPUT
           echo "repository=$(sed -E 's#(.+)/.+#\1/openremote#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
 
-          version=$(cat gradle.properties | grep openremoteVersion | sed -E 's#.+=(.+)#\1#' | xargs)
+          version=$(cat gradle/libs.versions.toml | grep 'openremote = ' | sed -E 's#.+= "(.+)"#\1#')
+          if [ -z "$version" ]; then
+            version=$(cat gradle.properties | grep openremoteVersion | sed -E 's#.+=(.+)#\1#' | xargs)
+            if [ -n "$version" ]; then
+              echo "::warning file=gradle.properties,title=Deprecated version configuration::Move openremoteVersion from gradle.properties to openremote in gradle/libs.versions.toml"
+            fi
+          fi
 
           if [ -z "$version" ]; then
-            echo "openremoteVersion must be set in gradle.properties"
+            echo "::error::openremote version must be set in gradle/libs.versions.toml"
             exit 1
           fi
 
