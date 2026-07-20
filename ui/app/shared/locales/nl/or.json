@@ -801,6 +801,7 @@
   "invalidUsername": "De gebruikersnaam mag 3-255 numerieke tekens bevatten",
   "invalidEmail": "Ongeldig emailadres",
   "invalidRealm": "De realm naam mag 2-255 numerieke tekens bevatten",
+  "invalidCharacters": "Ongeldige tekens gevonden",
   "yes": "Ja",
   "no": "Nee",
   "linked": "Gelinkt",
