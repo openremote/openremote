@@ -647,10 +647,8 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         def alarm2 = adminResource.createAlarm(null, new Alarm().setTitle('alarm 2').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM), null)
 
         then: "both can be linked to an asset"
-        adminResource.setAssetLinks(null, [
-                new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.smartOfficeId),
-                new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.smartOfficeId)
-        ])
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.smartOfficeId)])
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.smartOfficeId)])
 
         when: "the alarm asset links are retrieved"
         def alarm1Links = adminResource.getAssetLinks(null, alarm1.id, MASTER_REALM)
@@ -667,10 +665,8 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         alarm2Links.get(0).id.realm == MASTER_REALM
 
         when: "more alarm asset links are added"
-        adminResource.setAssetLinks(null, [
-                new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.lobbyId),
-                new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.lobbyId)
-        ])
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.lobbyId)])
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.lobbyId)])
         alarm1Links = adminResource.getAssetLinks(null, alarm1.id, MASTER_REALM)
         alarm2Links = adminResource.getAssetLinks(null, alarm2.id, MASTER_REALM)
 
@@ -689,6 +685,107 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         alarm2Links.get(1).id.alarmId == alarm2.id
         alarm2Links.get(1).id.assetId == managerTestSetup.smartOfficeId
         alarm2Links.get(1).id.realm == MASTER_REALM
+    }
+
+    def "should reject asset links for multiple alarms in one request"() {
+        given:
+        def alarm1 = adminResource.createAlarm(null, new Alarm().setTitle('alarm 1').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM), null)
+        def alarm2 = adminResource.createAlarm(null, new Alarm().setTitle('alarm 2').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM), null)
+
+        when:
+        adminResource.setAssetLinks(null, [
+                new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.smartOfficeId),
+                new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.smartOfficeId)
+        ])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
+
+        and:
+        adminResource.getAssetLinks(null, alarm1.id, MASTER_REALM).isEmpty()
+        adminResource.getAssetLinks(null, alarm2.id, MASTER_REALM).isEmpty()
+    }
+
+    // Linking alarms across realms
+    def "should reject asset links for multiple realms in one request"() {
+        given:
+        def buildingRealm = keycloakTestSetup.realmBuilding.name
+        def alarm = buildingUserResource.createAlarm(null, new Alarm("Building alarm", "Building content", Severity.MEDIUM, null, buildingRealm), null)
+        def links = [
+                new AlarmAssetLink(buildingRealm, alarm.id, managerTestSetup.apartment1Id),
+                new AlarmAssetLink(MASTER_REALM, alarm.id, managerTestSetup.smartOfficeId)
+        ]
+
+        when:
+        buildingUserResource.setAssetLinks(null, links)
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
+
+        and:
+        buildingUserResource.getAssetLinks(null, alarm.id, buildingRealm).isEmpty()
+        superAdminResource.getAssetLinks(null, alarm.id, MASTER_REALM).isEmpty()
+    }
+
+    def "should reject asset links pointing to assets from another realm"() {
+        given:
+        def buildingRealm = keycloakTestSetup.realmBuilding.name
+        def alarm = buildingUserResource.createAlarm(null, new Alarm("Building alarm", "Building content", Severity.MEDIUM, null, buildingRealm), null)
+
+        when:
+        buildingUserResource.setAssetLinks(null, [new AlarmAssetLink(buildingRealm, alarm.id, managerTestSetup.smartOfficeId)])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
+
+        and:
+        buildingUserResource.getAssetLinks(null, alarm.id, buildingRealm).isEmpty()
+    }
+
+    def "should reject asset links pointing to alarms from another realm"() {
+        given:
+        def buildingRealm = keycloakTestSetup.realmBuilding.name
+        def masterAlarm = adminResource.createAlarm(null, new Alarm("Master alarm", "Master content", Severity.MEDIUM, null, MASTER_REALM), null)
+
+        when:
+        buildingUserResource.setAssetLinks(null, [new AlarmAssetLink(buildingRealm, masterAlarm.id, managerTestSetup.apartment1Id)])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
+
+        and:
+        buildingUserResource.getAssetLinks(null, masterAlarm.id, buildingRealm).isEmpty()
+    }
+
+    def "should reject creating alarms with linked assets from another realm"() {
+        given:
+        def buildingRealm = keycloakTestSetup.realmBuilding.name
+
+        when:
+        buildingUserResource.createAlarm(null, new Alarm("Building alarm", "Building content", Severity.MEDIUM, null, buildingRealm), [managerTestSetup.smartOfficeId])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
     }
 
     // Linking alarms without permissions
@@ -779,4 +876,5 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
             return true
         }
     }
+
 }
