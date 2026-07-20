@@ -15,12 +15,13 @@ pluginManagement {
     }
 }
 
+// TODO: These plugins remain here because project.gradle imports their classes,
+// and version-catalog aliases cannot be used in settings.gradle. Move the related
+// configuration into convention plugins/build logic so their versions can be
+// managed through libs.versions.toml.
 plugins {
     id 'cz.habarta.typescript-generator' version "$typescriptGeneratorVersion" apply false
-    id 'io.github.gradle-nexus.publish-plugin' version "$gradleNexusPublishPluginVersion" apply false
-    id 'io.openremote.com.cherryperry.gradle-file-encrypt' version "$gradleFileEncryptPluginVersion" apply false
     id 'org.jetbrains.gradle.plugin.idea-ext' version "$ideaExtPluginVersion" apply false
-    id 'pl.allegro.tech.build.axion-release' version "$axionReleasePluginVersion" apply false
 }
 
 rootProject.name = "openremote"
