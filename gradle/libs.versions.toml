@@ -2,6 +2,8 @@
 angusMail = "2.0.5"
 artemis = "2.55.0"
 apacheSshd = "2.18.0"
+asm = "9.10.1"
+axionRelease = "1.21.2"
 bouncyCastle = "1.84"
 byteBuddy = "1.18.10"
 bluetooth = "0.64"
@@ -14,6 +16,7 @@ corsFilter = "3.1"
 easyRules = "4.1.0"
 exp4j = "0.4.13"
 failsafe = "3.3.2"
+fileEncrypt = "2.1.0"
 firebaseAdmin = "9.8.0"
 flywaydb = "12.8.1"
 friendlyId = "1.0.4"
@@ -21,7 +24,6 @@ geotools = "34.3"
 glassfishSoteria = "3.0.4"
 greenmail = "2.1.9"
 grpc = "1.82.2"
-grpcAnnotations = "1.3.2"
 groovy = "5.0.7"
 groovySandbox = "4.3.2"
 guava = "33.6.0-jre"
@@ -31,11 +33,13 @@ hikaricp = "7.1.0"
 hiveMqttClient = "1.3.16"
 ical4j = "4.3.0"
 jackson = "2.21.4"
+jacoco = "0.8.14"
+jakartaAnnotationApi = "3.0.0"
 jakartaEl = "4.0.2"
 jakartaElApi = "6.0.1"
 jakartaSecurityEnterpriseApi = "4.0.0"
 jakartaWsRs = "3.1.0"
-javaxAnnotationApi = "3.0.0"
+javaxAnnotationApi = "1.3.2"
 jaywayJsonPath = "2.10.0"
 jdom = "2.0.6.1"
 jserialcomm = "2.11.4"
@@ -45,12 +49,15 @@ keycloak = "25.0.3"
 micrometer = "1.17.0"
 mockito = "5.23.0"
 netty = "4.2.15.Final"
+nexusPublish = "2.0.0"
 niftyModbus = "1.4.0"
 nimbusJoseJwt = "10.9.1"
 objenesis = "3.4"
 moquette = "0.18.0"
 postgresJdbc = "42.7.13"
 prometheus = "1.6.1"
+protobuf = "3.25.5"
+protobufPlugin = "0.10.0"
 quartz = "2.5.2"
 reflections = "0.10.2"
 resteasy = "6.2.16.Final"
@@ -61,6 +68,8 @@ spock = "2.4-groovy-5.0"
 sqlite = "3.53.2.0"
 suncalc = "3.11"
 swagger = "2.2.52"
+swaggerUi = "5.32.8"
+testLogger = "4.0.0"
 typescriptGenerator = "4.1.1"
 undertow = "2.3.24.Final"
 uuidGenerator = "5.2.0"
@@ -68,6 +77,8 @@ victoolsJsonSchemaGenerator = "4.38.0"
 zwave = "3.4.0"
 
 [libraries]
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+asmTree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
 angusMail = { module = "org.eclipse.angus:angus-mail", version.ref = "angusMail" }
 artemisMqttProtocol = { module = "org.apache.artemis:artemis-mqtt-protocol", version.ref = "artemis" }
 artemisServer = { module = "org.apache.artemis:artemis-server", version.ref = "artemis" }
@@ -123,13 +134,13 @@ jacksonDatabind = { module = "com.fasterxml.jackson.core:jackson-databind", vers
 jacksonDatatypeJdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8", version.ref = "jackson" }
 jacksonDatatypeJsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
 jacksonModuleParameterNames = { module = "com.fasterxml.jackson.module:jackson-module-parameter-names", version.ref = "jackson" }
-jakartaAnnotationApi = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "javaxAnnotationApi" }
+jakartaAnnotationApi = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakartaAnnotationApi" }
 jakartaEl = { module = "org.glassfish:jakarta.el", version.ref = "jakartaEl" }
 jakartaElApi = { module = "jakarta.el:jakarta.el-api", version.ref = "jakartaElApi" }
 jakartaSecurityEnterpriseApi = { module = "jakarta.security.enterprise:jakarta.security.enterprise-api", version.ref = "jakartaSecurityEnterpriseApi" }
 jakartaWsRsApi = { module = "jakarta.ws.rs:jakarta.ws.rs-api", version.ref = "jakartaWsRs" }
 javaUuidGenerator = { module = "com.fasterxml.uuid:java-uuid-generator", version.ref = "uuidGenerator" }
-javaxAnnotationApi = { module = "javax.annotation:javax.annotation-api", version.ref = "grpcAnnotations" }
+javaxAnnotationApi = { module = "javax.annotation:javax.annotation-api", version.ref = "javaxAnnotationApi" }
 jaywayJsonPath = { module = "com.jayway.jsonpath:json-path", version.ref = "jaywayJsonPath" }
 jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom" }
 jserialcomm = { module = "com.fazecast:jSerialComm", version.ref = "jserialcomm" }
@@ -155,6 +166,8 @@ moquette = { module = "com.github.moquette-io:moquette", version.ref = "moquette
 orZwave = { module = "org.openremote:or-zwave", version.ref = "zwave" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresJdbc" }
 prometheusMetricsExporterHttpserver = { module = "io.prometheus:prometheus-metrics-exporter-httpserver", version.ref = "prometheus" }
+protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
+protocGenGrpcJava = { module = "io.grpc:protoc-gen-grpc-java", version.ref = "grpc" }
 quartz = { module = "org.quartz-scheduler:quartz", version.ref = "quartz" }
 reflections = { module = "org.reflections:reflections", version.ref = "reflections" }
 resteasyCacheCore = { module = "org.jboss.resteasy:resteasy-cache-core", version.ref = "resteasyCache" }
@@ -172,6 +185,7 @@ sqliteJdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
 suncalc = { module = "org.shredzone.commons:commons-suncalc", version.ref = "suncalc" }
 swaggerAnnotations = { module = "io.swagger.core.v3:swagger-annotations", version.ref = "swagger" }
 swaggerJaxrs2Jakarta = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger" }
+swaggerUi = { module = "org.webjars:swagger-ui", version.ref = "swaggerUi" }
 sshdNetty = { module = "org.apache.sshd:sshd-netty", version.ref = "apacheSshd" }
 typescriptGeneratorCore = { module = "cz.habarta.typescript-generator:typescript-generator-core", version.ref = "typescriptGenerator" }
 undertowCore = { module = "io.undertow:undertow-core", version.ref = "undertow" }
@@ -179,3 +193,10 @@ undertowWebsocketsJsr = { module = "io.undertow:undertow-websockets-jsr", versio
 victoolsJsonschemaGenerator = { module = "com.github.victools:jsonschema-generator", version.ref = "victoolsJsonSchemaGenerator" }
 victoolsJsonschemaModuleJackson = { module = "com.github.victools:jsonschema-module-jackson", version.ref = "victoolsJsonSchemaGenerator" }
 victoolsJsonschemaModuleJakartaValidation = { module = "com.github.victools:jsonschema-module-jakarta-validation", version.ref = "victoolsJsonSchemaGenerator" }
+
+[plugins]
+axionRelease = { id = "pl.allegro.tech.build.axion-release", version.ref = "axionRelease" }
+fileEncrypt = { id = "io.openremote.com.cherryperry.gradle-file-encrypt", version.ref = "fileEncrypt" }
+nexusPublish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublish" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
+testLogger = { id = "com.adarshr.test-logger", version.ref = "testLogger" }
