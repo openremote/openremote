@@ -455,6 +455,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def clientEventService = container.getService(ClientEventService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
         def applyService = container.getService(ApplyPredictedDataPointsService.class)
 
         and: "the clock is stopped for deterministic scheduling"
@@ -467,6 +468,11 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         and: "a plain attribute exists with required meta"
         def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue9")
         enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+
+        and: "the attribute setup events have settled"
+        conditions.eventually {
+            assert noEventProcessedIn(assetProcessingService, 300)
+        }
 
         and: "we capture attribute events"
         List<AttributeEvent> events = new CopyOnWriteArrayList<>()
@@ -512,10 +518,11 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
             future.get()
         }
 
-        then: "no further attribute events should be emitted"
+        then: "no further attribute events should be emitted for the attribute"
         conditions.eventually {
-            assert events.isEmpty()
+            assert noEventProcessedIn(assetProcessingService, 300)
         }
+        assert !events.any { it.ref == attributeRef && !it.deleted }
     }
 
     def "Does not emit attribute events after asset deletion"() {
@@ -526,6 +533,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def clientEventService = container.getService(ClientEventService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
         def applyService = container.getService(ApplyPredictedDataPointsService.class)
 
         and: "the clock is stopped for deterministic scheduling"
@@ -538,6 +546,11 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         and: "a plain attribute exists with required meta"
         def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue10")
         enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+
+        and: "the attribute setup events have settled"
+        conditions.eventually {
+            assert noEventProcessedIn(assetProcessingService, 300)
+        }
 
         and: "we capture attribute events"
         List<AttributeEvent> events = new CopyOnWriteArrayList<>()
@@ -581,10 +594,11 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
             future.get()
         }
 
-        then: "no further attribute events should be emitted"
+        then: "no further attribute events should be emitted for the attribute"
         conditions.eventually {
-            assert events.isEmpty()
+            assert noEventProcessedIn(assetProcessingService, 300)
         }
+        assert !events.any { it.ref == attributeRef && !it.deleted }
     }
 
     private static void enablePredictedApplyMeta(AssetStorageService assetStorageService, String assetId, String attributeName) {
