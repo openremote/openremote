@@ -17,6 +17,10 @@ Running `./gradlew clean` deletes the root `tmp/` directory that is mounted into
 
 ## UI
 
+### Generated model types
+
+`ui/component/model/src/model.ts` is generated from the Java backend by typescript-generator. Do not edit it by hand. When a TypeScript type mirrors a backend class, import it from `@openremote/model` instead of redeclaring a local interface. Regenerate it from the backend rather than patching the output.
+
 ### Adding a new Vaadin component
 
 Vaadin-based components live in `ui/component/or-vaadin-components/src/` as thin wrappers that extend a Vaadin class and re-register it under an `or-vaadin-<name>` tag, e.g. `export class OrVaadinX extends (X as new () => X & LitElement)` with `@customElement("or-vaadin-x")`. Keep all `@vaadin/*` dependency versions aligned.

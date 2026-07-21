@@ -30,18 +30,14 @@ import {
     schemaMatches,
 } from "@openremote/or-json-forms";
 import "@openremote/or-vaadin-components/or-vaadin-text-area";
-
-interface ReplayDatapoint {
-    timestamp: number;
-    value: any;
-}
+import { SimulatorReplayDatapoint } from "@openremote/model";
 
 // Cache keyed by data array reference so re-renders return the same string object.
 // Lit's property binding uses === to detect changes, so an identical reference
 // prevents setting .value on the textarea (and its expensive internal string scan).
-const textCache = new WeakMap<ReplayDatapoint[], string>();
+const textCache = new WeakMap<SimulatorReplayDatapoint[], string>();
 
-function datapointsToText(data: ReplayDatapoint[] | undefined): string {
+function datapointsToText(data: SimulatorReplayDatapoint[] | undefined): string {
     if (!Array.isArray(data) || data.length === 0) return "";
     const cached = textCache.get(data);
     if (cached !== undefined) return cached;
@@ -57,13 +53,13 @@ function datapointsToText(data: ReplayDatapoint[] | undefined): string {
 }
 
 interface ParseResult {
-    datapoints: ReplayDatapoint[];
+    datapoints: SimulatorReplayDatapoint[];
     /** 1-based line number of the first invalid line, or null when all lines parsed. */
     invalidLine: number | null;
 }
 
 function textToDatapoints(text: string): ParseResult {
-    const datapoints: ReplayDatapoint[] = [];
+    const datapoints: SimulatorReplayDatapoint[] = [];
     const len = text.length;
     let lineStart = 0;
     let line = 0;
