@@ -548,7 +548,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 <p class="panel-title">
                                     ${user.serviceAccount ? i18next.t('serviceUser') : i18next.t('user')}
                                     ${i18next.t('settings')}</p>
-                                ${this.getSingleUserView(user, compositeRoleOptions, realmRoleOptions, ("user" + index), (readonly || this._saveUserPromise != undefined))}
+                                ${this.getSingleUserView(user, compositeRoleOptions, realmRoleOptions, index != undefined ? ("user" + index) : "", (readonly || this._saveUserPromise != undefined))}
                             </div>
                             
                             ${when(showMqttSessions, () => this.getMQTTSessionTemplate(user))}
@@ -771,10 +771,11 @@ export class PageUsers extends Page<AppStateKeyed> {
 
     protected onUserChanged(suffix: string) {
         // Don't have form-associated custom element support in lit at time of writing which would be the way to go here
-        const validateArray = this.shadowRoot.querySelectorAll(".validate");
+        const validateArray = Array.from(this.shadowRoot.querySelectorAll('.validate'))
+            .map(element => element.querySelector('input'))
+            .filter(input => input !== null);
         const saveBtn = this.shadowRoot.getElementById("savebtn-" + suffix) as OrVaadinButton;
         const saveDisabled = Array.from(validateArray)
-            .filter(e => e instanceof HTMLInputElement)
             .some(input => !(input as HTMLInputElement).checkValidity());
         saveBtn.disabled = saveDisabled;
     }
@@ -898,9 +899,9 @@ export class PageUsers extends Page<AppStateKeyed> {
                                           class="validate" minlength="3" maxlength="255"
                                           ?readonly=${!!user.id || readonly || (!isServiceUser && this._registrationEmailAsUsername)}
                                           ?required=${isServiceUser || !this._registrationEmailAsUsername}
-                                          pattern="[A-Za-z0-9_+@\\.\\-ßçʊÇʊ]+"
+                                          pattern="[^<>&&quot;'\\s\\v$%!#?§,;:*~\\/\\\\\\|^=\\[\\]\\{\\}\\(\\)\`\\p{Control}]+"
                                           value=${user.username} autocomplete="false"
-                                          error-message=${i18next.t("invalidUsername")}
+                                          error-message=${i18next.t("invalidCharacters")}
                                           @change=${(ev: Event) => {
                                               user.username = (ev.currentTarget as HTMLInputElement).value;
                                               this.onUserChanged(suffix)

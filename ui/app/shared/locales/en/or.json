@@ -805,7 +805,6 @@
   "savePasswordFailed": "Failed to set the password.",
   "userAlreadyExists": "Error occurred! This user already exists.",
   "realmAlreadyExists": "Realm name already exists",
-  "invalidUsername": "Username must be 3-255 alpha numerical characters",
   "invalidEmail": "Invalid email address",
   "invalidRealm": "Realm must be 2-255 alpha numerical characters",
   "invalidCharacters": "Invalid characters found",
