@@ -658,6 +658,8 @@
   "scheduleRuleActivity": "Schedule Rule Activity",
   "scheduleSimulatorActivity": "Simulator Replay Schedule",
   "defaultSimulatorSchedule": "Replay today at {{time}}",
+  "simulatorReplayFormatHelper": "Format: seconds, value — one entry per line",
+  "simulatorReplayInvalidLine": "Invalid entry on line {{line}}, expected: seconds, value",
   "schedule": {
     "count_one": "occurrence",
     "count_other": "occurrences",

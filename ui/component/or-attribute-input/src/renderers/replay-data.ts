@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { html } from "lit";
+import { i18next } from "@openremote/or-translate";
 import {
     JsonFormsStateContext,
     getTemplateWrapper,
@@ -124,7 +125,7 @@ const replayDataRenderer = (state: JsonFormsStateContext, props: ControlProps) =
             // the textarea keeps the user's draft instead of dropping bad lines.
             // Requires manualValidation, otherwise Vaadin's focusout auto-validation
             // (which runs after this change handler) resets invalid to false.
-            textArea.errorMessage = `Invalid entry on line ${invalidLine}, expected: seconds, value`;
+            textArea.errorMessage = i18next.t("simulatorReplayInvalidLine", { line: invalidLine });
             textArea.invalid = true;
             return;
         }
@@ -144,7 +145,7 @@ const replayDataRenderer = (state: JsonFormsStateContext, props: ControlProps) =
     return getTemplateWrapper(html`
         <or-vaadin-text-area
             label="${props.label}"
-            helper-text="Format: seconds, value — one entry per line"
+            helper-text="${i18next.t("simulatorReplayFormatHelper")}"
             style="width: 100%;"
             .manualValidation="${true}"
             .value="${textValue}"
