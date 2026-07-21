@@ -1,24 +1,28 @@
 {
-	"push": {
-		"master": {
-			"distribute": {
-				"docker": "develop-core",
-				"npm": "$version-core-snapshot"
-			},
-			"deploy": {
-				"managerTag": "develop-core",
-				"environment": "staging"
-			}
-		}
-	},
-	"release": {
-		"distribute": {
-			"docker": "latest-core,$version-core",
-			"npm": "$version-core"
-		},
-		"deploy": {
-			"managerTag": "latest-core",
-			"environment": "demo"
-		}
-	}
+  "push": {
+    "master": {
+      "distribute": {
+        "docker": "develop-core",
+        "npm": "$version-core-snapshot"
+      }
+    }
+  },
+  "workflow_dispatch": {
+    "deploy": {
+      "snapshot": {
+        "managerTag": "develop",
+        "environment": "staging"
+      },
+      "release": {
+        "managerTag": "latest",
+        "environment": "demo"
+      }
+    }
+  },
+  "release": {
+    "distribute": {
+      "docker": "latest-core,$version-core",
+      "npm": "$version-core"
+    }
+  }
 }
