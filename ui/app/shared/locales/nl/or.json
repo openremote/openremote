@@ -800,7 +800,7 @@
   "realmAlreadyExists": "Realm naam bestaat al",
   "invalidEmail": "Ongeldig emailadres",
   "invalidRealm": "De realm naam mag 2-255 numerieke tekens bevatten",
-  "invalidCharacters": "Ongeldige tekens gevonden",
+  "invalidCharacters": "Ongeldige lengte of ongeldige tekens gevonden",
   "yes": "Ja",
   "no": "Nee",
   "linked": "Gelinkt",

@@ -807,7 +807,7 @@
   "realmAlreadyExists": "Realm name already exists",
   "invalidEmail": "Invalid email address",
   "invalidRealm": "Realm must be 2-255 alpha numerical characters",
-  "invalidCharacters": "Invalid characters found",
+  "invalidCharacters": "Length invalid or invalid characters found",
   "yes": "Yes",
   "no": "No",
   "tag": "Tag",
