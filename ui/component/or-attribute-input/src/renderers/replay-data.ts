@@ -123,7 +123,7 @@ const replayDataRenderer = (state: JsonFormsStateContext, props: ControlProps) =
         if (invalidLine !== null) {
             // Don't commit: the data stays untouched and, since no state changes,
             // the textarea keeps the user's draft instead of dropping bad lines.
-            // Requires manualValidation, otherwise Vaadin's focusout auto-validation
+            // Requires manual-validation, otherwise Vaadin's focusout auto-validation
             // (which runs after this change handler) resets invalid to false.
             textArea.errorMessage = i18next.t("simulatorReplayInvalidLine", { line: invalidLine });
             textArea.invalid = true;
@@ -147,7 +147,7 @@ const replayDataRenderer = (state: JsonFormsStateContext, props: ControlProps) =
             label="${props.label}"
             helper-text="${i18next.t("simulatorReplayFormatHelper")}"
             style="width: 100%;"
-            .manualValidation="${true}"
+            manual-validation
             .value="${textValue}"
             @change="${onChanged}"
         ></or-vaadin-text-area>
