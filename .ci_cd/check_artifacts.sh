@@ -9,7 +9,7 @@ if [ "$IS_RELEASE" == true ]; then
   STATUS=$(curl --head --silent https://repo1.maven.org/maven2/io/openremote/openremote-manager/$RELEASED_VERSION/openremote-manager-$RELEASED_VERSION.jar --output /dev/null --write-out "%{http_code}")
   COUNT=0
 
-  while [ "$STATUS" != 200 ] && [ "$COUNT" -lt 30 ]; do
+  while [ "$STATUS" != 200 ] && [ "$COUNT" -lt 40 ]; do
     echo "Artifacts not yet available ... Sleeping 60 seconds"
     sleep 60
     STATUS=$(curl --head --silent https://repo1.maven.org/maven2/io/openremote/openremote-manager/$RELEASED_VERSION/openremote-manager-$RELEASED_VERSION.jar --output /dev/null --write-out "%{http_code}")
@@ -29,7 +29,7 @@ if [ "$IS_RELEASE" == false ]; then
   VERSION=$(curl -s "https://central.sonatype.com/repository/maven-snapshots/io/openremote/openremote-manager/maven-metadata.xml" | sed -n 's:.*<latest>\(.*\)</latest>.*:\1:p')
   COUNT=0
 
-  while [ "$VERSION" != "$RELEASED_VERSION" ] && [ "$COUNT" -lt 30 ]; do
+  while [ "$VERSION" != "$RELEASED_VERSION" ] && [ "$COUNT" -lt 40 ]; do
     echo "SNAPSHOT artifacts not yet available ... Sleeping 60 seconds"
     sleep 60
     VERSION=$(curl -s "https://central.sonatype.com/repository/maven-snapshots/io/openremote/openremote-manager/maven-metadata.xml" | sed -n 's:.*<latest>\(.*\)</latest>.*:\1:p')
