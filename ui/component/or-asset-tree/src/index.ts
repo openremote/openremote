@@ -1226,14 +1226,19 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             attributeCond = {
                 operator: LogicGroupOperator.AND,
                 items:
-                    this._filter.attribute.map((attributeName: string) => {
+                    this._filter.attribute.map((attributeName: string, index) => {
+                        const value = this._filter?.attributeValue?.[index];
                         return {
                             name: {
                                 predicateType: "string",
                                 match: AssetQueryMatch.EXACT,
                                 value: Util.sentenceCaseToCamelCase(attributeName),
                                 caseSensitive: false
-                            }
+                            },
+                            value: value ? {
+                                predicateType: "string",
+                                value: value
+                            } : undefined
                         };
                     })
             };
