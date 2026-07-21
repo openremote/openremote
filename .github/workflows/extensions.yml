@@ -40,7 +40,7 @@ jobs:
           CURRENT=$(grep '^openremote = ' extensions/gradle/libs.versions.toml | sed -E 's/^openremote = "([^\"]+)".*/\1/' | head -n 1)
           if [ "$CURRENT" != "$VERSION" ]; then
             sed -i "s/^openremote = .*/openremote = \"$VERSION\"/" extensions/gradle/libs.versions.toml
-            git -C extensions add extensions/gradle/libs.versions.toml
+            git -C extensions add gradle/libs.versions.toml
             git -C extensions -c user.name="github-actions[bot]" -c user.email="github-actions[bot]@users.noreply.github.com" commit -m "Update OpenRemote version to $VERSION [skip ci]"
             git -C extensions push
           else
