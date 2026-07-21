@@ -70,6 +70,8 @@ export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitEleme
             // resize handle by default (inline style beats Vaadin's ::slotted()
             // resize: none). min-height keeps drags from shrinking below default.
             // Only an explicit false disables, so undefined behaves like the default.
+            // Browsers without `resize` support silently ignore the property; the
+            // fixed height and scrolling still work, only the drag handle is absent.
             if (this.resize !== false) {
                 this.inputElement.style.resize = "vertical";
                 this.inputElement.style.minHeight = h;
