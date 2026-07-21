@@ -59,7 +59,7 @@ services:
   manager:
 #    privileged: true
     restart: always
-    image: openremote/manager:${MANAGER_VERSION:-latest-core}
+    image: openremote/manager:${MANAGER_VERSION:-latest}
     depends_on:
       keycloak:
         condition: service_healthy
