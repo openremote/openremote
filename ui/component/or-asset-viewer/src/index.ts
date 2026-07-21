@@ -13,7 +13,7 @@ import "@openremote/or-chart";
 import "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
@@ -53,6 +53,7 @@ import {when} from "lit/directives/when.js";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import {OrVaadinInput} from "@openremote/or-vaadin-components/or-vaadin-input";
+import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "linkedUsers" | "alarm.linkedAlarms";
@@ -748,6 +749,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
 
             const newlySelectedAttributes = [...selectedAttributes];
 
+            // TODO: Replace with or-vaadin-dialog, see https://github.com/openremote/openremote/issues/2594
             showOkCancelDialog(
                 i18next.t("addRemoveAttributes"),
                 html`
@@ -1543,7 +1545,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     && !this._saveInProgress) // And save isn't in progress
             if (reloadAsset && this.editMode && this._assetInfo?.modified) {
                 // Asset has changed whilst we're editing it so inform the user and reload
-                await showOkDialog("assetModified", i18next.t("assetModifiedMustRefresh"));
+                showConfirmDialog(this.shadowRoot!, html`
+                    <or-vaadin-confirm-dialog>
+                        ${getConfirmDialogContent("error tertiary", "assetModified", "assetModifiedMustRefresh", "ok")}
+                    </or-vaadin-confirm-dialog>
+                `)
             }
 
             if (reloadAsset) {

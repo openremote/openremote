@@ -29,7 +29,7 @@ type WithLit<T> = T & typeof LitElement;
 /**
  * Helper function for rendering the `<or-vaadin-confirm-dialog>` dynamically, to "show a dialog on command".
  * This saves initial render time for components, and prevents state handling on the consumer side.
- * `showOkCancelDialog()` appends (and updates) dialogs to the host element when called,
+ * `showConfirmDialog()` appends (and updates) dialogs to the host element when called,
  * and automatically removes the element upon closing the dialog.
  * It also conveniently adds HTML attributes like `cancel-button-visible` when a slotted element is present.
  * @param host - Host element (often shadow root) to append the dialog container as a child.
@@ -80,13 +80,19 @@ export function getConfirmDialogContent(theme: string | undefined, header: Templ
                 : content
         }
         ${when(confirmKey, () => html`
-            <or-vaadin-button theme="primary ${theme}" slot="confirm-button"><or-translate value=${confirmKey}></or-translate></or-vaadin-button>
+            <or-vaadin-button theme="${theme && theme.includes(' ') ? theme : (theme + " primary")}" slot="confirm-button">
+                <or-translate value=${confirmKey}></or-translate>
+            </or-vaadin-button>
         `)}
         ${when(cancelKey, () => html`
-            <or-vaadin-button theme="tertiary ${theme}" slot="cancel-button"><or-translate value=${cancelKey}></or-translate></or-vaadin-button>
+            <or-vaadin-button theme="tertiary ${theme}" slot="cancel-button">
+                <or-translate value=${cancelKey}></or-translate>
+            </or-vaadin-button>
         `)}
         ${when(rejectKey, () => html`
-            <or-vaadin-button theme="tertiary ${theme}" slot="reject-button"><or-translate value=${rejectKey}></or-translate></or-vaadin-button>
+            <or-vaadin-button theme="tertiary ${theme}" slot="reject-button">
+                <or-translate value=${rejectKey}></or-translate>
+            </or-vaadin-button>
         `)}
     `;
 }

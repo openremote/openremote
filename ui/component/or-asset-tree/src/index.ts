@@ -4,6 +4,7 @@ import {type OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin
 import {type OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
 import {comboBoxRenderer, ComboBoxLitRenderer, OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 import "@openremote/or-icon";
 import {
     Asset,
@@ -34,7 +35,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrMwcDialog, showDialog, showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -1649,12 +1650,20 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         };
 
         // Confirm deletion request
-        showOkCancelDialog(i18next.t("deleteAssets"), i18next.t("deleteAssetsConfirm", { assetNames: assetNames.join(",\n- ") }), i18next.t("delete"))
-            .then((ok) => {
-                if (ok) {
-                    doDelete();
-                }
-            });
+        showConfirmDialog(this.shadowRoot!, html`
+            <or-vaadin-confirm-dialog @confirm=${() => doDelete()}>
+                ${getConfirmDialogContent(
+                    "error",
+                    "deleteAssets",
+                    html`
+                        <or-translate value="deleteAssetsConfirm"></or-translate>
+                        <ul>${assetNames.map(n => html`<li>${n}</li>`)}</ul>
+                    `,
+                    "delete",
+                    "cancel"
+                )}
+            </or-vaadin-confirm-dialog>
+        `);
     }
 
     protected _canAdd(): boolean {
