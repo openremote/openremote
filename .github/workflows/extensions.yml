@@ -27,7 +27,7 @@ jobs:
 
   checkout-extensions:
     name: Retrieve versions.toml file from extensions repo
-    if: ${{ github.event_name != 'pull_request' }}
+    if: ${{ inputs.is_release  }}
     uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     with:
       repository: openremote/extensions
@@ -39,7 +39,7 @@ jobs:
   update-openremote-version:
     name: Update OpenRemote version in gradle/libs.versions.toml
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'pull_request' }}
+    if: ${{ inputs.is_release  }}
     steps:
       - run: |
           CURRENT=$(grep '^openremote = ' extensions/gradle/libs.versions.toml | sed -E 's/^openremote = "([^\"]+)".*/\1/' | head -n 1)
