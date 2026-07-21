@@ -26,6 +26,7 @@ import {type LitElement, type PropertyValues} from "lit";
  * @cssprop --or-vaadin-text-area-height - When set, fixes the input area to this height
  * (scroll instead of auto-grow) and, unless `resize` is false, shows the native resize handle.
  */
+// _updateHeight is defined in Vaadin's TextAreaMixin (not TextArea itself); the cast exposes it.
 @customElement("or-vaadin-text-area")
 export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitElement & { _updateHeight(): void }) implements OrVaadinComponent {
 
