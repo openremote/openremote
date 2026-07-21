@@ -4,7 +4,7 @@ import {type OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin
 import {type OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
 import {comboBoxRenderer, ComboBoxLitRenderer, OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
-import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
+import {getConfirmDialogContent, showConfirmDialog, showErrorDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 import "@openremote/or-icon";
 import {
     Asset,
@@ -35,7 +35,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -1456,7 +1456,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             });
         } catch (e) {
             console.error("Failed to copy asset", e);
-            showErrorDialog("Failed to copy asset");
+            showErrorDialog(this.shadowRoot!, "Failed to copy asset");
         }
     }
 
@@ -1640,10 +1640,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }).then((response) => {
                 this._onDeselectClicked();
                 if (response.status !== 204) {
-                    showErrorDialog(i18next.t("deleteAssetsFailed"));
+                    showErrorDialog(this.shadowRoot!, "deleteAssetsFailed");
                 }
             }).catch((reason) => {
-                showErrorDialog(i18next.t("deleteAssetsFailed"));
+                showErrorDialog(this.shadowRoot!, "deleteAssetsFailed");
             }).finally(() => {
                 this.disabled = false;
             });

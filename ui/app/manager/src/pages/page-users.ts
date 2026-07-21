@@ -7,7 +7,7 @@ import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery, UserSession} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
-import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";

@@ -35,7 +35,7 @@ type WithLit<T> = T & typeof LitElement;
  * @param host - Host element (often shadow root) to append the dialog container as a child.
  * @param dialog - A {@link TemplateResult} to render. It is required to contain a `<or-vaadin-confirm-dialog>` tag.
  */
-export function showConfirmDialog(host: DocumentFragment, dialog: TemplateResult) {
+export function showConfirmDialog(host: Node, dialog: TemplateResult) {
     const container = document.createElement("div");
     container.id = `dialog-${Util.generateUniqueUUID()}`;
     render(dialog, container); // Render Lit template inside the container
@@ -95,6 +95,14 @@ export function getConfirmDialogContent(theme: string | undefined, header: Templ
             </or-vaadin-button>
         `)}
     `;
+}
+
+export function showErrorDialog(host: Node, message: string | TemplateResult, title: string | TemplateResult = "errorOccurred") {
+    return showConfirmDialog(host, html`
+        <or-vaadin-confirm-dialog>
+            ${getConfirmDialogContent("error tertiary", title, message, "close")}
+        </or-vaadin-confirm-dialog>
+    `)
 }
 
 @customElement("or-vaadin-confirm-dialog")
