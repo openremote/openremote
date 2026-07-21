@@ -21,8 +21,6 @@ services:
       service: proxy
     environment:
       MANAGER_HOST: ${MANAGER_HOST:-'host.docker.internal'}
-      KEYCLOAK_HOST: ${KEYCLOAK_HOST:-'host.docker.internal'}
-      KEYCLOAK_PORT: ${KEYCLOAK_PORT:-8080}
       # Uncomment to use sish in development
       #SISH_HOST: sish
       #SISH_PORT: 8090
