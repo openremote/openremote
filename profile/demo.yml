@@ -17,6 +17,7 @@ volumes:
   manager-data:
   postgresql-data:
   deployment-data:
+  extensions-data:
 
 x-logging: &awslogs
   logging:
@@ -126,5 +127,6 @@ services:
     volumes:
       - manager-data:/storage
       - deployment-data:/deployment
+      - extensions-data:/deployment/manager/extensions
     <<: *awslogs
 

@@ -9,6 +9,7 @@ volumes:
   proxy-data:
   manager-data:
   postgresql-data:
+  extensions-data:
 
 services:
 
@@ -90,3 +91,4 @@ services:
       OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
       - manager-data:/storage
+      - extensions-data:/deployment/manager/extensions
