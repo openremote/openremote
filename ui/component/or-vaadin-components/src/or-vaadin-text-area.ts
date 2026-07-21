@@ -22,10 +22,14 @@ import {TextArea} from "@vaadin/text-area";
 import {OrVaadinComponent} from "./util";
 import {type LitElement, type PropertyValues} from "lit";
 
+/**
+ * @cssprop --or-vaadin-text-area-height - When set, fixes the input area to this height
+ * (scroll instead of auto-grow) and, unless `resize` is false, shows the native resize handle.
+ */
 @customElement("or-vaadin-text-area")
 export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitElement & { _updateHeight(): void }) implements OrVaadinComponent {
 
-    // Enables the native resize handle in fixed-height mode (--or-text-area-height).
+    // Enables the native resize handle in fixed-height mode (--or-vaadin-text-area-height).
     // Irrelevant in the default auto-grow mode, where the height always tracks the content.
     @property({type: Boolean})
     resize = true;
@@ -41,10 +45,10 @@ export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitEleme
     }
 
     // Vaadin's default _updateHeight reads scrollHeight on every value change — O(content lines).
-    // When --or-text-area-height is set, size via CSS variable (O(1)) instead.
+    // When --or-vaadin-text-area-height is set, size via CSS variable (O(1)) instead.
     override _updateHeight(): void {
         if (!this.inputElement) return;
-        const h = window.getComputedStyle(this).getPropertyValue("--or-text-area-height").trim();
+        const h = window.getComputedStyle(this).getPropertyValue("--or-vaadin-text-area-height").trim();
         if (h) {
             const inputField = this.shadowRoot?.querySelector<HTMLElement>('[part~="input-field"]');
             if (inputField) {

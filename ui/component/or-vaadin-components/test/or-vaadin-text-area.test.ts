@@ -69,9 +69,9 @@ ct.describe("Submit", () => {
 });
 
 ct.describe("Height", () => {
-  ct("fixes the input area to --or-text-area-height and scrolls instead of growing", async ({ mount }) => {
+  ct("fixes the input area to --or-vaadin-text-area-height and scrolls instead of growing", async ({ mount }) => {
     const component = await mount(OrVaadinTextArea, { props: { label: "Text" } });
-    await component.evaluate((el) => el.style.setProperty("--or-text-area-height", "108px"));
+    await component.evaluate((el) => el.style.setProperty("--or-vaadin-text-area-height", "108px"));
 
     const input = component.getByRole("textbox", { name: "Text" });
     await input.fill(lines(30));
@@ -104,7 +104,7 @@ ct.describe("Height", () => {
 
   ct("the resize handle drags the textarea taller but not below the floor", async ({ mount, page, shared }) => {
     const component = await mount(OrVaadinTextArea, { props: { label: "Text" } });
-    await component.evaluate((el) => el.style.setProperty("--or-text-area-height", "108px"));
+    await component.evaluate((el) => el.style.setProperty("--or-vaadin-text-area-height", "108px"));
 
     const input = component.getByRole("textbox", { name: "Text" });
     // Overflowing content matters: the scrollbar historically competed with the
@@ -127,7 +127,7 @@ ct.describe("Height", () => {
 
   ct("resize=false removes the native resize handle", async ({ mount }) => {
     const component = await mount(OrVaadinTextArea, { props: { label: "Text", resize: false } });
-    await component.evaluate((el) => el.style.setProperty("--or-text-area-height", "108px"));
+    await component.evaluate((el) => el.style.setProperty("--or-vaadin-text-area-height", "108px"));
 
     const input = component.getByRole("textbox", { name: "Text" });
     await input.fill(lines(5));
