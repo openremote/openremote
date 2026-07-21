@@ -97,6 +97,14 @@ export function getConfirmDialogContent(theme: string | undefined, header: Templ
     `;
 }
 
+/**
+ * Helper function for rendering the `<or-vaadin-confirm-dialog>` dynamically, to "show an error dialog on command".
+ * This saves initial render time for components, and prevents state handling on the consumer side.
+ * It utilizes {@link showConfirmDialog}, to render the given message and title.
+ * @param host - Host element (often shadow root) to append the dialog container as a child.
+ * @param message - The translation key or {@link TemplateResult} to render as dialog message.
+ * @param title - Optional translation key or {@link TemplateResult} to render as dialog title.
+ */
 export function showErrorDialog(host: Node, message: string | TemplateResult, title: string | TemplateResult = "errorOccurred") {
     return showConfirmDialog(host, html`
         <or-vaadin-confirm-dialog>
