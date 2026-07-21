@@ -26,12 +26,6 @@
 :where(:root),
 :where(:host) {
     --vaadin-lumo-theme: 1;
-
-    /* Distance from a labelled Lumo field's top edge to its input box:
-       host padding-top (space-m when has-label) plus the label block
-       (font-size-s, line-height 1, 0.5em bottom padding). Offset elements
-       placed next to a labelled field by this to align with the input box. */
-    --or-field-input-offset: calc(var(--lumo-space-m) + var(--lumo-font-size-s) * 1.5);
 }
 
 :root[theme~="dark"] {

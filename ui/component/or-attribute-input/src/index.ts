@@ -275,10 +275,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             #wrapper {
                 display: flex;
                 position: relative;
-            }
-
-            /* Legacy or-mwc-input fields have no label above the input, keep them centered. */
-            #wrapper:has(or-mwc-input) {
                 align-items: center;
             }
             
@@ -334,11 +330,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 flex: 0;
                 margin-left: 4px;
                 --or-icon-width: 20px;
-            }
-
-            /* Align the send button with the input box below the field label. */
-            #wrapper:has(or-vaadin-input[label]) #send-btn {
-                margin-top: var(--or-field-input-offset);
             }
 
             or-vaadin-input {
