@@ -925,7 +925,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     </or-vaadin-email-field>
                     <or-vaadin-text-field id="new-firstName" class="${isServiceUser ? "hidden" : "validate"}"
                                           ?readonly="${readonly}" minlength="1" maxlength="255"
-                                          pattern="^(?!.*\\\\\\\\)(?!.*//).*$"
+                                          pattern='[^<>&"\\v$%!#?§;*~\\/\\\\\\|^=\\[\\]\\{\\}\\(\\)\\p{Control}]+'
                                           error-message=${i18next.t("invalidCharacters")}
                                           value=${user.firstName} autocomplete="false"
                                           @change=${(ev: Event) => {
@@ -936,7 +936,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     </or-vaadin-text-field>
                     <or-vaadin-text-field id="new-surname" class="${isServiceUser ? "hidden" : "validate"}"
                                           ?readonly="${readonly}" minlength="1" maxlength="255"
-                                          pattern="^(?!.*\\\\\\\\)(?!.*//).*$"
+                                          pattern='[^<>&"\\v$%!#?§;*~\\/\\\\\\|^=\\[\\]\\{\\}\\(\\)\\p{Control}]+'
                                           error-message=${i18next.t("invalidCharacters")}
                                           value=${user.lastName} autocomplete="false"
                                           @change=${(ev: Event) => {
