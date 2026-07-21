@@ -121,14 +121,14 @@ runs:
               if isMainRepo:
                 deployStr += deploy['managerTag']
               else:
-                # Custom projects manager docker image must match the openremoteVersion from gradle.properties
+                # Custom projects manager docker image must match the openremote version from gradle/libs.versions.toml
                 deployStr += managerVersion
             else:
               if isMainRepo:
                 os.system("echo 'Manager tag not specified so using commit SHA'")
                 deployStr += managerTagDefault
               else:
-                # Custom projects manager docker image must match the openremoteVersion from gradle.properties
+                # Custom projects manager docker image must match the openremote version from gradle/libs.versions.toml
                 deployStr += managerVersion
 
             deployStr += ";"
