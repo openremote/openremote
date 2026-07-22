@@ -44,6 +44,7 @@ import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogRealmRegistry;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -160,6 +161,7 @@ public class RulesEngine<T extends Ruleset> {
 
         String ruleEngineCategory = id.scope.getSimpleName().replace("Ruleset", "Engine-") + id.getId().orElse("");
         LOG = SyslogCategory.getLogger(SyslogCategory.RULES, RulesEngine.class.getName() + "." + ruleEngineCategory);
+        id.getRealm().ifPresent(realm -> SyslogRealmRegistry.register(LOG.getName(), realm));
 
         AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, attributeEvent -> {
             try {
@@ -379,6 +381,8 @@ public class RulesEngine<T extends Ruleset> {
         }
 
         publishRulesEngineStatus();
+
+        SyslogRealmRegistry.unregister(LOG.getName());
     }
 
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
