@@ -53,6 +53,7 @@ export function showConfirmDialog(host: Node, dialog: TemplateResult) {
     } else {
         // As no or-vaadin-confirm-dialog is present, we can remove the HTMLElement
         container.remove();
+        return;
     }
     host.appendChild(container);
 }

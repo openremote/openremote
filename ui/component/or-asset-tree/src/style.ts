@@ -21,6 +21,7 @@ export const style = css`
         --internal-or-asset-tree-button-color: var(--or-asset-tree-button-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
         --internal-or-asset-tree-line-color: var(--or-asset-tree-line-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
         
+        position: relative;
         display: flex;
         flex-direction: column;
         height: 100%;
@@ -274,7 +275,7 @@ export const style = css`
         background-color: var(--internal-or-asset-tree-background-color);
         top: calc(var(--internal-or-asset-tree-header-height) + var(--internal-or-header-height, 50px) - 1px);
         display: none;
-        width: 300px;
+        width: 100%;
         z-index: 100;
         box-shadow: rgb(0 0 0 / 21%) 0px 1px 3px 0px;
         box-sizing: border-box;

@@ -20,7 +20,7 @@ import {getAlarmsRoute} from "../routes";
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
 import {guard} from "lit/directives/guard.js";
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showDialog} from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {
     OrMwcTable,
@@ -896,55 +896,43 @@ export class PageAlarms extends Page<AppStateKeyed> {
             })
         };
 
-        const dialog = showDialog(
-            new OrMwcDialog()
-                .setHeading(i18next.t("linkedAssets"))
-                .setContent(
-                    html`
-                        <or-asset-tree
-                                id="chart-asset-tree"
-                                readonly="true"
-                                .selectedIds="${alarm.alarmAssetLinks?.map((al) => al.id.assetId)}"
-                                .showSortBtn="${false}"
-                                expandNodes
-                                checkboxes
-                                @or-asset-tree-request-selection="${(e: OrAssetTreeRequestSelectionEvent) => {
-                                    this.creationState ? e.detail.allow = true : e.detail.allow = false;
-                                }}"
-                                @or-asset-tree-selection="${(e: OrAssetTreeSelectionEvent) => {
-                                    if (!readonly) {
-                                        onAssetSelectionChanged(e);
-                                    }
-                                }}"
-                        ></or-asset-tree>
-                    `
-                )
-                .setActions([
-                    {
-                        default: true,
-                        actionName: "cancel",
-                        content: i18next.t("cancel"),
-                        action: () => {
-                            openBtn.toggleAttribute("disabled", false);
-                        },
-                    },
-                    {
-                        actionName: "ok",
-                        content: "ok",
-                        action: () => {
-                            openBtn.toggleAttribute("disabled", false);
-                            this.onAlarmChanged(this.shadowRoot.querySelector('or-vaadin-text-field') as HTMLElement);
-                            this.requestUpdate();
-                        }
-                    }
-                ])
-                .setDismissAction({
-                    actionName: "cancel",
-                    action: () => {
-                        openBtn.toggleAttribute("disabled", false);
-                    },
-                })
-        );
+        const onCancel = () => openBtn.toggleAttribute("disabled", false);
+        const onOk = () => {
+            openBtn.toggleAttribute("disabled", false);
+            this.onAlarmChanged(this.shadowRoot.querySelector('or-vaadin-text-field') as HTMLElement);
+            this.requestUpdate();
+        }
+
+        const dialog = showDialog(this.shadowRoot!, html`
+            <or-vaadin-dialog no-close-on-esc no-close-on-outside-click>
+                <h2 slot="header-content"><or-translate value="linkedAssets"></or-translate></h2>
+                <or-asset-tree
+                        id="chart-asset-tree"
+                        style="aspect-ratio: 1/1;"
+                        readonly="true"
+                        .selectedIds="${alarm.alarmAssetLinks?.map((al) => al.id.assetId)}"
+                        .showSortBtn="${false}"
+                        expandNodes
+                        checkboxes
+                        @or-asset-tree-request-selection="${(e: OrAssetTreeRequestSelectionEvent) => {
+                            this.creationState ? e.detail.allow = true : e.detail.allow = false;
+                        }}"
+                        @or-asset-tree-selection="${(e: OrAssetTreeSelectionEvent) => {
+                            if (!readonly) {
+                                onAssetSelectionChanged(e);
+                            }
+                        }}"
+                ></or-asset-tree>
+                <div slot="footer" style="width: 100%; display: flex; justify-content: space-between;">
+                    <or-vaadin-button theme="tertiary" @click=${() => { onCancel(); dialog?.close(); }}>
+                        <or-translate value="cancel"></or-translate>
+                    </or-vaadin-button>
+                    <or-vaadin-button theme="primary" @click=${() => { onOk(); dialog?.close(); }}>
+                        <or-translate value="ok"></or-translate>
+                    </or-vaadin-button>
+                </div>
+            </or-vaadin-dialog>
+        `);
     }
 
     // Reset selected alarm and go back to the alarm overview
