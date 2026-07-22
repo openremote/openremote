@@ -6,7 +6,7 @@ export const baseStyle = css`
     :host {
         flex: 1;
     }
-    
+
     .item-container {
         display: flex;
     }
