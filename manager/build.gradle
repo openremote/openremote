@@ -61,7 +61,9 @@ dependencies {
 
     implementation libs.sshdNetty
 
+if (!gradle.startParameter.taskNames.any { it == 'release' || it.endsWith(':release') }) {
     demoExtension "io.openremote.extension:openremote-demo-setup-extension:${project.version}"
+}
 
     testImplementation libs.groovyAll
     testImplementation platform(libs.spockBom)
