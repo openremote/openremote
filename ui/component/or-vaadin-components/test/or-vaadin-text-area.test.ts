@@ -112,6 +112,28 @@ ct.describe("Height", () => {
     await expect.poll(async () => (await input.boundingBox())!.height).toBeGreaterThan(box.height + 60);
   });
 
+  ct("manualresize shows no handle on touch devices but stays fixed", async ({ mount }) => {
+    const component = await mount(OrVaadinTextArea, { props: { label: "Text", minRows: 3, manualresize: true } });
+
+    // Stub the coarse-pointer media query; Playwright's hasTouch emulation
+    // does not flip the CSS pointer feature in every browser.
+    await component.evaluate(() => {
+      const original = window.matchMedia.bind(window);
+      window.matchMedia = (query: string) =>
+        query === "(pointer: coarse)" ? ({ matches: true } as MediaQueryList) : original(query);
+    });
+
+    const input = component.getByRole("textbox", { name: "Text" });
+    // The fill triggers the height update, which now takes the coarse-pointer branch.
+    await input.fill(lines(30));
+    await expect(input).toHaveCSS("resize", "none");
+
+    // The height must stay fixed at min-rows rather than autoresize.
+    const before = (await component.boundingBox())!.height;
+    await input.fill(lines(60));
+    expect((await component.boundingBox())!.height).toBe(before);
+  });
+
   ct("autoresize (the default) has no resize handle and grows with the content", async ({ mount }) => {
     const component = await mount(OrVaadinTextArea, { props: { label: "Text" } });
 

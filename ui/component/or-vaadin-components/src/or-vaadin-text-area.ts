@@ -28,6 +28,7 @@ export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitEleme
 
     // Show a native vertical resize handle and stop automatic resizing: the height starts at
     // min-rows and stays fixed until the user drags it. Default is Vaadin's autoresize.
+    // Touch devices get no usable native handle; the height then simply stays fixed.
     @property({type: Boolean})
     manualresize = false;
 
@@ -54,7 +55,12 @@ export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitEleme
             this.inputElement.style.overflowY = "auto";
             // Fixed height with a native vertical handle. Vaadin's own min-rows sets the
             // initial height and max-rows caps it, so no row-to-pixel math is reimplemented.
-            this.inputElement.style.resize = "vertical";
+            // Coarse pointers get no handle (Vaadin's resize: none) as it is unusable on touch.
+            if (window.matchMedia("(pointer: coarse)").matches) {
+                this.inputElement.style.removeProperty("resize");
+            } else {
+                this.inputElement.style.resize = "vertical";
+            }
             return;
         }
         // Autoresize: drop the manual overrides (no-ops when never set) and keep Vaadin's
