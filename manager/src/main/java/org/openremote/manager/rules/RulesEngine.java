@@ -161,7 +161,6 @@ public class RulesEngine<T extends Ruleset> {
 
         String ruleEngineCategory = id.scope.getSimpleName().replace("Ruleset", "Engine-") + id.getId().orElse("");
         LOG = SyslogCategory.getLogger(SyslogCategory.RULES, RulesEngine.class.getName() + "." + ruleEngineCategory);
-        id.getRealm().ifPresent(realm -> SyslogRealmRegistry.register(LOG.getName(), realm));
 
         AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, attributeEvent -> {
             try {
@@ -306,6 +305,11 @@ public class RulesEngine<T extends Ruleset> {
             running = true;
         }
 
+        // Attribute this engine's logs to its realm while running; re-registered on restart and
+        // removed in stop(). A never-started engine never registers, so nothing leaks. Realm and
+        // asset engines carry a realm; global engines do not.
+        id.getRealm().ifPresent(realm -> SyslogRealmRegistry.register(LOG.getName(), realm));
+
         if (deployments.isEmpty()) {
             LOG.finest("No rulesets so nothing to start");
             return;
@@ -358,9 +362,6 @@ public class RulesEngine<T extends Ruleset> {
 
         synchronized (this) {
             if (!running) {
-                // Engine was never started (or already stopped); still drop the registry entry so a
-                // constructed-but-never-started engine does not leak its loggerName->realm mapping
-                SyslogRealmRegistry.unregister(LOG.getName());
                 return;
             }
             running = false;

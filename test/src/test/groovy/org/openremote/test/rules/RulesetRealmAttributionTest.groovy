@@ -46,12 +46,15 @@ class RulesetRealmAttributionTest extends Specification implements ManagerContai
                 GROOVY,
                 NOOP_RULE))
 
-        then: "the deployment's syslog logger is registered against the building realm so its logs are attributed"
+        then: "both the engine and the deployment syslog loggers are registered against the building realm"
         String loggerName = null
         conditions.eventually {
             engine = rulesService.realmEngines.get(buildingRealm)
             assert engine != null
             assert engine.deployments[ruleset.id] != null
+            // Engine's own logger (subCategory RealmEngine-<realm>) must resolve to the realm
+            assert SyslogRealmRegistry.getRealm(engine.LOG.name) == buildingRealm
+            // Deployment's own logger (subCategory <RulesetClass>-<id>) must resolve to the realm
             loggerName = engine.deployments[ruleset.id].LOG.name
             assert SyslogRealmRegistry.getRealm(loggerName) == buildingRealm
         }
