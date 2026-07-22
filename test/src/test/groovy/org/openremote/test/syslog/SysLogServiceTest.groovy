@@ -149,6 +149,27 @@ class SysLogServiceTest extends Specification implements ManagerContainerTrait {
         markerEvent != null
         markerEvent.realm == "smartcity"
 
+        when: "the marker log helper is used with a throwable"
+        def capturedRecords = []
+        def handler = new java.util.logging.Handler() {
+            void publish(java.util.logging.LogRecord r) { capturedRecords << r }
+            void flush() {}
+            void close() {}
+        }
+        def helperLogger = java.util.logging.Logger.getLogger(loggerName)
+        helperLogger.addHandler(handler)
+        helperLogger.setLevel(Level.ALL)
+        SyslogRealmMarker.log(helperLogger, Level.SEVERE, "helper message", new RuntimeException("boom"), "smartcity")
+        def helperEvent = SyslogCategory.mapSyslogEvent(capturedRecords[0] as java.util.logging.LogRecord)
+        helperLogger.removeHandler(handler)
+
+        then: "the record carries logger name, throwable and realm, and maps to an attributed event"
+        capturedRecords.size() == 1
+        (capturedRecords[0] as java.util.logging.LogRecord).thrown instanceof RuntimeException
+        helperEvent != null
+        helperEvent.realm == "smartcity"
+        helperEvent.message.contains("helper message")
+
         cleanup:
         SyslogRealmRegistry.unregister(loggerName)
     }

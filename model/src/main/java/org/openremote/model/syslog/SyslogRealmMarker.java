@@ -19,6 +19,10 @@
  */
 package org.openremote.model.syslog;
 
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+
 /**
  * Marker that can be passed as a {@link java.util.logging.LogRecord} parameter to attribute a
  * single log record to a realm, e.g. {@code LOG.log(Level.INFO, "Agent started", new SyslogRealmMarker(realm))}.
@@ -26,4 +30,20 @@ package org.openremote.model.syslog;
  * ignored by message formatters unless the message contains an explicit {@code {N}} placeholder.
  */
 public record SyslogRealmMarker(String realm) {
+
+    /**
+     * Logs a message with both a {@link Throwable} and a realm marker; the JUL convenience
+     * methods cannot carry both, so this builds the {@link LogRecord} manually. The logger
+     * name is set explicitly as {@link Logger#log(LogRecord)} does not fill it in.
+     */
+    public static void log(Logger logger, Level level, String message, Throwable thrown, String realm) {
+        if (!logger.isLoggable(level)) {
+            return;
+        }
+        LogRecord record = new LogRecord(level, message);
+        record.setLoggerName(logger.getName());
+        record.setThrown(thrown);
+        record.setParameters(new Object[]{new SyslogRealmMarker(realm)});
+        logger.log(record);
+    }
 }
