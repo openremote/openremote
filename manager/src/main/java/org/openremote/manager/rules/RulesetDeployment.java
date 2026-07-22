@@ -43,6 +43,7 @@ import org.openremote.model.rules.Users;
 import org.openremote.model.rules.Webhooks;
 import org.openremote.model.rules.flow.NodeCollection;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogRealmRegistry;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -144,6 +145,9 @@ public class RulesetDeployment {
 
         String ruleCategory = ruleset.getClass().getSimpleName() + "-" + ruleset.getId();
         LOG = SyslogCategory.getLogger(SyslogCategory.RULES, RulesEngine.class.getName() + "." + ruleCategory);
+        // Attribute this deployment's logs (compilation, per-rule logging) to the engine's realm; the
+        // registry entry is removed when the ruleset is undeployed (RulesEngine.removeRuleset)
+        rulesEngine.getId().getRealm().ifPresent(realm -> SyslogRealmRegistry.register(LOG.getName(), realm));
     }
 
     protected void init() throws IllegalStateException {

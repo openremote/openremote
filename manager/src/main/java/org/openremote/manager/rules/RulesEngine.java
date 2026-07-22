@@ -288,6 +288,7 @@ public class RulesEngine<T extends Ruleset> {
             stop();
             stopRuleset(deployment);
             deployments.values().remove(deployment);
+            SyslogRealmRegistry.unregister(deployment.LOG.getName());
             updateDeploymentInfo();
             if (wasRunning && !deployments.isEmpty()) {
                 start();
