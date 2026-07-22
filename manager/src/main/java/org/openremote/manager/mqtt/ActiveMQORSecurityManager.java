@@ -36,6 +36,7 @@ import org.openremote.container.security.TokenPrincipal;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
 import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogRealmMarker;
 
 import javax.security.auth.Subject;
 import java.security.Principal;
@@ -116,7 +117,7 @@ public class ActiveMQORSecurityManager implements ActiveMQSecurityManager5 {
               principals.add(userPrincipal);
            } catch (InterruptedException | TimeoutException | ExecutionException | AuthenticationException e) {
               Throwable cause = (e instanceof ExecutionException) ? e.getCause() : e;
-              LOG.info("Failed to authenticate user: realm=" + realm + ", username=" + user + ", exception=" + cause);
+              LOG.log(Level.INFO, "Failed to authenticate user: realm=" + realm + ", username=" + user + ", exception=" + cause, new SyslogRealmMarker(realm));
               return null;
            }
         }

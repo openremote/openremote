@@ -38,6 +38,7 @@ import org.openremote.model.event.Event;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogRealmMarker;
 import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
@@ -208,7 +209,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         AssetFilter<?> filter = buildAssetFilter(topic);
 
         if (filter == null) {
-            LOG.info("Failed to process subscription topic: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+            LOG.log(Level.INFO, "Failed to process subscription topic: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection), new SyslogRealmMarker(topicRealm(topic)));
             return false;
         }
 

@@ -44,6 +44,7 @@ import org.openremote.model.provisioning.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogRealmMarker;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
@@ -395,7 +396,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         }
 
         if (!serviceUser.getEnabled()) {
-            LOG.info(() -> "Service user exists and has been disabled so cannot continue:  " + MQTTBrokerService.connectionToString(connection));
+            if (LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, "Service user exists and has been disabled so cannot continue:  " + MQTTBrokerService.connectionToString(connection), new SyslogRealmMarker(realm));
+            }
             publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
             return;
         }
@@ -409,13 +412,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
             if (asset != null) {
                 if (!matchingConfig.getRealm().equals(asset.getRealm())) {
-                    LOG.warning("Client asset realm mismatch");
+                    LOG.log(Level.WARNING, "Client asset realm mismatch", new SyslogRealmMarker(matchingConfig.getRealm()));
                     publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.ASSET_ERROR), MqttQoS.AT_MOST_ONCE);
                     return;
                 }
             }
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to retrieve/create asset: " + MQTTBrokerService.connectionToString(connection) + ", config=" + matchingConfig, e);
+            SyslogRealmMarker.log(LOG, Level.WARNING, "Failed to retrieve/create asset: " + MQTTBrokerService.connectionToString(connection) + ", config=" + matchingConfig, e, matchingConfig.getRealm());
             publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
             return;
         }
@@ -460,14 +463,14 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
                                 return true;
                             } catch (CertificateExpiredException | CertificateNotYetValidException e) {
-                                LOG.log(Level.INFO, "Client certificate failed validity check: " + MQTTBrokerService.connectionToString(connection) + ", timestamp=" + now, e);
+                                SyslogRealmMarker.log(LOG, Level.INFO, "Client certificate failed validity check: " + MQTTBrokerService.connectionToString(connection) + ", timestamp=" + now, e, config.getRealm());
                             } catch (Exception e) {
-                                LOG.log(Level.INFO, "Client certificate failed verification against CA certificate: " + MQTTBrokerService.connectionToString(connection) + ", config=" + config, e);
+                                SyslogRealmMarker.log(LOG, Level.INFO, "Client certificate failed verification against CA certificate: " + MQTTBrokerService.connectionToString(connection) + ", config=" + config, e, config.getRealm());
                             }
                         }
                     }
                 } catch (Exception e) {
-                    LOG.log(Level.WARNING, "Failed to extract certificate from provisioning config: " + MQTTBrokerService.connectionToString(connection) + ", config=" + config, e);
+                    SyslogRealmMarker.log(LOG, Level.WARNING, "Failed to extract certificate from provisioning config: " + MQTTBrokerService.connectionToString(connection) + ", config=" + config, e, config.getRealm());
                 }
                 return false;
             })

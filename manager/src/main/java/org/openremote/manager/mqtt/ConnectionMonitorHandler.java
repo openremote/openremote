@@ -44,6 +44,7 @@ import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogRealmMarker;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ValueHolder;
 import org.openremote.model.value.ValueType;
@@ -264,7 +265,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
                 String userID = userIds.get(usernames.indexOf(User.SERVICE_ACCOUNT_PREFIX + username));
 
                 if (userID == null) {
-                    LOG.warning("Invalid username so skipping add session attributes: realm=" + realm + ", username=" + username);
+                    LOG.log(Level.WARNING, "Invalid username so skipping add session attributes: realm=" + realm + ", username=" + username, new SyslogRealmMarker(realm));
                 } else {
                     addSessionAttribute(userID, new AttributeRef(assetIdAttr.key, assetIdAttr.getValue().getName()));
                 }
