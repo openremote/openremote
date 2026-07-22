@@ -36,6 +36,7 @@ import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.protocol.ProtocolAssetImport;
 import org.openremote.model.protocol.ProtocolAssetService;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogRealmRegistry;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.JsonPathFilter;
 import org.openremote.model.value.RegexValueFilter;
@@ -69,7 +70,7 @@ import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
 public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<S,T>, T extends LoRaWANAgent<T, S>> implements Protocol<T>, ProtocolAssetImport {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractLoRaWANProtocol.class);
+    protected final Logger LOG;
 
     protected volatile ExecutorService executorService;
     protected volatile ProtocolAssetService assetService;
@@ -80,6 +81,10 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
     public AbstractLoRaWANProtocol(T agent) {
         this.agent = agent;
+
+        // Dedicated per-instance logger so log records are attributed to the agent's realm
+        // (see SyslogRealmRegistry); the syslog subCategory becomes <SimpleClass>-<agentId>
+        LOG = SyslogCategory.getLogger(PROTOCOL, getClass().getName() + "-" + agent.getId());
 
         MQTTAgent mqttAgent = new MQTTAgent(agent.getName());
 
@@ -140,8 +145,14 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
     @Override
     public void start(Container container) throws Exception {
+        SyslogRealmRegistry.register(LOG.getName(), agent.getRealm());
         this.container = container;
         executorService = container.getExecutor();
+    }
+
+    @Override
+    public void stop(Container container) throws Exception {
+        SyslogRealmRegistry.unregister(LOG.getName());
     }
 
     @Override

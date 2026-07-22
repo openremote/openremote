@@ -43,7 +43,6 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.filter.NumberPredicate;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
@@ -73,17 +72,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.agent.protocol.lorawan.LoRaWANConstants.ASSET_TYPE_TAG;
 import static org.openremote.agent.protocol.lorawan.tts.TheThingsStackAgent.*;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsStackProtocol, TheThingsStackAgent> {
-
-    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TheThingsStackProtocol.class);
 
     public static final String THE_THINGS_STACK_ASSET_TYPE_TAG = ASSET_TYPE_TAG;
     public static final String PROTOCOL_DISPLAY_NAME = "The Things Stack";
@@ -142,7 +137,11 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
 
     @Override
     public void stop(org.openremote.model.Container container) throws Exception {
-        connectionStateManager.stop(container);
+        try {
+            connectionStateManager.stop(container);
+        } finally {
+            super.stop(container);
+        }
     }
 
     @Override

@@ -46,7 +46,6 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.query.filter.NumberPredicate;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
@@ -64,7 +63,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.API_KEY;
@@ -72,12 +70,9 @@ import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.APPLICATION_ID;
 import static org.openremote.agent.protocol.lorawan.LoRaWANConstants.ASSET_TYPE_TAG;
 import static org.openremote.agent.protocol.lorawan.chirpstack.ChirpStackAgent.SECURE_GRPC;
 import static org.openremote.model.asset.agent.Agent.HOST;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtocol, ChirpStackAgent> implements ProtocolAssetDiscovery {
-
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ChirpStackProtocol.class);
 
     public static final String PROTOCOL_DISPLAY_NAME = "ChirpStack";
     public static final String CHIRPSTACK_ASSET_TYPE_TAG = ASSET_TYPE_TAG;
@@ -107,7 +102,11 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
     @Override
     public void stop(Container container) throws Exception {
-        stopMqttProtocol(container);
+        try {
+            stopMqttProtocol(container);
+        } finally {
+            super.stop(container);
+        }
     }
 
     @Override
