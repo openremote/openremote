@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-rive-renderer",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "A web component for displaying Rive animations using WebGL",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
