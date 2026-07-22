@@ -165,9 +165,14 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, clea
             }
 
             if (dataAndErrors.data !== prevValue) {
+                // Reference check first; the deep compare only runs when json-forms hands
+                // out a new object, so unchanged content does not notify a change.
+                const changed = !Util.objectsEqual(dataAndErrors.data, prevValue);
                 prevValue = dataAndErrors.data;
-                const errors = !!dataAndErrors.errors?.length;
-                valueChangeNotifier({ value: dataAndErrors.data, errors });
+                if (changed) {
+                    const errors = !!dataAndErrors.errors?.length;
+                    valueChangeNotifier({ value: dataAndErrors.data, errors });
+                }
             }
         };
 
