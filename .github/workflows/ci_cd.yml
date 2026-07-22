@@ -169,7 +169,7 @@ jobs:
           echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT
 
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # This will only be available when run by workflow_dispatch otherwise will checkout branch/commit that triggered the workflow
           ref: ${{ steps.process-inputs.outputs.COMMIT }}
@@ -227,10 +227,20 @@ jobs:
             echo "value=false" >> $GITHUB_OUTPUT
             echo "repository=$(sed -E 's#(.+)/.+#\1/openremote#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
 
-            version=$(cat gradle.properties | grep openremoteVersion | sed -E 's#.+=(.+)#\1#' | xargs)
+            version=""
+            if [ -f gradle/libs.versions.toml ]; then
+              version=$(sed -nE 's/^[[:space:]]*openremote[[:space:]]*=[[:space:]]*"([^"]+)".*$/\1/p' gradle/libs.versions.toml)
+            fi
+
+            if [ -z "$version" ] && [ -f gradle.properties ]; then
+              version=$(sed -nE 's/^[[:space:]]*openremoteVersion[[:space:]]*=[[:space:]]*([^[:space:]]+)[[:space:]]*$/\1/p' gradle.properties)
+              if [ -n "$version" ]; then
+                echo "::warning file=gradle.properties,title=Deprecated version configuration::Move openremoteVersion from gradle.properties to openremote in gradle/libs.versions.toml"
+              fi
+            fi
 
             if [ -z "$version" ]; then
-              echo "openremoteVersion must be set in gradle.properties"
+              echo "::error::openremote version must be set in gradle/libs.versions.toml"
               exit 1
             fi
 
@@ -238,7 +248,7 @@ jobs:
           fi
 
       - name: Checkout main repo
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ steps.is_main_repo.outputs.value == 'false' }}
         with:
           repository: ${{ steps.is_main_repo.outputs.repository }}
@@ -277,7 +287,7 @@ jobs:
 
       - name: Set up JDK 21 and gradle cache
         id: java
-        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -386,14 +396,14 @@ jobs:
                 if isMainRepo:
                   deployStr += deploy['managerTag']
                 else:
-                  # Custom projects manager docker image must match the openremoteVersion from gradle.properties
+                  # Custom projects manager docker image must match the openremote version from gradle/libs.versions.toml
                   deployStr += managerVersion
               else:
                 if isMainRepo:
                   os.system("echo 'Manager tag not specified so using commit SHA'")
                   deployStr += managerTagDefault
                 else:
-                  # Custom projects manager docker image must match the openremoteVersion from gradle.properties
+                  # Custom projects manager docker image must match the openremote version from gradle/libs.versions.toml
                   deployStr += managerVersion
 
               deployStr += ";"
@@ -845,7 +855,7 @@ jobs:
         if: |
           !cancelled() &&
           steps.manager-docker-command.outputs.pushToDockerHub == 'true'
-        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
 

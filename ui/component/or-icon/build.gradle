@@ -27,7 +27,7 @@ tasks.register('publishUi') {
 
 tasks.register('installDist', Copy) {
     dependsOn getYarnInstallTask(), copyMdiFont, npmAnalyze
-    resolveTask(":ui:app:shared:generateSources").dependsOn it
+    tasks.getByPath(":ui:app:shared:generateSources").dependsOn it
     from "${layout.buildDirectory.get()}/Material Design Icons"
     into "${project(':ui:app:shared').projectDir}/fonts/Material Design Icons"
 }

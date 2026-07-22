@@ -2,21 +2,21 @@
 afterEvaluate {
     // Add dependencies on model and rest typescript generation
     rootProject.getTasksByName('installDist', true).forEach {
-        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+        it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
     }
     rootProject.getTasksByName('prepareUi', true).forEach {
-        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+        it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
     }
     rootProject.getTasksByName('publishUi', true).forEach {
-        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+        it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
     }
     rootProject.getTasksByName('npmBuild', true).forEach {
-        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+        it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
     }
 }
 
 tasks.register("modelWatch") {
-    dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build")
+    dependsOn ":ui:component:model:build", ":ui:component:rest:build"
 }
 
 tasks.register("installKnipDeps", Exec) {
