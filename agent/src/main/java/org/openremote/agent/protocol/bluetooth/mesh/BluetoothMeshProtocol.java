@@ -59,14 +59,14 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
     // Class Members --------------------------------------------------------------------------------
 
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, BluetoothMeshProtocol.class.getName());
+    public static final Logger MESH_LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, BluetoothMeshProtocol.class.getName());
 
     private static final MainThreadManager mainThread = new MainThreadManager();
     private static ScheduledFuture<?> mainThreadFuture = null;
     private static final BluetoothCentralManagerCallback bluetoothManagerCallback = new BluetoothCentralManagerCallback() {
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-            LOG.info("BluetoothCentralManager::onConnectedPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
+            MESH_LOG.info("BluetoothCentralManager::onConnectedPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
 
             synchronized (BluetoothMeshProtocol.class) {
                 for (BluetoothMeshNetwork network : networkList) {
@@ -77,7 +77,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-            LOG.info("BluetoothCentralManager::onConnectionFailed: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", Status=" + status +"]");
+            MESH_LOG.info("BluetoothCentralManager::onConnectionFailed: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", Status=" + status +"]");
 
             synchronized (BluetoothMeshProtocol.class) {
                 for (BluetoothMeshNetwork network : networkList) {
@@ -88,7 +88,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
         @Override
         public void onDisconnectedPeripheral(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-            LOG.info("BluetoothCentralManager::onDisconnectedPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", Status=" + status +"]");
+            MESH_LOG.info("BluetoothCentralManager::onDisconnectedPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", Status=" + status +"]");
 
             synchronized (BluetoothMeshProtocol.class) {
                 for (BluetoothMeshNetwork network : networkList) {
@@ -99,7 +99,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-            LOG.info("BluetoothCentralManager::onDiscoveredPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", ScanResult=" + scanResult +"]");
+            MESH_LOG.info("BluetoothCentralManager::onDiscoveredPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", ScanResult=" + scanResult +"]");
 
             synchronized (BluetoothMeshProtocol.class) {
                 for (BluetoothMeshNetwork network : networkList) {
@@ -110,7 +110,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
         @Override
         public void onScanFailed(int errorCode) {
-            LOG.info("BluetoothCentralManager::onScanFailed: [errorCode=" + errorCode + "]");
+            MESH_LOG.info("BluetoothCentralManager::onScanFailed: [errorCode=" + errorCode + "]");
 
             synchronized (BluetoothMeshProtocol.class) {
                 for (BluetoothMeshNetwork network : networkList) {
