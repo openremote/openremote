@@ -48,8 +48,6 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
 
     // Class Members --------------------------------------------------------------------------------
 
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ZWaveProtocol.class.getName());
-
     // Protected Instance Fields --------------------------------------------------------------------
 
     protected ZWaveNetwork network;

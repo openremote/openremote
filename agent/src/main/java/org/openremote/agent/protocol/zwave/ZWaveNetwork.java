@@ -26,6 +26,7 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.impl.ColourRGB;
@@ -46,12 +47,15 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static java.util.stream.Collectors.toList;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 import static org.openremote.protocol.zwave.model.ZWNodeInitializerListener.NodeInitState.INITIALIZATION_FINISHED;
 
 public class ZWaveNetwork {
+
+    private static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ZWaveNetwork.class.getName());
 
     protected Controller controller;
     private final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new CopyOnWriteArrayList<>();
@@ -96,7 +100,7 @@ public class ZWaveNetwork {
         try {
             controller.disconnect();
         } catch (ConnectionException e) {
-            ZWaveProtocol.LOG.log(Level.WARNING, "Exception thrown whilst disconnecting the controller", e);
+            LOG.log(Level.WARNING, "Exception thrown whilst disconnecting the controller", e);
         } finally {
             disposeClient();
             ioClient = null;
