@@ -19,6 +19,7 @@
  */
 package org.openremote.container.security.keycloak;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
@@ -44,6 +45,7 @@ import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.VersionUtil;
 
 import javax.security.auth.Subject;
 import java.net.URI;
@@ -60,7 +62,6 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
-import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.util.MapAccess.getString;
 
@@ -96,6 +97,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
     public static final int OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT = 2628000; // 5 years
     private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class.getName());
+    public static final String KEYCLOAK_MIN_VERSION = "26.7.0";
     // The URI where Keycloak can be found
     protected UriBuilder keycloakServiceUri;
     // Configuration options for new realms
@@ -211,6 +213,18 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 }
             }
         }
+
+        // Verify the version of keycloak matches our requirements
+       JsonNode serverInfo = keycloakTarget.path("admin/serverinfo").request(MediaType.APPLICATION_JSON_TYPE).get(JsonNode.class);
+       String keycloakVersion = serverInfo.get("systemInfo").get("version").asText("0.0.0");
+       if (!VersionUtil.isVersionGreaterOrEqual(keycloakVersion, KEYCLOAK_MIN_VERSION)) {
+          String msg = "Keycloak version " + keycloakVersion + " is not supported; version "
+            + KEYCLOAK_MIN_VERSION + " or newer is required.";
+          LOG.severe(msg);
+          throw new IllegalStateException(msg);
+       }
+
+       LOG.info("Keycloak version detected: " + keycloakVersion);
     }
 
     @Override
