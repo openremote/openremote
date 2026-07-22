@@ -1,6 +1,8 @@
-apply plugin: 'java'
-apply plugin: "maven-publish"
-apply plugin: "signing"
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'signing'
+}
 
 sourceSets.main.resources.srcDirs += layout.buildDirectory.dir('classes/main')
 
@@ -9,7 +11,7 @@ configurations {
 }
 
 dependencies {
-    sources "org.webjars:swagger-ui:$swaggeruiVersion"
+    sources libs.swaggerUi
 }
 
 base {
@@ -80,7 +82,7 @@ signing {
 tasks.register('generateSources', Copy) {
     // Copy Swagger UI resources from the WebJars dependency
     from zipTree(configurations.sources.singleFile).matching {
-        include "META-INF/resources/webjars/swagger-ui/$swaggeruiVersion/*"
+        include "META-INF/resources/webjars/swagger-ui/${libs.versions.swaggerUi.get()}/*"
         exclude('**/favicon*.png')
         exclude('**/index.html')
         exclude('**/swagger-initializer.js')
@@ -104,7 +106,7 @@ tasks.register('generateSources', Copy) {
 
 tasks.register('installDist', Copy) {
     dependsOn generateSources
-    mustRunAfter resolveTask(":manager:installDist")
+    mustRunAfter ":manager:installDist"
     from layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
 }
