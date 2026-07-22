@@ -52,11 +52,27 @@ export const Primary: Story = {
     args: {
         label: "Notes",
         value: "OpenRemote"
+    },
+    parameters: {
+        docs: {
+            story: {
+                height: "120px"
+            }
+        }
     }
 };
 
 // Fixed height with a native vertical resize handle; overflow scrolls until dragged.
 export const ManualResize: Story = {
+    parameters: {
+        title: "Manual resizing",
+        summary: "With `manualresize` the field starts at `min-rows`, keeps a fixed height, and shows the native resize handle. Overflowing content scrolls until the handle is dragged.",
+        docs: {
+            story: {
+                height: "180px"
+            }
+        }
+    },
     args: {
         label: "Notes",
         minRows: 5,
@@ -67,6 +83,15 @@ export const ManualResize: Story = {
 
 // Automatic resizing constrained to a number of rows.
 export const BoundedAutoresize: Story = {
+    parameters: {
+        title: "Bounded automatic resizing",
+        summary: "`min-rows` and `max-rows` bound the automatic resizing: the field starts at `min-rows` and grows with the content until `max-rows`, after which it scrolls.",
+        docs: {
+            story: {
+                height: "140px"
+            }
+        }
+    },
     args: {
         label: "Notes",
         minRows: 2,
@@ -74,7 +99,7 @@ export const BoundedAutoresize: Story = {
     }
 };
 
-export const examples: Story[] = [];
+export const examples: Story[] = [ManualResize, BoundedAutoresize];
 
 export {customElements, packageJson};
 
