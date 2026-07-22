@@ -50,7 +50,7 @@ public class SyslogEvent extends RealmScopedEvent {
         }
 
         public List<SyslogCategory> getCategories() {
-            return categories;
+            return categories != null ? categories : Collections.emptyList();
         }
 
         public SyslogLevel getLevel() {
