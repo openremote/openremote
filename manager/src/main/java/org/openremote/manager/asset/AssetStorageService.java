@@ -60,6 +60,7 @@ import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
+import org.openremote.model.syslog.SyslogRealmMarker;
 import org.openremote.model.util.LockByKey;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
@@ -640,7 +641,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (!validationFailures.isEmpty()) {
                 String msg = "Asset merge failed as asset has failed constraint validation: asset=" + asset;
                 ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
-                LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage());
+                LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage(), new SyslogRealmMarker(asset.getRealm()));
                 throw ex;
             }
         }

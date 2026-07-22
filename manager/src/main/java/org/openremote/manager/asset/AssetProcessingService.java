@@ -47,6 +47,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.event.Event;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.syslog.SyslogRealmMarker;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 
@@ -149,7 +150,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             // Check realm against user
             if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext,
                 requestedRealm)) {
-                LOG.log(System.Logger.Level.INFO, "Realm is inactive, inaccessible or nonexistent: " + requestedRealm);
+                LOG.log(System.Logger.Level.INFO, "Realm is inactive, inaccessible or nonexistent: " + requestedRealm, new SyslogRealmMarker(requestedRealm));
                 return false;
             }
 
@@ -167,10 +168,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             Attribute<?> attribute = asset != null ? asset.getAttribute(attributeEvent.getName()).orElse(null) : null;
 
             if (asset == null || !asset.hasAttribute(attributeEvent.getName())) {
-                LOG.log(System.Logger.Level.INFO, () -> "Cannot authorize asset event as asset and/or attribute doesn't exist: " + attributeEvent.getRef());
+                if (LOG.isLoggable(System.Logger.Level.INFO)) {
+                    LOG.log(System.Logger.Level.INFO, "Cannot authorize asset event as asset and/or attribute doesn't exist: " + attributeEvent.getRef(), new SyslogRealmMarker(attributeEvent.getRealm()));
+                }
                 return false;
             } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
-                LOG.log(System.Logger.Level.INFO, () -> "Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + attributeEvent.getRef());
+                if (LOG.isLoggable(System.Logger.Level.INFO)) {
+                    LOG.log(System.Logger.Level.INFO, "Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + attributeEvent.getRef(), new SyslogRealmMarker(attributeEvent.getRealm()));
+                }
                 return false;
             }
 
@@ -417,7 +422,9 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     LOG.log(System.Logger.Level.TRACE, "Event intercepted: interceptor=" + interceptorName + ", ref=" + enrichedEvent.getRef() + ", source=" + enrichedEvent.getSource());
                 } else {
                     if (enrichedEvent.isOutdated()) {
-                        LOG.log(System.Logger.Level.INFO, () -> "Event is older than current attribute value so marking as outdated: ref=" + enrichedEvent.getRef() + ", event=" + Instant.ofEpochMilli(enrichedEvent.getTimestamp()) + ", previous=" + Instant.ofEpochMilli(enrichedEvent.getOldValueTimestamp()));
+                        if (LOG.isLoggable(System.Logger.Level.INFO)) {
+                            LOG.log(System.Logger.Level.INFO, "Event is older than current attribute value so marking as outdated: ref=" + enrichedEvent.getRef() + ", event=" + Instant.ofEpochMilli(enrichedEvent.getTimestamp()) + ", previous=" + Instant.ofEpochMilli(enrichedEvent.getOldValueTimestamp()), new SyslogRealmMarker(enrichedEvent.getRealm()));
+                        }
                         // Generate an event for this so internal subscribers can act on it if needed
                         eventToPublish = new OutdatedAttributeEvent(enrichedEvent);
                     } else {
