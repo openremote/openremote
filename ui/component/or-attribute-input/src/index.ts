@@ -38,6 +38,7 @@ import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-f
 import {type OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
 import {agentIdRendererRegistryEntry} from "./renderers/agent-link";
 import {schedulerRendererRegistryEntry} from "./renderers/scheduler";
+import {replayDataRendererRegistryEntry} from "./renderers/replay-data";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
 
@@ -111,7 +112,7 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
     return i18next.t("updatedWithDate", { date: new Date(timestamp) });
 }
 
-const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry, schedulerRendererRegistryEntry];
+export const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry, schedulerRendererRegistryEntry, replayDataRendererRegistryEntry];
 
 const schemas = new Map<string, unknown>();
 const inflightRequests = new Map<string, Promise<unknown>>();
@@ -163,10 +164,15 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, clea
                 return
             }
 
-            if (!Util.objectsEqual(dataAndErrors.data, prevValue)) {
+            if (dataAndErrors.data !== prevValue) {
+                // Reference check first; the deep compare only runs when json-forms hands
+                // out a new object, so unchanged content does not notify a change.
+                const changed = !Util.objectsEqual(dataAndErrors.data, prevValue);
                 prevValue = dataAndErrors.data;
-                const errors = !!dataAndErrors.errors?.length;
-                valueChangeNotifier({ value: dataAndErrors.data, errors });
+                if (changed) {
+                    const errors = !!dataAndErrors.errors?.length;
+                    valueChangeNotifier({ value: dataAndErrors.data, errors });
+                }
             }
         };
 
@@ -325,7 +331,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 display: none;
             }
 
-            #send-btn { 
+            #send-btn {
                 flex: 0;
                 margin-left: 4px;
                 --or-icon-width: 20px;
@@ -438,19 +444,24 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         if (_changedProperties.has("attribute")) {
-            const oldAttr = {..._changedProperties.get("attribute") as Attribute<any>};
+            const oldAttr = _changedProperties.get("attribute") as Attribute<any>;
             const attr = this.attribute;
 
             if (oldAttr && attr) {
                 const oldValue = oldAttr.value;
                 const oldTimestamp = oldAttr.timestamp;
 
-                // Compare attributes ignoring the timestamp and value
-                oldAttr.value = attr.value;
-                oldAttr.timestamp = attr.timestamp;
-                if (Util.objectsEqual(oldAttr, attr)) {
+                // Structural check: name, type, and meta reference must all match.
+                // Live value updates arrive as shallow copies of the attribute ({...attr}),
+                // so meta keeps the same reference and this check is O(1).
+                // A full asset reload produces a new meta reference, which is sufficient
+                // to detect a structural change without deep-comparing large meta values.
+                const structurallyEqual = oldAttr.name === attr.name
+                    && oldAttr.type === attr.type
+                    && oldAttr.meta === attr.meta;
+                if (structurallyEqual) {
                     // Compare value and timestamp
-                    if (!Util.objectsEqual(oldValue, attr.value) || oldTimestamp !== attr.timestamp) {
+                    if (oldValue !== attr.value || oldTimestamp !== attr.timestamp) {
                         this._onAttributeValueChanged(oldValue, attr.value, attr.timestamp);
                     } else if (_changedProperties.size === 1) {
                         // Only the attribute has 'changed' and we've handled it so don't perform update
@@ -563,6 +574,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             label: this.getLabel(),
             comfortable: this.comfortable,
             resizeVertical: this.resizeVertical,
+            minRows: 5,
+            manualresize: true,
             inputType: this.inputType
         };
 

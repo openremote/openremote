@@ -175,10 +175,14 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
 
         if (_changedProperties.has("core")) {
             const data = this.core!.data;
-            const errors = this.core!.errors;
+            const errors = this.core!.errors ?? [];
 
-            if (this.onChange && (!Util.objectsEqual(data, this.previousData, true) || (errors && !Util.objectsEqual(errors, this.previousErrors, true)))) {
-                this.previousErrors = errors || [];
+            // Normalize undefined to [] before comparing (previousErrors is always an array),
+            // and treat two empty arrays as equal so a rebuilt empty errors array from a
+            // validation cycle doesn't fire a spurious onChange.
+            const errorsChanged = errors !== this.previousErrors && (errors.length > 0 || this.previousErrors.length > 0);
+            if (this.onChange && (data !== this.previousData || errorsChanged)) {
+                this.previousErrors = errors;
                 this.previousData = data;
                 this.onChange({data: data, errors: errors});
             }
