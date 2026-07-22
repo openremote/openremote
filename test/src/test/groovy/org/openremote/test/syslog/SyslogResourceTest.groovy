@@ -228,6 +228,30 @@ class SyslogResourceTest extends Specification implements ManagerContainerTrait 
         ((SyslogEvent.LevelCategoryFilter) filteredSubscription.filter).realm == "building"
         filteredSubscription.filter.apply(new SyslogEvent(0, SyslogLevel.INFO, SyslogCategory.API, null, "msg", "smartcity")) == null
 
+        when: "a non superuser subscribes with a level/category filter that pre-sets another realm"
+        def hostileLevelFilter = new SyslogEvent.LevelCategoryFilter(SyslogLevel.INFO)
+        hostileLevelFilter.setRealm("smartcity")
+        def hostileLevelSubscription = new EventSubscription(SyslogEvent.class, hostileLevelFilter)
+        def hostileLevelAuthorized = clientEventService.authorizeEventSubscription("building", buildingAuth, hostileLevelSubscription)
+
+        then: "the pre-set realm is overwritten with the user's own realm"
+        hostileLevelAuthorized
+        hostileLevelSubscription.filter instanceof SyslogEvent.LevelCategoryFilter
+        ((SyslogEvent.LevelCategoryFilter) hostileLevelSubscription.filter).realm == "building"
+        hostileLevelSubscription.filter.apply(new SyslogEvent(0, SyslogLevel.INFO, SyslogCategory.API, null, "msg", "building")) != null
+        hostileLevelSubscription.filter.apply(new SyslogEvent(0, SyslogLevel.INFO, SyslogCategory.API, null, "msg", "smartcity")) == null
+
+        when: "a non superuser subscribes with a realm filter targeting another realm"
+        def hostileRealmSubscription = new EventSubscription(SyslogEvent.class, new RealmFilter<>("smartcity"))
+        def hostileRealmAuthorized = clientEventService.authorizeEventSubscription("building", buildingAuth, hostileRealmSubscription)
+
+        then: "the filter is replaced with one scoped to the user's own realm"
+        hostileRealmAuthorized
+        hostileRealmSubscription.filter instanceof RealmFilter
+        ((RealmFilter) hostileRealmSubscription.filter).name == "building"
+        hostileRealmSubscription.filter.apply(new SyslogEvent(0, SyslogLevel.INFO, SyslogCategory.API, null, "msg", "building")) != null
+        hostileRealmSubscription.filter.apply(new SyslogEvent(0, SyslogLevel.INFO, SyslogCategory.API, null, "msg", "smartcity")) == null
+
         when: "a superuser subscribes without a filter"
         def superSubscription = new EventSubscription(SyslogEvent.class)
         def superAuthorized = clientEventService.authorizeEventSubscription(MASTER_REALM, superAuth, superSubscription)
