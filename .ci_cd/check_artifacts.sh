@@ -3,12 +3,12 @@ set -eo pipefail
 
 RELEASED_VERSION="${1:?Usage: $0 <released_version> <true or false>}"
 IS_RELEASE="${2:?Usage: $0 <released_version> <true or false>}"
+MAX_RETRIES=40
 
 if [ "$IS_RELEASE" == true ]; then
   echo "Check if OpenRemote artifacts '$RELEASED_VERSION' are available."
   STATUS=$(curl --head --silent https://repo1.maven.org/maven2/io/openremote/openremote-manager/$RELEASED_VERSION/openremote-manager-$RELEASED_VERSION.jar --output /dev/null --write-out "%{http_code}")
   COUNT=0
-  MAX_RETRIES=40
 
   while [ "$STATUS" != 200 ] && [ "$COUNT" -lt "$MAX_RETRIES" ]; do
     echo "Artifacts not yet available ... Sleeping 60 seconds"
@@ -29,7 +29,6 @@ if [ "$IS_RELEASE" == false ]; then
   echo "Check if OpenRemote SNAPSHOT artifacts '$RELEASED_VERSION' are available."
   VERSION=$(curl -s "https://central.sonatype.com/repository/maven-snapshots/io/openremote/openremote-manager/maven-metadata.xml" | sed -n 's:.*<latest>\(.*\)</latest>.*:\1:p')
   COUNT=0
-  MAX_RETRIES=40
 
   while [ "$VERSION" != "$RELEASED_VERSION" ] && [ "$COUNT" -lt "$MAX_RETRIES" ]; do
     echo "SNAPSHOT artifacts not yet available ... Sleeping 60 seconds"
