@@ -1,7 +1,8 @@
 import {css, html} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import "@openremote/or-log-viewer";
 import {ViewerConfig} from "@openremote/or-log-viewer";
+import manager from "@openremote/core";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
@@ -32,9 +33,9 @@ export class PageLogs extends Page<AppStateKeyed> {
         return css`
             :host {
                 flex: 1;
-                width: 100%;            
+                width: 100%;
             }
-            
+
             or-log-viewer {
                 width: 100%;
             }
@@ -43,6 +44,9 @@ export class PageLogs extends Page<AppStateKeyed> {
 
     @property()
     public config?: PageLogsConfig;
+
+    @state()
+    protected _realm?: string;
 
     get name(): string {
         return "logs";
@@ -53,11 +57,21 @@ export class PageLogs extends Page<AppStateKeyed> {
     }
 
     public stateChanged(state: AppStateKeyed) {
+        this._realm = state.app.realm || manager.displayRealm;
+    }
+
+    protected _getViewerRealm(): string | undefined {
+        // A superuser viewing their own (master) realm sees logs of all realms including system
+        // logs (no realm); non-superusers are restricted to their own realm by the server anyway
+        if (manager.isSuperUser() && this._realm === manager.config.realm) {
+            return undefined;
+        }
+        return this._realm;
     }
 
     protected render() {
         return html`
-            <or-log-viewer .config="${this.config?.viewer}"></or-log-viewer>
+            <or-log-viewer .realm="${this._getViewerRealm()}" .config="${this.config?.viewer}"></or-log-viewer>
         `;
     }
 }

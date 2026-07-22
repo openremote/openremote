@@ -172,6 +172,9 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     @property({type: String})
     public level?: Model.SyslogLevel;
 
+    @property({type: String})
+    public realm?: string;
+
     @property({type: Boolean})
     public live: boolean = false;
 
@@ -210,6 +213,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             || _changedProperties.has("limit")
             || _changedProperties.has("categories")
             || _changedProperties.has("filter")
+            || _changedProperties.has("realm")
             || _changedProperties.has("live")) {
             if (!this.live) {
                 this._pageCount = undefined;
@@ -510,7 +514,8 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             from: this._getFrom(),
             to: this.timestamp ? this.timestamp.getTime() : undefined,
             category: this.categories as Model.SyslogCategory[],
-            subCategory: this.filter ? this.filter.split(";") : undefined
+            subCategory: this.filter ? this.filter.split(";") : undefined,
+            realm: this.realm
         });
 
         this._loading = false;
@@ -611,6 +616,10 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     protected _onEvent(event: Model.SyslogEvent) {
 
         // TODO: Move filtering to server side
+        if (this.realm && event.realm !== this.realm) {
+            return;
+        }
+
         if (this.categories && !this.categories.find((c) => c === event.category)) {
             return;
         }
