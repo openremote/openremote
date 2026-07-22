@@ -44,6 +44,7 @@ import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogRealmMarker;
 import org.openremote.model.syslog.SyslogRealmRegistry;
 
 import java.util.*;
@@ -662,11 +663,12 @@ public class RulesEngine<T extends Ruleset> {
         Collection<Object> anonFacts = facts.getAnonymousFacts();
         long temporaryFactsCount = facts.getTemporaryFacts().count();
         long total = assetStateFacts.size() + namedFacts.size() + anonFacts.size();
-        STATS_LOG.fine("Engine stats for '" + this + "', in memory facts are Total: " + total
+        STATS_LOG.log(Level.FINE, "Engine stats for '" + this + "', in memory facts are Total: " + total
             + ", AssetState: " + assetStateFacts.size()
             + ", Named: " + namedFacts.size()
             + ", Anonymous: " + anonFacts.size()
-            + ", Temporary: " + temporaryFactsCount);
+            + ", Temporary: " + temporaryFactsCount,
+            id.getRealm().map(SyslogRealmMarker::new).orElse(null));
 
         // Additional details if FINEST is enabled
         facts.logFacts(STATS_LOG, Level.FINEST);

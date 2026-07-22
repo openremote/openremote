@@ -103,12 +103,12 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 asset.setRealm(agent.getRealm());
             } else if (!Objects.equals(asset.getRealm(), agent.getRealm())) {
                 String msg = "Protocol attempting to merge asset into another realm: " + agent;
-                Protocol.LOG.warning(msg);
+                Protocol.LOG.log(Level.WARNING, msg, new SyslogRealmMarker(agent.getRealm()));
                 throw new IllegalArgumentException(msg);
             }
 
             // TODO: Define access permissions for merged asset (user asset links inherit from parent agent?)
-            LOG.fine("Merging asset with protocol-provided: " + asset);
+            LOG.log(Level.FINE, "Merging asset with protocol-provided: " + asset, new SyslogRealmMarker(agent.getRealm()));
             return assetStorageService.merge(asset, true);
         }
 
@@ -118,23 +118,23 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 Asset<?> asset = findAsset(assetId);
                 if (asset != null) {
                     if (!Objects.equals(asset.getRealm(), agent.getRealm())) {
-                        Protocol.LOG.warning("Protocol attempting to delete asset from another realm: " + agent);
+                        Protocol.LOG.log(Level.WARNING, "Protocol attempting to delete asset from another realm: " + agent, new SyslogRealmMarker(agent.getRealm()));
                         throw new IllegalArgumentException("Protocol attempting to delete asset from another realm");
                     }
                 }
             }
-            LOG.fine("Deleting protocol-provided: " + Arrays.toString(assetIds));
+            LOG.log(Level.FINE, "Deleting protocol-provided: " + Arrays.toString(assetIds), new SyslogRealmMarker(agent.getRealm()));
             return assetStorageService.delete(Arrays.asList(assetIds), false);
         }
 
         @SuppressWarnings("unchecked")
         @Override
         public <T extends Asset<?>> T findAsset(String assetId) {
-            LOG.fine("Getting protocol-provided: " + assetId);
+            LOG.log(Level.FINE, "Getting protocol-provided: " + assetId, new SyslogRealmMarker(agent.getRealm()));
             T asset = (T)assetStorageService.find(assetId);
             if (asset != null) {
                 if (!Objects.equals(asset.getRealm(), agent.getRealm())) {
-                    Protocol.LOG.warning("Protocol attempting to find asset from another realm: " + agent);
+                    Protocol.LOG.log(Level.WARNING, "Protocol attempting to find asset from another realm: " + agent, new SyslogRealmMarker(agent.getRealm()));
                     throw new IllegalArgumentException("Protocol attempting to find asset from another realm");
                 }
             }
@@ -146,7 +146,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
             List<Asset<?>> assets = assetStorageService.findAll(assetQuery.realm(new RealmPredicate(agent.getRealm())));
             for (Asset<?> asset : assets) {
                 if (!Objects.equals(asset.getRealm(), agent.getRealm())) {
-                    Protocol.LOG.warning("Protocol attempting to find asset from another realm: " + agent);
+                    Protocol.LOG.log(Level.WARNING, "Protocol attempting to find asset from another realm: " + agent, new SyslogRealmMarker(agent.getRealm()));
                     throw new IllegalArgumentException("Protocol attempting to find asset from another realm");
                 }
             }
@@ -158,7 +158,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
             if (TextUtil.isNullOrEmpty(attributeEvent.getRealm())) {
                 attributeEvent.setRealm(agent.getRealm());
             } else if (!Objects.equals(attributeEvent.getRealm(), agent.getRealm())) {
-                Protocol.LOG.warning("Protocol attempting to send attribute event to another realm: " + agent);
+                Protocol.LOG.log(Level.WARNING, "Protocol attempting to send attribute event to another realm: " + agent, new SyslogRealmMarker(agent.getRealm()));
                 throw new IllegalArgumentException("Protocol attempting to send attribute event to another realm");
             }
             AgentService.this.sendAttributeEvent(attributeEvent);
@@ -167,7 +167,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
         @Override
         public void subscribeChildAssetChange(Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer) {
             if (!getAgents().containsKey(agent.getId())) {
-                LOG.fine("Attempt to subscribe to child asset changes with an invalid agent ID: " + agent.getId());
+                LOG.log(Level.FINE, "Attempt to subscribe to child asset changes with an invalid agent ID: " + agent.getId(), new SyslogRealmMarker(agent.getRealm()));
                 return;
             }
 
@@ -281,7 +281,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
      */
     protected void processAgentChange(PersistenceEvent<Agent<?, ?, ?>> persistenceEvent) {
 
-        LOG.finest("Processing agent persistence event: " + persistenceEvent.getCause());
+        LOG.log(Level.FINEST, "Processing agent persistence event: " + persistenceEvent.getCause(), new SyslogRealmMarker(persistenceEvent.getEntity().getRealm()));
         Agent<?, ?, ?> agent = persistenceEvent.getEntity();
 
         switch (persistenceEvent.getCause()) {
@@ -312,7 +312,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
      */
     protected void processAssetChange(PersistenceEvent<Asset<?>> persistenceEvent) {
 
-        LOG.finest("Processing asset persistence event: " + persistenceEvent.getCause());
+        LOG.log(Level.FINEST, "Processing asset persistence event: " + persistenceEvent.getCause(), new SyslogRealmMarker(persistenceEvent.getEntity().getRealm()));
         Asset<?> asset = persistenceEvent.getEntity();
 
         switch (persistenceEvent.getCause()) {
@@ -417,7 +417,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 protocolInstanceMap.put(agent.getId(), protocol);
                 LOG.log(Level.FINE, "Started protocol instance: " + protocol, new SyslogRealmMarker(agent.getRealm()));
 
-                LOG.finest("Linking attributes to protocol instance: " + protocol);
+                LOG.log(Level.FINEST, "Linking attributes to protocol instance: " + protocol, new SyslogRealmMarker(protocol.getAgent().getRealm()));
 
                 // Get all assets that have attributes with agent link meta for this agent
                 List<Asset<?>> assets = assetStorageService.findAll(
@@ -429,7 +429,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                         )
                 );
 
-                LOG.finest("Found '" + assets.size() + "' asset(s) with attributes linked to this protocol instance: " + protocol);
+                LOG.log(Level.FINEST, "Found '" + assets.size() + "' asset(s) with attributes linked to this protocol instance: " + protocol, new SyslogRealmMarker(protocol.getAgent().getRealm()));
 
                 assets.forEach(
                     asset ->
@@ -473,7 +473,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
             try {
                 protocol.stop(container);
             } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Protocol instance threw an exception whilst being stopped", e);
+                SyslogRealmMarker.log(LOG, Level.SEVERE, "Protocol instance threw an exception whilst being stopped", e, protocol.getAgent().getRealm());
             }
 
             // Remove child asset subscriptions for this agent
@@ -490,17 +490,17 @@ public class AgentService extends RouteBuilder implements ContainerService {
         }
 
         synchronized (protocol) {
-            LOG.fine("Linking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() + ", protocol=" + protocol);
+            LOG.log(Level.FINE, "Linking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() + ", protocol=" + protocol, new SyslogRealmMarker(protocol.getAgent().getRealm()));
 
             attributes.forEach(attribute -> {
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
                 try {
                     if (!protocol.getLinkedAttributes().containsKey(attributeRef)) {
-                        LOG.finest("Linking attribute '" + attributeRef + "' to protocol: " + protocol);
+                        LOG.log(Level.FINEST, "Linking attribute '" + attributeRef + "' to protocol: " + protocol, new SyslogRealmMarker(protocol.getAgent().getRealm()));
                         protocol.linkAttribute(assetId, attribute);
                     }
                 } catch (Exception ex) {
-                    LOG.log(Level.SEVERE, "Failed to link attribute '" + attributeRef + "' to protocol: " + protocol + " msg=" + ex.getMessage());
+                    LOG.log(Level.SEVERE, "Failed to link attribute '" + attributeRef + "' to protocol: " + protocol + " msg=" + ex.getMessage(), new SyslogRealmMarker(protocol.getAgent().getRealm()));
                 }
             });
         }
@@ -514,17 +514,17 @@ public class AgentService extends RouteBuilder implements ContainerService {
         }
 
         synchronized (protocol) {
-            LOG.fine("Unlinking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() + ", protocol=" + protocol);
+            LOG.log(Level.FINE, "Unlinking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() + ", protocol=" + protocol, new SyslogRealmMarker(protocol.getAgent().getRealm()));
 
             attributes.forEach(attribute -> {
                 try {
                     AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
                     if (protocol.getLinkedAttributes().containsKey(attributeRef)) {
-                        LOG.finest("Unlinking attribute '" + attributeRef + "' to protocol: " + protocol);
+                        LOG.log(Level.FINEST, "Unlinking attribute '" + attributeRef + "' to protocol: " + protocol, new SyslogRealmMarker(protocol.getAgent().getRealm()));
                         protocol.unlinkAttribute(assetId, attribute);
                     }
                 } catch (Exception ex) {
-                    LOG.log(Level.SEVERE, "Ignoring error on unlinking attribute '" + attribute + "' from protocol: " + protocol, ex);
+                    SyslogRealmMarker.log(LOG, Level.SEVERE, "Ignoring error on unlinking attribute '" + attribute + "' from protocol: " + protocol, ex, protocol.getAgent().getRealm());
                 }
             });
         }
@@ -620,9 +620,9 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 return;
             }
 
-            LOG.finer("Notifying protocol instance of an event for one of its agent attributes: " + event.getRef());
+            LOG.log(Level.FINER, "Notifying protocol instance of an event for one of its agent attributes: " + event.getRef(), new SyslogRealmMarker(agent.getRealm()));
             if (protocolInstance.onAgentAttributeChanged(event)) {
-                LOG.info("Protocol has requested recreation following agent attribute event: " + event.getRef());
+                LOG.log(Level.INFO, "Protocol has requested recreation following agent attribute event: " + event.getRef(), new SyslogRealmMarker(agent.getRealm()));
                 deployAgent(agent);
             }
         }
@@ -662,10 +662,10 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
         // Fully load agent asset if path and parent info not loaded
         if (agent.getPath() == null || (agent.getPath().length > 1 && agent.getParentId() == null)) {
-            LOG.fine("Agent is not fully loaded so retrieving the agent from the DB: " + agent.getId());
+            LOG.log(Level.FINE, "Agent is not fully loaded so retrieving the agent from the DB: " + agent.getId(), new SyslogRealmMarker(agent.getRealm()));
             final Agent<?, ?, ?> loadedAgent = assetStorageService.find(agent.getId(), true, Agent.class);
             if (loadedAgent == null) {
-                LOG.fine("Agent not found in the DB, maybe it has been removed: " + agent.getId());
+                LOG.log(Level.FINE, "Agent not found in the DB, maybe it has been removed: " + agent.getId(), new SyslogRealmMarker(agent.getRealm()));
                 return null;
             }
             agent = loadedAgent;
@@ -708,11 +708,11 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
     protected void notifyChildAssetChange(String agentId, PersistenceEvent<Asset<?>> assetPersistenceEvent) {
         childAssetSubscriptions.computeIfPresent(agentId, (id, consumers) -> {
-            LOG.finest("Notifying child asset change consumers of change to agent child asset: Agent ID=" + id + ", Asset<?> ID=" + assetPersistenceEvent.getEntity().getId());
+            LOG.log(Level.FINEST, "Notifying child asset change consumers of change to agent child asset: Agent ID=" + id + ", Asset<?> ID=" + assetPersistenceEvent.getEntity().getId(), new SyslogRealmMarker(assetPersistenceEvent.getEntity().getRealm()));
             try {
                 consumers.forEach(consumer -> consumer.accept(assetPersistenceEvent));
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Child asset change consumer threw an exception: Agent ID=" + id + ", Asset<?> ID=" + assetPersistenceEvent.getEntity().getId(), e);
+                SyslogRealmMarker.log(LOG, Level.WARNING, "Child asset change consumer threw an exception: Agent ID=" + id + ", Asset<?> ID=" + assetPersistenceEvent.getEntity().getId(), e, assetPersistenceEvent.getEntity().getRealm());
             }
             return consumers;
         });
@@ -760,7 +760,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
             throw new UnsupportedOperationException("Agent protocol doesn't support asset discovery");
         }
 
-        LOG.fine("Initiating protocol asset discovery: Agent = " + agent);
+        LOG.log(Level.FINE, "Initiating protocol asset discovery: Agent = " + agent, new SyslogRealmMarker(agent.getRealm()));
 
         synchronized (agentDiscoveryImportFutureMap) {
             okToContinueWithImportOrDiscovery(agent.getId());
@@ -776,11 +776,11 @@ public class AgentService extends RouteBuilder implements ContainerService {
                     Future<Void> discoveryFuture = assetDiscovery.startAssetDiscovery(onDiscovered);
                     discoveryFuture.get();
                 } catch (InterruptedException e) {
-                    LOG.fine("Protocol asset discovery was cancelled");
+                    LOG.log(Level.FINE, "Protocol asset discovery was cancelled", new SyslogRealmMarker(agent.getRealm()));
                 } catch (Exception e) {
-                    LOG.log(Level.WARNING, "Failed to do protocol asset discovery: Agent = " + agent, e);
+                    SyslogRealmMarker.log(LOG, Level.WARNING, "Failed to do protocol asset discovery: Agent = " + agent, e, agent.getRealm());
                 } finally {
-                    LOG.fine("Finished protocol asset discovery: Agent = " + agent);
+                    LOG.log(Level.FINE, "Finished protocol asset discovery: Agent = " + agent, new SyslogRealmMarker(agent.getRealm()));
                     agentDiscoveryImportFutureMap.remove(agent.getId());
                 }
             };
@@ -803,7 +803,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
             throw new UnsupportedOperationException("Agent protocol doesn't support asset import");
         }
 
-        LOG.fine("Initiating protocol asset import: Agent = " + agent);
+        LOG.log(Level.FINE, "Initiating protocol asset import: Agent = " + agent, new SyslogRealmMarker(agent.getRealm()));
         synchronized (agentDiscoveryImportFutureMap) {
             okToContinueWithImportOrDiscovery(agent.getId());
 
@@ -818,11 +818,11 @@ public class AgentService extends RouteBuilder implements ContainerService {
                     Future<Void> discoveryFuture = assetImport.startAssetImport(fileData, onDiscovered);
                     discoveryFuture.get();
                 } catch (InterruptedException e) {
-                    LOG.fine("Protocol asset import was cancelled");
+                    LOG.log(Level.FINE, "Protocol asset import was cancelled", new SyslogRealmMarker(agent.getRealm()));
                 } catch (Exception e) {
-                    LOG.log(Level.WARNING, "Failed to do protocol asset import: Agent = " + agent, e);
+                    SyslogRealmMarker.log(LOG, Level.WARNING, "Failed to do protocol asset import: Agent = " + agent, e, agent.getRealm());
                 } finally {
-                    LOG.fine("Finished protocol asset import: Agent = " + agent);
+                    LOG.log(Level.FINE, "Finished protocol asset import: Agent = " + agent, new SyslogRealmMarker(agent.getRealm()));
                     agentDiscoveryImportFutureMap.remove(agent.getId());
                 }
             };
