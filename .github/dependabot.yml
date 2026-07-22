@@ -13,7 +13,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "friday"
+      day: "monday"
       time: "03:00"
       timezone: "Europe/Amsterdam"
     groups:
@@ -42,7 +42,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "friday"
+      day: "monday"
       time: "03:00"
       timezone: "Europe/Amsterdam"
     rebase-strategy: disabled # Prevent unnecessary pipeline runs
