@@ -22,20 +22,14 @@ import {TextArea} from "@vaadin/text-area";
 import {OrVaadinComponent} from "./util";
 import {type LitElement, type PropertyValues} from "lit";
 
-/**
- * @cssprop --or-vaadin-text-area-height - When set, fixes the input area to this height
- * (scroll instead of auto-grow) and, unless `resize` is false, shows the native resize handle.
- */
 // _updateHeight is defined in Vaadin's TextAreaMixin (not TextArea itself); the cast exposes it.
 @customElement("or-vaadin-text-area")
 export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitElement & { _updateHeight(): void }) implements OrVaadinComponent {
 
-    // Enables the native resize handle in fixed-height mode (--or-vaadin-text-area-height).
-    // Irrelevant in the default auto-grow mode, where the height always tracks the content.
+    // Show a native vertical resize handle and stop automatic resizing: the height starts at
+    // min-rows and stays fixed until the user drags it. Default is Vaadin's autoresize.
     @property({type: Boolean})
-    resize = true;
-
-    private _fixedHeightApplied = false;
+    manualresize = false;
 
     override _onEnter(ev: KeyboardEvent) {
         // Shift+Enter inserts a newline without submitting the value.
@@ -45,52 +39,36 @@ export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitEleme
         return super._onEnter(ev);
     }
 
-    // Vaadin's default _updateHeight reads scrollHeight on every value change — O(content lines).
-    // When --or-vaadin-text-area-height is set, size via CSS variable (O(1)) instead.
+    // Vaadin's default _updateHeight reads scrollHeight on every value change to autoresize.
+    // In manualresize mode, keep the height fixed and offer a native resize handle instead.
     override _updateHeight(): void {
         if (!this.inputElement) return;
-        const h = window.getComputedStyle(this).getPropertyValue("--or-vaadin-text-area-height").trim();
-        if (h) {
-            const inputField = this.shadowRoot?.querySelector<HTMLElement>('[part~="input-field"]');
+        const inputField = this.shadowRoot?.querySelector<HTMLElement>('[part~="input-field"]');
+        if (this.manualresize) {
             if (inputField) {
-                // The container wraps the textarea (auto height) so a native resize
-                // drag on the textarea grows the whole field, and it never shows a
-                // second scrollbar of its own.
+                // The container wraps the textarea (auto height, capped by max-rows) so a
+                // resize drag grows the whole field without a second scrollbar of its own.
                 inputField.style.height = "auto";
                 inputField.style.overflowY = "hidden";
             }
-            // Set the initial height only: a resize drag on the textarea writes this
-            // same inline property, so later value changes must not snap it back.
-            if (!this._fixedHeightApplied) {
-                this.inputElement.style.height = h;
-                this._fixedHeightApplied = true;
-            }
             this.inputElement.style.overflowY = "auto";
-            // Fixed height disables auto-grow, so the textarea offers the native
-            // resize handle by default (inline style beats Vaadin's ::slotted()
-            // resize: none). min-height keeps drags from shrinking below default.
-            // Only an explicit false disables, so undefined behaves like the default.
-            // Browsers without `resize` support silently ignore the property; the
-            // fixed height and scrolling still work, only the drag handle is absent.
-            if (this.resize !== false) {
-                this.inputElement.style.resize = "vertical";
-                this.inputElement.style.minHeight = h;
-            } else {
-                this.inputElement.style.resize = "none";
-                this.inputElement.style.minHeight = "";
-            }
+            // Fixed height with a native vertical handle. Vaadin's own min-rows sets the
+            // initial height and max-rows caps it, so no row-to-pixel math is reimplemented.
+            this.inputElement.style.resize = "vertical";
             return;
         }
-        // Without the CSS variable, keep Vaadin's stock auto-grow behavior
-        // (scrollbar-flicker minimization, scroll-position preservation) so
-        // other or-vaadin-text-area users are unaffected by this override.
+        // Autoresize: drop the manual overrides (no-ops when never set) and keep Vaadin's
+        // stock behavior (scrollbar-flicker minimization, scroll-position preservation).
+        this.inputElement.style.removeProperty("resize");
+        this.inputElement.style.removeProperty("overflow-y");
+        if (inputField) inputField.style.removeProperty("overflow-y");
         super._updateHeight();
     }
 
     protected override updated(changedProperties: PropertyValues): void {
         super.updated(changedProperties);
-        // _updateHeight only runs on value changes; re-apply when the option toggles.
-        if (changedProperties.has("resize")) {
+        // _updateHeight only runs on value changes; re-apply when the mode toggles.
+        if (changedProperties.has("manualresize")) {
             this._updateHeight();
         }
     }

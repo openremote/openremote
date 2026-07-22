@@ -147,6 +147,8 @@ const replayDataRenderer = (state: JsonFormsStateContext, props: ControlProps) =
             label="${props.label}"
             helper-text="${i18next.t("simulatorReplayFormatHelper")}"
             style="width: 100%;"
+            min-rows="5"
+            manualresize
             manual-validation
             .value="${textValue}"
             @change="${onChanged}"

@@ -7,12 +7,6 @@ export const baseStyle = css`
         flex: 1;
     }
 
-    or-vaadin-text-area {
-        /* Fixed input-area height enables the O(1) sizing path in or-vaadin-text-area.
-           The host height stays content-driven so label/helper/error rows aren't clipped. */
-        --or-vaadin-text-area-height: 96px;
-    }
-
     .item-container {
         display: flex;
     }

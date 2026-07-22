@@ -69,81 +69,80 @@ ct.describe("Submit", () => {
 });
 
 ct.describe("Height", () => {
-  ct("fixes the input area to --or-vaadin-text-area-height and scrolls instead of growing", async ({ mount }) => {
-    const component = await mount(OrVaadinTextArea, { props: { label: "Text" } });
-    await component.evaluate((el) => el.style.setProperty("--or-vaadin-text-area-height", "108px"));
+  ct("manualresize fixes the input area to the min-rows height and scrolls instead of growing", async ({ mount }) => {
+    const component = await mount(OrVaadinTextArea, { props: { label: "Text", minRows: 3, manualresize: true } });
 
     const input = component.getByRole("textbox", { name: "Text" });
     await input.fill(lines(30));
 
-    // The textarea starts at the CSS variable and scrolls the overflowing
+    // The textarea starts at the min-rows height and scrolls the overflowing
     // content; the container wraps it without a second scrollbar.
     const inputField = component.locator("[part~='input-field']");
-    await expect(input).toHaveCSS("height", "108px");
     await expect(input).toHaveCSS("overflow-y", "auto");
     await expect(inputField).toHaveCSS("overflow-y", "hidden");
 
-    // The host must not auto-grow when more content is added.
+    // The host must not autoresize when more content is added.
     const before = (await component.boundingBox())!.height;
     await input.fill(lines(60));
-    await expect(input).toHaveCSS("height", "108px");
     const after = (await component.boundingBox())!.height;
     expect(after).toBe(before);
 
-    // Fixed-height mode enables the native resize handle by default,
-    // floored at the default height.
+    // Manual mode enables the native resize handle.
     await expect(input).toHaveCSS("resize", "vertical");
-    await expect(input).toHaveCSS("min-height", "108px");
 
     // A native resize drag writes an inline height on the textarea;
-    // later value changes must not snap it back to the CSS variable.
+    // later value changes must not snap it back to the min-rows height.
     await input.evaluate((el) => { el.style.height = "208px"; });
     await input.fill(lines(90));
     await expect(input).toHaveCSS("height", "208px");
   });
 
-  ct("the resize handle drags the textarea taller but not below the floor", async ({ mount, page, shared }) => {
-    const component = await mount(OrVaadinTextArea, { props: { label: "Text" } });
-    await component.evaluate((el) => el.style.setProperty("--or-vaadin-text-area-height", "108px"));
+  ct("the resize handle drags the textarea taller", async ({ mount, page, shared }) => {
+    const component = await mount(OrVaadinTextArea, { props: { label: "Text", minRows: 3, manualresize: true } });
 
     const input = component.getByRole("textbox", { name: "Text" });
     // Overflowing content matters: the scrollbar historically competed with the
     // handle (and on the input container the slotted textarea covered it entirely).
     await input.fill(lines(30));
-    await expect(input).toHaveCSS("height", "108px");
 
     // Drag the native handle (bottom-right corner of the textarea) 100px down.
     const box = (await input.boundingBox())!;
     await page.mouse.move(box.x + box.width - 4, box.y + box.height - 4);
     await shared.drag(box.x + box.width - 4, box.y + box.height + 96);
-    await expect.poll(async () => (await input.boundingBox())!.height).toBeGreaterThan(180);
-
-    // Drag far upwards: min-height must stop the shrink at the default height.
-    const grown = (await input.boundingBox())!;
-    await page.mouse.move(grown.x + grown.width - 4, grown.y + grown.height - 4);
-    await shared.drag(grown.x + grown.width - 4, grown.y - 300);
-    await expect.poll(async () => (await input.boundingBox())!.height).toBe(108);
+    await expect.poll(async () => (await input.boundingBox())!.height).toBeGreaterThan(box.height + 60);
   });
 
-  ct("resize=false removes the native resize handle", async ({ mount }) => {
-    const component = await mount(OrVaadinTextArea, { props: { label: "Text", resize: false } });
-    await component.evaluate((el) => el.style.setProperty("--or-vaadin-text-area-height", "108px"));
-
-    const input = component.getByRole("textbox", { name: "Text" });
-    await input.fill(lines(5));
-
-    await expect(input).toHaveCSS("resize", "none");
-    await expect(input).toHaveCSS("height", "108px");
-  });
-
-  ct("keeps Vaadin's auto-grow behavior without the CSS variable", async ({ mount }) => {
+  ct("autoresize (the default) has no resize handle and grows with the content", async ({ mount }) => {
     const component = await mount(OrVaadinTextArea, { props: { label: "Text" } });
 
     const input = component.getByRole("textbox", { name: "Text" });
     await input.fill(lines(1));
     const singleLine = (await component.boundingBox())!.height;
+    await expect(input).toHaveCSS("resize", "none");
 
     await input.fill(lines(10));
     await expect.poll(async () => (await component.boundingBox())!.height).toBeGreaterThan(singleLine);
+  });
+
+  ct("min-rows sets the initial visible height", async ({ mount }) => {
+    const component = await mount(OrVaadinTextArea, { props: { label: "Text", minRows: 2 } });
+    const twoRows = (await component.boundingBox())!.height;
+
+    // Compare on the same element: mount() returns a shared #root locator,
+    // so a second mount would measure the same node.
+    await component.evaluate((el: any) => { el.minRows = 8; });
+    await expect.poll(async () => (await component.boundingBox())!.height).toBeGreaterThan(twoRows);
+  });
+
+  ct("max-rows caps the autoresize and scrolls the overflow", async ({ mount }) => {
+    const component = await mount(OrVaadinTextArea, { props: { label: "Text", minRows: 2, maxRows: 4 } });
+
+    const input = component.getByRole("textbox", { name: "Text" });
+    await input.fill(lines(6));
+    const capped = (await component.boundingBox())!.height;
+
+    // Past max-rows the field must stop growing and scroll instead.
+    await input.fill(lines(40));
+    expect(Math.abs((await component.boundingBox())!.height - capped)).toBeLessThanOrEqual(2);
   });
 });

@@ -254,9 +254,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             css`
             :host {
                 display: inline-block;
-                /* Fixed input-area height enables the O(1) sizing path in or-vaadin-text-area.
-                   The host height stays content-driven so label/helper/error rows aren't clipped. */
-                --or-vaadin-text-area-height: 96px;
             }
             
             :host(.force-btn-padding) #wrapper.no-padding {
@@ -572,6 +569,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             label: this.getLabel(),
             comfortable: this.comfortable,
             resizeVertical: this.resizeVertical,
+            minRows: 5,
+            manualresize: true,
             inputType: this.inputType
         };
 
