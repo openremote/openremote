@@ -357,6 +357,9 @@ public class RulesEngine<T extends Ruleset> {
 
         synchronized (this) {
             if (!running) {
+                // Engine was never started (or already stopped); still drop the registry entry so a
+                // constructed-but-never-started engine does not leak its loggerName->realm mapping
+                SyslogRealmRegistry.unregister(LOG.getName());
                 return;
             }
             running = false;
