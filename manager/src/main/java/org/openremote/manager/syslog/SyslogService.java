@@ -216,11 +216,20 @@ public class SyslogService extends Handler implements ContainerService {
         }
     }
 
-    public void clearStoredEvents() {
+    public void clearStoredEvents(String realm) {
         if (persistenceService == null)
             return;
         synchronized (batch) {
-            persistenceService.doTransaction(em -> em.createQuery("delete from SyslogEvent e").executeUpdate());
+            persistenceService.doTransaction(em -> {
+                if (realm == null) {
+                    // Global clear (superuser only); also removes system logs
+                    em.createQuery("delete from SyslogEvent e").executeUpdate();
+                } else {
+                    em.createQuery("delete from SyslogEvent e where e.realm = :realm")
+                        .setParameter("realm", realm)
+                        .executeUpdate();
+                }
+            });
         }
     }
 

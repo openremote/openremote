@@ -26,12 +26,12 @@ class SysLogServiceTest extends Specification implements ManagerContainerTrait {
         syslogService = new SyslogService()
         def container = startContainer(defaultConfig(), defaultServices(syslogService))
         persistenceService = container.getService(PersistenceService.class)
-        syslogService.clearStoredEvents()
+        syslogService.clearStoredEvents(null)
     }
 
     def cleanupSpec() {
         if (syslogService != null) {
-            syslogService.clearStoredEvents()
+            syslogService.clearStoredEvents(null)
         }
     }
 

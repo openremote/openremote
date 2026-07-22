@@ -92,8 +92,17 @@ public class SyslogResourceImpl extends ManagerWebResource implements SyslogReso
     }
 
     @Override
-    public void clearEvents(@BeanParam RequestParams requestParams) {
-        syslogService.clearStoredEvents();
+    public void clearEvents(@BeanParam RequestParams requestParams, String realm) {
+        // Non-superusers can only clear events of their own realm; clearing system logs (no realm)
+        // and other realms' logs requires superuser
+        String filterRealm = TextUtil.isNullOrEmpty(realm) ? null : realm;
+        if (!getAuthContext().isSuperUser()) {
+            filterRealm = filterRealm == null ? getAuthenticatedRealmName() : filterRealm;
+            if (!isRealmActiveAndAccessible(filterRealm)) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+        }
+        syslogService.clearStoredEvents(filterRealm);
     }
 
     @Override

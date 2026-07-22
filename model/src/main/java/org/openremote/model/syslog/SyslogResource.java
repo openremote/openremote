@@ -47,7 +47,7 @@ public interface SyslogResource {
     @Path("event")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "clearEvents", summary = "Clear the syslog events")
-    void clearEvents(@BeanParam RequestParams requestParams);
+    void clearEvents(@BeanParam RequestParams requestParams, @QueryParam("realm") String realm);
 
     @GET
     @Path("config")
