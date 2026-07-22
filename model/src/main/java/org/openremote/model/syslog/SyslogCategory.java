@@ -141,10 +141,27 @@ public enum SyslogCategory {
                     ? record.getMessage() + " -- " + record.getThrown().getMessage()
                     : record.getMessage();
 
-                return new SyslogEvent(record.getMillis(), level, category, subCategory, message);
+                return new SyslogEvent(record.getMillis(), level, category, subCategory, message, getRealm(record));
             }
         }
         return null;
+    }
+
+    /**
+     * Resolves the realm of a log record; an explicit {@link SyslogRealmMarker} parameter takes
+     * precedence over a {@link SyslogRealmRegistry} entry for the record's logger. Null means the
+     * record is a system log (not attributable to a realm).
+     */
+    protected static String getRealm(LogRecord record) {
+        Object[] parameters = record.getParameters();
+        if (parameters != null) {
+            for (Object parameter : parameters) {
+                if (parameter instanceof SyslogRealmMarker marker) {
+                    return marker.realm();
+                }
+            }
+        }
+        return SyslogRealmRegistry.getRealm(record.getLoggerName());
     }
 
     public static Logger getLogger(SyslogCategory category, Class<?> loggerName) {

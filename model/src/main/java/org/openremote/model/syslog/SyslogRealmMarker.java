@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,37 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.event.shared;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.MappedSuperclass;
+package org.openremote.model.syslog;
 
 /**
- * An event that carries information about the realm it occurred in.
+ * Marker that can be passed as a {@link java.util.logging.LogRecord} parameter to attribute a
+ * single log record to a realm, e.g. {@code LOG.log(Level.INFO, "Agent started", new SyslogRealmMarker(realm))}.
+ * Takes precedence over any {@link SyslogRealmRegistry} entry for the logger. The marker is
+ * ignored by message formatters unless the message contains an explicit {@code {N}} placeholder.
  */
-@MappedSuperclass
-public abstract class RealmScopedEvent extends SharedEvent {
-
-    @Column(name = "REALM")
-    public String realm;
-
-    public RealmScopedEvent(long timestamp, String realm) {
-        super(timestamp);
-        this.realm = realm;
-    }
-
-    public RealmScopedEvent(String realm) {
-        this.realm = realm;
-    }
-
-    protected RealmScopedEvent() {
-    }
-
-    public String getRealm() {
-        return realm;
-    }
-
-    public void setRealm(String realm) {
-        this.realm = realm;
-    }
+public record SyslogRealmMarker(String realm) {
 }

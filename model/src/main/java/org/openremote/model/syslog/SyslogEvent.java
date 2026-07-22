@@ -22,7 +22,7 @@ package org.openremote.model.syslog;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.openremote.model.event.shared.EventFilter;
-import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.event.shared.RealmScopedEvent;
 
 import java.util.*;
 
@@ -30,7 +30,7 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @Entity
 @Table(name = "SYSLOG_EVENT")
-public class SyslogEvent extends SharedEvent {
+public class SyslogEvent extends RealmScopedEvent {
 
     static public class LevelCategoryFilter implements EventFilter<SyslogEvent> {
 
@@ -38,6 +38,7 @@ public class SyslogEvent extends SharedEvent {
 
         protected SyslogLevel level;
         protected List<SyslogCategory> categories = new ArrayList<>();
+        protected String realm;
 
         protected LevelCategoryFilter() {
         }
@@ -64,9 +65,18 @@ public class SyslogEvent extends SharedEvent {
             this.categories = categories;
         }
 
+        public String getRealm() {
+            return realm;
+        }
+
+        public void setRealm(String realm) {
+            this.realm = realm;
+        }
+
         @Override
         public SyslogEvent apply(SyslogEvent event) {
-            return (getCategories().isEmpty() || getCategories().contains(event.getCategory()))
+            return (realm == null || realm.equals(event.getRealm()))
+                && (getCategories().isEmpty() || getCategories().contains(event.getCategory()))
                 && (getLevel() == null || getLevel().ordinal() <= event.getLevel().ordinal()) ? event : null;
         }
 
@@ -75,6 +85,7 @@ public class SyslogEvent extends SharedEvent {
             return getClass().getSimpleName() + "{" +
                 "level=" + level +
                 ", categories=" + categories +
+                ", realm=" + realm +
                 '}';
         }
     }
@@ -105,7 +116,11 @@ public class SyslogEvent extends SharedEvent {
     }
 
     public SyslogEvent(long timestamp, SyslogLevel level, SyslogCategory category, String subCategory, String message) {
-        super(timestamp);
+        this(timestamp, level, category, subCategory, message, null);
+    }
+
+    public SyslogEvent(long timestamp, SyslogLevel level, SyslogCategory category, String subCategory, String message, String realm) {
+        super(timestamp, realm);
         this.level = level;
         this.category = category;
         this.subCategory = subCategory;
@@ -149,12 +164,32 @@ public class SyslogEvent extends SharedEvent {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SyslogEvent that = (SyslogEvent) o;
+        return Objects.equals(id, that.id)
+            && getTimestamp() == that.getTimestamp()
+            && level == that.level
+            && category == that.category
+            && Objects.equals(subCategory, that.subCategory)
+            && Objects.equals(message, that.message)
+            && Objects.equals(realm, that.realm);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, getTimestamp(), level, category, subCategory, message, realm);
+    }
+
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "level=" + level +
             ", category=" + category +
             ", subCategory=" + subCategory +
             ", message='" + message + '\'' +
+            ", realm=" + realm +
             '}';
     }
 }
