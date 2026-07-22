@@ -46,6 +46,7 @@ import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.User;
+import org.openremote.model.syslog.SyslogRealmMarker;
 import org.openremote.model.util.TextUtil;
 
 import java.sql.PreparedStatement;
@@ -53,6 +54,7 @@ import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.time.Instant;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -247,11 +249,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         List<User> users = getAlarmNotificationUsers(alarm);
         users.removeIf(user -> excludeUserIds.contains(user.getId()));
         if (users.isEmpty()) {
-            LOG.fine("No matching users to send alarm notification");
+            LOG.log(Level.FINE, "No matching users to send alarm notification", new SyslogRealmMarker(alarm.getRealm()));
             return;
         }
 
-        LOG.fine("Sending alarm notification to " + users.size() + " matching user(s)");
+        LOG.log(Level.FINE, "Sending alarm notification to " + users.size() + " matching user(s)", new SyslogRealmMarker(alarm.getRealm()));
 
         String title = String.format("Alarm: %s - %s", alarm.getSeverity(), alarm.getTitle());
         String url = getAlarmNotificationUrl(alarm);

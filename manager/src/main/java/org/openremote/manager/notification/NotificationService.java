@@ -40,6 +40,7 @@ import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.User;
+import org.openremote.model.syslog.SyslogRealmMarker;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 
@@ -179,7 +180,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         }
                     }
 
-                    LOG.fine("Sending " + notification.getMessage().getType() + " notification '" + notification.getName() + "': '" + source + ":" + sourceId.get() + "' -> " + notification.getTargets());
+                    LOG.log(Level.FINE, "Sending " + notification.getMessage().getType() + " notification '" + notification.getName() + "': '" + source + ":" + sourceId.get() + "' -> " + notification.getTargets(), new SyslogRealmMarker(realm));
 
                     // Check access permissions
                     checkAccess(source, sourceId.get(), notification.getTargets(), realm, userId, isSuperUser, isRestrictedUser, assetId);
@@ -190,7 +191,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     if (mappedTargetsList == null || mappedTargetsList.isEmpty()) {
                         throw new NotificationProcessingException(MISSING_TARGETS, "Notification targets must be set");
                     } else if (LOG.isLoggable(Level.FINER)) {
-                        LOG.finer("Notification targets mapped from: [" + (notification.getTargets() != null ? notification.getTargets().stream().map(Object::toString).collect(Collectors.joining(",")) : "null") + "to: [" + mappedTargetsList.stream().map(Object::toString).collect(Collectors.joining(",")) + "]");
+                        LOG.log(Level.FINER, "Notification targets mapped from: [" + (notification.getTargets() != null ? notification.getTargets().stream().map(Object::toString).collect(Collectors.joining(",")) : "null") + "to: [" + mappedTargetsList.stream().map(Object::toString).collect(Collectors.joining(",")) + "]", new SyslogRealmMarker(realm));
                     }
 
                     // Filter targets based on repeat frequency
@@ -202,6 +203,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
                     // Send message to each applicable target
                     AtomicReference<Exception> error = new AtomicReference<>();
+
+                    // realm is reassigned above so capture an effectively final copy for use in the nested lambdas below
+                    final String notificationRealm = realm;
 
                     // As we can have multiple targets in a single exchange we'll track the first exception that occurs
                     mappedTargetsList.forEach(
@@ -231,7 +235,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                         notification.getMessage());
 
                                     NotificationSendResult result = NotificationSendResult.success();
-                                    LOG.fine("Notification sent '" + id + "': " + target);
+                                    LOG.log(Level.FINE, "Notification sent '" + id + "': " + target, new SyslogRealmMarker(notificationRealm));
 
                                     // Merge the sent notification again with the message included just in case the handler modified the message
                                     sentNotification.setMessage(notification.getMessage());
@@ -243,7 +247,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                     } else {
                                         notificationProcessingException = new NotificationProcessingException(SEND_FAILURE, e.getMessage());
                                     }
-                                    LOG.warning("Notification failed '" + id + "': " + target + ", reason=" + notificationProcessingException);
+                                    LOG.log(Level.WARNING, "Notification failed '" + id + "': " + target + ", reason=" + notificationProcessingException, new SyslogRealmMarker(notificationRealm));
                                     sentNotification.setError(TextUtil.isNullOrEmpty(notificationProcessingException.getMessage()) ? "Unknown error" : notificationProcessingException.getMessage());
                                     return notificationProcessingException;
                                 } finally {
