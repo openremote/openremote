@@ -50,6 +50,7 @@ import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.syslog.SyslogRealmMarker;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 
@@ -394,7 +395,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
     protected void doAgentInit(Agent<?,?,?> agent) {
         boolean isDisabled = agent.isDisabled().orElse(false);
         if (isDisabled) {
-            LOG.fine("Agent is disabled so not starting: " + agent);
+            LOG.log(Level.FINE, "Agent is disabled so not starting: " + agent, new SyslogRealmMarker(agent.getRealm()));
             sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
         } else {
             executorService.execute(() -> this.startAgent(agent));
@@ -411,10 +412,10 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 protocol = agent.getProtocolInstance();
                 protocol.setAssetService(new AgentProtocolAssetService(agent));
 
-                LOG.fine("Starting protocol instance: " + protocol);
+                LOG.log(Level.FINE, "Starting protocol instance: " + protocol, new SyslogRealmMarker(agent.getRealm()));
                 protocol.start(container);
                 protocolInstanceMap.put(agent.getId(), protocol);
-                LOG.fine("Started protocol instance: " + protocol);
+                LOG.log(Level.FINE, "Started protocol instance: " + protocol, new SyslogRealmMarker(agent.getRealm()));
 
                 LOG.finest("Linking attributes to protocol instance: " + protocol);
 
@@ -447,7 +448,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                     }
                 }
                 protocolInstanceMap.remove(agent.getId());
-                LOG.log(Level.SEVERE, "Failed to start protocol '" + protocol + "': " + agent + " msg=" + e.getMessage());
+                LOG.log(Level.SEVERE, "Failed to start protocol '" + protocol + "': " + agent + " msg=" + e.getMessage(), new SyslogRealmMarker(agent.getRealm()));
                 sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
             }
         }

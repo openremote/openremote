@@ -8,14 +8,10 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.syslog.SyslogCategory;
 import org.snmp4j.PDU;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is a SNMP client protocol for receiving SNMP traps.
@@ -25,7 +21,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
 
     public static final String PROTOCOL_DISPLAY_NAME = "SNMP Client";
-    protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SNMPProtocol.class);
     protected final Map<String, AttributeRef> oidMap = new HashMap<>();
 
     public SNMPProtocol(SNMPAgent agent) {

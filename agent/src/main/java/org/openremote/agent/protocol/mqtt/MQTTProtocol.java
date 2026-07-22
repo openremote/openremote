@@ -29,7 +29,6 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.security.KeyStoreService;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 
@@ -39,13 +38,9 @@ import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTAgent, String, MQTT_IOClient, MQTTAgentLink> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, MQTTProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "MQTT Client";
     protected final Map<AttributeRef, Consumer<MQTTMessage<String>>> protocolMessageConsumers = new HashMap<>();
     protected final Map<String, Map<String, Map<AttributeRef, Consumer<MQTTMessage<String>>>>> wildcardTopicConsumerMap = new HashMap<>();

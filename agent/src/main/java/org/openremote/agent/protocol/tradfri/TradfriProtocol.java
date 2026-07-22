@@ -15,15 +15,12 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ValueHolder;
 
 import java.util.*;
-import java.util.logging.Logger;
 
 import static org.openremote.model.asset.impl.LightAsset.BRIGHTNESS;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 /**
@@ -32,11 +29,6 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
  * for a given {@link Agent} a device {@link Asset} will have a consistent ID.
  */
 public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgentLink> {
-
-    /**
-     * The logger for the IKEA TRÅDFRI protocol.
-     */
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TradfriProtocol.class);
 
     /**
      * The display name for the IKEA TRÅDFRI protocol.

@@ -31,20 +31,17 @@ import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.logging.Level.INFO;
 import static org.openremote.container.web.WebService.getStandardProviders;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is an abstract protocol for creating JAX-RS deployments; a concrete implementation should be created for each
@@ -69,10 +66,6 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
      */
     public static final String DEPLOYMENT_PATH_PREFIX = "/http_agent";
 
-    /**
-     * The regex used to validate the deployment path.
-     */
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractHTTPServerProtocol.class);
     protected Container container;
     protected boolean devMode;
     protected IdentityService identityService;

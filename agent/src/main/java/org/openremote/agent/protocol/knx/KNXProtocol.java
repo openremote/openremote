@@ -8,7 +8,6 @@ import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.protocol.ProtocolAssetImport;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueDescriptor;
 import tuwien.auto.calimero.GroupAddress;
@@ -35,12 +34,10 @@ import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 /**
@@ -48,7 +45,6 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
  */
 public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implements ProtocolAssetImport {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, KNXProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "KNX";
     protected static final String SUPPORT_DTD = XMLInputFactory.SUPPORT_DTD;
     protected static final String SUPPORTING_EXTERNAL_ENTITIES = "javax.xml.stream.isSupportingExternalEntities";

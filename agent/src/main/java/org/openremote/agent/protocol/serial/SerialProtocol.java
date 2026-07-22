@@ -25,7 +25,6 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.protocol.ProtocolUtil;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 
@@ -33,9 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is a generic Serial client protocol for communicating with Serial ports; it uses the {@link SerialIOClient} to
@@ -44,7 +40,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  */
 public class SerialProtocol extends AbstractSerialProtocol<SerialProtocol, SerialAgent, DefaultAgentLink, String, SerialIOClient<String>> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SerialProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "Serial";
 
     protected final List<Pair<AttributeRef, Consumer<String>>> protocolMessageConsumers = new ArrayList<>();

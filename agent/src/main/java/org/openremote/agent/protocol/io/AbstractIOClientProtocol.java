@@ -36,7 +36,6 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.Charset;
@@ -45,9 +44,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is an abstract {@link Protocol} for protocols that require an {@link IOClient}.
@@ -124,7 +120,6 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
         };
     }
 
-    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractIOClientProtocol.class);
     protected W client;
 
     protected AbstractIOClientProtocol(U agent) {
@@ -174,7 +169,7 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
             return;
         }
 
-        AbstractIOClientProtocol.LOG.finest("Sending message to IO client: " + client.getClientUri());
+        LOG.finest("Sending message to IO client: " + client.getClientUri());
         client.sendMessage(message);
     }
 

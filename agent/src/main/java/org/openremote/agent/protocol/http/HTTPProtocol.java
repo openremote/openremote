@@ -47,7 +47,6 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.protocol.ProtocolUtil;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -64,10 +63,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static org.openremote.container.web.WebTargetBuilder.addHeaders;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is a HTTP client protocol for communicating with HTTP servers; it uses the {@link WebTargetBuilder} factory to
@@ -273,7 +270,6 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     public static final String PROTOCOL_DISPLAY_NAME = "HTTP Client";
     public static final String DEFAULT_HTTP_METHOD = HttpMethod.GET;
     public static final String DEFAULT_CONTENT_TYPE = MediaType.TEXT_PLAIN;
-    protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HTTPProtocol.class);
     // Cannot be final due to adjustment needed in tests to speed up tests
     public static int MIN_POLLING_MILLIS = 5000;
     public static final int DEFAULT_READ_TIMEOUT_MILLIS = 10000;

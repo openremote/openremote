@@ -30,7 +30,6 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
-import org.openremote.model.syslog.SyslogCategory;
 
 import java.nio.file.Path;
 import java.util.Date;
@@ -40,14 +39,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>, U extends AbstractMailProtocol<T, U, V>, V extends AgentLink<V>> extends AbstractProtocol<T, V> {
     protected MailClient mailClient;
     protected Map<AttributeRef, Function<MailMessage, String>> attributeMessageProcessorMap = new ConcurrentHashMap<>();
-    protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractMailProtocol.class);
     protected static int INITIAL_CHECK_DELAY_SECONDS = 10;
 
     public AbstractMailProtocol(T agent) {

@@ -34,6 +34,8 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.protocol.ProtocolAssetService;
 import org.openremote.model.protocol.ProtocolUtil;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogRealmRegistry;
 import org.openremote.model.util.Pair;
 
 import java.util.*;
@@ -41,13 +43,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static org.openremote.model.protocol.ProtocolUtil.hasDynamicPlaceholders;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends AgentLink<?>> implements Protocol<T> {
 
-    private static final System.Logger LOG = System.getLogger(AbstractProtocol.class.getName() + "." + PROTOCOL.name());
+    /**
+     * Per protocol instance logger so log records can be attributed to the realm of the linked
+     * {@link Agent} (see {@link SyslogRealmRegistry}); the syslog sub category becomes
+     * {@code <ProtocolClass>-<agentId>}.
+     */
+    protected final Logger LOG;
     protected final Map<AttributeRef, Attribute<?>> linkedAttributes = new ConcurrentHashMap<>();
     protected final Set<AttributeRef> dynamicAttributes = Collections.synchronizedSet(new HashSet<>());
     protected DefaultCamelContext messageBrokerContext;
@@ -63,6 +72,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
 
     public AbstractProtocol(T agent) {
         this.agent = agent;
+        this.LOG = SyslogCategory.getLogger(PROTOCOL, getClass().getName() + "-" + agent.getId());
     }
 
     @Override
@@ -79,6 +89,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         datapointService = container.getService(ProtocolDatapointService.class);
         messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
         this.producerTemplate = container.getService(MessageBrokerService.class).getProducerTemplate();
+        SyslogRealmRegistry.register(LOG.getName(), agent.getRealm());
         doStart(container);
     }
 
@@ -93,6 +104,8 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
 
         } catch (Exception ex) {
             throw new RuntimeException(ex);
+        } finally {
+            SyslogRealmRegistry.unregister(LOG.getName());
         }
     }
 
@@ -144,7 +157,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     @Override
     public void processLinkedAttributeWrite(AttributeEvent event) {
         synchronized (processorLock) {
-            LOG.log(System.Logger.Level.TRACE, () -> "Processing linked attribute write on protocol '" + this + "': " + event);
+            LOG.log(Level.FINER, () -> "Processing linked attribute write on protocol '" + this + "': " + event);
             AgentLink<?> agentLink = agent.getAgentLink(event);
 
             Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(
@@ -155,7 +168,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
                 timerService.getNow());
 
             if (ignoreAndConverted.key) {
-                LOG.log(System.Logger.Level.DEBUG, "Value conversion returned ignore so attribute will not write to protocol: " + event.getRef());
+                LOG.log(Level.FINE, "Value conversion returned ignore so attribute will not write to protocol: " + event.getRef());
                 return;
             }
 
@@ -183,7 +196,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     final protected void sendAttributeEvent(AttributeEvent event) {
         // Don't allow updating linked attributes with this mechanism as it could cause an infinite loop
         if (linkedAttributes.containsKey(event.getRef())) {
-            LOG.log(System.Logger.Level.WARNING, () -> "Cannot update an attribute linked to the same protocol; use updateLinkedAttribute for that: " + event);
+            LOG.log(Level.WARNING, () -> "Cannot update an attribute linked to the same protocol; use updateLinkedAttribute for that: " + event);
             return;
         }
         assetService.sendAttributeEvent(event);
@@ -195,19 +208,19 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         Attribute<?> attribute = linkedAttributes.get(attributeRef);
 
         if (attribute == null) {
-            LOG.log(System.Logger.Level.WARNING, () -> "Update linked attribute called for un-linked attribute: " + attributeRef);
+            LOG.log(Level.WARNING, () -> "Update linked attribute called for un-linked attribute: " + attributeRef);
             return;
         }
 
         Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doInboundValueProcessing(attributeRef.getId(), attribute, agent.getAgentLink(attribute), value);
 
         if (ignoreAndConverted.key) {
-            LOG.log(System.Logger.Level.DEBUG, "Value conversion returned ignore so attribute will not be updated: " + attributeRef);
+            LOG.log(Level.FINE, "Value conversion returned ignore so attribute will not be updated: " + attributeRef);
             return;
         }
 
         AttributeEvent attributeEvent = new AttributeEvent(attributeRef, ignoreAndConverted.value, timestamp);
-        LOG.log(System.Logger.Level.TRACE, () -> "Sending linked attribute update: " + attributeEvent);
+        LOG.log(Level.FINER, () -> "Sending linked attribute update: " + attributeEvent);
         assetService.sendAttributeEvent(attributeEvent);
     }
 

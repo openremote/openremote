@@ -28,21 +28,17 @@ import org.openremote.agent.protocol.modbus.util.ModbusTcpEncoder;
 import org.openremote.agent.protocol.modbus.util.ModbusTcpFrame;
 import org.openremote.agent.protocol.tcp.TCPIOClient;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
 
 /**
  * Modbus TCP protocol implementation.
  * Handles TCP-specific transport: transaction ID correlation and full-duplex communication.
  */
 public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol, ModbusTcpAgent, ModbusTcpFrame> {
-
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusTcpProtocol.class);
 
     // Request/response correlation via transaction ID
     private final Map<Integer, CompletableFuture<ModbusTcpFrame>> pendingRequests = new ConcurrentHashMap<>();

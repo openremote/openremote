@@ -27,19 +27,15 @@ import org.openremote.agent.protocol.modbus.util.ModbusRTUEncoder;
 import org.openremote.agent.protocol.modbus.util.ModbusSerialFrame;
 import org.openremote.agent.protocol.serial.SerialIOClient;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.concurrent.*;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
 
 /**
  * Modbus Serial (RTU) protocol implementation.
  * Handles Serial-specific transport: half-duplex communication with timing gaps.
  */
 public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialProtocol, ModbusSerialAgent, ModbusSerialFrame> {
-
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusSerialProtocol.class);
 
     // Single pending request (RTU is half-duplex, no transaction IDs)
     private volatile CompletableFuture<ModbusSerialFrame> pendingRequest = null;

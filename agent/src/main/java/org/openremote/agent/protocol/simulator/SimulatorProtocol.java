@@ -40,7 +40,6 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.value.AbstractNameValueHolder;
 
@@ -52,14 +51,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS;
 
 public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, SimulatorAgentLink> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SimulatorProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "Simulator";
 
     protected final Map<AttributeRef, ScheduledFuture<?>> replayMap = new ConcurrentHashMap<>();

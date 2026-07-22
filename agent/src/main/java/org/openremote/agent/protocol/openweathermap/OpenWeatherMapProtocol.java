@@ -32,7 +32,6 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 
 import java.util.ArrayList;
@@ -42,9 +41,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS;
 
@@ -71,7 +68,6 @@ import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS;
  */
 public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent, OpenWeatherMapAgentLink> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, OpenWeatherMapProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "OpenWeatherMap";
 
     // Initial delay to allow system to populate agent links

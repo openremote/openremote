@@ -37,7 +37,6 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.protocol.ProtocolUtil;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -49,12 +48,10 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.http.HTTPProtocol.DEFAULT_CONTENT_TYPE;
 import static org.openremote.agent.protocol.http.HTTPProtocol.DEFAULT_HTTP_METHOD;
 import static org.openremote.container.web.WebTargetBuilder.getClient;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is a generic {@link org.openremote.model.asset.agent.Protocol} for communicating with a Websocket server
@@ -69,7 +66,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<WebsocketAgentProtocol, WebsocketAgent, String, WebsocketIOClient<String>, WebsocketAgentLink> {
 
     public static final String PROTOCOL_DISPLAY_NAME = "Websocket Client";
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketAgentProtocol.class);
     public static final int CONNECTED_SEND_DELAY_MILLIS = 2000;
     protected List<Runnable> protocolConnectedTasks;
     protected Map<AttributeRef, Runnable> attributeConnectedTasks;

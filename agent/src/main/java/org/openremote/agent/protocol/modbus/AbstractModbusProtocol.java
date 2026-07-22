@@ -33,7 +33,6 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -56,8 +54,6 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractModbusProtocol<T extends AbstractModbusProtocol<T, U, F>, U extends ModbusAgent<U, T>, F extends ModbusFrame>
         extends AbstractProtocol<U, ModbusAgentLink> {
-
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, AbstractModbusProtocol.class);
 
     protected NettyIOClient<F> client;
     protected final Object requestLock = new Object();
