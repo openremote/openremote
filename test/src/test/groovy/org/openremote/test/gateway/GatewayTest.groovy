@@ -110,6 +110,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).gatewayId == gateway.getId()
         }
 
+        and: "the connector's syslog logger is registered against the gateway's realm"
+        def connectorLoggerName = "org.openremote.manager.gateway.GatewayConnector-" + gateway.getId() + ".GATEWAY"
+        assert org.openremote.model.syslog.SyslogRealmRegistry.getRealm(connectorLoggerName) == gateway.getRealm()
+
         when: "the gateway service user credentials are used to try and access the asset resources"
         def accessToken = authenticate(
             container,
@@ -754,6 +758,11 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         assert deleted
         conditions.eventually {
             assert identityProvider.getClient(managerTestSetup.realmBuildingName, getGatewayClientId(gateway.getId())) == null
+        }
+
+        and: "the connector's syslog registry entry is removed"
+        new PollingConditions(timeout: 10, delay: 0.2).eventually {
+            assert org.openremote.model.syslog.SyslogRealmRegistry.getRealm(connectorLoggerName) == null
         }
 
         cleanup: "cleanup the gateway client"

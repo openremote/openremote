@@ -32,6 +32,7 @@ import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogRealmRegistry;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.VersionUtil;
 
@@ -55,7 +56,7 @@ import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
  */
 public class GatewayConnector {
 
-    private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayConnector.class.getName());
+    private final Logger LOG;
     public static int MAX_SYNC_RETRIES = 5;
     public static int SYNC_ASSET_BATCH_SIZE = 20;
     public static final String ASSET_READ_EVENT_NAME_INITIAL = "INITIAL";
@@ -123,6 +124,12 @@ public class GatewayConnector {
         this.gatewayId = gateway.getId();
         this.gatewayAsset = gateway;
 
+        // Dedicated per-connector logger so this connector's log records are attributed to the
+        // gateway's realm (see SyslogRealmRegistry); unregistered when GatewayService discards
+        // the connector. Syslog subCategory becomes GatewayConnector-<gatewayId>.
+        LOG = SyslogCategory.getLogger(GATEWAY, GatewayConnector.class.getName() + "-" + gatewayId);
+        SyslogRealmRegistry.register(LOG.getName(), realm);
+
         // Setup static inbound event handling
         synchronized(eventConsumerMap) {
             eventConsumerMap.put(AssetEvent.class, (e) -> onAssetEvent((AssetEvent) e));
@@ -130,6 +137,10 @@ public class GatewayConnector {
         }
         LOG.finest("Setting connection status=" + ConnectionStatus.DISCONNECTED + ": " + getGatewayIdString());
         publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED, timerService.getNow()));
+    }
+
+    protected String getLoggerName() {
+        return LOG.getName();
     }
 
     protected void sendMessageToGateway(Object message) {

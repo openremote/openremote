@@ -51,6 +51,7 @@ import org.openremote.model.rules.Ruleset;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogRealmRegistry;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.MetaItemType;
 
@@ -756,6 +757,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
                 if (connector != null) {
                     connector.disconnect(GatewayDisconnectEvent.Reason.UNRECOGNISED);
+                    SyslogRealmRegistry.unregister(connector.getLoggerName());
                 }
 
                 removeGatewayServiceUser(gateway);
