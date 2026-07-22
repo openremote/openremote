@@ -35,7 +35,7 @@ runs:
         files: ".ci_cd/ci_cd.json"
 
     - name: Process ci_cd.json file
-      if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
+      if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || github.event_name != 'pull_request') }}
       id: ci-cd-output
       shell: python
       run: |
@@ -54,30 +54,37 @@ runs:
         dockerPublishTags = None
         npmPublishTag = None
         deployEnvironment = None
-        eventConfig = ()
+        eventConfig = None
+        distributeConfig = None
 
         f = open(".ci_cd/ci_cd.json")
         data = json.load(f)
         f.close()
 
-        if isRelease:
-          eventName = "release"
-
         if data is not None and eventName in data:
           eventConfig = data[eventName]
 
-        if eventName == "push" and refType == "branch" and refName in eventConfig:
-          eventConfig = eventConfig[refName]
-
+        if eventName == "push" and refType == "branch" and isinstance(eventConfig, dict):
+          eventConfig = eventConfig.get(refName)
+        
         if eventConfig is not None:
-          deploys = eventConfig['deploy'] if 'deploy' in eventConfig else None
-          if 'distribute' in eventConfig:
-            if 'docker' in eventConfig['distribute']:
-                dockerPublishTags = eventConfig['distribute']['docker']
-            if 'npm' in eventConfig['distribute']:
-                npmPublishTag = eventConfig['distribute']['npm']
+          deploys = eventConfig.get('deploy')
+        
+          if eventName == "workflow_dispatch" and isinstance(deploys, dict):
+            deploys = deploys["release"] if isRelease else deploys["snapshot"]
 
-        if isMainRepo and ((eventName == "release" and isRelease) or (eventName != "release" and not isRelease)):
+          if eventName == "workflow_dispatch" and isRelease:
+            distributeConfig = data.get("release")
+          else:
+            distributeConfig = eventConfig
+        
+          if distributeConfig is not None and 'distribute' in distributeConfig:
+            if 'docker' in distributeConfig['distribute']:
+              dockerPublishTags = distributeConfig['distribute']['docker']
+            if 'npm' in distributeConfig['distribute']:
+              npmPublishTag = distributeConfig['distribute']['npm']
+        
+        if isMainRepo:
 
           if dockerPublishTags is not None:
             dockerPublishTags = ",".join(map(lambda t: t.strip(), dockerPublishTags.split(",")))
@@ -114,14 +121,14 @@ runs:
               if isMainRepo:
                 deployStr += deploy['managerTag']
               else:
-                # Custom projects manager docker image must match the openremoteVersion from gradle.properties
+                # Custom projects manager docker image must match the openremote version from gradle/libs.versions.toml
                 deployStr += managerVersion
             else:
               if isMainRepo:
                 os.system("echo 'Manager tag not specified so using commit SHA'")
                 deployStr += managerTagDefault
               else:
-                # Custom projects manager docker image must match the openremoteVersion from gradle.properties
+                # Custom projects manager docker image must match the openremote version from gradle/libs.versions.toml
                 deployStr += managerVersion
 
             deployStr += ";"
