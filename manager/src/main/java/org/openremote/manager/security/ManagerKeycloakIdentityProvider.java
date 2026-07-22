@@ -58,6 +58,7 @@ import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.security.*;
+import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
@@ -976,6 +977,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             // Delete Rules
             query = entityManager.createQuery("delete from " + RealmRuleset.class.getSimpleName() + " rs " +
                 "where rs.realm = ?1");
+            query.setParameter(1, realmName);
+            query.executeUpdate();
+
+            // Delete syslog events
+            query = entityManager.createQuery("delete from " + SyslogEvent.class.getSimpleName() + " se " +
+                "where se.realm = ?1");
             query.setParameter(1, realmName);
             query.executeUpdate();
 

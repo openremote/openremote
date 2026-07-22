@@ -25,8 +25,11 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
+import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.syslog.SyslogConfig;
 import org.openremote.model.syslog.SyslogEvent;
@@ -88,13 +91,34 @@ public class SyslogService extends Handler implements ContainerService {
         }
 
         if (clientEventService != null) {
-            clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) ->
-                subscription.isEventType(SyslogEvent.class) && auth != null && (auth.isSuperUser() || auth.hasResourceRole(Constants.READ_LOGS_ROLE, Constants.KEYCLOAK_CLIENT_ID)));
+            clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
+                if (!subscription.isEventType(SyslogEvent.class) || auth == null) {
+                    return false;
+                }
+                if (!auth.isSuperUser() && !auth.hasResourceRole(Constants.READ_LOGS_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
+                    return false;
+                }
+                if (!auth.isSuperUser()) {
+                    // Force the subscription to only receive events of the user's own realm; system
+                    // logs (no realm) are only visible to superusers
+                    @SuppressWarnings("unchecked")
+                    EventSubscription<SyslogEvent> syslogSubscription = (EventSubscription<SyslogEvent>) subscription;
+                    if (syslogSubscription.getFilter() instanceof SyslogEvent.LevelCategoryFilter levelCategoryFilter) {
+                        levelCategoryFilter.setRealm(auth.getAuthenticatedRealmName());
+                    } else {
+                        syslogSubscription.setFilter(new RealmFilter<>(auth.getAuthenticatedRealmName()));
+                    }
+                }
+                return true;
+            });
         }
 
         if (container.hasService(ManagerWebService.class)) {
             container.getService(ManagerWebService.class).addApiSingleton(
-                new SyslogResourceImpl(this)
+                new SyslogResourceImpl(
+                    container.getService(TimerService.class),
+                    container.getService(ManagerIdentityService.class),
+                    this)
             );
         }
 
@@ -200,7 +224,7 @@ public class SyslogService extends Handler implements ContainerService {
         }
     }
 
-    public Pair<Long, List<SyslogEvent>> getEvents(SyslogLevel level, int perPage, int page, Instant from, Instant to, List<SyslogCategory> categories, List<String> subCategories) {
+    public Pair<Long, List<SyslogEvent>> getEvents(SyslogLevel level, int perPage, int page, Instant from, Instant to, List<SyslogCategory> categories, List<String> subCategories, String realm) {
         if (persistenceService == null)
             return null;
 
@@ -226,6 +250,9 @@ public class SyslogService extends Handler implements ContainerService {
             if (subCategories != null && !subCategories.isEmpty()) {
                 sb.append(" and e.subCategory in :subCategories");
             }
+            if (realm != null) {
+                sb.append(" and e.realm = :realm");
+            }
 
             TypedQuery<Long> countQuery = em.createQuery("select count(e.id) " + sb.toString(), Long.class);
             countQuery.setParameter("from", fromInstant);
@@ -238,6 +265,9 @@ public class SyslogService extends Handler implements ContainerService {
             }
             if (subCategories != null && !subCategories.isEmpty()) {
                 countQuery.setParameter("subCategories", subCategories);
+            }
+            if (realm != null) {
+                countQuery.setParameter("realm", realm);
             }
             count.set(countQuery.getSingleResult());
 
@@ -258,6 +288,9 @@ public class SyslogService extends Handler implements ContainerService {
             }
             if (subCategories != null && !subCategories.isEmpty()) {
                 query.setParameter("subCategories", subCategories);
+            }
+            if (realm != null) {
+                query.setParameter("realm", realm);
             }
 
             query.setMaxResults(perPage);

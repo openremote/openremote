@@ -19,12 +19,16 @@
  */
 package org.openremote.manager.syslog;
 
-import org.openremote.container.web.WebResource;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.syslog.*;
 import org.openremote.model.util.Pair;
+import org.openremote.model.util.TextUtil;
 
 import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 
@@ -34,19 +38,30 @@ import java.util.List;
 
 import static org.openremote.model.syslog.SyslogConfig.DEFAULT_LIMIT;
 
-public class SyslogResourceImpl extends WebResource implements SyslogResource {
+public class SyslogResourceImpl extends ManagerWebResource implements SyslogResource {
 
     final protected SyslogService syslogService;
 
-    public SyslogResourceImpl(SyslogService syslogService) {
+    public SyslogResourceImpl(TimerService timerService, ManagerIdentityService identityService, SyslogService syslogService) {
+        super(timerService, identityService);
         this.syslogService = syslogService;
     }
 
     @Override
-    public Response getEvents(@BeanParam RequestParams requestParams, SyslogLevel level, Integer perPage, Integer page, Long from, Long to, List<SyslogCategory> categories, List<String> subCategories) {
+    public Response getEvents(@BeanParam RequestParams requestParams, SyslogLevel level, Integer perPage, Integer page, Long from, Long to, List<SyslogCategory> categories, List<String> subCategories, String realm) {
 
         perPage = perPage != null ? perPage : DEFAULT_LIMIT;
         page = page != null ? page : 1;
+
+        // Non-superusers can only retrieve events of their own realm; system logs (no realm) and
+        // other realms' logs are only visible to superusers
+        String filterRealm = TextUtil.isNullOrEmpty(realm) ? null : realm;
+        if (!getAuthContext().isSuperUser()) {
+            filterRealm = filterRealm == null ? getAuthenticatedRealmName() : filterRealm;
+            if (!isRealmActiveAndAccessible(filterRealm)) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+        }
 
         Pair<Long, List<SyslogEvent>> result = syslogService.getEvents(
             level,
@@ -55,7 +70,8 @@ public class SyslogResourceImpl extends WebResource implements SyslogResource {
             from != null ? Instant.ofEpochMilli(from) : null,
             to != null ? Instant.ofEpochMilli(to) : null,
             categories,
-            subCategories
+            subCategories,
+            filterRealm
         );
 
         if (result == null) {
