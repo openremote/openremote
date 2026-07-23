@@ -432,7 +432,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
             await this._loadData();
         } catch (_error) {
             showSnackbar(undefined, i18next.t("notifications.failedToCreateNotification"));
-            await this._loadData();
         }
     }
 
