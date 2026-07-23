@@ -100,8 +100,8 @@ public class ManagerNotificationSetup extends ManagerSetup {
         Instant base = Instant.now();
         int slot = 0;
         for (User user : users) {
-            persistNotification("Welcome", "Welcome to OpenRemote notifications", user.getId(), assetId, MASTER_REALM, base.minus(++slot, ChronoUnit.MINUTES));
-            persistNotification("Test Alert", "This is a pending test notification", user.getId(), assetId, MASTER_REALM, base.minus(++slot, ChronoUnit.MINUTES));
+            persistPushNotification("Welcome", "Welcome to OpenRemote notifications", user.getId(), assetId, MASTER_REALM, base.minus(++slot, ChronoUnit.MINUTES));
+            persistPushNotification("Test Alert", "This is a pending test notification", user.getId(), assetId, MASTER_REALM, base.minus(++slot, ChronoUnit.MINUTES));
             persistEmailNotification("Email Alert", "<p>This is a test email notification</p>", user.getId(), assetId, MASTER_REALM, base.minus(++slot, ChronoUnit.MINUTES));
         }
 
@@ -119,8 +119,8 @@ public class ManagerNotificationSetup extends ManagerSetup {
 
         createConsole(KeycloakNotificationSetup.SMARTCITY_REALM, keycloakSetup.smartCityUser);
 
-        persistNotification("Welcome", "Welcome to Smart City", keycloakSetup.smartCityUser.getId(), smartCityAssetId, KeycloakNotificationSetup.SMARTCITY_REALM, base.minus(++slot, ChronoUnit.MINUTES));
-        persistNotification("Test Alert", "This is a pending test notification", keycloakSetup.smartCityUser.getId(), smartCityAssetId, KeycloakNotificationSetup.SMARTCITY_REALM, base.minus(++slot, ChronoUnit.MINUTES));
+        persistPushNotification("Welcome", "Welcome to Smart City", keycloakSetup.smartCityUser.getId(), smartCityAssetId, KeycloakNotificationSetup.SMARTCITY_REALM, base.minus(++slot, ChronoUnit.MINUTES));
+        persistPushNotification("Test Alert", "This is a pending test notification", keycloakSetup.smartCityUser.getId(), smartCityAssetId, KeycloakNotificationSetup.SMARTCITY_REALM, base.minus(++slot, ChronoUnit.MINUTES));
 
         // Realm ruleset whose Groovy script body sends notifications directly once on deployment, so notifications
         // with the REALM_RULESET source show up for testing the source filter. Plain rules with a when clause
@@ -226,12 +226,12 @@ public class ManagerNotificationSetup extends ManagerSetup {
         assetStorageService.storeUserAssetLinks(List.of(new UserAssetLink(realm, user.getId(), console.getId())));
     }
 
-    private void persistNotification(String title, String body, String userId, String assetId, String realm, Instant sentOn) {
+    private void persistPushNotification(String title, String body, String userId, String assetId, String realm, Instant sentOn) {
         PushNotificationMessage message = new PushNotificationMessage()
             .setTitle(title)
             .setBody(body);
 
-        persist(title, PushNotificationMessage.TYPE, message, userId, assetId, realm, sentOn);
+        persistNotification(title, PushNotificationMessage.TYPE, message, userId, assetId, realm, sentOn);
     }
 
     private void persistEmailNotification(String subject, String html, String userId, String assetId, String realm, Instant sentOn) {
@@ -239,10 +239,10 @@ public class ManagerNotificationSetup extends ManagerSetup {
             .setSubject(subject)
             .setHtml(html);
 
-        persist(subject, EmailNotificationMessage.TYPE, message, userId, assetId, realm, sentOn);
+        persistNotification(subject, EmailNotificationMessage.TYPE, message, userId, assetId, realm, sentOn);
     }
 
-    private void persist(String name, String type, AbstractNotificationMessage message, String userId, String assetId, String realm, Instant sentOn) {
+    private void persistNotification(String name, String type, AbstractNotificationMessage message, String userId, String assetId, String realm, Instant sentOn) {
         // One notification targeting the user directly
         SentNotification toUser = new SentNotification()
             .setName(name)
