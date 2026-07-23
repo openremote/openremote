@@ -39,8 +39,8 @@ import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin
 import "@openremote/or-vaadin-components/or-vaadin-button";
 import {dialogRenderer, dialogFooterRenderer, dialogHeaderRenderer} from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import "@openremote/or-vaadin-components/or-vaadin-dialog";
-import {NotificationForm} from "../components/notifications/notification-form";
-import "../components/notifications/notification-form";
+import {OrNotificationForm} from "../components/notifications/or-notification-form";
+import "../components/notifications/or-notification-form";
 import {NotificationTableClickEvent, OrNotificationsPageChangedEvent, OrNotificationsSortChangedEvent} from "../components/notifications/or-notifications-table";
 import "../components/notifications/or-notifications-table";
 
@@ -309,7 +309,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
     @state()
     protected _createFormValid: boolean = false;
 
-    protected _createForm?: NotificationForm;
+    protected _createForm?: OrNotificationForm;
 
     protected _loading: boolean = false;
     protected _loadAbortController?: AbortController;
@@ -522,26 +522,26 @@ export class PageNotifications extends Page<AppStateKeyed> {
     // realm's users/assets/realms.
     protected _renderCreateForm() {
         return html`
-            <notification-form
+            <or-notification-form
                     id="notificationForm"
                     .realm=${this.realm}
-                    @notification-form-changed="${(ev: Event) => this._onCreateFormChanged(ev)}">
-            </notification-form>
+                    @or-notification-form-changed="${(ev: Event) => this._onCreateFormChanged(ev)}">
+            </or-notification-form>
         `;
     }
 
     protected _renderDetailsForm(notification?: SentNotification) {
         return html`
-            <notification-form
+            <or-notification-form
                     .realm=${this.realm}
                     .notification=${notification}
                     ?readonly=${true}>
-            </notification-form>
+            </or-notification-form>
         `;
     }
 
     protected _onCreateFormChanged(ev: Event) {
-        this._createForm = ev.target as NotificationForm;
+        this._createForm = ev.target as OrNotificationForm;
         const valid = !!this._createForm.getNotification();
         if (valid !== this._createFormValid) {
             this._createFormValid = valid;

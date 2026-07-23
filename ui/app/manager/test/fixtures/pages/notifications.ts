@@ -156,9 +156,9 @@ export class NotificationsPage implements BasePage {
 
     // --- Details dialog ----------------------------------------------------
 
-    /** The details dialog renders a read-only notification-form (reflected `readonly` attribute). */
+    /** The details dialog renders a read-only or-notification-form (reflected `readonly` attribute). */
     getDetailsForm(): Locator {
-        return this.page.locator("notification-form[readonly]");
+        return this.page.locator("or-notification-form[readonly]");
     }
 
     /**

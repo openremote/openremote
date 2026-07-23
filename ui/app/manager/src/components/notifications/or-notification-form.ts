@@ -50,19 +50,19 @@ interface TargetOption {
     value: string;
 }
 
-export class NotificationFormChangedEvent extends CustomEvent<void> {
-    static readonly NAME = "notification-form-changed";
+export class OrNotificationFormChangedEvent extends CustomEvent<void> {
+    static readonly NAME = "or-notification-form-changed";
 
     constructor() {
-        super(NotificationFormChangedEvent.NAME, {
+        super(OrNotificationFormChangedEvent.NAME, {
             bubbles: true,
             composed: true
         });
     }
 }
 
-@customElement("notification-form")
-export class NotificationForm extends LitElement {
+@customElement("or-notification-form")
+export class OrNotificationForm extends LitElement {
     static styles = css`
         ${unsafeCSS(globals)}
         :host {
@@ -220,7 +220,7 @@ export class NotificationForm extends LitElement {
         }
         // Notify listeners (e.g. the create dialog) so they can re-evaluate form validity
         if (!this.readonly) {
-            this.dispatchEvent(new NotificationFormChangedEvent());
+            this.dispatchEvent(new OrNotificationFormChangedEvent());
         }
     }
 
