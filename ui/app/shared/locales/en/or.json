@@ -1136,6 +1136,15 @@
       "push": "Push",
       "email": "Email"
     },
+    "targetTypes": {
+      "USER": "Users",
+      "ASSET": "Users linked to assets",
+      "REALM": "All users in realms"
+    },
+    "targetListLabel": {
+      "USER": "Recipients",
+      "REALM": "Recipients in realms"
+    },
     "target": "Recipient",
     "targetType": "Recipient type",
     "failedToCreateNotification": "Failed to send notification.",

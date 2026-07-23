@@ -1126,6 +1126,15 @@
       "push": "Push",
       "email": "E-mail"
     },
+    "targetTypes": {
+      "USER": "Gebruikers",
+      "ASSET": "Gebruikers gekoppeld aan assets",
+      "REALM": "Alle gebruikers in realms"
+    },
+    "targetListLabel": {
+      "USER": "Ontvangers",
+      "REALM": "Ontvangers in realms"
+    },
     "target": "Ontvanger",
     "targetType": "Ontvanger type",
     "failedToCreateNotification": "Notificatie versturen mislukt.",

@@ -474,14 +474,14 @@ export class OrNotificationForm extends OrElement {
 
         const allowedTargetTypes: SelectItem[] = [];
         if (manager.hasRole("read:assets") || manager.hasRole("read:admin")) {
-            allowedTargetTypes.push({label: i18next.t("asset_plural"), value: NotificationTargetType.ASSET});
+            allowedTargetTypes.push({label: i18next.t("notifications.targetTypes.ASSET"), value: NotificationTargetType.ASSET});
         }
         if (!manager.isRestrictedUser() && (manager.hasRole("read:users") || manager.hasRole("read:admin"))) {
-            allowedTargetTypes.unshift({label: i18next.t("user_plural"), value: NotificationTargetType.USER});
+            allowedTargetTypes.unshift({label: i18next.t("notifications.targetTypes.USER"), value: NotificationTargetType.USER});
         }
         // Realm targets only work for superusers
         if (manager.isSuperUser()) {
-            allowedTargetTypes.push({label: i18next.t("realm_plural"), value: NotificationTargetType.REALM});
+            allowedTargetTypes.push({label: i18next.t("notifications.targetTypes.REALM"), value: NotificationTargetType.REALM});
         }
 
         return html`
@@ -524,7 +524,7 @@ export class OrNotificationForm extends OrElement {
                                                 this._targets = [...ev.detail.value];
                                             }
                                         }}">
-                                    <or-translate slot="label" value="notifications.target"></or-translate>
+                                    <or-translate slot="label" value="${this._targetType === NotificationTargetType.REALM ? "notifications.targetListLabel.REALM" : "notifications.targetListLabel.USER"}"></or-translate>
                                     ${this._targetOptions
                                             .sort(Util.sortByString((option: TargetOption) => option.label))
                                             .map(option => html`

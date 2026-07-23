@@ -132,7 +132,7 @@ export class NotificationsPage implements BasePage {
         await this.pickOverlayOption(label);
     }
 
-    /** Choose the target type (e.g. "Assets", "Users", "Realms"). */
+    /** Choose the target type (e.g. "Users", "Users linked to assets", "All users in realms"). */
     async selectTargetType(label: string) {
         await this.getCreateForm().locator("#targetType").click();
         await this.pickOverlayOption(label);
