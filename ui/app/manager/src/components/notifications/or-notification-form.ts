@@ -42,6 +42,7 @@ import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-va
 import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import "@openremote/or-vaadin-components/or-vaadin-text-field";
 import "@openremote/or-vaadin-components/or-vaadin-text-area";
+import "@openremote/or-vaadin-components/or-vaadin-toggle";
 
 export type NotificationMessage = PushNotificationMessage | EmailNotificationMessage;
 
@@ -76,7 +77,8 @@ export class OrNotificationForm extends OrElement {
         or-vaadin-select,
         or-vaadin-checkbox-group,
         or-vaadin-text-field,
-        or-vaadin-text-area {
+        or-vaadin-text-area,
+        or-vaadin-toggle {
             width: 100%;
             margin-bottom: 16px;
         }
@@ -619,10 +621,21 @@ export class OrNotificationForm extends OrElement {
                         value="${message.action?.url || ''}"
                         @change="${(ev: Event) => {
                             const url = (ev.currentTarget as HTMLInputElement).value;
-                            this._updateMessage({action: url ? {url, openInBrowser: true} : undefined});
+                            this._updateMessage({action: url ? {...message.action, url} : undefined});
                         }}">
                     <or-translate slot="label" value="openWebsiteUrl"></or-translate>
                 </or-vaadin-text-field>
+
+                <or-vaadin-toggle
+                        id="openInBrowser"
+                        ?disabled="${inputDisabled}"
+                        ?checked="${message.action?.openInBrowser ?? false}"
+                        @change="${(ev: Event) => {
+                            const openInBrowser = (ev.currentTarget as HTMLInputElement).checked;
+                            this._updateMessage({action: {...message.action, openInBrowser}});
+                        }}">
+                    <or-translate slot="label" value="openInBrowser"></or-translate>
+                </or-vaadin-toggle>
 
                 <or-vaadin-text-field
                         id="openButtonText"
