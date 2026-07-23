@@ -479,6 +479,11 @@ export class PageNotifications extends Page<AppStateKeyed> {
                             this._loadData();
                         }
                     }}"
+                    ${dialogHeaderRenderer(() => html`
+                        <or-vaadin-button theme="tertiary" @click="${() => this._cancelCreateDialog()}">
+                            <or-icon icon="mdi:close"></or-icon>
+                        </or-vaadin-button>
+                    `, [])}
                     ${dialogRenderer(() => this._renderCreateForm(), [this.realm])}
                     ${dialogFooterRenderer(() => html`
                         <or-vaadin-button theme="tertiary" @click="${() => this._cancelCreateDialog()}">
