@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {css, html, LitElement, unsafeCSS} from "lit";
-import {globals} from "@openremote/theme";
+import {css, html} from "lit";
+import {OrElement} from "@openremote/or-element";
 import {customElement, property, state} from "lit/decorators.js";
 import {when} from "lit/directives/when.js";
 import { i18next } from "@openremote/or-translate";
@@ -62,9 +62,8 @@ export class OrNotificationFormChangedEvent extends CustomEvent<void> {
 }
 
 @customElement("or-notification-form")
-export class OrNotificationForm extends LitElement {
+export class OrNotificationForm extends OrElement {
     static styles = css`
-        ${unsafeCSS(globals)}
         :host {
             height: 76vh;
             display: block;

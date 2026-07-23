@@ -10,6 +10,7 @@
   "references": [
     { "path": "../model" },
     { "path": "../core" },
+    { "path": "../or-element" },
     { "path": "../or-translate" },
     { "path": "../or-vaadin-components" }
   ]

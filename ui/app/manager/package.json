@@ -41,6 +41,7 @@
     "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-dashboard-builder": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-json-forms": "workspace:*",
     "@openremote/or-log-viewer": "workspace:*",

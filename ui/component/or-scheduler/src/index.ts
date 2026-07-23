@@ -30,8 +30,8 @@ import "@openremote/or-vaadin-components/or-vaadin-radio-group";
 import "@openremote/or-vaadin-components/or-vaadin-select";
 import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-time-picker";
-import { css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
-import { globals } from "@openremote/theme";
+import { css, html, PropertyValues, TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { Util } from "@openremote/core";
@@ -105,10 +105,9 @@ declare global {
 }
 
 @customElement("or-scheduler")
-export class OrScheduler extends translate(i18next)(LitElement) {
+export class OrScheduler extends translate(i18next)(OrElement) {
 
     static styles = css`
-        ${unsafeCSS(globals)}
         or-vaadin-dialog::part(overlay) {
             max-width: 600px;
         }

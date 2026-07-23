@@ -1,0 +1,26 @@
+{
+    "name": "@openremote/or-element",
+    "version": "1.28.0-snapshot",
+    "description": "Base element and shared shadow-DOM styling for OpenRemote UI components",
+    "main": "lib/index.js",
+    "module": "lib/index.js",
+    "exports": {
+        ".": "./lib/index.js",
+        "./*": "./lib/*.js"
+    },
+    "types": "lib/index.d.ts",
+    "scripts": {
+        "build": "npx tsc -b",
+        "test": "npx tsc -b && npx playwright test",
+        "prepack": "npx tsc -b"
+    },
+    "author": "OpenRemote",
+    "license": "AGPL-3.0-or-later",
+    "repository": "https://github.com/openremote/openremote",
+    "dependencies": {
+        "lit": "^3.3.1"
+    },
+    "publishConfig": {
+        "access": "public"
+    }
+}

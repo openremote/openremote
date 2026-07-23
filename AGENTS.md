@@ -21,6 +21,14 @@ Running `./gradlew clean` deletes the root `tmp/` directory that is mounted into
 
 `ui/component/model/src/model.ts` is generated from the Java backend by typescript-generator. Do not edit it by hand. When a TypeScript type mirrors a backend class, import it from `@openremote/model` instead of redeclaring a local interface. Regenerate it from the backend rather than patching the output.
 
+### Base element
+
+Own Lit components extend `OrElement` from `@openremote/or-element` instead of `LitElement` (also through mixins, e.g. `translate(i18next)(OrElement)`). It applies the shared shadow-DOM styling automatically. Vaadin wrappers are exempt; they extend their Vaadin base and are themed via Lumo.
+
+### Adding a new component package
+
+New packages under `ui/component/` are picked up automatically by the yarn workspace and by Gradle (any dir with a `build.gradle`). The rsbuild apps are not automatic: add the package to the `@openremote/*` alias maps in `ui/app/manager/rsbuild.config.ts` and `ui/app/storybook/rsbuild.config.ts`, which resolve workspace packages to their `src` dirs. A missing entry fails the build with "Module not found" for any file importing the package.
+
 ### Adding a new Vaadin component
 
 Vaadin-based components live in `ui/component/or-vaadin-components/src/` as thin wrappers that extend a Vaadin class and re-register it under an `or-vaadin-<name>` tag, e.g. `export class OrVaadinX extends (X as new () => X & LitElement)` with `@customElement("or-vaadin-x")`. Keep all `@vaadin/*` dependency versions aligned.
@@ -85,3 +93,4 @@ Component tests use Playwright component testing (`@sand4rt/experimental-ct-web`
 - **The default slot must be an array of single-element strings.** The CT runner builds each slot via `createContextualFragment(str).firstChild`, so a single string containing multiple elements silently keeps only the first; pass `slots: { default: ["<a>…</a>", "<b>…</b>"] }`.
 - **Vaadin's `theme` is attribute-only.** `ThemePropertyMixin` derives a read-only `_theme` from the `theme` *attribute*; there is no writable reflecting `theme` property. So `mount(..., { props: { theme: "vertical" } })` sets an ignored JS property and the `:host([theme~='vertical'])` styles never apply (e.g. a "vertical" checkbox-group stays horizontal). Set it as an attribute instead: `await component.evaluate((el) => el.setAttribute("theme", "vertical"))`. (In Storybook/Lit templates `theme="vertical"` is already a real attribute, so it works there.)
 - The `on` handler type is `Record<string, Function>`, so typed handler params are fine.
+- **Mounted component sources must be JavaScript.** The CT bundle compiles `.ts` against `ui/test/tsconfig.json` (`rootDir` `ui/test`), so a TS component file anywhere else fails with TS6059. Mount components from the package's built lib, or write test-only fixture elements as plain `.js` (no decorators; register with `customElements.define`).

@@ -36,5 +36,3 @@ declare module "*.css" {
 
 declare const theme: string;
 export default theme;
-
-export const globals: string;
