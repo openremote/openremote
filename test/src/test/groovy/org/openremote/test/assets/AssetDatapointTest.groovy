@@ -1,5 +1,6 @@
 package org.openremote.test.assets
 
+import jakarta.ws.rs.WebApplicationException
 import io.netty.channel.ChannelHandler
 import io.netty.handler.codec.string.StringDecoder
 import io.netty.handler.codec.string.StringEncoder
@@ -16,8 +17,10 @@ import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.datapoint.AssetPredictedDatapointEvent
 import org.openremote.model.datapoint.AssetPredictedDatapointResource
@@ -44,9 +47,9 @@ import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 import static java.util.concurrent.TimeUnit.*
-import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
+import static org.openremote.model.value.MetaItemType.ACCESS_PUBLIC_WRITE
 import static org.openremote.setup.integration.ManagerTestSetup.thingLightToggleAttributeName
 import static spock.util.matcher.HamcrestMatchers.closeTo
 
@@ -109,7 +112,6 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         when: "the demo agent and thing have been deployed"
-        def datapointPurgeDays = OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def agentService = container.getService(AgentService.class)
@@ -129,7 +131,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
         // Resteasy client has issues with @Suspended annotation so not used for now
         //def datapointResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetDatapointResource.class)
         def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetPredictedDatapointResource.class)
@@ -353,107 +355,6 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             assert thing.getAttribute(thingLightToggleAttributeName).flatMap {it.getTimestamp()}.orElse(0) == getClockTimeOf(container)
         }
 
-        // ------------------------------------
-        // Test purging of data points
-        // ------------------------------------
-
-        when: "time moves forward by more than purge days"
-        advancePseudoClock(datapointPurgeDays + 1, DAYS, container)
-
-        and: "the power sensor with default max age receives a new value"
-        def datapoint4ExpectedTimestamp = getClockTimeOf(container)
-        simulatorProtocol.updateSensor(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"), 17.5d)
-
-        and: "the toggle sensor with a custom max age of 7 days receives a new value"
-        simulatorProtocol.updateSensor(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName), true)
-
-        then: "the datapoints should be stored"
-        conditions.eventually {
-            //def powerDatapoints = datapointResource.getDatapoints(null, managerTestSetup.thingId, "light1PowerConsumption", null) as List
-            //def toggleDatapoints = datapointResource.getDatapoints(null, managerTestSetup.thingId, thingLightToggleAttributeName, null) as List
-            def powerDatapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
-            def toggleDatapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
-
-            assert powerDatapoints.size() >= 6
-            assert powerDatapoints.any {it.timestamp == datapoint4ExpectedTimestamp && it.value == 17.5 }
-
-            assert toggleDatapoints.size() >= 4
-            assert toggleDatapoints.any {it.timestamp == datapoint4ExpectedTimestamp && it.value}
-        }
-
-        when: "the clock advances to the next days purge routine execution time"
-        advancePseudoClock(assetDatapointService.getFirstPurgeMillis(Instant.ofEpochMilli(getClockTimeOf(container))), TimeUnit.MILLISECONDS, container)
-
-        and: "the purge routine runs"
-        assetDatapointService.purgeDataPoints()
-
-        then: "data points older than purge days should be purged for the power sensor"
-        conditions.eventually {
-            //def datapoints = datapointResource.getDatapoints(null, managerTestSetup.thingId, "light1PowerConsumption", null) as List
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
-            assert datapoints.size() == 1
-            assert ValueUtil.getValue(datapoints.get(0).value, Double.class).orElse(null) == 17.5d
-            assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
-        }
-
-        and: "no data points should have been purged for the toggle sensor"
-        conditions.eventually {
-            //def datapoints = datapointResource.getDatapoints(null, managerTestSetup.thingId, thingLightToggleAttributeName, null) as List
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
-            assert datapoints.size() >= 4
-            assert ValueUtil.getBoolean(datapoints.get(0).value).orElse(false)
-            assert datapoints.any {it.timestamp == datapoint4ExpectedTimestamp && it.value}
-        }
-
-        when: "the clock advances 3 times the purge duration"
-        advancePseudoClock(3 * datapointPurgeDays, DAYS, container)
-
-        and: "the purge routine runs"
-        assetDatapointService.purgeDataPoints()
-
-        then: "all data points should be purged for power sensor"
-        conditions.eventually {
-            //def datapoints = datapointResource.getDatapoints(null, managerTestSetup.thingId, "light1PowerConsumption", null) as List
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
-            assert datapoints.isEmpty()
-        }
-
-        and: "no data points should have been purged for the toggle sensor"
-        conditions.eventually {
-            //def datapoints = datapointResource.getDatapoints(null, managerTestSetup.thingId, thingLightToggleAttributeName, null) as List
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
-            assert datapoints.size() >= 4
-            assert datapoints.any {it.timestamp == datapoint4ExpectedTimestamp && it.value}
-        }
-
-        when: "the clock advances 3 times the purge duration"
-        advancePseudoClock(3 * datapointPurgeDays, DAYS, container)
-
-        and: "the purge routine runs"
-        assetDatapointService.purgeDataPoints()
-
-        then: "data points older than 7 days should have been purged for the toggle sensor"
-        conditions.eventually {
-            //def datapoints = datapointResource.getDatapoints(null, managerTestSetup.thingId, thingLightToggleAttributeName, null) as List
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
-            assert datapoints.size() == 1
-            assert ValueUtil.getBoolean(datapoints.get(0).value).orElse(false)
-            assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
-        }
-
-        when: "the clock advances by the purge duration"
-        advancePseudoClock(datapointPurgeDays, DAYS, container)
-
-        and: "the purge routine runs"
-        assetDatapointService.purgeDataPoints()
-
-        then: "all data points should have been purged for the toggle sensor"
-        conditions.eventually {
-            //def datapoints = datapointResource.getDatapoints(null, managerTestSetup.thingId, thingLightToggleAttributeName, null) as List
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
-            assert datapoints.isEmpty()
-        }
-
         when: "we subscribe to predicted data points events"
         List<AssetPredictedDatapointEvent> predictedEvents = new CopyOnWriteArrayList<>()
         Consumer<AssetPredictedDatapointEvent> predictedEventConsumer = { event ->
@@ -521,6 +422,109 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         assert predictedData.count {it.value == false} == 2
     }
 
+    def "Test anonymous predicted datapoint writes are allowed for public write attributes"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+
+        and: "the manager container and test setup are available"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+
+        and: "a public-write-only attribute exists on a public asset"
+        def attributeName = "predictedPublicWrite"
+        def apartment1 = assetStorageService.find(managerTestSetup.apartment1Id, true)
+        apartment1.getAttributes().addOrReplace(
+            new Attribute<>(attributeName, ValueType.NUMBER, 0d)
+                .addMeta(new MetaItem<>(ACCESS_PUBLIC_WRITE, true))
+        )
+        assetStorageService.merge(apartment1)
+
+        and: "an anonymous predicted datapoint API client"
+        def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(AssetPredictedDatapointResource.class)
+
+        when: "an anonymous predicted datapoint write is made"
+        predictedDatapointResource.writePredictedDatapoints(
+            null,
+            managerTestSetup.apartment1Id,
+            attributeName,
+            [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 12d)] as ValueDatapoint<?>[]
+        )
+
+        then: "the predicted datapoint should be stored"
+        conditions.eventually {
+            def predictedData = assetPredictedDatapointService.getDatapoints(new AttributeRef(managerTestSetup.apartment1Id, attributeName))
+            assert predictedData.size() == 1
+            assert predictedData[0].value == 12d
+        }
+    }
+
+    def "Test predicted datapoint writes are denied without WRITE_ATTRIBUTES role"() {
+        given: "the manager container and test setup are available"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "a building user with READ_ASSETS but without WRITE_ATTRIBUTES"
+        def accessToken = authenticate(
+            container,
+            keycloakTestSetup.realmBuilding.name,
+            KEYCLOAK_CLIENT_ID,
+            "testuser2",
+            "testuser2"
+        )
+        def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetPredictedDatapointResource.class)
+
+        when: "the user writes predicted datapoints"
+        predictedDatapointResource.writePredictedDatapoints(
+            null,
+            managerTestSetup.apartment1LivingroomId,
+            "targetTemperature",
+            [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 19d)] as ValueDatapoint<?>[]
+        )
+
+        then: "access should be forbidden"
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+    }
+
+    def "Test restricted predicted datapoint writes require restricted write meta"() {
+        given: "the manager container and test setup are available"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "a restricted user with linked assets"
+        def accessToken = authenticate(
+            container,
+            keycloakTestSetup.realmBuilding.name,
+            KEYCLOAK_CLIENT_ID,
+            "testuser3",
+            "testuser3"
+        )
+        def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetPredictedDatapointResource.class)
+
+        when: "the restricted user writes a predicted datapoint for an attribute without restricted write access"
+        predictedDatapointResource.writePredictedDatapoints(
+            null,
+            managerTestSetup.apartment1Id,
+            BuildingAsset.STREET.name,
+            [new ValueDatapoint<>(getClockTimeOf(container) + 60000, "should fail")] as ValueDatapoint<?>[]
+        )
+
+        then: "access should be forbidden"
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+    }
+
     def "Test predicted datapoint change events are received via websocket API"() {
 
         given: "expected conditions"
@@ -537,7 +541,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-        ).token
+        )
         def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetPredictedDatapointResource.class)
 
         and: "a websocket client authenticated in the same realm"
@@ -709,15 +713,28 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         and: "the manager container and setup are available"
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def identityService = container.getService(ManagerIdentityService.class)
 
-        and: "a building realm predicted datapoint API client"
+        and: "the limited building user has attribute write permission for producing predicted datapoint events"
+        identityService.getIdentityProvider().updateUserClientRoles(
+            keycloakTestSetup.realmBuilding.name,
+            keycloakTestSetup.testuser2Id,
+            KEYCLOAK_CLIENT_ID,
+            ClientRole.WRITE_USER.value,
+            ClientRole.READ_MAP.value,
+            ClientRole.READ_ASSETS.value,
+            ClientRole.WRITE_ATTRIBUTES.value
+        )
+
+        and: "a limited building realm predicted datapoint API client"
         def accessToken = authenticate(
             container,
             "building",
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "testuser2"
-        ).token
+        )
         def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), "building", accessToken).proxy(AssetPredictedDatapointResource.class)
 
         and: "a restricted websocket client in the same realm"
@@ -772,7 +789,15 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             !(it instanceof TriggeredEventSubscription) || it.subscriptionId != "predicted-restricted-unlinked"
         }
 
-        cleanup: "the websocket client is disconnected"
+        cleanup: "the websocket client is disconnected and original roles are restored"
+        identityService.getIdentityProvider().updateUserClientRoles(
+            keycloakTestSetup.realmBuilding.name,
+            keycloakTestSetup.testuser2Id,
+            KEYCLOAK_CLIENT_ID,
+            ClientRole.WRITE_USER.value,
+            ClientRole.READ_MAP.value,
+            ClientRole.READ_ASSETS.value
+        )
         if (client != null) {
             client.disconnect()
         }
@@ -787,20 +812,33 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def identityService = container.getService(ManagerIdentityService.class)
 
         and: "a non-restricted attribute exists on an asset linked to the restricted user"
         def apartment1 = assetStorageService.find(managerTestSetup.apartment1Id, true)
         apartment1.getAttributes().addOrReplace(new Attribute<>("predictedNonRestricted", ValueType.NUMBER, 0d))
         assetStorageService.merge(apartment1)
 
-        and: "a building realm predicted datapoint API client"
+        and: "the limited building user has attribute write permission for producing predicted datapoint events"
+        identityService.getIdentityProvider().updateUserClientRoles(
+            keycloakTestSetup.realmBuilding.name,
+            keycloakTestSetup.testuser2Id,
+            KEYCLOAK_CLIENT_ID,
+            ClientRole.WRITE_USER.value,
+            ClientRole.READ_MAP.value,
+            ClientRole.READ_ASSETS.value,
+            ClientRole.WRITE_ATTRIBUTES.value
+        )
+
+        and: "a limited building realm predicted datapoint API client"
         def accessToken = authenticate(
             container,
             "building",
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "testuser2"
-        ).token
+        )
         def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), "building", accessToken).proxy(AssetPredictedDatapointResource.class)
 
         and: "a restricted websocket client in the same realm"
@@ -855,7 +893,15 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             !(it instanceof TriggeredEventSubscription) || it.subscriptionId != "predicted-restricted-attr"
         }
 
-        cleanup: "the websocket client is disconnected"
+        cleanup: "the websocket client is disconnected and original roles are restored"
+        identityService.getIdentityProvider().updateUserClientRoles(
+            keycloakTestSetup.realmBuilding.name,
+            keycloakTestSetup.testuser2Id,
+            KEYCLOAK_CLIENT_ID,
+            ClientRole.WRITE_USER.value,
+            ClientRole.READ_MAP.value,
+            ClientRole.READ_ASSETS.value
+        )
         if (client != null) {
             client.disconnect()
         }

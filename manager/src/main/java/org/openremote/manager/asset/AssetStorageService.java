@@ -888,6 +888,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     }
 
                     assets.sort(Comparator.comparingInt((Asset<?> asset) -> asset.getPath() == null ? 0 : asset.getPath().length).reversed());
+
+                    // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
+                    // and the minimum supported TimescaleDB version includes that fix.
+                    em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
+
                     assets.forEach(em::remove);
                     em.flush();
                 });
@@ -992,6 +997,26 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } catch (NoResultException ex) {
                 return false;
             }
+        });
+    }
+
+    /**
+     * Returns the realm for each asset ID that exists.
+     */
+    public Map<String, String> getAssetRealms(Collection<String> assetIds) {
+        if (assetIds == null || assetIds.isEmpty()) {
+            return Map.of();
+        }
+        return persistenceService.doReturningTransaction(entityManager -> {
+            List<Object[]> result = entityManager.createQuery("""
+                    select a.id, a.realm from Asset a
+                    where a.id in :assetIds
+                    """, Object[].class)
+                .setParameter("assetIds", assetIds)
+                .getResultList();
+            Map<String, String> realms = new HashMap<>();
+            result.forEach(row -> realms.put((String) row[0], (String) row[1]));
+            return realms;
         });
     }
 

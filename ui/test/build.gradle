@@ -1,0 +1,17 @@
+tasks.register("clean", Delete) {
+    delete "tmp"
+}
+
+tasks.register("installBrowsers", Exec) {
+    mustRunAfter ":deployment:installDist"
+    commandLine npmCommand("npx"), "playwright", "install", "chromium"
+}
+
+def yarnInstallRequested = gradle.startParameter.taskNames.any {
+    it == "yarnInstall" || it == ":yarnInstall" || it.endsWith(":yarnInstall")
+}
+
+tasks.register('installTestDeps', Exec) {
+    onlyIf { !yarnInstallRequested }
+    commandLine npmCommand("yarn"), "workspaces", "focus", "@openremote/test", "@openremote/model", "@openremote/rest", "@openremote/core"
+}

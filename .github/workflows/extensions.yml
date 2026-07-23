@@ -1,0 +1,70 @@
+name: Extensions
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+      is_release:
+        type: string
+    secrets:
+      GH_EXTENSIONS_TOKEN:
+        required: true
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  check-artifacts:
+    name: Check if artifacts are available
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: |
+          chmod +x .ci_cd/check_artifacts.sh
+          .ci_cd/check_artifacts.sh "${{ inputs.version }}" "${{ inputs.is_release }}"
+
+  update-openremote-version:
+    name: Update OpenRemote version in gradle/libs.versions.toml
+    runs-on: ubuntu-latest
+    needs: check-artifacts
+    if: ${{ github.event_name != 'pull_request' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: openremote/extensions
+          path: extensions
+          ref: main
+          sparse-checkout: gradle/libs.versions.toml
+      - run: |
+          CURRENT=$(grep '^openremote = ' extensions/gradle/libs.versions.toml | sed -E 's/^openremote = "([^\"]+)".*/\1/' | head -n 1)
+          if [ "$CURRENT" != "$VERSION" ]; then
+            sed -i "s/^openremote = .*/openremote = \"$VERSION\"/" extensions/gradle/libs.versions.toml
+            git -C extensions add gradle/libs.versions.toml
+            git -C extensions -c user.name="github-actions[bot]" -c user.email="github-actions[bot]@users.noreply.github.com" commit -m "Update OpenRemote version to $VERSION [skip ci]"
+            git -C extensions push
+          else
+            echo "Version unchanged, skipping commit."
+          fi
+        env:
+          VERSION: ${{ inputs.version }}
+
+  create-extensions-release:
+    name: Create release
+    runs-on: ubuntu-latest
+    needs: check-artifacts
+    if: ${{ inputs.is_release == 'true' }}
+    steps:
+      - run: gh release create "${{ inputs.version }}" -R openremote/extensions --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GH_EXTENSIONS_TOKEN }}
+
+  trigger-extensions-ci-cd:
+    name: Run CI/CD
+    runs-on: ubuntu-latest
+    needs: check-artifacts
+    steps:
+      - run: gh workflow run ci_cd.yml -R openremote/extensions -f version="${{ inputs.version }}" -f is_release="${{ inputs.is_release }}"
+        env:
+          GH_TOKEN: ${{ secrets.GH_EXTENSIONS_TOKEN }}

@@ -12,6 +12,10 @@ function getStandardModuleRules() {
                 type: "asset/source"
             },
             {
+                test: /\.wasm$/,
+                type: "asset/resource"
+            },
+            {
                 test: /\.css$/, //
                 exclude: /(maplibre|@material|gridstack|@mdi).*\.css$/,
                 use: [
@@ -83,6 +87,9 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
                 "vm": false,
                 "querystring": require.resolve("querystring-es3")
             }
+        },
+        experiments: {
+            asyncWebAssembly: true
         }
     };
 
@@ -104,7 +111,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
         }),
         // Remove any unused locales
         new MomentLocalesPlugin({
-          localesToKeep: ['ar', 'zh-cn', 'de', 'en', 'es', 'fr', 'it', 'nl', 'pt', 'ro', 'uk'],
+          localesToKeep: ['ar', 'zh-cn', 'de', 'en', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ro', 'uk'],
         }),
     ];
 

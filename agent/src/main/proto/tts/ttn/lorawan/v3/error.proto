@@ -1,0 +1,51 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
+import "thethings/flags/annotations.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// Error details that are communicated over gRPC (and HTTP) APIs.
+// The messages (for translation) are stored as "error:<namespace>:<name>".
+message ErrorDetails {
+  option (thethings.flags.message) = {
+    select: true,
+    set: false
+  };
+  // Namespace of the error (typically the package name in The Things Stack).
+  string namespace = 1;
+  // Name of the error.
+  string name = 2;
+  // The default (fallback) message format that should be used for the error.
+  // This is also used if the client does not have a translation for the error.
+  string message_format = 3;
+  // Attributes that should be filled into the message format. Any extra attributes
+  // can be displayed as error details.
+  google.protobuf.Struct attributes = 4;
+  // The correlation ID of the error can be used to correlate the error to stack
+  // traces the network may (or may not) store about recent errors.
+  string correlation_id = 5;
+  // The error that caused this error.
+  ErrorDetails cause = 6 [(thethings.flags.field) = {select: false}];
+  // The status code of the error.
+  uint32 code = 7;
+  // The details of the error.
+  repeated google.protobuf.Any details = 8;
+}

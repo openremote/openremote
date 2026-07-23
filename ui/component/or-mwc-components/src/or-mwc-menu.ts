@@ -74,6 +74,9 @@ export function positionMenuAtElement<T extends OrMwcMenu>(
     return menu;
 }
 
+/**
+ * @deprecated Please use the <or-vaadin-*> components instead.
+ */
 export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (ListItem | ListItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false, translateValues = true, midHeight = false, fullWidth = false, menuId = "menu", fixedToHost = false): TemplateResult {
     let menuRef: OrMwcMenu | null = null;   // Reference to the menu
 

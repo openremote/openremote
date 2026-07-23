@@ -79,7 +79,7 @@ public class RulesFacts extends Facts implements RuleListener {
         this.loggingContext = loggingContext;
         this.LOG = logger;
 
-        super.put(ASSET_STATES, new ArrayDeque<AttributeInfo>(INITIAL_CAPACITY));
+        super.put(ASSET_STATES, new HashSet<>(INITIAL_CAPACITY));
         super.put(EXECUTION_VARS, new HashMap<>());
         super.put(ANONYMOUS_FACTS, new ArrayDeque<>(INITIAL_CAPACITY));
     }

@@ -108,17 +108,16 @@ export class OrConfMapGlobal extends LitElement {
                         <or-translate value="configuration.global.mapTileServerDescription"></or-translate><br>
                         <or-translate class="note" value="configuration.global.mapTileServerNote"></or-translate>
                     </span>
-                    <or-mwc-input class="input"
-                        .value="${isCustom ? this.config.sources?.vector_tiles?.tiles?.[0] : undefined}"
-                        .type="${InputType.URL}"
-                        .label="${i18next.t("configuration.global.mapTileServerPlaceholder")}"
-                        placeholder="https://api.example.com/tileset/{z}/{x}/{y}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                            this.config.sources.vector_tiles.tiles = e.detail.value ? [e.detail.value] : undefined;
-                            this.config.sources.vector_tiles.custom = !!e.detail.value;
-                            this.notifyConfigChange(this.config);
-                        }}"
-                    ></or-mwc-input>
+                    <or-vaadin-text-field class="input" type="url" pattern="^[a-zA-Z][a-zA-Z0-9+.-]*://.*$"
+                                          value=${isCustom ? this.config.sources?.vector_tiles?.tiles?.[0] : undefined}
+                                          placeholder="https://api.example.com/tileset/{z}/{x}/{y}"
+                                          @change=${(ev: Event) => {
+                                              const newValue = (ev.currentTarget as HTMLInputElement).value;
+                                              this.config.sources.vector_tiles.tiles = newValue ? [newValue] : undefined;
+                                              this.config.sources.vector_tiles.custom = !!newValue;
+                                              this.notifyConfigChange(this.config);
+                                          }}>
+                    </or-vaadin-text-field>
                 </div>
                 <div class="map-tile-upload-group">
                     <div class="subheader"><or-translate value="configuration.global.mapTiles"></or-translate></div>
@@ -152,17 +151,15 @@ export class OrConfMapGlobal extends LitElement {
                         <or-translate class="note" value="configuration.global.mapStyleJsonUrlNote"></or-translate>
                     </span>
                     <div style="display: flex; height: 56px; align-items: center">
-                        <or-mwc-input class="input"
-                            .value="${this.config.override}"
-                            .type="${InputType.URL}"
-                            .label="${i18next.t("configuration.global.mapStyleJsonUrlPlaceholder")}"
-                            placeholder="https://api.example.com/tileset/style.json"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                this.config.override = e.detail.value || undefined
-                                this.notifyConfigChange(this.config)
-                                this.requestUpdate();
-                            }}"
-                        ></or-mwc-input>
+                        <or-vaadin-text-field class="input" type="url" pattern="^[a-zA-Z][a-zA-Z0-9+.-]*://.*$"
+                                              value=${this.config.override}
+                                              placeholder="https://api.example.com/tileset/style.json"
+                                              @change=${(ev: Event) => {
+                                                  this.config.override = (ev.currentTarget as HTMLInputElement).value || undefined
+                                                  this.notifyConfigChange(this.config)
+                                                  this.requestUpdate();
+                                              }}>
+                        </or-vaadin-text-field>
                     </div>
                 </div>
                 <div class="map-style-layers-group">
@@ -172,10 +169,11 @@ export class OrConfMapGlobal extends LitElement {
                         <or-translate class="note" value="configuration.global.mapImportStyleNote"></or-translate>
                     </span>
                     <div style="display: flex; gap: 12px; align-items: center">
-                        <or-mwc-input class="input fit-content" type="button" outlined icon="import" 
-                            .label="${i18next.t("configuration.global.import")}"
-                            .disabled="${!this.config.override}" @or-mwc-input-changed="${this.importMapSettings}"
-                        ></or-mwc-input>
+                        <or-vaadin-button class="fit-content" ?disabled=${!this.config.override}
+                                          @click=${() => this.importMapSettings()}>
+                            <or-icon slot="prefix" icon="import"></or-icon>
+                            <or-translate value="configuration.global.import"></or-translate>
+                        </or-vaadin-button>
                         <or-conf-json class="input fit-content hide-mobile" .heading="${i18next.t("configuration.global.mapLayers")}"
                             .config="${hasExternalSource ? this.config.layers.filter(({ id }) => !id.startsWith("or:")) : this.config.layers}"
                             @saveLocalConfig="${(ev: CustomEvent) => {
@@ -194,10 +192,10 @@ export class OrConfMapGlobal extends LitElement {
                         }}"
                         ></or-conf-json>
                         ${when(hasExternalSource, () => html`
-                            <or-mwc-input class="input fit-content" outlined type="button" icon="undo"
-                                .label="${i18next.t("configuration.global.reset")}"
-                                @or-mwc-input-changed="${this.resetMapSettings}"
-                            ></or-mwc-input>
+                            <or-vaadin-button class="fit-content" @click=${() => this.resetMapSettings()}>
+                                <or-icon slot="prefix" icon="undo"></or-icon>
+                                <or-translate value="configuration.global.reset"></or-translate>
+                            </or-vaadin-button>
                         `)}
                         </div>
                 </div>

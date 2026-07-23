@@ -98,6 +98,27 @@ const VaadinSuperclassParserPlugin = {
     }
 }
 
+/**
+ * Custom plugin that we wrote ourselves, that marks underscore-prefixed members as
+ * protected/private (the Vaadin naming convention), since the inherited Vaadin code
+ * carries no privacy metadata. Consumers such as the Storybook helpers rely on the
+ * privacy field to skip internals.
+ */
+const VaadinPrivacyPlugin = {
+    name: 'vaadin-privacy',
+    packageLinkPhase({customElementsManifest}) {
+        for (const module of customElementsManifest.modules ?? []) {
+            for (const declaration of module.declarations ?? []) {
+                for (const member of declaration.members ?? []) {
+                    if (!member.privacy && member.name.startsWith('_')) {
+                        member.privacy = member.name.startsWith('__') ? 'private' : 'protected';
+                    }
+                }
+            }
+        }
+    }
+}
+
 /* -------------------------------- */
 
 // Retrieve path to the Vaadin NPM package
@@ -111,6 +132,7 @@ export default {
         ...baseConfig.plugins,
         VaadinSuperclassParserPlugin, // Resolve conflict in package names
         cemInheritancePlugin(), // Inject the analysis of the inherited Vaadin code
-        VaadinJSDocParserPlugin // Inject JSDoc of the inherited Vaadin code
+        VaadinJSDocParserPlugin, // Inject JSDoc of the inherited Vaadin code
+        VaadinPrivacyPlugin // Mark inherited underscore members as non-public
     ]
 }

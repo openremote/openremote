@@ -25,7 +25,6 @@ import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import "@openremote/or-vaadin-components/or-vaadin-date-picker";
 import "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import "@openremote/or-vaadin-components/or-vaadin-dialog";
-import "@openremote/or-vaadin-components/or-vaadin-icon";
 import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import "@openremote/or-vaadin-components/or-vaadin-radio-group";
 import "@openremote/or-vaadin-components/or-vaadin-select";
@@ -437,7 +436,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected _getDialogHeader(): TemplateResult {
         return html`
             <vaadin-button theme="tertiary" @click="${this._onClose}">
-                <vaadin-icon icon="lumo:cross"></vaadin-icon>
+                <or-icon icon="mdi:close"></or-icon>
             </vaadin-button>
         `;
     }

@@ -1,0 +1,81 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/duration.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/keys.proto";
+import "ttn/lorawan/v3/lorawan.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message JoinRequest {
+  bytes raw_payload = 1 [(validate.rules).bytes.len = 23];
+  Message payload = 2;
+  bytes dev_addr = 3 [
+    (validate.rules).bytes = {
+      len: 4,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal4Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"2600ABCD\""
+    }
+  ];
+  MACVersion selected_mac_version = 4;
+  bytes net_id = 5 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"000013\""
+    }
+  ];
+  DLSettings downlink_settings = 6 [(validate.rules).message.required = true];
+  RxDelay rx_delay = 7 [(validate.rules).enum.defined_only = true];
+  // Optional CFList.
+  CFList cf_list = 8;
+  reserved 9; // Reserved for CFListType.
+  repeated string correlation_ids = 10 [(validate.rules).repeated.items.string.max_len = 100];
+
+  // Consumed airtime for the transmission of the join request. Calculated by Network Server using the RawPayload size and the transmission settings.
+  google.protobuf.Duration consumed_airtime = 11;
+}
+
+message JoinResponse {
+  bytes raw_payload = 1 [(validate.rules).bytes = {
+    min_len: 17,
+    max_len: 33
+  }];
+  SessionKeys session_keys = 2 [(validate.rules).message.required = true];
+  google.protobuf.Duration lifetime = 3;
+  repeated string correlation_ids = 4 [(validate.rules).repeated.items.string.max_len = 100];
+}

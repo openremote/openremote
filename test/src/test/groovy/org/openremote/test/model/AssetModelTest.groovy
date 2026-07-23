@@ -108,7 +108,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
         stopPseudoClock()
 
         and: "the asset resource"
@@ -128,7 +128,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
         then: "a constraint violation exception should be thrown"
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
         def report = ex.response.readEntity(ViolationReport)
         report.propertyViolations.size() == 1
         report.propertyViolations.get(0).path == "attributes[positiveInt].value"
@@ -247,7 +250,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
         then: "a constraint violation exception should be thrown"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "the report is extracted"
         report = ex.response.readEntity(ViolationReport)
@@ -360,7 +366,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
         then: "a constraint violation exception should be thrown"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "the report is extracted"
         report = ex.response.readEntity(ViolationReport)

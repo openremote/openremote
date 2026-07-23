@@ -32,6 +32,7 @@ import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 
 import static org.openremote.model.util.MapAccess.getString
@@ -45,10 +46,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
     def "Check push notification functionality"() {
 
-        List<String> notificationIds = []
-        List<Notification.TargetType> notificationTargetTypes = []
-        List<String> notificationTargetIds = []
-        List<AbstractNotificationMessage> notificationMessages = []
+        List<String> notificationIds = new CopyOnWriteArrayList<>()
+        List<Notification.TargetType> notificationTargetTypes = new CopyOnWriteArrayList<>()
+        List<String> notificationTargetIds = new CopyOnWriteArrayList<>()
+        List<AbstractNotificationMessage> notificationMessages = new CopyOnWriteArrayList<>()
 
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
@@ -90,21 +91,21 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
         def testuser2AccessToken = authenticate(
                 container,
                 realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser2",
                 "testuser2"
-        ).token
+        )
         def testuser3AccessToken = authenticate(
                 container,
                 realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         and: "an authenticated superuser"
         def adminAccessToken = authenticate(
@@ -113,7 +114,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         def notification = new Notification("TestAction",
                 new PushNotificationMessage("Test Action",
@@ -136,7 +137,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def testuser3ConsoleResource = getClientApiTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(ConsoleResource.class)
         def adminConsoleResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(ConsoleResource.class)
         def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), realm).proxy(ConsoleResource.class)
-        SentNotification[] notifications = []
+        SentNotification[] notifications = new CopyOnWriteArrayList<>()
 
         when: "various consoles are registered"
         def consoleRegistration = new ConsoleRegistration(null,
@@ -200,7 +201,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "the admin user sends a notification to a user in a different realm with emailNotificationsDisabled set to true"
         notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser2Id)]
@@ -209,7 +213,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
         notificationIds.size() == 3
 
         when: "the admin user sends a notification to a user in a different realm with emailNotificationsDisabled set to false"
@@ -228,7 +235,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a restricted user sends a push notification to another user in the same realm"
         notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser2Id)]
@@ -236,14 +246,20 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "an anonymous user sends a push notification to a user"
         anonymousNotificationResource.sendNotification(null, notification)
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "the admin user sends a push notification to the console assets in building realm"
         notificationIds.clear()
@@ -268,7 +284,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a regular user sends a push notification to the console assets in the same realm"
         notificationIds.clear()
@@ -302,7 +321,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a restricted user sends a push notification to some consoles linked to them and some not linked to them"
         notificationIds.clear()
@@ -314,7 +336,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         and: "no new notifications should have been sent"
         notificationIds.size() == 0
@@ -363,7 +388,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "a bad request exception should be thrown"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         and: "the notification should be recorded in the DB with the exception set as the error"
         conditions.eventually {
@@ -418,7 +446,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "a regular user marks a console notification for their own console as delivered"
         testuser3NotificationResource.notificationDelivered(null, testuser3Console1.id, notifications.find {n -> n.targetId == testuser3Console1.id}.id)
@@ -434,7 +465,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 //
 //        then: "access should be forbidden"
 //        ex = thrown()
-//        ex.response.status == 403
+//        ex.response.withCloseable { r ->
+//            assert r.status == 403
+//        }
 
         when: "an anonymous user marks a console notification for their own console as delivered"
         notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id)
@@ -450,14 +483,20 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "a restricted user tries to remove notifications"
         testuser3NotificationResource.removeNotifications(null, null, PushNotificationMessage.TYPE, null, null, realm, null, null)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "the admin user removes notifications by timestamp and the notifications are retrieved again"
         notifications = adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, null).reverse(true)
@@ -494,7 +533,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "request should not be allowed"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         // -----------------------------------------------
         //    Check notification repeat frequency
@@ -587,7 +629,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
     def "Check email notification functionality"() {
 
-        List<Message> sentEmails = []
+        List<Message> sentEmails = new CopyOnWriteArrayList<>()
 
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
@@ -670,15 +712,15 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
     def "Check localized notification functionality"() {
 
-        List<String> localizedNotificationIds = []
-        List<Notification.TargetType> localizedNotificationTargetTypes = []
-        List<String> localizedNotificationTargetIds = []
-        List<AbstractNotificationMessage> localizedNotificationMessages = []
+        List<String> localizedNotificationIds = new CopyOnWriteArrayList<>()
+        List<Notification.TargetType> localizedNotificationTargetTypes = new CopyOnWriteArrayList<>()
+        List<String> localizedNotificationTargetIds = new CopyOnWriteArrayList<>()
+        List<AbstractNotificationMessage> localizedNotificationMessages = new CopyOnWriteArrayList<>()
 
-        List<String> pushNotificationIds = []
-        List<Notification.TargetType> pushNotificationTargetTypes = []
-        List<String> pushNotificationTargetIds = []
-        List<AbstractNotificationMessage> pushNotificationMessages = []
+        List<String> pushNotificationIds = new CopyOnWriteArrayList<>()
+        List<Notification.TargetType> pushNotificationTargetTypes = new CopyOnWriteArrayList<>()
+        List<String> pushNotificationTargetIds = new CopyOnWriteArrayList<>()
+        List<AbstractNotificationMessage> pushNotificationMessages = new CopyOnWriteArrayList<>()
 
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
@@ -747,7 +789,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         def notification = new Notification(
                 "MultiLanguageAction",
@@ -837,7 +879,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
 
         and: "their language is updated to dutch"
         def testuser1 = identityService.getIdentityProvider().getUserByUsername(MASTER_REALM, "testuser1")
@@ -949,7 +991,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         complexNotification.targets = [new Notification.Target(Notification.TargetType.REALM, MASTER_REALM)]
 
         and: "the mock email notification handler has been added"
-        List<Message> sentEmails = []
+        List<Message> sentEmails = new CopyOnWriteArrayList<>()
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
         EmailNotificationHandler mockEmailNotificationHandler = Spy(emailNotificationHandler)
         mockEmailNotificationHandler.isValid() >> true

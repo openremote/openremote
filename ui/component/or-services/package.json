@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-services",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "OpenRemote services related UI components",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -28,6 +28,9 @@
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-tree-menu": "workspace:*",
     "lit": "^3.3.1"
+  },
+  "devDependencies": {
+    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

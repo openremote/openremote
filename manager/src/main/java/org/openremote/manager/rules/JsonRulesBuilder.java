@@ -223,7 +223,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                 // only need up to date values in the previously matched asset states previously unmatched asset states is only
                 // used to compare asset ID and attribute name.
                 if (event != null) {
-                    if (previouslyMatchedAssetStates.remove(event.assetState)) {
+                    boolean resetImmediately = event.assetState.getMeta().getValue(MetaItemType.RULE_RESET_IMMEDIATE).orElse(false);
+                    if (!resetImmediately && previouslyMatchedAssetStates.remove(event.assetState)) {
                         previouslyMatchedAssetStates.add(event.assetState);
                     }
                 }

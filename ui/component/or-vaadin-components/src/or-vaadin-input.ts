@@ -21,10 +21,14 @@ import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {InputType} from "./util";
 import "./or-vaadin-checkbox";
+import "./or-vaadin-email-field";
 import "./or-vaadin-number-field";
 import "./or-vaadin-password-field";
+import "./or-vaadin-select";
+import "./or-vaadin-slider";
 import "./or-vaadin-text-field";
 import "./or-vaadin-text-area";
+import "./or-vaadin-toggle";
 
 /**
  * Function to register properties (get/setter) of a CustomElement to the child Vaadin element.
@@ -58,6 +62,7 @@ export class OrVaadinInput extends LitElement {
         customElements.get("or-vaadin-number-field"),
         customElements.get("or-vaadin-password-field"),
         customElements.get("or-vaadin-select"),
+        customElements.get("or-vaadin-slider"),
         customElements.get("or-vaadin-text-area"),
         customElements.get("or-vaadin-text-field")
     ];
@@ -72,9 +77,11 @@ export class OrVaadinInput extends LitElement {
         [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
         [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
         [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
+        [InputType.RANGE, OrVaadinInput.getSliderTemplate],
         [InputType.SELECT, OrVaadinInput.getSelectTemplate],
+        [InputType.SWITCH, OrVaadinInput.getSwitchTemplate],
         [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
-        [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
+        [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate]
     ]);
 
     /**
@@ -133,12 +140,13 @@ export class OrVaadinInput extends LitElement {
     }
 
     updated(changedProps: PropertyValues) {
-        changedProps.forEach((_, key) => this._onPropertyChange(String(key)));
+        changedProps.forEach((_, key) => this._onPropertyChange(String(key), this[String(key) as keyof OrVaadinInput]));
         return super.updated(changedProps);
     }
 
     firstUpdated(_changedProps: PropertyValues) {
         for (const name of this.getAttributeNames()) {
+            // console.debug(this._getLoggingPrefix() + `firstUpdated for ${name} (${typeof this.getAttribute(name)}) to`, this.getAttribute(name));
             this._applyAttribute(name, this.getAttribute(name), this._elem);
         }
         return super.firstUpdated(_changedProps);
@@ -156,7 +164,8 @@ export class OrVaadinInput extends LitElement {
      */
     public get nativeValue(): any {
         switch (this.type) {
-            case InputType.CHECKBOX: {
+            case InputType.CHECKBOX:
+            case InputType.SWITCH: {
                 return (this._elem as HTMLInputElement | undefined)?.checked;
             }
             default: {
@@ -188,6 +197,7 @@ export class OrVaadinInput extends LitElement {
             mutations
                 .filter(mutation => mutation.type === "attributes" && mutation.attributeName)
                 .forEach(mutation => {
+                    // console.debug(this._getLoggingPrefix() + `_onAttributeChange for ${mutation.attributeName} (${typeof this.getAttribute(mutation.attributeName!)})`, this.getAttribute(mutation.attributeName!));
                     this._applyAttribute(mutation.attributeName!, this.getAttribute(mutation.attributeName!), this._elem);
                 });
         });
@@ -200,6 +210,7 @@ export class OrVaadinInput extends LitElement {
      * @protected
      */
     protected _onPropertyChange(name: string, newValue?: any) {
+        // console.debug(this._getLoggingPrefix() + `_onPropertyChange for ${name} (${typeof newValue}) to`, newValue);
         newValue ??= (this as Record<string, unknown>)[String(name)];
         this._applyAttribute(name, JSON.stringify(newValue), this._elem);
     }
@@ -258,12 +269,24 @@ export class OrVaadinInput extends LitElement {
         return html`<or-vaadin-select id="elem" @change=${onChange}></or-vaadin-select>`;
     }
 
+    public static getSliderTemplate(onChange?: (e: Event) => void) {
+        return html`<or-vaadin-slider id="elem" @change=${onChange}></or-vaadin-slider>`
+    }
+
+    public static getSwitchTemplate(onChange?: (e: Event) => void) {
+        return html`<or-vaadin-toggle id="elem" @change=${onChange}></or-vaadin-toggle>`;
+    }
+
     public static getTextAreaTemplate(onChange?: (e: Event) => void) {
         return html`<or-vaadin-text-area id="elem" @change=${onChange}></or-vaadin-text-area>`;
     }
 
     public static getTextFieldTemplate(onChange?: (e: Event) => void) {
         return html`<or-vaadin-text-field id="elem" @change=${onChange}></or-vaadin-text-field>`;
+    }
+
+    protected _getLoggingPrefix(): string {
+        return `[${this.getAttribute("label")} ${this.type}] `;
     }
 }
 

@@ -22,6 +22,12 @@ import {customElement} from "lit/decorators.js";
 import {OrVaadinComponent} from "./util";
 import {type LitElement} from "lit";
 
+export {SelectItem} from "@vaadin/select";
+export {selectRenderer} from "@vaadin/select/lit.js";
+
+/**
+ * @slot label - The label element
+ */
 @customElement("or-vaadin-select")
 export class OrVaadinSelect extends (Select as new () => Select & LitElement) implements OrVaadinComponent {
 

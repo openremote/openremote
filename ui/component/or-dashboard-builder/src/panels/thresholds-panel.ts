@@ -1,9 +1,30 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {DefaultColor5} from "@openremote/core";
 import {style} from "../style";
+import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
+import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 
 export class ThresholdChangeEvent extends CustomEvent<[number, string][]> {
 
@@ -49,7 +70,7 @@ const styling = css`
   #thresholds-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
   }
 
   .threshold-list-item {
@@ -147,16 +168,15 @@ export class ThresholdsPanel extends LitElement {
                                                   }}"
                                     ></or-mwc-input>
                                 </div>
-                                <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${threshold[0]}"
-                                              ?disabled="${index === 0 && this.max}"
-                                              .min="${ifDefined(this.min)}" .max="${ifDefined(this.max)}"
-                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  if ((!this.min || event.detail.value >= this.min) && (!this.max || event.detail.value <= this.max)) {
-                                                      this.thresholds[index][0] = event.detail.value;
-                                                      this.requestUpdate('thresholds');
-                                                  }
-                                              }}"
-                                ></or-mwc-input>
+                                <or-vaadin-number-field value=${threshold[0]} min=${ifDefined(this.min)} max=${ifDefined(this.max)}
+                                                        ?disabled=${index === 0 && this.max} @change=${(ev: Event) => {
+                                                            const elem = ev.currentTarget as OrVaadinNumberField;
+                                                            if(elem.checkValidity()) {
+                                                                this.thresholds[index][0] = Number(elem.value);
+                                                                this.requestUpdate('thresholds');
+                                                            }
+                                                        }}
+                                ></or-vaadin-number-field>
                                 ${index === 0 ? html`
                                     <button class="button-clear"
                                             style="margin-left: 8px;">
@@ -174,9 +194,10 @@ export class ThresholdsPanel extends LitElement {
                             </div>
                         `
                     })}
-                    <or-mwc-input .type="${InputType.BUTTON}" label="threshold" icon="plus"
-                                  @or-mwc-input-changed="${() => this.addNewThreshold()}">
-                    </or-mwc-input>
+                    <or-vaadin-button style="margin-top: 8px;" @click=${() => this.addNewThreshold()}>
+                        <or-icon slot="prefix" icon="plus"></or-icon>
+                        <or-translate value="threshold"></or-translate>
+                    </or-vaadin-button>
                 ` : null}
 
                 <!-- Thresholds by boolean -->
@@ -188,8 +209,7 @@ export class ThresholdsPanel extends LitElement {
                                           this.onBoolColorChange(true, event.detail.value)}}"
                             ></or-mwc-input>
                         </div>
-                        <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'True'}" .readonly="${true}"
-                        ></or-mwc-input>
+                        <or-vaadin-text-field value="True" readonly></or-vaadin-text-field>
                     </div>
                     <div class="threshold-list-item">
                         <div class="threshold-list-item-colour">
@@ -198,8 +218,7 @@ export class ThresholdsPanel extends LitElement {
                                             this.onBoolColorChange(false, event.detail.value)}}"
                             ></or-mwc-input>
                         </div>
-                        <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'False'}" .readonly="${true}"
-                        ></or-mwc-input>
+                        <or-vaadin-text-field value="False" readonly></or-vaadin-text-field>
                     </div>
                 ` : null}
 
@@ -216,12 +235,12 @@ export class ThresholdsPanel extends LitElement {
                                                   }}"
                                     ></or-mwc-input>
                                 </div>
-                                <or-mwc-input type="${InputType.TEXT}" comfortable .value="${threshold[0]}"
-                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  this.textColors[index][0] = event.detail.value;
-                                                  this.requestUpdate('textColors');
-                                              }}"
-                                ></or-mwc-input>
+                                <or-vaadin-text-field value=${threshold[0]}
+                                                      @change=${(ev: Event) => {
+                                                          this.textColors[index][0] = (ev.currentTarget as OrVaadinTextField).value;
+                                                          this.requestUpdate('textColors');
+                                                      }}
+                                ></or-vaadin-text-field>
                                 <button class="button-clear"
                                         style="margin-left: 8px;"
                                         @click="${() => {
@@ -232,9 +251,10 @@ export class ThresholdsPanel extends LitElement {
                             </div>
                         `
                     })}
-                    <or-mwc-input .type="${InputType.BUTTON}" label="threshold" icon="plus"
-                                  @or-mwc-input-changed="${() => this.addNewThreshold()}">
-                    </or-mwc-input>
+                    <or-vaadin-button style="margin-top: 8px;" @click=${() => this.addNewThreshold()}>
+                        <or-icon slot="prefix" icon="plus"></or-icon>
+                        <or-translate value="threshold"></or-translate>
+                    </or-vaadin-button>
                 ` : null}
             </div>
         `

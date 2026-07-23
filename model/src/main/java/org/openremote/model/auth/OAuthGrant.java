@@ -45,7 +45,6 @@ public abstract class OAuthGrant implements Serializable {
     public static final String VALUE_KEY_CLIENT_ID = "client_id";
     public static final String VALUE_KEY_CLIENT_SECRET = "client_secret";
     public static final String VALUE_KEY_SCOPE = "scope";
-    @NotNull
     protected String tokenEndpointUri;
     protected boolean basicAuthHeader;
     protected Map<String, List<String>> additionalValueMap = null;
@@ -60,7 +59,6 @@ public abstract class OAuthGrant implements Serializable {
     String scope;
 
     protected OAuthGrant(String tokenEndpointUri, String grantType, String clientId, String clientSecret, String scope) {
-        requireNonNullAndNonEmpty(tokenEndpointUri);
         requireNonNullAndNonEmpty(grantType);
         requireNonNullAndNonEmpty(clientId);
         this.grantType = grantType;
@@ -145,7 +143,6 @@ public abstract class OAuthGrant implements Serializable {
             ", basicAuthHeader=" + basicAuthHeader +
             ", grantType='" + grantType + '\'' +
             ", clientId='" + clientId + '\'' +
-            ", clientSecret='" + clientSecret + '\'' +
             ", scope='" + scope + '\'' +
             '}';
     }

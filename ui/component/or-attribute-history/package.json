@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-attribute-history",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "OpenRemote attribute history",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -26,16 +26,17 @@
     "@openremote/model": "workspace:*",
     "@openremote/or-chart": "workspace:*",
     "@openremote/or-components": "workspace:*",
-    "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
+    "@openremote/or-vaadin-components": "workspace:*",
     "@openremote/rest": "workspace:*",
-    "echarts": "~6.0.0",
+    "echarts": "~6.1.0",
     "jsonpath-plus": "^10.3.0",
     "lit": "^3.3.1",
     "lodash.debounce": "^4.0.8",
     "moment": "^2.29.4"
   },
   "devDependencies": {
+    "@openremote/util": "workspace:*",
     "@types/lodash.debounce": "^4"
   },
   "publishConfig": {

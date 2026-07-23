@@ -38,6 +38,10 @@ export class AttributesChartPanel extends AttributesPanel {
     protected _getAttributeActionsTemplate(asset: Asset, attributeRef: AttributeRef): TemplateResult {
         return html`
             <div class="attribute-list-item-actions">
+                <!-- Replace attribute button -->
+                <button class="button-action" title="${i18next.t('dashboard.replaceAttribute')}" @click="${() => this.replaceWidgetAttribute(attributeRef)}">
+                    <or-icon icon="swap-horizontal"></or-icon>
+                </button>
                 <!-- Remove attribute button -->
                 <button class="button-action" title="${i18next.t('delete')}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
                     <or-icon icon="close-circle"></or-icon>

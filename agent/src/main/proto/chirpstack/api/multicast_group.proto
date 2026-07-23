@@ -1,0 +1,334 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/api";
+option java_package = "io.chirpstack.api";
+option java_multiple_files = true;
+option java_outer_classname = "MulticastGroupProto";
+option csharp_namespace = "Chirpstack.Api";
+option php_namespace = "Chirpstack\\Api";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Api";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "common/common.proto";
+
+
+// MulticastGroupService is the service managing multicast-groups.
+service MulticastGroupService {
+    // Create the given multicast group.
+    rpc Create(CreateMulticastGroupRequest) returns (CreateMulticastGroupResponse) {
+        option(google.api.http) = {
+            post: "/api/multicast-groups"
+            body: "*"
+        };
+    }
+
+    // Get returns the multicast group for the given ID.
+    rpc Get(GetMulticastGroupRequest) returns (GetMulticastGroupResponse) {
+        option(google.api.http) = {
+            get: "/api/multicast-groups/{id}"
+        };
+    }
+
+    // Update the given multicast group.
+    rpc Update(UpdateMulticastGroupRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            put: "/api/multicast-groups/{multicast_group.id}"
+            body: "*"
+        };
+    }
+
+    // Delete the multicast-group with the given ID.
+    rpc Delete(DeleteMulticastGroupRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            delete: "/api/multicast-groups/{id}"
+        };
+    }
+
+    // List the available multicast groups.
+    rpc List(ListMulticastGroupsRequest) returns (ListMulticastGroupsResponse) {
+        option(google.api.http) = {
+            get: "/api/multicast-groups"
+        };
+    }
+
+    // Add a device to the multicast group.
+    rpc AddDevice(AddDeviceToMulticastGroupRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            post: "/api/multicast-groups/{multicast_group_id}/devices"
+            body: "*"
+        };
+    }
+
+    // Remove a device from the multicast group.
+    rpc RemoveDevice(RemoveDeviceFromMulticastGroupRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            delete: "/api/multicast-groups/{multicast_group_id}/devices/{dev_eui}"
+        };
+    }
+
+    // Add a gateway to the multicast group.
+    rpc AddGateway(AddGatewayToMulticastGroupRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            post: "/api/multicast-groups/{multicast_group_id}/gateways"
+            body: "*"
+        };
+    }
+
+    // Remove a gateway from the multicast group.
+    rpc RemoveGateway(RemoveGatewayFromMulticastGroupRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            delete: "/api/multicast-groups/{multicast_group_id}/gateways/{gateway_id}"
+        };
+    }
+
+    // Add the given item to the multicast group queue.
+    rpc Enqueue(EnqueueMulticastGroupQueueItemRequest) returns (EnqueueMulticastGroupQueueItemResponse) {
+        option(google.api.http) = {
+            post: "/api/multicast-groups/{queue_item.multicast_group_id}/queue"
+            body: "*"
+        };
+    }
+
+    // Flush the queue for the given multicast group.
+    rpc FlushQueue(FlushMulticastGroupQueueRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            delete: "/api/multicast-groups/{multicast_group_id}/queue"
+        };
+    }
+
+    // List the items in the multicast group queue.
+    rpc ListQueue(ListMulticastGroupQueueRequest) returns (ListMulticastGroupQueueResponse) {
+        option(google.api.http) = {
+            get: "/api/multicast-groups/{multicast_group_id}/queue"
+        };        
+    }
+}
+
+enum MulticastGroupType {
+    // Class C.
+    CLASS_C = 0;
+
+    // Class-B.
+    CLASS_B = 1;
+}
+
+enum MulticastGroupSchedulingType {
+    // Delay.
+    // If multicast downlinks must be sent through multiple gateways, then
+    // these will be sent one by one with a delay between each gateway.
+    DELAY = 0;
+
+    // Time.
+    // If multicast downlinks must be sent through multiple gateways, then
+    // these will be sent simultaneously using GPS time synchronization.
+    // Note that this does require GPS time-synchronized LoRa gateways.
+    GPS_TIME = 1;
+}
+
+message MulticastGroup {
+    // ID (UUID).
+    // This will be generated automatically on create.
+    string id = 1;
+
+    // Name.
+    string name = 2;
+
+    // Application ID.
+    // After creation, this can not be updated.
+    string application_id = 3;
+
+    // Region.
+    common.Region region = 4;
+
+    // Multicast address (HEX encoded DevAddr).
+    string mc_addr = 5;
+
+    // Multicast network session key (HEX encoded AES128 key).
+    string mc_nwk_s_key = 6;
+
+    // Multicast application session key (HEX encoded AES128 key).
+    string mc_app_s_key = 7;
+
+    // Frame-counter.
+    uint32 f_cnt = 8;
+
+    // Multicast group type.
+    MulticastGroupType group_type = 9;
+
+    // Data-rate.
+    uint32 dr = 10;
+
+    // Frequency (Hz).
+    uint32 frequency = 11;
+
+    // Class-B ping-slot periodicity (only for Class-B).
+    // Valid options are: 0 - 7.
+    //
+    // Number of ping-slots per beacon-period:
+    // pingNb = 2^(7-periodicity)
+    //
+    // Periodicity: 0 = 128 ping-slots per beacon period = ~ every 1 sec
+    // Periodicity: 7 = 1 ping-slot per beacon period = ~ every 128 sec
+    uint32 class_b_ping_slot_periodicity = 14;
+
+    // Scheduling type (only for Class-C).
+    MulticastGroupSchedulingType class_c_scheduling_type = 13;
+}
+
+message MulticastGroupListItem {
+    // ID.
+    string id = 1;
+
+	// Created at timestamp.
+	google.protobuf.Timestamp created_at = 2;
+
+	// Last update timestamp.
+	google.protobuf.Timestamp updated_at = 3;
+
+    // Name.
+    string name = 4;
+
+    // Region.
+    common.Region region = 5;
+
+    // Multicast group type.
+    MulticastGroupType group_type = 6;
+}
+
+message CreateMulticastGroupRequest {
+    // Multicast group to create.
+    MulticastGroup multicast_group = 1;
+}
+
+message CreateMulticastGroupResponse {
+    // ID of created multicast group (UUID).
+    string id = 1;
+}
+
+message GetMulticastGroupRequest {
+    // Multicast group ID.
+    string id = 1;
+}
+
+message GetMulticastGroupResponse {
+    // Multicast group object.
+    MulticastGroup multicast_group = 1;
+
+	// Created at timestamp.
+	google.protobuf.Timestamp created_at = 2;
+
+	// Last update timestamp.
+	google.protobuf.Timestamp updated_at = 3;
+}
+
+message UpdateMulticastGroupRequest {
+    // Multicast group object to update.
+    MulticastGroup multicast_group = 1;
+}
+
+message DeleteMulticastGroupRequest {
+    // Multicast group iD.
+    string id = 1;
+}
+
+message ListMulticastGroupsRequest {
+    // Max number of multicast groups to return in the result-set.
+    // If not set, it will be treated as 0, and the response will only return the total_count.
+    uint32 limit = 1;
+
+    // Offset in the result-set (for pagination).
+    uint32 offset = 2;
+
+    // If set, the given string will be used to search on name.
+    string search = 3;
+
+    // Application ID to list the multicast groups for.
+    string application_id = 4;
+}
+
+message ListMulticastGroupsResponse {
+    // Total number of multicast groups.
+    uint32 total_count = 1;
+
+    // Result-test.
+    repeated MulticastGroupListItem result = 2;
+}
+
+message AddDeviceToMulticastGroupRequest {
+    // Multicast group ID.
+    string multicast_group_id = 1;
+
+    // Device EUI (HEX encoded).
+    string dev_eui = 2;
+}
+
+message RemoveDeviceFromMulticastGroupRequest {
+    // Multicast group ID.
+    string multicast_group_id = 1;
+
+    // Device EUI (HEX encoded).
+    string dev_eui = 2;
+}
+
+message AddGatewayToMulticastGroupRequest {
+    // Multicast group ID.
+    string multicast_group_id = 1;
+
+    // Gateway ID (HEX encoded).
+    string gateway_id = 2;
+}
+
+message RemoveGatewayFromMulticastGroupRequest {
+    // Multicast group ID.
+    string multicast_group_id = 1;
+
+    // Gateway ID (HEX encoded).
+    string gateway_id = 2;
+}
+
+message MulticastGroupQueueItem {
+    // Multicast group ID.
+    string multicast_group_id = 1;
+
+    // Downlink frame-counter.
+    // This will be automatically set on enqueue.
+    uint32 f_cnt = 2;
+
+    // FPort (must be > 0).
+    uint32 f_port = 3;
+
+    // Payload.
+    bytes data = 4;
+
+    // Expires at (optional).
+    // Expired queue-items will be automatically removed from the queue.
+    google.protobuf.Timestamp expires_at = 5;
+}
+
+message EnqueueMulticastGroupQueueItemRequest {
+    // Multicast queue-item to enqueue.
+    MulticastGroupQueueItem queue_item = 1;
+}
+
+message EnqueueMulticastGroupQueueItemResponse {
+    // Frame-counter of the enqueued payload.
+    uint32 f_cnt = 1;
+}
+
+message FlushMulticastGroupQueueRequest {
+    // Multicast group ID.
+    string multicast_group_id = 1;
+}
+
+message ListMulticastGroupQueueRequest {
+    // Multicast group ID.
+    string multicast_group_id = 1;
+}
+
+message ListMulticastGroupQueueResponse {
+    repeated MulticastGroupQueueItem items = 1;
+}

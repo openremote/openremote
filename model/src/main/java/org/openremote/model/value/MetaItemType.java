@@ -92,8 +92,12 @@ public final class MetaItemType {
     public static final MetaItemDescriptor<Boolean> STORE_DATA_POINTS = new MetaItemDescriptor<>("storeDataPoints", ValueType.BOOLEAN);
 
     /**
-     * How long to store attribute values in time series database (data older than this will be automatically purged)
+     * How long to store attribute values in time series database (data older than this will be automatically purged).
+     * @deprecated Per-attribute retention is no longer supported. Purging now uses TimescaleDB drop_chunks with
+     *             a global week-based retention period configured via OR_DATA_POINTS_MAX_AGE_WEEKS. This meta item
+     *             is retained for backward compatibility but has no effect.
      */
+    @Deprecated
     public static final MetaItemDescriptor<Integer> DATA_POINTS_MAX_AGE_DAYS = new MetaItemDescriptor<>("dataPointsMaxAgeDays", ValueType.POSITIVE_INTEGER);
 
     /**

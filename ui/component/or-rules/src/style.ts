@@ -53,7 +53,7 @@ export const buttonStyle = css`
     }
 
     .plus-button {
-        --or-icon-fill: var(--internal-or-rules-button-color);
+        width: 200px;
     }
     
     .add-button {

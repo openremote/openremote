@@ -68,7 +68,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "the endpoint should return 404"
-        response.status == 404
+        response.withCloseable {r ->
+            assert r.status == 404
+            return true
+        }
 
         cleanup:
         if (response != null) {
@@ -90,7 +93,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "the endpoint should return 200"
-        response.status == 200
+        response.withCloseable { r ->
+            assert r.status == 200
+            return true
+        }
 
         cleanup:
         if (response != null) {
@@ -117,10 +123,13 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "both apps are returned"
-        response.status == 200
-        def appList = parse(response.readEntity(String.class)).orElse([])
-        appList.contains("appBuiltin")
-        appList.contains("appCustom")
+        response.withCloseable { r ->
+            assert r.status == 200
+            def appList = parse(r.readEntity(String.class)).orElse("") as String
+            appList.contains("appBuiltin")
+            appList.contains("appCustom")
+            return true
+        }
 
         cleanup:
         if (response != null) {
@@ -130,6 +139,39 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         Files.deleteIfExists(builtInDocRoot)
         Files.deleteIfExists(customDocRoot.resolve("appCustom"))
         Files.deleteIfExists(customDocRoot)
+    }
+
+    def "Apps endpoint treats missing app doc root as empty"() {
+        given: "a built-in app doc root and a missing custom app doc root"
+        def builtInDocRoot = Files.createTempDirectory("apps-builtin-")
+        def customDocRootParent = Files.createTempDirectory("apps-missing-custom-")
+        def customDocRoot = customDocRootParent.resolve("missing")
+        Files.createDirectories(builtInDocRoot.resolve("appBuiltin"))
+
+        def container = startContainer(defaultConfig() << [
+                (ManagerWebService.OR_APP_DOCROOT)       : builtInDocRoot.toString(),
+                (ManagerWebService.OR_CUSTOM_APP_DOCROOT): customDocRoot.toString()
+        ], defaultServices())
+        def requestTarget = getClientApiTarget(serverUri(serverPort), MASTER_REALM).path("apps")
+
+        when: "requesting the apps list"
+        def response = requestTarget.request().get()
+
+        then: "the missing root is ignored and apps from the available root are returned"
+        response.withCloseable { r ->
+            assert r.status == 200
+            def appList = parse(r.readEntity(String.class)).orElse("") as String
+            appList.contains("appBuiltin")
+            return true
+        }
+
+        cleanup:
+        if (response != null) {
+            response.close()
+        }
+        Files.deleteIfExists(builtInDocRoot.resolve("appBuiltin"))
+        Files.deleteIfExists(builtInDocRoot)
+        Files.deleteIfExists(customDocRootParent)
     }
 
     def "Apps info endpoint returns info for custom apps"() {
@@ -151,17 +193,121 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "the response includes the app info"
-        response.status == 200
-        def infoMap = parse(response.readEntity(String.class)).orElse([:])
-        infoMap.containsKey("appInfo")
+        response.withCloseable { r ->
+            assert r.status == 200
+            Map infoMap = parse(response.readEntity(String.class)).orElse([:])
+            infoMap.containsKey("appInfo")
+            return true
+        }
 
         cleanup:
-        if (response != null) {
-            response.close()
-        }
         Files.deleteIfExists(appDir.resolve("info.json"))
         Files.deleteIfExists(appDir)
         Files.deleteIfExists(customDocRoot)
+    }
+
+    def "Console registration rejects existing console mutation without current ownership"() {
+        given: "the container environment is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "console registration clients for two users and an anonymous caller"
+        def testUser3AccessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
+        )
+        def testUser2AccessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser2",
+                "testuser2"
+        )
+        def testUser3ConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, testUser3AccessToken).proxy(ConsoleResource.class)
+        def testUser2ConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, testUser2AccessToken).proxy(ConsoleResource.class)
+        def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(ConsoleResource.class)
+
+        when: "a console is registered by one authenticated user"
+        def originalRegistration = createConsoleRegistration(null, "Owner Console", "owner-token")
+        def registeredConsole = testUser3ConsoleResource.register(null, originalRegistration)
+        def consoleId = registeredConsole.id
+        ConsoleAsset console = assetStorageService.find(consoleId, true)
+
+        then: "the console is linked to the registering user and has the original provider data"
+        assert console != null
+        assert console.getConsoleName().orElse(null) == "Owner Console"
+        assert getPushToken(console) == "owner-token"
+        assert assetStorageService.findUserAssetLinks(keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id, consoleId).size() == 1
+        assert assetStorageService.findUserAssetLinks(keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, consoleId).isEmpty()
+
+        when: "an anonymous caller tries to mutate the existing console by ID"
+        anonymousConsoleResource.register(null, createConsoleRegistration(consoleId, "Anonymous Attacker Console", "anonymous-attacker-token"))
+
+        then: "the request should be rejected"
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403 || r.status == 409
+            return true
+        }
+
+        and: "the console provider data should remain unchanged"
+        ConsoleAsset consoleAfterAnonymousAttempt = assetStorageService.find(consoleId, true)
+        assert consoleAfterAnonymousAttempt.getConsoleName().orElse(null) == "Owner Console"
+        assert getPushToken(consoleAfterAnonymousAttempt) == "owner-token"
+        assert assetStorageService.findUserAssetLinks(keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id, consoleId).size() == 1
+        assert assetStorageService.findUserAssetLinks(keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, consoleId).isEmpty()
+
+        when: "a different authenticated user tries to claim the existing console by ID"
+        testUser2ConsoleResource.register(null, createConsoleRegistration(consoleId, "Other User Console", "other-user-token"))
+
+        then: "the request should be rejected"
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403 || r.status == 409
+            return true
+        }
+
+        and: "the original user link and provider data should remain unchanged"
+        ConsoleAsset consoleAfterOtherUserAttempt = assetStorageService.find(consoleId, true)
+        assert consoleAfterOtherUserAttempt.getConsoleName().orElse(null) == "Owner Console"
+        assert getPushToken(consoleAfterOtherUserAttempt) == "owner-token"
+        assert assetStorageService.findUserAssetLinks(keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id, consoleId).size() == 1
+        assert assetStorageService.findUserAssetLinks(keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, consoleId).isEmpty()
+    }
+
+    def "Console registration rejects client supplied IDs for new legacy consoles"() {
+        given: "the container environment is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated console registration client"
+        def accessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
+        )
+        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(ConsoleResource.class)
+
+        when: "a client tries to create a console with its own unused ID"
+        def unusedId = UniqueIdentifierGenerator.generateId("UnusedConsoleIdRejectedByLegacyRegister")
+        authenticatedConsoleResource.register(null, createConsoleRegistration(unusedId, "Client Supplied ID Console", "client-token"))
+
+        then: "the request should be rejected"
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400 || r.status == 409
+            return true
+        }
+
+        and: "no console asset should be created with the supplied ID"
+        assert assetStorageService.find(unusedId, true) == null
     }
 
     def "Check full console behaviour"() {
@@ -232,7 +378,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         and: "authenticated and anonymous console, rules and asset resources"
         def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(ConsoleResource.class)
@@ -341,13 +487,21 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         when: "the console registration is updated anonymously"
         returnedConsoleRegistration.providers.get("test").disabled = false
-        returnedConsoleRegistration = anonymousConsoleResource.register(null, returnedConsoleRegistration)
+        anonymousConsoleResource.register(null, returnedConsoleRegistration)
+
+        then: "the result should be forbidden"
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+
+        when: "the console registration is reloaded after the rejected anonymous update"
         console = assetStorageService.find(consoleId, true)
         testUser3Console1 = console
         consoleTestProvider = console.getConsoleProviders().map{it.get("test")}.orElse(null)
 
-        then: "the returned console should contain the updated data and have the same id"
-        assert returnedConsoleRegistration.getId() == consoleId
+        then: "the console registration should be unchanged"
         assert console != null
         assert consoleGeofenceProvider != null
         assert consoleGeofenceProvider.version == ORConsoleGeofenceAssetAdapter.NAME
@@ -365,7 +519,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consoleTestProvider.version == "Test 1.0"
         assert !consoleTestProvider.requiresPermission
         assert !consoleTestProvider.hasPermission
-        assert !consoleTestProvider.disabled
+        assert consoleTestProvider.disabled
         assert consoleTestProvider.data == null
 
         when: "a console registers with the id of another existing asset"
@@ -373,14 +527,29 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         authenticatedConsoleResource.register(null, consoleRegistration)
 
         then: "the result should be bad request"
-        WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a console registers with an id that doesn't exist"
         def unusedId = UniqueIdentifierGenerator.generateId("UnusedConsoleId")
         consoleRegistration.setId(unusedId)
         authenticatedConsoleResource.register(null, consoleRegistration)
-        console = assetStorageService.find(unusedId, true)
+
+        then: "the result should be conflict"
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 409
+            return true
+        }
+        assert assetStorageService.find(unusedId, true) == null
+
+        when: "a second console is registered without a client supplied id"
+        consoleRegistration.setId(null)
+        returnedConsoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
+        console = assetStorageService.find(returnedConsoleRegistration.getId(), true)
         testUser3Console2 = console
         consoleGeofenceProvider = console.getConsoleProviders().map{it.get("geofence")}.orElse(null)
         consolePushProvider = console.getConsoleProviders().map{it.get("push")}.orElse(null)
@@ -409,7 +578,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         then: "the result should be bad request"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a console is registered anonymously"
         consoleRegistration.id = null
@@ -500,7 +672,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 //
 //        then: "the result should be forbidden"
 //        ex = thrown()
-//        ex.response.status == 403
+//        ex.response.withCloseable { r ->
+//            assert r.status == 403
+//        }
 
         when: "a console's location is updated to be at the Smart Building"
         authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, Asset.LOCATION.name, SMART_BUILDING_LOCATION)
@@ -586,7 +760,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 //
 //        then: "the result should be a forbidden request"
 //        ex = thrown()
-//        ex.response.status == 403
+//        ex.response.withCloseable { r ->
+//            assert r.status == 403
+//        }
 
         when: "the geofences of testUser3Console2 are retrieved"
         geofences = authenticatedRulesResource.getAssetGeofences(null, testUser3Console2.id)
@@ -828,5 +1004,36 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         if (notificationService != null) {
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
         }
+    }
+
+    protected static ConsoleRegistration createConsoleRegistration(String id, String name, String pushToken) {
+        return new ConsoleRegistration(
+                id,
+                name,
+                "1.0",
+                "Android 7.0",
+                new HashMap<String, ConsoleProvider>() {
+                    {
+                        put("push", new ConsoleProvider(
+                                "fcm",
+                                true,
+                                true,
+                                true,
+                                true,
+                                false,
+                                [token: pushToken]
+                        ))
+                    }
+                },
+                "",
+                ["manager"] as String[]
+        )
+    }
+
+    protected static String getPushToken(ConsoleAsset console) {
+        return console.getConsoleProviders()
+                .map { it.get("push") }
+                .map { it.data.get("token") as String }
+                .orElse(null)
     }
 }

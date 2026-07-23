@@ -29,10 +29,15 @@ import org.openremote.model.geo.GeoJSONPoint;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Modifier;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -46,6 +51,7 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     public static final String OR_SETUP_ASSETS = "OR_SETUP_ASSETS";
 
     private static final Logger LOG = SyslogCategory.getLogger(DATA, org.openremote.manager.setup.ManagerSetup.class);
+    private static final Duration SETUP_MAX_WAIT_DURATION =  Duration.ofMinutes(1);
 
     protected Container container;
     protected Executor executor;
@@ -68,9 +74,9 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     public void onStart() throws Exception {
         super.onStart();
 
-        String defaultTypes = "ThingAsset,LightAsset,RoomAsset,ThermostatAsset";
+        String defaultTypes = "ThingAsset,LightAsset,RoomAsset,ThermostatAsset,BuildingAsset";
         String types = getString(container.getConfig(), OR_SETUP_ASSET_TYPES, defaultTypes);
-        int assetsPerType = getInteger(container.getConfig(), OR_SETUP_ASSETS, 10000);
+        int assetsPerType = getInteger(container.getConfig(), OR_SETUP_ASSETS, 20000);
 
         Reflections reflections = new Reflections("org.openremote.model.asset.impl");
         Set<Class<? extends Asset>> allAvailableClasses = reflections.getSubTypesOf(Asset.class);
@@ -79,30 +85,52 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
             .filter(clazz -> !Modifier.isAbstract(clazz.getModifiers()))
             .collect(Collectors.toMap(Class::getSimpleName, clazz -> clazz));
 
-        String[] typesToLoad = types.split(",");
-
-        for (String typeName : typesToLoad) {
+        List<Class<? extends Asset>> validClasses = new ArrayList<>();
+        for (String typeName : types.split(",")) {
             String cleanName = typeName.trim();
             Class<? extends Asset> clazz = assetRegistry.get(cleanName);
-
             if (clazz == null) {
                 LOG.severe("Skipping unknown asset type: " + cleanName);
                 continue;
             }
-
             // Skip asset types which either can't directly be initialized or are slow to init
             if (clazz.equals(UnknownAsset.class) || clazz.equals(GroupAsset.class) || clazz.equals(GatewayAsset.class)) continue;
+            validClasses.add(clazz);
+        }
 
-            IntStream.rangeClosed(1, assetsPerType).forEach(i -> {
+        int expectedAssetCount = assetsPerType * validClasses.size();
+        AtomicInteger assets = new AtomicInteger(0);
+
+        for (Class<? extends Asset> clazz : validClasses) {
+            IntStream.range(0, assetsPerType).forEach(i -> {
                 executor.execute(() -> {
                     try {
                         createAsset(clazz, i);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
+                    assets.incrementAndGet();
                 });
             });
         }
+
+        // Wait until all assets are created
+        Instant start = Instant.now();
+        LOG.info(String.format("Waiting for %s assets to be created", expectedAssetCount));
+        while (assets.get() < expectedAssetCount) {
+            LOG.info(String.format("%s/%s devices created", assets.get(), expectedAssetCount));
+            if (Instant.now().isAfter(start.plus(SETUP_MAX_WAIT_DURATION))) {
+                throw new IllegalStateException("Failed to provision all requested devices after " + SETUP_MAX_WAIT_DURATION);
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // restore interrupt flag
+                LOG.info("Setup interrupted while waiting for devices to be created");
+                break;
+            }
+        }
+        LOG.info(String.format("Finished creating %s devices", expectedAssetCount));
     }
 
     private void createAsset(Class<? extends Asset> clazz, int i) throws Exception {

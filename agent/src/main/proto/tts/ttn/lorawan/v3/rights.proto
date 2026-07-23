@@ -1,0 +1,273 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/timestamp.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// Right is the enum that defines all the different rights to do something in the network.
+enum Right {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "RIGHT"
+  };
+
+  right_invalid = 0;
+
+  // The right to view user information.
+  RIGHT_USER_INFO = 1;
+  // The right to edit basic user settings.
+  RIGHT_USER_SETTINGS_BASIC = 2;
+  // The right to list users accounts.
+  RIGHT_USER_LIST = 87;
+  // The right to create an user account.
+  RIGHT_USER_CREATE = 88;
+  // The right to view and edit user API keys.
+  RIGHT_USER_SETTINGS_API_KEYS = 3;
+  // The right to delete user account.
+  RIGHT_USER_DELETE = 4;
+  // The right to delete user account.
+  RIGHT_USER_PURGE = 66;
+  // The right to view and edit authorized OAuth clients of the user.
+  RIGHT_USER_AUTHORIZED_CLIENTS = 5;
+  // The right to list applications the user is a collaborator of.
+  RIGHT_USER_APPLICATIONS_LIST = 6;
+  // The right to create an application under the user account.
+  RIGHT_USER_APPLICATIONS_CREATE = 7;
+  // The right to list gateways the user is a collaborator of.
+  RIGHT_USER_GATEWAYS_LIST = 8;
+  // The right to create a gateway under the account of the user.
+  RIGHT_USER_GATEWAYS_CREATE = 9;
+  // The right to list OAuth clients the user is a collaborator of.
+  RIGHT_USER_CLIENTS_LIST = 10;
+  // The right to create an OAuth client under the account of the user.
+  RIGHT_USER_CLIENTS_CREATE = 11;
+  // The right to list organizations the user is a member of.
+  RIGHT_USER_ORGANIZATIONS_LIST = 12;
+  // The right to create an organization under the user account.
+  RIGHT_USER_ORGANIZATIONS_CREATE = 13;
+  // The right to read notifications sent to the user.
+  RIGHT_USER_NOTIFICATIONS_READ = 59;
+  // The pseudo-right for all (current and future) user rights.
+  RIGHT_USER_ALL = 14;
+
+  // The right to view application information.
+  RIGHT_APPLICATION_INFO = 15;
+  // The right to edit basic application settings.
+  RIGHT_APPLICATION_SETTINGS_BASIC = 16;
+  // The right to view and edit application API keys.
+  RIGHT_APPLICATION_SETTINGS_API_KEYS = 17;
+  // The right to view and edit application collaborators.
+  RIGHT_APPLICATION_SETTINGS_COLLABORATORS = 18;
+  // The right to view and edit application packages and associations.
+  RIGHT_APPLICATION_SETTINGS_PACKAGES = 56;
+  // The right to delete application.
+  RIGHT_APPLICATION_DELETE = 19;
+  // The right to purge application.
+  RIGHT_APPLICATION_PURGE = 64;
+  // The right to view devices in application.
+  RIGHT_APPLICATION_DEVICES_READ = 20;
+  // The right to create devices in application.
+  RIGHT_APPLICATION_DEVICES_WRITE = 21;
+  // The right to view device keys in application.
+  // Note that keys may not be stored in a way that supports viewing them.
+  RIGHT_APPLICATION_DEVICES_READ_KEYS = 22;
+  // The right to edit device keys in application.
+  RIGHT_APPLICATION_DEVICES_WRITE_KEYS = 23;
+  // The right to read application traffic (uplink and downlink).
+  RIGHT_APPLICATION_TRAFFIC_READ = 24;
+  // The right to write uplink application traffic.
+  RIGHT_APPLICATION_TRAFFIC_UP_WRITE = 25;
+  // The right to write downlink application traffic.
+  RIGHT_APPLICATION_TRAFFIC_DOWN_WRITE = 26;
+  // The right to link as Application to a Network Server for traffic exchange,
+  // i.e. read uplink and write downlink (API keys only).
+  // This right is typically only given to an Application Server.
+  // This right implies RIGHT_APPLICATION_INFO, RIGHT_APPLICATION_TRAFFIC_READ,
+  // and RIGHT_APPLICATION_TRAFFIC_DOWN_WRITE.
+  RIGHT_APPLICATION_LINK = 27;
+  // The pseudo-right for all (current and future) application rights.
+  RIGHT_APPLICATION_ALL = 28;
+
+  // The pseudo-right for all (current and future) OAuth client rights.
+  RIGHT_CLIENT_ALL = 29;
+  // The right to read client information.
+  RIGHT_CLIENT_INFO = 60;
+  // The right to edit basic client settings.
+  RIGHT_CLIENT_SETTINGS_BASIC = 61;
+  // The right to view and edit client collaborators.
+  RIGHT_CLIENT_SETTINGS_COLLABORATORS = 62;
+  // The right to delete a client.
+  RIGHT_CLIENT_DELETE = 63;
+  // The right to purge a client.
+  RIGHT_CLIENT_PURGE = 68;
+
+  // The right to view gateway information.
+  RIGHT_GATEWAY_INFO = 30;
+  // The right to edit basic gateway settings.
+  RIGHT_GATEWAY_SETTINGS_BASIC = 31;
+  // The right to view and edit gateway API keys.
+  RIGHT_GATEWAY_SETTINGS_API_KEYS = 32;
+  // The right to view and edit gateway collaborators.
+  RIGHT_GATEWAY_SETTINGS_COLLABORATORS = 33;
+  // The right to delete gateway.
+  RIGHT_GATEWAY_DELETE = 34;
+  // The right to purge gateway.
+  RIGHT_GATEWAY_PURGE = 67;
+  // The right to read gateway traffic.
+  RIGHT_GATEWAY_TRAFFIC_READ = 35;
+  // The right to write downlink gateway traffic.
+  RIGHT_GATEWAY_TRAFFIC_DOWN_WRITE = 36;
+  // The right to link as Gateway to a Gateway Server for traffic exchange,
+  // i.e. write uplink and read downlink (API keys only)
+  // This right is typically only given to a gateway.
+  // This right implies RIGHT_GATEWAY_INFO.
+  RIGHT_GATEWAY_LINK = 37;
+  // The right to view gateway status.
+  RIGHT_GATEWAY_STATUS_READ = 38;
+  // The right to view view gateway location.
+  RIGHT_GATEWAY_LOCATION_READ = 39;
+  // The right to store secrets associated with this gateway.
+  RIGHT_GATEWAY_WRITE_SECRETS = 57;
+  // The right to retrieve secrets associated with this gateway.
+  RIGHT_GATEWAY_READ_SECRETS = 58;
+  // The pseudo-right for all (current and future) gateway rights.
+  RIGHT_GATEWAY_ALL = 40;
+
+  // The right to view organization information.
+  RIGHT_ORGANIZATION_INFO = 41;
+  // The right to edit basic organization settings.
+  RIGHT_ORGANIZATION_SETTINGS_BASIC = 42;
+  // The right to view and edit organization API keys.
+  RIGHT_ORGANIZATION_SETTINGS_API_KEYS = 43;
+  // The right to view and edit organization members.
+  RIGHT_ORGANIZATION_SETTINGS_MEMBERS = 44;
+  // The right to delete organization.
+  RIGHT_ORGANIZATION_DELETE = 45;
+  // The right to purge organization.
+  RIGHT_ORGANIZATION_PURGE = 65;
+  // The right to list the applications the organization is a collaborator of.
+  RIGHT_ORGANIZATION_APPLICATIONS_LIST = 46;
+  // The right to create an application under the organization.
+  RIGHT_ORGANIZATION_APPLICATIONS_CREATE = 47;
+  // The right to list the gateways the organization is a collaborator of.
+  RIGHT_ORGANIZATION_GATEWAYS_LIST = 48;
+  // The right to create a gateway under the organization.
+  RIGHT_ORGANIZATION_GATEWAYS_CREATE = 49;
+  // The right to list the OAuth clients the organization is a collaborator of.
+  RIGHT_ORGANIZATION_CLIENTS_LIST = 50;
+  // The right to create an OAuth client under the organization.
+  RIGHT_ORGANIZATION_CLIENTS_CREATE = 51;
+  // The right to add the organization as a collaborator on an existing entity.
+  RIGHT_ORGANIZATION_ADD_AS_COLLABORATOR = 52;
+  // The pseudo-right for all (current and future) organization rights.
+  RIGHT_ORGANIZATION_ALL = 53;
+
+  // The right to send invites to new users.
+  // Note that this is not prefixed with "USER_"; it is not a right on the user entity.
+  RIGHT_SEND_INVITES = 54;
+
+  reserved 69;
+  reserved 70;
+  reserved 71;
+  reserved 72;
+  reserved 73;
+  reserved 74;
+  reserved 75;
+  reserved 76;
+  reserved 77;
+  reserved 78;
+  reserved 79;
+  reserved 80;
+  reserved 81;
+  reserved 82;
+  reserved 83;
+  reserved 84;
+  reserved 85;
+  reserved 86;
+  reserved 92;
+  reserved 93;
+  reserved 94;
+  reserved 95;
+  reserved 96;
+  reserved 97;
+
+  // The pseudo-right for all (current and future) possible rights.
+  RIGHT_ALL = 55;
+
+  // Next value: 89
+}
+
+message Rights {
+  repeated Right rights = 1 [(validate.rules).repeated.items.enum.defined_only = true];
+}
+
+message APIKey {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Immutable and unique public identifier for the API key.
+  // Generated by the Access Server.
+  string id = 1;
+  // Immutable and unique secret value of the API key.
+  // Generated by the Access Server.
+  string key = 2;
+
+  // User-defined (friendly) name for the API key.
+  string name = 3 [(validate.rules).string.max_len = 50];
+
+  // Rights that are granted to this API key.
+  repeated Right rights = 4 [(validate.rules).repeated.items.enum.defined_only = true];
+
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  google.protobuf.Timestamp expires_at = 7 [(validate.rules).timestamp.gt_now = true];
+}
+
+message APIKeys {
+  repeated APIKey api_keys = 1;
+}
+
+message Collaborator {
+  OrganizationOrUserIdentifiers ids = 1 [(validate.rules).message.required = true];
+  repeated Right rights = 2 [(validate.rules).repeated.items.enum.defined_only = true];
+  reserved 3; // reserved for future EntityIdentifiers entity = 3;
+  reserved 4; // reserved for future State state = 4;
+  reserved 5; // reserved for future google.protobuf.Timestamp created_at = 5;
+  reserved 6; // reserved for future google.protobuf.Timestamp updated_at = 6;
+  // NOTE: Keep compatible with GetCollaboratorResponse.
+}
+
+message GetCollaboratorResponse {
+  OrganizationOrUserIdentifiers ids = 1;
+  repeated Right rights = 2;
+  reserved 3; // reserved for future EntityIdentifiers entity = 3;
+  reserved 4; // reserved for future State state = 4;
+  reserved 5; // reserved for future google.protobuf.Timestamp created_at = 5;
+  reserved 6; // reserved for future google.protobuf.Timestamp updated_at = 6;
+  // NOTE: Keep compatible with Collaborator.
+}
+
+message Collaborators {
+  repeated Collaborator collaborators = 1;
+}

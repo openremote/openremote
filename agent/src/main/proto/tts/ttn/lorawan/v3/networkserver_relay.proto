@@ -1,0 +1,203 @@
+// Copyright © 2023 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/field_mask.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "ttn/lorawan/v3/end_device.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message CreateRelayRequest {
+  // End device identifiers of the relay.
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+
+  // Relay configuration.
+  RelaySettings settings = 2 [(validate.rules).message.required = true];
+}
+
+message CreateRelayResponse {
+  // Relay configuration.
+  RelaySettings settings = 1;
+}
+
+message GetRelayRequest {
+  // End device identifiers of the relay.
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+
+  // Field mask of the fields to return.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message GetRelayResponse {
+  // Relay configuration.
+  RelaySettings settings = 1;
+}
+
+message UpdateRelayRequest {
+  // End device identifiers of the relay.
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+
+  // Relay configuration.
+  RelaySettings settings = 2 [(validate.rules).message.required = true];
+
+  // Field mask of the fields to update.
+  google.protobuf.FieldMask field_mask = 3;
+}
+
+message UpdateRelayResponse {
+  // Relay configuration.
+  RelaySettings settings = 1;
+}
+
+message DeleteRelayRequest {
+  // End device identifiers of the relay.
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+}
+
+message DeleteRelayResponse {}
+
+message CreateRelayUplinkForwardingRuleRequest {
+  // End device identifiers of the relay.
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+
+  // Index of the uplink forwarding rule.
+  uint32 index = 2 [(validate.rules).uint32.lte = 15];
+
+  // Uplink forwarding rule.
+  RelayUplinkForwardingRule rule = 3 [(validate.rules).message.required = true];
+}
+
+message CreateRelayUplinkForwardingRuleResponse {
+  // Uplink forwarding rule.
+  RelayUplinkForwardingRule rule = 1;
+}
+
+message GetRelayUplinkForwardingRuleRequest {
+  // End device identifiers of the relay.
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+
+  // Index of the uplink forwarding rule.
+  uint32 index = 2 [(validate.rules).uint32.lte = 15];
+
+  // Field mask of the fields to return.
+  google.protobuf.FieldMask field_mask = 3;
+}
+
+message GetRelayUplinkForwardingRuleResponse {
+  // Uplink forwarding rule.
+  RelayUplinkForwardingRule rule = 1;
+}
+
+message ListRelayUplinkForwardingRulesRequest {
+  // End device identifiers of the relay.
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+
+  // Field mask of the fields to return.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListRelayUplinkForwardingRulesResponse {
+  // Uplink forwarding rules.
+  repeated RelayUplinkForwardingRule rules = 1;
+}
+
+message UpdateRelayUplinkForwardingRuleRequest {
+  // End device identifiers of the relay.
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+
+  // Index of the uplink forwarding rule.
+  uint32 index = 2 [(validate.rules).uint32.lte = 15];
+
+  // Uplink forwarding rule.
+  RelayUplinkForwardingRule rule = 3 [(validate.rules).message.required = true];
+
+  // Field mask of the fields to update.
+  google.protobuf.FieldMask field_mask = 4;
+}
+
+message UpdateRelayUplinkForwardingRuleResponse {
+  // Uplink forwarding rule.
+  RelayUplinkForwardingRule rule = 1;
+}
+
+message DeleteRelayUplinkForwardingRuleRequest {
+  // End device identifiers of the relay.
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+
+  // Index of the uplink forwarding rule.
+  uint32 index = 2 [(validate.rules).uint32.lte = 15];
+}
+
+message DeleteRelayUplinkForwardingRuleResponse {}
+
+// The NsRelayConfigurationService provides configuration management capabilities for relays.
+service NsRelayConfigurationService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage configuration of LoRaWAN® relay devices."};
+  // Create a relay.
+  rpc CreateRelay(CreateRelayRequest) returns (CreateRelayResponse) {
+    option (google.api.http) = {
+      post: "/ns/applications/{end_device_ids.application_ids.application_id}/relays"
+      body: "*"
+    };
+  }
+  // Get a relay.
+  rpc GetRelay(GetRelayRequest) returns (GetRelayResponse) {
+    option (google.api.http) = {get: "/ns/applications/{end_device_ids.application_ids.application_id}/relays/{end_device_ids.device_id}"};
+  }
+  // Update a relay.
+  rpc UpdateRelay(UpdateRelayRequest) returns (UpdateRelayResponse) {
+    option (google.api.http) = {
+      put: "/ns/applications/{end_device_ids.application_ids.application_id}/relays/{end_device_ids.device_id}"
+      body: "*"
+    };
+  }
+  // Delete a relay.
+  rpc DeleteRelay(DeleteRelayRequest) returns (DeleteRelayResponse) {
+    option (google.api.http) = {delete: "/ns/applications/{end_device_ids.application_ids.application_id}/relays/{end_device_ids.device_id}"};
+  }
+
+  // Create an uplink forwarding rule.
+  rpc CreateRelayUplinkForwardingRule(CreateRelayUplinkForwardingRuleRequest) returns (CreateRelayUplinkForwardingRuleResponse) {
+    option (google.api.http) = {
+      post: "/ns/applications/{end_device_ids.application_ids.application_id}/relays/{end_device_ids.device_id}/uplink-forwarding-rules"
+      body: "*"
+    };
+  }
+  // Get an uplink forwarding rule.
+  rpc GetRelayUplinkForwardingRule(GetRelayUplinkForwardingRuleRequest) returns (GetRelayUplinkForwardingRuleResponse) {
+    option (google.api.http) = {get: "/ns/applications/{end_device_ids.application_ids.application_id}/relays/{end_device_ids.device_id}/uplink-forwarding-rules/{index}"};
+  }
+  // List uplink forwarding rules.
+  rpc ListRelayUplinkForwardingRules(ListRelayUplinkForwardingRulesRequest) returns (ListRelayUplinkForwardingRulesResponse) {
+    option (google.api.http) = {get: "/ns/applications/{end_device_ids.application_ids.application_id}/relays/{end_device_ids.device_id}/uplink-forwarding-rules"};
+  }
+  // Update an uplink forwarding rule.
+  rpc UpdateRelayUplinkForwardingRule(UpdateRelayUplinkForwardingRuleRequest) returns (UpdateRelayUplinkForwardingRuleResponse) {
+    option (google.api.http) = {
+      put: "/ns/applications/{end_device_ids.application_ids.application_id}/relays/{end_device_ids.device_id}/uplink-forwarding-rules/{index}"
+      body: "*"
+    };
+  }
+  // Delete an uplink forwarding rule.
+  rpc DeleteRelayUplinkForwardingRule(DeleteRelayUplinkForwardingRuleRequest) returns (DeleteRelayUplinkForwardingRuleResponse) {
+    option (google.api.http) = {delete: "/ns/applications/{end_device_ids.application_ids.application_id}/relays/{end_device_ids.device_id}/uplink-forwarding-rules/{index}"};
+  }
+}

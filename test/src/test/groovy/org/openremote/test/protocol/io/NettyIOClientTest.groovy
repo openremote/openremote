@@ -94,6 +94,5 @@ class NettyIOClientTest extends Specification implements ManagerContainerTrait {
         
         cleanup:
         AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS = oldDelay
-        client.executorService.shutdownNow()
     }
 }

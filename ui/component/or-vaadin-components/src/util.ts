@@ -17,6 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+import {WellknownValueTypes} from "@openremote/model";
+
 export enum InputType {
     BUTTON = "button",
     BUTTON_TOGGLE = "button-toggle",
@@ -50,6 +52,38 @@ export enum InputType {
     DURATION_PERIOD = "duration-period"
 }
 
+export const SUPPORTED_WELLKNOWN_VALUE_TYPES = [
+    WellknownValueTypes.TEXT,
+    WellknownValueTypes.EMAIL,
+    WellknownValueTypes.UUID,
+    WellknownValueTypes.ASSETID,
+    WellknownValueTypes.HOSTORIPADDRESS,
+    WellknownValueTypes.IPADDRESS,
+    WellknownValueTypes.BOOLEAN,
+    WellknownValueTypes.BIGNUMBER,
+    WellknownValueTypes.NUMBER,
+    WellknownValueTypes.POSITIVEINTEGER,
+    WellknownValueTypes.POSITIVENUMBER,
+    WellknownValueTypes.LONG,
+    WellknownValueTypes.INTEGER,
+    WellknownValueTypes.BYTE,
+    WellknownValueTypes.INTEGERBYTE,
+    WellknownValueTypes.DIRECTION,
+    WellknownValueTypes.TCPIPPORTNUMBER,
+    WellknownValueTypes.BIGINTEGER,
+    WellknownValueTypes.COLOURRGB,
+    WellknownValueTypes.DATEANDTIME,
+    WellknownValueTypes.TIMESTAMP,
+    WellknownValueTypes.TIMESTAMPISO8601,
+    WellknownValueTypes.CRONEXPRESSION,
+    WellknownValueTypes.TIMEDURATIONISO8601,
+    WellknownValueTypes.PERIODDURATIONISO8601,
+    WellknownValueTypes.TIMEANDPERIODDURATIONISO8601,
+    WellknownValueTypes.JSONOBJECT
+] as const;
+
+export type SupportedWellknownValueTypes = typeof SUPPORTED_WELLKNOWN_VALUE_TYPES[number];
+
 export interface OrVaadinComponent {
     getAttributeNames(): string[];
 }
@@ -78,7 +112,7 @@ export function inputTypeSupportsSendButton(inputType: InputType): boolean {
 }
 
 export function inputTypeSupportsHelperText(inputType: InputType) {
-    return inputTypeSupportsSendButton(inputType) || inputType === InputType.SELECT;
+    return inputTypeSupportsSendButton(inputType) || inputType === InputType.SELECT || inputType === InputType.RANGE;
 }
 
 export function inputTypeSupportsLabel(inputType: InputType) {

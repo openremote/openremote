@@ -47,6 +47,7 @@ import spock.util.concurrent.PollingConditions
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.concurrent.CopyOnWriteArrayList
 
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
@@ -796,7 +797,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         def attributeRef = new org.openremote.model.attribute.AttributeRef(device.getId(), "continuousWrite")
 
         then: "multiple write events should be observed"
-        def writeRequests = []
+        def writeRequests = new CopyOnWriteArrayList<>()
         conditions.eventually {
             def request = latestRequest
             if (request != null) {

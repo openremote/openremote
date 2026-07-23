@@ -45,13 +45,22 @@ export class InsightsPage implements BasePage {
     }
 
     /**
+     * Gets the parent Gridstack item container for a given widget.
+     * @param widget The `or-dashboard-widget-container` locator
+     * @returns The locator for the Gridstack item container
+     */
+    getWidgetGSContainer(widget: Locator): Locator {
+        return widget.locator("..").locator("..");
+    }
+
+    /**
      * Gets the x and y coordinates for the specified widget
      * @requires the locator to reference a `or-dashboard-widget-container` to be able to get the Gridstack node
      * @param widget The `or-dashboard-widget-container` locator
      * @returns The x and y grid cell coordinates
      */
     getWidgetLocation(widget: Locator): Promise<[number, number]> {
-        return widget.locator("..").locator("..").evaluate((el: any) => [el.gridstackNode.x, el.gridstackNode.y]);
+        return this.getWidgetGSContainer(widget).evaluate((el: any) => [el.gridstackNode.x, el.gridstackNode.y]);
     }
 
     /**
@@ -91,13 +100,16 @@ export class InsightsPage implements BasePage {
      * Resize a widget from its bottom right corner to the specified grid cell coordinates
      * @param widget The locator of the widget
      * @param to The grid cell coordinates to resize the widget to
+     * @param options The resize options (e.g. force will skip dimension assertions)
      */
-    async resizeWidgetTo(widget: Locator, [cellsWidth, cellsHeight] = [8, 8]) {
+    async resizeWidgetTo(widget: Locator, [cellsWidth, cellsHeight] = [8, 8], { force } = { force: false }) {
         const [gridX, gridY] = await this.getWidgetLocation(widget);
         const [cellWidth, cellHeight] = await this.getGridCellDimensions();
         const [width, height] = [cellsWidth * cellWidth, cellsHeight * cellHeight];
 
-        await this.page.dragAndDrop(`.ui-resizable-handle.ui-resizable-se`, ".maingrid", {
+        const grid = this.page.locator(".maingrid");
+        await this.getWidgetGSContainer(widget).locator(".ui-resizable-handle.ui-resizable-se").dragTo(grid, {
+            force,
             // We apply -cellWidth/Height / 2 as the handle causes the source position to be offset
             targetPosition: {
                 x: gridX * cellWidth + width - cellWidth / 2,
@@ -105,6 +117,8 @@ export class InsightsPage implements BasePage {
             },
             steps: 10,
         });
+
+        if (force) return;
 
         const bbox = await widget.boundingBox();
         // The dashboard dimensions should be equal to the specified cells,
@@ -126,5 +140,84 @@ export class InsightsPage implements BasePage {
             await dialog.getByText(attributeName).click();
         }
         await dialog.getByRole("button", { name: "Add" }).click();
+    }
+
+    /**
+     * Selects a widget (opens its settings).
+     * @param widget The `or-dashboard-widget-container` locator
+     */
+    async selectWidget(widget: Locator) {
+        await widget.scrollIntoViewIfNeeded();
+        await widget.locator(".panel-title").click();
+    }
+
+    /**
+     * "Broken Reference" entries, both in chart widget legends and in the widget
+     * settings attribute list.
+     * @param options Optional locator options (e.g. scope via `has`)
+     */
+    getBrokenReferences(options?: any) {
+        return this.page.locator('or-translate[value="brokenReference"]', options);
+    }
+
+    /**
+     * Broken attribute rows shown in the widget settings attribute list.
+     */
+    getBrokenAttributeRows(options?: any) {
+        return this.getWidgetSettings().locator(".attribute-list-item.broken", options);
+    }
+
+    /**
+     * Opens the attribute picker for the replace ("swap-horizontal") action on a
+     * given attribute row and returns the picker dialog locator.
+     * @param row The attribute row locator (broken or healthy)
+     */
+    async openReplacePicker(row: Locator): Promise<Locator> {
+        const button = row.locator('button[title="Replace attribute"]');
+        await expect(button).toBeVisible();
+        await button.dispatchEvent("click");
+        const dialog = this.page.locator("#dialog");
+        await expect(dialog).toBeVisible();
+        return dialog;
+    }
+
+    /**
+     * Sets the custom line/bar colour of the (single) attribute in the open widget
+     * settings.
+     * @param hex The colour to set, e.g. `#ff0000`
+     */
+    async setAttributeColor(hex: string) {
+        const settings = this.getWidgetSettings();
+        // Action buttons on a healthy row are only visible while the row is hovered
+        await settings.locator(".attribute-list-item").first().hover();
+        await settings.locator('button:has(or-icon[icon="palette"])').click();
+        const colorInput = settings.locator('input[id^="chart-color-"]');
+        await colorInput.evaluate((el, value) => {
+            (el as HTMLInputElement).value = value;
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+        }, hex);
+        // The colour change is written to the config behind a debounce; wait for it
+        // to flush so the colour persists when the dashboard is saved.
+        await expect
+            .poll(async () => (await this.getAttributeColors()).some(([, c]) => c?.toLowerCase() === hex.toLowerCase()))
+            .toBe(true);
+    }
+
+    /**
+     * Reads the current value of the (single) custom colour input in the open
+     * widget settings.
+     */
+    getAttributeColorInput(): Locator {
+        return this.getWidgetSettings().locator('input[id^="chart-color-"]');
+    }
+
+    /**
+     * Reads the `attributeColors` config (`[AttributeRef, hex]` entries) off the
+     * open chart/barchart settings element.
+     */
+    getAttributeColors(): Promise<[{ id?: string; name?: string }, string][]> {
+        return this.getWidgetSettings()
+            .locator("chart-settings, barchart-settings")
+            .evaluate((el: any) => el?.widgetConfig?.attributeColors ?? []);
     }
 }

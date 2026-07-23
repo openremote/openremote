@@ -1,0 +1,880 @@
+syntax = "proto3";
+
+package gw;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/gw";
+option java_package = "io.chirpstack.api.gw";
+option java_multiple_files = true;
+option java_outer_classname = "GatewayProto";
+option csharp_namespace = "Chirpstack.Gateway";
+option php_namespace = "Chirpstack\\Gateway";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Gateway";
+
+import "common/common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/struct.proto";
+
+enum CodeRate {
+  CR_UNDEFINED = 0;
+  CR_4_5 = 1; // LoRa
+  CR_4_6 = 2;
+  CR_4_7 = 3;
+  CR_4_8 = 4;
+  CR_3_8 = 5; // LR-FHSS
+  CR_2_6 = 6;
+  CR_1_4 = 7;
+  CR_1_6 = 8;
+  CR_5_6 = 9;
+  CR_LI_4_5 = 10; // LoRa 2.4 gHz
+  CR_LI_4_6 = 11;
+  CR_LI_4_8 = 12;
+}
+
+enum DownlinkTiming {
+  // Send the downlink immediately.
+  IMMEDIATELY = 0;
+
+  // Send downlink at the given delay (based on provided context).
+  DELAY = 1;
+
+  // Send at given GPS epoch value.
+  GPS_EPOCH = 2;
+}
+
+enum FineTimestampType {
+  // No fine-timestamp available.
+  NONE = 0;
+
+  // Encrypted fine-timestamp.
+  ENCRYPTED = 1;
+
+  // Plain fine-timestamp.
+  PLAIN = 2;
+}
+
+enum CRCStatus {
+  // No CRC.
+  NO_CRC = 0;
+
+  // Bad CRC.
+  BAD_CRC = 1;
+
+  // CRC OK.
+  CRC_OK = 2;
+}
+
+enum TxAckStatus {
+  // Ignored (when a previous item was already emitted).
+  IGNORED = 0;
+
+  // Packet has been programmed for downlink.
+  OK = 1;
+
+  // Rejected because it was already too late to program this packet for
+  // downlink.
+  TOO_LATE = 2;
+
+  // Rejected because downlink packet timestamp is too much in advance.
+  TOO_EARLY = 3;
+
+  // Rejected because there was already a packet programmed in requested
+  // timeframe.
+  COLLISION_PACKET = 4;
+
+  // Rejected because there was already a beacon planned in requested timeframe.
+  COLLISION_BEACON = 5;
+
+  // Rejected because requested frequency is not supported by TX RF chain.
+  TX_FREQ = 6;
+
+  // Rejected because requested power is not supported by gateway.
+  TX_POWER = 7;
+
+  // Rejected because GPS is unlocked, so GPS timestamp cannot be used.
+  GPS_UNLOCKED = 8;
+
+  // Downlink queue is full.
+  QUEUE_FULL = 9;
+
+  // Internal error.
+  INTERNAL_ERROR = 10;
+
+  // Duty-cycle overflow.
+  DUTY_CYCLE_OVERFLOW = 11;
+}
+
+// Gateway events as reported by the ChirpStack Concentratord ZMQ interface.
+message Event {
+  oneof event {
+    // Uplink frame.
+    UplinkFrame uplink_frame = 1;
+
+    // Gateway stats.
+    GatewayStats gateway_stats = 2;
+
+    // Gateway Mesh Event.
+    MeshEvent mesh = 3;
+  }
+}
+
+// Commands that can be sent to the ChirpStack Concentratord ZMQ interface.
+message Command {
+  oneof command {
+    // Downlink frame.
+    DownlinkFrame send_downlink_frame = 1;
+
+    // Gateway configuration.
+    GatewayConfiguration set_gateway_configuration = 2;
+
+    // Get Gateway ID.
+    GetGatewayIdRequest get_gateway_id = 3;
+
+    // Get location.
+    GetLocationRequest get_location = 4;
+
+    // Gateway Mesh Command.
+    MeshCommand mesh = 5;
+  }
+}
+
+message MeshEvent {
+  // Gateway ID (of the Border Gateway).
+  string gateway_id = 1;
+
+  // Relay ID.
+  string relay_id = 2;
+
+  // Timestamp (second precision).
+  google.protobuf.Timestamp time = 3;
+
+  // Mesh events.
+  repeated MeshEventItem events = 4;
+}
+
+message MeshEventItem {
+  oneof event {
+    // Proprietary Mesh event.
+    MeshEventProprietary proprietary = 1;
+
+    // Mesh heartbeat.
+    MeshEventHeartbeat heartbeat = 2;
+  }
+}
+
+message MeshCommand {
+    // Gateway ID (of the Border Gateway).
+  string gateway_id = 1;
+
+  // Relay ID.
+  string relay_id = 2;
+
+  // Mesh events.
+  repeated MeshCommandItem commands = 3;
+}
+
+message MeshCommandItem {
+  oneof command {
+    // Proprietary Mesh command.
+    MeshCommandProprietary proprietary = 1;
+  }
+}
+
+message Modulation {
+  oneof parameters {
+    // LoRa modulation information.
+    LoraModulationInfo lora = 3;
+
+    // FSK modulation information.
+    FskModulationInfo fsk = 4;
+
+    // LR-FHSS modulation information.
+    LrFhssModulationInfo lr_fhss = 5;
+  }
+}
+
+message UplinkTxInfoLegacy {
+  // Frequency (Hz).
+  uint32 frequency = 1;
+
+  // Modulation.
+  common.Modulation modulation = 2;
+
+  oneof modulation_info {
+    // LoRa modulation information.
+    LoraModulationInfo lora_modulation_info = 3;
+
+    // FSK modulation information.
+    FskModulationInfo fsk_modulation_info = 4;
+
+    // LR-FHSS modulation information.
+    LrFhssModulationInfo lr_fhss_modulation_info = 5;
+  }
+}
+
+message UplinkTxInfo {
+  // Frequency (Hz).
+  uint32 frequency = 1;
+
+  // Modulation.
+  Modulation modulation = 2;
+}
+
+message LoraModulationInfo {
+  // Bandwidth.
+  uint32 bandwidth = 1;
+
+  // Speading-factor.
+  uint32 spreading_factor = 2;
+
+  // Code-rate.
+  string code_rate_legacy = 3;
+
+  // Code-rate.
+  CodeRate code_rate = 5;
+
+  // Polarization inversion.
+  bool polarization_inversion = 4;
+
+  // Preamble length (for TX).
+  uint32 preamble = 6;
+
+  //  No CRC (for TX).
+  // If true, do not send a CRC in the packet.
+  bool no_crc = 7;
+}
+
+message FskModulationInfo {
+  // Frequency deviation.
+  uint32 frequency_deviation = 1;
+
+  // FSK datarate (bits / sec).
+  uint32 datarate = 2;
+}
+
+message LrFhssModulationInfo {
+  // Operating channel width (OCW) in Hz.
+  uint32 operating_channel_width = 1;
+
+  // Code-rate.
+  // Deprecated: use code_rate.
+  string code_rate_legacy = 2;
+
+  // Code-rate.
+  CodeRate code_rate = 4;
+
+  // Hopping grid number of steps.
+  uint32 grid_steps = 3;
+}
+
+message EncryptedFineTimestamp {
+  // AES key index used for encrypting the fine timestamp.
+  uint32 aes_key_index = 1;
+
+  // Encrypted 'main' fine-timestamp (ns precision part of the timestamp).
+  bytes encrypted_ns = 2;
+
+  // FPGA ID.
+  bytes fpga_id = 3;
+}
+
+message PlainFineTimestamp {
+  // Full timestamp.
+  google.protobuf.Timestamp time = 1;
+}
+
+message GatewayStats {
+  // Gateway ID.
+  // Deprecated: use gateway_id.
+  bytes gateway_id_legacy = 1;
+
+  // Gateway ID.
+  string gateway_id = 17;
+
+  // Gateway time.
+  google.protobuf.Timestamp time = 2;
+
+  // Gateway location.
+  common.Location location = 3;
+
+  // Gateway configuration version (this maps to the config_version sent
+  // by ChirpStack to the gateway).
+  string config_version = 4;
+
+  // Number of radio packets received.
+  uint32 rx_packets_received = 5;
+
+  // Number of radio packets received with valid PHY CRC.
+  uint32 rx_packets_received_ok = 6;
+
+  // Number of downlink packets received for transmission.
+  uint32 tx_packets_received = 7;
+
+  // Number of downlink packets emitted.
+  uint32 tx_packets_emitted = 8;
+
+  // Additional gateway meta-data.
+  map<string, string> metadata = 10;
+
+  // Tx packets per frequency.
+  map<uint32, uint32> tx_packets_per_frequency = 12;
+
+  // Rx packets per frequency.
+  map<uint32, uint32> rx_packets_per_frequency = 13;
+
+  // Tx packets per modulation parameters.
+  repeated PerModulationCount tx_packets_per_modulation = 14;
+
+  // Rx packets per modulation parameters.
+  repeated PerModulationCount rx_packets_per_modulation = 15;
+
+  // Tx packets per status.
+  map<string, uint32> tx_packets_per_status = 16;
+
+  // Duty-cycle statistics (Concentratord only).
+  DutyCycleStats duty_cycle_stats = 18;
+}
+
+message PerModulationCount {
+  // Modulation.
+  Modulation modulation = 1;
+
+  // Count.
+  uint32 count = 2;
+}
+
+message DutyCycleStats {
+  // Implemented regulation.
+  common.Regulation regulation = 1;
+
+  // Tracking window.
+  google.protobuf.Duration window = 2;
+
+  // Bands.
+  repeated DutyCycleBand bands = 3;
+}
+
+message DutyCycleBand {
+  // Band name.
+  string name = 1;
+
+  // Min frequency for this band.
+  uint32 frequency_min = 2;
+
+  // Max frequency for this band.
+  uint32 frequency_max = 3;
+
+  // Max. allowed load.
+  google.protobuf.Duration load_max = 4;
+
+  // Tracked load (within the window of the regionlation).
+  google.protobuf.Duration load_tracked = 5;
+}
+
+message UplinkRxInfoLegacy {
+  // Gateway ID.
+  bytes gateway_id = 1;
+
+  // RX time (only set when the gateway has a GPS module).
+  google.protobuf.Timestamp time = 2;
+
+  // RX time since GPS epoch (only set when the gateway has a GPS module).
+  google.protobuf.Duration time_since_gps_epoch = 3;
+
+  // RSSI.
+  int32 rssi = 5;
+
+  // LoRa SNR.
+  double lora_snr = 6;
+
+  // Channel.
+  uint32 channel = 7;
+
+  // RF Chain.
+  uint32 rf_chain = 8;
+
+  // Board.
+  uint32 board = 9;
+
+  // Antenna.
+  uint32 antenna = 10;
+
+  // Location.
+  common.Location location = 11;
+
+  // Fine-timestamp type.
+  FineTimestampType fine_timestamp_type = 12;
+
+  // Fine-timestamp data.
+  oneof fine_timestamp {
+    // Encrypted fine-timestamp data.
+    EncryptedFineTimestamp encrypted_fine_timestamp = 13;
+
+    // Plain fine-timestamp data.
+    PlainFineTimestamp plain_fine_timestamp = 14;
+  }
+
+  // Gateway specific context.
+  bytes context = 15;
+
+  // Uplink ID (UUID bytes).
+  // Unique and random ID which can be used to correlate the uplink across
+  // multiple logs.
+  bytes uplink_id = 16;
+
+  // CRC status.
+  CRCStatus crc_status = 17;
+
+  // Optional meta-data map.
+  map<string, string> metadata = 18;
+}
+
+message UplinkRxInfo {
+  // Gateway ID.
+  string gateway_id = 1;
+
+  // Uplink ID.
+  uint32 uplink_id = 2;
+
+  // Gateway RX time (set if the gateway has a GNSS module).
+  google.protobuf.Timestamp gw_time = 3;
+
+  // Network Server RX time (set by the NS on receiving the uplink).
+  google.protobuf.Timestamp ns_time = 17;
+
+  // RX time as time since GPS epoch (set if the gateway has a GNSS module).
+  google.protobuf.Duration time_since_gps_epoch = 4;
+
+  // Fine-timestamp.
+  // This timestamp can be used for TDOA based geolocation.
+  google.protobuf.Duration fine_time_since_gps_epoch = 5;
+
+  // RSSI.
+  int32 rssi = 6;
+
+  // SNR.
+  // Note: only available for LoRa modulation.
+  float snr = 7;
+
+  // Channel.
+  uint32 channel = 8;
+
+  // RF chain.
+  uint32 rf_chain = 9;
+
+  // Board.
+  uint32 board = 10;
+
+  // Antenna.
+  uint32 antenna = 11;
+
+  // Location.
+  common.Location location = 12;
+
+  // Gateway specific context.
+  // This value must be returned to the gateway on (Class-A) downlink.
+  bytes context = 13;
+
+  // Additional gateway meta-data.
+  map<string, string> metadata = 15;
+
+  // CRC status.
+  CRCStatus crc_status = 16;
+}
+
+message DownlinkTxInfoLegacy {
+  // Gateway ID.
+  // Deprecated: replaced by gateway_id in DownlinkFrame.
+  bytes gateway_id = 1;
+
+  // TX frequency (in Hz).
+  uint32 frequency = 5;
+
+  // TX power (in dBm EIRP).
+  int32 power = 6;
+
+  // Modulation.
+  common.Modulation modulation = 7;
+
+  oneof modulation_info {
+    // LoRa modulation information.
+    LoraModulationInfo lora_modulation_info = 8;
+
+    // FSK modulation information.
+    FskModulationInfo fsk_modulation_info = 9;
+  }
+
+  // The board identifier for emitting the frame.
+  uint32 board = 10;
+
+  // The antenna identifier for emitting the frame.
+  uint32 antenna = 11;
+
+  // Timing defines the downlink timing to use.
+  DownlinkTiming timing = 12;
+
+  oneof timing_info {
+    // Immediately timing information.
+    ImmediatelyTimingInfo immediately_timing_info = 13;
+
+    // Context based delay timing information.
+    DelayTimingInfo delay_timing_info = 14;
+
+    // GPS Epoch timing information.
+    GPSEpochTimingInfo gps_epoch_timing_info = 15;
+  }
+
+  // Gateway specific context.
+  // In case of a Class-A downlink, this contains a copy of the uplink context.
+  bytes context = 16;
+}
+
+message DownlinkTxInfo {
+  // TX frequency (in Hz).
+  uint32 frequency = 1;
+
+  // TX power (in dBm EIRP).
+  int32 power = 2;
+
+  // Modulation.
+  Modulation modulation = 3;
+
+  // The board identifier for emitting the frame.
+  uint32 board = 4;
+
+  // The antenna identifier for emitting the frame.
+  uint32 antenna = 5;
+
+  // Timing.
+  Timing timing = 6;
+
+  // Gateway specific context.
+  // In case of a Class-A downlink, this contains a copy of the uplink context.
+  bytes context = 7;
+}
+
+message Timing {
+  oneof parameters {
+    // Immediately timing information.
+    ImmediatelyTimingInfo immediately = 1;
+
+    // Context based delay timing information.
+    DelayTimingInfo delay = 2;
+
+    // GPS Epoch timing information.
+    GPSEpochTimingInfo gps_epoch = 3;
+  }
+}
+
+message ImmediatelyTimingInfo {
+  // Not implemented yet.
+}
+
+message DelayTimingInfo {
+  // Delay (duration).
+  // The delay will be added to the gateway internal timing, provided by the
+  // context object.
+  google.protobuf.Duration delay = 1;
+}
+
+message GPSEpochTimingInfo {
+  // Duration since GPS Epoch.
+  google.protobuf.Duration time_since_gps_epoch = 1;
+}
+
+message UplinkFrame {
+  // PHYPayload.
+  bytes phy_payload = 1;
+
+  // TX meta-data (deprecated).
+  UplinkTxInfoLegacy tx_info_legacy = 2;
+
+  // RX meta-data (deprecated).
+  UplinkRxInfoLegacy rx_info_legacy = 3;
+
+  // Tx meta-data.
+  UplinkTxInfo tx_info = 4;
+
+  // Rx meta-data.
+  UplinkRxInfo rx_info = 5;
+}
+
+message UplinkFrameSet {
+  // PHYPayload.
+  bytes phy_payload = 1;
+
+  // TX meta-data.
+  UplinkTxInfo tx_info = 2;
+
+  // RX meta-data set.
+  repeated UplinkRxInfo rx_info = 3;
+}
+
+message DownlinkFrame {
+  // Downlink ID.
+  uint32 downlink_id = 3;
+
+  // Downlink ID (UUID).
+  // Deprecated: use downlink_id.
+  bytes downlink_id_legacy = 4;
+
+  // Downlink frame items.
+  // This makes it possible to send multiple downlink opportunities to the
+  // gateway at once (e.g. RX1 and RX2 in LoRaWAN). The first item has the
+  // highest priority, the last the lowest. The gateway will emit at most
+  // one item.
+  repeated DownlinkFrameItem items = 5;
+
+  // Gateway ID.
+  // Deprecated: use gateway_id
+  bytes gateway_id_legacy = 6;
+
+  // Gateway ID.
+  string gateway_id = 7;
+}
+
+message DownlinkFrameItem {
+  // PHYPayload.
+  bytes phy_payload = 1;
+
+  // TX meta-data (deprecated).
+  DownlinkTxInfoLegacy tx_info_legacy = 2;
+
+  // Tx meta-data.
+  DownlinkTxInfo tx_info = 3;
+}
+
+message DownlinkTxAck {
+  // Gateway ID (deprecated).
+  bytes gateway_id_legacy = 1;
+
+  // Gateway ID.
+  string gateway_id = 6;
+
+  // Downlink ID.
+  uint32 downlink_id = 2;
+
+  // Downlink ID (deprecated).
+  bytes downlink_id_legacy = 4;
+
+  // Downlink frame items.
+  // This list has the same length as the request and indicates which
+  // downlink frame has been emitted of the requested list (or why it failed).
+  // Note that at most one item has a positive acknowledgement.
+  repeated DownlinkTxAckItem items = 5;
+}
+
+message DownlinkTxAckItem {
+  // The Ack status of this item.
+  TxAckStatus status = 1;
+}
+
+message GatewayConfiguration {
+  // Gateway ID.
+  // Deprecated: use gateway_id.
+  bytes gateway_id_legacy = 1;
+
+  // Gateway ID.
+  string gateway_id = 5;
+
+  // Configuration version.
+  string version = 2;
+
+  // Channels.
+  repeated ChannelConfiguration channels = 3;
+
+  // Stats interval.
+  google.protobuf.Duration stats_interval = 4;
+}
+
+message GetGatewayIdRequest {}
+
+message GetGatewayIdResponse {
+  // Gateway ID.
+  string gateway_id = 1;
+}
+
+message GetLocationRequest {}
+
+message GetLocationResponse {
+  // Location.
+  common.Location location = 1;
+
+  // Last updated at.
+  google.protobuf.Timestamp updated_at = 2;
+}
+
+message ChannelConfiguration {
+  // Frequency (Hz).
+  uint32 frequency = 1;
+
+  // Modulation (deprecated).
+  common.Modulation modulation_legacy = 2;
+
+  oneof modulation_config {
+    // LoRa modulation config.
+    LoraModulationConfig lora_modulation_config = 3;
+
+    // FSK modulation config.
+    FskModulationConfig fsk_modulation_config = 4;
+  }
+
+  // Board index.
+  uint32 board = 5;
+
+  // Demodulator index (of the given board).
+  uint32 demodulator = 6;
+}
+
+message LoraModulationConfig {
+  // Bandwidth (kHz).
+  // Deprecated: use bandwidth.
+  uint32 bandwidth_legacy = 1;
+
+  // Bandwidth (Hz).
+  uint32 bandwidth = 3;
+
+  // Spreading-factors.
+  repeated uint32 spreading_factors = 2;
+}
+
+message FskModulationConfig {
+  // Bandwidth (kHz).
+  // Deprecated: use bandwidth.
+  uint32 bandwidth_legacy = 1;
+
+  // Bandwidth (Hz).
+  uint32 bandwidth = 3;
+
+  // Bitrate.
+  uint32 bitrate = 2;
+}
+
+message GatewayCommandExecRequest {
+  // Gateway ID.
+  // Deprecated: use gateway_id.
+  bytes gateway_id_legacy = 1;
+
+  // Gateway ID.
+  string gateway_id = 6;
+
+  // Command to execute.
+  // This command must be pre-configured in the LoRa Gateway Bridge
+  // configuration.
+  string command = 2;
+
+  // Execution request ID.
+  // The same will be returned when the execution of the command has
+  // completed.
+  uint32 exec_id = 7;
+
+  // Standard input.
+  bytes stdin = 4;
+
+  // Environment variables.
+  map<string, string> environment = 5;
+}
+
+message GatewayCommandExecResponse {
+  // Gateway ID.
+  // Deprecated: use gateway_id.
+  bytes gateway_id_legacy = 1;
+
+  // Gateway ID.
+  string gateway_id = 6;
+
+  // Execution request ID.
+  uint32 exec_id = 7;
+
+  // Standard output.
+  bytes stdout = 3;
+
+  // Standard error.
+  bytes stderr = 4;
+
+  // Error message.
+  string error = 5;
+}
+
+// RawPacketForwarderEvent contains a raw packet-forwarder event.
+// It can be used to access packet-forwarder features that are not (fully)
+// integrated with the ChirpStack Gateway Bridge.
+message RawPacketForwarderEvent {
+  // Gateway ID.
+  // Deprecated: use gateway_id.
+  bytes gateway_id_legacy = 1;
+
+  // Gateway ID.
+  string gateway_id = 4;
+
+  // Payload contains the raw payload.
+  bytes payload = 3;
+}
+
+// RawPacketForwarderEvent contains a raw packet-forwarder command.
+// It can be used to access packet-forwarder features that are not (fully)
+// integrated with the ChirpStack Gateway Bridge.
+message RawPacketForwarderCommand {
+  // Gateway ID.
+  // Deprecated: use gateway_id.
+  bytes gateway_id_legacy = 1;
+
+  // Gateway ID.
+  string gateway_id = 4;
+
+  // Payload contains the raw payload.
+  bytes payload = 3;
+}
+
+// ConnState contains the connection state of a gateway.
+message ConnState {
+  // Gateway ID.
+  // Deprecated: use gateway_id.
+  bytes gateway_id_legacy = 1;
+
+  // Gateway ID.
+  string gateway_id = 3;
+
+  enum State {
+    OFFLINE = 0;
+    ONLINE = 1;
+  }
+
+  State state = 2;
+}
+
+// Gateway Mesh heartbeat (sent periodically by the Relay Gateways).
+message MeshEventHeartbeat {
+
+  // Relay path.
+  repeated MeshEventHeartbeatRelayPath relay_path = 4;
+}
+
+message MeshEventHeartbeatRelayPath {
+  // Relay ID.
+  string relay_id = 1;
+
+  // RSSI.
+  int32 rssi = 2;
+
+  // SNR.
+  int32 snr = 3;
+}
+
+// Proprietary mesh event.
+message MeshEventProprietary {
+  // Event type.
+  uint32 event_type = 1;
+
+  // Payload.
+  bytes payload = 2;
+}
+
+// Proprietary mesh command.
+message MeshCommandProprietary {
+  // Command type.
+  uint32 command_type = 1;
+
+  // Payload.
+  bytes payload = 2;
+}

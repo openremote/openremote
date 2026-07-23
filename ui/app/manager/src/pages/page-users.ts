@@ -7,7 +7,6 @@ import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery, UserSession} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
@@ -17,6 +16,11 @@ import {when} from 'lit/directives/when.js';
 import {until} from 'lit/directives/until.js';
 import {map} from 'lit/directives/map.js';
 import {OrMwcTableRowClickEvent, TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
+import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import {OrVaadinPasswordField} from "@openremote/or-vaadin-components/or-vaadin-password-field";
+import {OrVaadinMultiSelectComboBox} from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
+import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -106,7 +110,8 @@ export class PageUsers extends Page<AppStateKeyed> {
                     min-height: 36px;
                 }
 
-                or-mwc-input {
+                or-mwc-input, or-vaadin-text-field, or-vaadin-email-field,
+                or-vaadin-password-field, or-vaadin-multi-select-combo-box {
                     margin-bottom: 20px;
                 }
 
@@ -466,8 +471,12 @@ export class PageUsers extends Page<AppStateKeyed> {
         const users = this._userFilter(this._users);
         const serviceUsers = this._serviceUserFilter(this._serviceUsers);
 
-        const compositeRoleOptions: string[] = this._compositeRoles.map(cr => cr.name);
-        const realmRoleOptions: [string, string][] = this._realmRoles.map(r => [r, i18next.t("realmRole." + r, Util.camelCaseToSentenceCase(r.replace("_", " ").replace("-", " ")))]);
+        const compositeRoleOptions: {value: any, label: string}[] = this._compositeRoles.map(cr => ({
+            value: cr.name, label: i18next.t(cr.name)
+        }));
+        const realmRoleOptions: {value: any, label: string}[] = this._realmRoles.map(r => ({
+            value: r, label: i18next.t("realmRole." + r, Util.camelCaseToSentenceCase(r.replace("_", " ").replace("-", " ")))
+        }));
         const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
 
         // Content of User Table
@@ -552,13 +561,16 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <div class="panel-title" style="justify-content: space-between;">
                             <p>${i18next.t("regularUser_plural")}</p>
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <or-mwc-input type="${InputType.TEXT}" placeholder="${i18next.t('search')}" 
-                                              style="margin: 0; text-transform: none;" iconTrailing="magnify" compact outlined
-                                              @input="${(ev) => this.onRegularUserSearch(ev)}"
-                                ></or-mwc-input>
-                                <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus" label="${i18next.t('add')} ${i18next.t("user")}"
-                                              @or-mwc-input-changed="${() => this.creationState = {userModel: this.getNewUserModel(false)}}"
-                                ></or-mwc-input>
+                                <or-vaadin-text-field placeholder=${i18next.t('search')} style="margin: 0;"
+                                                      @input=${(ev: InputEvent) => this.onRegularUserSearch(ev)}>
+                                    <or-translate slot="placeholder" value="search"></or-translate>
+                                    <or-icon slot="suffix" icon="magnify"></or-icon>
+                                </or-vaadin-text-field>
+                                <or-vaadin-button @click=${() => this.creationState = {userModel: this.getNewUserModel(false)}}>
+                                    <or-icon slot="prefix" icon="plus"></or-icon>
+                                    <or-translate value="add"></or-translate>
+                                    <or-translate value="user"></or-translate>
+                                </or-vaadin-button>
                             </div>
                         </div>
                         ${until(this.getUsersTable(userTableColumns, userTableRows, tableConfig, (ev) => {
@@ -570,12 +582,16 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <div class="panel-title" style="justify-content: space-between;">
                             <p>${i18next.t("serviceUser_plural")}</p>
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <or-mwc-input style="margin: 0; text-transform: none;" type="${InputType.TEXT}" iconTrailing="magnify" placeholder="${i18next.t('search')}" compact outlined
-                                              @input="${(ev) => this.onServiceUserSearch(ev)}"
-                                ></or-mwc-input>
-                                <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus" label="${i18next.t('add')} ${i18next.t("user")}"
-                                              @or-mwc-input-changed="${() => this.creationState = {userModel: this.getNewUserModel(true)}}"
-                                ></or-mwc-input>
+                                <or-vaadin-text-field placeholder=${i18next.t('search')} style="margin: 0;"
+                                                      @input=${(ev: InputEvent) => this.onServiceUserSearch(ev)}>
+                                    <or-translate slot="placeholder" value="search"></or-translate>
+                                    <or-icon slot="suffix" icon="magnify"></or-icon>
+                                </or-vaadin-text-field>
+                                <or-vaadin-button @click=${() => this.creationState = {userModel: this.getNewUserModel(true)}}>
+                                    <or-icon slot="prefix" icon="plus"></or-icon>
+                                    <or-translate value="add"></or-translate>
+                                    <or-translate value="user"></or-translate>
+                                </or-vaadin-button>
                             </div>
                         </div>
                         ${until(this.getUsersTable(serviceUserTableColumns, serviceUserTableRows, tableConfig, (ev) => {
@@ -621,7 +637,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     protected onRegularUserSearch(ev: InputEvent) {
-        const value = (ev.target as OrMwcInput).nativeValue?.toLowerCase();
+        const value = (ev.target as HTMLInputElement).value?.toLowerCase();
         if(!value) {
             this._userFilter = this.getDefaultUserFilter(false);
         } else {
@@ -638,7 +654,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     protected onServiceUserSearch(ev: InputEvent) {
-        const value = (ev.target as OrMwcInput).nativeValue?.toLowerCase();
+        const value = (ev.target as HTMLInputElement).value?.toLowerCase();
         if(!value) {
             this._serviceUserFilter = this.getDefaultUserFilter(true);
         } else {
@@ -687,8 +703,8 @@ export class PageUsers extends Page<AppStateKeyed> {
         this.requestUpdate();
     }
 
-    protected _openAssetSelector(ev: MouseEvent, user: UserModel, readonly: boolean, suffix: string) {
-        const openBtn = ev.target as OrMwcInput;
+    protected _openAssetSelector(ev: Event, user: UserModel, readonly: boolean, suffix: string) {
+        const openBtn = ev.target as OrVaadinButton;
         openBtn.disabled = true;
         user.previousAssetLinks = [...user.userAssetLinks];
 
@@ -756,28 +772,36 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected onUserChanged(suffix: string) {
         // Don't have form-associated custom element support in lit at time of writing which would be the way to go here
         const validateArray = this.shadowRoot.querySelectorAll(".validate");
-        const saveBtn = this.shadowRoot.getElementById("savebtn-" + suffix) as OrMwcInput;
-        const saveDisabled = Array.from(validateArray).filter(e => e instanceof OrMwcInput).some(input => !(input as OrMwcInput).valid);
+        const saveBtn = this.shadowRoot.getElementById("savebtn-" + suffix) as OrVaadinButton;
+        const saveDisabled = Array.from(validateArray)
+            .filter(e => e instanceof HTMLInputElement)
+            .some(input => !(input as HTMLInputElement).checkValidity());
         saveBtn.disabled = saveDisabled;
     }
 
     protected _onPasswordChanged(user: UserModel, suffix: string) {
-        const passwordComponent = this.shadowRoot.getElementById("new-password-" + suffix) as OrMwcInput;
-        const repeatPasswordComponent = this.shadowRoot.getElementById("new-repeatPassword-" + suffix) as OrMwcInput;
+        const passwordComponent = this.shadowRoot.getElementById("new-password-" + suffix) as OrVaadinPasswordField;
+        const repeatPasswordComponent = this.shadowRoot.getElementById("new-repeatPassword-" + suffix) as OrVaadinPasswordField;
 
         if (repeatPasswordComponent.value !== passwordComponent.value) {
-            const error = i18next.t("passwordMismatch");
-            repeatPasswordComponent.setCustomValidity(error);
+            console.debug("The passwords are a mismatch.")
+            repeatPasswordComponent.errorMessage = i18next.t("passwordMismatch");
+            repeatPasswordComponent.invalid = true;
+            user.password = "";
+        } else if(!passwordComponent.checkValidity() || !repeatPasswordComponent.checkValidity()) {
+            console.debug("The passwords are invalid.")
+            repeatPasswordComponent.errorMessage = i18next.t("passwordInvalid");
+            repeatPasswordComponent.invalid = true;
             user.password = "";
         } else {
-            repeatPasswordComponent.setCustomValidity(undefined);
+            repeatPasswordComponent.invalid = false;
             user.password = passwordComponent.value;
         }
     }
 
-    protected async _regenerateSecret(ev: OrInputChangedEvent, user: UserModel, secretInputId: string) {
-        const btnElem = ev.currentTarget as OrMwcInput;
-        const secretElem = this.shadowRoot.getElementById(secretInputId) as OrMwcInput;
+    protected async _regenerateSecret(ev: Event, user: UserModel, secretInputId: string) {
+        const btnElem = ev.currentTarget as OrVaadinButton;
+        const secretElem = this.shadowRoot.getElementById(secretInputId) as OrVaadinPasswordField;
         if (!btnElem || !secretElem) {
             showSnackbar(undefined, "errorOccurred");
             return;
@@ -793,13 +817,13 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     protected _updateUserSelectedRoles(user: UserModel, suffix: string) {
-        const roleCheckboxes = [...((this.shadowRoot.getElementById("role-list-" + suffix) as HTMLDivElement).children as any)] as OrMwcInput[];
+        const roleCheckboxes = [...((this.shadowRoot.getElementById("role-list-" + suffix) as HTMLDivElement).children as any)] as OrVaadinCheckbox[];
         const implicitRoleNames = this.getImplicitUserRoles(user);
         roleCheckboxes.forEach((checkbox) => {
             const roleName = checkbox.label;
             const r = this._roles.find(role => roleName === role.name);
             checkbox.disabled = !!implicitRoleNames.find(name => r.name === name);
-            checkbox.value = !!user.roles.find(userRole => userRole === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name);
+            checkbox.checked = !!user.roles.find(userRole => userRole === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name);
         });
     }
 
@@ -807,7 +831,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         return this._compositeRoles.filter((role) => user.roles.some(ur => ur === role.name)).flatMap((role) => role.compositeRoleIds).map(id => this._roles.find(r => r.id === id).name);
     }
 
-    protected getSingleUserView(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
+    protected getSingleUserView(user: UserModel, compositeRoleOptions: {value: any, label: string}[], realmRoleOptions: {value: any, label: string}[], suffix: string, readonly: boolean = true): TemplateResult {
         return html`
             ${when((user.loaded || (user.roles && user.realmRoles)), () => {
                 return this.getSingleUserTemplate(user, compositeRoleOptions, realmRoleOptions, suffix, readonly);
@@ -847,7 +871,11 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         const cols = [i18next.t("address"), i18next.t("since"), ""];
         const rows = userSessionsResponse.data.map((session) => {
-            return [session.remoteAddress, new Date(session.startTimeMillis), html`<or-mwc-input .type="${InputType.BUTTON}" label="disconnect" @or-mwc-input-changed="${() => {this.disconnectSession(user, session)}}"></or-mwc-input>`]
+            return [session.remoteAddress, new Date(session.startTimeMillis), html`
+                <or-vaadin-button @click=${() => {this.disconnectSession(user, session)}}>
+                    <or-translate value="disconnect"></or-translate>
+                </or-vaadin-button>
+            `]
         });
         if (rows.length < 1){
             return html`<or-mwc-table .rows="${[['This user has no active MQTT sessions',null]]}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
@@ -856,7 +884,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         return html`<or-mwc-table id="session-table" .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
     }
 
-    protected getSingleUserTemplate(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
+    protected getSingleUserTemplate(user: UserModel, compositeRoleOptions: {value: any, label: string}[], realmRoleOptions: {value: any, label: string}[], suffix: string, readonly: boolean = true): TemplateResult {
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
         const isGatewayServiceUser = isServiceUser && user.username?.startsWith("gateway-");
@@ -864,113 +892,110 @@ export class PageUsers extends Page<AppStateKeyed> {
         return html`
             <div class="row">
                 <div class="column">
-                    <h5>${i18next.t("details")}</h5>
+                    <h5><or-translate value="details"></h5>
                     <!-- user details -->
-                    <or-mwc-input id="new-username-${suffix}" ?readonly="${!!user.id || readonly}" .disabled="${!!user.id || (!isServiceUser && this._registrationEmailAsUsername)}"
-                                  class = "validate"
-                                  .label="${i18next.t("username")}"
-                                  .type="${InputType.TEXT}" minLength="3" maxLength="255" 
-                                  ?required="${isServiceUser || !this._registrationEmailAsUsername}"
-                                  pattern="[A-Za-z0-9_+@\\.\\-ßçʊÇʊ]+"
-                                  .value="${user.username}" autocomplete="false"
-                                  .validationMessage="${i18next.t("invalidUsername")}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.username = e.detail.value;
-                                      this.onUserChanged(suffix)
-                                  }}"></or-mwc-input>
+                    <or-vaadin-text-field id="new-username-${suffix}"
+                                          class="validate" minlength="3" maxlength="255"
+                                          ?readonly=${!!user.id || readonly || (!isServiceUser && this._registrationEmailAsUsername)}
+                                          ?required=${isServiceUser || !this._registrationEmailAsUsername}
+                                          pattern="[A-Za-z0-9_+@\\.\\-ßçʊÇʊ]+"
+                                          value=${user.username} autocomplete="false"
+                                          error-message=${i18next.t("invalidUsername")}
+                                          @change=${(ev: Event) => {
+                                              user.username = (ev.currentTarget as HTMLInputElement).value;
+                                              this.onUserChanged(suffix)
+                                          }}>
+                        <or-translate slot="label" value="username"></or-translate>
+                    </or-vaadin-text-field>
                     <!-- if identity provider is set to use email as username, make it required -->
-                    <or-mwc-input id="new-email" ?readonly="${(!!user.id && this._registrationEmailAsUsername) || readonly}"
-                                  .disabled="${!!user.id && this._registrationEmailAsUsername}"
-                                  class="${isServiceUser ? "hidden" : "validate"}"
-                                  .label="${i18next.t("email")}"
-                                  .type="${InputType.EMAIL}"
-                                  .value="${user.email}" autocomplete="false"
-                                  ?required="${!isServiceUser && this._registrationEmailAsUsername}"
-                                  pattern="^[\\w\\.\\-\\+\\%]+@([\\w\\-]+\\.)+[\\w]{2,}$"
-                                  .validationMessage="${i18next.t("invalidEmail")}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      if(this._registrationEmailAsUsername) {
-                                          user.username = e.detail.value;
-                                      }
-                                      user.email = e.detail.value;
-                                      this.onUserChanged(suffix);
-                                      this.requestUpdate(); // in case of username update, we trigger a state change
-                                  }}"></or-mwc-input>
-                    <or-mwc-input id="new-firstName" ?readonly="${readonly}"
-                                  class="${isServiceUser ? "hidden" : "validate"}"
-                                  .label="${i18next.t("firstName")}"
-                                  .type="${InputType.TEXT}" minLength="1"
-                                  .value="${user.firstName}" autocomplete="false"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.firstName = e.detail.value;
-                                      this.onUserChanged(suffix)
-                                  }}"></or-mwc-input>
-                    <or-mwc-input id="new-surname" ?readonly="${readonly}"
-                                  class="${isServiceUser ? "hidden" : "validate"}"
-                                  .label="${i18next.t("surname")}"
-                                  .type="${InputType.TEXT}" minLength="1"
-                                  .value="${user.lastName}" autocomplete="false"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.lastName = e.detail.value;
-                                      this.onUserChanged(suffix)
-                                  }}"></or-mwc-input>
-                    <or-mwc-input id="new-tag" ?readonly="${readonly || isGatewayServiceUser}"
-                                  class= "validate"
-                                  .label="${i18next.t("tag")}"
-                                  .type="${InputType.TEXT}" minLength="1"
-                                  .value="${user.attributes?.Tag?.[0]}" autocomplete="false"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      // Ensure 'attributes' and 'Tag' exist before assigning
-                                      if (!user.attributes) {
-                                          user.attributes = {};
-                                      }
-                                      if (!Array.isArray(user.attributes.Tag)) {
-                                          user.attributes.Tag = [];
-                                      }  
-                                      user.attributes.Tag[0] = e.detail.value;
-                                      this.onUserChanged(suffix)
-                                  }}"></or-mwc-input>
+                    <or-vaadin-email-field id="new-email" class=${isServiceUser ? "hidden" : "validate"} 
+                                           ?readonly=${(!!user.id && this._registrationEmailAsUsername) || readonly}
+                                           ?required=${!isServiceUser && this._registrationEmailAsUsername}
+                                           value=${user.email} autocomplete="false"
+                                           error-message=${i18next.t("invalidEmail")}
+                                           @change=${(ev: Event) => {
+                                               if(this._registrationEmailAsUsername) {
+                                                   user.username = (ev.currentTarget as HTMLInputElement).value;
+                                               }
+                                               user.email = (ev.currentTarget as HTMLInputElement).value;
+                                               this.onUserChanged(suffix);
+                                               this.requestUpdate(); // in case of username update, we trigger a state change
+                                           }}>
+                        <or-translate slot="label" value="email"></or-translate>
+                    </or-vaadin-email-field>
+                    <or-vaadin-text-field id="new-firstName" class="${isServiceUser ? "hidden" : "validate"}"
+                                          ?readonly="${readonly}" minlength="1" maxlength="255"
+                                          value=${user.firstName} autocomplete="false"
+                                          @change=${(ev: Event) => {
+                                              user.firstName = (ev.currentTarget as HTMLInputElement).value;
+                                              this.onUserChanged(suffix);
+                                          }}>
+                        <or-translate slot="label" value="firstName"></or-translate>
+                    </or-vaadin-text-field>
+                    <or-vaadin-text-field id="new-surname" class="${isServiceUser ? "hidden" : "validate"}"
+                                          ?readonly="${readonly}" minlength="1" maxlength="255"
+                                          value=${user.lastName} autocomplete="false"
+                                          @change=${(ev: Event) => {
+                                              user.lastName = (ev.currentTarget as HTMLInputElement).value;
+                                              this.onUserChanged(suffix)
+                                          }}>
+                        <or-translate slot="label" value="surname"></or-translate>
+                    </or-vaadin-text-field>
+                    <or-vaadin-text-field id="new-tag" class="validate"
+                                          ?readonly=${readonly || isGatewayServiceUser}
+                                          minlength="1" maxlength="255"
+                                          value=${user.attributes?.Tag?.[0]} autocomplete="false"
+                                          @change=${(ev: Event) => {
+                                              // Ensure 'attributes' and 'Tag' exist before assigning
+                                              if (!user.attributes) {
+                                                  user.attributes = {};
+                                              }
+                                              if (!Array.isArray(user.attributes.Tag)) {
+                                                  user.attributes.Tag = [];
+                                              }
+                                              user.attributes.Tag[0] = (ev.currentTarget as HTMLInputElement).value;
+                                              this.onUserChanged(suffix)
+                                          }}>
+                        <or-translate slot="label" value="tag"></or-translate>
+                    </or-vaadin-text-field>
                     <!-- password -->
-                    <h5>${i18next.t("password")}</h5>
+                    <h5><or-translate value="password"></or-translate></h5>
                     ${isServiceUser ? html`
                         ${when(user.secret, () => html`
-                            <or-mwc-input id="new-password-${suffix}" readonly
-                                          class = "validate"
-                                          .label="${i18next.t("secret")}"
-                                          .value="${user.secret}"
-                                          .type="${InputType.TEXT}"></or-mwc-input>
-                            <or-mwc-input ?readonly="${!user.id || readonly}"
-                                          ?disabled="${isGatewayServiceUser}"
-                                          .label="${i18next.t("regenerateSecret")}"
-                                          .type="${InputType.BUTTON}"
-                                          @or-mwc-input-changed="${(ev) => {
-                                              this._regenerateSecret(ev, user, "new-password-" + suffix).catch(() => showSnackbar(undefined, 'errorOccurred'));
-                                              this.onUserChanged(suffix);
-                                          }}"></or-mwc-input>
+                            <or-vaadin-password-field id="new-password-${suffix}" readonly class="validate"
+                                                      value=${user.secret}>
+                                <or-translate slot="label" value="secret"></or-translate>
+                            </or-vaadin-password-field>
+                            <or-vaadin-button ?disabled=${!user.id || readonly || isGatewayServiceUser}
+                                              @click=${(ev: Event) => {
+                                                  this._regenerateSecret(ev, user, "new-password-" + suffix).catch(() => showSnackbar(undefined, 'errorOccurred'));
+                                                  this.onUserChanged(suffix);
+                                              }}>
+                                <or-translate value="regenerateSecret"></or-translate>
+                            </or-vaadin-button>
                         `, () => html`
-                            <span>${i18next.t("generateSecretInfo")}</span>
+                            <or-translate value="generateSecretInfo"></or-translate>
                         `)}
                     ` : html`
-                        <or-mwc-input id="new-password-${suffix}"
-                                      ?readonly="${readonly}"
-                                      class = "validate"
-                                      .label="${i18next.t("password")}"
-                                      .type="${InputType.PASSWORD}" min="1" autocomplete="false"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                          this._onPasswordChanged(user, suffix);
-                                          this.onUserChanged(suffix);
-                                      }}"
-                        ></or-mwc-input>
-                        <or-mwc-input id="new-repeatPassword-${suffix}"
-                                      helperPersistent ?readonly="${readonly}"
-                                      .label="${i18next.t("repeatPassword")}"
-                                      .type="${InputType.PASSWORD}" min="1" autocomplete="false"
-                                      style="${this._passwordPolicy ? 'margin-bottom: 0' : undefined}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                          this._onPasswordChanged(user, suffix);
-                                          this.onUserChanged(suffix);
-                                      }}"
-                        ></or-mwc-input>
+                        <or-vaadin-password-field id="new-password-${suffix}" class="validate"
+                                                  ?readonly=${readonly} autocomplete="false"
+                                                  minlength="1" maxlength="255" manual-validation
+                                                  @change=${(ev: Event) => {
+                                                      this._onPasswordChanged(user, suffix);
+                                                      this.onUserChanged(suffix);
+                                                  }}>
+                            <or-translate slot="label" value="password"></or-translate>
+                        </or-vaadin-password-field>
+                        <or-vaadin-password-field id="new-repeatPassword-${suffix}" class="validate"
+                                                  ?readonly="${readonly}" autocomplete="false"
+                                                  minlength="1" maxlength="255" manual-validation
+                                                  style="${this._passwordPolicy ? 'margin-bottom: 0' : undefined}"
+                                                  @change=${(ev: Event) => {
+                                                      this._onPasswordChanged(user, suffix);
+                                                      this.onUserChanged(suffix);
+                                                  }}>
+                            <or-translate slot="label" value="repeatPassword"></or-translate>
+                        </or-vaadin-password-field>
                         ${when(this._passwordPolicy, () => until(this._getPasswordPolicyTemplate(user, this._passwordPolicy)))}
                     `}
                 </div>
@@ -978,80 +1003,75 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <div class="column">
                     <h5>${i18next.t("settings")}</h5>
                     <!-- enabled -->
-                    <or-mwc-input ?readonly="${readonly || isGatewayServiceUser}"
-                                  class="validate"
-                                  .label="${i18next.t("active")}"
-                                  .type="${InputType.CHECKBOX}"
-                                  .value="${user.enabled}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.enabled = e.detail.value;
-                                      this.onUserChanged(suffix);
-                                  }}"
-                                  style="height: 56px;"
-                    ></or-mwc-input>
+                    <div style="height: 56px; display: flex; align-items: center; margin-bottom: 20px;">
+                        <or-vaadin-checkbox class="validate"
+                                            ?readonly=${readonly || isGatewayServiceUser}
+                                            ?checked=${user.enabled}
+                                            @change=${(ev: Event) => {
+                                                user.enabled = (ev.currentTarget as HTMLInputElement).checked;
+                                                this.onUserChanged(suffix);
+                                            }}>
+                            <label slot="label"><or-translate value="active"></or-translate></label>
+                        </or-vaadin-checkbox>
+                    </div>
 
                     <!-- realm roles -->
-                    <or-mwc-input
-                            ?readonly="${readonly}"
-                            ?disabled="${isSameUser || isGatewayServiceUser}"
-                            class = "validate"
-                            .value="${user.realmRoles}"
-                            .type="${InputType.SELECT}" multiple
-                            .options="${realmRoleOptions}"
-                            .label="${i18next.t("realm_role_plural")}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                this.onUserChanged(suffix);
-                                user.realmRoles = e.detail.value as string[];
-                            }}"></or-mwc-input>
+                    <or-vaadin-multi-select-combo-box class="validate"
+                                                      ?readonly="${readonly || isSameUser || isGatewayServiceUser}"
+                                                      .items=${realmRoleOptions}
+                                                      .selectedItems=${user.realmRoles.map(r => realmRoleOptions.find(o => o.value === r))}
+                                                      @change=${(ev: Event) => {
+                                                          this.onUserChanged(suffix);
+                                                          user.realmRoles = (ev.currentTarget as OrVaadinMultiSelectComboBox).selectedItems.map(i => i.value);
+                                                      }}>
+                        <or-translate slot="label" value="realm_role_plural"></or-translate>
+                    </or-vaadin-multi-select-combo-box>
 
                     <!-- composite client roles -->
-                    <or-mwc-input
-                            ?readonly="${readonly}"
-                            ?disabled="${isSameUser || isGatewayServiceUser}"
-                            class = "validate"
-                            .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => this._compositeRoles.some(cr => cr.name === r)) : undefined}"
-                            .type="${InputType.SELECT}" multiple
-                            .options="${compositeRoleOptions}"
-                            .label="${i18next.t("manager_role_plural")}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                user.roles = e.detail.value as string[];
-                                this._updateUserSelectedRoles(user, suffix);
-                                this.onUserChanged(suffix);
-                            }}"></or-mwc-input>
+                    <or-vaadin-multi-select-combo-box class="validate"
+                                                      ?readonly=${readonly || isSameUser || isGatewayServiceUser}
+                                                      .items=${compositeRoleOptions}
+                                                      .selectedItems=${user.roles
+                                                              ?.filter(r => this._compositeRoles.some(cr => cr.name === r))
+                                                              ?.map(r => compositeRoleOptions.find(o => o.value === r))}
+                                                      @change=${(ev: Event) => {
+                                                          user.roles = (ev.currentTarget as OrVaadinMultiSelectComboBox).selectedItems.map(i => i.value);
+                                                          console.debug(user.roles);
+                                                          this._updateUserSelectedRoles(user, suffix);
+                                                          this.onUserChanged(suffix);
+                                                      }}>
+                        <or-translate slot="label" value="manager_role_plural"></or-translate>
+                    </or-vaadin-multi-select-combo-box>
 
                     <!-- roles -->
                     <div style="display:flex;flex-wrap:wrap;margin-bottom: 20px;"
                          id="role-list-${suffix}">
                         ${this._roles.map(r => {
                             return html`
-                                <or-mwc-input
-                                        ?readonly="${readonly}"
-                                        ?disabled="${implicitRoleNames.find(name => r.name === name) || isGatewayServiceUser}"
-                                        class = "validate"
-                                        .value="${!!user.roles.find(userRole => userRole === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name)}"
-                                        .type="${InputType.CHECKBOX}"
-                                        .label="${r.name}"
-                                        title="${r.description}"
-                                        style="flex: 0 1 160px; margin: 0; overflow: hidden;"
-                                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                            if (!!e.detail.value) {
-                                                user.roles.push(r.name);
-                                            } else {
-                                                user.roles = user.roles.filter(ur => ur !== r.name);
-                                            }
-                                            this.onUserChanged(suffix);
-                                        }}"></or-mwc-input>
+                                <or-vaadin-checkbox class="validate" style="flex: 0 1 160px; overflow: hidden; margin: 4px 0;"
+                                                    ?disabled=${readonly || implicitRoleNames.find(name => r.name === name) || isGatewayServiceUser}
+                                                    title=${r.description} label=${r.name}
+                                                    ?checked=${!!user.roles.find(userRole => userRole === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name)}
+                                                    @change=${(ev: Event) => {
+                                                        if ((ev.currentTarget as HTMLInputElement).checked) {
+                                                            user.roles.push(r.name);
+                                                        } else {
+                                                            user.roles = user.roles.filter(ur => ur !== r.name);
+                                                        }
+                                                        this.onUserChanged(suffix);
+                                                    }}>
+                                </or-vaadin-checkbox>
                             `
                         })}
                     </div>
 
                     <!-- Asset-User links -->
                     <div>
-                        <span>${i18next.t("linkedAssets")}:</span>
-                        <or-mwc-input outlined ?disabled="${readonly || isGatewayServiceUser}" style="margin-left: 4px;"
-                                      .type="${InputType.BUTTON}"
-                                      .label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
-                                      @or-mwc-input-changed="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly, suffix)}"></or-mwc-input>
+                        <or-translate value="linkedAssets"></or-translate>
+                        <or-vaadin-button ?disabled=${readonly || isGatewayServiceUser} style="margin-left: 4px;"
+                                          @click=${(ev: Event) => this._openAssetSelector(ev, user, readonly, suffix)}>
+                            <span>${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}</span>
+                        </or-vaadin-button>
                     </div>
                 </div>
             </div>
@@ -1060,49 +1080,45 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <div class="row button-row">
 
                     ${when((!isSameUser && !isGatewayServiceUser && user.id), () => html`
-                        <or-mwc-input style="margin: 0;" outlined ?disabled="${readonly}"
-                                      .label="${i18next.t("delete")}"
-                                      .type="${InputType.BUTTON}"
-                                      @or-mwc-input-changed="${() => this._deleteUser(user)}"
-                        ></or-mwc-input>
+                        <or-vaadin-button ?disabled=${readonly} @click=${() => this._deleteUser(user)}>
+                            <or-translate value="delete"></or-translate>
+                        </or-vaadin-button>
                     `)}
                     <div style="display: flex; align-items: center; gap: 16px; margin: 0 0 0 auto;">
                         <!-- Button disabled until an input has input, and by that a valid check is done -->
-                        <or-mwc-input id="savebtn-${suffix}" style="margin: 0;" raised disabled
-                                      .label="${i18next.t(user.id ? "save" : "create")}"
-                                      .type="${InputType.BUTTON}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                          let error: { status?: number, text: string };
-                                          this._saveUserPromise = this._createUpdateUser(user, user.id ? 'update' : 'create').then((result) => {
-                                              // Return to the users page on successful user create/update
-                                              if (result) {                                              
-                                                  showSnackbar(undefined, "saveUserSucceeded");
-                                                  this.reset();
-                                              }
-                                          }).catch((ex) => {
-                                              console.error(ex);
-                                              if (isAxiosError(ex)) {
-                                                  error = {
-                                                      status: ex.response.status,
-                                                      text: (ex.response.status == 403 ? i18next.t('userAlreadyExists') : i18next.t('errorOccurred'))
-                                                  }
-                                              }
-                                          }).finally(() => {
-                                              this._saveUserPromise = undefined;
-                                              if (error) {
-                                                  this.updateComplete.then(() => {
-                                                      showSnackbar(undefined, error.text);
-                                                      if (error.status === 403) {
-                                                          const elem = this.shadowRoot.getElementById('username-' + suffix) as OrMwcInput;
-                                                          elem.setCustomValidity(error.text);
-                                                          (elem.shadowRoot.getElementById("elem") as HTMLInputElement).reportValidity(); // manually reporting was required since we're not editing the username at all.
-                                                          this.onUserChanged(suffix); // onUserChanged to trigger validation of all fields again.
-                                                      }
-                                                  })
-                                              }
-                                          })
-                                      }}">
-                        </or-mwc-input>
+                        <or-vaadin-button id="savebtn-${suffix}" theme="primary" disabled @click=${() => {
+                            let error: { status?: number, text: string };
+                            this._saveUserPromise = this._createUpdateUser(user, user.id ? 'update' : 'create').then((result) => {
+                                // Return to the users page on successful user create/update
+                                if (result) {
+                                    showSnackbar(undefined, "saveUserSucceeded");
+                                    this.reset();
+                                }
+                            }).catch((ex) => {
+                                console.error(ex);
+                                if (isAxiosError(ex)) {
+                                    error = {
+                                        status: ex.response.status,
+                                        text: (ex.response.status == 403 ? i18next.t('userAlreadyExists') : i18next.t('errorOccurred'))
+                                    }
+                                }
+                            }).finally(() => {
+                                this._saveUserPromise = undefined;
+                                if (error) {
+                                    this.updateComplete.then(() => {
+                                        showSnackbar(undefined, error.text);
+                                        if (error.status === 403) {
+                                            const elem = this.shadowRoot.getElementById('username-' + suffix) as OrVaadinTextField;
+                                            elem.errorMessage = error.text;
+                                            (elem.shadowRoot.getElementById("elem") as HTMLInputElement).reportValidity(); // manually reporting was required since we're not editing the username at all.
+                                            this.onUserChanged(suffix); // onUserChanged to trigger validation of all fields again.
+                                        }
+                                    })
+                                }
+                            })
+                        }}>
+                            <or-translate value=${user.id ? "save" : "create"}></or-translate>
+                        </or-vaadin-button>
                     </div>
                 </div>
             `)}

@@ -40,21 +40,21 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
         def privateUser1AccessToken = authenticate(
                 container,
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
         def smartcityUserAccessToken = authenticate(
                 container,
                 keycloakTestSetup.realmCity.name,
                 KEYCLOAK_CLIENT_ID,
                 "smartcity",
                 "smartcity"
-        ).token
+        )
 
         and: "the admin user has been retrieved"
         def serverUri = serverUri(serverPort)
@@ -64,16 +64,16 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         and: "an additional user without READ_INSIGHTS is created"
         ClientRole[] noInsightsRoles = new ClientRole[] { ClientRole.READ_ASSETS }
         User noAccessUser = keycloakTestSetup.createUser(MASTER_REALM, "noinsights", "noinsights", "firstName", "lastName", "noinsights@openremote.local", true, noInsightsRoles)
-        def noAccessUserToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "noinsights", "noinsights").token
+        def noAccessUserToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "noinsights", "noinsights")
 
         and: "an additional user without WRITE_INSIGHTS is created"
         ClientRole[] readonlyRoles = new ClientRole[] { ClientRole.READ_ASSETS, ClientRole.READ_INSIGHTS }
         User readonlyUser = keycloakTestSetup.createUser(MASTER_REALM, "readinsights", "readinsights", "firstName", "lastName", "readinsights@openremote.local", true, readonlyRoles)
-        def readonlyUserToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "readinsights", "readinsights").token
+        def readonlyUserToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "readinsights", "readinsights")
 
         and: "an additional user with all permissions is created"
         User alternativeUser = keycloakTestSetup.createUser(MASTER_REALM, "alternativeuser", "alternativeuser", "alternative", "user", "alternativeuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES)
-        def alternativeUserToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "alternativeuser", "alternativeuser").token
+        def alternativeUserToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "alternativeuser", "alternativeuser")
 
         and: "the dashboard resource"
         def adminUserDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, adminUserAccessToken).proxy(DashboardResource.class)
@@ -314,7 +314,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
         def restrictedUserDashboardResource = getClientApiTarget(serverUri, keycloakTestSetup.realmBuilding.name, restrictedUser1AccessToken).proxy(DashboardResource.class)
 
         and: "a restricted user tries to query a dashboard without access to the assets shown"

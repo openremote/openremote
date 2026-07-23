@@ -29,7 +29,6 @@ import {Asset, AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
 import {getAlarmsRoute, getAssetsRoute, getUsersRoute} from "../routes";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -208,7 +207,9 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
                 <div class="multipleAssetsView hideMobile">
                     <div>
                         <or-translate value="multiAssetSelected" .options="${ { assetNbr: this._assetIds.length } }"></or-translate>
-                        <or-mwc-input .type="${InputType.BUTTON}" label="changeParent" @or-mwc-input-changed="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
+                        <or-vaadin-button @click=${() => this._onParentChangeClick()}>
+                            <or-translate value="changeParent"></or-translate>
+                        </or-vaadin-button>
                     </div>
                 </div>
             `;

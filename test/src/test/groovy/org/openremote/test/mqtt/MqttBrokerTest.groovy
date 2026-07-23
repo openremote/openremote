@@ -48,6 +48,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         List<SharedEvent> receivedEvents = new CopyOnWriteArrayList<>()
         List<SharedEvent> restrictedReceivedEvents = new CopyOnWriteArrayList<>()
         List<Object> receivedValues = new CopyOnWriteArrayList<>()
+        List<ConnectionStatus> clientConnectionStatuses = new CopyOnWriteArrayList<>()
         MQTT_IOClient client = null
         MQTT_IOClient newClient = null
         def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
@@ -68,15 +69,24 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         when: "a mqtt client connects with invalid credentials"
         def wrongUsername = "master:" + keycloakTestSetup.serviceUser.username
         client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(wrongUsername, password), null, null)
+        client.addConnectionStatusConsumer {clientConnectionStatuses.add(it)}
         client.connect()
 
-        then: "the client connection status should be in error"
+        then: "the client should fail connection and retry"
         conditions.eventually {
-            assert client.getConnectionStatus() == ConnectionStatus.CONNECTING
+           assert clientConnectionStatuses.contains(ConnectionStatus.CONNECTING)
+           assert clientConnectionStatuses.contains(ConnectionStatus.WAITING)
+        }
+
+        when: "the client disconnects"
+        client.disconnect()
+
+        then: "the status should be reported and reconnect cancelled"
+        conditions.eventually {
+           assert clientConnectionStatuses.contains(ConnectionStatus.DISCONNECTED)
         }
 
         when: "a mqtt client connects with valid credentials"
-        client.disconnect()
         mqttClientId = UniqueIdentifierGenerator.generateId()
         client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, null)
         client.connect()

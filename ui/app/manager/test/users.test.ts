@@ -71,8 +71,8 @@ test(`Create service users with tags and search by tag`, async ({ page, manager,
  */
 test(`Verify browser behavior while creating regular users`, async ({ page, usersPage }) => {
     await usersPage.gotoUserCreation("master", "regular");
-    await page.locator("label").filter({ hasText: "Username" }).fill("mycustomusername");
-    await page.locator("label").filter({ hasText: "Email" }).fill("mycustom@email.com");
+    await page.getByLabel("Username").fill("mycustomusername");
+    await page.getByLabel("Email").fill("mycustom@email.com");
     await usersPage.toHavePermissions();
     await usersPage.toggleUserRoles("Read", "Write");
     await usersPage.toHavePermissions(...permissions);
@@ -95,7 +95,7 @@ test(`Verify gateway service user is read-only`, async ({ page, manager, usersPa
   await manager.goToRealmStartPage("master");
   await manager.switchToRealmByRealmPicker("smartcity");
   await manager.navigateToTab("Assets");
-  await assetsPage.addAsset("GatewayAsset", "TestGateway");
+  await assetsPage.addAsset("Gateway Asset", "TestGateway");
   await page.waitForURL("**/assets/**");
   const clientIdInput = page.locator(`#field-clientId input`);
   await expect(clientIdInput).not.toHaveValue("", { timeout: 15000 });
@@ -109,14 +109,14 @@ test(`Verify gateway service user is read-only`, async ({ page, manager, usersPa
   await page.getByRole("cell", { name: gatewayUsername, exact: true }).click();
   const usernameInput = page.locator('[id*="username"]');
   await expect(usernameInput).toHaveAttribute("readonly");
-  const tagInput = page.locator('or-mwc-input#new-tag');
+  const tagInput = page.getByLabel("Tag");
   await expect(tagInput).toHaveAttribute("readonly");
-  const activeCheckbox = page.locator('or-mwc-input').filter({ hasText: 'Active' }).locator('input[type="checkbox"]');
-  await expect(activeCheckbox).toBeDisabled();
-  const realmRolesSelect = page.locator('or-mwc-input').filter({ hasText: 'Realm roles' });
-  await expect(realmRolesSelect).toHaveAttribute("disabled");
-  const managerRolesSelect = page.locator('or-mwc-input').filter({ hasText: 'Manager roles' });
-  await expect(managerRolesSelect).toHaveAttribute("disabled");
+  const activeCheckbox = page.getByRole("checkbox", { name: "Active" });
+  await expect(activeCheckbox).toHaveAttribute("aria-readonly");
+  const realmRolesSelect = page.getByLabel("Realm roles");
+  await expect(realmRolesSelect).toHaveAttribute("readonly");
+  const managerRolesSelect = page.getByLabel('Manager roles');
+  await expect(managerRolesSelect).toHaveAttribute("readonly");
   const saveButton = page.getByRole("button", { name: "Save" });
   await expect(saveButton).toBeDisabled();
 });

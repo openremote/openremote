@@ -15,20 +15,38 @@ pluginManagement {
     }
 }
 
+// TODO: These plugins remain here because project.gradle imports their classes,
+// and version-catalog aliases cannot be used in settings.gradle. Move the related
+// configuration into convention plugins/build logic so their versions can be
+// managed through libs.versions.toml.
 plugins {
     id 'cz.habarta.typescript-generator' version "$typescriptGeneratorVersion" apply false
-    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0' apply false
-    id 'io.openremote.com.cherryperry.gradle-file-encrypt' version '2.1.0' apply false
-    id 'org.jetbrains.gradle.plugin.idea-ext' version '1.2' apply false
-    id 'pl.allegro.tech.build.axion-release' version '1.20.1' apply false
+    id 'org.jetbrains.gradle.plugin.idea-ext' version "$ideaExtPluginVersion" apply false
 }
 
 rootProject.name = "openremote"
 
 // Include sub-projects dynamically, every directory with a build.gradle (and no .buildignore)
-fileTree(dir: rootDir, include: "**/build.gradle", excludes: ["**/node_modules/**", "**/generic_app/**"])
-        .filter { it.parent != rootDir }
-        .filter { !file("${it.parent}/.buildignore").exists() }
+fileTree(
+        dir: rootDir,
+        include: "**/build.gradle",
+        excludes: [
+                ".git/**",
+                "**/.git/**",
+                ".gradle/**",
+                "**/.gradle/**",
+                "**/build/**",
+                "**/node_modules/**",
+                "**/generic_app/**",
+                "**/dist/**",
+                "**/lib/**"
+        ]
+)
+        .filter { it.parentFile != rootDir }
+        .filter { !new File(it.parentFile, ".buildignore").exists() }
         .each {
-    include it.parent.replace(rootDir.canonicalPath, "").replace("\\", ":").replace("/", ":")
-}
+            include it.parentFile.canonicalPath
+                    .replace(rootDir.canonicalPath, "")
+                    .replace("\\", ":")
+                    .replace("/", ":")
+        }

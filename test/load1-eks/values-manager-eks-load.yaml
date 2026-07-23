@@ -36,5 +36,5 @@ or:
       value: "10000"
     - name: OR_SETUP_DEVICES_SKIP_COUNT
       value: "100"
-    - name: OR_JAVA_OPTS
-      value: "-Dhibernate.generate_statistics=true -XX:InitialRAMPercentage=75 -XX:MaxRAMPercentage=75 -XX:NativeMemoryTracking=summary -Xlog:all=warning:stdout:uptime,level,tags -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof"
+    - name: JAVA_OPTS_APPEND
+      value: "-Dhibernate.generate_statistics=true"

@@ -1,0 +1,61 @@
+{
+  "rules": [
+    {
+      "name": "Brightness Trigger Rule",
+      "recurrence": {
+        "mins": 0
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "LightAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "brightness"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_THAN",
+                          "value": 50
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "notification",
+          "notification": {
+            "message": {
+              "type": "email",
+              "subject": "%RULESET_NAME%",
+              "html": "%TRIGGER_ASSETS%",
+              "to": [
+                {
+                  "address": "test@openremote.io",
+                  "name": "OR Test"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

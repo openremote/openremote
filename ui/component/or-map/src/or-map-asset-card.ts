@@ -1,10 +1,4 @@
-import {
-    CSSResultGroup,
-    html,
-    LitElement,
-    PropertyValues,
-    TemplateResult
-} from "lit";
+import {CSSResultGroup, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import { classMap } from 'lit-html/directives/class-map.js';
 import {
@@ -20,7 +14,6 @@ import {
 import manager, {subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
 import {mapAssetCardStyle} from "./style";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { getMarkerIconAndColorFromAssetType } from "./util";
 import {getMarkerConfigAttributeName, MapMarkerAssetConfig} from "./markers/or-map-marker-asset";
 
@@ -177,7 +170,10 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                 </div>
                 ${cardConfig && cardConfig.hideViewAsset ? html`` : html`
                     <div id="footer">
-                        <or-mwc-input .type="${InputType.BUTTON}" label="viewAsset" @or-mwc-input-changed="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-mwc-input>
+                        <or-vaadin-button style="--lumo-primary-text-color: var(--internal-or-map-asset-card-header-color);"
+                                          @click=${() => this._loadAsset(this.asset!.id!)}>
+                            <or-translate value="viewAsset"></or-translate>
+                        </or-vaadin-button>
                     </div>
                 `}
             </div>

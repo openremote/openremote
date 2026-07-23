@@ -1,0 +1,165 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/organization.proto";
+import "ttn/lorawan/v3/rights.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// The OrganizationRegistry service, exposed by the Identity Server, is used to manage
+// organization registrations.
+service OrganizationRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage organizations."};
+  // Create a new organization. This also sets the given user as
+  // first collaborator with all possible rights.
+  rpc Create(CreateOrganizationRequest) returns (Organization) {
+    option (google.api.http) = {
+      post: "/users/{collaborator.user_ids.user_id}/organizations"
+      body: "*"
+    };
+  }
+
+  // Get the organization with the given identifiers, selecting the fields specified
+  // in the field mask.
+  // More or less fields may be returned, depending on the rights of the caller.
+  rpc Get(GetOrganizationRequest) returns (Organization) {
+    option (google.api.http) = {get: "/organizations/{organization_ids.organization_id}"};
+  }
+
+  // List organizations where the given user or organization is a direct collaborator.
+  // If no user or organization is given, this returns the organizations the caller
+  // has access to.
+  // Similar to Get, this selects the fields given by the field mask.
+  // More or less fields may be returned, depending on the rights of the caller.
+  rpc List(ListOrganizationsRequest) returns (Organizations) {
+    option (google.api.http) = {
+      get: "/organizations"
+      additional_bindings {get: "/users/{collaborator.user_ids.user_id}/organizations"}
+    };
+  }
+
+  // Update the organization, changing the fields specified by the field mask to the provided values.
+  rpc Update(UpdateOrganizationRequest) returns (Organization) {
+    option (google.api.http) = {
+      put: "/organizations/{organization.ids.organization_id}"
+      body: "*"
+    };
+  }
+
+  // Delete the organization. This may not release the organization ID for reuse.
+  rpc Delete(OrganizationIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/organizations/{organization_id}"};
+  }
+
+  // Restore a recently deleted organization.
+  //
+  // Deployment configuration may specify if, and for how long after deletion,
+  // entities can be restored.
+  rpc Restore(OrganizationIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {post: "/organizations/{organization_id}/restore"};
+  }
+
+  // Purge the organization. This will release the organization ID for reuse.
+  // The user is responsible for clearing data from any (external) integrations
+  // that may store and expose data by user or organization ID.
+  rpc Purge(OrganizationIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/organizations/{organization_id}/purge"};
+  }
+}
+
+// The OrganizationAcces service, exposed by the Identity Server, is used to manage
+// API keys and collaborators of organizations.
+service OrganizationAccess {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage access to organizations"};
+  // List the rights the caller has on this organization.
+  rpc ListRights(OrganizationIdentifiers) returns (Rights) {
+    option (google.api.http) = {get: "/organizations/{organization_id}/rights"};
+  }
+
+  // Create an API key scoped to this organization.
+  // Organization API keys can give access to the organization itself, as well as
+  // any application, gateway and OAuth client this organization is a collaborator of.
+  rpc CreateAPIKey(CreateOrganizationAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {
+      post: "/organizations/{organization_ids.organization_id}/api-keys"
+      body: "*"
+    };
+  }
+
+  // List the API keys for this organization.
+  rpc ListAPIKeys(ListOrganizationAPIKeysRequest) returns (APIKeys) {
+    option (google.api.http) = {get: "/organizations/{organization_ids.organization_id}/api-keys"};
+  }
+
+  // Get a single API key of this organization.
+  rpc GetAPIKey(GetOrganizationAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {get: "/organizations/{organization_ids.organization_id}/api-keys/{key_id}"};
+  }
+
+  // Update the rights of an API key of the organization.
+  // This method can also be used to delete the API key, by giving it no rights.
+  // The caller is required to have all assigned or/and removed rights.
+  rpc UpdateAPIKey(UpdateOrganizationAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {
+      put: "/organizations/{organization_ids.organization_id}/api-keys/{api_key.id}"
+      body: "*"
+    };
+  }
+
+  // Delete a single API key of this organization.
+  rpc DeleteAPIKey(DeleteOrganizationAPIKeyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/organizations/{organization_ids.organization_id}/api-keys/{key_id}"};
+  }
+
+  // Get the rights of a collaborator (member) of the organization.
+  // Pseudo-rights in the response (such as the "_ALL" right) are not expanded.
+  rpc GetCollaborator(GetOrganizationCollaboratorRequest) returns (GetCollaboratorResponse) {
+    option (google.api.http) = {
+      additional_bindings {get: "/organizations/{organization_ids.organization_id}/collaborator/user/{collaborator.user_ids.user_id}"}
+    };
+  }
+
+  // Set the rights of a collaborator (member) on the organization.
+  // Organization collaborators can get access to the organization itself, as well as
+  // any application, gateway and OAuth client this organization is a collaborator of.
+  // This method can also be used to delete the collaborator, by giving them no rights.
+  // The caller is required to have all assigned or/and removed rights.
+  rpc SetCollaborator(SetOrganizationCollaboratorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/organizations/{organization_ids.organization_id}/collaborators"
+      body: "*"
+    };
+  }
+
+  // List the collaborators on this organization.
+  rpc ListCollaborators(ListOrganizationCollaboratorsRequest) returns (Collaborators) {
+    option (google.api.http) = {get: "/organizations/{organization_ids.organization_id}/collaborators"};
+  }
+
+  // DeleteCollaborator removes a collaborator from an organization.
+  rpc DeleteCollaborator(DeleteOrganizationCollaboratorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      // NOTE: It is currently not possible to have organizations collaborating on other organizations.
+      delete: "/organizations/{organization_ids.organization_id}/collaborators/user/{collaborator_ids.user_ids.user_id}"
+    };
+  }
+}

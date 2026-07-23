@@ -157,6 +157,7 @@ const style = css`
     }
 
     .dialog-container {
+        font-family: inherit; /* Disables Material UI font family, and prioritizes our own */
         display: flex;
         flex-direction: row;
     }

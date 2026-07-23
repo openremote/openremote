@@ -40,6 +40,7 @@ import {
 } from "@jsonforms/core";
 import {html, TemplateResult} from "lit";
 import "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-vaadin-components/or-vaadin-input";
 import {JsonFormsStateContext} from "./index";
 import {
     getCombinatorInfos,

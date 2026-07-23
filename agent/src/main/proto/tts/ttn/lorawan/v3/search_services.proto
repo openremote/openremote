@@ -1,0 +1,478 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/field_mask.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "ttn/lorawan/v3/application.proto";
+import "ttn/lorawan/v3/client.proto";
+import "ttn/lorawan/v3/end_device.proto";
+import "ttn/lorawan/v3/enums.proto";
+import "ttn/lorawan/v3/gateway.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/organization.proto";
+import "ttn/lorawan/v3/user.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// This message is used for finding applications in the EntityRegistrySearch service.
+message SearchApplicationsRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // Find applications where the ID, name or description contains this substring.
+  string query = 11 [(validate.rules).string.max_len = 50];
+  // Find applications where the ID contains this substring.
+  string id_contains = 1 [(validate.rules).string.max_len = 50];
+  // Find applications where the name contains this substring.
+  string name_contains = 2 [(validate.rules).string.max_len = 50];
+  // Find applications where the description contains this substring.
+  string description_contains = 3 [(validate.rules).string.max_len = 50];
+  // Find applications where the given attributes contain these substrings.
+  map<string, string> attributes_contain = 4 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 50}
+    }
+  }];
+
+  reserved 5; // Reserved for EUI or state filter.
+
+  google.protobuf.FieldMask field_mask = 6;
+
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 7 [(validate.rules).string = {
+    in: [
+      "",
+      "application_id",
+      "-application_id",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 8 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 9;
+  // Only return recently deleted applications.
+  bool deleted = 10;
+
+  // next: 12
+}
+
+// This message is used for finding OAuth clients in the EntityRegistrySearch service.
+message SearchClientsRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // Find OAuth clients where the ID, name or description contains this substring.
+  string query = 11 [(validate.rules).string.max_len = 50];
+  // Find OAuth clients where the ID contains this substring.
+  string id_contains = 1 [(validate.rules).string.max_len = 50];
+  // Find OAuth clients where the name contains this substring.
+  string name_contains = 2 [(validate.rules).string.max_len = 50];
+  // Find OAuth clients where the description contains this substring.
+  string description_contains = 3 [(validate.rules).string.max_len = 50];
+  // Find OAuth clients where the given attributes contain these substrings.
+  map<string, string> attributes_contain = 4 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 50}
+    }
+  }];
+
+  // Find OAuth clients where the state is any of these states.
+  repeated State state = 5 [(validate.rules).repeated = {
+    unique: true,
+    items: {
+      enum: {defined_only: true}
+    }
+  }];
+
+  google.protobuf.FieldMask field_mask = 6;
+
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 7 [(validate.rules).string = {
+    in: [
+      "",
+      "client_id",
+      "-client_id",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 8 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 9;
+  // Only return recently deleted OAuth clients.
+  bool deleted = 10;
+
+  // next: 12
+}
+
+// This message is used for finding gateways in the EntityRegistrySearch service.
+message SearchGatewaysRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // Find gateways where the ID, name, description or EUI contains this substring.
+  string query = 11 [(validate.rules).string.max_len = 50];
+  // Find gateways where the ID contains this substring.
+  string id_contains = 1 [(validate.rules).string.max_len = 50];
+  // Find gateways where the name contains this substring.
+  string name_contains = 2 [(validate.rules).string.max_len = 50];
+  // Find gateways where the description contains this substring.
+  string description_contains = 3 [(validate.rules).string.max_len = 50];
+  // Find gateways where the given attributes contain these substrings.
+  map<string, string> attributes_contain = 4 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 50}
+    }
+  }];
+
+  // Find gateways where the (hexadecimal) EUI contains this substring.
+  string eui_contains = 5 [(validate.rules).string.max_len = 16];
+
+  google.protobuf.FieldMask field_mask = 6;
+
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 7 [(validate.rules).string = {
+    in: [
+      "",
+      "gateway_id",
+      "-gateway_id",
+      "gateway_eui",
+      "-gateway_eui",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 8 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 9;
+  // Only return recently deleted gateways.
+  bool deleted = 10;
+
+  // next: 12
+}
+
+// This message is used for finding organizations in the EntityRegistrySearch service.
+message SearchOrganizationsRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // Find organizations where the ID, name or description contains this substring.
+  string query = 11 [(validate.rules).string.max_len = 50];
+  // Find organizations where the ID contains this substring.
+  string id_contains = 1 [(validate.rules).string.max_len = 50];
+  // Find organizations where the name contains this substring.
+  string name_contains = 2 [(validate.rules).string.max_len = 50];
+  // Find organizations where the description contains this substring.
+  string description_contains = 3 [(validate.rules).string.max_len = 50];
+  // Find organizations where the given attributes contain these substrings.
+  map<string, string> attributes_contain = 4 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 50}
+    }
+  }];
+
+  reserved 5; // Reserved for state filter.
+
+  google.protobuf.FieldMask field_mask = 6;
+
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 7 [(validate.rules).string = {
+    in: [
+      "",
+      "organization_id",
+      "-organization_id",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 8 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 9;
+  // Only return recently deleted organizations.
+  bool deleted = 10;
+
+  // next: 12
+}
+
+// This message is used for finding users in the EntityRegistrySearch service.
+message SearchUsersRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // Find users where the ID, name or description contains this substring.
+  string query = 11 [(validate.rules).string.max_len = 50];
+  // Find users where the ID contains this substring.
+  string id_contains = 1 [(validate.rules).string.max_len = 50];
+  // Find users where the name contains this substring.
+  string name_contains = 2 [(validate.rules).string.max_len = 50];
+  // Find users where the description contains this substring.
+  string description_contains = 3 [(validate.rules).string.max_len = 50];
+  // Find users where the given attributes contain these substrings.
+  map<string, string> attributes_contain = 4 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 50}
+    }
+  }];
+
+  // Find users where the state is any of these states.
+  repeated State state = 5 [(validate.rules).repeated = {
+    unique: true,
+    items: {
+      enum: {defined_only: true}
+    }
+  }];
+
+  google.protobuf.FieldMask field_mask = 6;
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 7 [(validate.rules).string = {
+    in: [
+      "",
+      "user_id",
+      "-user_id",
+      "name",
+      "-name",
+      "primary_email_address",
+      "-primary_email_address",
+      "state",
+      "-state",
+      "admin",
+      "-admin",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 8 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 9;
+  // Only return recently deleted users.
+  bool deleted = 10;
+}
+
+message SearchAccountsRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+
+  string query = 1 [(validate.rules).string = {max_len: 50}];
+
+  bool only_users = 2;
+
+  oneof collaborator_of {
+    ApplicationIdentifiers application_ids = 3;
+    ClientIdentifiers client_ids = 4;
+    GatewayIdentifiers gateway_ids = 5;
+    OrganizationIdentifiers organization_ids = 6;
+  }
+
+  bool complement_collaborators = 7;
+
+  // NOTE: This request intentionally does not support pagination.
+}
+
+message SearchAccountsResponse {
+  repeated OrganizationOrUserIdentifiers account_ids = 1;
+}
+
+// The EntityRegistrySearch service indexes entities in the various registries
+// and enables searching for them.
+// This service is not implemented on all deployments.
+service EntityRegistrySearch {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Search for entities in the Entity Registry."};
+  // Search for applications that match the conditions specified in the request.
+  // Non-admin users will only match applications that they have rights on.
+  rpc SearchApplications(SearchApplicationsRequest) returns (Applications) {
+    option (google.api.http) = {get: "/search/applications"};
+  }
+
+  // Search for OAuth clients that match the conditions specified in the request.
+  // Non-admin users will only match OAuth clients that they have rights on.
+  rpc SearchClients(SearchClientsRequest) returns (Clients) {
+    option (google.api.http) = {get: "/search/clients"};
+  }
+
+  // Search for gateways that match the conditions specified in the request.
+  // Non-admin users will only match gateways that they have rights on.
+  rpc SearchGateways(SearchGatewaysRequest) returns (Gateways) {
+    option (google.api.http) = {get: "/search/gateways"};
+  }
+
+  // Search for organizations that match the conditions specified in the request.
+  // Non-admin users will only match organizations that they have rights on.
+  rpc SearchOrganizations(SearchOrganizationsRequest) returns (Organizations) {
+    option (google.api.http) = {get: "/search/organizations"};
+  }
+
+  // Search for users that match the conditions specified in the request.
+  // This is only available to admin users.
+  rpc SearchUsers(SearchUsersRequest) returns (Users) {
+    option (google.api.http) = {get: "/search/users"};
+  }
+
+  // Search for accounts that match the conditions specified in the request.
+  rpc SearchAccounts(SearchAccountsRequest) returns (SearchAccountsResponse) {
+    option (google.api.http) = {
+      get: "/search/accounts"
+      additional_bindings {get: "/applications/{application_ids.application_id}/collaborators/search"}
+      additional_bindings {get: "/clients/{client_ids.client_id}/collaborators/search"}
+      additional_bindings {get: "/gateways/{gateway_ids.gateway_id}/collaborators/search"}
+      additional_bindings {get: "/organizations/{organization_ids.organization_id}/collaborators/search"}
+    };
+  }
+}
+
+message SearchEndDevicesRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+
+  // Find end devices where the ID, name, description or EUI contains this substring.
+  string query = 13 [(validate.rules).string.max_len = 50];
+
+  // Find end devices where the ID contains this substring.
+  string id_contains = 2 [(validate.rules).string.max_len = 50];
+  // Find end devices where the name contains this substring.
+  string name_contains = 3 [(validate.rules).string.max_len = 50];
+  // Find end devices where the description contains this substring.
+  string description_contains = 4 [(validate.rules).string.max_len = 50];
+  // Find end devices where the given attributes contain these substrings.
+  map<string, string> attributes_contain = 5 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 50}
+    }
+  }];
+
+  // Find end devices where the (hexadecimal) DevEUI contains this substring.
+  string dev_eui_contains = 6 [(validate.rules).string.max_len = 16];
+  // Find end devices where the (hexadecimal) JoinEUI contains this substring.
+  string join_eui_contains = 7 [(validate.rules).string.max_len = 16];
+  // Find end devices where the (hexadecimal) DevAddr contains this substring.
+  string dev_addr_contains = 8 [(validate.rules).string.max_len = 8];
+
+  google.protobuf.FieldMask field_mask = 9;
+
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 10 [(validate.rules).string = {
+    in: [
+      "",
+      "device_id",
+      "-device_id",
+      "join_eui",
+      "-join_eui",
+      "dev_eui",
+      "-dev_eui",
+      "name",
+      "-name",
+      "description",
+      "-description",
+      "created_at",
+      "-created_at",
+      "last_seen_at",
+      "-last_seen_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 11 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 12;
+
+  // next: 14
+}
+
+// The EndDeviceRegistrySearch service indexes devices in the EndDeviceRegistry
+// and enables searching for them.
+// This service is not implemented on all deployments.
+service EndDeviceRegistrySearch {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Search for end devices in the End Device Registry."};
+  // Search for end devices in the given application that match the conditions specified in the request.
+  rpc SearchEndDevices(SearchEndDevicesRequest) returns (EndDevices) {
+    option (google.api.http) = {get: "/search/applications/{application_ids.application_id}/devices"};
+  }
+}

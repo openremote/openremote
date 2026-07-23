@@ -1,0 +1,1010 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/api";
+option java_package = "io.chirpstack.api";
+option java_multiple_files = true;
+option java_outer_classname = "ApplicationProto";
+option csharp_namespace = "Chirpstack.Api";
+option php_namespace = "Chirpstack\\Api";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Api";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// ApplicationService is the service providing API methods for managing
+// applications.
+service ApplicationService {
+  // Create creates the given application.
+  rpc Create(CreateApplicationRequest) returns (CreateApplicationResponse) {
+    option (google.api.http) = {
+      post : "/api/applications"
+      body : "*"
+    };
+  }
+
+  // Get the application for the given ID.
+  rpc Get(GetApplicationRequest) returns (GetApplicationResponse) {
+    option (google.api.http) = {
+      get : "/api/applications/{id}"
+    };
+  }
+
+  // Update updates the given application.
+  rpc Update(UpdateApplicationRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/applications/{application.id}"
+      body : "*"
+    };
+  }
+
+  // Delete the application for the given ID.
+  rpc Delete(DeleteApplicationRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/applications/{id}"
+    };
+  }
+
+  // Get the list of applications.
+  rpc List(ListApplicationsRequest) returns (ListApplicationsResponse) {
+    option (google.api.http) = {
+      get : "/api/applications"
+    };
+  }
+
+  // List all configured integrations.
+  rpc ListIntegrations(ListIntegrationsRequest)
+      returns (ListIntegrationsResponse) {
+    option (google.api.http) = {
+      get : "/api/applications/{application_id}/integrations"
+    };
+  }
+
+  // Create HTTP integration.
+  rpc CreateHttpIntegration(CreateHttpIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/applications/{integration.application_id}/integrations/http"
+      body : "*"
+    };
+  }
+
+  // Get the configured HTTP integration.
+  rpc GetHttpIntegration(GetHttpIntegrationRequest)
+      returns (GetHttpIntegrationResponse) {
+    option (google.api.http) = {
+      get : "/api/applications/{application_id}/integrations/http"
+    };
+  }
+
+  // Update the HTTP integration.
+  rpc UpdateHttpIntegration(UpdateHttpIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/applications/{integration.application_id}/integrations/http"
+      body : "*"
+    };
+  }
+
+  // Delete the HTTP integration.
+  rpc DeleteHttpIntegration(DeleteHttpIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/applications/{application_id}/integrations/http"
+    };
+  }
+
+  // Create InfluxDb integration.
+  rpc CreateInfluxDbIntegration(CreateInfluxDbIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/applications/{integration.application_id}/integrations/"
+             "influxdb"
+      body : "*"
+    };
+  }
+
+  // Get InfluxDb integration.
+  rpc GetInfluxDbIntegration(GetInfluxDbIntegrationRequest)
+      returns (GetInfluxDbIntegrationResponse) {
+    option (google.api.http) = {
+      get : "/api/applications/{application_id}/integrations/influxdb"
+    };
+  }
+
+  // Update InfluxDb integration.
+  rpc UpdateInfluxDbIntegration(UpdateInfluxDbIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/applications/{integration.application_id}/integrations/"
+            "influxdb"
+      body : "*"
+    };
+  }
+
+  // Delete InfluxDb integration.
+  rpc DeleteInfluxDbIntegration(DeleteInfluxDbIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/applications/{application_id}/integrations/influxdb"
+    };
+  }
+
+  // Create ThingsBoard integration.
+  rpc CreateThingsBoardIntegration(CreateThingsBoardIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/applications/{integration.application_id}/integrations/"
+             "thingsboard"
+      body : "*"
+    };
+  }
+
+  // Get ThingsBoard integration.
+  rpc GetThingsBoardIntegration(GetThingsBoardIntegrationRequest)
+      returns (GetThingsBoardIntegrationResponse) {
+    option (google.api.http) = {
+      get : "/api/applications/{application_id}/integrations/thingsboard"
+    };
+  }
+
+  // Update ThingsBoard integration.
+  rpc UpdateThingsBoardIntegration(UpdateThingsBoardIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/applications/{integration.application_id}/integrations/"
+            "thingsboard"
+      body : "*"
+    };
+  }
+
+  // Delete ThingsBoard integration.
+  rpc DeleteThingsBoardIntegration(DeleteThingsBoardIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/applications/{application_id}/integrations/thingsboard"
+    };
+  }
+
+  // Create myDevices integration.
+  rpc CreateMyDevicesIntegration(CreateMyDevicesIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/applications/{integration.application_id}/integrations/"
+             "mydevices"
+      body : "*"
+    };
+  }
+
+  // Get myDevices integration.
+  rpc GetMyDevicesIntegration(GetMyDevicesIntegrationRequest)
+      returns (GetMyDevicesIntegrationResponse) {
+    option (google.api.http) = {
+      get : "/api/applications/{application_id}/integrations/mydevices"
+    };
+  }
+
+  // Update myDevices integration.
+  rpc UpdateMyDevicesIntegration(UpdateMyDevicesIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/applications/{integration.application_id}/integrations/"
+            "mydevices"
+      body : "*"
+    };
+  }
+
+  // Delete myDevices integration.
+  rpc DeleteMyDevicesIntegration(DeleteMyDevicesIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/applications/{application_id}/integrations/mydevices"
+    };
+  }
+
+  // Create GCP Pub/Sub integration.
+  rpc CreateGcpPubSubIntegration(CreateGcpPubSubIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/applications/{integration.application_id}/integrations/"
+             "gcp-pub-sub"
+      body : "*"
+    };
+  }
+
+  // Get GCP Pub/Sub integration.
+  rpc GetGcpPubSubIntegration(GetGcpPubSubIntegrationRequest)
+      returns (GetGcpPubSubIntegrationResponse) {
+    option (google.api.http) = {
+      get : "/api/applications/{application_id}/integrations/gcp-pub-sub"
+    };
+  }
+
+  // Update GCP Pub/Sub integration.
+  rpc UpdateGcpPubSubIntegration(UpdateGcpPubSubIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/applications/{integration.application_id}/integrations/"
+            "gcp-pub-sub"
+      body : "*"
+    };
+  }
+
+  // Delete GCP Pub/Sub integration.
+  rpc DeleteGcpPubSubIntegration(DeleteGcpPubSubIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/applications/{application_id}/integrations/gcp-pub-sub"
+    };
+  }
+
+  // Create AWS SNS integration.
+  rpc CreateAwsSnsIntegration(CreateAwsSnsIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/applications/{integration.application_id}/integrations/"
+             "aws-sns"
+      body : "*"
+    };
+  }
+
+  // Get AWS SNS integration.
+  rpc GetAwsSnsIntegration(GetAwsSnsIntegrationRequest)
+      returns (GetAwsSnsIntegrationResponse) {
+    option (google.api.http) = {
+      get : "/api/applications/{application_id}/integrations/aws-sns"
+    };
+  }
+
+  // Update AWS SNS integration.
+  rpc UpdateAwsSnsIntegration(UpdateAwsSnsIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/applications/{integration.application_id}/integrations/"
+            "aws-sns"
+      body : "*"
+    };
+  }
+
+  // Delete AWS SNS integration.
+  rpc DeleteAwsSnsIntegration(DeleteAwsSnsIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/applications/{application_id}/integrations/aws-sns"
+    };
+  }
+
+  // Create Azure Service-Bus integration.
+  rpc CreateAzureServiceBusIntegration(CreateAzureServiceBusIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/applications/{integration.application_id}/integrations/"
+             "azure-service-bus"
+      body : "*"
+    };
+  }
+
+  // Get Azure Service-Bus integration.
+  rpc GetAzureServiceBusIntegration(GetAzureServiceBusIntegrationRequest)
+      returns (GetAzureServiceBusIntegrationResponse) {
+    option (google.api.http) = {
+      get : "/api/applications/{application_id}/integrations/azure-service-bus"
+    };
+  }
+
+  // Update Azure Service-Bus integration.
+  rpc UpdateAzureServiceBusIntegration(UpdateAzureServiceBusIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/applications/{integration.application_id}/integrations/"
+            "azure-service-bus"
+      body : "*"
+    };
+  }
+
+  // Delete Azure Service-Bus integration.
+  rpc DeleteAzureServiceBusIntegration(DeleteAzureServiceBusIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/applications/{application_id}/integrations/"
+               "azure-service-bus"
+    };
+  }
+
+  // Create Pilot Things integration.
+  rpc CreatePilotThingsIntegration(CreatePilotThingsIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/applications/{integration.application_id}/integrations/"
+             "pilot-things"
+      body : "*"
+    };
+  }
+
+  // Get Pilot Things integration.
+  rpc GetPilotThingsIntegration(GetPilotThingsIntegrationRequest)
+      returns (GetPilotThingsIntegrationResponse) {
+    option (google.api.http) = {
+      get : "/api/applications/{application_id}/integrations/pilot-things"
+    };
+  }
+
+  // Update Pilot Things integration.
+  rpc UpdatePilotThingsIntegration(UpdatePilotThingsIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/applications/{integration.application_id}/integrations/"
+            "pilot-things"
+      body : "*"
+    };
+  }
+
+  // Delete Pilot Things integration.
+  rpc DeletePilotThingsIntegration(DeletePilotThingsIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/applications/{application_id}/integrations/pilot-things"
+    };
+  }
+
+  // Create IFTTT integration.
+  rpc CreateIftttIntegration(CreateIftttIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/applications/{integration.application_id}/integrations/ifttt"
+      body : "*"
+    };
+  }
+
+  // Get IFTTT integration.
+  rpc GetIftttIntegration(GetIftttIntegrationRequest)
+      returns (GetIftttIntegrationResponse) {
+    option (google.api.http) = {
+      get : "/api/applications/{application_id}/integrations/ifttt"
+    };
+  }
+
+  // Update IFTTT integration.
+  rpc UpdateIftttIntegration(UpdateIftttIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/applications/{integration.application_id}/integrations/ifttt"
+      body : "*"
+    };
+  }
+
+  // Delete IFTTT integration.
+  rpc DeleteIftttIntegration(DeleteIftttIntegrationRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/applications/{application_id}/integrations/ifttt"
+    };
+  }
+
+  // Generates application ID specific client-certificate.
+  rpc GenerateMqttIntegrationClientCertificate(
+      GenerateMqttIntegrationClientCertificateRequest)
+      returns (GenerateMqttIntegrationClientCertificateResponse) {
+    option (google.api.http) = {
+      post : "/api/applications/{application_id}/integrations/mqtt/certificate"
+    };
+  }
+
+  // List device-profiles used within the given application.
+  rpc ListDeviceProfiles(ListApplicationDeviceProfilesRequest) returns (ListApplicationDeviceProfilesResponse) {
+    option (google.api.http) = {
+      get: "/api/applications/{application_id}/device-profiles"
+    };
+   }
+
+  // List device tags used within the given application.
+  rpc ListDeviceTags(ListApplicationDeviceTagsRequest) returns (ListApplicationDeviceTagsResponse) {
+    option (google.api.http) = {
+      get: "/api/applications/{application_id}/device-tags"
+    };
+  }
+}
+
+enum Encoding {
+  JSON = 0;
+  PROTOBUF = 1;
+}
+
+enum IntegrationKind {
+  HTTP = 0;
+  INFLUX_DB = 1;
+  THINGS_BOARD = 2;
+  MY_DEVICES = 3;
+  GCP_PUB_SUB = 5;
+  AWS_SNS = 6;
+  AZURE_SERVICE_BUS = 7;
+  PILOT_THINGS = 8;
+  MQTT_GLOBAL = 9;
+  IFTTT = 10;
+}
+
+message Application {
+  // Application ID (UUID).
+  // Note: on create this will be automatically generated.
+  string id = 1;
+
+  // Application name.
+  string name = 2;
+
+  // Application description.
+  string description = 3;
+
+  // Tenant ID (UUID).
+  string tenant_id = 4;
+
+  // Tags (user defined).
+  // These tags can be used to add additional information to the application.
+  // These tags are exposed in all the integration events of devices under
+  // this application.
+  map<string, string> tags = 5;
+}
+
+message ApplicationListItem {
+  // Application ID (UUID).
+  string id = 1;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 2;
+
+  // Last update timestamp.
+  google.protobuf.Timestamp updated_at = 3;
+
+  // Application name.
+  string name = 4;
+
+  // Application description.
+  string description = 5;
+}
+
+message CreateApplicationRequest {
+  // Application object to create.
+  Application application = 1;
+}
+
+message CreateApplicationResponse {
+  // Application ID (UUID).
+  string id = 1;
+}
+
+message GetApplicationRequest {
+  // Application ID (UUID).
+  string id = 1;
+}
+
+message GetApplicationResponse {
+  // Application object.
+  Application application = 1;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 2;
+
+  // Last update timestamp.
+  google.protobuf.Timestamp updated_at = 3;
+
+  // Measurement keys.
+  // This contains the measurement keys from all the device-profiles that
+  // are used by the devices under this application.
+  repeated string measurement_keys = 4;
+}
+
+message UpdateApplicationRequest {
+  // Application object.
+  Application application = 1;
+}
+
+message DeleteApplicationRequest {
+  // Application ID (UUID).
+  string id = 1;
+}
+
+message ListApplicationsRequest {
+  // Max number of applications to return in the result-set.
+  // If not set, it will be treated as 0, and the response will only return the total_count.
+  uint32 limit = 1;
+
+  // Offset in the result-set (for pagination).
+  uint32 offset = 2;
+
+  // If set, the given string will be used to search on name (optional).
+  string search = 3;
+
+  // Tenant ID to list the applications for.
+  string tenant_id = 4;
+}
+
+message ListApplicationsResponse {
+  // Total number of applications.
+  uint32 total_count = 1;
+
+  // Result-set.
+  repeated ApplicationListItem result = 2;
+}
+
+message ListIntegrationsRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message IntegrationListItem {
+  // Integration kind.
+  IntegrationKind kind = 1;
+}
+
+message ListIntegrationsResponse {
+  // Total number of integrations available within the result-set.
+  uint32 total_count = 1;
+
+  // Integrations within result-set.
+  repeated IntegrationListItem result = 2;
+}
+
+message HttpIntegration {
+  // Application ID (UUID).
+  string application_id = 1;
+
+  // HTTP headers to set when making requests.
+  map<string, string> headers = 2;
+
+  // Payload encoding.
+  Encoding encoding = 3;
+
+  // Event endpoint URL.
+  // The HTTP integration will POST all events to this enpoint. The request
+  // will contain a query parameters "event" containing the type of the
+  // event.
+  string event_endpoint_url = 4;
+}
+
+message CreateHttpIntegrationRequest {
+  // Integration object to create.
+  HttpIntegration integration = 1;
+}
+
+message GetHttpIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GetHttpIntegrationResponse {
+  // Integration object.
+  HttpIntegration integration = 1;
+}
+
+message UpdateHttpIntegrationRequest {
+  // Integration object to update.
+  HttpIntegration integration = 1;
+}
+
+message DeleteHttpIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+enum InfluxDbPrecision {
+  NS = 0;
+  U = 1;
+  MS = 2;
+  S = 3;
+  M = 4;
+  H = 5;
+}
+
+enum InfluxDbVersion {
+  INFLUXDB_1 = 0;
+  INFLUXDB_2 = 1;
+}
+
+message InfluxDbIntegration {
+  // Application ID (UUID).
+  string application_id = 1;
+
+  // InfluxDb API write endpoint (e.g. http://localhost:8086/write).
+  string endpoint = 2;
+
+  // InfluxDb database name. (InfluxDb v1)
+  string db = 3;
+
+  // InfluxDb username. (InfluxDb v1)
+  string username = 4;
+
+  // InfluxDb password. (InfluxDb v1)
+  string password = 5;
+
+  // InfluxDb retention policy name. (InfluxDb v1)
+  string retention_policy_name = 6;
+
+  // InfluxDb timestamp precision (InfluxDb v1).
+  InfluxDbPrecision precision = 7;
+
+  // InfluxDb version.
+  InfluxDbVersion version = 8;
+
+  // Token. (InfluxDb v2)
+  string token = 9;
+
+  // Organization. (InfluxDb v2)
+  string organization = 10;
+
+  // Bucket. (InfluxDb v2)
+  string bucket = 11;
+}
+
+message CreateInfluxDbIntegrationRequest {
+  // Integration object to create.
+  InfluxDbIntegration integration = 1;
+}
+
+message GetInfluxDbIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GetInfluxDbIntegrationResponse {
+  // Integration object.
+  InfluxDbIntegration integration = 1;
+}
+
+message UpdateInfluxDbIntegrationRequest {
+  // Integration object to update.
+  InfluxDbIntegration integration = 1;
+}
+
+message DeleteInfluxDbIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message ThingsBoardIntegration {
+  // Application ID (UUID).
+  string application_id = 1;
+
+  // ThingsBoard server endpoint, e.g. https://example.com
+  string server = 2;
+}
+
+message CreateThingsBoardIntegrationRequest {
+  // Integration object to create.
+  ThingsBoardIntegration integration = 1;
+}
+
+message GetThingsBoardIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GetThingsBoardIntegrationResponse {
+  // Integration object.
+  ThingsBoardIntegration integration = 1;
+}
+
+message UpdateThingsBoardIntegrationRequest {
+  // Integration object to update.
+  ThingsBoardIntegration integration = 1;
+}
+
+message DeleteThingsBoardIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message MyDevicesIntegration {
+  // Application ID (UUID).
+  string application_id = 1;
+
+  // myDevices API endpoint.
+  string endpoint = 2;
+}
+
+message CreateMyDevicesIntegrationRequest {
+  // Integration object to create.
+  MyDevicesIntegration integration = 1;
+}
+
+message GetMyDevicesIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GetMyDevicesIntegrationResponse {
+  // Integration object.
+  MyDevicesIntegration integration = 1;
+}
+
+message UpdateMyDevicesIntegrationRequest {
+  // Integration object to update.
+  MyDevicesIntegration integration = 1;
+}
+
+message DeleteMyDevicesIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GcpPubSubIntegration {
+  // Application ID (UUID).
+  string application_id = 1;
+
+  // Encoding.
+  Encoding encoding = 2;
+
+  // Credentials file.
+  // This IAM service-account credentials file (JSON) must have the following
+  // Pub/Sub roles:
+  // * Pub/Sub Publisher
+  string credentials_file = 3;
+
+  // Project ID.
+  string project_id = 4;
+
+  // Topic name.
+  // This is the name of the Pub/Sub topic.
+  string topic_name = 5;
+}
+
+message CreateGcpPubSubIntegrationRequest {
+  // Integration object to create.
+  GcpPubSubIntegration integration = 1;
+}
+
+message GetGcpPubSubIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GetGcpPubSubIntegrationResponse {
+  // Integration object.
+  GcpPubSubIntegration integration = 1;
+}
+
+message UpdateGcpPubSubIntegrationRequest {
+  // Integration object to update.
+  GcpPubSubIntegration integration = 1;
+}
+
+message DeleteGcpPubSubIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message AwsSnsIntegration {
+  // Application ID (UUID).
+  string application_id = 1;
+
+  // Encoding.
+  Encoding encoding = 2;
+
+  // AWS region.
+  string region = 3;
+
+  // AWS Access Key ID.
+  string access_key_id = 4;
+
+  // AWS Secret Access Key.
+  string secret_access_key = 5;
+
+  // Topic ARN.
+  string topic_arn = 6;
+}
+
+message CreateAwsSnsIntegrationRequest {
+  // Integration object to create.
+  AwsSnsIntegration integration = 1;
+}
+
+message GetAwsSnsIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GetAwsSnsIntegrationResponse {
+  // Integration object.
+  AwsSnsIntegration integration = 1;
+}
+
+message UpdateAwsSnsIntegrationRequest {
+  // Integration object to update.
+  AwsSnsIntegration integration = 1;
+}
+
+message DeleteAwsSnsIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message AzureServiceBusIntegration {
+  // Application ID (UUID).
+  string application_id = 1;
+
+  // Encoding.
+  Encoding encoding = 2;
+
+  // Connection string.
+  string connection_string = 3;
+
+  // Publish name.
+  // This is the name of the topic or queue.
+  string publish_name = 4;
+}
+
+message CreateAzureServiceBusIntegrationRequest {
+  // Integration object to create.
+  AzureServiceBusIntegration integration = 1;
+}
+
+message GetAzureServiceBusIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GetAzureServiceBusIntegrationResponse {
+  // Integration object.
+  AzureServiceBusIntegration integration = 1;
+}
+
+message UpdateAzureServiceBusIntegrationRequest {
+  // Integration object to create.
+  AzureServiceBusIntegration integration = 1;
+}
+
+message DeleteAzureServiceBusIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message PilotThingsIntegration {
+  // Application ID (UUID).
+  string application_id = 1;
+
+  // Server URL.
+  string server = 2;
+
+  // Authentication token.
+  string token = 3;
+}
+
+message CreatePilotThingsIntegrationRequest {
+  // Integration object to create.
+  PilotThingsIntegration integration = 1;
+}
+
+message GetPilotThingsIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GetPilotThingsIntegrationResponse {
+  // Integration object.
+  PilotThingsIntegration integration = 1;
+}
+
+message UpdatePilotThingsIntegrationRequest {
+  // Integration object to update.
+  PilotThingsIntegration integration = 1;
+}
+
+message DeletePilotThingsIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message IftttIntegration {
+  // Application ID (UUID).
+  string application_id = 1;
+
+  // Key.
+  // This key can be obtained from the IFTTT Webhooks documentation page.
+  string key = 2;
+
+  // Values.
+  // Up to 2 values can be forwarded to IFTTT. These values must map to the
+  // decoded payload keys. For example:
+  // {
+  //   "batteryLevel": 75.3,
+  //   "buttons": [{"pressed": false}, {"pressed": true}]
+  // }
+  // You would specify the following fields:
+  // uplink_values = ["batteryLevel", "buttons_0_pressed"]
+  //
+  // Notes: The first value is always used for the DevEUI.
+  // Ignored if arbitrary_json is set to true.
+  repeated string uplink_values = 3;
+
+  // Arbitrary JSON.
+  // If set to true, ChirpStack events will be sent as-is as arbitrary JSON
+  // payload. If set to false (default), the 3 JSON values format will be used.
+  bool arbitrary_json = 4;
+
+  // Event prefix.
+  // If set, the event name will be PREFIX_EVENT. For example if event_prefix
+  // is set to weatherstation, and uplink event will be sent as
+  // weatherstation_up to the IFTTT webhook.
+  // Note: Only characters in the A-Z, a-z and 0-9 range are allowed.
+  string event_prefix = 5;
+}
+
+message CreateIftttIntegrationRequest {
+  // Integration object.
+  IftttIntegration integration = 1;
+}
+
+message GetIftttIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GetIftttIntegrationResponse {
+  // Integration object.
+  IftttIntegration integration = 1;
+}
+
+message UpdateIftttIntegrationRequest {
+  // Integration object to update.
+  IftttIntegration integration = 1;
+}
+
+message DeleteIftttIntegrationRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GenerateMqttIntegrationClientCertificateRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message GenerateMqttIntegrationClientCertificateResponse {
+  // TLS certificate.
+  string tls_cert = 1;
+
+  // TLS key.
+  string tls_key = 2;
+
+  // CA certificate.
+  string ca_cert = 3;
+
+  // Expires at defines the expiration date of the certificate.
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+message ApplicationDeviceProfileListItem {
+  // Device-profile ID (UUID).
+  string id = 1;
+
+  // Name.
+  string name = 2;
+}
+
+message ListApplicationDeviceProfilesRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+};
+
+message ListApplicationDeviceProfilesResponse {
+  // Device-profiles.
+  repeated ApplicationDeviceProfileListItem result = 1;
+}
+
+message ApplicationDeviceTagListItem {
+  // Tag key.
+  string key = 1;
+
+  // Used values.
+  repeated string values = 2;
+}
+
+message ListApplicationDeviceTagsRequest {
+  // Application ID (UUID).
+  string application_id = 1;
+}
+
+message ListApplicationDeviceTagsResponse {
+  // Device tags.
+  repeated ApplicationDeviceTagListItem result = 1;
+}

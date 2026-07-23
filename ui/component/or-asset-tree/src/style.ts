@@ -85,6 +85,7 @@ export const style = css`
     #header-btns {
         display: flex;
         flex-direction: row;
+        align-items: center;
         padding-right: 5px;
     }
 
@@ -262,7 +263,7 @@ export const style = css`
     }
     
     #filterInput {
-        padding: 7px 12px 7px 7px;
+        padding: 7px;
     }
 
     #filterAssetTypeDownIcon {
@@ -275,8 +276,7 @@ export const style = css`
     }
     
     #filterSettingsIcon {
-        cursor: pointer;
-        margin-right: 12px;
+        margin-right: 7px;
     }
     
     #asset-tree-filter-setting {

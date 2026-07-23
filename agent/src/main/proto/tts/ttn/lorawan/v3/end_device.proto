@@ -1,0 +1,1452 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/enums.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/keys.proto";
+import "ttn/lorawan/v3/lorawan.proto";
+import "ttn/lorawan/v3/messages.proto";
+import "ttn/lorawan/v3/metadata.proto";
+import "ttn/lorawan/v3/picture.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message Session {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  reserved 1; // RFU: Session ID
+
+  // Device Address, issued by the Network Server or chosen by device manufacturer in case of testing range (beginning with 00-03).
+  // Known by Network Server, Application Server and Join Server. Owned by Network Server.
+  bytes dev_addr = 2 [
+    (validate.rules).bytes = {
+      len: 4,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal4Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New4BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"2600ABCD\""
+    }
+  ];
+  SessionKeys keys = 3 [(validate.rules).message.required = true];
+  // Last uplink frame counter value used. Network Server only. Application Server assumes the Network Server checked it.
+  uint32 last_f_cnt_up = 4;
+  // Last network downlink frame counter value used. Network Server only.
+  uint32 last_n_f_cnt_down = 5;
+  // Last application downlink frame counter value used. Application Server only.
+  uint32 last_a_f_cnt_down = 6;
+  // Frame counter of the last confirmed downlink message sent. Network Server only.
+  uint32 last_conf_f_cnt_down = 7;
+  // Time when the session started. Network Server only.
+  google.protobuf.Timestamp started_at = 8;
+  // Queued Application downlink messages. Stored in Application Server and Network Server.
+  repeated ApplicationDownlink queued_application_downlinks = 9;
+}
+
+message BoolValue {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    wrapper: true
+  };
+  option (thethings.json.message) = {wrapper: true};
+  bool value = 1;
+}
+
+message ServingRelayForwardingLimits {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+
+  // Reset behavior of the buckets upon limit update.
+  RelayResetLimitCounter reset_behavior = 1;
+  // Bucket configuration for join requests.
+  // If unset, no individual limits will apply to join requests, but the relay overall limitations will apply.
+  RelayForwardLimits join_requests = 2;
+  // Bucket configuration for unknown device notifications.
+  // If unset, no individual limits will apply to unknown end device notifications, but the relay overall
+  // limitations will still apply.
+  RelayForwardLimits notifications = 3;
+  // Bucket configuration for uplink messages across all served end devices.
+  // If unset, no individual limits will apply to uplink messages across all served end devices, but the relay
+  // overall limitations will still apply.
+  RelayForwardLimits uplink_messages = 4;
+  // Bucket configuration for all relay messages.
+  // If unset, no overall limits will apply to the relay, but individual limitations will still apply.
+  RelayForwardLimits overall = 5;
+}
+
+message RelayUplinkForwardingRule {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+
+  // Bucket configuration for the served end device.
+  // If unset, no individual limits will apply to the end device, but the relay global limitations will apply.
+  RelayUplinkForwardLimits limits = 1;
+  // Last wake on radio frame counter used by the served end device.
+  uint32 last_w_f_cnt = 2;
+
+  // End device identifier of the served end device.
+  string device_id = 3 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36,
+    ignore_empty: true
+  }];
+  // Session key ID of the session keys used to derive the root relay session key.
+  bytes session_key_id = 4;
+}
+
+message ServingRelayParameters {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+
+  // Second wake on radio channel configuration.
+  RelaySecondChannel second_channel = 1;
+  // Index of the default wake on radio channel.
+  uint32 default_channel_index = 2 [(validate.rules).uint32.lte = 255];
+  // Channel activity detection periodicity.
+  RelayCADPeriodicity cad_periodicity = 3 [(validate.rules).enum.defined_only = true];
+  // Configured uplink forwarding rules.
+  repeated RelayUplinkForwardingRule uplink_forwarding_rules = 4 [(validate.rules).repeated.max_items = 16];
+  // Configured forwarding limits.
+  // If unset, the default value from Network Server configuration will be used.
+  ServingRelayForwardingLimits limits = 5;
+}
+
+message ServedRelayParameters {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    semantical: true
+  };
+
+  oneof mode {
+    option (validate.required) = true;
+
+    // The end device will always attempt to use the relay mode in order to send uplink messages.
+    RelayEndDeviceAlwaysMode always = 1;
+    // The end device will attempt to use relay mode only after a number of uplink messages have been sent without
+    // receiving a valid a downlink message.
+    RelayEndDeviceDynamicMode dynamic = 2;
+    // The end device will control when it uses the relay mode. This is the default mode.
+    RelayEndDeviceControlledMode end_device_controlled = 3;
+  }
+  // Number of wake on radio frames to be sent without an acknowledgement before sending the uplink message directly.
+  uint32 backoff = 4 [(validate.rules).uint32.lte = 63];
+  // Second wake on radio channel configuration.
+  RelaySecondChannel second_channel = 5;
+
+  // End device identifier of the serving end device.
+  string serving_device_id = 6 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+}
+
+// RelayParameters represent the parameters of a relay.
+// This is used internally by the Network Server.
+message RelayParameters {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    semantical: true
+  };
+
+  oneof mode {
+    option (validate.required) = true;
+
+    // Parameters related to a relay which is serving end devices.
+    ServingRelayParameters serving = 1;
+    // Parameters related to an end device served by a relay.
+    ServedRelayParameters served = 2;
+  }
+}
+
+message ServingRelaySettings {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+
+  // Second wake on radio channel configuration.
+  RelaySecondChannel second_channel = 1;
+  reserved 2; // DEPRECATED: default_channel_index (uint32)
+  // Index of the default wake on radio channel.
+  // If unset, the default value from Network Server configuration will be used.
+  google.protobuf.UInt32Value default_channel_index = 6 [(validate.rules).uint32.lte = 255];
+  // Channel activity detection periodicity.
+  RelayCADPeriodicity cad_periodicity = 3 [(validate.rules).enum.defined_only = true];
+  // Configured uplink forwarding rules.
+  repeated RelayUplinkForwardingRule uplink_forwarding_rules = 4 [(validate.rules).repeated.max_items = 16];
+  // Configured forwarding limits.
+  // If unset, the default value from Network Server configuration will be used.
+  ServingRelayForwardingLimits limits = 5;
+}
+
+message ServedRelaySettings {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    semantical: true
+  };
+
+  oneof mode {
+    option (validate.required) = true;
+
+    // The end device will always attempt to use the relay mode in order to send uplink messages.
+    RelayEndDeviceAlwaysMode always = 1;
+    // The end device will attempt to use relay mode only after a number of uplink messages have been sent without
+    // receiving a valid a downlink message.
+    RelayEndDeviceDynamicMode dynamic = 2;
+    // The end device will control when it uses the relay mode. This is the default mode.
+    RelayEndDeviceControlledMode end_device_controlled = 3;
+  }
+  reserved 4; // DEPRECATED: backoff (uint32)
+  // Number of wake on radio frames to be sent without an acknowledgement before sending the uplink message directly.
+  // If unset, the default value from Network Server configuration will be used.
+  google.protobuf.UInt32Value backoff = 7 [(validate.rules).uint32.lte = 63];
+  // Second wake on radio channel configuration.
+  RelaySecondChannel second_channel = 5;
+
+  // End device identifier of the serving end device.
+  string serving_device_id = 6 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+}
+
+// RelaySettings represent the settings of a relay.
+// This is used internally by the Network Server.
+message RelaySettings {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    semantical: true
+  };
+
+  oneof mode {
+    option (validate.required) = true;
+
+    ServingRelaySettings serving = 1;
+    ServedRelaySettings served = 2;
+  }
+}
+
+// MACParameters represent the parameters of the device's MAC layer (active or desired).
+// This is used internally by the Network Server.
+message MACParameters {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Maximum EIRP (dBm).
+  float max_eirp = 1;
+  reserved 2; // Deprecated: uplink_dwell_time
+  reserved 3; // Deprecated: downlink_dwell_time
+  // ADR: data rate index to use.
+  DataRateIndex adr_data_rate_index = 4 [(validate.rules).enum.defined_only = true];
+  // ADR: transmission power index to use.
+  uint32 adr_tx_power_index = 5 [(validate.rules).uint32.lte = 15];
+  // ADR: number of retransmissions.
+  uint32 adr_nb_trans = 6 [(validate.rules).uint32.lte = 15];
+  // ADR: number of messages to wait before setting ADRAckReq.
+  // This field is deprecated, use adr_ack_limit_exponent instead.
+  uint32 adr_ack_limit = 7 [deprecated = true];
+  // ADR: number of messages to wait after setting ADRAckReq and before changing TxPower or DataRate.
+  // This field is deprecated, use adr_ack_delay_exponent instead.
+  uint32 adr_ack_delay = 8 [deprecated = true];
+  // Rx1 delay (Rx2 delay is Rx1 delay + 1 second).
+  RxDelay rx1_delay = 9 [(validate.rules).enum.defined_only = true];
+  // Data rate offset for Rx1.
+  DataRateOffset rx1_data_rate_offset = 10 [(validate.rules).enum.defined_only = true];
+  // Data rate index for Rx2.
+  DataRateIndex rx2_data_rate_index = 11 [(validate.rules).enum.defined_only = true];
+  // Frequency for Rx2 (Hz).
+  uint64 rx2_frequency = 12 [(validate.rules).uint64.gte = 100000];
+  // Maximum uplink duty cycle (of all channels).
+  AggregatedDutyCycle max_duty_cycle = 13 [(validate.rules).enum.defined_only = true];
+  // Time within which a rejoin-request must be sent.
+  RejoinTimeExponent rejoin_time_periodicity = 14 [(validate.rules).enum.defined_only = true];
+  // Message count within which a rejoin-request must be sent.
+  RejoinCountExponent rejoin_count_periodicity = 15 [(validate.rules).enum.defined_only = true];
+  // Frequency of the class B ping slot (Hz).
+  uint64 ping_slot_frequency = 16 [(validate.rules).uint64 = {
+    lte: 0,
+    gte: 100000
+  }];
+  // Data rate index of the class B ping slot.
+  // This field is deprecated, use ping_slot_data_rate_index_value instead.
+  DataRateIndex ping_slot_data_rate_index_legacy = 17 [deprecated = true];
+  // Frequency of the class B beacon (Hz).
+  uint64 beacon_frequency = 18 [(validate.rules).uint64 = {
+    lte: 0,
+    gte: 100000
+  }];
+
+  message Channel {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    // Uplink frequency of the channel (Hz).
+    uint64 uplink_frequency = 1 [(validate.rules).uint64 = {
+      lte: 0,
+      gte: 100000
+    }];
+    // Downlink frequency of the channel (Hz).
+    uint64 downlink_frequency = 2 [(validate.rules).uint64.gte = 100000];
+    // Index of the minimum data rate for uplink.
+    DataRateIndex min_data_rate_index = 3 [(validate.rules).enum.defined_only = true];
+    // Index of the maximum data rate for uplink.
+    DataRateIndex max_data_rate_index = 4 [(validate.rules).enum.defined_only = true];
+    // Channel can be used by device for uplink.
+    bool enable_uplink = 5;
+  }
+  // Configured uplink channels and optionally Rx1 frequency.
+  repeated Channel channels = 19 [(validate.rules).repeated.min_items = 1];
+
+  // Whether uplink dwell time is set (400ms).
+  // If unset, then the value is either unknown or irrelevant(Network Server cannot modify it).
+  BoolValue uplink_dwell_time = 20;
+  // Whether downlink dwell time is set (400ms).
+  // If unset, then the value is either unknown or irrelevant(Network Server cannot modify it).
+  BoolValue downlink_dwell_time = 21;
+
+  // ADR: number of messages to wait before setting ADRAckReq.
+  ADRAckLimitExponentValue adr_ack_limit_exponent = 22;
+  // ADR: number of messages to wait after setting ADRAckReq and before changing TxPower or DataRate.
+  ADRAckDelayExponentValue adr_ack_delay_exponent = 23;
+  // Data rate index of the class B ping slot.
+  DataRateIndexValue ping_slot_data_rate_index_value = 24;
+
+  // Relay parameters.
+  RelayParameters relay = 25;
+}
+
+// Template for creating end devices.
+message EndDeviceVersion {
+  // Version identifiers.
+  EndDeviceVersionIdentifiers ids = 1 [(validate.rules).message.required = true];
+
+  // LoRaWAN MAC version.
+  MACVersion lorawan_version = 2 [(validate.rules).enum.defined_only = true];
+  // LoRaWAN PHY version.
+  PHYVersion lorawan_phy_version = 3 [(validate.rules).enum.defined_only = true];
+  // ID of the frequency plan used by this device.
+  string frequency_plan_id = 4 [(validate.rules).string.max_len = 64];
+
+  // Photos contains file names of device photos.
+  repeated string photos = 5 [(validate.rules).repeated.max_items = 10];
+
+  // Whether the device supports class B.
+  bool supports_class_b = 6;
+  // Whether the device supports class C.
+  bool supports_class_c = 7;
+  // Default MAC layer settings of the device.
+  MACSettings default_mac_settings = 8;
+  // Minimum frequency the device is capable of using (Hz).
+  uint64 min_frequency = 9;
+  // Maximum frequency the device is capable of using (Hz).
+  uint64 max_frequency = 10;
+  // The device supports join (it's OTAA).
+  bool supports_join = 11;
+  // Whether the device resets the join and dev nonces (not LoRaWAN compliant).
+  bool resets_join_nonces = 12;
+
+  // Default formatters defining the payload formats for this end device.
+  MessagePayloadFormatters default_formatters = 13 [(validate.rules).message.required = true];
+}
+
+// Adaptive Data Rate settings.
+message ADRSettings {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    semantical: true
+  };
+  // Configuration options for static ADR.
+  message StaticMode {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    // Data rate index to use.
+    DataRateIndex data_rate_index = 1 [(validate.rules).enum.defined_only = true];
+    // Transmission power index to use.
+    uint32 tx_power_index = 2 [(validate.rules).uint32.lte = 15];
+    // Number of retransmissions.
+    uint32 nb_trans = 3 [(validate.rules).uint32 = {
+      gte: 1,
+      lte: 15
+    }];
+  }
+
+  // Configuration options for dynamic ADR.
+  message DynamicMode {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    // The ADR margin (dB) tells the network server how much margin it should add in ADR requests.
+    // A bigger margin is less efficient, but gives a better chance of successful reception.
+    // If unset, the default value from Network Server configuration will be used.
+    google.protobuf.FloatValue margin = 1;
+
+    // Minimum data rate index.
+    // If unset, the default value from Network Server configuration will be used.
+    DataRateIndexValue min_data_rate_index = 2;
+    // Maximum data rate index.
+    // If unset, the default value from Network Server configuration will be used.
+    DataRateIndexValue max_data_rate_index = 3;
+
+    // Minimum transmission power index.
+    // If unset, the default value from Network Server configuration will be used.
+    google.protobuf.UInt32Value min_tx_power_index = 4 [(validate.rules).uint32.lte = 15];
+    // Maximum transmission power index.
+    // If unset, the default value from Network Server configuration will be used.
+    google.protobuf.UInt32Value max_tx_power_index = 5 [(validate.rules).uint32.lte = 15];
+
+    // Minimum number of retransmissions.
+    // If unset, the default value from Network Server configuration will be used.
+    google.protobuf.UInt32Value min_nb_trans = 6 [(validate.rules).uint32 = {
+      gte: 1,
+      lte: 3
+    }];
+    // Maximum number of retransmissions.
+    // If unset, the default value from Network Server configuration will be used.
+    google.protobuf.UInt32Value max_nb_trans = 7 [(validate.rules).uint32 = {
+      gte: 1,
+      lte: 3
+    }];
+
+    // EXPERIMENTAL: Channel steering settings.
+    message ChannelSteeringSettings {
+      option (thethings.flags.message) = {
+        select: true,
+        set: true,
+        semantical: true
+      };
+
+      // Configuration options for LoRa narrow channels steering.
+      // The narrow mode attempts to steer the end device towards
+      // using the LoRa modulated, 125kHz bandwidth channels.
+      message LoRaNarrowMode {
+        option (thethings.flags.message) = {
+          select: true,
+          set: true
+        };
+      }
+
+      // Configuration options for cases in which ADR is not supposed to steer the end device
+      // to another set of channels.
+      message DisabledMode {
+        option (thethings.flags.message) = {
+          select: true,
+          set: true
+        };
+      }
+
+      oneof mode {
+        LoRaNarrowMode lora_narrow = 1;
+        DisabledMode disabled = 2;
+      }
+    }
+
+    ChannelSteeringSettings channel_steering = 8;
+
+    // EXPERIMENTAL: Data rate index override settings.
+    message PerDataRateIndexOverride {
+      option (thethings.flags.message) = {
+        select: true,
+        set: true
+      };
+      reserved 1;
+      reserved "min_tx_power_index";
+      reserved 2;
+      reserved "max_tx_power_index";
+      // Minimum number of retransmissions.
+      // If unset, the default value from Network Server configuration will be used.
+      google.protobuf.UInt32Value min_nb_trans = 3 [(validate.rules).uint32 = {
+        gte: 1,
+        lte: 3
+      }];
+      // Maximum number of retransmissions.
+      // If unset, the default value from Network Server configuration will be used.
+      google.protobuf.UInt32Value max_nb_trans = 4 [(validate.rules).uint32 = {
+        gte: 1,
+        lte: 3
+      }];
+    }
+
+    // EXPERIMENTAL: Configuration overrides.
+    message Overrides {
+      option (thethings.flags.message) = {
+        select: true,
+        set: true
+      };
+      PerDataRateIndexOverride data_rate_0 = 1;
+      PerDataRateIndexOverride data_rate_1 = 2;
+      PerDataRateIndexOverride data_rate_2 = 3;
+      PerDataRateIndexOverride data_rate_3 = 4;
+      PerDataRateIndexOverride data_rate_4 = 5;
+      PerDataRateIndexOverride data_rate_5 = 6;
+      PerDataRateIndexOverride data_rate_6 = 7;
+      PerDataRateIndexOverride data_rate_7 = 8;
+      PerDataRateIndexOverride data_rate_8 = 9;
+      PerDataRateIndexOverride data_rate_9 = 10;
+      PerDataRateIndexOverride data_rate_10 = 11;
+      PerDataRateIndexOverride data_rate_11 = 12;
+      PerDataRateIndexOverride data_rate_12 = 13;
+      PerDataRateIndexOverride data_rate_13 = 14;
+      PerDataRateIndexOverride data_rate_14 = 15;
+      PerDataRateIndexOverride data_rate_15 = 16;
+    }
+
+    Overrides overrides = 9;
+  }
+
+  // Configuration options for cases in which ADR is to be disabled
+  // completely.
+  message DisabledMode {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+  }
+
+  oneof mode {
+    StaticMode static = 1;
+    DynamicMode dynamic = 2;
+    DisabledMode disabled = 3;
+  }
+}
+
+message MACSettings {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Maximum delay for the device to answer a MAC request or a confirmed downlink frame.
+  // If unset, the default value from Network Server configuration will be used.
+  google.protobuf.Duration class_b_timeout = 1;
+  // Periodicity of the class B ping slot.
+  // If unset, the default value from Network Server configuration will be used.
+  PingSlotPeriodValue ping_slot_periodicity = 2;
+  // Data rate index of the class B ping slot.
+  // If unset, the default value from Network Server configuration will be used.
+  DataRateIndexValue ping_slot_data_rate_index = 3;
+  // Frequency of the class B ping slot (Hz).
+  // If unset, the default value from Network Server configuration will be used.
+  ZeroableFrequencyValue ping_slot_frequency = 4;
+  // Frequency of the class B beacon (Hz).
+  // If unset, the default value from Network Server configuration will be used.
+  ZeroableFrequencyValue beacon_frequency = 25;
+
+  // Maximum delay for the device to answer a MAC request or a confirmed downlink frame.
+  // If unset, the default value from Network Server configuration will be used.
+  google.protobuf.Duration class_c_timeout = 5;
+
+  // Class A Rx1 delay.
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  RxDelayValue rx1_delay = 6;
+  // Rx1 data rate offset.
+  // If unset, the default value from Network Server configuration will be used.
+  DataRateOffsetValue rx1_data_rate_offset = 7;
+  // Data rate index for Rx2.
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  DataRateIndexValue rx2_data_rate_index = 8;
+  // Frequency for Rx2 (Hz).
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  FrequencyValue rx2_frequency = 9;
+  // List of factory-preset frequencies.
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  repeated uint64 factory_preset_frequencies = 10 [(validate.rules).repeated.max_items = 96];
+
+  // Maximum uplink duty cycle (of all channels).
+  AggregatedDutyCycleValue max_duty_cycle = 11;
+
+  // Whether the device supports 32-bit frame counters.
+  // If unset, the default value from Network Server configuration will be used.
+  BoolValue supports_32_bit_f_cnt = 12;
+
+  // Whether the Network Server should use ADR for the device.
+  // This field is deprecated, use adr_settings instead.
+  BoolValue use_adr = 13 [deprecated = true];
+  // The ADR margin (dB) tells the network server how much margin it should add in ADR requests.
+  // A bigger margin is less efficient, but gives a better chance of successful reception.
+  // This field is deprecated, use adr_settings.dynamic.margin instead.
+  google.protobuf.FloatValue adr_margin = 14 [deprecated = true];
+  // Whether the device resets the frame counters (not LoRaWAN compliant).
+  // If unset, the default value from Network Server configuration will be used.
+  BoolValue resets_f_cnt = 15;
+  // The interval after which a DevStatusReq MACCommand shall be sent.
+  // If unset, the default value from Network Server configuration will be used.
+  google.protobuf.Duration status_time_periodicity = 16;
+  // Number of uplink messages after which a DevStatusReq MACCommand shall be sent.
+  // If unset, the default value from Network Server configuration will be used.
+  google.protobuf.UInt32Value status_count_periodicity = 17;
+
+  // The Rx1 delay Network Server should configure device to use via MAC commands or Join-Accept.
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  RxDelayValue desired_rx1_delay = 18;
+  // The Rx1 data rate offset Network Server should configure device to use via MAC commands or Join-Accept.
+  // If unset, the default value from Network Server configuration will be used.
+  DataRateOffsetValue desired_rx1_data_rate_offset = 19;
+  // The Rx2 data rate index Network Server should configure device to use via MAC commands or Join-Accept.
+  // If unset, the default value from frequency plan, Network Server configuration or regional parameters specification will be used.
+  DataRateIndexValue desired_rx2_data_rate_index = 20;
+  // The Rx2 frequency index Network Server should configure device to use via MAC commands.
+  // If unset, the default value from frequency plan, Network Server configuration or regional parameters specification will be used.
+  FrequencyValue desired_rx2_frequency = 21;
+
+  // The maximum uplink duty cycle (of all channels) Network Server should configure device to use via MAC commands.
+  // If unset, the default value from Network Server configuration will be used.
+  AggregatedDutyCycleValue desired_max_duty_cycle = 22;
+
+  // The ADR ACK limit Network Server should configure device to use via MAC commands.
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  ADRAckLimitExponentValue desired_adr_ack_limit_exponent = 23;
+  // The ADR ACK delay Network Server should configure device to use via MAC commands.
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  ADRAckDelayExponentValue desired_adr_ack_delay_exponent = 24;
+
+  // The data rate index of the class B ping slot Network Server should configure device to use via MAC commands.
+  // If unset, the default value from Network Server configuration will be used.
+  DataRateIndexValue desired_ping_slot_data_rate_index = 27;
+  // The frequency of the class B ping slot (Hz) Network Server should configure device to use via MAC commands.
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  ZeroableFrequencyValue desired_ping_slot_frequency = 28;
+  // The frequency of the class B beacon (Hz) Network Server should configure device to use via MAC commands.
+  // If unset, the default value from Network Server configuration will be used.
+  ZeroableFrequencyValue desired_beacon_frequency = 29;
+  // Maximum EIRP (dBm).
+  // If unset, the default value from regional parameters specification will be used.
+  DeviceEIRPValue desired_max_eirp = 30;
+  // The minimum duration passed before a network-initiated(e.g. Class B or C) downlink following an arbitrary downlink.
+  google.protobuf.Duration class_b_c_downlink_interval = 31;
+
+  // Whether uplink dwell time is set (400ms).
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  BoolValue uplink_dwell_time = 32;
+  // Whether downlink dwell time is set (400ms).
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  BoolValue downlink_dwell_time = 33;
+
+  // Adaptive Data Rate settings.
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  ADRSettings adr = 34;
+
+  // Whether or not downlink messages should be scheduled.
+  // This option can be used in order to disable any downlink interaction with the end device. It will affect all types
+  // of downlink messages: data and MAC downlinks, and join accepts.
+  BoolValue schedule_downlinks = 35;
+
+  // The relay settings the end device is using.
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  RelaySettings relay = 36;
+
+  // The relay settings the Network Server should configure device to use via MAC commands.
+  // If unset, the default value from Network Server configuration or regional parameters specification will be used.
+  RelaySettings desired_relay = 37;
+}
+
+message MACSettingsProfile {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Profile identifiers.
+  MACSettingsProfileIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false,
+      hidden: true
+    }
+  ];
+  // MAC settings.
+  MACSettings mac_settings = 2 [(validate.rules).message.required = true];
+  // Associated end devices counter.
+  uint32 end_devices_count = 3;
+}
+
+// MACState represents the state of MAC layer of the device.
+// MACState is reset on each join for OTAA or ResetInd for ABP devices.
+// This is used internally by the Network Server.
+message MACState {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Current LoRaWAN MAC parameters.
+  MACParameters current_parameters = 1 [(validate.rules).message.required = true];
+  // Desired LoRaWAN MAC parameters.
+  MACParameters desired_parameters = 2 [(validate.rules).message.required = true];
+
+  // Currently active LoRaWAN device class
+  // - Device class is A by default
+  // - If device sets ClassB bit in uplink, this will be set to B
+  // - If device sent DeviceModeInd MAC message, this will be set to that value
+  Class device_class = 3 [(validate.rules).enum.defined_only = true];
+  // LoRaWAN MAC version.
+  MACVersion lorawan_version = 4 [(validate.rules).enum.defined_only = true];
+  // Time when the last confirmed downlink message or MAC command was scheduled.
+  google.protobuf.Timestamp last_confirmed_downlink_at = 5;
+  // Frame counter value of last uplink containing DevStatusAns.
+  uint32 last_dev_status_f_cnt_up = 6;
+  // Periodicity of the class B ping slot.
+  PingSlotPeriodValue ping_slot_periodicity = 7;
+  // A confirmed application downlink, for which an acknowledgment is expected to arrive.
+  ApplicationDownlink pending_application_downlink = 8;
+  // Queued MAC responses.
+  // Regenerated on each uplink.
+  repeated MACCommand queued_responses = 9;
+  // Pending MAC requests(i.e. sent requests, for which no response has been received yet).
+  // Regenerated on each downlink.
+  repeated MACCommand pending_requests = 10;
+
+  message JoinRequest {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    reserved 1, 2, 3, 4, 5, 9, 10; // deprecated JoinRequest fields.
+    DLSettings downlink_settings = 6 [(validate.rules).message.required = true];
+    RxDelay rx_delay = 7 [(validate.rules).enum.defined_only = true];
+    CFList cf_list = 8;
+  }
+  message JoinAccept {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    // Payload of the join-accept received from Join Server.
+    bytes payload = 1 [(validate.rules).bytes = {
+      min_len: 17,
+      max_len: 33
+    }];
+    JoinRequest request = 2 [(validate.rules).message.required = true];
+    // Network session keys associated with the join.
+    SessionKeys keys = 3 [(validate.rules).message.required = true];
+    repeated string correlation_ids = 4 [(validate.rules).repeated.items.string.max_len = 100];
+    bytes dev_addr = 5 [
+      (validate.rules).bytes = {
+        len: 4,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal4Bytes"
+      },
+      (thethings.flags.field) = {
+        set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New4BytesFlag",
+        set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"2600ABCD\""
+      }
+    ];
+    bytes net_id = 6 [
+      (validate.rules).bytes = {
+        len: 3,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+      },
+      (thethings.flags.field) = {
+        set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New3BytesFlag",
+        set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"000013\""
+      }
+    ];
+  }
+
+  // Queued join-accept.
+  // Set each time a (re-)join request accept is received from Join Server and removed each time a downlink is scheduled.
+  JoinAccept queued_join_accept = 11;
+  // Pending join request.
+  // Set each time a join-accept is scheduled and removed each time an uplink is received from the device.
+  JoinRequest pending_join_request = 12;
+  // Whether or not Rx windows are expected to be open.
+  // Set to true every time an uplink is received.
+  // Set to false every time a successful downlink scheduling attempt is made.
+  bool rx_windows_available = 13;
+
+  // A minimal UplinkMessage definition which is binary compatible with the top level UplinkMessage message.
+  // Used for type safe recent uplink storage.
+  message UplinkMessage {
+    Message payload = 2 [(validate.rules).message.required = true];
+    message TxSettings {
+      DataRate data_rate = 1 [(validate.rules).message.required = true];
+      reserved 2 to 9;
+    }
+    TxSettings settings = 4 [(validate.rules).message.required = true];
+    message RxMetadata {
+      GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+      float channel_rssi = 9;
+      float snr = 11;
+      DownlinkPathConstraint downlink_path_constraint = 14 [(validate.rules).enum.defined_only = true];
+      bytes uplink_token = 15;
+      message PacketBrokerMetadata {
+        reserved 1 to 10;
+      }
+      PacketBrokerMetadata packet_broker = 18;
+      message RelayMetadata {
+        reserved 1 to 3;
+      }
+      RelayMetadata relay = 23;
+      reserved 2 to 8, 10, 12, 13, 16, 17, 19, 20, 21, 22, 99;
+    }
+    repeated RxMetadata rx_metadata = 5;
+    google.protobuf.Timestamp received_at = 6;
+    repeated string correlation_ids = 7 [(validate.rules).repeated.items.string.max_len = 100];
+    uint32 device_channel_index = 9 [(validate.rules).uint32 = {lte: 255}];
+    reserved 1, 3, 8, 10;
+  }
+
+  // A minimal DownlinkMessage definition which is binary compatible with the top level DownlinkMessage message.
+  // Used for type safe recent downlink storage.
+  message DownlinkMessage {
+    message Message {
+      message MHDR {
+        MType m_type = 1 [(validate.rules).enum.defined_only = true];
+        reserved 2;
+      }
+      MHDR m_hdr = 1 [(validate.rules).message.required = true];
+      message MACPayload {
+        uint32 f_port = 2 [(validate.rules).uint32.lte = 255];
+        uint32 full_f_cnt = 5;
+        reserved 1, 3, 4;
+      }
+      MACPayload mac_payload = 3;
+      reserved 2, 4 to 7;
+    }
+    Message payload = 2;
+    repeated string correlation_ids = 6 [(validate.rules).repeated.items.string.max_len = 100];
+    reserved 1, 3 to 5, 7;
+  }
+
+  // Recent data uplink messages sorted by time.
+  // The number of messages stored may depend on configuration.
+  repeated UplinkMessage recent_uplinks = 14;
+  // Recent data downlink messages sorted by time.
+  // The number of messages stored may depend on configuration.
+  repeated DownlinkMessage recent_downlinks = 15;
+
+  // Time when the last network-initiated downlink message was scheduled.
+  google.protobuf.Timestamp last_network_initiated_downlink_at = 16;
+
+  // ADR Data rate index values rejected by the device.
+  // Reset each time `current_parameters.channels` change.
+  // Elements are sorted in ascending order.
+  repeated DataRateIndex rejected_adr_data_rate_indexes = 17 [(validate.rules).repeated = {
+    max_items: 15,
+    items {
+      enum {defined_only: true}
+    }
+  }];
+
+  // ADR TX output power index values rejected by the device.
+  // Elements are sorted in ascending order.
+  repeated uint32 rejected_adr_tx_power_indexes = 18 [(validate.rules).repeated = {
+    max_items: 15,
+    items {
+      uint32 {lte: 15}
+    }
+  }];
+
+  // Frequencies rejected by the device.
+  repeated uint64 rejected_frequencies = 19 [(validate.rules).repeated.items.uint64.gte = 100000];
+
+  // Time when the last downlink message was scheduled.
+  google.protobuf.Timestamp last_downlink_at = 20;
+
+  message DataRateRange {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    DataRateIndex min_data_rate_index = 1 [(validate.rules).enum.defined_only = true];
+    DataRateIndex max_data_rate_index = 2 [(validate.rules).enum.defined_only = true];
+  }
+  message DataRateRanges {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    repeated DataRateRange ranges = 1 [(validate.rules).repeated = {min_items: 1}];
+  }
+  // Data rate ranges rejected by the device per frequency.
+  map<uint64, DataRateRanges> rejected_data_rate_ranges = 21;
+
+  // Frame counter of uplink, which confirmed the last ADR parameter change.
+  uint32 last_adr_change_f_cnt_up = 22;
+
+  // MAC command identifiers sent by the end device in the last received uplink.
+  // The Network Server may choose to store only certain types of MAC
+  // command identifiers in the underlying implementation.
+  repeated MACCommandIdentifier recent_mac_command_identifiers = 23;
+
+  // Pending relay downlink contents.
+  // The pending downlink will be scheduled to the relay in either Rx1 or Rx2.
+  // The pending downlink will be cleared after the scheduling attempt.
+  RelayForwardDownlinkReq pending_relay_downlink = 24;
+}
+
+// Power state of the device.
+enum PowerState {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "POWER"
+  };
+  POWER_UNKNOWN = 0;
+  POWER_BATTERY = 1;
+  POWER_EXTERNAL = 2;
+}
+
+// Authentication code for end devices.
+message EndDeviceAuthenticationCode {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  string value = 1 [(validate.rules).string.pattern = "^[a-zA-Z0-9]{1,32}$"];
+  google.protobuf.Timestamp valid_from = 2;
+  google.protobuf.Timestamp valid_to = 3;
+}
+
+// Defines an End Device registration and its state on the network.
+// The persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.
+// SDKs are responsible for combining (if desired) the three.
+message EndDevice {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  EndDeviceIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false,
+      hidden: true
+    }
+  ];
+  google.protobuf.Timestamp created_at = 2 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  google.protobuf.Timestamp updated_at = 3 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+
+  // Friendly name of the device. Stored in Entity Registry.
+  string name = 4 [(validate.rules).string.max_len = 50];
+  // Description of the device. Stored in Entity Registry.
+  string description = 5 [(validate.rules).string.max_len = 2000];
+
+  // Key-value attributes for this end device. Typically used for organizing end devices or for storing integration-specific data. Stored in Entity Registry.
+  map<string, string> attributes = 6 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // Version Identifiers. Stored in Entity Registry, Network Server and Application Server.
+  EndDeviceVersionIdentifiers version_ids = 7;
+
+  // Default service profile. Stored in Entity Registry.
+  string service_profile_id = 8 [(validate.rules).string.max_len = 64];
+
+  // The address of the Network Server where this device is supposed to be registered.
+  // Stored in Entity Registry and Join Server.
+  // The typical format of the address is "host:port". If the port is omitted,
+  // the normal port inference (with DNS lookup, otherwise defaults) is used.
+  // The connection shall be established with transport layer security (TLS).
+  // Custom certificate authorities may be configured out-of-band.
+  string network_server_address = 9 [(validate.rules).string.pattern = "^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$"];
+  // The KEK label of the Network Server to use for wrapping network session keys.
+  // Stored in Join Server.
+  string network_server_kek_label = 47 [(validate.rules).string.max_len = 2048];
+  // The address of the Application Server where this device is supposed to be registered.
+  // Stored in Entity Registry and Join Server.
+  // The typical format of the address is "host:port". If the port is omitted,
+  // the normal port inference (with DNS lookup, otherwise defaults) is used.
+  // The connection shall be established with transport layer security (TLS).
+  // Custom certificate authorities may be configured out-of-band.
+  string application_server_address = 10 [(validate.rules).string.pattern = "^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$"];
+  // The KEK label of the Application Server to use for wrapping the application session key.
+  // Stored in Join Server.
+  string application_server_kek_label = 48 [(validate.rules).string.max_len = 2048];
+  // The AS-ID of the Application Server to use.
+  // Stored in Join Server.
+  string application_server_id = 49 [(validate.rules).string.max_len = 100];
+  // The address of the Join Server where this device is supposed to be registered.
+  // Stored in Entity Registry.
+  // The typical format of the address is "host:port". If the port is omitted,
+  // the normal port inference (with DNS lookup, otherwise defaults) is used.
+  // The connection shall be established with transport layer security (TLS).
+  // Custom certificate authorities may be configured out-of-band.
+  string join_server_address = 11 [(validate.rules).string.pattern = "^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$"];
+
+  // Location of the device. Stored in Entity Registry.
+  map<string, Location> locations = 12 [(validate.rules).map.keys.string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+
+  // Stored in Entity Registry.
+  Picture picture = 50;
+
+  // Whether the device supports class B.
+  // Copied on creation from template identified by version_ids, if any or from the home Network Server device profile, if any.
+  bool supports_class_b = 13;
+  // Whether the device supports class C.
+  // Copied on creation from template identified by version_ids, if any or from the home Network Server device profile, if any.
+  bool supports_class_c = 14;
+  // LoRaWAN MAC version. Stored in Network Server.
+  // Copied on creation from template identified by version_ids, if any or from the home Network Server device profile, if any.
+  MACVersion lorawan_version = 15 [(validate.rules).enum.defined_only = true];
+  // LoRaWAN PHY version. Stored in Network Server.
+  // Copied on creation from template identified by version_ids, if any or from the home Network Server device profile, if any.
+  PHYVersion lorawan_phy_version = 16 [(validate.rules).enum.defined_only = true];
+  // ID of the frequency plan used by this device.
+  // Copied on creation from template identified by version_ids, if any or from the home Network Server device profile, if any.
+  string frequency_plan_id = 17 [(validate.rules).string.max_len = 64];
+  // Minimum frequency the device is capable of using (Hz). Stored in Network Server.
+  // Copied on creation from template identified by version_ids, if any or from the home Network Server device profile, if any.
+  uint64 min_frequency = 18;
+  // Maximum frequency the device is capable of using (Hz). Stored in Network Server.
+  // Copied on creation from template identified by version_ids, if any or from the home Network Server device profile, if any.
+  uint64 max_frequency = 19;
+  // The device supports join (it's OTAA).
+  // Copied on creation from template identified by version_ids, if any or from the home Network Server device profile, if any.
+  bool supports_join = 20;
+  // Whether the device resets the join and dev nonces (not LoRaWAN compliant). Stored in Join Server.
+  // Copied on creation from template identified by version_ids, if any or from the home Network Server device profile, if any.
+  bool resets_join_nonces = 21;
+
+  // Device root keys. Stored in Join Server.
+  RootKeys root_keys = 22;
+
+  // Home NetID. Stored in Join Server.
+  bytes net_id = 23 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New3BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"000013\""
+    }
+  ];
+  // Settings for how the Network Server handles MAC layer for this device. Stored in Network Server.
+  // Mutually exclusive with MAC settings profile.
+  MACSettings mac_settings = 24;
+  // MAC state of the device. Stored in Network Server.
+  MACState mac_state = 25;
+  // Pending MAC state of the device. Stored in Network Server.
+  MACState pending_mac_state = 44;
+  // Current session of the device. Stored in Network Server and Application Server.
+  Session session = 26;
+  // Pending session. Stored in Network Server and Application Server until RekeyInd is received.
+  Session pending_session = 27;
+
+  // Last DevNonce used.
+  // This field is only used for devices using LoRaWAN version 1.1 and later.
+  // Stored in Join Server.
+  uint32 last_dev_nonce = 28;
+  // Used DevNonces sorted in ascending order.
+  // This field is only used for devices using LoRaWAN versions preceding 1.1.
+  // Stored in Join Server.
+  repeated uint32 used_dev_nonces = 29;
+  // Last JoinNonce/AppNonce(for devices using LoRaWAN versions preceding 1.1) used.
+  // Stored in Join Server.
+  uint32 last_join_nonce = 30;
+  // Last Rejoin counter value used (type 0/2).
+  // Stored in Join Server.
+  uint32 last_rj_count_0 = 31;
+  // Last Rejoin counter value used (type 1).
+  // Stored in Join Server.
+  uint32 last_rj_count_1 = 32;
+
+  // Time when last DevStatus MAC command was received.
+  // Stored in Network Server.
+  google.protobuf.Timestamp last_dev_status_received_at = 33;
+  // The power state of the device; whether it is battery-powered or connected to an external power source.
+  // Received via the DevStatus MAC command at status_received_at.
+  // Stored in Network Server.
+  PowerState power_state = 34 [
+    (validate.rules).enum.defined_only = true,
+    (thethings.flags.field) = {set: false}
+  ];
+  // Latest-known battery percentage of the device.
+  // Received via the DevStatus MAC command at last_dev_status_received_at or earlier.
+  // Stored in Network Server.
+  google.protobuf.FloatValue battery_percentage = 35 [(validate.rules).float = {
+    gte: 0,
+    lte: 1
+  }];
+  // Demodulation signal-to-noise ratio (dB).
+  // Received via the DevStatus MAC command at last_dev_status_received_at.
+  // Stored in Network Server.
+  int32 downlink_margin = 36;
+
+  reserved 37; // Deprecated: recent_adr_uplinks
+  reserved 38; // Deprecated: recent_uplinks
+  reserved 39; // Deprecated: recent_downlinks
+
+  // Queued Application downlink messages. Stored in Application Server,
+  // which sets them on the Network Server.
+  // This field is deprecated and is always set equal to session.queued_application_downlinks.
+  repeated ApplicationDownlink queued_application_downlinks = 40;
+
+  // The payload formatters for this end device. Stored in Application Server.
+  // Copied on creation from template identified by version_ids.
+  MessagePayloadFormatters formatters = 41;
+
+  // ID of the provisioner. Stored in Join Server.
+  string provisioner_id = 42 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$|^$",
+    max_len: 36
+  }];
+  // Vendor-specific provisioning data. Stored in Join Server.
+  google.protobuf.Struct provisioning_data = 43;
+
+  // Indicates whether this device represents a multicast group.
+  bool multicast = 45;
+
+  // Authentication code to claim ownership of the end device.
+  // From TTS v3.21.0 this field is stored in the Identity Server.
+  // For TTS versions < 3.21.0, this field is stored in the Join Server.
+  // The value stored on the Identity Server takes precedence.
+  EndDeviceAuthenticationCode claim_authentication_code = 46;
+
+  // Skip decryption of uplink payloads and encryption of downlink payloads.
+  // This field is deprecated, use skip_payload_crypto_override instead.
+  bool skip_payload_crypto = 51;
+  // Skip decryption of uplink payloads and encryption of downlink payloads.
+  // This field overrides the application-level setting.
+  google.protobuf.BoolValue skip_payload_crypto_override = 52;
+
+  // Timestamp when the device has been activated. Stored in the Entity Registry.
+  // This field is set by the Application Server when an end device sends
+  // its first uplink.
+  // The Application Server will use the field in order to avoid repeated
+  // calls to the Entity Registry.
+  // The field cannot be unset once set.
+  google.protobuf.Timestamp activated_at = 53;
+
+  // Timestamp when a device uplink has been last observed.
+  // This field is set by the Application Server and stored in the Identity Server.
+  google.protobuf.Timestamp last_seen_at = 54;
+
+  string serial_number = 55 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36,
+    ignore_empty: true
+  }];
+
+  LoRaAllianceProfileIdentifiers lora_alliance_profile_ids = 56;
+
+  reserved 57;
+  reserved "label_ids";
+
+  // MAC settings profile identifiers.
+  // Mutually exclusive with MAC settings.
+  MACSettingsProfileIdentifiers mac_settings_profile_ids = 58;
+
+  // next: 59;
+}
+
+message EndDevices {
+  repeated EndDevice end_devices = 1;
+}
+
+message DevAddrPrefix {
+  // DevAddr base.
+  bytes dev_addr = 1 [
+    (validate.rules).bytes = {
+      len: 4,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal4Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"2600ABCD\""
+    }
+  ];
+  // Number of most significant bits from dev_addr that are used as prefix.
+  uint32 length = 2;
+}
+
+message CreateEndDeviceRequest {
+  EndDevice end_device = 1 [(validate.rules).message.required = true];
+}
+
+message UpdateEndDeviceRequest {
+  EndDevice end_device = 1 [(validate.rules).message.required = true];
+  // The names of the end device fields that should be updated.
+  // See the API reference for which fields can be set on the different services.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message BatchUpdateEndDeviceLastSeenRequest {
+  message EndDeviceLastSeenUpdate {
+    EndDeviceIdentifiers ids = 1 [(validate.rules).message.required = true];
+    google.protobuf.Timestamp last_seen_at = 2;
+  }
+
+  // The last seen timestamp needs to be set per end device.
+  repeated EndDeviceLastSeenUpdate updates = 1;
+}
+
+message GetEndDeviceRequest {
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+  // The names of the end device fields that should be returned.
+  // See the API reference for which fields can be returned by the different services.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message GetEndDeviceIdentifiersForEUIsRequest {
+  bytes join_eui = 1 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+  bytes dev_eui = 2 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+}
+
+message ListEndDevicesRequest {
+  ApplicationIdentifiers application_ids = 1;
+  // The names of the end device fields that should be returned.
+  // See the API reference for which fields can be returned by the different services.
+  google.protobuf.FieldMask field_mask = 2;
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 3 [(validate.rules).string = {
+    in: [
+      "",
+      "device_id",
+      "-device_id",
+      "join_eui",
+      "-join_eui",
+      "dev_eui",
+      "-dev_eui",
+      "name",
+      "-name",
+      "description",
+      "-description",
+      "created_at",
+      "-created_at",
+      "last_seen_at",
+      "-last_seen_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 4 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 5;
+  // Filter end devices by fields.
+  message Filter {
+    oneof field {
+      google.protobuf.Timestamp updated_since = 1 [(validate.rules).timestamp.lt_now = true];
+    }
+  }
+  repeated Filter filters = 6;
+}
+
+message SetEndDeviceRequest {
+  EndDevice end_device = 1 [(validate.rules).message.required = true];
+  // The names of the end device fields that should be updated.
+  // See the API reference for which fields can be set on the different services.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ResetAndGetEndDeviceRequest {
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+  // The names of the end device fields that should be returned.
+  // See the API reference for which fields can be returned by the different services.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message EndDeviceTemplate {
+  EndDevice end_device = 1 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 2;
+  string mapping_key = 3 [(validate.rules).string.max_len = 100];
+}
+
+message EndDeviceTemplateFormat {
+  string name = 1 [(validate.rules).string.max_len = 100];
+  string description = 2 [(validate.rules).string.max_len = 200];
+  repeated string file_extensions = 3 [(validate.rules).repeated = {
+    max_items: 100,
+    unique: true,
+    items: {
+      string: {pattern: "^(?:\\.[a-z0-9]{1,16}){1,2}$"}
+    }
+  }];
+}
+
+message EndDeviceTemplateFormats {
+  map<string, EndDeviceTemplateFormat> formats = 1 [(validate.rules).map.keys.string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+}
+
+message ConvertEndDeviceTemplateRequest {
+  // ID of the format.
+  string format_id = 1 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+  // Data to convert.
+  bytes data = 2;
+
+  // End device profile identifiers.
+  EndDeviceVersionIdentifiers end_device_version_ids = 3;
+}
+
+message BatchDeleteEndDevicesRequest {
+  ttn.lorawan.v3.ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  repeated string device_ids = 2 [(validate.rules).repeated = {
+    min_items: 1,
+    max_items: 20,
+    items: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    }
+  }];
+}
+
+message BatchGetEndDevicesRequest {
+  ttn.lorawan.v3.ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  repeated string device_ids = 2 [(validate.rules).repeated = {
+    min_items: 1,
+    max_items: 20,
+    items: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    }
+  }];
+  // The names of the end device fields that should be returned.
+  // This mask is applied on all the end devices in the result.
+  // See the API reference for which fields can be returned by the different services.
+  google.protobuf.FieldMask field_mask = 3;
+  reserved 4;
+  reserved "order";
+  reserved 5;
+  reserved "limit";
+  reserved 6;
+  reserved "page";
+}
+
+message BatchSetMACSettingsProfileRequest {
+  ttn.lorawan.v3.ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  MACSettingsProfileIdentifiers mac_settings_profile_ids = 2;
+  repeated string device_ids = 3 [(validate.rules).repeated = {
+    min_items: 1,
+    max_items: 20,
+    items: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    }
+  }];
+}

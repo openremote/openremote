@@ -1,0 +1,51 @@
+name: Check if main repo
+description: Resolves- and checks if it is run from the main repository, and resolves the OpenRemote version
+
+outputs:
+  value:
+    description: Whether this is the main repository which builds the manager
+    value: ${{ steps.is_main_repo.outputs.value }}
+  repository:
+    description: The main GitHub repository name
+    value: ${{ steps.is_main_repo.outputs.repository }}
+  version:
+    description: The openremote version defined in the main repo
+    value: ${{ steps.is_main_repo.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check if main repo
+      id: is_main_repo
+      shell: bash
+      run: |
+        if [ -f manager/src/main/java/org/openremote/manager/Main.java ]; then
+          echo "value=true" >> $GITHUB_OUTPUT
+        else
+          if [ -e 'openremote' ]; then
+            echo "::error::openremote submodule no longer supported, see custom project template!"
+            exit 1
+          fi
+
+          echo "value=false" >> $GITHUB_OUTPUT
+          echo "repository=$(sed -E 's#(.+)/.+#\1/openremote#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
+
+          version=""
+          if [ -f gradle/libs.versions.toml ]; then
+            version=$(sed -nE 's/^[[:space:]]*openremote[[:space:]]*=[[:space:]]*"([^"]+)".*$/\1/p' gradle/libs.versions.toml)
+          fi
+
+          if [ -z "$version" ] && [ -f gradle.properties ]; then
+            version=$(sed -nE 's/^[[:space:]]*openremoteVersion[[:space:]]*=[[:space:]]*([^[:space:]]+)[[:space:]]*$/\1/p' gradle.properties)
+            if [ -n "$version" ]; then
+              echo "::warning file=gradle.properties,title=Deprecated version configuration::Move openremoteVersion from gradle.properties to openremote in gradle/libs.versions.toml"
+            fi
+          fi
+
+          if [ -z "$version" ]; then
+            echo "::error::openremote version must be set in gradle/libs.versions.toml"
+            exit 1
+          fi
+
+          echo "version=$version" >> $GITHUB_OUTPUT
+        fi

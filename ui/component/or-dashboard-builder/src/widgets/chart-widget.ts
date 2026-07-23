@@ -1,3 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
@@ -42,7 +61,7 @@ function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationC
 }
 
 function getDefaultTimePrefixOptions(): string[] {
-    return ["this", "last"];
+    return ["this", "last", "next"];
 }
 
 function getDefaultSamplingOptions(): Map<string, string> {
@@ -177,8 +196,9 @@ export class ChartWidget extends OrAssetWidget {
             this.assetAttributes = attributeRefs?.map((attrRef: AttributeRef) => {
                 const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
                 const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
-                return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
-            }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+                const attribute = foundAsset?.attributes?.[attrRef.name!];
+                return attribute ? [assetIndex, attribute] : [-1, { name: attrRef.name } as Attribute<any>];
+            }) as [number, Attribute<any>][];
         }).catch(e => {
             this._error = e.message;
         }).finally(() => {

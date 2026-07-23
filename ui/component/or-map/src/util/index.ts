@@ -1,3 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "maplibre-gl";
 import {
     Asset,
@@ -12,6 +31,19 @@ import {
 import {AttributeMarkerColoursRange, MapMarkerColours} from "../markers/or-map-marker-asset";
 import { Util } from "@openremote/core";
 import { AssetWithLocation } from "..";
+
+let _compactFormatter: Intl.NumberFormat | undefined;
+
+export function formatCount(n: number): string {
+    if (!_compactFormatter) {
+        _compactFormatter = new Intl.NumberFormat("en", {
+            notation: "compact",
+            compactDisplay: "short",
+            maximumFractionDigits: 1
+        });
+    }
+    return _compactFormatter.format(n).toLowerCase();
+}
 
 export function metersToPixelsAtMaxZoom(meters: number, latitude: number) {
     return meters / 0.075 / Math.cos(latitude * Math.PI / 180);

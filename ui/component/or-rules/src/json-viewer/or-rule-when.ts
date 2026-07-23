@@ -5,10 +5,10 @@ import {OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {buttonStyle} from "../style";
 import "./or-rule-condition";
 import {i18next, translate} from "@openremote/or-translate"
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {getWhenTypesMenu, updateRuleConditionType} from "./or-rule-condition";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import { when } from "lit/directives/when.js";
 
 enum ResetOption {
     NO_LONGER_MATCHES = "noLongerMatches",
@@ -89,10 +89,6 @@ const style = css`
     
     .add-button-wrapper > * {
         margin-right: 6px;
-    }
-    
-    .add-button-wrapper or-mwc-menu {
-        text-transform: capitalize;
     }
 
     strong {
@@ -198,14 +194,20 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
         }
 
         if (!isTopLevel && showAddCondition) {
+            const menuItems: MenuBarItem[] = [{
+                component: createMenuBarItem(html`
+                    <div style="display: flex; align-items: center; gap: 0.25em;">
+                        <or-icon icon="plus"></or-icon>
+                        <or-translate value="rulesEditorAddCondition"></or-translate>
+                    </div>
+                `),
+                children: getWhenTypesMenu(this.config, this.assetInfos)
+            }]
             addTemplate = html`
                 <span class="add-button-wrapper">
-                    ${getContentWithMenuTemplate(
-                        html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
-                                           .label="${i18next.t("rulesEditorAddCondition")}"></or-mwc-input>`,
-                        getWhenTypesMenu(this.config, this.assetInfos),
-                        undefined,
-                        (value) => this.addCondition(group, value as string))}
+                    <or-vaadin-menu-bar .items=${menuItems}
+                                        @item-selected=${(ev: CustomEvent) => this.addCondition(group, ev.detail.value.value)}
+                    ></or-vaadin-menu-bar>
                 </span>
             `;
         }
@@ -252,18 +254,27 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                 ${this.ruleGroupTemplate(this.rule.when)}
             </div>
             
-            ${!showAddGroup ? `` : html`
-                <or-panel>
-                    <strong>${i18next.t(!this.rule.when.groups || this.rule.when.groups.length === 0 ? "when" : "orWhen")}...</strong>
-                    <span class="add-button-wrapper">
-                        ${getContentWithMenuTemplate(
-                            html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
-                            getWhenTypesMenu(this.config, this.assetInfos),
-                            undefined,
-                            (value) => this.addGroup(this.rule!.when!, value as string))}
-                    </span>
-                </or-panel>
-            `}
+            ${when(showAddGroup, () => {
+                const menuItems: MenuBarItem[] = [{
+                    component: createMenuBarItem(html`
+                        <div style="display: flex; align-items: center; gap: 0.25em;">
+                            <or-icon icon="plus"></or-icon>
+                            <or-translate value="rulesEditorAddCondition"></or-translate>
+                        </div>
+                    `),
+                    children: getWhenTypesMenu(this.config, this.assetInfos)
+                }]
+                return html`
+                    <or-panel>
+                        <strong><or-translate value=${this.rule?.when?.groups?.length ? "orWhen" : "when"}></or-translate>...</strong>
+                        <span class="add-button-wrapper">
+                            <or-vaadin-menu-bar .items=${menuItems}
+                                                @item-selected=${(ev: CustomEvent) => this.addGroup(this.rule!.when!, ev.detail.value.value)}
+                            </or-vaadin-menu-bar>
+                        </span>
+                    </or-panel>
+                `
+            })}
         `;
     }
 
