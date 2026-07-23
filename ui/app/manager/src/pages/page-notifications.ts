@@ -467,17 +467,21 @@ export class PageNotifications extends Page<AppStateKeyed> {
             <or-vaadin-dialog
                     id="createDialog"
                     width="1024px"
+                    no-close-on-outside-click
+                    no-close-on-esc
                     header-title="${i18next.t("notifications.createNotification")}"
                     ?opened="${this._createDialogOpen}"
                     @opened-changed="${(ev: CustomEvent) => {
+                        // Safety net for dialog-initiated closes; Cancel and a successful create close
+                        // (and reload) through their own handlers, which this guard skips
                         if (!ev.detail.value && this._createDialogOpen) {
                             this._createDialogOpen = false;
-                            this._loadData(); // reload after the dialog closes (cancel or create)
+                            this._loadData();
                         }
                     }}"
                     ${dialogRenderer(() => this._renderCreateForm(), [this.realm])}
                     ${dialogFooterRenderer(() => html`
-                        <or-vaadin-button theme="tertiary" @click="${() => this._createDialogOpen = false}">
+                        <or-vaadin-button theme="tertiary" @click="${() => this._cancelCreateDialog()}">
                             <or-translate value="cancel"></or-translate>
                         </or-vaadin-button>
                         <or-vaadin-button theme="primary" ?disabled="${!this._createFormValid}"
@@ -642,6 +646,12 @@ export class PageNotifications extends Page<AppStateKeyed> {
         this._createForm?.reset();
         this._createFormValid = false;
         this._createDialogOpen = true;
+    }
+
+    protected _cancelCreateDialog() {
+        this._createDialogOpen = false;
+        // A failed send may still have persisted the notification with its error, so refresh the table
+        this._loadData();
     }
 
     private _onRowClick(e: NotificationTableClickEvent) {
