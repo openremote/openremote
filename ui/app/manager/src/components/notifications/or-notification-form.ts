@@ -152,7 +152,7 @@ export class OrNotificationForm extends OrElement {
     protected _message: NotificationMessage = {type: "push"};
 
     @state()
-    protected _targetType: NotificationTargetType = NotificationTargetType.ASSET;
+    protected _targetType: NotificationTargetType = this._defaultTargetType();
 
     @state()
     protected _targets: string[] = [];
@@ -207,7 +207,7 @@ export class OrNotificationForm extends OrElement {
         await Promise.all(promises);
 
         // Select the initial target type through the shared path so its option list is populated too
-        await this._onTargetTypeChanged(canReadAssets ? NotificationTargetType.ASSET : NotificationTargetType.USER);
+        await this._onTargetTypeChanged(this._defaultTargetType());
     }
 
     updated(changedProps: Map<string, any>) {
@@ -233,8 +233,14 @@ export class OrNotificationForm extends OrElement {
         this._message = {type: "push"};
         this._targets = [];
         this._selectedAssetIds = [];
-        const canReadAssets = manager.hasRole("read:assets") || manager.hasRole("read:admin");
-        return this._onTargetTypeChanged(canReadAssets ? NotificationTargetType.ASSET : NotificationTargetType.USER);
+        return this._onTargetTypeChanged(this._defaultTargetType());
+    }
+
+    /** Users are the default recipient type; falls back to assets for callers not allowed to pick users. */
+    protected _defaultTargetType(): NotificationTargetType {
+        const canSelectUsers = !manager.isRestrictedUser()
+            && (manager.hasRole("read:users") || manager.hasRole("read:admin"));
+        return canSelectUsers ? NotificationTargetType.USER : NotificationTargetType.ASSET;
     }
 
     /** Drops cached realm-specific target data and rebuilds the options for the current target type. */
