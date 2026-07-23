@@ -30,6 +30,19 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
     ScheduledExecutorService executor = Mock(ScheduledExecutorService)
     ScheduledFuture<?> future = Mock(ScheduledFuture)
     Long delay
+    ApplyPredictedDataPointsService mockedApplyService
+    ScheduledExecutorService originalExecutor
+
+    def cleanup() {
+        if (mockedApplyService != null) {
+            mockedApplyService.scheduledFuture?.cancel(true)
+            mockedApplyService.scheduledFuture = null
+            mockedApplyService.scheduledEntries.clear()
+            mockedApplyService.scheduleQueue.clear()
+            mockedApplyService.scheduledExecutorService = originalExecutor
+            mockedApplyService = null
+        }
+    }
 
     def "Applies predicted datapoints when timestamps match"() {
         given: "a running container and target attribute with required meta"
@@ -455,7 +468,6 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def clientEventService = container.getService(ClientEventService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
         def applyService = container.getService(ApplyPredictedDataPointsService.class)
 
         and: "the clock is stopped for deterministic scheduling"
@@ -465,19 +477,22 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         and: "the scheduled executor is mocked to allow manual triggering"
         setupScheduler(applyService)
 
-        and: "a plain attribute exists with required meta"
-        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue9")
-        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
-
-        and: "the attribute setup events have settled"
-        conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 300)
-        }
-
         and: "we capture attribute events"
         List<AttributeEvent> events = new CopyOnWriteArrayList<>()
         Consumer<AttributeEvent> consumer = { event -> events.add(event) }
         clientEventService.addSubscription(AttributeEvent.class, null, consumer)
+
+        and: "a plain attribute exists with required meta"
+        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue9")
+        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+
+        and: "the meta update has been applied and its attribute event observed"
+        conditions.eventually {
+            def asset = assetStorageService.find(attributeRef.getId(), true)
+            assert asset.getAttribute(attributeRef.getName()).get().getMeta().has(APPLY_PREDICTED_DATA_POINTS)
+            assert events.any { it.ref == attributeRef }
+        }
+        events.clear()
 
         and: "predicted datapoints are added in the future"
         assetPredictedDatapointService.updateValues(
@@ -518,10 +533,12 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
             future.get()
         }
 
-        then: "no further attribute events should be emitted for the attribute"
+        then: "the scheduled prediction for the attribute is cancelled"
         conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 300)
+            assert !applyService.scheduledEntries.containsKey(attributeRef)
         }
+
+        and: "no further non-deletion attribute events are emitted for the attribute"
         assert !events.any { it.ref == attributeRef && !it.deleted }
     }
 
@@ -533,7 +550,6 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def clientEventService = container.getService(ClientEventService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
         def applyService = container.getService(ApplyPredictedDataPointsService.class)
 
         and: "the clock is stopped for deterministic scheduling"
@@ -543,19 +559,22 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         and: "the scheduled executor is mocked to allow manual triggering"
         setupScheduler(applyService)
 
-        and: "a plain attribute exists with required meta"
-        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue10")
-        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
-
-        and: "the attribute setup events have settled"
-        conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 300)
-        }
-
         and: "we capture attribute events"
         List<AttributeEvent> events = new CopyOnWriteArrayList<>()
         Consumer<AttributeEvent> consumer = { event -> events.add(event) }
         clientEventService.addSubscription(AttributeEvent.class, null, consumer)
+
+        and: "a plain attribute exists with required meta"
+        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue10")
+        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+
+        and: "the meta update has been applied and its attribute event observed"
+        conditions.eventually {
+            def asset = assetStorageService.find(attributeRef.getId(), true)
+            assert asset.getAttribute(attributeRef.getName()).get().getMeta().has(APPLY_PREDICTED_DATA_POINTS)
+            assert events.any { it.ref == attributeRef }
+        }
+        events.clear()
 
         and: "predicted datapoints are added in the future"
         assetPredictedDatapointService.updateValues(
@@ -594,10 +613,12 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
             future.get()
         }
 
-        then: "no further attribute events should be emitted for the attribute"
+        then: "the scheduled prediction for the attribute is cancelled"
         conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 300)
+            assert !applyService.scheduledEntries.containsKey(attributeRef)
         }
+
+        and: "no further non-deletion attribute events are emitted for the attribute"
         assert !events.any { it.ref == attributeRef && !it.deleted }
     }
 
@@ -635,6 +656,8 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
     }
 
     private void setupScheduler(ApplyPredictedDataPointsService applyService) {
+        mockedApplyService = applyService
+        originalExecutor = applyService.scheduledExecutorService
         executor = Mock(ScheduledExecutorService)
         future = Mock(ScheduledFuture)
         delay = null
