@@ -498,8 +498,9 @@ export class OrNotificationForm extends LitElement {
                                         id="asset-selector"
                                         .selectedIds="${this._selectedAssetIds}"
                                         .showSortBtn="${false}"
-                                        expandNodes
                                         checkboxes
+                                        expandNodes
+                                        readonly
                                         @or-asset-tree-selection="${(e: OrAssetTreeSelectionEvent) => this._onAssetSelectionChanged(e)}"
                                 ></or-asset-tree>
                             `,
