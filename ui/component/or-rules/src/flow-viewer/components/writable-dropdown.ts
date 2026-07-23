@@ -16,12 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html, type PropertyValues } from "lit";
+import { html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { PickerStyle } from "../styles/picker-styles";
 
 @customElement("writable-dropdown")
-export class WritableDropdown extends LitElement {
+export class WritableDropdown extends OrElement {
   @property({ type: Object, reflect: true }) public value?: any;
   @property({ type: Array }) public options: { value: any; name: string }[] = [];
 

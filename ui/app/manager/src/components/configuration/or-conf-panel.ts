@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement, type TemplateResult } from "lit";
+import { html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { customElement, property } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
@@ -31,7 +32,7 @@ import type { OrConfMapCard } from "./or-conf-map/or-conf-map-card";
 import type { OrVaadinSelect } from "@openremote/or-vaadin-components/or-vaadin-select";
 
 @customElement("or-conf-panel")
-export class OrConfPanel extends LitElement {
+export class OrConfPanel extends OrElement {
   @property()
   public config?: MapConfig | ManagerAppConfig = {};
 

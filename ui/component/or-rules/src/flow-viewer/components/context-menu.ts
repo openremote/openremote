@@ -16,13 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import type { ContextMenuEntry, ContextMenuButton } from "../models/context-menu-button";
 import { translate, i18next } from "@openremote/or-translate";
 
 @customElement("context-menu")
-export class ContextMenu extends translate(i18next)(LitElement) {
+export class ContextMenu extends translate(i18next)(OrElement) {
   public static get opened() {
     return ContextMenu.main.isOpen;
   }

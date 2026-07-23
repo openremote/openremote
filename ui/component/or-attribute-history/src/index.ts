@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import * as echarts from "echarts/core";
+import { OrElement } from "@openremote/or-element";
 import {
   GridComponent,
   type GridComponentOption,
@@ -30,7 +31,7 @@ import { LineChart, type LineSeriesOption } from "echarts/charts";
 import { UniversalTransition } from "echarts/features";
 import { CanvasRenderer } from "echarts/renderers";
 import debounce from "lodash.debounce";
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
 import {
@@ -283,7 +284,7 @@ const style = css`
 `;
 
 @customElement("or-attribute-history")
-export class OrAttributeHistory extends translate(i18next)(LitElement) {
+export class OrAttributeHistory extends translate(i18next)(OrElement) {
   public static DEFAULT_TIMESTAMP_FORMAT = "L HH:mm:ss";
 
   static get styles() {

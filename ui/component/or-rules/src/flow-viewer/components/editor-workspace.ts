@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html } from "lit";
+import { html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import type { Node, NodeSocket } from "@openremote/model";
@@ -34,7 +35,7 @@ import { createContextMenuButtons } from "./workspace-contextmenu-options";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 @customElement("editor-workspace")
-export class EditorWorkspace extends translate(i18next)(LitElement) {
+export class EditorWorkspace extends translate(i18next)(OrElement) {
   public get clientRect() {
     return this.cachedClientRect;
   }

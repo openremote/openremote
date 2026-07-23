@@ -26,6 +26,7 @@
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/or-components": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-vaadin-components": "workspace:*",

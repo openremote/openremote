@@ -16,11 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement } from "lit";
+import { css, html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 
 @customElement("or-loading-indicator")
-export class OrLoadingIndicator extends LitElement {
+export class OrLoadingIndicator extends OrElement {
   @property({ attribute: true })
   public overlay: boolean = false;
 

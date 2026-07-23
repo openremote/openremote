@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { type AppConfig, type Page, type RealmAppConfig, router } from "./types";
 import "@openremote/or-translate";
@@ -83,7 +84,7 @@ const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
 };
 
 @customElement("or-app")
-export class OrApp<S extends AppStateKeyed> extends LitElement {
+export class OrApp<S extends AppStateKeyed> extends OrElement {
   @property({ type: Object })
   public appConfig?: AppConfig<S>;
 

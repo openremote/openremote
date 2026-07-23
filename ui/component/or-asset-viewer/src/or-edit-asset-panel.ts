@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { until } from "lit/directives/until.js";
 import { customElement, property } from "lit/decorators.js";
 import {
@@ -205,7 +206,7 @@ interface TemplateAndValidator {
 }
 
 @customElement("or-edit-asset-panel")
-export class OrEditAssetPanel extends LitElement {
+export class OrEditAssetPanel extends OrElement {
   @property({ attribute: false })
   protected asset!: Asset;
 

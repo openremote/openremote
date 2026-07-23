@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement, type PropertyValues } from "lit";
+import { html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import throttle from "lodash.throttle";
@@ -32,7 +33,7 @@ import { Util } from "@openremote/core";
 const elemTagName = "or-dashboard-widget-container";
 
 @customElement(elemTagName)
-export class OrDashboardWidgetContainer extends LitElement {
+export class OrDashboardWidgetContainer extends OrElement {
   static tagName = elemTagName;
 
   @property()

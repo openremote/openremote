@@ -18,7 +18,8 @@
  */
 import type { HeaderConfig, Languages } from "./or-header";
 import type { AppStateKeyed } from "./app";
-import { LitElement, type TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { i18next, translate } from "@openremote/or-translate";
 import type { AnyAction, Store, Unsubscribe } from "@reduxjs/toolkit";
 import Navigo from "navigo";
@@ -56,7 +57,7 @@ export interface PageProvider<S extends AppStateKeyed> {
   pageCreator: () => Page<S>;
 }
 
-export abstract class Page<S extends AppStateKeyed> extends translate(i18next)(LitElement) {
+export abstract class Page<S extends AppStateKeyed> extends translate(i18next)(OrElement) {
   abstract get name(): string;
 
   protected _store: Store<S, AnyAction>;

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { type CSSResult, LitElement, type TemplateResult } from "lit";
+import type { CSSResult, TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { property } from "lit/decorators.js";
 import type { WidgetConfig } from "./widget-config";
 import type { WidgetSettings } from "./widget-settings";
@@ -35,7 +36,7 @@ export interface WidgetManifest {
 
 // Main OrWidget class where all widgets extend their functionality on.
 // It contains several methods used for rendering by the parent component; OrDashboardWidget
-export abstract class OrWidget extends LitElement {
+export abstract class OrWidget extends OrElement {
   protected static manifest: WidgetManifest;
 
   @property({ type: Object })
