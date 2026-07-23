@@ -535,7 +535,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
             <or-notification-form
                     .realm=${this.realm}
                     .notification=${notification}
-                    ?readonly=${true}>
+                    readonly>
             </or-notification-form>
         `;
     }
