@@ -451,15 +451,11 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
         return html`
             <div id="wrapper">
-                ${!manager.authenticated
-                        ? html`
-                            <or-translate value="notAuthenticated"/>`
-                        : html`
-                            ${this._renderHeader(writeNotifications, hasRecipientType)}
-                            <div id="table-container">
-                                ${this._renderNotificationsTable()}
-                            </div>
-                        `
+                ${html`
+                    ${this._renderHeader(writeNotifications, hasRecipientType)}
+                    <div id="table-container">
+                        ${this._renderNotificationsTable()}
+                    </div>`
                 }
             </div>
             ${this._renderCreateDialog()}
