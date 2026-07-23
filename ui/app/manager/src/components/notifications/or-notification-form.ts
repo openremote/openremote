@@ -35,7 +35,7 @@ import {
     User
 } from "@openremote/model";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
+import {OrAssetTree, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import "@openremote/or-asset-tree";
 import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
 // or-vaadin-checkbox-group registers the native vaadin-checkbox used for its children
@@ -241,6 +241,8 @@ export class OrNotificationForm extends LitElement {
         this._users = undefined;
         this._assets = undefined;
         this._realms = undefined;
+        // The asset tree fetches and caches its nodes itself
+        this.shadowRoot?.querySelector<OrAssetTree>("#asset-selector")?.refresh();
         return this._onTargetTypeChanged(this._targetType);
     }
 
