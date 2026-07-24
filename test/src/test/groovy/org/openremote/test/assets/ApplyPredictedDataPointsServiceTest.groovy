@@ -37,8 +37,10 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         if (mockedApplyService != null) {
             mockedApplyService.scheduledFuture?.cancel(true)
             mockedApplyService.scheduledFuture = null
-            mockedApplyService.scheduledEntries.clear()
-            mockedApplyService.scheduleQueue.clear()
+            synchronized (mockedApplyService.scheduleLock) {
+                mockedApplyService.scheduledEntries.clear()
+                mockedApplyService.scheduleQueue.clear()
+            }
             mockedApplyService.scheduledExecutorService = originalExecutor
             mockedApplyService = null
         }
