@@ -70,7 +70,6 @@ export class OrNotificationFormChangedEvent extends CustomEvent<void> {
 export class OrNotificationForm extends OrElement {
     static styles = css`
         :host {
-            height: 76vh;
             display: block;
         }
 
@@ -149,6 +148,39 @@ export class OrNotificationForm extends OrElement {
 
         :host([readonly]) .form-container {
             opacity: 0.9;
+        }
+
+        @media (max-width: 1024px) {
+            :host {
+                height: auto;
+            }
+
+            .formGridContainer,
+            .formGridContainer-readonly {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .formGridContainer {
+                grid-template-areas:
+                "targetContainer"
+                "messageContentContainer"
+                "actionButtonContainer";
+            }
+
+            .formGridContainer-readonly {
+                grid-template-areas:
+                "targetContainer"
+                "messageContentContainer"
+                "propContainer"
+                "actionButtonContainer";
+            }
+
+            /* Return the target column to normal flow so its stacked row keeps a height */
+            .targetContainer {
+                position: relative;
+                height: auto;
+            }
         }
     `;
 
