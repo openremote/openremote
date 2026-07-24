@@ -344,6 +344,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         }
 
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
+
+        verifyTimescaleDbVersion();
+
         prepareSchema(container, connectionUrl, dbUsername, dbPassword, dbSchema, dbName);
     }
 
@@ -358,8 +361,6 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
     @Override
     public void start(Container container) throws Exception {
-        verifyTimescaleDbVersion();
-
         // Register standard entity classes and also any Entity ClassProviders
         List<String> entityClasses = new ArrayList<>(50);
         entityClasses.add(Asset.class.getName());
