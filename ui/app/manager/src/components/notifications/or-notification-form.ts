@@ -374,7 +374,7 @@ export class OrNotificationForm extends OrElement {
                 break;
         }
 
-        await this.requestUpdate();
+        this.requestUpdate();
     }
 
     protected _onAssetSelectionChanged(e: OrAssetTreeSelectionEvent): void {
@@ -409,7 +409,7 @@ export class OrNotificationForm extends OrElement {
         this._targetType = this.notification.target || NotificationTargetType.ASSET;
         this._targets = this.notification.targetId ? [this.notification.targetId] : [];
 
-        await this.requestUpdate();
+        this.requestUpdate();
     }
 
     /**
