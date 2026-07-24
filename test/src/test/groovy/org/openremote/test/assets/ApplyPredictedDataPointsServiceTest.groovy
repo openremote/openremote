@@ -482,15 +482,12 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         Consumer<AttributeEvent> consumer = { event -> events.add(event) }
         clientEventService.addSubscription(AttributeEvent.class, null, consumer)
 
-        and: "a plain attribute exists with required meta"
-        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue9")
-        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+        and: "an attribute with the required meta is created in a single update"
+        def attributeRef = createTestAttributeWithApplyMeta(assetStorageService, managerTestSetup.thingId, "predictedValue9")
 
-        and: "the meta update has been applied and its attribute event observed"
+        and: "the creation event has been delivered to the service before it is observed here"
         conditions.eventually {
-            def asset = assetStorageService.find(attributeRef.getId(), true)
-            assert asset.getAttribute(attributeRef.getName()).get().getMeta().has(APPLY_PREDICTED_DATA_POINTS)
-            assert events.any { it.ref == attributeRef }
+            assert events.any { it.ref == attributeRef && it.getMeta()?.has(APPLY_PREDICTED_DATA_POINTS) }
         }
         events.clear()
 
@@ -564,15 +561,12 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         Consumer<AttributeEvent> consumer = { event -> events.add(event) }
         clientEventService.addSubscription(AttributeEvent.class, null, consumer)
 
-        and: "a plain attribute exists with required meta"
-        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue10")
-        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+        and: "an attribute with the required meta is created in a single update"
+        def attributeRef = createTestAttributeWithApplyMeta(assetStorageService, managerTestSetup.thingId, "predictedValue10")
 
-        and: "the meta update has been applied and its attribute event observed"
+        and: "the creation event has been delivered to the service before it is observed here"
         conditions.eventually {
-            def asset = assetStorageService.find(attributeRef.getId(), true)
-            assert asset.getAttribute(attributeRef.getName()).get().getMeta().has(APPLY_PREDICTED_DATA_POINTS)
-            assert events.any { it.ref == attributeRef }
+            assert events.any { it.ref == attributeRef && it.getMeta()?.has(APPLY_PREDICTED_DATA_POINTS) }
         }
         events.clear()
 
@@ -637,6 +631,18 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         asset.getAttributes().addOrReplace(
             new org.openremote.model.attribute.Attribute<>(attributeName, ValueType.NUMBER, 0d)
         )
+        assetStorageService.merge(asset)
+        return new AttributeRef(assetId, attributeName)
+    }
+
+    private static AttributeRef createTestAttributeWithApplyMeta(AssetStorageService assetStorageService, String assetId, String attributeName) {
+        def asset = assetStorageService.find(assetId)
+        def attribute = new org.openremote.model.attribute.Attribute<>(attributeName, ValueType.NUMBER, 0d)
+        attribute.addOrReplaceMeta(
+            new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true),
+            new MetaItem<>(APPLY_PREDICTED_DATA_POINTS, true)
+        )
+        asset.getAttributes().addOrReplace(attribute)
         assetStorageService.merge(asset)
         return new AttributeRef(assetId, attributeName)
     }
