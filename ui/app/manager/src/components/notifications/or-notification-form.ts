@@ -46,6 +46,10 @@ import "@openremote/or-vaadin-components/or-vaadin-toggle";
 
 export type NotificationMessage = PushNotificationMessage | EmailNotificationMessage;
 
+// Requires a scheme (e.g. https://) before the rest of the URL; shared by the actionUrl field's pattern attribute
+// and the create-validation check. The hyphen is escaped so it's valid under the pattern attribute's `v` flag.
+const ACTION_URL_PATTERN = "^[a-zA-Z][a-zA-Z0-9+.\\-]*://.+$";
+
 interface TargetOption {
     label: string;
     value: string;
@@ -394,6 +398,10 @@ export class OrNotificationForm extends OrElement {
         let message = this._message;
         if (message.type === "push") {
             const push = {...message} as PushNotificationMessage;
+            // The action URL is optional, but reject a malformed one
+            if (push.action?.url && !new RegExp(ACTION_URL_PATTERN).test(push.action.url)) {
+                return null;
+            }
             // Drop empty button slots and attach the action to the open button (index 0)
             const buttons = (push.buttons || []).filter(button => button?.title);
             if (buttons.length > 0) {
@@ -623,6 +631,10 @@ export class OrNotificationForm extends OrElement {
                 <h4><or-translate value="actions"></or-translate></h4>
                 <or-vaadin-text-field
                         id="actionUrl"
+                        type="url"
+                        pattern="${ACTION_URL_PATTERN}"
+                        error-message="${i18next.t("invalidUrl")}"
+                        placeholder="https://example.com"
                         ?readonly="${inputDisabled}"
                         value="${message.action?.url || ''}"
                         @change="${(ev: Event) => {

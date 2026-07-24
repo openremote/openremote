@@ -92,7 +92,9 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
                                      @change=${(ev: Event) => onchange(ev, message).then(msg => this._onBodyChange(this._pushBodyElem!, msg))}>
                     <or-translate slot="label" value="body"></or-translate>
                 </or-vaadin-text-area>
-                <or-vaadin-text-field id="push-url" value=${message.action?.url}
+                <or-vaadin-text-field id="push-url" type="url" pattern="^[a-zA-Z][a-zA-Z0-9+.\\-]*://.+$"
+                                      error-message="${i18next.t("invalidUrl")}"
+                                      placeholder="https://example.com" value=${message.action?.url}
                                       @change=${(ev: Event) => onchange(ev, message).then(msg => this._onActionUrlChange(this._pushUrlElem!, msg))}>
                     <or-translate slot="label" value="openWebsiteUrl"></or-translate>
                 </or-vaadin-text-field>
