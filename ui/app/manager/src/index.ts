@@ -1,3 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 import {pageProvisioningProvider} from "./pages/page-provisioning";
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
@@ -17,6 +36,7 @@ import {
     headerItemLogout,
     headerItemLogs,
     headerItemMap,
+    headerItemNotifications,
     headerItemProvisioning,
     headerItemRealms,
     headerItemRoles,
@@ -50,6 +70,8 @@ import { pageConfigurationProvider } from "./pages/page-configuration";
 import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
+import { pageNotificationsProvider } from "./pages/page-notifications";
+import "./pages/page-notifications";
 
 declare var MANAGER_URL: string | undefined;
 
@@ -85,7 +107,8 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageExportProvider(store),
     pageProvisioningProvider(store),
     pageConfigurationProvider(store),
-    pageAlarmsProvider(store)
+    pageAlarmsProvider(store),
+    pageNotificationsProvider(store)
 ];
 
 export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
@@ -101,6 +124,7 @@ export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     gatewayTunnel: headerItemGatewayTunnel(orApp),
     language: headerItemLanguage(orApp),
     logs: headerItemLogs(orApp),
+    notifications: headerItemNotifications(orApp),
     account: headerItemAccount(orApp),
     users: headerItemUsers(orApp),
     roles: headerItemRoles(orApp),

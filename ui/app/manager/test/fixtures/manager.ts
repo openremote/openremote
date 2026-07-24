@@ -1,3 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import path from "node:path";
 
 import rest, { RestApi } from "@openremote/rest";
@@ -10,22 +29,30 @@ import { Asset, AssetModelUtil, ManagerAppConfig, Role } from "@openremote/model
 import {
     test as base,
     expect,
+    type APIRequestContext,
     type Page,
     type SharedComponentTestFixtures,
     type Shared,
     type TestFixture,
     withPage,
 } from "@openremote/test";
-import { AssetsPage, InsightsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
+import { playwrightRequestAdapter } from "./request-adapter";
+import { AssetsPage, InsightsPage, NotificationsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
 import { MwcInput, MwcMenu } from "../../../../component/or-mwc-components/test/fixtures";
 import { JsonForms } from "../../../../component/or-json-forms/test/fixtures";
 import { AssetTree } from "../../../../component/or-asset-tree/test/fixtures";
-import { type AxiosRequestConfig } from "axios";
+import { isAxiosError, type AxiosRequestConfig } from "axios";
 
 export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
 export const userStatePath = path.join(__dirname, "data/.auth/user.json");
+
+/** Logs a warning for a failed HTTP request; any other error is a test bug and is rethrown to fail the test. */
+function warnOnHttpError(e: unknown, message: string, ...context: unknown[]) {
+    if (!isAxiosError(e)) throw e;
+    console.warn(message, ...context, e.response?.status ?? e.message);
+}
 
 export class Manager {
     private readonly clientId = "openremote";
@@ -39,12 +66,17 @@ export class Manager {
     public assets: Asset[] = [];
     public rules: number[] = [];
     public dashboards: string[] = [];
+    public provisionedUsers: { realm: string; id: string }[] = [];
 
-    constructor(readonly page: Page, readonly baseURL: string) {
+    constructor(readonly page: Page, readonly baseURL: string, request?: APIRequestContext) {
         this.managerHost = process.env.managerUrl || "http://localhost:8080";
         rest.initialise(`${this.managerHost}/api/master/`);
         this.api = rest.api;
         this.axios = rest.axiosInstance;
+        // Route the rest client through Playwright's request context so setup calls appear in the trace viewer
+        if (request) {
+            this.axios.defaults.adapter = playwrightRequestAdapter(request);
+        }
     }
 
     /**
@@ -164,6 +196,62 @@ export class Manager {
     }
 
     /**
+     * Build an axios request config authenticated as the master-realm admin, for REST setup calls.
+     */
+    async adminConfig(): Promise<AxiosRequestConfig<any>> {
+        const token = await this.getAccessToken("master", admin.username, admin.password);
+        return { headers: { Authorization: `Bearer ${token}` } };
+    }
+
+    /**
+     * Provision a user with client roles (and optionally a password/email) in the given realm via REST, returning
+     * the created user. Unlike {@link createUser} this is stateless (it doesn't touch `this.realm`/`this.user`), so
+     * it can set up arbitrary users for e.g. access-control tests. Defaults to the admin config when none is given.
+     * @param realm The realm to create the user in
+     * @param user The username, client roles, and optional initial password/email
+     * @param config The axios request config
+     */
+    async provisionUser(
+        realm: string,
+        { username, roles = [], password, email }: { username: string; roles?: string[]; password?: string; email?: string },
+        config?: AxiosRequestConfig<any>
+    ): Promise<UserModel | undefined> {
+        config ??= await this.adminConfig();
+        const user = await this.api.UserResource.create(realm, { username, email, enabled: true } as UserModel, config)
+            .then((r) => r.data)
+            .catch(() => undefined);
+
+        if (user?.id) {
+            // track for teardown so provisioned users don't leak between tests/runs
+            this.provisionedUsers.push({ realm, id: user.id });
+            if (roles.length > 0) {
+                await this.api.UserResource.updateUserClientRoles(realm, user.id, this.clientId, roles, config);
+            }
+            if (password) {
+                await this.api.UserResource.updatePassword(realm, user.id, { value: password }, config);
+            }
+        }
+        return user;
+    }
+
+    /**
+     * Deletes all users provisioned via {@link provisionUser} (across realms). Called by {@link cleanUp}.
+     * @param config The axios request config
+     */
+    async deleteUsers(config?: AxiosRequestConfig<any>) {
+        config ??= await this.adminConfig();
+        for (const { realm, id } of this.provisionedUsers) {
+            try {
+                const response = await this.api.UserResource.delete(realm, id, config);
+                expect(response.status).toBe(204);
+            } catch (e) {
+                warnOnHttpError(e, "Could not delete user: ", id);
+            }
+        }
+        this.provisionedUsers = [];
+    }
+
+    /**
      * When an application initialises a WebSocket this will assign that instance to the `window.ws` object.
      *
      * Must only be used inside a `await page.addInitScript` before the WebSocket gets initialised.
@@ -209,7 +297,7 @@ export class Manager {
             expect(response.status).toBe(200);
             return response.data;
         } catch (e) {
-            console.error("Failed to get roles", e.response.status);
+            warnOnHttpError(e, "Failed to get roles");
         }
     }
 
@@ -235,7 +323,7 @@ export class Manager {
             expect(response.status).toBe(204);
             this.role = newRole;
         } catch (e) {
-            console.error("Failed to create role", e.response.status);
+            warnOnHttpError(e, "Failed to create role");
         }
     }
 
@@ -252,7 +340,7 @@ export class Manager {
             expect(response.status).toBe(200);
             this.user = response.data;
         } catch (e) {
-            console.error("Failed to create user", e.response.status);
+            warnOnHttpError(e, "Failed to create user");
         }
     }
 
@@ -274,7 +362,7 @@ export class Manager {
             );
             expect(response.status).toBe(204);
         } catch (e) {
-            console.error("Failed to update users' roles", e.response.status);
+            warnOnHttpError(e, "Failed to update users' roles");
         }
     }
 
@@ -294,7 +382,7 @@ export class Manager {
             );
             expect(response.status).toBe(204);
         } catch (e) {
-            console.error("Failed to reset user password", e.response.status);
+            warnOnHttpError(e, "Failed to reset user password");
         }
     }
 
@@ -305,8 +393,7 @@ export class Manager {
      */
     async createAsset(asset: Asset, config?: AxiosRequestConfig<any>) {
         if (!config) {
-            const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
-            config = { headers: { Authorization: `Bearer ${access_token}` } };
+            config = await this.adminConfig();
         }
         await rest.api.AssetResource.create(asset, config)
             .then((response) => {
@@ -314,7 +401,8 @@ export class Manager {
                 this.assets.push(response.data);
             })
             .catch((e) => {
-                expect(e.response.status, { message: "Failed to create asset" }).toBe(409);
+                if (!isAxiosError(e)) throw e;
+                expect(e.response?.status, { message: "Failed to create asset" }).toBe(409);
             });
     }
 
@@ -325,8 +413,7 @@ export class Manager {
      */
     async updateAsset(asset: Asset, config?: AxiosRequestConfig<any>) {
         if (!config) {
-            const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
-            config = { headers: { Authorization: `Bearer ${access_token}` } };
+            config = await this.adminConfig();
         }
         await rest.api.AssetResource.update(asset.id!, asset, config)
             .then((response) => {
@@ -334,7 +421,8 @@ export class Manager {
                 this.assets = [...this.assets.filter((a) => a.id !== response.data.id), response.data as Asset];
             })
             .catch((e) => {
-                expect(e.response.status, { message: "Failed to update asset" }).toBe(409);
+                if (!isAxiosError(e)) throw e;
+                expect(e.response?.status, { message: "Failed to update asset" }).toBe(409);
             });
     }
 
@@ -350,8 +438,7 @@ export class Manager {
         realm: string,
         { user, role, assets }: { user?: UserModel; role?: Role; assets?: Asset[] | DefaultAssets } = {}
     ) {
-        const access_token = await this.getAccessToken("master", admin.username, admin.password);
-        const config = { headers: { Authorization: `Bearer ${access_token}` } };
+        const config = await this.adminConfig();
 
         this.realm = realm;
 
@@ -390,7 +477,7 @@ export class Manager {
                 expect(response.status).toBe(204);
                 this.dashboards.splice(i, 1);
             } catch (e) {
-                console.warn("Could not delete dashboard: ", id, e);
+                warnOnHttpError(e, "Could not delete dashboard: ", id);
             }
         }
     }
@@ -406,7 +493,7 @@ export class Manager {
                 expect(response.status).toBe(204);
                 this.rules.splice(i, 1);
             } catch (e) {
-                console.warn("Could not delete realm rule: ", id, e);
+                warnOnHttpError(e, "Could not delete realm rule: ", id);
             }
         }
     }
@@ -422,7 +509,7 @@ export class Manager {
             expect(response.status).toBe(204);
             this.assets = [];
         } catch (e) {
-            console.warn("Could not delete asset(s): ", assetIds, e);
+            warnOnHttpError(e, "Could not delete asset(s): ", assetIds);
         }
     }
 
@@ -440,7 +527,7 @@ export class Manager {
             expect(response.status).toBe(204);
             delete this.role;
         } catch (e) {
-            console.warn("Could not update roles: ", this.role, e);
+            warnOnHttpError(e, "Could not update roles: ", this.role);
         }
     }
 
@@ -448,8 +535,7 @@ export class Manager {
      *  Clean up the environment
      */
     async cleanUp() {
-        const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
-        const config = { headers: { Authorization: `Bearer ${access_token}` } };
+        const config = await this.adminConfig();
 
         if (this.dashboards.length > 0) {
             await this.deleteDashboards(config);
@@ -461,6 +547,10 @@ export class Manager {
 
         if (this.assets.length > 0) {
             await this.deleteAssets(config);
+        }
+
+        if (this.provisionedUsers.length > 0) {
+            await this.deleteUsers(config);
         }
 
         if (this.role && this.realm) {
@@ -486,6 +576,7 @@ function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; sha
 interface PageFixtures {
     assetsPage: AssetsPage;
     insightsPage: InsightsPage;
+    notificationsPage: NotificationsPage;
     realmsPage: RealmsPage;
     rolesPage: RolesPage;
     rulesPage: RulesPage;
@@ -506,10 +597,11 @@ interface Fixtures extends PageFixtures, ComponentFixtures {
 }
 
 export const test = base.extend<Fixtures>({
-    manager: async ({ page, baseURL }, use) => await use(new Manager(page, baseURL!)),
+    manager: async ({ page, baseURL, request }, use) => await use(new Manager(page, baseURL!, request)),
     // Pages
     assetsPage: withManager(AssetsPage),
     insightsPage: withManager(InsightsPage),
+    notificationsPage: withManager(NotificationsPage),
     realmsPage: withManager(RealmsPage),
     rolesPage: withManager(RolesPage),
     rulesPage: withManager(RulesPage),

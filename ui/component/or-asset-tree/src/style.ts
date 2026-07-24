@@ -1,3 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, unsafeCSS} from "lit";
 import { DefaultColor1, DefaultColor2, DefaultColor4, DefaultColor5, DefaultColor8 } from "@openremote/core";
 import {mdiChevronRight} from "@mdi/js";
@@ -163,6 +182,7 @@ export const style = css`
     }
     
     .expander {
+        flex: 0 0 auto;
         width: 36px;
         height: 100%;
         display: inline-block;
@@ -187,13 +207,23 @@ export const style = css`
     }
     
     .node-name {
+        width: 100%;
         margin: -4px 0;
         flex: 1 0 auto;
         display: flex;
         align-items: center;
     }
     
-    .node-name > span {
+    .node-name-withCheck {
+        flex: 1 1 auto;
+        white-space: nowrap;
+        overflow: hidden;
+        margin-right: 4px;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+    }
+
+    .node-name-noCheck {
         vertical-align: middle;
     }
     
@@ -231,7 +261,6 @@ export const style = css`
     }
     
     .mdc-checkbox or-icon {
-        height: 15px;
         width: auto;
         color: var(--internal-or-asset-tree-line-color);
     }

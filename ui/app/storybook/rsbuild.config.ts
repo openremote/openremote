@@ -41,6 +41,7 @@ export default defineConfig({
             "@openremote/or-attribute-picker": "../../component/or-attribute-picker/src",
             "@openremote/or-components": "../../component/or-components/src",
             "@openremote/or-chart": "../../component/or-chart/src",
+            "@openremote/or-element": "../../component/or-element/src",
             "@openremote/or-icon": "../../component/or-icon/src",
             "@openremote/or-map": "../../component/or-map/src",
             "@openremote/or-mwc-components": "../../component/or-mwc-components/src",

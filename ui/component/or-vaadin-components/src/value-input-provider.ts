@@ -64,6 +64,8 @@ export interface ValueInputProviderOptions {
     outlined?: boolean;
     comfortable?: boolean;
     resizeVertical?: boolean;
+    minRows?: number;
+    manualresize?: boolean;
     inputType?: InputType;
 }
 
@@ -347,6 +349,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                                  ?autofocus=${focused} ?required=${required} ?readonly=${readonly} ?disabled=${disabled}
                                  .items=${ifDefined(selectOptions)} step=${ifDefined(step)}
                                  helper-text="${ifDefined(helperText)}" ?resizeVertical="${resizeVertical}"
+                                 min-rows="${ifDefined(inputType === InputType.TEXTAREA ? options.minRows : undefined)}"
+                                 ?manualresize="${inputType === InputType.TEXTAREA && !!options.manualresize}"
                                  ?rounded="${options.rounded}" ?outlined="${options.outlined}"
                                  @change="${onValueChange}"
                                  @submit="${onValueChange}"
