@@ -296,20 +296,35 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
 
         if (!canReadUsers) {
             if (n.getSource() == Notification.Source.CLIENT) {
+                redactErrorId(n, n.getSourceId());
                 n.setSourceId(null);
             }
             // Custom targets can carry raw email addresses
             if (n.getTarget() == Notification.TargetType.USER || n.getTarget() == Notification.TargetType.CUSTOM) {
+                redactErrorId(n, n.getTargetId());
                 n.setTargetId(null);
             }
         }
         if (!canReadAssets) {
             if (n.getSource() == Notification.Source.ASSET_RULESET) {
+                redactErrorId(n, n.getSourceId());
                 n.setSourceId(null);
             }
             if (n.getTarget() == Notification.TargetType.ASSET) {
+                redactErrorId(n, n.getTargetId());
                 n.setTargetId(null);
             }
+        }
+    }
+
+    /**
+     * Redacts a stripped id (asset/user id or custom email address) from the stored error message, which
+     * handlers embed verbatim (e.g. "No recipients set for asset: {id}"). The error text is kept so the row
+     * still reports as failed.
+     */
+    protected void redactErrorId(SentNotification n, String id) {
+        if (n.getError() != null && id != null && !id.isEmpty()) {
+            n.setError(n.getError().replace(id, "***"));
         }
     }
 
