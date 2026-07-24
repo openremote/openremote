@@ -29,12 +29,14 @@ import { Asset, AssetModelUtil, ManagerAppConfig, Role } from "@openremote/model
 import {
     test as base,
     expect,
+    type APIRequestContext,
     type Page,
     type SharedComponentTestFixtures,
     type Shared,
     type TestFixture,
     withPage,
 } from "@openremote/test";
+import { playwrightRequestAdapter } from "./request-adapter";
 import { AssetsPage, InsightsPage, NotificationsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
@@ -66,11 +68,15 @@ export class Manager {
     public dashboards: string[] = [];
     public provisionedUsers: { realm: string; id: string }[] = [];
 
-    constructor(readonly page: Page, readonly baseURL: string) {
+    constructor(readonly page: Page, readonly baseURL: string, request?: APIRequestContext) {
         this.managerHost = process.env.managerUrl || "http://localhost:8080";
         rest.initialise(`${this.managerHost}/api/master/`);
         this.api = rest.api;
         this.axios = rest.axiosInstance;
+        // Route the rest client through Playwright's request context so setup calls appear in the trace viewer
+        if (request) {
+            this.axios.defaults.adapter = playwrightRequestAdapter(request);
+        }
     }
 
     /**
@@ -591,7 +597,7 @@ interface Fixtures extends PageFixtures, ComponentFixtures {
 }
 
 export const test = base.extend<Fixtures>({
-    manager: async ({ page, baseURL }, use) => await use(new Manager(page, baseURL!)),
+    manager: async ({ page, baseURL, request }, use) => await use(new Manager(page, baseURL!, request)),
     // Pages
     assetsPage: withManager(AssetsPage),
     insightsPage: withManager(InsightsPage),

@@ -149,9 +149,25 @@ export class NotificationsPage implements BasePage {
         await bodyInput.blur();
     }
 
+    async fillPushMessage(title: string, body: string) {
+        // The fields commit on `change` (blur), so blur after filling to update the form model.
+        const titleInput = this.getCreateForm().locator("#notificationTitle input");
+        await titleInput.fill(title);
+        await titleInput.blur();
+
+        const bodyInput = this.getCreateForm().locator("#notificationBody textarea");
+        await bodyInput.fill(body);
+        await bodyInput.blur();
+    }
+
     /** Tick a specific recipient (by visible label) in the (Users/Realms) checkbox list. */
     async checkTarget(label: string) {
         await this.getCreateForm().locator("#target").getByRole("checkbox", { name: label }).check();
+    }
+
+    /** Select an asset (by name) in the "Users linked to assets" target's asset tree. */
+    async checkAssetTarget(name: string) {
+        await this.getCreateForm().locator("#asset-selector .node-container", { hasText: name }).click();
     }
 
     // --- Details dialog ----------------------------------------------------

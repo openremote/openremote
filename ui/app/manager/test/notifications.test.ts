@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { expect, Page } from "@openremote/test";
-import { EmailNotificationMessage, Notification, NotificationTargetType } from "@openremote/model";
+import { Asset, EmailNotificationMessage, Notification, NotificationTargetType } from "@openremote/model";
 import { type AxiosRequestConfig } from "axios";
 import { Manager, adminStatePath, test } from "./fixtures/manager.js";
 
@@ -48,6 +48,57 @@ async function seedNotification(manager: Manager, realm = "master", subject = `E
         targets: [{ type: NotificationTargetType.REALM, id: realm }],
     } as Notification, config);
     return subject;
+}
+
+/** Create an asset in `realm` (REST, tracked for teardown) and return its id. */
+async function createAssetAndGetId(manager: Manager, asset: Asset, config: AxiosRequestConfig): Promise<string> {
+    await manager.createAsset(asset, config);
+    const created = manager.assets.find((a) => a.name === asset.name);
+    expect(created?.id).toBeTruthy();
+    return created!.id!;
+}
+
+/** Link each of `userIds` to `assetId` in `realm` (REST). One call per user, as a batch must be for a single user. */
+async function linkUsersToAsset(manager: Manager, realm: string, assetId: string, userIds: string[], config: AxiosRequestConfig) {
+    for (const userId of userIds) {
+        await manager.api.AssetResource.createUserAssetLinks([{ id: { realm, userId, assetId } }], config);
+    }
+}
+
+/**
+ * Create a ConsoleAsset with a (fake) FCM push token in `realm` and link it to `userId` (REST, tracked for teardown),
+ * so push targets resolve to a console in dev mode. Mirrors ManagerNotificationSetup#createConsole.
+ */
+async function createConsoleForUser(manager: Manager, realm: string, userId: string, username: string, config: AxiosRequestConfig) {
+    const consoleId = await createAssetAndGetId(manager, {
+        name: `${username} console`,
+        type: "ConsoleAsset",
+        realm,
+        // ConsoleAsset requires these well-known attributes to be present to pass validation
+        attributes: {
+            notes: { name: "notes", type: "text" },
+            location: { name: "location", type: "GEO_JSONPoint" },
+            consoleName: { name: "consoleName", type: "text", value: `${username} console` },
+            consoleVersion: { name: "consoleVersion", type: "text", value: "1.0.0" },
+            consolePlatform: { name: "consolePlatform", type: "text", value: "Android 14" },
+            consoleProviders: {
+                name: "consoleProviders",
+                type: "consoleProviders",
+                value: {
+                    push: {
+                        version: "fcm",
+                        requiresPermission: true,
+                        hasPermission: true,
+                        success: true,
+                        enabled: true,
+                        disabled: false,
+                        data: { token: `dev-fcm-token-${username}` },
+                    },
+                },
+            },
+        },
+    } as Asset, config);
+    await linkUsersToAsset(manager, realm, consoleId, [userId], config);
 }
 
 /**
@@ -252,6 +303,56 @@ test("should show the sent, delivered and error statuses in the table", async ({
     await expect(notificationsPage.getStatusBadge(deliveredSubject)).toHaveText("Delivered");
     await expect(notificationsPage.getStatusBadge(errorSubject)).toHaveText("Error");
     await expect(notificationsPage.getStatusBadge(errorSubject)).toHaveAttribute("title", /no recipients/i);
+});
+
+/**
+ * @given Logged into the "master" realm as "admin"
+ * @and An asset with two users linked to it, each with a push-registered console (REST setup)
+ * @and Navigated to the "Notifications" page
+ * @when A push notification is composed and sent to that asset target
+ * @then Submitting closes the dialog and the push fans out to a row per linked user's console
+ */
+test("should send a push notification to an asset target linked to multiple users", async ({ manager, notificationsPage }) => {
+    const config = await manager.adminConfig();
+    const stamp = Date.now();
+    const assetName = `E2E push asset ${stamp}`;
+    const assetId = await createAssetAndGetId(manager, {
+        name: assetName,
+        type: "ThingAsset",
+        realm: "master",
+        // ThingAsset requires these well-known attributes to be present to pass validation
+        attributes: {
+            notes: { name: "notes", type: "text" },
+            location: { name: "location", type: "GEO_JSONPoint" },
+        },
+    } as Asset, config);
+
+    // two users linked to the asset, each with a push-registered console so an asset push resolves to their consoles
+    const usernames = [`e2e-push-1-${stamp}`, `e2e-push-2-${stamp}`];
+    for (const username of usernames) {
+        const user = await manager.provisionUser("master", { username }, config);
+        expect(user?.id).toBeTruthy();
+        await linkUsersToAsset(manager, "master", assetId, [user!.id!], config);
+        await createConsoleForUser(manager, "master", user!.id!, username, config);
+    }
+
+    await manager.goToRealmStartPage("master");
+    await notificationsPage.goto();
+
+    const title = `E2E asset push ${stamp}`;
+    await notificationsPage.openCreateDialog();
+    await notificationsPage.selectMessageType("Push");
+    await notificationsPage.fillPushMessage(title, "Hello from the E2E push test");
+
+    // pick the asset as the target -> the form becomes valid
+    await notificationsPage.selectTargetType("Users linked to assets");
+    await notificationsPage.checkAssetTarget(assetName);
+    await expect(notificationsPage.getSubmitButton()).toBeEnabled();
+
+    // submitting closes the dialog and the push fans out to a record per linked user's console
+    await notificationsPage.getSubmitButton().click();
+    await expect(notificationsPage.getCreateForm()).not.toBeVisible();
+    await expect(notificationsPage.getRowByText(title)).toHaveCount(usernames.length);
 });
 
 /**
