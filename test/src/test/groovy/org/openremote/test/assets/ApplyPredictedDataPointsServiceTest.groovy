@@ -6,6 +6,7 @@ import org.openremote.manager.datapoint.ApplyPredictedDataPointsService
 import org.openremote.manager.datapoint.AssetPredictedDatapointService
 import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
@@ -639,7 +640,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
 
     private static AttributeRef createTestAttributeWithApplyMeta(AssetStorageService assetStorageService, String assetId, String attributeName) {
         def asset = assetStorageService.find(assetId)
-        def attribute = new org.openremote.model.attribute.Attribute<>(attributeName, ValueType.NUMBER, 0d)
+        def attribute = new Attribute<>(attributeName, ValueType.NUMBER, 0d)
         attribute.addOrReplaceMeta(
             new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true),
             new MetaItem<>(APPLY_PREDICTED_DATA_POINTS, true)
