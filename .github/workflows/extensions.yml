@@ -37,7 +37,9 @@ jobs:
           path: extensions
           ref: main
           sparse-checkout: gradle/libs.versions.toml
-      - run: |
+          token: ${{ secrets.GH_EXTENSIONS_TOKEN }}
+      - name: Update OpenRemote version in gradle/libs.versions.toml
+        run: |
           CURRENT=$(grep '^openremote = ' extensions/gradle/libs.versions.toml | sed -E 's/^openremote = "([^\"]+)".*/\1/' | head -n 1)
           if [ "$CURRENT" != "$VERSION" ]; then
             sed -i "s/^openremote = .*/openremote = \"$VERSION\"/" extensions/gradle/libs.versions.toml
@@ -53,7 +55,7 @@ jobs:
   create-extensions-release:
     name: Create release
     runs-on: ubuntu-latest
-    needs: check-artifacts
+    needs: [ check-artifacts, update-openremote-version ]
     if: ${{ inputs.is_release == 'true' }}
     steps:
       - run: gh release create "${{ inputs.version }}" -R openremote/extensions --generate-notes
