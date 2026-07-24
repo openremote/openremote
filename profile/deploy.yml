@@ -412,7 +412,6 @@ services:
 
       # Configure web server
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
-      KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
       #KC_HOSTNAME_PATH: ${KC_HOSTNAME_PATH:-auth}
       #KC_HOSTNAME_ADMIN: ${KC_HOSTNAME_ADMIN:-}
       #KC_HTTP_ENABLED: ${KC_HTTP_ENABLED:-true}
