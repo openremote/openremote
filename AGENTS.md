@@ -3,7 +3,7 @@
 ## DB update scripts
 
 Flyway is used to automate execution of DB update scripts.  
-When naming scripts, use \<date>_\<time> as version number, date being YYYYMMDD and time being HHmm in UTC e.g. `v20260611_0755__Changes.sql`
+When naming scripts, use \<date>_\<time> as version number, date being YYYYMMDD and time being HHmm in UTC e.g. `V20260611_0755__Changes.sql` (the `V` prefix is required by Flyway and must be uppercase)
 
 ## Dev environment
 The backend is written in Java, we target JDK 21, use modern language features up to that version during implementation.  
@@ -20,6 +20,14 @@ Running `./gradlew clean` deletes the root `tmp/` directory that is mounted into
 ### Generated model types
 
 `ui/component/model/src/model.ts` is generated from the Java backend by typescript-generator. Do not edit it by hand. When a TypeScript type mirrors a backend class, import it from `@openremote/model` instead of redeclaring a local interface. Regenerate it from the backend rather than patching the output.
+
+### Base element
+
+Own Lit components extend `OrElement` from `@openremote/or-element` instead of `LitElement` (also through mixins, e.g. `translate(i18next)(OrElement)`). It applies the shared shadow-DOM styling automatically. Vaadin wrappers are exempt; they extend their Vaadin base and are themed via Lumo.
+
+### Adding a new component package
+
+New packages under `ui/component/` are picked up automatically by the yarn workspace and by Gradle (any dir with a `build.gradle`). The rsbuild apps are not automatic: add the package to the `@openremote/*` alias maps in `ui/app/manager/rsbuild.config.ts` and `ui/app/storybook/rsbuild.config.ts`, which resolve workspace packages to their `src` dirs. A missing entry fails the build with "Module not found" for any file importing the package.
 
 ### Adding a new Vaadin component
 
@@ -54,8 +62,26 @@ Storybook covers any component under `ui/component/` (e.g. `or-chart`, `or-map`,
 
 Stories call `getORStorybookHelpers(tagName)` (from `ui/component/storybook-utils.js`) and `setCustomElementsManifest(customElements)` off the package's own `../custom-elements.json`. That manifest is generated per-package by `npm run analyze` (cem), so a newly added component will render but show no args/argTypes/description until you regenerate its package's manifest. `custom-elements.json` (and `custom-elements-jsx.d.ts`) are generated and untracked.
 
+### Writing UI tests
 
-### Component testing
+- **Test Naming:** `test.describe` blocks describe a feature. Tests should be named starting with "should ...".
+- **Test Structure:** Keep tests flat by default. Omit top-level `test.describe` blocks. If grouping is needed, target a specific feature (e.g., filtering notifications) rather than a parent concept like the whole page. Example: `test.describe("Filter Notifications", ...)` instead of `test.describe("Notifications", ...)`.
+
+#### Fixtures
+
+- **Avoid Redundant Actions:** Do not create methods in fixtures that simply wrap native Playwright actions (e.g., `click()`, `getByRole()`, `expect()`). Use native Playwright actions directly in the tests where possible.
+- **Provide Locators:** Provide fixture methods for locators with non-standard or complex paths (e.g., reliant on specific DOM structures) so others can reuse the correct locators across tests.
+
+#### App tests
+
+- **Compilation:** Run `./gradlew clean installDist` after making changes to the UI source code to ensure they are applied before testing.
+- **Location:** Define tests in `ui/app/<app-name>/test/`. Define fixtures in `ui/app/<app-name>/test/fixtures/`.
+- **Comments:** Add scenario comments above tests (`@given`, `@when`, `@then`, `@and`) based on the acceptance criteria.
+- **Auth State:** Select correct `storageState` for the task to be tested. Use `adminStatePath` for master/admin tasks. Use `userStatePath` for regular realm user tasks.
+
+#### Component testing
+
+- **Location:** Define tests in `ui/component/<component-name>/test/`. Define fixtures in `ui/component/<component-name>/test/fixtures/`.
 
 Component tests use Playwright component testing (`@sand4rt/experimental-ct-web`). They live in each package's `test/*.test.ts`, import `{ ct, expect }` from `@openremote/test`, and `mount(ComponentClass, { props, slots, on })`. Run them with `npm test` in the package (which does `tsc -b && playwright test`). CI runs `./gradlew -p ui/component npmTest`, which only executes packages that register an `npmTest` task, so when adding the first test to a package also register `npmTest` (and `npmTestUI`) in its `build.gradle` file; copy the tasks from a sibling package. Prefer web-first, role-based assertions (`getByRole("checkbox", { name }).toBeChecked()`, `toHaveCount(...)`) over poking at JS properties (`toHaveJSProperty`) or internal locators. Some important quirks to know about:
 
@@ -67,3 +93,4 @@ Component tests use Playwright component testing (`@sand4rt/experimental-ct-web`
 - **The default slot must be an array of single-element strings.** The CT runner builds each slot via `createContextualFragment(str).firstChild`, so a single string containing multiple elements silently keeps only the first; pass `slots: { default: ["<a>…</a>", "<b>…</b>"] }`.
 - **Vaadin's `theme` is attribute-only.** `ThemePropertyMixin` derives a read-only `_theme` from the `theme` *attribute*; there is no writable reflecting `theme` property. So `mount(..., { props: { theme: "vertical" } })` sets an ignored JS property and the `:host([theme~='vertical'])` styles never apply (e.g. a "vertical" checkbox-group stays horizontal). Set it as an attribute instead: `await component.evaluate((el) => el.setAttribute("theme", "vertical"))`. (In Storybook/Lit templates `theme="vertical"` is already a real attribute, so it works there.)
 - The `on` handler type is `Record<string, Function>`, so typed handler params are fine.
+- **Mounted component sources must be JavaScript.** The CT bundle compiles `.ts` against `ui/test/tsconfig.json` (`rootDir` `ui/test`), so a TS component file anywhere else fails with TS6059. Mount components from the package's built lib, or write test-only fixture elements as plain `.js` (no decorators; register with `customElements.define`).

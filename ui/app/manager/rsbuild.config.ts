@@ -32,6 +32,7 @@ export default defineConfig({
             "@openremote/or-components": "../../component/or-components/src",
             "@openremote/or-chart": "../../component/or-chart/src",
             "@openremote/or-dashboard-builder": "../../component/or-dashboard-builder/src",
+            "@openremote/or-element": "../../component/or-element/src",
             "@openremote/or-gauge": "../../component/or-gauge/src",
             "@openremote/or-icon": "../../component/or-icon/src",
             "@openremote/or-json-forms": "../../component/or-json-forms/src",
