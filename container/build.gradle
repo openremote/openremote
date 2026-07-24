@@ -1,7 +1,9 @@
-apply plugin: "java-library"
-apply plugin: "groovy"
-apply plugin: "maven-publish"
-apply plugin: "signing"
+plugins {
+    id 'java-library'
+    id 'groovy'
+    id 'maven-publish'
+    id 'signing'
+}
 
 dependencies {
 

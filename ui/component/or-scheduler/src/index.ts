@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -30,7 +30,8 @@ import "@openremote/or-vaadin-components/or-vaadin-radio-group";
 import "@openremote/or-vaadin-components/or-vaadin-select";
 import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-time-picker";
-import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { css, html, PropertyValues, TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { Util } from "@openremote/core";
@@ -104,8 +105,13 @@ declare global {
 }
 
 @customElement("or-scheduler")
-export class OrScheduler extends translate(i18next)(LitElement) {
+export class OrScheduler extends translate(i18next)(OrElement) {
+
     static styles = css`
+        or-vaadin-dialog::part(overlay) {
+            max-width: 600px;
+        }
+
         .time-label {
             display: flex;
             &>:first-child {
@@ -473,13 +479,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     padding: var(--lumo-space-l);
                 }
 
-                .title {
-                    padding-bottom: var(--lumo-space-m);
-                    font-size: var(--lumo-font-size-l);
-                    font-style: normal;
-                    font-weight: 600;
-                    line-height: 125.303%; /* 22.554px */
-                }
 
                 .label {
                     margin-left: 10px;
@@ -509,7 +508,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             </style>
             <div style="display: flex; flex-direction: column; gap: var(--lumo-space-m)">
                 <div id="event-type" class="section">
-                    <label class="title"><or-translate value="schedule.type"></or-translate></label>
+                    <h4><or-translate value="schedule.type"></or-translate></h4>
                     <or-vaadin-select style="flex: 1" .value="${this._eventType}" .items="${eventTypes}" @change="${this._setCalendarEventType}"></or-vaadin-select>
                 </div>
                 ${when(this._eventType !== EventTypes.default, () => this._getPeriodTemplate())}
@@ -596,7 +595,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
         return html`
             <div id="recurrence" class="section">
-                <label class="title"><or-translate value="schedule.repeat"></or-translate></label>
+                <h4><or-translate value="schedule.repeat"></or-translate></h4>
                 <div style="display: flex; gap: 8px">
                     ${when(!this.disabledRRuleParts?.includes("interval"), () => html`
                         <or-vaadin-number-field min="1" max="9" step-buttons-visible style="width: 106px" .value="${interval}"
@@ -608,7 +607,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     </or-vaadin-select>
                 </div>
                 ${when(BY_RRULE_PARTS.some((p) => this._byRRuleParts?.includes(p)), () => html`
-                    <label class="title" style="margin-top: var(--lumo-space-l)"><or-translate value="schedule.repeatOn"></or-translate></label>
+                    <h4 style="margin-top: var(--lumo-space-l)"><or-translate value="schedule.repeatOn"></or-translate></h4>
                     <div>${this._getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
                     <div>
                         ${this._getByRulePart("byweekno", InputType.SELECT, byWeekNoOptions)}
@@ -662,7 +661,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         const calendar = this._scheduleWithOffset!;
         return html`
             <div id="period" class="section">
-                <label class="title"><or-translate value="period"></or-translate></label>
+                <h4><or-translate value="period"></or-translate></h4>
                 <div style="display: flex; gap: 8px">
                     <div class="period">
                         <or-vaadin-date-picker style="text-transform: capitalize" ?combined="${!this.isAllDay}" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
@@ -698,7 +697,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected _getEndsTemplate(): TemplateResult {
         return html`
             <div id="recurrence-ends" class="section">
-                <label class="title"><or-translate value="schedule._ends"></or-translate></label>
+                <h4><or-translate value="schedule._ends"></or-translate></h4>
                 <div style="display: flex; gap: 8px;">
                     <or-vaadin-radio-group style="padding-right: 10px; width: unset" .value="${this._ends}" theme="vertical"
                         @change="${this._onPartChange("recurrence-ends", "value")}">

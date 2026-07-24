@@ -39,6 +39,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " Predicted datapoints can be added by configuring 'Store predicted datapoints' which will insert the datapoints" +
         " immediately as determined by the schedule." +
         " If a recurring schedule is defined it recurringly inserts the next predicted dataset.")
+    @JsonSchemaFormat("simulator-replay-data")
     protected SimulatorReplayDatapoint[] replayData;
 
     @JsonSchemaTitle("Schedule")

@@ -1,14 +1,20 @@
 import java.nio.file.Paths
 
-apply plugin: "java-library"
-apply plugin: "groovy"
-apply plugin: "application"
-apply plugin: "distribution"
-apply plugin: "maven-publish"
-apply plugin: "signing"
+plugins {
+    id 'java-library'
+    id 'groovy'
+    id 'application'
+    id 'distribution'
+    id 'maven-publish'
+    id 'signing'
+}
 
 application {
     mainClass = "org.openremote.manager.Main"
+}
+
+configurations {
+    demoExtension
 }
 
 dependencies {
@@ -55,6 +61,10 @@ dependencies {
 
     implementation libs.sshdNetty
 
+if (!gradle.startParameter.taskNames.any { it == 'release' || it.endsWith(':release') }) {
+    demoExtension "io.openremote.extension:openremote-demo-setup-extension:${project.version}"
+}
+
     testImplementation libs.groovyAll
     testImplementation platform(libs.spockBom)
     testImplementation libs.spockCore
@@ -64,6 +74,9 @@ dependencies {
 }
 
 sourceSets {
+    main {
+        runtimeClasspath += configurations.demoExtension
+    }
     test {
         groovy.srcDirs = ['test/src/groovy']
     }
@@ -194,13 +207,6 @@ publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
 sourcesJar.dependsOn(setVersionProperties)
 
-configurations {
-    demoExtension
-}
-
-dependencies {
-    demoExtension project(":extension:demo-setup")
-}
 
 tasks.named("run", JavaExec) {
     def setupType = System.getenv("OR_SETUP_TYPE")

@@ -131,7 +131,7 @@ exit \$status
 
 // Configure Conditional plugins
 if (project == rootProject) {
-    apply plugin: "org.jetbrains.gradle.plugin.idea-ext"
+    pluginManager.apply('org.jetbrains.gradle.plugin.idea-ext')
 
     // Configure IDEA
     if (project.hasProperty("idea") && idea.project) {
@@ -153,7 +153,7 @@ if (project == rootProject) {
                     workingDirectory = projectDir.toString()
                 }
                 "Demo Setup"(Application) {
-                    moduleName = getProject().idea.module.name + ".extension.demo-setup.main"
+                    moduleName = getProject().idea.module.name + ".manager.main"
                     envs = [
                             OR_SETUP_TYPE: "demo"
                     ]
@@ -162,6 +162,13 @@ if (project == rootProject) {
                     moduleName = getProject().idea.module.name + ".setup.clustering"
                     envs = [
                             OR_SETUP_TYPE: "clustering"
+                    ]
+                }
+                "Notification Setup"(Application) {
+                    moduleName = getProject().idea.module.name + ".setup.notification"
+                    envs = [
+                            OR_SETUP_TYPE: "notification",
+                            OR_APP_DOCROOT: "manager/build/install/manager/web"
                     ]
                 }
                 "Test Setup"(Application) {
@@ -215,10 +222,11 @@ repositories {
 }
 
 // Eclipse needs help
-apply plugin: "eclipse"
+pluginManager.apply('eclipse')
+
 
 // Intellij needs help
-apply plugin: 'idea'
+pluginManager.apply('idea')
 // Use the same output directories in IDE as in gradle
 idea {
     module {
@@ -232,17 +240,9 @@ idea {
     }
 }
 
-def resolveProject(String path) {
-    project(path)
-}
-
-def resolveTask(String path) {
-    tasks.getByPath(path)
-}
-
 def getYarnInstallTask() {
     // Just use openremote repo yarn install
-    resolveTask(":yarnInstall")
+    tasks.getByPath(":yarnInstall")
 }
 
 /**
@@ -361,8 +361,6 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
 }
 
 ext {
-    resolveProject = this.&resolveProject
-    resolveTask = this.&resolveTask
     getYarnInstallTask = this.&getYarnInstallTask
     createTSGeneratorConfigForClient = this.&createTSGeneratorConfigForClient
     createTSGeneratorConfigForModel = this.&createTSGeneratorConfigForModel

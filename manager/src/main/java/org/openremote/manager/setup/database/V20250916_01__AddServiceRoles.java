@@ -19,102 +19,25 @@
  */
 package org.openremote.manager.setup.database;
 
-import org.flywaydb.core.api.migration.BaseJavaMigration;
-import org.flywaydb.core.api.migration.Context;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.admin.client.resource.RolesResource;
-import org.keycloak.admin.client.resource.ClientResource;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.container.security.IdentityProvider;
-import org.openremote.model.Constants;
-
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.UriBuilder;
+import org.openremote.model.security.ClientRole;
 
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
- * Flyway migration script to add write:services and read:services roles using
- * Keycloak
- * admin API.
+ * Flyway migration that adds the {@code read:services} and {@code write:services} client roles to the
+ * {@code openremote} client of every realm and wires them into the existing {@code read}/{@code write} composite
+ * roles. See {@link AbstractKeycloakRolesMigration} for the credential handling and why this must stay a Java
+ * migration.
  */
-public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
-
-    private static final Logger LOG = Logger.getLogger(V20250916_01__AddServiceRoles.class.getName());
+public class V20250916_01__AddServiceRoles extends AbstractKeycloakRolesMigration {
 
     @Override
-    public void migrate(Context context) throws Exception {
-
-        // Build the keycloak URL
-        UriBuilder uriBuilder = UriBuilder.fromPath("/")
-                .scheme("http")
-                .host(System.getenv().getOrDefault(KeycloakIdentityProvider.OR_KEYCLOAK_HOST,
-                        KeycloakIdentityProvider.OR_KEYCLOAK_HOST_DEFAULT))
-                .port(Integer.parseInt(System.getenv().getOrDefault(KeycloakIdentityProvider.OR_KEYCLOAK_PORT,
-                        String.valueOf(KeycloakIdentityProvider.OR_KEYCLOAK_PORT_DEFAULT))));
-
-        String path = System.getenv().getOrDefault(KeycloakIdentityProvider.OR_KEYCLOAK_PATH,
-                KeycloakIdentityProvider.OR_KEYCLOAK_PATH_DEFAULT);
-
-        if (path != null && !path.isBlank()) {
-            uriBuilder.path(path);
-        }
-
-        String keycloakUrl = uriBuilder.build().toString();
-        String adminUser = Constants.MASTER_REALM_ADMIN_USER;
-        String adminPassword = System.getenv().getOrDefault(IdentityProvider.OR_ADMIN_PASSWORD,
-                IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT);
-
-        // Get the keycloak instance
-        try (Keycloak keycloak = Keycloak.getInstance(
-                keycloakUrl,
-                Constants.MASTER_REALM,
-                adminUser,
-                adminPassword,
-                KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID)) {
-
-            // Get all available realms
-            List<String> realmNames = keycloak.realms().findAll().stream()
-                    .map(RealmRepresentation::getRealm)
-                    .toList();
-
-            // For every realm, check if the openremote client has the write:services and
-            // read:services roles added
-            for (String realmName : realmNames) {
-                RealmResource realm = keycloak.realm(realmName);
-
-                List<ClientRepresentation> clients = realm.clients().findByClientId(Constants.KEYCLOAK_CLIENT_ID);
-
-                if (clients.isEmpty()) {
-                    LOG.warning("Client '" + Constants.KEYCLOAK_CLIENT_ID + "' not found in realm " + realmName
-                            + ", skipping role creation.");
-                    continue; // Skip realms without the openremote client
-                }
-                ClientResource clientResource = realm.clients().get(clients.get(0).getId());
-                RolesResource clientRoles = clientResource.roles();
-                createRoleIfNotExists(clientRoles, "write:services", "Write service data");
-                createRoleIfNotExists(clientRoles, "read:services", "View services");
-            }
-        }
+    protected List<ClientRole> getReadRoles() {
+        return List.of(ClientRole.READ_SERVICES);
     }
 
-    // Create the role if it doesn't exist by handling the NotFoundException
-    private void createRoleIfNotExists(RolesResource roles, String roleName, String description) {
-        try {
-            roles.get(roleName).toRepresentation();
-        } catch (NotFoundException e) {
-            roles.create(new RoleRepresentation(roleName, description, false));
-        }
-    }
-
-    // Since its a code migration, no DB transaction is needed
     @Override
-    public boolean canExecuteInTransaction() {
-        return false;
+    protected List<ClientRole> getWriteRoles() {
+        return List.of(ClientRole.WRITE_SERVICES);
     }
 }

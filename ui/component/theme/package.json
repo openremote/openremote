@@ -1,6 +1,6 @@
 {
   "name": "@openremote/theme",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "CSS themes for OpenRemote components",
   "main": "src/index.js",
   "types": "src/index.d.ts",
@@ -19,7 +19,7 @@
   "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@vaadin/vaadin-lumo-styles": "~25.1.4",
+    "@vaadin/vaadin-lumo-styles": "~25.2.4",
     "inter-ui": "^4.1.1"
   },
   "devDependencies": {

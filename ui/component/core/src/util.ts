@@ -286,6 +286,10 @@ export function objectsEqual(obj1?: any, obj2?: any, deep = true): boolean {
     }
 
     if (deep) {
+        // index-based comparison for arrays; the key-based check below is quadratic there
+        if (Array.isArray(obj1)) {
+            return obj1.every((item, i) => objectsEqual(item, obj2[i]));
+        }
         // recursive object equality check
         const p = Object.keys(obj1);
         return Object.keys(obj2).every((i) => {
