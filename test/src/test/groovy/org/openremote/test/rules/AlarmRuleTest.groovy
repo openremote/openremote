@@ -178,8 +178,13 @@ Value: 6000
         alarm.assigneeId == assigneeId
 
         and: "the asset is linked to the alarm"
-        def assetLinks = alarmService.getAssetLinks(alarm.id, managerTestSetup.realmBuildingName)
-        assetLinks.size() == 1
+        def assetLinks = null
+        conditions.eventually {
+            // The link is stored in its own transaction after the alarm, so it can still be missing once the alarm is
+            // readable
+            assetLinks = alarmService.getAssetLinks(alarm.id, managerTestSetup.realmBuildingName)
+            assert assetLinks.size() == 1
+        }
         def assetLink = assetLinks.get(0)
         assetLink.id.alarmId == alarm.id
         assetLink.id.realm == managerTestSetup.realmBuildingName
