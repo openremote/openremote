@@ -17,66 +17,53 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-import { ct, expect, type Page } from "@openremote/test";
-import { CoordinatesControl } from "@openremote/or-map/controls/coordinates";
-import type { Map as MapGL } from "maplibre-gl";
+import { ct, expect, type SharedComponentTestFixtures } from "@openremote/test";
+import { CoordinatesControlFixture } from "./fixtures/coordinates-control.js";
 
-type ImportRef = {
-    __pw_type: "importRef";
-    id: string;
-    property?: string;
-};
-
-type ImportRegistry = {
-    resolveImportRef(importRef: ImportRef): Promise<unknown>;
-};
-
-async function commitCoordinates(page: Page, value: string, event: "change" | "Enter", readonly = false) {
-    return page.evaluate(async ({controlImport, value, event, readonly}) => {
-        const registry = (window as typeof window & {__pwRegistry: ImportRegistry}).__pwRegistry;
-        const Control = await registry.resolveImportRef(controlImport) as typeof CoordinatesControl;
-
-        let result: {lng: number, lat: number} | null | undefined;
-        const control = new Control(readonly, (lngLat) => {
-            result = lngLat ? {lng: lngLat.lng, lat: lngLat.lat} : null;
-        });
-        const container = control.onAdd(undefined as unknown as MapGL);
-        document.body.appendChild(container);
-        const input = container.querySelector("or-vaadin-text-field") as HTMLElement & {value: string};
-        input.value = value;
-
-        if (event === "change") {
-            input.dispatchEvent(new Event("change", {bubbles: true}));
-        } else {
-            input.dispatchEvent(new KeyboardEvent("keyup", {code: "Enter", bubbles: true}));
-        }
-
-        control.onRemove();
-        return result;
-    }, {
-        controlImport: CoordinatesControl as unknown as ImportRef,
-        value,
-        event,
-        readonly
-    });
+type Mount = SharedComponentTestFixtures["mount"];
+async function mountCoordinatesControl(mount: Mount, value: string, event: "change" | "Enter", readonly = false) {
+    const fixture = await mount(CoordinatesControlFixture);
+    return fixture.evaluate((element, args) => (element as HTMLElement & {
+        commit(value: string, event: "change" | "Enter", readonly: boolean): {lng: number, lat: number} | null | undefined;
+    }).commit(args.value, args.event, args.readonly), {value, event, readonly});
 }
 
-ct("Should commit valid coordinates on change", async ({page}) => {
-    expect(await commitCoordinates(page, "4.89, 52.37", "change")).toEqual({lng: 4.89, lat: 52.37});
+ct("should commit valid coordinates on change", async ({mount}) => {
+    expect(await mountCoordinatesControl(mount, "4.89, 52.37", "change")).toEqual({lng: 4.89, lat: 52.37});
 });
 
-ct("Should commit valid coordinates on Enter", async ({page}) => {
-    expect(await commitCoordinates(page, "4.89, 52.37", "Enter")).toEqual({lng: 4.89, lat: 52.37});
+ct("should commit valid coordinates on Enter", async ({mount}) => {
+    expect(await mountCoordinatesControl(mount, "4.89, 52.37", "Enter")).toEqual({lng: 4.89, lat: 52.37});
 });
 
-ct("Should clear coordinates on change", async ({page}) => {
-    expect(await commitCoordinates(page, "", "change")).toBeNull();
+ct("should commit labeled coordinates", async ({mount}) => {
+    expect(await mountCoordinatesControl(mount, "Lat: 52.37, Lng: 4.89", "change")).toEqual({lng: 4.89, lat: 52.37});
 });
 
-ct("Should not commit invalid coordinates", async ({page}) => {
-    expect(await commitCoordinates(page, "not coordinates", "change")).toBeUndefined();
+ct("should accept the lower longitude boundary", async ({mount}) => {
+    expect(await mountCoordinatesControl(mount, "-180, 52.37", "change")).toEqual({lng: -180, lat: 52.37});
 });
 
-ct("Should not commit readonly or disabled coordinates", async ({page}) => {
-    expect(await commitCoordinates(page, "4.89, 52.37", "change", true)).toBeUndefined();
+ct("should accept the upper longitude boundary", async ({mount}) => {
+    expect(await mountCoordinatesControl(mount, "180, 52.37", "change")).toEqual({lng: 180, lat: 52.37});
+});
+
+ct("should clear coordinates on change", async ({mount}) => {
+    expect(await mountCoordinatesControl(mount, "  ", "change")).toBeNull();
+});
+
+ct("should not commit invalid coordinates", async ({mount}) => {
+    expect(await mountCoordinatesControl(mount, "not coordinates", "change")).toBeUndefined();
+});
+
+ct("should not commit longitude below -180", async ({mount}) => {
+    expect(await mountCoordinatesControl(mount, "-180.1, 52.37", "change")).toBeUndefined();
+});
+
+ct("should not commit longitude above 180", async ({mount}) => {
+    expect(await mountCoordinatesControl(mount, "180.1, 52.37", "change")).toBeUndefined();
+});
+
+ct("should not commit readonly coordinates", async ({mount}) => {
+    expect(await mountCoordinatesControl(mount, "4.89, 52.37", "change", true)).toBeUndefined();
 });

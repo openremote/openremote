@@ -128,7 +128,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
     const compact = !!(options && options.compact);
     const centerControl = new OrMapCenterControl();
 
-    const valueChangeHandler = (value: LngLatLike | undefined) => {
+    const valueChangeHandler = (value: LngLatLike | null | undefined) => {
         if (!valueChangeNotifier) {
             return;
         }

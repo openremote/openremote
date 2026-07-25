@@ -22,34 +22,35 @@ import { OrMapBaseControl } from "./base";
 import "@openremote/or-vaadin-components/or-vaadin-text-field";
 import "@openremote/or-icon";
 
-export const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(-?\\d+\\.?\\d*)[ ]*$";
+const CoordinateNumberPattern = "-?\\d+\\.?\\d*";
+export const CoordinatesRegexPattern = `^[ ]*(?:Lat:[ ]*(${CoordinateNumberPattern})[, ]+Lng:[ ]*(${CoordinateNumberPattern})|(${CoordinateNumberPattern})[, ]+(${CoordinateNumberPattern}))[ ]*$`;
 
-export function commitCoordinatesInputValue(e: Event, valueChangedHandler: (value: LngLat | undefined) => void) {
+export function commitCoordinatesInputValue(e: Event, valueChangedHandler: (value: LngLat | null) => void) {
     const input = e.target as HTMLInputElement;
     if (input.readOnly || input.disabled || input.hasAttribute("readonly") || input.hasAttribute("disabled")) {
         return;
     }
 
-    if (!input.value) {
-        valueChangedHandler(undefined);
+    if (!input.value.trim()) {
+        valueChangedHandler(null);
         return;
     }
 
-    const lngLatArr = input.value.split(/[ ,]/).filter(v => !!v);
-    if (lngLatArr.length !== 2) {
+    const match = new RegExp(CoordinatesRegexPattern).exec(input.value);
+    if (!match) {
         return;
     }
 
-    const lng = Number(lngLatArr[0]);
-    const lat = Number(lngLatArr[1]);
-    if (!Number.isFinite(lng) || !Number.isFinite(lat) || lat < -90 || lat > 90) {
+    const lng = Number(match[2] ?? match[3]);
+    const lat = Number(match[1] ?? match[4]);
+    if (!Number.isFinite(lng) || !Number.isFinite(lat) || lng < -180 || lng > 180 || lat < -90 || lat > 90) {
         return;
     }
 
     valueChangedHandler(new LngLat(lng, lat));
 }
 
-export function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | undefined) => void) {
+export function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | null) => void) {
     return (e: KeyboardEvent) => {
         if (e.code === "Enter" || e.code === "NumpadEnter") {
             commitCoordinatesInputValue(e, valueChangedHandler);
@@ -61,9 +62,9 @@ export class CoordinatesControl extends OrMapBaseControl {
     protected input?: HTMLElement;
     protected _readonly = false;
     protected _value: any;
-    protected _valueChangedHandler: (value: LngLat | undefined) => void;
+    protected _valueChangedHandler: (value: LngLat | null) => void;
 
-    constructor(disabled = false, valueChangedHandler: (value: LngLat | undefined) => void) {
+    constructor(disabled = false, valueChangedHandler: (value: LngLat | null) => void) {
         super();
         this._readonly = disabled;
         this._valueChangedHandler = valueChangedHandler;
