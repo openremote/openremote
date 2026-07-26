@@ -1,5 +1,6 @@
 package org.openremote.test.mqtt
 
+import com.google.common.cache.CacheBuilder
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
@@ -32,6 +33,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 
@@ -532,6 +534,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
 
         and: "the new client gets abruptly disconnected"
+        widenDisconnectedConnectionWindow(mqttBrokerService)
         def existingConnection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
 //        ((NioSocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).config().setOption(ChannelOption.SO_LINGER, 0I)
         ((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)newClient.client).clientConfig).delegate).connectionConfig.get()).channel).close()
@@ -864,5 +867,16 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         if (newClient != null) {
             newClient.disconnect()
         }
+    }
+
+    /**
+     * A last will publish is only accepted while the broker can still resolve the closed connection, which it keeps for
+     * 3s, so a publish consumer that is held up for longer drops the will and no amount of polling recovers it.
+     */
+    private static void widenDisconnectedConnectionWindow(MQTTBrokerService mqttBrokerService) {
+        mqttBrokerService.@disconnectedConnectionCache = CacheBuilder.newBuilder()
+                .maximumSize(10000)
+                .expireAfterWrite(Duration.ofSeconds(60))
+                .build()
     }
 }
