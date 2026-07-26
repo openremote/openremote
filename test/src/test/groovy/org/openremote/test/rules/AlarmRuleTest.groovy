@@ -27,8 +27,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.time.Instant
-
 class AlarmRuleTest extends Specification implements ManagerContainerTrait {
 
     @Shared
@@ -157,6 +155,9 @@ getLOG()
         }
 
         and: "the created alarm matches the rule action configuration"
+        // Timestamps are written from the container clock, which the test setup puts ahead of the wall clock, so the
+        // wall clock cannot be used as the upper bound
+        def alarmClockNow = getInstantTimeOf(container)
         def alarm = alarms.get(0)
         alarm.id >= 0L
         alarm.realm == managerTestSetup.realmBuildingName
@@ -171,8 +172,8 @@ Value: 6000
         alarm.status == Alarm.Status.OPEN
         alarm.source == Alarm.Source.REALM_RULESET
         alarm.sourceId == Long.toString(realmRuleset.id)
-        alarm.createdOn.isAfter(Instant.now().minusSeconds(30))
-        alarm.createdOn.isBefore(Instant.now())
+        alarm.createdOn.isAfter(alarmClockNow.minusSeconds(30))
+        !alarm.createdOn.isAfter(alarmClockNow)
         alarm.acknowledgedOn == null
         alarm.createdOn == alarm.lastModified
         alarm.assigneeId == assigneeId
@@ -185,12 +186,13 @@ Value: 6000
             assetLinks = alarmService.getAssetLinks(alarm.id, managerTestSetup.realmBuildingName)
             assert assetLinks.size() == 1
         }
+        def linkClockNow = getInstantTimeOf(container)
         def assetLink = assetLinks.get(0)
         assetLink.id.alarmId == alarm.id
         assetLink.id.realm == managerTestSetup.realmBuildingName
         assetLink.id.assetId == managerTestSetup.apartment2LivingroomId
-        assetLink.createdOn.isAfter(Instant.now().minusSeconds(30))
-        assetLink.createdOn.isBefore(Instant.now())
+        assetLink.createdOn.isAfter(linkClockNow.minusSeconds(30))
+        !assetLink.createdOn.isAfter(linkClockNow)
         assetLink.assetName == "Living Room 2"
         assetLink.parentAssetName == "Apartment 2"
 
