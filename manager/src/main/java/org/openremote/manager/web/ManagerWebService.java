@@ -21,6 +21,7 @@ package org.openremote.manager.web;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.core.util.Json;
+import io.swagger.v3.core.util.Yaml;
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -39,6 +40,8 @@ import org.openremote.model.Container;
 import org.openremote.model.util.Config;
 import org.openremote.model.util.TextUtil;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -143,47 +146,27 @@ public class ManagerWebService extends WebService {
     }
 
     protected Object getOpenApiResource() {
-        // Modify swagger object mapper to match ours
-        configureObjectMapper(Json.mapper());
-        Json.mapper().addMixIn(StringSchema.class, StringSchemaMixin.class);
-        Json.mapper().addMixIn(ServerVariable.class, ServerVariableMixin.class);
+        ManagerObjectMapperProcessor.configure(Json.mapper());
 
-        // Add swagger resource
-        OpenAPI oas = new OpenAPI()
-                .servers(List.of(new Server().url("/api/{realm}/").variables(new ServerVariables().addServerVariable("realm", new ServerVariable()._default("master")))))
-                .schemaRequirement("openid", new SecurityScheme().type(SecurityScheme.Type.OAUTH2).flows(
-                        new OAuthFlows() //
-                                .authorizationCode(
-                                        new OAuthFlow()
-                                                .authorizationUrl("/auth/realms/master/protocol/openid-connect/auth")
-                                                .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
-                                                .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
-                                                .scopes(new Scopes().addString("profile", "profile"))
-                                )
-                                .clientCredentials(
-                                        // for service users
-                                        new OAuthFlow()
-                                                .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
-                                                .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
-                                                .scopes(new Scopes().addString("profile", "profile"))
-                                )
-                )).security(List.of(new SecurityRequirement().addList("openid")));
-
-        Info info = new Info()
-                .title("OpenRemote Manager HTTP API")
-                .version("3.0.0")
-                .description("This is the documentation for the OpenRemote Manager HTTP API.  Please see the [documentation](https://docs.openremote.io) for more info.")
-                .contact(new Contact().email("info@openremote.io"))
-                .license(new License().name("AGPL 3.0").url("https://www.gnu.org/licenses/agpl-3.0.en.html"));
-
-        oas.info(info);
         SwaggerConfiguration oasConfig = new SwaggerConfiguration()
                 .resourcePackages(Set.of("org.openremote.model.*"))
-                .openAPI(oas)
+                .openAPI(loadOpenApiBase())
                 .defaultResponseCode("200");
+
         OpenApiResource openApiResource = new OpenApiResource();
         openApiResource.openApiConfiguration(oasConfig);
         return openApiResource;
+    }
+
+    private OpenAPI loadOpenApiBase() {
+        try (InputStream input = ManagerWebService.class.getResourceAsStream("/openapi-base.yaml")) {
+            if (input == null) {
+                throw new IllegalStateException("Cannot find /openapi-base.yaml");
+            }
+            return Yaml.mapper().readValue(input, OpenAPI.class);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load /openapi-base.yaml", e);
+        }
     }
 
     /**

@@ -1,0 +1,39 @@
+openapi: 3.0.1
+
+info:
+  title: OpenRemote Manager HTTP API
+  version: 3.0.0
+  description: >-
+    This is the documentation for the OpenRemote Manager HTTP API.
+    Please see the [documentation](https://docs.openremote.io) for more info.
+  contact:
+    email: info@openremote.io
+  license:
+    name: AGPL 3.0
+    url: https://www.gnu.org/licenses/agpl-3.0.en.html
+
+servers:
+  - url: /api/{realm}/
+    variables:
+      realm:
+        default: master
+
+security:
+  - openid: []
+
+components:
+  securitySchemes:
+    openid:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: /auth/realms/master/protocol/openid-connect/auth
+          tokenUrl: /auth/realms/master/protocol/openid-connect/token
+          refreshUrl: /auth/realms/master/protocol/openid-connect/token
+          scopes:
+            profile: profile
+        clientCredentials:
+          tokenUrl: /auth/realms/master/protocol/openid-connect/token
+          refreshUrl: /auth/realms/master/protocol/openid-connect/token
+          scopes:
+            profile: profile
