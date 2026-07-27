@@ -56,7 +56,7 @@ jobs:
           if [ "$CURRENT" != "$VERSION" ]; then
             sed -i "s/^openremote = .*/openremote = \"$VERSION\"/" extensions/gradle/libs.versions.toml
             git -C extensions add gradle/libs.versions.toml
-            git -C extensions -c user.name="github-actions[bot]" -c user.email="github-actions[bot]@users.noreply.github.com" commit -m "Update OpenRemote version to $VERSION [skip ci]"
+            git -C extensions -c user.name="openremote-ci-automation[bot]" -c user.email="309709051+openremote-ci-automation[bot]@users.noreply.github.com" commit -m "Update OpenRemote version to $VERSION [skip ci]"
             git -C extensions push
           else
             echo "Version unchanged, skipping commit."
