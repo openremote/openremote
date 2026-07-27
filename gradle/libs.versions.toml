@@ -199,4 +199,5 @@ axionRelease = { id = "pl.allegro.tech.build.axion-release", version.ref = "axio
 fileEncrypt = { id = "io.openremote.com.cherryperry.gradle-file-encrypt", version.ref = "fileEncrypt" }
 nexusPublish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublish" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
+swagger = { id = "io.swagger.core.v3.swagger-gradle-plugin", version.ref = "swagger" }
 testLogger = { id = "com.adarshr.test-logger", version.ref = "testLogger" }
