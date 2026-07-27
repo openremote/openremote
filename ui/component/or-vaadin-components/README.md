@@ -42,4 +42,4 @@ The group fields `or-vaadin-checkbox-group` and `or-vaadin-radio-group` should u
 [GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
 [npm-image]: https://img.shields.io/npm/v/@openremote/or-vaadin-components.svg
-[npm-url]: https://npmjs.org/package/@openremote/or-vaadin-components
+[npm-url]: https://www.npmjs.com/package/@openremote/or-vaadin-components
