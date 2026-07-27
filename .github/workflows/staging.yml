@@ -193,5 +193,5 @@ jobs:
       version: ${{ needs.detect-changes.outputs.version_with_qualifier }}
       is_release: ${{ needs.detect-changes.outputs.is_release }}
     secrets:
-      GH_EXTENSIONS_TOKEN: ${{ secrets._TEMP_GH_EXTENSIONS_TOKEN }}
-
+      CI_AUTOMATION_APP_CLIENT_ID: ${{ secrets._TEMP_CI_AUTOMATION_APP_CLIENT_ID }}
+      CI_AUTOMATION_APP_PRIVATE_KEY: ${{ secrets._TEMP_CI_AUTOMATION_APP_PRIVATE_KEY }}
