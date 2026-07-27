@@ -416,7 +416,6 @@ services:
       #KC_HOSTNAME_ADMIN: ${KC_HOSTNAME_ADMIN:-}
       #KC_HTTP_ENABLED: ${KC_HTTP_ENABLED:-true}
       #KC_PROXY_HEADERS: ${KC_PROXY_HEADERS:-xforwarded}
-      #KC_PROXY: ${KC_PROXY:-edge}
       # Configure main user credentials (only on first startup)
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
       # Custom startup options (see keycloak documentation)
