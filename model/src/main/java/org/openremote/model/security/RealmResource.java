@@ -20,8 +20,12 @@
 package org.openremote.model.security;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
+import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
 
 import jakarta.annotation.security.RolesAllowed;
@@ -29,6 +33,8 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.openremote.model.http.OpenApiDescriptions.EXAMPLE_REALM;
+import static org.openremote.model.http.OpenApiDescriptions.REALM;
 
 /**
  * Manage realms.
@@ -37,13 +43,17 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * <p>
  * TODO Relax permissions to allow regular users to maintain their own realm
  */
-@Tag(name = "Realm", description = "Operations on realms")
+@Tag(name = "Realm", description = "Discover accessible realms and administer identity-provider realms")
 @Path("realm")
 public interface RealmResource {
 
     @GET
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getAllRealms", summary = "Retrieve all realms")
+    @Operation(operationId = "getAllRealms", summary = "Retrieve all realms",
+        description = "Returns complete realm records from the identity provider. This operation is restricted to a super user.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.ServerError
     Realm[] getAll(@BeanParam RequestParams requestParams);
 
     /**
@@ -52,7 +62,10 @@ public interface RealmResource {
     @GET
     @Path("accessible")
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getAccessibleRealms", summary = "Retrieve accessible realms for the authenticated user")
+    @Operation(operationId = "getAccessibleRealms", summary = "Retrieve realms accessible to the caller",
+        description = "Returns only realm name and display name. Super users receive all realms; authenticated users receive their realm; anonymous callers receive the request realm.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.ServerError
     Realm[] getAccessible(@BeanParam RequestParams requestParams);
 
     /**
@@ -61,28 +74,54 @@ public interface RealmResource {
     @GET
     @Path("{name}")
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getRealm", summary = "Retrieve details about the currently authenticated and active realm")
-    Realm get(@BeanParam RequestParams requestParams, @PathParam("name") String realm);
+    @Operation(operationId = "getRealm", summary = "Retrieve an accessible realm",
+        description = "Returns complete details for a named active realm when it is accessible to the caller. Regular users cannot use this endpoint to inspect other realms.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Forbidden
+    @OpenApiResponses.NotFound
+    Realm get(@BeanParam RequestParams requestParams,
+              @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("name") String realm);
 
     @PUT
     @Path("{name}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    @Operation(operationId = "updateRealm", summary = "Update a realm")
-    void update(@BeanParam RequestParams requestParams, @PathParam("name") String realmName, @Valid Realm realm);
+    @Operation(operationId = "updateRealm", summary = "Update a realm",
+        description = "Updates a realm through the identity provider. Super-user access is required; the master realm cannot be renamed or disabled.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.Conflict
+    @ApiResponse(responseCode = "405", description = "The requested mutation is not allowed for the master realm")
+    void update(
+        @BeanParam RequestParams requestParams,
+        @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("name") String realmName,
+        @Valid @RequestBody(required = true, description = "Complete realm settings to apply; the path name identifies the existing realm.") Realm realm);
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    @Operation(operationId = "createRealm", summary = "Create a new realm")
-    void create(@BeanParam RequestParams requestParams, @Valid Realm realm);
+    @Operation(operationId = "createRealm", summary = "Create a new realm",
+        description = "Creates and configures a realm in the identity provider. This operation is restricted to a super user.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.Conflict
+    void create(@BeanParam RequestParams requestParams,
+                @Valid @RequestBody(required = true, description = "Realm name, display name, activation state, and optional identity-provider settings.") Realm realm);
 
     @DELETE
     @Path("{name}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    @Operation(operationId = "deleteRealm", summary = "Delete a realm")
-    void delete(@BeanParam RequestParams requestParams, @PathParam("name") String realm);
+    @Operation(operationId = "deleteRealm", summary = "Delete a realm",
+        description = "Permanently deletes a realm from the identity provider. The master realm cannot be deleted; related Manager data is not automatically removed.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.NotFound
+    @ApiResponse(responseCode = "405", description = "The master realm cannot be deleted")
+    void delete(@BeanParam RequestParams requestParams,
+                @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("name") String realm);
 }

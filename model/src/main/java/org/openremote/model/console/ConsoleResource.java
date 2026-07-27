@@ -20,9 +20,11 @@
 package org.openremote.model.console;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
 
 import jakarta.validation.Valid;
@@ -31,7 +33,7 @@ import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Console", description = "Operations on consoles")
+@Tag(name = "Console", description = "Register mobile and browser consoles as Console assets")
 @Path("console")
 public interface ConsoleResource {
 
@@ -52,6 +54,13 @@ public interface ConsoleResource {
     @Path("register")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "register", summary = "Create or update the registration for a console")
-    ConsoleRegistration register(@BeanParam RequestParams requestParams, @NotNull @Valid ConsoleRegistration consoleRegistration);
+    @Operation(operationId = "register", summary = "Create or update the registration for a console",
+        description = "Creates an anonymous console registration when id is absent, or updates an existing registration when id is present. Authenticated new registrations are linked to the caller; updates require that link. The returned registration contains the durable asset ID for later calls.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.Forbidden
+    @OpenApiResponses.Conflict
+    ConsoleRegistration register(@BeanParam RequestParams requestParams,
+                                 @RequestBody(required = true, description = "Console platform, version, display name, and notification-provider registrations. Omit id to create a registration; include the returned id to update it.")
+                                 @NotNull @Valid ConsoleRegistration consoleRegistration);
 }

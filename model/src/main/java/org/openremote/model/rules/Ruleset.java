@@ -22,6 +22,7 @@ package org.openremote.model.rules;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -50,6 +51,7 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
     @JsonSubTypes.Type(value = RealmRuleset.class, name = RealmRuleset.TYPE),
     @JsonSubTypes.Type(value = GlobalRuleset.class, name = GlobalRuleset.TYPE)
 })
+@Schema(description = "Executable ruleset. Its type discriminator selects global, realm, or asset scope.")
 public abstract class Ruleset {
 
     public static final String SHOW_ON_LIST = "showOnList";
@@ -68,44 +70,55 @@ public abstract class Ruleset {
     @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
     @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
+    @Schema(description = "Server-assigned numeric ruleset identifier.", accessMode = Schema.AccessMode.READ_ONLY, example = "27")
     protected Long id;
 
     @Version
     @Column(name = "VERSION", nullable = false)
+    @Schema(description = "Optimistic-lock version.", accessMode = Schema.AccessMode.READ_ONLY, example = "2")
     protected long version;
 
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
+    @Schema(description = "Server-assigned creation time.", accessMode = Schema.AccessMode.READ_ONLY)
     protected Instant createdOn = Instant.now();
 
     @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.UpdateTimestamp
+    @Schema(description = "Server-assigned last modification time.", accessMode = Schema.AccessMode.READ_ONLY)
     protected Instant lastModified;
 
     @NotNull(message = "{Ruleset.name.NotNull}")
     @Column(name = "NAME", nullable = false)
     @Size(min = 3, max = 255, message = "{Ruleset.name.Size}")
+    @Schema(description = "Human-readable ruleset name.", example = "High temperature alert")
     protected String name;
 
     @Column(name = "ENABLED", nullable = false)
+    @Schema(description = "Whether the ruleset should be deployed and evaluated.", example = "true")
     protected boolean enabled = true;
 
     @Column(name = "RULES", nullable = false)
+    @Schema(description = "Rules source encoded according to lang.")
     protected String rules;
 
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "RULES_LANG", nullable = false)
+    @Schema(description = "Rules source language. JAVASCRIPT is retained for legacy records but cannot be newly created.")
     protected Lang lang = Lang.GROOVY;
 
     @Column(name = "META")
     @JdbcTypeCode(SqlTypes.JSON)
+    @Schema(description = "Optional execution and presentation metadata.")
     protected Map<String, Object> meta;
 
     @Transient
+    @Schema(description = "Transient deployment status.", accessMode = Schema.AccessMode.READ_ONLY)
     protected RulesetStatus status;
 
     @Transient
+    @Schema(description = "Latest compilation or execution error, when present.", accessMode = Schema.AccessMode.READ_ONLY)
     protected String error;
 
     protected Ruleset() {

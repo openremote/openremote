@@ -21,10 +21,15 @@ package org.openremote.model.asset;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Request;
 import org.jboss.resteasy.annotations.cache.Cache;
+import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
@@ -35,12 +40,13 @@ import jakarta.ws.rs.core.Response;
 import java.util.Map;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.openremote.model.http.OpenApiDescriptions.EXAMPLE_ASSET_ID;
 
 /**
  * Resource for handling model requests and also providing server side validation of {@link Asset}s
  */
 // TODO: Implement generic Asset<?> validation for assets and agents
-@Tag(name = "Asset Model", description = "Operations on asset model resources")
+@Tag(name = "Asset Model", description = "Discover asset, attribute-value, and metadata types supported by this Manager or a gateway")
 @Path("model")
 public interface AssetModelResource {
 
@@ -53,8 +59,12 @@ public interface AssetModelResource {
     @GET
     @Path("assetInfos")
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getAssetInfos", summary = "Retrieve the asset type information of each available asset type")
-    AssetTypeInfo[] getAssetInfos(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @QueryParam("parentType") String parentType);
+    @Operation(operationId = "getAssetInfos", summary = "Retrieve the asset type information of each available asset type",
+        description = "Returns type metadata from this Manager by default. When parentId identifies an asset below a gateway, the gateway's model is used instead; parentType can provide type context for a new parent that does not yet exist.")
+    @OpenApiResponses.Ok
+    AssetTypeInfo[] getAssetInfos(@BeanParam RequestParams requestParams,
+                                   @Parameter(description = "Optional parent asset used to select the local or gateway model", example = EXAMPLE_ASSET_ID) @QueryParam("parentId") String parentId,
+                                   @Parameter(description = "Optional parent asset type, primarily for assets that have not been persisted yet", example = "GroupAsset") @QueryParam("parentType") String parentType);
 
     /**
      * Retrieve the specific {@link AssetTypeInfo} of the specified} {@link
@@ -66,8 +76,13 @@ public interface AssetModelResource {
     @GET
     @Path("assetInfo/{assetType}")
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getAssetInfo", summary = "Retrieve the asset type information of an asset type")
-    AssetTypeInfo getAssetInfo(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @PathParam("assetType") String assetType);
+    @Operation(operationId = "getAssetInfo", summary = "Retrieve the asset type information of an asset type",
+        description = "Returns metadata for one asset type from this Manager or, when parentId is below a gateway, from that gateway's model. An unknown or gateway-provided type that is not locally available returns no content.")
+    @OpenApiResponses.Ok
+    @ApiResponse(responseCode = "204", description = "No model information is available for the requested asset type")
+    AssetTypeInfo getAssetInfo(@BeanParam RequestParams requestParams,
+                               @Parameter(description = "Optional parent asset used to select the local or gateway model", example = EXAMPLE_ASSET_ID) @QueryParam("parentId") String parentId,
+                               @Parameter(description = "Asset type name", example = "ThingAsset", required = true) @PathParam("assetType") String assetType);
 
     /**
      * Retrieve the asset descriptors {@link AssetDescriptor} available in this system or from a {@link
@@ -78,8 +93,12 @@ public interface AssetModelResource {
     @GET
     @Path("assetDescriptors")
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getAssetDescriptors", summary = "Retrieve the available asset descriptors")
-    AssetDescriptor<?>[] getAssetDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @QueryParam("parentType") String parentType);
+    @Operation(operationId = "getAssetDescriptors", summary = "Retrieve the available asset descriptors",
+        description = "Returns the descriptors used to construct supported asset types, using a gateway model when the optional parent context resolves below a gateway.")
+    @OpenApiResponses.Ok
+    AssetDescriptor<?>[] getAssetDescriptors(@BeanParam RequestParams requestParams,
+                                              @Parameter(description = "Optional parent asset used to select the local or gateway model", example = EXAMPLE_ASSET_ID) @QueryParam("parentId") String parentId,
+                                              @Parameter(description = "Optional parent asset type, primarily for assets that have not been persisted yet", example = "GroupAsset") @QueryParam("parentType") String parentType);
 
     /**
      * Retrieve value descriptors {@link ValueDescriptor} available in this system or from a {@link
@@ -90,8 +109,11 @@ public interface AssetModelResource {
     @GET
     @Path("valueDescriptors")
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getValueDescriptors", summary = "Retrieve the available value descriptors")
-    Map<String, ValueDescriptor<?>> getValueDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+    @Operation(operationId = "getValueDescriptors", summary = "Retrieve the available value descriptors",
+        description = "Returns attribute value descriptors keyed by descriptor name, using a gateway model when parentId resolves below a gateway.")
+    @OpenApiResponses.Ok
+    Map<String, ValueDescriptor<?>> getValueDescriptors(@BeanParam RequestParams requestParams,
+                                                         @Parameter(description = "Optional parent asset used to select the local or gateway model", example = EXAMPLE_ASSET_ID) @QueryParam("parentId") String parentId);
 
     /**
      * Retrieve meta descriptors {@link MetaItemDescriptor} available in this system or from a {@link
@@ -102,8 +124,11 @@ public interface AssetModelResource {
     @GET
     @Path("metaItemDescriptors")
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors")
-    Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+    @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors",
+        description = "Returns attribute metadata descriptors keyed by descriptor name, using a gateway model when parentId resolves below a gateway.")
+    @OpenApiResponses.Ok
+    Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams,
+                                                               @Parameter(description = "Optional parent asset used to select the local or gateway model", example = EXAMPLE_ASSET_ID) @QueryParam("parentId") String parentId);
 
     /**
      * Retrieve the JSON Schema for a {@link ValueDescriptor} available in this system. A value descriptor schema is only meant to be retrieved
@@ -114,6 +139,15 @@ public interface AssetModelResource {
     @Path("getValueDescriptorSchema")
     @Produces(APPLICATION_JSON)
     @Cache(noCache = true)
-    @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the JSON Schema of the specified value descriptor")
-    Response getValueDescriptorSchema(@QueryParam("name") String name, @Context Request request);
+    @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the JSON Schema of the specified value descriptor",
+        description = "Returns the JSON Schema and a weak ETag for the named value descriptor. Send If-None-Match on later requests to receive 304 when the schema has not changed.")
+    @ApiResponse(responseCode = "200", description = "The current JSON Schema",
+        headers = @Header(name = "ETag", description = "Weak entity tag identifying this schema version", schema = @Schema(type = "string", example = "W/\"17af8b28\"")),
+        content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(type = "object")))
+    @ApiResponse(responseCode = "304", description = "The supplied ETag still identifies the current schema",
+        headers = @Header(name = "ETag", description = "Entity tag supplied by the client", schema = @Schema(type = "string")))
+    @OpenApiResponses.NotFound
+    Response getValueDescriptorSchema(
+        @Parameter(description = "Value descriptor name", example = "number", required = true) @QueryParam("name") String name,
+        @Context Request request);
 }

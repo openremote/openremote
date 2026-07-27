@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nonnull;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -55,6 +56,7 @@ import java.util.stream.Stream;
  */
 @JsonDeserialize(using = Attribute.AttributeDeserializer.class)
 @JsonSerialize(using = Attribute.AttributeSerializer.class)
+@Schema(description = "Named typed asset value. Attribute JSON includes name, type, value, optional Unix-millisecond timestamp, and optional metadata.")
 public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHolder {
 
     /**
@@ -199,8 +201,10 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     @JsonIgnore
     @Valid
+    @Schema(description = "Optional behavior and integration metadata keyed by meta-item name.")
     protected MetaMap meta;
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    @Schema(description = "Value timestamp in Unix milliseconds; zero means no explicit timestamp was supplied.", example = "1767225600000")
     protected long timestamp;
 
     Attribute() {

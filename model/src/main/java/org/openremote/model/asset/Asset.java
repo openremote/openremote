@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Table;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
@@ -232,6 +233,7 @@ import static jakarta.persistence.DiscriminatorType.STRING;
 @DynamicUpdate
 @TsIgnoreTypeParams
 @SuppressWarnings("unchecked")
+@Schema(description = "Polymorphic OpenRemote asset. The type discriminator selects a registered asset subtype; attributes are keyed by attribute name.")
 public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>, AssetInfo {
 
     private static final java.util.regex.Pattern ASSET_ID_PATTERN = java.util.regex.Pattern.compile(Constants.ASSET_ID_REGEXP);
@@ -287,45 +289,55 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Id @HibernateUniqueIdentifierTypeAssignable
     @Column(name = "ID", length = 22, columnDefinition = "char(22)")
     @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.id.Pattern}")
+    @Schema(description = "Stable 22-character asset identifier. Omit when creating an asset.", example = "7A6p4AnLTkKxJUCQAAABAA")
     protected String id;
 
     @Version
     @Min(value = 0L, message = "{Asset.version.Min}")
     @Column(name = "VERSION", nullable = false)
+    @Schema(description = "Optimistic-lock version. Omit when creating an asset and preserve the latest value when updating it.", example = "3")
     protected long version;
 
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
+    @Schema(description = "Server-assigned asset creation time.", accessMode = Schema.AccessMode.READ_ONLY, example = "2026-01-01T00:00:00Z")
     protected Instant createdOn;
 
     @NotBlank(message = "{Asset.name.NotBlank}")
     @Size(min = 1, max = 1023, message = "{Asset.name.Size}")
     @Column(name = "NAME", nullable = false, length = 1023)
+    @Schema(description = "Human-readable asset name.", example = "Boiler room sensor")
     protected String name;
 
     @Column(name = "ACCESS_PUBLIC_READ", nullable = false)
+    @Schema(description = "Allows anonymous callers to read this asset where an endpoint supports public access.", example = "false")
     protected boolean accessPublicRead;
 
     @Column(name = "PARENT_ID", length = 22, columnDefinition = "char(22)")
     @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.parentId.Pattern}")
+    @Schema(description = "Parent asset identifier. Omit for a root asset.", example = "1ZyG7BmsTQ2cGmbuaMsi0A")
     protected String parentId;
 
     @NotBlank(message = "{Asset.realm.NotBlank}")
     @Size(min = 1, max = 255, message = "{Asset.realm.Size}")
     @Column(name = "REALM", nullable = false, updatable = false)
+    @Schema(description = "Realm that owns the asset; immutable after creation.", example = "building")
     protected String realm;
 
     @Column(name = "TYPE", nullable = false, updatable = false, insertable = false)
+    @Schema(description = "Registered asset subtype discriminator.", example = "ThingAsset")
     protected String type = getClass().getSimpleName();
 
     @Column(name = "PATH", updatable = false, insertable = false, columnDefinition = LTreeType.TYPE)
     @Type(LTreeType.class)
     @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @Schema(description = "Ancestor identifiers from the root through the parent.", accessMode = Schema.AccessMode.READ_ONLY)
     protected String[] path;
 
     @Column(name = "ATTRIBUTES")
     @JdbcTypeCode(SqlTypes.JSON)
     @Valid
+    @Schema(description = "Attributes keyed by attribute name. Each entry contains type, value, timestamp, and optional metadata.")
     protected AttributeMap attributes;
 
     /**

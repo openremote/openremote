@@ -1,5 +1,6 @@
 package org.openremote.model.datapoint.query;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.DatapointInterval;
 
@@ -9,10 +10,30 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.HashMap;
 
+@Schema(description = "Aggregates numeric or boolean datapoints from the inclusive range into aligned time "
+        + "buckets and returns buckets in chronological order. Use this to summarize a series at a regular "
+        + "resolution. Numeric attributes support every formula; boolean attributes support every formula "
+        + "except `DIFFERENCE` and are aggregated as 1 for true and 0 for false.")
 public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
 
+    @Schema(description = "PostgreSQL interval literal that sets the bucket width. Include a positive amount "
+            + "and unit, for example `1 hour`, `5 minutes`, or `1 day`.",
+            example = "1 hour",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     public String interval;
+
+    @Schema(description = "When true, returns empty buckets across the requested range using time-bucket gap "
+            + "filling; their aggregate is generally null. When false, only buckets containing datapoints are "
+            + "returned. Defaults to false.",
+            example = "true")
     public boolean gapFill;
+
+    @Schema(description = "Aggregation applied per bucket: `MIN`, `AVG`, and `MAX` calculate the corresponding "
+            + "value; `DIFFERENCE` calculates the change between the last values of consecutive buckets; "
+            + "`COUNT` counts datapoints; `SUM` totals numeric values (or true values for booleans); `MODE` "
+            + "selects the most frequent value; and `MEDIAN` selects the middle value. `DIFFERENCE` is numeric "
+            + "only.",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     public Formula formula;
 
     public enum Formula {

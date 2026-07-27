@@ -20,14 +20,18 @@
 package org.openremote.model.datapoint;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.*;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
+import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.openremote.model.http.OpenApiDescriptions.*;
 
-@Tag(name = "Asset Predicted Datapoint", description = "Operations on asset predicted datapoints")
+@Tag(name = "Asset Predicted Datapoint", description = "Read and replace predicted future values for asset attributes")
 @Path("asset/predicted")
 public interface AssetPredictedDatapointResource {
     /**
@@ -41,18 +45,28 @@ public interface AssetPredictedDatapointResource {
     @Path("{assetId}/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getPredictedDatapoints", summary = "Retrieve the predicted datapoints of an asset attribute")
+    @Operation(operationId = "getPredictedDatapoints", summary = "Retrieve the predicted datapoints of an asset attribute",
+        description = "Queries predicted values for one attribute using the supplied time-range and aggregation criteria. Anonymous access requires public-read access on both asset and attribute.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.Forbidden
+    @OpenApiResponses.NotFound
     ValueDatapoint<?>[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
-                                               @PathParam("assetId") String assetId,
-                                               @PathParam("attributeName") String attributeName,
-                                               AssetDatapointQuery query);
+                                               @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId") String assetId,
+                                               @Parameter(description = ATTRIBUTE_NAME, example = EXAMPLE_ATTRIBUTE_NAME) @PathParam("attributeName") String attributeName,
+                                               @RequestBody(description = "Optional time range, ordering, limit, and aggregation strategy for predicted values.") AssetDatapointQuery query);
 
     @PUT
     @Path("{assetId}/{attributeName}")
     @Consumes(APPLICATION_JSON)
-    @Operation(operationId = "writePredictedDatapoints", summary = "Write the predicted datapoints of an asset attribute")
+    @Operation(operationId = "writePredictedDatapoints", summary = "Write the predicted datapoints of an asset attribute",
+        description = "Replaces or adds predicted values for one attribute. Anonymous access is allowed only when the asset and attribute are public-write; authenticated callers require attribute-write access.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.Forbidden
+    @OpenApiResponses.NotFound
     void writePredictedDatapoints(@BeanParam RequestParams requestParams,
-                                  @PathParam("assetId") String assetId,
-                                  @PathParam("attributeName") String attributeName,
-                                  ValueDatapoint<?>[] predictedDatapoints);
+                                  @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId") String assetId,
+                                  @Parameter(description = ATTRIBUTE_NAME, example = EXAMPLE_ATTRIBUTE_NAME) @PathParam("attributeName") String attributeName,
+                                  @RequestBody(required = true, description = "Timestamped predicted values to store for the attribute.") ValueDatapoint<?>[] predictedDatapoints);
 }

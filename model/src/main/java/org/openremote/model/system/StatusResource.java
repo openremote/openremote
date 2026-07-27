@@ -26,12 +26,13 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import org.openremote.model.Constants;
+import org.openremote.model.http.OpenApiResponses;
 
 import java.util.Map;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Status", description = "Operations on system status")
+@Tag(name = "Status", description = "Read Manager health and build information")
 @Path("")
 public interface StatusResource {
 
@@ -40,12 +41,17 @@ public interface StatusResource {
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    @Operation(operationId = "getHealthStatus", summary = "Retrieve the health status of the system")
+    @Operation(operationId = "getHealthStatus", summary = "Retrieve the health status of the system",
+        description = "Returns health data keyed by registered health-provider name. A null provider result is represented as JSON null.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
     Map<String, Object> getHealthStatus();
 
     @Path("info")
     @GET
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getInfo", summary = "Retrieve the system information")
+    @Operation(operationId = "getInfo", summary = "Retrieve the system information",
+        description = "Returns public bootstrap information, including the Manager version and identity-provider URL.")
+    @OpenApiResponses.Ok
     Map<String, Object> getInfo();
 }

@@ -21,9 +21,16 @@ package org.openremote.model.map;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import jakarta.ws.rs.core.Response;
+import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapConfig;
 
@@ -31,7 +38,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
-@Tag(name = "Map", description = "Operations on maps")
+@Tag(name = "Map", description = "Configure the Manager map and serve map styles, vector tiles, and custom MBTiles data")
 @Path("map")
 public interface MapResource {
 
@@ -42,8 +49,13 @@ public interface MapResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    @Operation(operationId = "saveSettings", summary = "Update map settings")
-    ObjectNode saveSettings(@BeanParam RequestParams requestParams, MapConfig mapConfig);
+    @Operation(operationId = "saveSettings", summary = "Update map settings",
+        description = "Stores the map configuration and returns the resulting public MapLibre settings.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    ObjectNode saveSettings(@BeanParam RequestParams requestParams,
+                            @RequestBody(required = true, description = "Map provider, style, bounds, and custom-map settings to persist.") MapConfig mapConfig);
 
     /**
      * Returns style used to initialise MapLibre GL
@@ -51,7 +63,9 @@ public interface MapResource {
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(operationId = "getSettings", summary = "Retrieve the style used for MapLibre GL")
+    @Operation(operationId = "getSettings", summary = "Retrieve the style used for MapLibre GL",
+        description = "Returns realm-aware public MapLibre settings with externally reachable URLs derived from proxy headers.")
+    @OpenApiResponses.Ok
     ObjectNode getSettings(@BeanParam RequestParams requestParams);
 
     /**
@@ -60,8 +74,17 @@ public interface MapResource {
     @GET
     @Produces("application/vnd.mapbox-vector-tile")
     @Path("tile/{zoom}/{column}/{row}")
-    @Operation(operationId = "getTile", summary = "Retrieve the vector tile data for Mapbox GL")
-    Response getTile(@PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
+    @Operation(operationId = "getTile", summary = "Retrieve vector tile data for MapLibre GL",
+        description = "Returns a pre-compressed Mapbox vector tile for the requested zoom, column, and row coordinates.")
+    @ApiResponse(responseCode = "200", description = "Gzip-compressed vector tile",
+        headers = @Header(name = "Content-Encoding", description = "Indicates that the tile bytes are already compressed", schema = @Schema(type = "string", allowableValues = "gzip")),
+        content = @Content(mediaType = "application/vnd.mapbox-vector-tile", schema = @Schema(type = "string", format = "binary")))
+    @ApiResponse(responseCode = "204", description = "No tile exists at the requested coordinates")
+    @OpenApiResponses.BadRequest
+    Response getTile(
+        @Parameter(description = "Web Mercator zoom level.", example = "14") @PathParam("zoom") int zoom,
+        @Parameter(description = "Web Mercator tile X coordinate.", example = "8392") @PathParam("column") int column,
+        @Parameter(description = "Web Mercator tile Y coordinate.", example = "5469") @PathParam("row") int row);
 
     /**
      * Saves mbtiles file
@@ -71,8 +94,17 @@ public interface MapResource {
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    @Operation(operationId = "uploadMap", summary = "Saves mbtiles file")
-    ObjectNode uploadMap(@BeanParam RequestParams requestParams, @QueryParam("filename") String filename);
+    @Operation(operationId = "uploadMap", summary = "Upload a custom MBTiles map",
+        description = "Stores the raw request body as the realm's custom MBTiles database and returns the resulting public map settings.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.PayloadTooLarge
+    @OpenApiResponses.ServerError
+    @RequestBody(required = true, description = "Raw MBTiles SQLite database bytes.",
+        content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = "string", format = "binary")))
+    ObjectNode uploadMap(@BeanParam RequestParams requestParams,
+                         @Parameter(description = "Original MBTiles filename used for validation and storage.", example = "building.mbtiles", required = true) @QueryParam("filename") String filename);
 
     /**
      * Retrieve if the map is custom and custom map limit
@@ -81,7 +113,11 @@ public interface MapResource {
     @Path("getCustomMapInfo")
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    @Operation(operationId = "getCustomMapInfo", summary = "Retrieve if the map is custom and custom map limit")
+    @Operation(operationId = "getCustomMapInfo", summary = "Retrieve custom-map status and upload limit",
+        description = "Reports whether custom MBTiles data is installed and the maximum accepted upload size.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.ServerError
     ObjectNode getCustomMapInfo();
 
     /**
@@ -91,6 +127,10 @@ public interface MapResource {
     @Path("deleteMap")
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    @Operation(operationId = "deleteMap", summary = "Removes mbtiles file")
+    @Operation(operationId = "deleteMap", summary = "Remove the custom MBTiles map",
+        description = "Deletes the installed custom MBTiles database and returns the fallback public map settings.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
     ObjectNode deleteMap(@BeanParam RequestParams requestParams);
 }

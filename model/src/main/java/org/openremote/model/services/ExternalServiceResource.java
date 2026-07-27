@@ -20,12 +20,15 @@
 package org.openremote.model.services;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.openremote.model.Constants;
+import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
 
 import jakarta.annotation.security.RolesAllowed;
@@ -35,6 +38,8 @@ import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.openremote.model.http.OpenApiDescriptions.EXAMPLE_REALM;
+import static org.openremote.model.http.OpenApiDescriptions.REALM;
 
 /**
  * REST resource for managing external services.
@@ -45,8 +50,9 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * Registered services are made available via the OpenRemote manager's Web UI
  * and API, enabling centralized service management and monitoring.
  */
-@Tag(name = "Services", description = "Registration and management of external services")
+@Tag(name = "Services", description = "Register, discover, renew, and deregister leased external-service instances")
 @Path("service")
+@OpenApiResponses.Authenticated
 public interface ExternalServiceResource {
 
         /**
@@ -64,13 +70,15 @@ public interface ExternalServiceResource {
         @Consumes(APPLICATION_JSON)
         @Produces(APPLICATION_JSON)
         @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
-        @Operation(operationId = "registerService", summary = "Register an external service with the OpenRemote manager", responses = {
+        @Operation(operationId = "registerService", summary = "Register an external service with the OpenRemote Manager",
+            description = "Registers a realm-scoped service instance for the request realm. The caller must be a service account; the returned object contains the assigned instance ID and initial lease state.", responses = {
                         @ApiResponse(responseCode = "200", description = "Service registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExternalService.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid external service object"),
                         @ApiResponse(responseCode = "409", description = "ExternalService instance already registered"),
         })
         ExternalService registerService(@BeanParam RequestParams requestParams,
-                        @NotNull @Valid ExternalService service);
+                        @NotNull @Valid @RequestBody(required = true,
+                            description = "Realm-scoped service metadata and lease settings; instanceId is assigned by the Manager.") ExternalService service);
 
         /**
          * Register a new global external service with the OpenRemote
@@ -87,13 +95,15 @@ public interface ExternalServiceResource {
         @Consumes(APPLICATION_JSON)
         @Produces(APPLICATION_JSON)
         @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
-        @Operation(operationId = "registerGlobalService", summary = "Register a global external service with the OpenRemote manager", responses = {
+        @Operation(operationId = "registerGlobalService", summary = "Register a global external service with the OpenRemote Manager",
+            description = "Registers a service visible in every realm. The caller must be a super-user service account and the request must use the master realm.", responses = {
                         @ApiResponse(responseCode = "200", description = "Service registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExternalService.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid external service object"),
                         @ApiResponse(responseCode = "409", description = "ExternalService instance already registered"),
         })
         ExternalService registerGlobalService(@BeanParam RequestParams requestParams,
-                        @NotNull @Valid ExternalService service);
+                        @NotNull @Valid @RequestBody(required = true,
+                            description = "Globally visible service metadata and lease settings; instanceId is assigned by the Manager.") ExternalService service);
 
         /**
          * Retrieve all registered external services for a specific
@@ -105,10 +115,13 @@ public interface ExternalServiceResource {
         @GET
         @Produces(APPLICATION_JSON)
         @RolesAllowed({ Constants.READ_SERVICES_ROLE })
-        @Operation(operationId = "getServices", summary = "List all registered external services for the given realm within the OpenRemote manager", responses = {
+        @Operation(operationId = "getServices", summary = "List registered external services for a realm",
+            description = "Returns all active realm-scoped service registrations for an active realm accessible to the caller.", responses = {
                         @ApiResponse(responseCode = "200", description = "List of registered external services", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExternalService[].class))),
         })
-        ExternalService[] getServices(@BeanParam RequestParams requestParams, @QueryParam("realm") @NotNull String realm);
+        @OpenApiResponses.BadRequest
+        ExternalService[] getServices(@BeanParam RequestParams requestParams,
+                        @Parameter(description = REALM, example = EXAMPLE_REALM, required = true) @QueryParam("realm") @NotNull String realm);
 
         /**
          * Retrieve a specific external service by its serviceId and
@@ -122,13 +135,15 @@ public interface ExternalServiceResource {
         @Path("{serviceId}/{instanceId}")
         @Produces(APPLICATION_JSON)
         @RolesAllowed({ Constants.READ_SERVICES_ROLE })
-        @Operation(operationId = "getService", summary = "Retrieve a specific external service by its serviceId and instanceId", responses = {
+        @Operation(operationId = "getService", summary = "Retrieve an external service instance",
+            description = "Returns one registered instance by stable service ID and numeric instance ID, after verifying access to the service's realm.", responses = {
                         @ApiResponse(responseCode = "200", description = "ExternalService retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExternalService.class))),
                         @ApiResponse(responseCode = "404", description = "ExternalService not found"),
         })
+        @OpenApiResponses.BadRequest
         ExternalService getService(@BeanParam RequestParams requestParams,
-                        @PathParam("serviceId") @NotNull @Size(min = 1) String serviceId,
-                        @PathParam("instanceId") int instanceId);
+                        @Parameter(description = "Stable service type identifier chosen by the service.", example = "weather") @PathParam("serviceId") @NotNull @Size(min = 1) String serviceId,
+                        @Parameter(description = "Numeric instance identifier assigned during registration.", example = "1") @PathParam("instanceId") int instanceId);
 
         /**
          * Retrieve all external services that are globally registered
@@ -139,7 +154,8 @@ public interface ExternalServiceResource {
         @Path("global")
         @Produces(APPLICATION_JSON)
         @RolesAllowed({ Constants.READ_SERVICES_ROLE })
-        @Operation(operationId = "getGlobalServices", summary = "List all registered external services that are globally accessible within the OpenRemote manager", responses = {
+        @Operation(operationId = "getGlobalServices", summary = "List globally available external services",
+            description = "Returns active registrations marked as globally available across realms.", responses = {
                         @ApiResponse(responseCode = "200", description = "List of registered external services", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExternalService[].class))),
         })
         ExternalService[] getGlobalServices(@BeanParam RequestParams requestParams);
@@ -157,13 +173,15 @@ public interface ExternalServiceResource {
         @PUT
         @Path("{serviceId}/{instanceId}")
         @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
-        @Operation(operationId = "heartbeat", summary = "Update the active registration lease for the specified external service", responses = {
+        @Operation(operationId = "heartbeat", summary = "Renew an external service registration lease",
+            description = "Extends the lease of one service instance. The caller must be the service account that registered it; global-service heartbeats additionally require a super user.", responses = {
                         @ApiResponse(responseCode = "204", description = "Heartbeat sent successfully"),
                         @ApiResponse(responseCode = "404", description = "Service instance not found"),
         })
+        @OpenApiResponses.BadRequest
         void heartbeat(@BeanParam RequestParams requestParams,
-                        @PathParam("serviceId") @NotNull @Size(min = 1) String serviceId,
-                        @PathParam("instanceId") int instanceId);
+                        @Parameter(description = "Stable service type identifier chosen by the service.", example = "weather") @PathParam("serviceId") @NotNull @Size(min = 1) String serviceId,
+                        @Parameter(description = "Numeric instance identifier assigned during registration.", example = "1") @PathParam("instanceId") int instanceId);
 
         /**
          * Deregister an external service from the registry.
@@ -178,11 +196,13 @@ public interface ExternalServiceResource {
         @DELETE
         @Path("{serviceId}/{instanceId}")
         @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
-        @Operation(operationId = "deregisterService", summary = "Deregister an external service", responses = {
+        @Operation(operationId = "deregisterService", summary = "Deregister an external service",
+            description = "Removes an active service registration. The caller must be the service account that registered it; global-service removal additionally requires a super user.", responses = {
                         @ApiResponse(responseCode = "204", description = "Service deregistered successfully"),
                         @ApiResponse(responseCode = "404", description = "Service instance not found"),
         })
-        void deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId,
-                        @PathParam("instanceId") int instanceId);
+        void deregisterService(@BeanParam RequestParams requestParams,
+                        @Parameter(description = "Stable service type identifier chosen by the service.", example = "weather") @PathParam("serviceId") String serviceId,
+                        @Parameter(description = "Numeric instance identifier assigned during registration.", example = "1") @PathParam("instanceId") int instanceId);
 
 }

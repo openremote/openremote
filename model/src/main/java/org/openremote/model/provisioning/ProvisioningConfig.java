@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -43,6 +44,7 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 @JsonSubTypes(
     @JsonSubTypes.Type(name = "x509", value = X509ProvisioningConfig.class)
 )
+@Schema(description = "Polymorphic device-provisioning configuration. The type discriminator selects the provisioning mechanism.")
 public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> {
 
     public static final String DISABLED_PROPERTY_NAME = "disabled";
@@ -53,6 +55,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     @Min(1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
     @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
+    @Schema(description = "Server-assigned numeric configuration identifier.", accessMode = Schema.AccessMode.READ_ONLY, example = "12")
     protected Long id;
 
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
@@ -65,27 +68,34 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     @NotNull
     @Column(name = "NAME", nullable = false)
     @Size(min = 1, max = 255, message = "{ProvisioningConfig.name.Size}")
+    @Schema(description = "Human-readable configuration name.", example = "Factory sensors")
     protected String name;
 
     @Column(name = "TYPE", nullable = false, updatable = false, insertable = false, length = 100, columnDefinition = "char(100)")
     @Size(min = 3, max = 100, message = "{ProvisioningConfig.type.Size}")
     @JsonDeserialize
+    @Schema(description = "Provisioning mechanism discriminator.", example = "x509")
     protected String type;
 
     @Column(name = "REALM", nullable = false, updatable = false)
+    @Schema(description = "Realm in which devices and users are provisioned.", example = "building")
     protected String realm;
 
     @Column(name = "ASSET_TEMPLATE", columnDefinition = "text")
+    @Schema(description = "Optional asset JSON template applied to newly provisioned devices.")
     protected String assetTemplate;
 
     @Column(name = "RESTRICTED_USER", nullable = false)
+    @Schema(description = "Create the provisioned user with restricted-user access.", example = "true")
     protected boolean restrictedUser;
 
     @Column(name = "ROLES")
     @Enumerated(EnumType.STRING)
+    @Schema(description = "Client roles granted to the provisioned user.")
     protected ClientRole[] userRoles;
 
     @Column(name = DISABLED_PROPERTY_NAME, nullable = false)
+    @Schema(description = "Prevent new provisioning while retaining the configuration.", example = "false")
     protected boolean disabled = false;
 
     protected ProvisioningConfig() {}
