@@ -29,7 +29,6 @@ import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS
 
 class ApplyPredictedDataPointsServiceTest extends Specification implements ManagerContainerTrait {
 
-    ScheduledExecutorService executor = Mock(ScheduledExecutorService)
     // Delay and future of the last schedule as a single value, so a delay can never be paired with a stale future
     volatile Map<String, ?> scheduled
     ApplyPredictedDataPointsService mockedApplyService
@@ -37,13 +36,13 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
 
     def cleanup() {
         if (mockedApplyService != null) {
-            mockedApplyService.scheduledFuture?.cancel(true)
-            mockedApplyService.scheduledFuture = null
             synchronized (mockedApplyService.scheduleLock) {
+                mockedApplyService.scheduledFuture?.cancel(true)
+                mockedApplyService.scheduledFuture = null
                 mockedApplyService.scheduledEntries.clear()
                 mockedApplyService.scheduleQueue.clear()
+                mockedApplyService.scheduledExecutorService = originalExecutor
             }
-            mockedApplyService.scheduledExecutorService = originalExecutor
             mockedApplyService = null
         }
     }
@@ -731,7 +730,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
     private void setupScheduler(ApplyPredictedDataPointsService applyService) {
         mockedApplyService = applyService
         originalExecutor = applyService.scheduledExecutorService
-        executor = Mock(ScheduledExecutorService)
+        def executor = Mock(ScheduledExecutorService)
         scheduled = null
 
         executor.schedule(_ as Runnable, _ as Long, _ as TimeUnit) >> { args ->
@@ -745,9 +744,11 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
             return scheduledFuture
         }
 
-        applyService.scheduledFuture?.cancel(true)
-        applyService.scheduledFuture = null
-        applyService.scheduledExecutorService = executor
+        synchronized (applyService.scheduleLock) {
+            applyService.scheduledFuture?.cancel(true)
+            applyService.scheduledFuture = null
+            applyService.scheduledExecutorService = executor
+        }
     }
 
     /**
