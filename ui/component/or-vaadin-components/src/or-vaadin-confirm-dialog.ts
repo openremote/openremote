@@ -53,6 +53,7 @@ export function showConfirmDialog(host: Node, dialog: TemplateResult) {
     } else {
         // As no or-vaadin-confirm-dialog is present, we can remove the HTMLElement
         container.remove();
+        return;
     }
     host.appendChild(container);
 }
@@ -60,7 +61,7 @@ export function showConfirmDialog(host: Node, dialog: TemplateResult) {
 /**
  * Helper function for simplifying the generation of `<or-vaadin-confirm-dialog>` content.
  * Instead of using declarative HTML, this function provides an easy alternative with automatically translated keys.
- * Example: `getOkCancelDialogContent("areYouSure", "deleteWarning", "remove", "cancel")`
+ * Example: `getConfirmDialogContent("areYouSure", "deleteWarning", "remove", "cancel")`
  *
  * @param theme - Optional theme to use for the dialog and its buttons (for example 'error').
  * @param header - Dialog header that is either a translation key, or a {@link TemplateResult}
