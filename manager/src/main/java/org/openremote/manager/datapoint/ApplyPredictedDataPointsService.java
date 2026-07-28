@@ -96,11 +96,11 @@ public class ApplyPredictedDataPointsService implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
-        if (scheduledFuture != null) {
-            scheduledFuture.cancel(true);
-            scheduledFuture = null;
-        }
         synchronized (scheduleLock) {
+            if (scheduledFuture != null) {
+                scheduledFuture.cancel(true);
+                scheduledFuture = null;
+            }
             scheduleQueue.clear();
             scheduledEntries.clear();
         }
@@ -116,9 +116,10 @@ public class ApplyPredictedDataPointsService implements ContainerService {
             return;
         }
 
+        // Events are delivered concurrently so their meta can be stale; it is only trusted for attributes that are not
+        // scheduled, otherwise the stored attribute is checked
         MetaMap meta = event.getMeta();
-        if (meta != null && !hasRequiredMeta(meta)) {
-            removeScheduledEntry(event.getRef());
+        if (meta != null && !hasRequiredMeta(meta) && !isScheduled(event.getRef())) {
             return;
         }
 
@@ -150,22 +151,18 @@ public class ApplyPredictedDataPointsService implements ContainerService {
      * Based on the next predicted data point to be applied, schedule the next execution of our processing.
      */
     protected void scheduleNext() {
-        long delayMillis = -1;
+        // Cancelling and scheduling must be atomic with reading the queue head, otherwise a concurrent caller can
+        // cancel a live schedule and leave a queued entry without one
         synchronized (scheduleLock) {
-            if (!scheduleQueue.isEmpty()) {
-                long now = timerService.getCurrentTimeMillis();
-                long nextTime = scheduleQueue.peek().timestamp;
-                delayMillis = Math.max(0, nextTime - now);
+            if (scheduledFuture != null) {
+                scheduledFuture.cancel(false);
+                scheduledFuture = null;
             }
-        }
 
-        if (scheduledFuture != null) {
-            scheduledFuture.cancel(false);
-            scheduledFuture = null;
-        }
-
-        if (delayMillis >= 0) {
-            scheduledFuture = scheduledExecutorService.schedule(this::processDueEntries, delayMillis, TimeUnit.MILLISECONDS);
+            if (!scheduleQueue.isEmpty()) {
+                long delayMillis = Math.max(0, scheduleQueue.peek().timestamp - timerService.getCurrentTimeMillis());
+                scheduledFuture = scheduledExecutorService.schedule(this::processDueEntries, delayMillis, TimeUnit.MILLISECONDS);
+            }
         }
     }
 
@@ -253,6 +250,12 @@ public class ApplyPredictedDataPointsService implements ContainerService {
 
     protected boolean hasRequiredMeta(MetaMap meta) {
         return meta != null && meta.has(HAS_PREDICTED_DATA_POINTS) && meta.has(APPLY_PREDICTED_DATA_POINTS);
+    }
+
+    protected boolean isScheduled(AttributeRef ref) {
+        synchronized (scheduleLock) {
+            return scheduledEntries.containsKey(ref);
+        }
     }
 
     protected void upsertScheduledEntry(AttributeRef ref, long timestamp, Object value) {

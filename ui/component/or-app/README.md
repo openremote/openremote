@@ -1,14 +1,12 @@
 # @openremote/or-asset-viewer  \<or-asset-viewer\>
 [![NPM Version][npm-image]][npm-url]
-[![Linux Build][travis-image]][travis-url]
-[![Test Coverage][coveralls-image]][coveralls-url]
 
 Web Component for displaying an asset tree. This component requires an OpenRemote Manager to retrieve, save and query assets.
 
 ## Install
 ```bash
-npm i @openremote/or-asset-viewer
-yarn add @openremote/or-asset-viewer
+npm i @openremote/or-app
+yarn add @openremote/or-app
 ```
 
 ## Usage
@@ -79,9 +77,5 @@ Internet Explorer 11 is also supported.
 ## License
 [GNU AGPLv3](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
-[npm-image]: https://img.shields.io/npm/v/live-xxx.svg
-[npm-url]: https://npmjs.org/package/@openremote/or-asset-list
-[travis-image]: https://img.shields.io/travis/live-js/live-xxx/master.svg
-[travis-url]: https://travis-ci.org/live-js/live-xxx
-[coveralls-image]: https://img.shields.io/coveralls/live-js/live-xxx/master.svg
-[coveralls-url]: https://coveralls.io/r/live-js/live-xxx?branch=master
+[npm-image]: https://img.shields.io/npm/v/@openremote/or-app.svg
+[npm-url]: https://www.npmjs.com/package/@openremote/or-app
