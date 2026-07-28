@@ -10,64 +10,73 @@ yarn add @openremote/or-asset-viewer
 ```
 
 ## Usage
-By default the or-asset-viewer is using a 2 columns grid. This can be changed by using a different config.
-
-4 column grid, 25% for each column:
-```javascript
-const viewerConfig = {
-    viewerStyles: {
-        gridTemplateColumns: "repeat(auto-fill, minmax(calc(25%),1fr))";
-    }
-};
-<or-asset-viewer .config="${viewerConfig}"></or-asset-viewer>
-```
-
-
-The position of a panel can also be changed by changing the config of or-asset-viewer
-
-To change the width of a panel use gridColumn:
-```javascript
-const viewerConfig = {
-    panels: {
-      "info": {
-          type: "property",
-          panelStyles: {
-            gridColumn: "1 / -1" // same as 1 / 3 in a 2 column grid: Start on column 1, End on column 3
-          }
-      }
-    }
-};
-```
-
-gridColumn can also be used to change the position horizontally.
-```javascript
-const viewerConfig = {
-    panels: {
-      "info": {
-          type: "property",
-          panelStyles: {
-            gridColumnStart: "2" // start the panel in the second column
-          }
-      }
-    }
-};
-```
-
-To change the vertical position of a panel use gridRowStart. To start the panel on the first row set gridRowStart to 1:
-```javascript
-const viewerConfig = {
-    panels: {
-      "info": {
-          type: "property",
-          panelStyles: {
-            gridRowStart: "1"
-          }
-      }
-    }
-};
-```
-
 For a full list of properties, methods and options refer to the TypeDoc generated [documentation]().
+
+Point the viewer at an asset with `assetId`, or pass a loaded `asset` directly. Set `editMode` to expose the attribute
+editor and `readonly` to prevent any writes.
+
+```html
+<or-asset-viewer assetId="4bK9K8j1Y8SQ1zZY4Zx0kN"></or-asset-viewer>
+```
+
+### Configuration
+Without a `config` the viewer falls back to `DEFAULT_VIEWER_CONFIG`. A `ViewerConfig` holds a `default` config plus
+per asset type overrides; an asset type entry replaces the default panels rather than merging with them.
+
+```typescript
+const config: ViewerConfig = {
+    default: { ... },
+    assetTypes: {
+        ThingAsset: { ... }
+    }
+};
+```
+
+### Panels
+`AssetViewerConfig.panels` is an ordered array of panel configs. Panels are laid out in two fixed columns; `column: 0`
+(the default) places a panel in the left column and `column: 1` in the right, in array order.
+
+```typescript
+const config: ViewerConfig = {
+    default: {
+        panels: [
+            {
+                title: "attributes",
+                type: "info",
+                properties: {include: []},
+                attributes: {exclude: ["location"]}
+            },
+            {
+                type: "history",
+                column: 1
+            }
+        ]
+    }
+};
+```
+
+Every panel supports `type`, `title`, `hide`, `column`, `hideOnMobile` and `panelStyles`. The available types are
+`info`, `setup`, `history`, `group`, `linkedUsers` and `alarm.linkedAlarms`; `info`, `setup`, `history` and `group`
+each add their own options on top, such as the `properties` and `attributes` include/exclude lists shown above.
+
+`viewerStyles` applies inline styles to the container that holds both columns.
+
+### View providers
+Rendering can be overridden per panel, property or attribute by supplying `panelViewProvider`, `propertyViewProvider`
+or `attributeViewProvider`. Each is called before the built in rendering and returning `undefined` falls back to it.
+
+```typescript
+const config: ViewerConfig = {
+    default: {
+        attributeViewProvider: (asset, attribute, hostElement, viewerConfig, panelConfig) => {
+            if (attribute.name !== "notes") {
+                return undefined;
+            }
+            return html`<my-notes-editor .asset="${asset}"></my-notes-editor>`;
+        }
+    }
+};
+```
 
 ## Supported Browsers
 The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition,

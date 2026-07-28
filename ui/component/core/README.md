@@ -11,7 +11,7 @@ the `init` method, what tasks are performed during initialisation is determined 
 * Check the manager exists and is accessible (calls the `api/master/info` endpoint)
 * Initialise authentication and perform login redirect (if requested in the `ManagerConfig`)
 * Download `mdi` iconset (if requested in the `ManagerConfig` - if not specified iconset will be downloaded)
-* Initialise REST API client (`@openremote/rest`) - Sets a timeout of 10s and will also add a request interceptor to
+* Initialise REST API client (`@openremote/rest`) - Sets a timeout of 20s and will also add a request interceptor to
 add required `Authorization` header for authentication
 * Initialise console (the console is the device used to render the application desktop, Android or iOS device)
 * Download built in OpenRemote translation files
@@ -31,8 +31,9 @@ whether initialisation was successful or not.
 
 Initialisation usage example:
 
-```$javascript
+```typescript
 import openremote from "@openremote/core";
+import {Auth} from "@openremote/model";
 
 openremote.init({
     managerUrl: "http://localhost:8080",
@@ -52,40 +53,63 @@ openremote.init({
 });
 ```
 
+Anything left out of the `ManagerConfig` is defaulted by `normaliseConfig`; notably `managerUrl` falls back to the
+host serving the app, `realm` to `master` and `auth` to `Auth.KEYCLOAK`.
 
-### Asset Mixin (`dist/asset-mixin`)
-Exports a `subscribe` function/mixin that can be used by components to connect to one or more Assets in the OpenRemote
-Manager; it takes care of subscribing to events for the specified Asset(s), usage example:
+The singleton emits `OREvent` values for lifecycle changes, which can be observed with `addListener`:
 
-```$javascript
-class AssetComponent extends subscribe(openremote) {
-
-    constructor() {
-        this.assetIds = [this.asset];
+```typescript
+openremote.addListener((event) => {
+    if (event === OREvent.OFFLINE) {
+        // Manager connection lost
     }
-    
-    // Override this method to be notified when an attribute event is received for a subscribed asset. This is called
-    // whenever an attribute's value is modified.
-    public onAttributeEvent(event: AttributeEvent) {}
+});
+```
 
-    // Override this method to be notified when an asset event is received for a subscribed asset. This is called when
-    // an asset is first subscribed or when an asset is modified (attribute value changes are handled as attribute events) 
-    public onAssetEvent(event: AssetEvent) {}
-    
-    // If you need to modify an attribute then call the sendAttributeEvent method; the event must be for a subscribed asset.
-    doSendEvent(event: AttributeEvent) {
-        this.sendAttributeEvent(event);
+### Asset Mixin (`@openremote/core/asset-mixin`)
+Exports a `subscribe` function/mixin that connects a component to the event bus and keeps its subscriptions in step
+with the assets or attributes it is interested in. Set `assetIds` to receive both asset and attribute events for those
+assets, or `attributeRefs` to receive attribute events for individual attributes only. Both are re-subscribed
+automatically when reassigned, and unsubscribed when the element is disconnected.
+
+```typescript
+class AssetComponent extends subscribe(openremote)(LitElement) {
+
+    @property({type: String})
+    public assetId?: string;
+
+    public willUpdate(changedProps: PropertyValues) {
+        if (changedProps.has("assetId")) {
+            this.assetIds = this.assetId ? [this.assetId] : undefined;
+        }
+    }
+
+    // Called for every event received on the current subscriptions
+    public _onEvent(event: SharedEvent) {
+        if (event.eventType === "attribute") {
+            // An attribute value changed
+        }
+    }
+
+    // Called when the event provider connects and disconnects
+    public onEventsConnect() {}
+    public onEventsDisconnect() {}
+
+    // Write an attribute; the event must be for a subscribed asset
+    protected doSendEvent(event: AttributeEvent) {
+        this._sendEvent(event);
     }
 }
 ```
 
-### Events (`./dist/event`)
-Provides infrastructure for connecting to the OpenRemote Manager client event bus; by default an `EventProvider` instance
-`Manager` is initialised by the `Manager` during the initialisation process and can be accessed from `openremote.events`
-but it is also possible to instantiate an `EventProvider` manually.
+### Events (`@openremote/core/event`)
+Provides infrastructure for connecting to the OpenRemote Manager client event bus; by default an `EventProvider` is
+initialised by the `Manager` during the initialisation process and can be accessed from `openremote.events` but it is
+also possible to instantiate an `EventProvider` manually. `ManagerConfig.eventProviderType` selects between the
+WebSocket and polling implementations.
 
-### Util (`./dist/util`)
-Various utility methods for common tasks.  
+### Util (`@openremote/core/util`)
+Various utility methods for common tasks.
 
 
 ## Supported Browsers

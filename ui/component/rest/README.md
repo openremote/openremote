@@ -22,18 +22,17 @@ If used in conjunction with `@openremote/core` and the `Manager` `init` method h
 will be ready to use, the endpoints can be accessed via the `RestApi` `api` property and each JAX-RS resource defined
 in the OpenRemote Manager is also defined with the same name in the `RestApi` object.
 
-```$typescript
+```typescript
 import openremote from "@openremote/core";
 import rest from "@openremote/rest";
 
 openremote.init({
     ...
-}).then((success) => {
+}).then(async (success) => {
     if (success) {
-        let assetQuery = ...;
-        let response = await rest.api.AssetResource.queryAssets(assetQuery);
-        let assets = response.data;
-        
+        const response = await rest.api.AssetResource.queryAssets(assetQuery);
+        const assets = response.data;
+
         // Do something with the assets
     } else {
         // Something has gone wrong
@@ -41,19 +40,38 @@ openremote.init({
 });
 ```
 
+Every method returns an Axios response, so the payload is on `data` and failures reject; use `isAxiosError` to
+distinguish an HTTP error from any other rejection.
+
+```typescript
+import {isAxiosError} from "@openremote/rest";
+
+try {
+    await rest.api.AssetResource.get(assetId);
+} catch (e) {
+    if (isAxiosError(e) && e.response?.status === 404) {
+        // No such asset
+    }
+}
+```
+
 It is possible to add additional request interceptors by calling the `addRequestInterceptor` method, it is also possible
 to access the `AxiosInstance` by calling the `axiosInstance` property.
 
-It is also possible to instantiate the `RestApi` object on demand but note you will need to ensure the Authorization
-header is correctly set if calling secure endpoints on the OpenRemote Manager REST API.
+It is also possible to instantiate the `RestApi` object on demand but note that `initialise` requires the API base URL,
+and you will need to ensure the Authorization header is correctly set if calling secure endpoints on the OpenRemote
+Manager REST API.
 
-```$typescript
+```typescript
 import {RestApi} from "@openremote/rest";
 
-let rest = new RestApi();
+const rest = new RestApi();
 rest.setTimeout(10000);
-rest.addRequestInterceptor(...);
-rest.initialise();
+rest.addRequestInterceptor((config) => {
+    config.headers.Authorization = "Bearer " + token;
+    return config;
+});
+rest.initialise("http://localhost:8080/api/master");
 ```
 
 

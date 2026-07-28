@@ -17,35 +17,55 @@ For a full list of `i18next` functionality refer to that project's [documentatio
 If used in conjunction with `@openremote/core` and the `Manager` `init` method has been called then the `i18next`
 default export will be ready to use and would have been configured with the following settings:
 
-* Language: `en`
+* Language: console preference, then user preference, then `ManagerConfig.defaultLanguage`, then `en`
 * Fallback language: `en`
 * Default Namespace: `app`
 * Fallback namespace: `or`
 * Available namespaces: `ManagerConfig.loadTranslations`
 * OR Namespace path: `managerURL` + `/shared/locales/{{lng}}/{{ns}}.json`
-* Namespace path: `ManagerConfig.loadTranslations` or fallback to `locales/{{lng}}/{{ns}}.json`
+* Namespace path: `ManagerConfig.translationsLoadPath` or fallback to `locales/{{lng}}/{{ns}}.json`
+
+Pass `ManagerConfig.configureTranslationsOptions` to amend the `InitOptions` before `i18next` is initialised.
 
 There is an `or` namespace which is used for OpenRemote related translations; apps can use any other namespace(s) it is
 recommended to use `app` as this is set as the default as described above. To translate a string use the following HTML:
 
-```$html
-<or-translate value="app:asset" />
+```html
+<or-translate value="app:asset"></or-translate>
 ```
 
 If using the default namespace then the namespace prefix can be omitted:
-```$html
-<or-translate value="asset" />
+```html
+<or-translate value="asset"></or-translate>
 ```
 
-It is also possible to pass an `TOptions<InitOptions>` object to the `18next.t` method by setting the
-`options` attribute.
- 
+It is also possible to pass a `TOptions<InitOptions>` object to the `i18next.t` method by setting the
+`options` property, for example to interpolate values:
 
-### Translate mixin (`dist/translate-mixin`)
+```html
+<or-translate value="assetCount" .options="${{count: 5}}"></or-translate>
+```
+
+Interpolation also accepts a format, where `uppercase` and any `moment` format string for `Date` values are supported.
+
+
+### Translate mixin (`@openremote/or-translate/translate-mixin`)
 Exports a `translate` function/mixin that can be used by any web component to hook into the `i18next` `initialized` and
-`languageChanged` events; if the web component is a `LitElement` an update of the component will be automatically 
+`languageChanged` events; if the web component is a `LitElement` an update of the component will be automatically
 requested when either event fires; otherwise the `initCallback` and/or `langChangedCallback` should be overridden as
-required. For usage example see the [or-translate source code](./src/index.ts).
+required.
+
+```typescript
+import {i18next, translate} from "@openremote/or-translate";
+
+@customElement("my-element")
+export class MyElement extends translate(i18next)(LitElement) {
+
+    protected render() {
+        return html`<span>${i18next.t("asset")}</span>`;
+    }
+}
+```
 
 
 ## Supported Browsers

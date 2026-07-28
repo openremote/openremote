@@ -12,36 +12,51 @@ yarn add @openremote/or-icon
 ## Usage
 For a full list of properties, methods and options refer to the TypeDoc generated [documentation]().
 
-Icons are defined in iconsets, there are two iconsets provided by default and new ones can be created as required (see
-[demo-core](../../demo/demo-core)), The `mdi` iconset is quite large and it is possible to prevent loading of this
-when initialising the OpenRemote `Manager` via the `ManagerConfig`:
+Icons are defined in iconsets. Two are registered by the OpenRemote `Manager` during initialisation, and loading them
+can be prevented with `ManagerConfig.loadIcons`:
 
 * `mdi` - [Material Design Icons](https://materialdesignicons.com/)
-* `or` - OpenRemote icons (see [here](./or-iconset.ts))
+* `or` - OpenRemote icons
 
-The default iconset is `mdi` but this can be changed by setting `OrIcon.DEFAULT_ICONSET`, to load an icon use the
-following HTML: 
+The `icon` attribute takes an `<iconset>:<name>` reference:
 
-```$html
-<or-icon icon="mdi:access-point" />
+```html
+<or-icon icon="mdi:access-point"></or-icon>
 ```
 
-If using the default iconset then the iconset prefix can be omitted:
-```$html
-<or-icon icon="access-point" />
+The first registered iconset becomes the default, so the prefix can be omitted for it:
+
+```html
+<or-icon icon="access-point"></or-icon>
 ```
 
 Styling is done through CSS, the following CSS variables can be used:
 
-```$css
---or-icon-fill (default: currentcolor)
---or-icon-stroke (default: none)
+```css
+--or-icon-fill (default: currentColor)
+--or-icon-stroke-width (default: 0)
 --or-icon-height (default: 24px)
 --or-icon-width (default: 24px)
---or-icon-pointer-events (default: none)
 ```
 
-When an iconset is added then any `or-icon` components in the DOM will be notified and refresh as required.
+### Custom iconsets
+Register an iconset with `IconSets.addIconSet`. `createSvgIconSet` builds one from a viewbox size and a map of names
+to SVG path data or markup:
+
+```typescript
+import {createSvgIconSet, IconSets} from "@openremote/or-icon";
+
+IconSets.addIconSet("my-icons", createSvgIconSet(24, {
+    "my-icon": "M12 2 L22 22 L2 22 Z"
+}));
+```
+
+```html
+<or-icon icon="my-icons:my-icon"></or-icon>
+```
+
+Adding an iconset dispatches `or-iconset-added` (`IconSetAddedEvent`) on `window`, and any `or-icon` in the DOM
+refreshes itself in response.
 
 ## Supported Browsers
 The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition,
