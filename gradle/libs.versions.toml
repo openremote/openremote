@@ -49,7 +49,7 @@ keycloakAdminClient = "26.0.10"
 keycloakCore = "26.6.4"
 micrometer = "1.17.0"
 mockito = "5.23.0"
-netty = "4.2.15.Final"
+netty = "4.2.16.Final"
 nexusPublish = "2.0.0"
 niftyModbus = "1.4.0"
 nimbusJoseJwt = "10.9.1"
@@ -200,4 +200,5 @@ axionRelease = { id = "pl.allegro.tech.build.axion-release", version.ref = "axio
 fileEncrypt = { id = "io.openremote.com.cherryperry.gradle-file-encrypt", version.ref = "fileEncrypt" }
 nexusPublish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublish" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
+swagger = { id = "io.swagger.core.v3.swagger-gradle-plugin", version.ref = "swagger" }
 testLogger = { id = "com.adarshr.test-logger", version.ref = "testLogger" }

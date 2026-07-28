@@ -145,7 +145,9 @@ async function getSchema(valueDescriptor: ValueDescriptor) {
 }
 
 export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, clear?: boolean) => ValueInputProviderGenerator = (fallback, clear) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
-    if (Util.isComplexValueDescriptor(valueDescriptor) && !SUPPORTED_WELLKNOWN_VALUE_TYPES.includes(valueDescriptor.name as SupportedWellknownValueTypes)) {
+    if (Util.isComplexValueDescriptor(valueDescriptor) && !(
+        SUPPORTED_WELLKNOWN_VALUE_TYPES.includes(valueDescriptor.name as SupportedWellknownValueTypes) && !valueDescriptor?.arrayDimensions
+    )) {
         const disabled = !!(options && options.disabled);
         const readonly = !!(options && options.readonly);
         const label = options.label;

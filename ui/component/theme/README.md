@@ -34,4 +34,4 @@ document.head.appendChild(style);
 [GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
 [npm-image]: https://img.shields.io/npm/v/@openremote/theme.svg
-[npm-url]: https://npmjs.org/package/@openremote/theme
+[npm-url]: https://www.npmjs.com/package/@openremote/theme

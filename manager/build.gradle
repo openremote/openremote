@@ -7,6 +7,7 @@ plugins {
     id 'distribution'
     id 'maven-publish'
     id 'signing'
+    alias libs.plugins.swagger
 }
 
 application {
@@ -103,6 +104,26 @@ afterEvaluate {
     tasks.run.workingDir = rootProject.projectDir
 }
 
+resolve {
+    outputFileName = 'openapi'
+    outputFormat = 'JSONANDYAML'
+    outputDir = layout.buildDirectory.dir("openapi")
+
+    prettyPrint = true
+    sortOutput = true
+    defaultResponseCode = '200'
+
+    classpath = sourceSets.main.runtimeClasspath
+
+    // Required so that the plugin itself uses the Jakarta Swagger/JAX-RS
+    // dependencies from the OpenRemote runtime classpath.
+    buildClasspath = sourceSets.main.runtimeClasspath
+
+    resourcePackages = ['org.openremote.model']
+    openApiFile = layout.projectDirectory.file('src/main/resources/openapi-base.yaml')
+    objectMapperProcessorClass = 'org.openremote.manager.web.ManagerObjectMapperProcessor'
+}
+
 tasks.withType(Sync).configureEach {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
@@ -140,12 +161,28 @@ java {
     withSourcesJar()
 }
 
+def openApiJsonFile = layout.buildDirectory.file('openapi/openapi.json')
+def openApiYamlFile = layout.buildDirectory.file('openapi/openapi.yaml')
+
 publishing {
     publications {
         maven(MavenPublication) {
             group = "io.openremote"
             artifactId = "openremote-${project.name}"
             from components.java
+
+            artifact(openApiJsonFile) {
+                classifier = 'openapi'
+                extension = 'json'
+                builtBy tasks.named('resolve')
+            }
+
+            artifact(openApiYamlFile) {
+                classifier = 'openapi'
+                extension = 'yaml'
+                builtBy tasks.named('resolve')
+            }
+
             pom {
                 name = 'OpenRemote Manager'
                 description = 'Provides core container services and is the main component of the OpenRemote backend; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
@@ -194,6 +231,16 @@ signing {
         useInMemoryPgpKeys(signingKey, signingPassword)
         sign publishing.publications.maven
     }
+}
+
+tasks.named('resolve') {
+    dependsOn tasks.named('classes')
+}
+
+tasks.register('generateOpenApi') {
+    group = 'documentation'
+    description = 'Generates the OpenRemote OpenAPI specification'
+    dependsOn tasks.named('resolve')
 }
 
 // Output version.properties file
