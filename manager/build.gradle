@@ -106,7 +106,7 @@ afterEvaluate {
 
 resolve {
     outputFileName = 'openapi'
-    outputFormat = 'JSON'
+    outputFormat = 'JSONANDYAML'
     outputDir = layout.buildDirectory.dir("openapi")
 
     prettyPrint = true
@@ -161,7 +161,8 @@ java {
     withSourcesJar()
 }
 
-def openApiFile = layout.buildDirectory.file('openapi/openapi.json')
+def openApiJsonFile = layout.buildDirectory.file('openapi/openapi.json')
+def openApiYamlFile = layout.buildDirectory.file('openapi/openapi.yaml')
 
 publishing {
     publications {
@@ -170,9 +171,15 @@ publishing {
             artifactId = "openremote-${project.name}"
             from components.java
 
-            artifact(openApiFile) {
+            artifact(openApiJsonFile) {
                 classifier = 'openapi'
                 extension = 'json'
+                builtBy tasks.named('resolve')
+            }
+
+            artifact(openApiYamlFile) {
+                classifier = 'openapi'
+                extension = 'yaml'
                 builtBy tasks.named('resolve')
             }
 
