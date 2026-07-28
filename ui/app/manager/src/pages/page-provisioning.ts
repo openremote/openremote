@@ -9,11 +9,11 @@ import {ClientRole, ProvisioningConfig, X509ProvisioningData} from "@openremote/
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse} from "@openremote/rest";
 import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
 import {OrVaadinMultiSelectComboBox} from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
+import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -343,12 +343,11 @@ export class PageProvisioning extends Page<AppStateKeyed> {
     }
 
     protected _deleteConfig(config: ProvisioningConfig<any, any>) {
-        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteProvisioningConfigConfirm"), i18next.t("delete"))
-            .then((ok) => {
-                if (ok) {
-                    this._doDelete(config);
-                }
-            });
+        showConfirmDialog(this.shadowRoot, html`
+            <or-vaadin-confirm-dialog @confirm=${() => this._doDelete(config)}>
+                ${getConfirmDialogContent("error", "delete", "deleteProvisioningConfigConfirm", "delete", "cancel")}
+            </or-vaadin-confirm-dialog>
+        `);
     }
 
     protected _doDelete(config: ProvisioningConfig<any, any>) {

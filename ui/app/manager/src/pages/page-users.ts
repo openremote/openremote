@@ -7,7 +7,7 @@ import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery, UserSession} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
-import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
@@ -21,6 +21,7 @@ import {OrVaadinPasswordField} from "@openremote/or-vaadin-components/or-vaadin-
 import {OrVaadinMultiSelectComboBox} from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -441,12 +442,17 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     private _deleteUser(user) {
-        showOkCancelDialog(i18next.t("deleteUser"), i18next.t("deleteUserConfirm", { userName: user.username }), i18next.t("delete"))
-            .then((ok) => {
-                if (ok) {
-                    this.doDelete(user);
-                }
-            });
+        showConfirmDialog(this.shadowRoot, html`
+            <or-vaadin-confirm-dialog @confirm=${() => this.doDelete(user)}>
+                ${getConfirmDialogContent(
+                    "error",
+                    "deleteUser",
+                    html`<or-translate value="deleteUserConfirm" .options=${{userName: user.username}}></or-translate>`,
+                    "delete",
+                    "cancel"
+                )}
+            </or-vaadin-confirm-dialog>
+        `);
     }
 
     private doDelete(user) {

@@ -10,11 +10,12 @@ import {DefaultColor3, manager} from "@openremote/core";
 import {Asset, AssetQuery, GatewayTunnelInfo, GatewayTunnelInfoType} from "@openremote/model";
 import {TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 import {getAssetsRoute} from "../routes";
-import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import moment from "moment";
 import {OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 export function pageGatewayTunnelProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -226,25 +227,24 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      */
     protected _onStopTunnelClick(ev: Event, tunnel: GatewayTunnelInfo) {
         ev.stopPropagation();
-        showOkCancelDialog(
-            i18next.t("areYouSure"),
-            i18next.t("gatewayTunnels.stopWarning"),
-            i18next.t("gatewayTunnels.stop")
-        ).then((ok: boolean) => {
-            if (ok) {
-                this._stopTunnel(tunnel).then(success => {
-                    if (success) {
-                        showSnackbar(undefined, "gatewayTunnels.closeSuccessful");
-                    } else {
-                        showSnackbar(undefined, "errorOccurred");
-                    }
-                }).catch(_error => {
+        const onOk = () => {
+            this._stopTunnel(tunnel).then(success => {
+                if (success) {
+                    showSnackbar(undefined, "gatewayTunnels.closeSuccessful");
+                } else {
                     showSnackbar(undefined, "errorOccurred");
-                }).finally(() => {
-                    this._fetchTunnelsTask.run();
-                });
-            }
-        });
+                }
+            }).catch(_error => {
+                showSnackbar(undefined, "errorOccurred");
+            }).finally(() => {
+                this._fetchTunnelsTask.run();
+            });
+        }
+        showConfirmDialog(this.shadowRoot, html`
+            <or-vaadin-confirm-dialog @confirm=${() => onOk()}>
+                ${getConfirmDialogContent("error", "areYouSure", "gatewayTunnels.stopWarning", "gatewayTunnels.stop", "cancel")}
+            </or-vaadin-confirm-dialog>
+        `);
     }
 
     /**

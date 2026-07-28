@@ -25,7 +25,6 @@ import {css, html, PropertyValues, TemplateResult} from "lit";
 import manager, {Util} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {
     OrRules,
     OrRulesAddEvent,
@@ -41,6 +40,7 @@ import {
 } from "./index";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {when} from "lit/directives/when.js";
+import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 const styling = css`
     .iconfill-gray {
@@ -285,13 +285,23 @@ export class OrRuleTree extends OrTreeMenu {
 
             // If only groups are selected without any rules, prompt "delete groups" dialog.
             if(selectedRuleNodes.length === 0 && groupNodes.length > 0) {
-                showOkCancelDialog(i18next.t("deleteRulesetGroups"), i18next.t("deleteRulesetGroupsConfirm", { groupNames: groupNames }), i18next.t("delete"))
-                    .then((ok) => {
-                        if(ok) {
-                            this.deselectAllNodes();
-                            this.nodes = this.nodes.filter(n => !groupNames.includes(n.label));
-                        }
-                    })
+                showConfirmDialog(this.shadowRoot!, html`
+                    <or-vaadin-confirm-dialog @confirm=${() => {
+                        this.deselectAllNodes();
+                        this.nodes = this.nodes.filter(n => !groupNames.includes(n.label));
+                    }}>
+                        ${getConfirmDialogContent(
+                            "error", 
+                            "deleteRulesetGroups",
+                            html`
+                                <or-translate value="deleteRulesetGroupsConfirm"></or-translate>
+                                <ul>${groupNames.map(n => html`<li>${n}</li>`)}</ul>
+                            `,
+                            "delete",
+                            "cancel"
+                        )}
+                    </or-vaadin-confirm-dialog>
+                `)
                 return;
             }
 
@@ -300,18 +310,26 @@ export class OrRuleTree extends OrTreeMenu {
                 .then((detail) => {
                     if (detail.allow) {
                         const names = selectedRules.map(r => r.name);
-                        showOkCancelDialog(i18next.t("deleteRulesets"), i18next.t("deleteRulesetsConfirm", { ruleNames: names }), i18next.t("delete"))
-                            .then((ok) => {
-                                if (ok) {
-                                    this.deselectAllNodes();
-                                    this._deleteRulesets(selectedRules)
-                                        .catch(e => console.error(e))
-                                        .finally(() => {
-                                            this.nodes = this.nodes.filter(n => !groupNames.includes(n.label));
-                                            this.refresh()
-                                        });
-                                }
-                            });
+                        showConfirmDialog(this.shadowRoot!, html`
+                            <or-vaadin-confirm-dialog @confirm=${() => {
+                                this.deselectAllNodes();
+                                this._deleteRulesets(selectedRules).catch(e => console.error(e)).finally(() => {
+                                    this.nodes = this.nodes.filter(n => !groupNames.includes(n.label));
+                                    this.refresh()
+                                });
+                            }}>
+                                ${getConfirmDialogContent(
+                                    "error",
+                                    "deleteRulesets",
+                                    html`
+                                        <or-translate value="deleteRulesetsConfirm"></or-translate>
+                                        <ul>${names.map(n => html`<li>${n}</li>`)}</ul>
+                                    `,
+                                    "delete",
+                                    "cancel"
+                                )}
+                            </or-vaadin-confirm-dialog>
+                        `);
                     }
                 });
         }

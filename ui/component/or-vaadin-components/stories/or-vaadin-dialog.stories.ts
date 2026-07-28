@@ -56,10 +56,9 @@ const meta: Meta = {
 export const Primary: Story = {
     render: (_args) => {
         return html`
-            <or-vaadin-dialog 
-                    ${dialogHeaderRenderer(() => html`<h2>Dialog title</h2>`)}
-                    ${dialogRenderer(() => html`<p>Content</p>`)}
-            ></or-vaadin-dialog>
+            <or-vaadin-dialog ${dialogHeaderRenderer(() => html`<h2>Dialog title</h2>`)}>
+                <p>Content</p>
+            </or-vaadin-dialog>
             <or-vaadin-button @click="${() => (document.querySelector('or-vaadin-dialog') as OrVaadinDialog).open()}">Show dialog</or-vaadin-button>
         `;
     },
@@ -80,10 +79,8 @@ export const MapExample: Story = {
         `;
         return html`
             <or-vaadin-dialog header-title="Configure area" ${dialogFooterRenderer(footer)}>
-                <div>
-                    <or-map style="aspect-ratio: 1/1;"></or-map>
-                    <or-vaadin-number-field label="Radius (min. 100m)" min="100" value="100"></or-vaadin-number-field>
-                </div>
+                <or-map style="aspect-ratio: 1/1;"></or-map>
+                <or-vaadin-number-field label="Radius (min. 100m)" min="100" value="100"></or-vaadin-number-field>
             </or-vaadin-dialog>
             <or-vaadin-button @click="${() => (document.querySelector('or-vaadin-dialog') as OrVaadinDialog).open()}">Show dialog</or-vaadin-button>
         `;

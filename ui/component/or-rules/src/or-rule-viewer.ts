@@ -36,11 +36,11 @@ import "./flow-viewer/components/flow-editor";
 import "@openremote/or-scheduler";
 import {i18next, translate} from "@openremote/or-translate"
 import {GenericAxiosResponse} from "@openremote/rest";
-import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
 import { INTUITIVE_NOT_APPLICABLE, OrSchedulerChangedEvent, RRulePartKeys } from "@openremote/or-scheduler";
 import {when} from "lit/directives/when.js";
 import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import {showErrorDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 const DISABLED_RRULE_PARTS = [
     "interval",
@@ -365,7 +365,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     protected _onSaveClicked() {
         if (this._isReadonly()) {
             if (this._isLegacyJavascriptRuleset()) {
-                showErrorDialog(i18next.t("rulesLegacyJavaScriptWarning"));
+                showErrorDialog(this.shadowRoot!, "rulesLegacyJavaScriptWarning");
             }
             return;
         }
@@ -397,7 +397,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
 
         if (this._isReadonly()) {
             if (this._isLegacyJavascriptRuleset(ruleset)) {
-                showErrorDialog(i18next.t("rulesLegacyJavaScriptWarning"));
+                showErrorDialog(this.shadowRoot!, "rulesLegacyJavaScriptWarning");
             }
             return;
         }
@@ -437,7 +437,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
 
             if (response.status !== (isNew ? 200 : 204)) {
                 fail = true;
-                showErrorDialog("Create ruleset returned unexpected status: " + response.status);
+                showErrorDialog(this.shadowRoot!, "Create ruleset returned unexpected status: " + response.status);
                 return;
             } else if (response.data) {
                 ruleset.id = response.data;
@@ -451,7 +451,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         this.saveBtnElem.disabled = false;
 
         if (fail) {
-            showErrorDialog(i18next.t("saveRulesetFailed"));
+            showErrorDialog(this.shadowRoot!, "saveRulesetFailed");
         }
 
         this.dispatchEvent(new OrRulesSaveEvent({
