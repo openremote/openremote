@@ -17,9 +17,6 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
-    environment:
-      #KC_HOSTNAME: ${KC_HOSTNAME:-http://localhost:8080/auth}
-      KC_HOSTNAME_DEBUG: true
 
   postgresql:
     extends:

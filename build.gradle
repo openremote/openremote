@@ -264,6 +264,14 @@ tasks.named('clean') {
 
 
 subprojects {
+    // Search across all java projects for a runtime dependency e.g. ./gradlew insightRuntime --dependency my-dep
+    plugins.withId('java') {
+       tasks.register("insightRuntime", DependencyInsightReportTask) {
+          configuration = configurations.runtimeClasspath
+          showingAllVariants = false
+       }
+    }
+
     // Apply only if the project has a 'test' task
     tasks.withType(Test).configureEach { testTask ->
         outputs.upToDateWhen { false } // Always invalidate the test cache

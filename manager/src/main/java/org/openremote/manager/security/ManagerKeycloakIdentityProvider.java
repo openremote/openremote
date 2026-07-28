@@ -127,7 +127,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         String keycloakPublicUri = getString(container.getConfig(), OR_KEYCLOAK_PUBLIC_URI, null);
         if (TextUtil.isNullOrEmpty(keycloakPublicUri)) {
-            // Use full public URI keycloak backend
+            // Use full public URI from keycloak backend - in our docker image this is set to '/auth' indicating that
+            // keycloak is available on the same hostname port and schema as the manager - needed for gateway tunnelling
+            // scenarios specifically
             keycloakPublicUri = getKeycloakPublicUrl();
         }
         try {

@@ -409,7 +409,7 @@ services:
       KC_DB_POOL_MAX_SIZE: ${KC_DB_POOL_MAX_SIZE:-20}
 
       # Configure web server (Can be a full URL, or just a hostname. When only hostname is provided, scheme, port and context path are resolved from the request)
-      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      KC_HOSTNAME: https://${OR_HOSTNAME:-localhost}/auth
       KC_HOSTNAME_DEBUG: true
       # Set the following for edge gateways not directly exposed to the internet
       #KC_HOSTNAME_STRICT: false

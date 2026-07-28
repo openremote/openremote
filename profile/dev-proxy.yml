@@ -20,7 +20,7 @@ services:
       file: deploy.yml
       service: proxy
     environment:
-      MANAGER_HOST: ${MANAGER_HOST:-'host.docker.internal'}
+      MANAGER_HOST: ${MANAGER_HOST:-host.docker.internal}
       # Uncomment to use sish in development
       #SISH_HOST: sish
       #SISH_PORT: 8090
@@ -35,8 +35,7 @@ services:
       postgresql:
         condition: service_healthy
     environment:
-      #KC_HOSTNAME: ${KC_HOSTNAME:-http://localhost:8080/auth}
-      KC_HOSTNAME_DEBUG: true
+      KC_HOSTNAME: ${KC_HOSTNAME:-https://localhost/auth}
 
   postgresql:
     extends:
