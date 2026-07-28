@@ -64,8 +64,7 @@ const dataProvider = async (startOfPeriod: number, endOfPeriod: number) => loadS
 * `or-chart-event` (`OrChartEvent`) - The chart value changed; detail contains `value` and `previousValue`
 
 ## Supported Browsers
-The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition,
-Internet Explorer 11 is also supported.
+The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge.
 
 
 ## License

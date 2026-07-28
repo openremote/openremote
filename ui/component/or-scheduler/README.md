@@ -48,8 +48,7 @@ hides combinations that are valid but confusing.
 * `or-scheduler-removed` (`OrSchedulerRemovedEvent`) - The schedule was cleared
 
 ## Supported Browsers
-The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition,
-Internet Explorer 11 is also supported.
+The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge.
 
 
 ## License

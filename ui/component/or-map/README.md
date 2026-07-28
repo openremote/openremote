@@ -116,8 +116,7 @@ The following DOM events may be fired by the component and markers:
 and the name of the changed `property`
 
 ## Supported Browsers
-The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition,
-Internet Explorer 11 is also supported.
+The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge.
 
 
 ## License

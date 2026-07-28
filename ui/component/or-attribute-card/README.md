@@ -34,8 +34,7 @@ Setting `panelName` makes the card persist the user's attribute and period choic
 sharing that storage with `or-chart`.
 
 ## Supported Browsers
-The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition,
-Internet Explorer 11 is also supported.
+The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge.
 
 
 ## License

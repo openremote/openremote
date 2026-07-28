@@ -60,8 +60,7 @@ Selection, add and delete each fire a request event first (`or-asset-tree-reques
 the action, which is how a consumer can prompt before discarding unsaved changes.
 
 ## Supported Browsers
-The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition,
-Internet Explorer 11 is also supported.
+The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge.
 
 
 ## License
