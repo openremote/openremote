@@ -1,4 +1,6 @@
 import type {
+    APIRequestContext,
+    APIResponse,
     Fixtures,
     PlaywrightTestArgs,
     Page,
@@ -41,4 +43,4 @@ export const ctFixtures: Fixtures<PlaywrightTestArgs & PlaywrightTestOptions & S
 };
 
 export const ct = test;
-export type { BasePage, ComponentTestType, Locator, Page, Project, Shared, TestFixture };
+export type { APIRequestContext, APIResponse, BasePage, ComponentTestType, Locator, Page, Project, Shared, TestFixture };

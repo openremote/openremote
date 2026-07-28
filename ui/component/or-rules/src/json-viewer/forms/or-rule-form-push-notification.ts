@@ -1,3 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {html, LitElement, css, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -67,13 +86,15 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
             <form style="display:grid">
                 <or-vaadin-text-field id="push-title" value=${message.title} required
                                       @change=${(ev: Event) => onchange(ev, message).then(msg => this._onTitleChange(this._pushTitleElem!, msg))}>
-                    <or-translate slot="label" value="subject"></or-translate>
+                    <or-translate slot="label" value="title"></or-translate>
                 </or-vaadin-text-field>
                 <or-vaadin-text-area id="push-body" value=${message.body} required style="min-height: 200px;"
                                      @change=${(ev: Event) => onchange(ev, message).then(msg => this._onBodyChange(this._pushBodyElem!, msg))}>
-                    <or-translate slot="label" value="message"></or-translate>
+                    <or-translate slot="label" value="body"></or-translate>
                 </or-vaadin-text-area>
-                <or-vaadin-text-field id="push-url" value=${message.action?.url}
+                <or-vaadin-text-field id="push-url" type="url" pattern="^[a-zA-Z][a-zA-Z0-9+.\\-]*://.+$"
+                                      error-message="${i18next.t("invalidUrl")}"
+                                      placeholder="https://example.com" value=${message.action?.url}
                                       @change=${(ev: Event) => onchange(ev, message).then(msg => this._onActionUrlChange(this._pushUrlElem!, msg))}>
                     <or-translate slot="label" value="openWebsiteUrl"></or-translate>
                 </or-vaadin-text-field>

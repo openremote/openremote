@@ -31,7 +31,7 @@ jobs:
       dockerTags: ${{ steps.ci-cd-output.outputs.dockerTags }}
       npmTag: ${{ steps.ci-cd-output.outputs.npmTag }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2 # Must be 2 for push events to compare to previous commit
 
@@ -69,7 +69,7 @@ jobs:
 
       - name: Process ci_cd.json file
         id: ci-cd-output
-        uses: openremote/openremote/.github/actions/process-cicd-json@f667c603a447af79dda980f1dd1d734fd4679b2e
+        uses: openremote/openremote/.github/actions/process-cicd-json@9ea22e19db6711afd711f39517fe25509b018803
         with:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }} # Shouldn't be needed in this context
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
@@ -193,5 +193,5 @@ jobs:
       version: ${{ needs.detect-changes.outputs.version_with_qualifier }}
       is_release: ${{ needs.detect-changes.outputs.is_release }}
     secrets:
-      GH_EXTENSIONS_TOKEN: ${{ secrets._TEMP_GH_EXTENSIONS_TOKEN }}
-
+      CI_AUTOMATION_APP_CLIENT_ID: ${{ secrets._TEMP_CI_AUTOMATION_APP_CLIENT_ID }}
+      CI_AUTOMATION_APP_PRIVATE_KEY: ${{ secrets._TEMP_CI_AUTOMATION_APP_PRIVATE_KEY }}
