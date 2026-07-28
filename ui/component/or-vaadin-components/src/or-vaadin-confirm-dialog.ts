@@ -81,17 +81,17 @@ export function getConfirmDialogContent(theme: string | undefined, header: Templ
                 : content
         }
         ${when(confirmKey, () => html`
-            <or-vaadin-button theme="${theme && theme.includes(' ') ? theme : (theme + " primary")}" slot="confirm-button">
+            <or-vaadin-button theme=${theme && theme.includes(' ') ? theme : (theme + " primary")} slot="confirm-button">
                 <or-translate value=${confirmKey}></or-translate>
             </or-vaadin-button>
         `)}
         ${when(cancelKey, () => html`
-            <or-vaadin-button theme="tertiary ${theme}" slot="cancel-button">
+            <or-vaadin-button theme=${theme ? `tertiary ${theme}` : "tertiary"} slot="cancel-button">
                 <or-translate value=${cancelKey}></or-translate>
             </or-vaadin-button>
         `)}
         ${when(rejectKey, () => html`
-            <or-vaadin-button theme="tertiary ${theme}" slot="reject-button">
+            <or-vaadin-button theme=${theme ? `tertiary ${theme}` : "tertiary"} slot="reject-button">
                 <or-translate value=${rejectKey}></or-translate>
             </or-vaadin-button>
         `)}
