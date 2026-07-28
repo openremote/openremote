@@ -293,7 +293,10 @@ export class OrRuleTree extends OrTreeMenu {
                         ${getConfirmDialogContent(
                             "error", 
                             "deleteRulesetGroups",
-                            html`<or-translate value="deleteRulesetGroupsConfirm" .options=${{groupNames: groupNames}}></or-translate>`,
+                            html`
+                                <or-translate value="deleteRulesetGroupsConfirm"></or-translate>
+                                <ul>${groupNames.map(n => html`<li>${n}</li>`)}</ul>
+                            `,
                             "delete",
                             "cancel"
                         )}
@@ -318,7 +321,10 @@ export class OrRuleTree extends OrTreeMenu {
                                 ${getConfirmDialogContent(
                                     "error",
                                     "deleteRulesets",
-                                    html`<or-translate value="deleteRulesetsConfirm" .options=${{ruleNames: names}}></or-translate>`,
+                                    html`
+                                        <or-translate value="deleteRulesetsConfirm"></or-translate>
+                                        <ul>${names.map(n => html`<li>${n}</li>`)}</ul>
+                                    `,
                                     "delete",
                                     "cancel"
                                 )}

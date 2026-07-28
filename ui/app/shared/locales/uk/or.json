@@ -82,7 +82,7 @@
   "close": "Закрити",
   "active": "Активний",
   "deleteRulesets": "Видалити правило(а)",
-  "deleteRulesetsConfirm": "Ви впевнені, що хочете видалити вибрані правила? {{ruleNames}}",
+  "deleteRulesetsConfirm": "Ви впевнені, що хочете видалити вибрані правила?",
   "deleteRulesetsFailed": "Не вдалося видалити одне або декілька запитаних правил",
   "saveRulesetFailed": "Не вдалося зберегти правило",
   "confirmContinueRulesetModified": "Правило було змінено, скасувати зміни?",
