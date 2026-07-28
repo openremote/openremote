@@ -58,7 +58,7 @@ services:
         condition: service_healthy
     environment:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
-      KC_HOSTNAME: ${OR_HOSTNAME:-https://localhost}
+      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_DB_POOL_MAX_SIZE: ${KC_DB_POOL_MAX_SIZE:-38}
 
   manager:

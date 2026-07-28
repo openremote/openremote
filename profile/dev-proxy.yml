@@ -29,19 +29,14 @@ services:
     extends:
       file: deploy.yml
       service: keycloak
-    #volumes:
-    #   Map custom themes
-    #  - ../deployment:/deployment
-    # Access directly if needed on localhost
     ports:
       - "8081:8080"
-    # Following options are useful for tunnelling functionality do not use on public instance
-    environment:
-      KC_HOSTNAME: ${KC_HOSTNAME:-https://localhost}
-      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
     depends_on:
       postgresql:
         condition: service_healthy
+    environment:
+      #KC_HOSTNAME: ${KC_HOSTNAME:-http://localhost:8080/auth}
+      KC_HOSTNAME_DEBUG: true
 
   postgresql:
     extends:

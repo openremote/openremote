@@ -52,7 +52,7 @@ services:
       - ./deployment:/deployment
     environment:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
-      KC_HOSTNAME: ${OR_HOSTNAME:-https://localhost}
+      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
 
   manager:
 #    privileged: true

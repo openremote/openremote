@@ -20,10 +20,6 @@
 package org.openremote.container.security.keycloak;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.ResponseCodeHandler;
-import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
-import io.undertow.server.handlers.proxy.ProxyHandler;
 import jakarta.security.enterprise.AuthenticationException;
 import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.ServletContext;
@@ -37,7 +33,6 @@ import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.openremote.container.security.*;
-import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -107,8 +102,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected ResteasyWebTarget keycloakTarget;
     protected OAuthGrant oAuthGrant;
     protected ConcurrentLinkedQueue<RealmsResource> realmsResourcePool = new ConcurrentLinkedQueue<>();
-    // Optional reverse proxy that listens to KEYCLOAK_AUTH_PATH and forwards requests to Keycloak (used in dev mode to allow same url to be used for manager and keycloak) - handled by proxy in production
-    protected HttpHandler authProxyHandler;
     protected TokenVerifier tokenVerifier;
 
     /**
@@ -158,15 +151,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
 
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
-
-        if (container.isDevMode()) {
-            authProxyHandler = ProxyHandler.builder()
-                .setProxyClient(new LoadBalancingProxyClient().addHost(keycloakServiceUri.build()))
-                .setMaxRequestTime(getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT))
-                .setNext(ResponseCodeHandler.HANDLE_404)
-                .setReuseXForwarded(true)
-                .build();
-        }
 
         // Get public URL of keycloak from the keycloak server
         String keycloakPublicUrl = getKeycloakPublicUrl();
@@ -318,14 +302,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
      * @return credentials or null if generation/storage failed.
      */
     protected abstract OAuthGrant generateStoredCredentials(Container container);
-
-    protected void enableAuthProxy(WebService webService, String keycloakPath) {
-        if (authProxyHandler == null)
-            throw new IllegalStateException("Initialize this service first");
-
-        LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + keycloakPath);
-        webService.deploy(keycloakPath, authProxyHandler);
-    }
 
     /**
      * There must be _some_ valid redirect URIs for the application or authentication will not be possible.

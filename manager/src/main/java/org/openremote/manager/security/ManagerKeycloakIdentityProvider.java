@@ -95,7 +95,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String OR_KEYCLOAK_GRANT_FILE = "OR_KEYCLOAK_GRANT_FILE";
     public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/keycloak-credentials.json";
     public static final String OR_KEYCLOAK_PUBLIC_URI = "OR_KEYCLOAK_PUBLIC_URI";
-    public static final String OR_KEYCLOAK_PUBLIC_URI_DEFAULT = "/auth";
     public static final String OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT = "OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT";
     public static final int REALM_CACHE_EXPIRY_MINS = 10;
     public static final List<String> BUILT_IN_REALM_ROLES = List.of(
@@ -126,7 +125,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             .expireAfterWrite(Duration.ofMinutes(container.isDevMode() ? 0 : REALM_CACHE_EXPIRY_MINS))
             .build();
 
-        String keycloakPublicUri = getString(container.getConfig(), OR_KEYCLOAK_PUBLIC_URI, OR_KEYCLOAK_PUBLIC_URI_DEFAULT);
+        String keycloakPublicUri = getString(container.getConfig(), OR_KEYCLOAK_PUBLIC_URI, null);
+        if (TextUtil.isNullOrEmpty(keycloakPublicUri)) {
+            // Use full public URI keycloak backend
+            keycloakPublicUri = getKeycloakPublicUrl();
+        }
         try {
             URIBuilder uriBuilder = new URIBuilder(keycloakPublicUri);
             frontendURI = uriBuilder.build().toString();
@@ -147,15 +150,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         validRedirectUris = new ArrayList<>();
         validRedirectUris.add("/*");
         validRedirectUris.addAll(WebService.getExternalHostnames().stream().map(host -> "https://" + host + "/*").toList());
-    }
-
-    @Override
-    public void start(Container container) {
-        super.start(container);
-        if (container.isDevMode()) {
-            String keycloakPath = getString(container.getConfig(), OR_KEYCLOAK_PATH, OR_KEYCLOAK_PATH_DEFAULT);
-            enableAuthProxy(container.getService(WebService.class), keycloakPath);
-        }
     }
 
     @Override

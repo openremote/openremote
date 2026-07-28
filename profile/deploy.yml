@@ -381,13 +381,11 @@ services:
 
   # Keycloak identity provider
   keycloak:
-    image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-develop}
     restart: always
-    # Map any custom themes into the /deployment/keycloak/themes dir:
     #volumes:
-      # Map custom themes
-      # - ../deployment:/deployment
-      # - deployment-data:/deployment
+    #   Map custom themes for theme development
+    #  - /path/to/theme/src/main/resources/theme/openremote:/opt/keycloak/themes/dev
     #ports:
     #  - "8081:8080" # Web server port
     environment:
@@ -410,9 +408,11 @@ services:
       KC_DB_POOL_MIN_SIZE:
       KC_DB_POOL_MAX_SIZE: ${KC_DB_POOL_MAX_SIZE:-20}
 
-      # Configure web server
+      # Configure web server (Can be a full URL, or just a hostname. When only hostname is provided, scheme, port and context path are resolved from the request)
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
-      #KC_HOSTNAME_PATH: ${KC_HOSTNAME_PATH:-auth}
+      KC_HOSTNAME_DEBUG: true
+      # Set the following for edge gateways not directly exposed to the internet
+      #KC_HOSTNAME_STRICT: false
       #KC_HOSTNAME_ADMIN: ${KC_HOSTNAME_ADMIN:-}
       #KC_HTTP_ENABLED: ${KC_HTTP_ENABLED:-true}
       #KC_PROXY_HEADERS: ${KC_PROXY_HEADERS:-xforwarded}
@@ -421,14 +421,6 @@ services:
       # Custom startup options (see keycloak documentation)
       KEYCLOAK_START_COMMAND:
       KEYCLOAK_START_OPTS:
-      # Default themes to use
-      KEYCLOAK_DEFAULT_THEME: ${KEYCLOAK_DEFAULT_THEME:-openremote}
-      KEYCLOAK_ACCOUNT_THEME: ${KEYCLOAK_ACCOUNT_THEME:-openremote}
-      KEYCLOAK_WELCOME_THEME: ${KEYCLOAK_WELCOME_THEME:-keycloak}
-      # Use the following to set the issuer to a fixed value (useful when accessing a private instance via a tunnel)
-      # Should also set KC_HOSTNAME to blank, KC_HOSTNAME_STRICT to false and if the keycloak instance is publicly
-      # exposed then the proxy should be configured to validate the host header to prevent abuse
-      #KEYCLOAK_ISSUER_BASE_URI: 'https://192.168.1.2/auth'
 
       # Configuration for roles to be assigned to self-registered users (when the listener is enabled)
       # Example is "{\"realmRoles\":[\"restricted_user\"],\"clientRoles\":[{\"client\":\"openremote\",\"roles\":[\"read:assets\",\"write:attributes\"]}]}"
@@ -439,7 +431,7 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest-slim}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-develop-slim}
     restart: always
     # RAM limits and PostgreSQL memory settings should be set appropriately for the expected load (see documentation)
     shm_size: ${OR_DB_SHM:-156mb}
