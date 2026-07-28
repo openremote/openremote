@@ -110,7 +110,7 @@
   "status": "Статус",
   "name": "Назва",
   "deleteAssets": "Видалити актив(и)",
-  "deleteAssetsConfirm": "Видалити актив(и) та всі дочірні активи?\n- {{assetNames}}",
+  "deleteAssetsConfirm": "Видалити актив(и) та всі дочірні активи?",
   "deleteAssetsFailed": "Не вдалося видалити запитані активи",
   "ok": "ОК",
   "cancel": "Скасувати",

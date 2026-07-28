@@ -15,8 +15,8 @@ import {AppStateKeyed} from "@openremote/or-app";
 import { ClientRole, Role } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -296,12 +296,17 @@ export class PageRoles extends Page<AppStateKeyed> {
   }
 
   private _deleteRole(role, rowIndex) {
-    showOkCancelDialog(i18next.t("deleteRole"), i18next.t("deleteRoleConfirm", { roleName: role.name }), i18next.t("delete"))
-    .then((ok) => {
-        if (ok) {
-          this.doDelete(role, rowIndex);
-        }
-    });
+      showConfirmDialog(this.shadowRoot, html`
+          <or-vaadin-confirm-dialog @confirm=${() => this.doDelete(role, rowIndex)}>
+              ${getConfirmDialogContent(
+                  "error", 
+                  "deleteRole",
+                  html`<or-translate value="deleteRoleConfirm" .options=${{roleName: role.name}}></or-translate>`,
+                  "delete",
+                  "cancel"
+              )}
+          </or-vaadin-confirm-dialog>
+      `);
   }
   
   private doDelete(role, rowIndex) {

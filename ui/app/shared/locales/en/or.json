@@ -141,7 +141,7 @@
   "status": "Status",
   "name": "Name",
   "deleteAssets": "Delete asset(s)",
-  "deleteAssetsConfirm": "Delete asset(s) and all descendant assets?\n- {{assetNames}}",
+  "deleteAssetsConfirm": "Delete asset(s) and all descendant assets?",
   "deleteAssetsFailed": "Failed to delete requested asset(s)",
   "ok": "OK",
   "cancel": "Cancel",

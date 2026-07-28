@@ -136,7 +136,7 @@
   "status": "Status",
   "name": "Naam",
   "deleteAssets": "Verwijder assets",
-  "deleteAssetsConfirm": "Verwijder alle asset(s) en onderliggende assets?\n- {{assetNames}}",
+  "deleteAssetsConfirm": "Verwijder alle asset(s) en onderliggende assets?",
   "deleteAssetsFailed": "Verwijderen van de asset(s) is niet gelukt",
   "ok": "OK",
   "cancel": "Annuleren",

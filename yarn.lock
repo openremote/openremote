@@ -2429,6 +2429,7 @@ __metadata:
     "@vaadin/checkbox": "npm:~25.2.4"
     "@vaadin/checkbox-group": "npm:~25.2.4"
     "@vaadin/combo-box": "npm:~25.2.4"
+    "@vaadin/confirm-dialog": "npm:~25.2.4"
     "@vaadin/date-picker": "npm:~25.2.4"
     "@vaadin/date-time-picker": "npm:~25.2.4"
     "@vaadin/dialog": "npm:~25.2.4"
@@ -4375,6 +4376,21 @@ __metadata:
     "@vaadin/vaadin-usage-statistics": "npm:^2.1.0"
     lit: "npm:^3.0.0"
   checksum: 10c0/efceb8aa87b9b31ed47bc6c55b3bd86e0a71b2da9ae80bdd13fefa07c5aa6dab3c151887a6086807e921c29465b420f5738117479235c0c6a350fe3d9016338a
+  languageName: node
+  linkType: hard
+
+"@vaadin/confirm-dialog@npm:~25.2.4":
+  version: 25.2.4
+  resolution: "@vaadin/confirm-dialog@npm:25.2.4"
+  dependencies:
+    "@open-wc/dedupe-mixin": "npm:^1.3.0"
+    "@vaadin/button": "npm:~25.2.4"
+    "@vaadin/component-base": "npm:~25.2.4"
+    "@vaadin/dialog": "npm:~25.2.4"
+    "@vaadin/overlay": "npm:~25.2.4"
+    "@vaadin/vaadin-themable-mixin": "npm:~25.2.4"
+    lit: "npm:^3.0.0"
+  checksum: 10c0/43443a2973bde72fbee28fa2b04cfa3e0307ab9cb298b594e29910178623b8a4ab3add9f81d626e7f40ee269511a0ab20f1a1a14339da9cbfffabb56e51c7e18
   languageName: node
   linkType: hard
 

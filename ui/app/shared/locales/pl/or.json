@@ -139,7 +139,7 @@
   "status": "Status",
   "name": "Nazwa",
   "deleteAssets": "Usuń zasób / zasoby",
-  "deleteAssetsConfirm": "Usunąć zasób / zasoby i wszystkie podrzędne zasoby?\n- {{assetNames}}",
+  "deleteAssetsConfirm": "Usunąć zasób / zasoby i wszystkie podrzędne zasoby?",
   "deleteAssetsFailed": "Nie udało się usunąć żądanego zasobu/zasobów",
   "ok": "OK",
   "cancel": "Anuluj",
