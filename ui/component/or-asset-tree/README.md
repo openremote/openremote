@@ -1,7 +1,7 @@
 # @openremote/or-asset-tree  \<or-asset-tree\>
 [![NPM Version][npm-image]][npm-url]
 
-Web Component for displaying an asset tree. This component requires an OpenRemote Manager to retrieve, save and query assets.
+Web Component for displaying an asset tree. This component requires an OpenRemote Manager to query assets.
 
 ## Install
 ```bash

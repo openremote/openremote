@@ -1,7 +1,7 @@
 # @openremote/or-attribute-input  \<or-attribute-input\>
 [![NPM Version][npm-image]][npm-url]
 
-Web Component for displaying an input control.
+Web Component to dynamically display fitting inputs/forms for attributes. This component requires an OpenRemote Manager to retrieve JSON Schemas for complex Value Types.
 
 ## Install
 ```bash

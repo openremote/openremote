@@ -1,7 +1,7 @@
 # @openremote/or-translate  \<or-translate\>
 [![NPM Version][npm-image]][npm-url]
 
-Web Component for displaying a translated string based on the `18next` library.
+Web Component for displaying a translated string based on the `i18next` library. This component requires an OpenRemote Manager to retrieve the locale files.
 
 ## Install
 ```bash
