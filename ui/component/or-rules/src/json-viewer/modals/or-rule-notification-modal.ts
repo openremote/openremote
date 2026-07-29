@@ -32,32 +32,7 @@ import {
 } from "@openremote/or-mwc-components/or-mwc-dialog";
 import type { OrRuleFormLocalized } from "../forms/or-rule-form-localized";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
-
-const checkValidity = (form: HTMLElement | null) => {
-  if (form) {
-    const inputs = form.querySelectorAll("or-mwc-input");
-    const elements = Array.prototype.slice.call(inputs);
-
-    return elements.every((element) => {
-      if (element.shadowRoot) {
-        const input = element.shadowRoot.querySelector("input, textarea, select") as any;
-
-        if (input && input.checkValidity()) {
-          return true;
-        } else {
-          if (element._mdcComponent) {
-            element._mdcComponent.valid = false;
-            element._mdcComponent.helperTextContent = "required";
-          }
-
-          return false;
-        }
-      } else {
-        return false;
-      }
-    });
-  }
-};
+import { isFormValid } from "../util";
 
 export class OrRulesNotificationModalCancelEvent extends CustomEvent<void> {
   public static readonly NAME = "or-rules-notification-modal-cancel";
@@ -113,7 +88,10 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
     return super.disconnectedCallback();
   }
 
-  protected _onJsonRuleChanged() {
+  protected _onJsonRuleChanged(ev: Event) {
+    // Keep edits inside the dialog: the rule is only really changed once "ok" is pressed, so letting this
+    // reach the rule editor would arm its save button while the dialog is still open (and cancellable).
+    ev.stopPropagation();
     this.validateForm();
   }
 
@@ -162,25 +140,20 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
   }
 
   checkForm() {
-    if (this.shadowRoot) {
-      const dialog = this._orMwcDialog;
-      const root = dialog?.shadowRoot;
-      if (dialog && root) {
-        const messageNotification = root.querySelector("or-rule-form-email-message");
-        const pushNotification = root.querySelector("or-rule-form-push-notification");
-        const localizedNotification = root.querySelector("or-rule-form-localized");
-
-        if (pushNotification?.shadowRoot) {
-          const form = pushNotification.shadowRoot.querySelector("form");
-          return checkValidity(form);
-        } else if (messageNotification?.shadowRoot) {
-          const form = messageNotification.shadowRoot.querySelector("form");
-          return checkValidity(form);
-        } else if (localizedNotification?.shadowRoot) {
-          return (localizedNotification as OrRuleFormLocalized).isValid();
-        }
-      }
+    // renderDialogHTML() moves the slotted form into the dialog's content, so it lives in the dialog's shadow root
+    const root = this._orMwcDialog?.shadowRoot;
+    if (!root) {
+      return false;
     }
+
+    // The localized form spans several languages, so it decides on its own whether it is complete
+    const localizedNotification = root.querySelector("or-rule-form-localized");
+    if (localizedNotification) {
+      return (localizedNotification as OrRuleFormLocalized).isValid();
+    }
+
+    const form = root.querySelector("or-rule-form-email-message, or-rule-form-push-notification");
+    return isFormValid(form?.shadowRoot);
   }
 
   protected render() {

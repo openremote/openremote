@@ -17,11 +17,35 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import type { RuleActionWebhook } from "@openremote/model";
-import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import type { DialogAction, OrMwcDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 import { html, LitElement, type PropertyValues } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
+import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
+import { isFormValid } from "../util";
+
+export class OrRulesWebhookModalCancelEvent extends CustomEvent<void> {
+  public static readonly NAME = "or-rules-webhook-modal-cancel";
+
+  constructor() {
+    super(OrRulesWebhookModalCancelEvent.NAME, {
+      bubbles: true,
+      composed: true,
+    });
+  }
+}
+
+export class OrRulesWebhookModalOkEvent extends CustomEvent<void> {
+  public static readonly NAME = "or-rules-webhook-modal-ok";
+
+  constructor() {
+    super(OrRulesWebhookModalOkEvent.NAME, {
+      bubbles: true,
+      composed: true,
+    });
+  }
+}
 
 @customElement("or-rule-webhook-modal")
 export class OrRuleWebhookModal extends LitElement {
@@ -31,16 +55,36 @@ export class OrRuleWebhookModal extends LitElement {
   @property({ type: String })
   public title: string = i18next.t("message");
 
-  constructor() {
-    super();
-  }
+  @query("#webhook-modal")
+  protected _orMwcDialog?: OrMwcDialog;
 
   /* ----------------------- */
+
+  connectedCallback() {
+    this.addEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
+    return super.connectedCallback();
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
+    return super.disconnectedCallback();
+  }
+
+  protected _onJsonRuleChanged(ev: Event) {
+    // Keep edits inside the dialog: the rule is only really changed once "ok" is pressed, so letting this
+    // reach the rule editor would arm its save button while the dialog is still open (and cancellable).
+    ev.stopPropagation();
+    this.validateForm();
+  }
 
   firstUpdated(changedProperties: PropertyValues) {
     if (changedProperties.has("action")) {
       this.renderDialogHTML(this.action);
     }
+    // Possibly, a render is triggered by renderDialogHTML(), so we await the pending update. (if there is any)
+    this.getUpdateComplete().finally(() => {
+      this.validateForm();
+    });
   }
 
   renderDialogHTML(action: RuleActionWebhook) {
@@ -61,9 +105,22 @@ export class OrRuleWebhookModal extends LitElement {
     }
   }
 
-  closeForm(event: OrInputChangedEvent) {
-    const dialog: OrMwcDialog = this.shadowRoot!.host as OrMwcDialog;
-    dialog.close();
+  validateForm() {
+    const valid = this.checkForm();
+    this._orMwcDialog?.setActions(
+      this._orMwcDialog?.actions?.map((action) => {
+        if (action.actionName === "ok") {
+          action.disabled = !valid;
+        }
+        return action;
+      })
+    );
+  }
+
+  checkForm() {
+    // renderDialogHTML() moves the slotted form into the dialog's content, so it lives in the dialog's shadow root
+    const form = this._orMwcDialog?.shadowRoot?.querySelector("or-rule-form-webhook");
+    return isFormValid(form?.shadowRoot);
   }
 
   render() {
@@ -72,12 +129,15 @@ export class OrRuleWebhookModal extends LitElement {
     }
     const webhookModalActions: DialogAction[] = [
       {
-        actionName: "",
-        content: html` <or-mwc-input
-          .type="${InputType.BUTTON}"
-          label="ok"
-          @or-mwc-input-changed="${this.closeForm}"
-        ></or-mwc-input>`,
+        actionName: "cancel",
+        content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
+        action: () => this.dispatchEvent(new OrRulesWebhookModalCancelEvent()),
+      },
+      {
+        actionName: "ok",
+        content: "ok",
+        disabled: true, // (by default, can be changed in validateForm())
+        action: () => this.dispatchEvent(new OrRulesWebhookModalOkEvent()),
       },
     ];
     const webhookModalOpen = () => {

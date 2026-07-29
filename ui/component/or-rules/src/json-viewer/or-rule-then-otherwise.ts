@@ -94,11 +94,13 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], 
 
   const menu: SubMenuItem[] = [];
 
+  // The menu bar is wrapped in an element that sets --or-icon-fill to the selected action's colour, so an item
+  // without a colour of its own would inherit that instead of falling back to the default icon colour.
   const getMenuBarItem = (icon?: string, content?: string | TemplateResult, color?: string) =>
     createMenuBarItem(html`
       <div style="display: flex; align-items: center; gap: 6px;">
         <or-icon
-          style=${color ? `--or-icon-fill: #${color}` : undefined}
+          style="--or-icon-fill: ${color ? `#${color}` : "initial"}"
           icon=${icon || AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}
         ></or-icon>
         ${when(
