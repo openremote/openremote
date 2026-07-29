@@ -144,14 +144,15 @@ export class Manager {
     /**
      * Login as user, waits for username and password fields to be visible.
      * @param user Username (admin or other)
+     * @param password Password to log in with, defaulting to the one held for the known test users
      */
-    async login(user: Usernames) {
-        const username = this.page.getByRole("textbox", { name: "Username or email" });
-        const password = this.page.getByRole("textbox", { name: "Password" });
-        await username.waitFor();
-        if ((await username.isVisible()) && (await password.isVisible())) {
-            await username.fill(user);
-            await password.fill(users[user].password);
+    async login(user: Usernames | string, password: string = users[user as Usernames]?.password) {
+        const usernameField = this.page.getByRole("textbox", { name: "Username or email" });
+        const passwordField = this.page.getByRole("textbox", { name: "Password" });
+        await usernameField.waitFor();
+        if ((await usernameField.isVisible()) && (await passwordField.isVisible())) {
+            await usernameField.fill(user);
+            await passwordField.fill(password);
             await this.page.keyboard.press("Enter");
         }
     }
@@ -169,9 +170,7 @@ export class Manager {
         await this.provisionUser(realm, { username, roles, password: username });
 
         await this.goToRealmStartPage(realm);
-        await this.page.getByRole("textbox", { name: "Username or email" }).fill(username);
-        await this.page.getByRole("textbox", { name: "Password" }).fill(username);
-        await this.page.keyboard.press("Enter");
+        await this.login(username, username);
         await this.page.waitForURL("**/manager/**");
     }
 
