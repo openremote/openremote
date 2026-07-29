@@ -21,6 +21,7 @@ package org.openremote.model.services;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -34,6 +35,7 @@ import jakarta.validation.constraints.Size;
  * to register, manage,
  * and track the lifecycle of external services within the OpenRemote system.
  */
+@Schema(description = "Leased external-service registration advertised through the OpenRemote Manager.")
 public class ExternalService {
 
     /**
@@ -45,6 +47,7 @@ public class ExternalService {
     @Size(min = 3, max = 255, message = "{ExternalService.serviceId.Size}")
     @NotEmpty(message = "{ExternalService.serviceId.NotEmpty}")
     @JsonProperty("serviceId")
+    @Schema(description = "Stable identifier shared by all instances of the same service.", example = "energy-service")
     protected String serviceId;
 
     /**
@@ -55,6 +58,7 @@ public class ExternalService {
      * registry when the service is registered.
      */
     @JsonProperty(value = "instanceId")
+    @Schema(description = "Instance number assigned by the Manager during registration.", accessMode = Schema.AccessMode.READ_ONLY, example = "1")
     protected int instanceId;
 
     /**
@@ -65,6 +69,7 @@ public class ExternalService {
      */
     @Size(min = 3, max = 255, message = "{ExternalService.version.Size}")
     @JsonProperty("version")
+    @Schema(description = "Service implementation version.", example = "1.4.0")
     protected String version;
 
     /**
@@ -75,6 +80,7 @@ public class ExternalService {
      * across all realms if the isGlobal flag is also set to true.
      */
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Schema(description = "Realm that owns this registration.", accessMode = Schema.AccessMode.READ_ONLY, example = "building")
     protected String realm;
 
     /**
@@ -86,6 +92,7 @@ public class ExternalService {
      * Should be a valid icon name from the Material Design Icons library.
      */
     @JsonProperty("icon")
+    @Schema(description = "Material Design Icons name used by Manager UIs.", example = "puzzle")
     protected String icon = "puzzle";
 
     /**
@@ -97,6 +104,7 @@ public class ExternalService {
     @NotEmpty(message = "{ExternalService.label.NotEmpty}")
     @Size(min = 1, max = 255, message = "{ExternalService.label.Size}")
     @JsonProperty("label")
+    @Schema(description = "Human-readable service label.", example = "Energy Service")
     protected String label;
 
     /**
@@ -110,6 +118,7 @@ public class ExternalService {
     @Size(min = 3, max = 512, message = "{ExternalService.homepageUrl.Size}")
     @NotEmpty(message = "{ExternalService.homepageUrl.NotEmpty}")
     @JsonProperty("homepageUrl")
+    @Schema(description = "Absolute URL of the service UI or configuration page.", example = "https://services.example.com/energy")
     protected String homepageUrl;
 
     /**
@@ -120,6 +129,7 @@ public class ExternalService {
      */
     @NotNull(message = "{ExternalService.status.NotNull}")
     @JsonProperty("status")
+    @Schema(description = "Current availability derived from the registration lease.")
     protected ExternalServiceStatus status;
 
     /**
@@ -142,6 +152,7 @@ public class ExternalService {
      * registered by a super admin service user and set to MASTER_REALM.
      */
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Schema(description = "Whether the service is visible to every realm.", accessMode = Schema.AccessMode.READ_ONLY)
     protected boolean isGlobal = false;
 
     public ExternalService() {

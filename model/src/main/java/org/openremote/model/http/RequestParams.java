@@ -19,6 +19,7 @@
  */
 package org.openremote.model.http;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.core.Context;
@@ -37,12 +38,15 @@ public class RequestParams {
     public HttpHeaders headers;
 
     @HeaderParam(HttpHeaders.AUTHORIZATION)
+    @Parameter(hidden = true)
     public String authorization;
 
     @HeaderParam("X-Forwarded-Proto")
+    @Parameter(hidden = true)
     public String forwardedProtoHeader;
 
     @HeaderParam("X-Forwarded-Host")
+    @Parameter(hidden = true)
     public String forwardedHostHeader;
 
     @Context

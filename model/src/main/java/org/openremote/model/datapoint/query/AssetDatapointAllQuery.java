@@ -1,5 +1,6 @@
 package org.openremote.model.datapoint.query;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.openremote.model.attribute.AttributeRef;
 
 import java.time.Instant;
@@ -7,6 +8,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashMap;
 
+@Schema(description = "Returns every stored datapoint in the inclusive range, ordered from newest to oldest. "
+        + "Use this when the complete series is needed without aggregation or downsampling. Supports numeric, "
+        + "boolean, text, and JSON-compatible complex attribute values.")
 public class AssetDatapointAllQuery extends AssetDatapointQuery {
 
     public AssetDatapointAllQuery() {}

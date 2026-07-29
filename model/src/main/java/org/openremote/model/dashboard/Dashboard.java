@@ -1,5 +1,6 @@
 package org.openremote.model.dashboard;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -14,6 +15,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "DASHBOARD")
+@Schema(description = "Realm-scoped Manager dashboard with ownership, access policy, and a screen/widget template.")
 public class Dashboard {
 
     @Id @HibernateUniqueIdentifierType

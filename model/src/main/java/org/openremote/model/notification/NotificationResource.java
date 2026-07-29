@@ -21,15 +21,23 @@ package org.openremote.model.notification;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
+import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.openremote.model.http.OpenApiDescriptions.*;
+import static org.openremote.model.http.OpenApiExamples.PUSH_NOTIFICATION;
 
-@Tag(name = "Notification", description = "Operations on notifications")
+@Tag(name = "Notification", description = "Send notifications and query, delete, deliver, or acknowledge their delivery records")
 @Path("notification")
 public interface NotificationResource {
 
@@ -42,20 +50,24 @@ public interface NotificationResource {
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_NOTIFICATIONS_ROLE})
-    @Operation(operationId = "getNotifications", summary = "Retrieve sent notifications matching the supplied criteria")
+    @Operation(operationId = "getNotifications", summary = "Retrieve sent notifications matching filter criteria",
+        description = "Returns sent-notification records filtered by identity, message type, time, realm, target, source, sorting, and pagination. Results are realm-scoped and sensitive target/source identifiers are redacted when the caller lacks user or asset read permission.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
     SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
-                                        @QueryParam("id") Long id,
-                                        @QueryParam("type") String type,
-                                        @QueryParam("from") Long fromTimestamp,
-                                        @QueryParam("to") Long toTimestamp,
-                                        @QueryParam("realmId") String realmId,
-                                        @QueryParam("userId") String userId,
-                                        @QueryParam("assetId") String assetId,
-                                        @QueryParam("source") Notification.Source source,
-                                        @QueryParam("sort") SentNotification.SortField sort,
-                                        @QueryParam("descending") Boolean descending,
-                                        @QueryParam("offset") Integer offset,
-                                        @QueryParam("limit") Integer limit);
+                                        @Parameter(description = "Return only this sent-notification record.", example = "42") @QueryParam("id") Long id,
+                                        @Parameter(description = "Notification message type discriminator.", example = "push") @QueryParam("type") String type,
+                                        @Parameter(description = "Inclusive lower bound for the sent timestamp, in Unix milliseconds.", example = EXAMPLE_TIMESTAMP) @QueryParam("from") Long fromTimestamp,
+                                        @Parameter(description = "Exclusive upper bound for the sent timestamp, in Unix milliseconds.", example = "1767312000000") @QueryParam("to") Long toTimestamp,
+                                        @Parameter(description = "Return notifications associated with this realm.", example = EXAMPLE_REALM) @QueryParam("realmId") String realmId,
+                                        @Parameter(description = USER_ID, example = EXAMPLE_USER_ID) @QueryParam("userId") String userId,
+                                        @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @QueryParam("assetId") String assetId,
+                                        @Parameter(description = "Origin that created the notification.") @QueryParam("source") Notification.Source source,
+                                        @Parameter(description = "Field used to order the result set.") @QueryParam("sort") SentNotification.SortField sort,
+                                        @Parameter(description = "Reverse the selected sort order.", example = "true") @QueryParam("descending") Boolean descending,
+                                        @Parameter(description = "Number of matching records to skip.", example = "0") @QueryParam("offset") Integer offset,
+                                        @Parameter(description = "Maximum number of records to return.", example = "100") @QueryParam("limit") Integer limit);
 
     /**
      * Removes all sent notifications that have been sent to the specified targets; optionally limiting the scope of the
@@ -65,15 +77,19 @@ public interface NotificationResource {
      */
     @DELETE
     @RolesAllowed({Constants.WRITE_NOTIFICATIONS_ROLE})
-    @Operation(operationId = "removeNotifications", summary = "Delete all sent notifications by targets")
+    @Operation(operationId = "removeNotifications", summary = "Delete sent notifications matching filter criteria",
+        description = "Permanently removes all records matching the optional ID, type, time, realm, user, and asset filters. This bulk operation is restricted to a super user.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
     void removeNotifications(@BeanParam RequestParams requestParams,
-                             @QueryParam("id") Long id,
-                             @QueryParam("type") String type,
-                             @QueryParam("from") Long fromTimestamp,
-                             @QueryParam("to") Long toTimestamp,
-                             @QueryParam("realmId") String realmId,
-                             @QueryParam("userId") String userId,
-                             @QueryParam("assetId") String assetId);
+                             @Parameter(description = "Delete only this sent-notification record.", example = "42") @QueryParam("id") Long id,
+                             @Parameter(description = "Delete records with this notification message type.", example = "push") @QueryParam("type") String type,
+                             @Parameter(description = "Inclusive lower bound for the sent timestamp, in Unix milliseconds.", example = EXAMPLE_TIMESTAMP) @QueryParam("from") Long fromTimestamp,
+                             @Parameter(description = "Exclusive upper bound for the sent timestamp, in Unix milliseconds.", example = "1767312000000") @QueryParam("to") Long toTimestamp,
+                             @Parameter(description = "Delete records associated with this realm.", example = EXAMPLE_REALM) @QueryParam("realmId") String realmId,
+                             @Parameter(description = USER_ID, example = EXAMPLE_USER_ID) @QueryParam("userId") String userId,
+                             @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @QueryParam("assetId") String assetId);
 
     /**
      * Remove a specific sent notification by ID.
@@ -81,9 +97,13 @@ public interface NotificationResource {
     @DELETE
     @Path("{notificationId}")
     @RolesAllowed({Constants.WRITE_NOTIFICATIONS_ROLE})
-    @Operation(operationId = "removeNotification", summary = "Delete a sent notification")
+    @Operation(operationId = "removeNotification", summary = "Delete a sent notification",
+        description = "Permanently removes one sent-notification record. This operation is restricted to a super user and is idempotent when the ID does not exist.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
     void removeNotification(@BeanParam RequestParams requestParams,
-                            @PathParam("notificationId") Long notificationId);
+                            @Parameter(description = "Numeric sent-notification identifier.", example = "42") @PathParam("notificationId") Long notificationId);
 
     /**
      * Send a notification to one or more targets; the authorisation of the requesting user will determine whether or
@@ -94,9 +114,15 @@ public interface NotificationResource {
     @Path("alert")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_NOTIFICATIONS_ROLE})
-    @Operation(operationId = "sendNotification", summary = "Send a notification to one or more targets")
+    @Operation(operationId = "sendNotification", summary = "Send a notification to one or more targets",
+        description = "Queues a notification for delivery. Authorization is checked for every target; if any target is inaccessible, the complete request fails rather than sending a partial set.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
     void sendNotification(@BeanParam RequestParams requestParams,
-                          Notification notification);
+                          @RequestBody(required = true, description = "Message, source, and one or more delivery targets to queue.",
+                              content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = Notification.class),
+                                  examples = @ExampleObject(name = "Push notification", summary = "Send a high-priority asset alert to one user", value = PUSH_NOTIFICATION))) Notification notification);
 
     /**
      * Allows a target to mark a notification as delivered.
@@ -106,10 +132,15 @@ public interface NotificationResource {
      */
     @PUT
     @Path("{notificationId}/delivered")
-    @Operation(operationId = "notificationDelivered", summary = "Update a notification as delivered")
+    @Operation(operationId = "notificationDelivered", summary = "Mark a notification as delivered",
+        description = "Marks one target's notification as delivered after matching both notificationId and targetId. Anonymous callers may update notifications sent to a public asset; authenticated callers are constrained to their own user, realm, or accessible assets.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.Forbidden
+    @OpenApiResponses.NotFound
     void notificationDelivered(@BeanParam RequestParams requestParams,
-                               @QueryParam("targetId") String targetId,
-                               @PathParam("notificationId") Long notificationId);
+                               @Parameter(description = "User, asset, or realm target identifier whose delivery state is updated.", example = EXAMPLE_USER_ID, required = true) @QueryParam("targetId") String targetId,
+                               @Parameter(description = "Numeric sent-notification identifier.", example = "42") @PathParam("notificationId") Long notificationId);
 
     /**
      * Allows a target to acknowledge a notification with an optional acknowledgement value.
@@ -120,11 +151,17 @@ public interface NotificationResource {
     @PUT
     @Path("{notificationId}/acknowledged")
     @Consumes(APPLICATION_JSON)
-    @Operation(operationId = "notificationAcknowledged", summary = "Update a notification as acknowledged")
+    @Operation(operationId = "notificationAcknowledged", summary = "Acknowledge a notification",
+        description = "Marks one target's notification as acknowledged and stores the optional JSON acknowledgement value. Access rules are identical to notificationDelivered.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.Forbidden
+    @OpenApiResponses.NotFound
     void notificationAcknowledged(@BeanParam RequestParams requestParams,
-                                  @QueryParam("targetId") String targetId,
-                                  @PathParam("notificationId") Long notificationId,
-                                  JsonNode acknowledgement);
+                                  @Parameter(description = "User, asset, or realm target identifier whose acknowledgement state is updated.", example = EXAMPLE_USER_ID, required = true) @QueryParam("targetId") String targetId,
+                                  @Parameter(description = "Numeric sent-notification identifier.", example = "42") @PathParam("notificationId") Long notificationId,
+                                  @RequestBody(description = "Optional arbitrary JSON acknowledgement value.",
+                                      content = @Content(schema = @Schema(nullable = true))) JsonNode acknowledgement);
 
     /**
      * Counts sent notifications matching the supplied criteria; uses the same scoping and access rules as
@@ -134,13 +171,17 @@ public interface NotificationResource {
     @Path("count")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_NOTIFICATIONS_ROLE})
-    @Operation(operationId = "getNotificationsCount", summary = "Count sent notifications matching the supplied criteria")
+    @Operation(operationId = "getNotificationsCount", summary = "Count sent notifications matching filter criteria",
+        description = "Returns the count for the same realm-scoped type, time, target, and source filters supported by getNotifications without loading notification records.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
     long getNotificationsCount(@BeanParam RequestParams requestParams,
-                               @QueryParam("type") String type,
-                               @QueryParam("from") Long fromTimestamp,
-                               @QueryParam("to") Long toTimestamp,
-                               @QueryParam("realmId") String realmId,
-                               @QueryParam("userId") String userId,
-                               @QueryParam("assetId") String assetId,
-                               @QueryParam("source") Notification.Source source);
+                               @Parameter(description = "Notification message type discriminator.", example = "push") @QueryParam("type") String type,
+                               @Parameter(description = "Inclusive lower bound for the sent timestamp, in Unix milliseconds.", example = EXAMPLE_TIMESTAMP) @QueryParam("from") Long fromTimestamp,
+                               @Parameter(description = "Exclusive upper bound for the sent timestamp, in Unix milliseconds.", example = "1767312000000") @QueryParam("to") Long toTimestamp,
+                               @Parameter(description = "Count notifications associated with this realm.", example = EXAMPLE_REALM) @QueryParam("realmId") String realmId,
+                               @Parameter(description = USER_ID, example = EXAMPLE_USER_ID) @QueryParam("userId") String userId,
+                               @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @QueryParam("assetId") String assetId,
+                               @Parameter(description = "Origin that created the notification.") @QueryParam("source") Notification.Source source);
 }

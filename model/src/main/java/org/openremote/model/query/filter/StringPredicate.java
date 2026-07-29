@@ -19,6 +19,7 @@
  */
 package org.openremote.model.query.filter;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.ValueUtil;
@@ -33,6 +34,7 @@ import java.util.function.Supplier;
  * Predicate for string values; will match based on configured options.
  */
 @JsonSchemaDescription("Predicate for string values; will match based on configured options.")
+@Schema(description = "String matcher supporting exact, prefix, suffix, or contains matching, case sensitivity, and negation.")
 public class StringPredicate extends ValuePredicate {
 
     public static final String name = "string";

@@ -22,6 +22,7 @@ package org.openremote.model.security;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 
@@ -41,6 +42,7 @@ import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
  */
 @Entity
 @Subselect("select * from PUBLIC.REALM") // Map this immutable to an SQL view, don't use/create table
+@Schema(description = "Identity-provider realm and its authentication, registration, theme, token, and role settings.")
 public class Realm {
 
     public static final List<RealmRole> DEFAULT_REALM_ROLES = List.of(
@@ -61,15 +63,19 @@ public class Realm {
     }
 
     @Id
+    @Schema(description = "Identity-provider internal realm identifier.", accessMode = Schema.AccessMode.READ_ONLY)
     protected String id;
 
     @Column(name = "NAME")
+    @Schema(description = "Stable realm name used in API paths and tokens.", example = "building")
     protected String name;
 
     @Formula("(select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = ID and ra.name = 'displayName')")
+    @Schema(description = "Human-readable realm label.", example = "Building Management")
     protected String displayName;
 
     @Column(name = "ENABLED")
+    @Schema(description = "Whether users can authenticate against this realm.", example = "true")
     protected Boolean enabled;
 
     @Column(name = "NOT_BEFORE")
@@ -82,6 +88,7 @@ public class Realm {
     @Column(name = "password_policy")
     @Convert(converter = PasswordPolicyConverter.class)
     @JsonDeserialize(using = PasswordPolicyDeserializer.class)
+    @Schema(description = "Identity-provider password-policy rules.")
     protected List<String> passwordPolicy;
 
     @Column(name = "reset_password_allowed")
@@ -118,10 +125,12 @@ public class Realm {
     protected String emailTheme;
 
     @Column(name = "access_token_lifespan")
+    @Schema(description = "Access-token lifetime in seconds.", example = "300")
     protected Integer accessTokenLifespan;
 
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "REALM_ID")
+    @Schema(description = "Realm-level roles available for assignment.")
     protected Set<RealmRole> realmRoles;
 
     public Realm() {
