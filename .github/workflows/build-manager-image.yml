@@ -95,7 +95,7 @@ jobs:
       - name: Upload Grype scan report on failure
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         # Only run this step if the previous steps failed AND it was specifically the scan step that failed
-        if: failure() && steps.manager-anchore-scan.outcome == 'failure'
+        if: always() && steps.manager-anchore-scan.outcome == 'failure'
         with:
           name: grype-critical-vulnerability-report
           # The scan-action automatically outputs the path to the SARIF file
