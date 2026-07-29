@@ -26,12 +26,15 @@ test.use({ storageState: adminStatePath });
 /** Alarms seeded through the REST API, removed again after each test. */
 const seededAlarmIds: number[] = [];
 
+/** Distinguishes alarms seeded within the same millisecond, so their titles stay unique enough to look up by. */
+let seedCount = 0;
+
 /** Persist an alarm via REST and return its id and title, for table lookups and assertions. */
 async function seedAlarm(
     manager: Manager,
     { realm = "master", status = AlarmStatus.OPEN, severity = AlarmSeverity.MEDIUM } = {}
 ) {
-    const title = `E2E alarm ${Date.now()}`;
+    const title = `E2E alarm ${Date.now()}-${++seedCount}`;
     const config = await manager.adminConfig();
     const alarm = (await manager.api.AlarmResource.createAlarm({
         realm,
@@ -48,7 +51,9 @@ async function seedAlarm(
 
 test.afterEach(async ({ manager }) => {
     if (seededAlarmIds.length > 0) {
-        await manager.api.AlarmResource.removeAlarms(seededAlarmIds.splice(0), await manager.adminConfig());
+        // tests that delete through the UI leave ids behind that are already gone, which is not a failure
+        await manager.api.AlarmResource.removeAlarms(seededAlarmIds.splice(0), await manager.adminConfig())
+            .catch((e) => console.warn("Could not delete seeded alarm(s): ", e.response?.status ?? e.message));
     }
     await manager.cleanUp();
 });
@@ -103,6 +108,57 @@ test("should drop a resolved alarm from the default active filter", async ({ man
 
     await expect(alarmsPage.getTable()).toBeVisible();
     await expect(alarmsPage.getRowByText(title)).toHaveCount(0);
+});
+
+/**
+ * The assertions below count table rows, so they run against "smartcity", which holds only the alarms seeded here
+ * rather than the master realm's demo data.
+ */
+test.describe("Delete alarms", () => {
+    // Keycloak sessions are per realm, so the stored admin state (master) cannot view "smartcity". Start clean and
+    // log in as a user of that realm instead.
+    test.use({ storageState: { cookies: [], origins: [] } });
+
+    /**
+     * @given Three alarms in the "smartcity" realm, and a user of that realm who may write alarms
+     * @when A single row is selected, and "select all" is then ticked on top of it
+     * @then The confirmation counts each alarm once rather than counting the pre-selected row twice
+     * @and Confirming removes all of them
+     */
+    test("should delete the alarms selected in the table", async ({ manager, alarmsPage }) => {
+        // seeded over REST as the master admin, which is independent of the realm session used below
+        const alarms = [
+            await seedAlarm(manager, { realm: "smartcity" }),
+            await seedAlarm(manager, { realm: "smartcity" }),
+            await seedAlarm(manager, { realm: "smartcity" })
+        ];
+
+        await manager.provisionUserAndLogin("smartcity", {
+            username: "e2e-alarm-editor",
+            roles: ["read:alarms", "write:alarms"],
+        });
+        await alarmsPage.goto();
+        await expect(alarmsPage.getRows()).toHaveCount(alarms.length);
+
+        // Selecting all emits a select event per row, including the row already selected here, which used to be
+        // added to the selection a second time. More than one row is needed: selecting the only row would already
+        // put the header checkbox in its checked state, making ticking it a no-op that emits nothing.
+        await alarmsPage.getRowCheckbox(alarms[0].title).check();
+        await alarmsPage.getSelectAllCheckbox().check();
+
+        // the trash button only appears once something is selected
+        await expect(alarmsPage.getDeleteSelectedButton()).toBeVisible();
+        await alarmsPage.getDeleteSelectedButton().click();
+        await expect(alarmsPage.getDeleteConfirmation(alarms.length)).toHaveCount(1);
+
+        // confirming clears the table, and the alarms are gone from the backend rather than just the view
+        await alarmsPage.getConfirmDeleteButton().click();
+        await expect(alarmsPage.getRows()).toHaveCount(0);
+
+        const config = await manager.adminConfig();
+        const remaining = (await manager.api.AlarmResource.getAlarms({ realm: "smartcity" }, config)).data;
+        expect(remaining).toEqual([]);
+    });
 });
 
 test.describe("Role-Based Access Control", () => {
