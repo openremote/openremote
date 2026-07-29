@@ -37,7 +37,7 @@ import {
     withPage,
 } from "@openremote/test";
 import { playwrightRequestAdapter } from "./request-adapter";
-import { AssetsPage, InsightsPage, NotificationsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
+import { AlarmsPage, AssetsPage, InsightsPage, NotificationsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
 import { MwcInput, MwcMenu } from "../../../../component/or-mwc-components/test/fixtures";
@@ -574,6 +574,7 @@ function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; sha
 }
 
 interface PageFixtures {
+    alarmsPage: AlarmsPage;
     assetsPage: AssetsPage;
     insightsPage: InsightsPage;
     notificationsPage: NotificationsPage;
@@ -599,6 +600,7 @@ interface Fixtures extends PageFixtures, ComponentFixtures {
 export const test = base.extend<Fixtures>({
     manager: async ({ page, baseURL, request }, use) => await use(new Manager(page, baseURL!, request)),
     // Pages
+    alarmsPage: withManager(AlarmsPage),
     assetsPage: withManager(AssetsPage),
     insightsPage: withManager(InsightsPage),
     notificationsPage: withManager(NotificationsPage),
