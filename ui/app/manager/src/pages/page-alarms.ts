@@ -691,7 +691,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                               }}>
                                 <or-translate slot="label" value="alarm.severity"></or-translate>
                             </or-vaadin-select>
-                            
+
+                            <or-vaadin-select class="alarm-input" ?readonly=${!write}
+                                              .items=${this._getAddStatusOptions()} value=${alarm.status}
+                                              @change=${(ev: Event) => {
+                                                  alarm.status = (ev.currentTarget as OrVaadinSelect).value as AlarmStatus;
+                                                  this.onAlarmChanged(ev);
+                                              }}>
+                                <or-translate slot="label" value="alarm.status"></or-translate>
+                            </or-vaadin-select>
+
                             <or-vaadin-select class="alarm-input"
                                               ?readonly=${!manager.hasRole("read:users") && !manager.hasRole("read:admin")}
                                               .items=${this._getUsers()} value=${alarm.assigneeId}
