@@ -172,7 +172,6 @@ public interface NotificationResource {
     @Path("count")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_NOTIFICATIONS_ROLE})
-    @RolesAllowed({Constants.READ_ADMIN_ROLE, Constants.READ_NOTIFICATIONS_ROLE})
     @Operation(operationId = "getNotificationsCount", summary = "Count sent notifications matching filter criteria",
         description = "Returns the count for the same realm-scoped type, time, target, and source filters supported by getNotifications without loading notification records.")
     @OpenApiResponses.Ok
