@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { expect } from "@openremote/test";
-import { test, userStatePath } from "./fixtures/manager.js";
+import { type Manager, test, userStatePath } from "./fixtures/manager.js";
 import { preparedAssetsForRules as assets } from "./fixtures/data/assets.js";
 import { energyRule } from "./fixtures/data/rules.js";
 import { type Asset, type RealmRuleset, RulesetLang } from "@openremote/model";
@@ -407,6 +407,137 @@ test("Dragging a legacy JavaScript rule is blocked", async ({ page, manager }) =
   await expect(page.locator("or-mwc-snackbar")).toContainText("JavaScript rules are legacy and cannot be updated.");
   expect(api.putRequests).toBe(0);
 });
+
+/**
+ * The then-clause actions that keep their configuration behind a dialog, with the button that opens it and a
+ * required field inside it. They share one flow, so they should behave identically.
+ *
+ * Email and push resolve to their localized variants when the realm configures notification languages; the plain
+ * forms asserted on here are what an unconfigured realm (like the test realm) gets.
+ */
+const dialogActions = [
+  { type: "Email", openWith: "Message", field: "Subject", value: "E2E subject" },
+  { type: "Push notification", openWith: "Message", field: "Title", value: "E2E title" },
+  { type: "Alarm", openWith: "Settings", field: "Title", value: "E2E alarm title" },
+  { type: "Webhook", openWith: "Message", field: "Web URL", value: "https://example.com/e2e" },
+];
+
+/**
+ * Fill in a When-Then rule's when clause, leaving the then clause ready for an action. These tests exercise the
+ * then-clause action dialogs; a complete when clause is only needed to make the rule saveable.
+ */
+async function startRuleWithWhenClause(page: any, manager: Manager, ruleName: string) {
+  await manager.setup("smartcity", { assets });
+  await manager.goToRealmStartPage("smartcity");
+  await manager.navigateToTab("Rules");
+  await page.click(".mdi-plus >> nth=0");
+  await page.getByRole("menuitem", { name: "When-Then", exact: true }).click();
+  await page.getByRole("textbox", { name: "Rule name" }).fill(ruleName);
+
+  const when = page.locator("or-rule-when");
+  await when.getByRole("menuitem", { name: "Add condition" }).click();
+  await when.getByRole("menuitem", { name: energyRule.asset_type }).click();
+  await when.getByRole("combobox", { name: "Asset", exact: true }).click();
+  await when.getByRole("option", { name: energyRule.asset, exact: true }).click();
+  await when.getByRole("combobox", { name: "Attribute", exact: true }).click();
+  await when.getByRole("option", { name: energyRule.attribute_when, exact: true }).click();
+  await when.getByRole("combobox", { name: "Operator", exact: true }).click();
+  await when.getByRole("option", { name: "Less than or equal to", exact: true }).click();
+  await when.getByRole("spinbutton", { name: "Energy level" }).fill(energyRule.value.toString());
+}
+
+/**
+ * @given A When-Then rule with an email action
+ * @when The message dialog is opened
+ * @then Its confirm button tracks whether the message is complete, rather than staying disabled regardless
+ *
+ * Regression test for the email message being uneditable: validation looked for `or-mwc-input` elements inside a
+ * `<form>`, neither of which the Vaadin forms render, so the dialog could never be confirmed.
+ */
+test("Email action dialog can be confirmed once the message is complete", async ({ page, manager, rulesPage }) => {
+  await startRuleWithWhenClause(page, manager, "Email validity rule");
+  await rulesPage.addThenAction("Email");
+  await rulesPage.openActionDialog("Message");
+
+  // a new email action is prefilled with placeholders, so it starts out complete
+  await expect(rulesPage.getDialogField("Subject")).not.toHaveValue("");
+  await expect(rulesPage.getDialogButton("OK")).toBeEnabled();
+
+  // emptying a required field blocks confirming ...
+  await rulesPage.getDialogField("Subject").fill("");
+  await rulesPage.getDialogField("Subject").blur();
+  await expect(rulesPage.getDialogButton("OK")).toBeDisabled();
+
+  // ... and filling it in again unblocks it
+  await rulesPage.getDialogField("Subject").fill("E2E subject");
+  await rulesPage.getDialogField("Subject").blur();
+  await expect(rulesPage.getDialogButton("OK")).toBeEnabled();
+
+  await rulesPage.getDialogButton("OK").click();
+  await expect(rulesPage.getOpenDialog()).toHaveCount(0);
+});
+
+/**
+ * Each action's dialog holds its edits until confirmed, so the rule editor's save button only arms on "ok" and
+ * cancelling leaves both the rule and the button untouched.
+ */
+for (const { type, openWith, field, value } of dialogActions) {
+  /**
+   * @given A saved When-Then rule with a <type> action, so the save button starts disabled
+   * @when The action's dialog is opened and a field is edited
+   * @then The save button stays disabled while the dialog is open
+   * @and Cancelling discards the edit, leaving the save button disabled
+   * @and Confirming applies the edit, closes the dialog and arms the save button
+   */
+  test(`${type} action dialog defers its changes until confirmed`, async ({ page, manager, shared, rulesPage }) => {
+    const ruleName = `${type} deferral rule`;
+    await startRuleWithWhenClause(page, manager, ruleName);
+    await rulesPage.addThenAction(type);
+
+    // the webhook action has no default URL, so give it one to make the rule saveable
+    if (type === "Webhook") {
+      await rulesPage.openActionDialog(openWith);
+      await rulesPage.getDialogField(field).fill(value);
+      await rulesPage.getDialogField(field).blur();
+      await rulesPage.getDialogButton("OK").click();
+      await expect(rulesPage.getOpenDialog()).toHaveCount(0);
+    }
+
+    await shared.interceptResponse<number>("**/rules/realm", (rule) => {
+      if (rule) manager.rules.push(rule);
+    });
+
+    // saving leaves an unmodified rule, so the button goes back to disabled and any later arming is ours
+    await rulesPage.getSaveButton().click();
+    await expect(page.locator(`text=${ruleName}`)).toHaveCount(1);
+    await expect(rulesPage.getSaveButton()).toBeDisabled();
+
+    // editing inside the dialog must not arm the rule editor behind it
+    await rulesPage.openActionDialog(openWith);
+    const original = await rulesPage.getDialogField(field).inputValue();
+    await rulesPage.getDialogField(field).fill(`${value} (cancelled)`);
+    await rulesPage.getDialogField(field).blur();
+    await expect(rulesPage.getSaveButton()).toBeDisabled();
+
+    // cancelling rolls the edit back
+    await rulesPage.getDialogButton("Cancel").click();
+    await expect(rulesPage.getOpenDialog()).toHaveCount(0);
+    await expect(rulesPage.getSaveButton()).toBeDisabled();
+
+    await rulesPage.openActionDialog(openWith);
+    await expect(rulesPage.getDialogField(field)).toHaveValue(original);
+
+    // confirming applies it, closes the dialog, and only then arms the save button
+    await rulesPage.getDialogField(field).fill(`${value} (confirmed)`);
+    await rulesPage.getDialogField(field).blur();
+    await rulesPage.getDialogButton("OK").click();
+    await expect(rulesPage.getOpenDialog()).toHaveCount(0);
+    await expect(rulesPage.getSaveButton()).toBeEnabled();
+
+    await rulesPage.openActionDialog(openWith);
+    await expect(rulesPage.getDialogField(field)).toHaveValue(`${value} (confirmed)`);
+  });
+}
 
 test.afterEach(async ({ manager }) => {
   await manager.cleanUp();
