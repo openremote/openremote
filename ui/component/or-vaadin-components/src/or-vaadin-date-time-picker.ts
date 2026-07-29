@@ -23,6 +23,8 @@ import type { OrVaadinComponent } from "./util";
 @customElement("or-vaadin-date-time-picker")
 export class OrVaadinDateTimePicker extends DateTimePicker implements OrVaadinComponent {
   public static getLocalizedISOString(d?: Date) {
-    return d && new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    return d && !Number.isNaN(d.getTime())
+      ? new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+      : undefined;
   }
 }
