@@ -28,7 +28,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.OpenApiResponses;
@@ -41,6 +40,9 @@ import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.openremote.model.http.OpenApiDescriptions.*;
+import static org.openremote.model.http.OpenApiExamples.ALARM_ASSET_LINK_INVALID_MULTIPLE_ALARMS;
+import static org.openremote.model.http.OpenApiExamples.ALARM_ASSET_LINK_MULTIPLE;
+import static org.openremote.model.http.OpenApiExamples.ALARM_ASSET_LINK_SINGLE;
 import static org.openremote.model.http.OpenApiExamples.ALARM_CREATE;
 
 @Tag(name = "Alarm", description = "Create, query, maintain, and associate alarms with assets")
@@ -147,19 +149,16 @@ public interface AlarmResource {
 
                     The request body is a list for backward compatibility, but this operation now has single-alarm semantics:
                     every item must contain the same `id.realm` and the same `id.alarmId`. The alarm must exist in that realm,
-                    every asset must exist in the same realm, and the authenticated user must have access to that realm.
+                    every asset must exist in the same realm, and the authenticated user must have access to that realm. Requests
+                    containing mixed alarm IDs or realms are rejected as bad requests.
 
                     Existing links are left unchanged; duplicate links in the request or links that already exist are ignored.
                     This operation does not remove existing links from the alarm.
-                    """,
-            responses = {
-                    @ApiResponse(responseCode = "204", description = "Asset links were added, or already existed"),
-                    @ApiResponse(responseCode = "400", description = "Invalid request body, multiple alarm IDs or realms were provided, or the alarm/assets are not all in the same realm"),
-                    @ApiResponse(responseCode = "401", description = "Authentication is required"),
-                    @ApiResponse(responseCode = "403", description = "The authenticated user is not allowed to write alarms in the requested realm"),
-                    @ApiResponse(responseCode = "404", description = "The alarm or one or more assets do not exist")
-            }
+                    """
     )
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.NotFound
     void setAssetLinks(
             @BeanParam RequestParams requestParams,
             @RequestBody(
@@ -172,61 +171,17 @@ public interface AlarmResource {
                                     @ExampleObject(
                                             name = "Single asset link",
                                             summary = "Link one asset to one alarm",
-                                            value = """
-                                                    [
-                                                      {
-                                                        "id": {
-                                                          "realm": "building",
-                                                          "alarmId": 1234,
-                                                          "assetId": "7A6p4AnLTkKxJUCQAAABAA"
-                                                        }
-                                                      }
-                                                    ]
-                                                    """
+                                            value = ALARM_ASSET_LINK_SINGLE
                                     ),
                                     @ExampleObject(
                                             name = "Multiple asset links",
                                             summary = "Link multiple assets to the same alarm",
-                                            value = """
-                                                    [
-                                                      {
-                                                        "id": {
-                                                          "realm": "building",
-                                                          "alarmId": 1234,
-                                                          "assetId": "7A6p4AnLTkKxJUCQAAABAA"
-                                                        }
-                                                      },
-                                                      {
-                                                        "id": {
-                                                          "realm": "building",
-                                                          "alarmId": 1234,
-                                                          "assetId": "2Qjr4AnLTkKxJUCQAAACAA"
-                                                        }
-                                                      }
-                                                    ]
-                                                    """
+                                            value = ALARM_ASSET_LINK_MULTIPLE
                                     ),
                                     @ExampleObject(
                                             name = "Invalid multiple alarms",
                                             summary = "Rejected because the request targets more than one alarm",
-                                            value = """
-                                                    [
-                                                      {
-                                                        "id": {
-                                                          "realm": "building",
-                                                          "alarmId": 1234,
-                                                          "assetId": "7A6p4AnLTkKxJUCQAAABAA"
-                                                        }
-                                                      },
-                                                      {
-                                                        "id": {
-                                                          "realm": "building",
-                                                          "alarmId": 5678,
-                                                          "assetId": "2Qjr4AnLTkKxJUCQAAACAA"
-                                                        }
-                                                      }
-                                                    ]
-                                                    """
+                                            value = ALARM_ASSET_LINK_INVALID_MULTIPLE_ALARMS
                                     )
                             }
                     )

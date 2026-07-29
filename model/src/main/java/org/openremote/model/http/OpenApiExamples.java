@@ -203,6 +203,56 @@ public final class OpenApiExamples {
         }
         """;
 
+    public static final String ALARM_ASSET_LINK_SINGLE = """
+        [
+          {
+            "id": {
+              "realm": "building",
+              "alarmId": 1234,
+              "assetId": "7A6p4AnLTkKxJUCQAAABAA"
+            }
+          }
+        ]
+        """;
+
+    public static final String ALARM_ASSET_LINK_MULTIPLE = """
+        [
+          {
+            "id": {
+              "realm": "building",
+              "alarmId": 1234,
+              "assetId": "7A6p4AnLTkKxJUCQAAABAA"
+            }
+          },
+          {
+            "id": {
+              "realm": "building",
+              "alarmId": 1234,
+              "assetId": "2Qjr4AnLTkKxJUCQAAACAA"
+            }
+          }
+        ]
+        """;
+
+    public static final String ALARM_ASSET_LINK_INVALID_MULTIPLE_ALARMS = """
+        [
+          {
+            "id": {
+              "realm": "building",
+              "alarmId": 1234,
+              "assetId": "7A6p4AnLTkKxJUCQAAABAA"
+            }
+          },
+          {
+            "id": {
+              "realm": "building",
+              "alarmId": 5678,
+              "assetId": "2Qjr4AnLTkKxJUCQAAACAA"
+            }
+          }
+        ]
+        """;
+
     public static final String PUSH_NOTIFICATION = """
         {
           "name": "High temperature alert",
