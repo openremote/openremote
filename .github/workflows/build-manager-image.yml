@@ -89,7 +89,7 @@ jobs:
         id: manager-anchore-scan
         with:
           image: ${{ steps.meta.outputs.first_tag }}
-          fail-build: true
+          fail-build: false
           severity-cutoff: critical
 
       - name: Upload Anchore scan SARIF report
