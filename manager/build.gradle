@@ -62,9 +62,11 @@ dependencies {
 
     implementation libs.sshdNetty
 
-if (!gradle.startParameter.taskNames.any { it == 'release' || it.endsWith(':release') }) {
-    demoExtension "io.openremote.extension:openremote-demo-setup-extension:${project.version}"
-}
+    // Select the newest published demo extension up to and including the
+    // current project version, falling back to an earlier version when the
+    // current version has not been published yet.
+    def demoExtensionMaxVersion = project.version.toString().replaceFirst(/-SNAPSHOT$/, "")
+    demoExtension "io.openremote.extension:openremote-demo-setup-extension:(,${demoExtensionMaxVersion}]"
 
     testImplementation libs.groovyAll
     testImplementation platform(libs.spockBom)
@@ -75,9 +77,6 @@ if (!gradle.startParameter.taskNames.any { it == 'release' || it.endsWith(':rele
 }
 
 sourceSets {
-    main {
-        runtimeClasspath += configurations.demoExtension
-    }
     test {
         groovy.srcDirs = ['test/src/groovy']
     }
