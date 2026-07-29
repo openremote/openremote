@@ -157,6 +157,25 @@ export class Manager {
     }
 
     /**
+     * Create a user with the given client roles in a realm (REST), then log in as them through the UI.
+     *
+     * Used to exercise a page under a specific permission set without disturbing the stored admin session.
+     * Requires a clean `storageState`, otherwise the stored session is used instead of the login form.
+     * @param realm The realm to create the user in
+     * @param user The username and client roles to give them
+     */
+    async provisionUserAndLogin(realm: string, { username, roles }: { username: string; roles?: string[] }) {
+        // set an initial password (== username) so the throwaway user can log in via the UI
+        await this.provisionUser(realm, { username, roles, password: username });
+
+        await this.goToRealmStartPage(realm);
+        await this.page.getByRole("textbox", { name: "Username or email" }).fill(username);
+        await this.page.getByRole("textbox", { name: "Password" }).fill(username);
+        await this.page.keyboard.press("Enter");
+        await this.page.waitForURL("**/manager/**");
+    }
+
+    /**
      * Logout from the manager.
      *
      * After logout waits until redirection finished.

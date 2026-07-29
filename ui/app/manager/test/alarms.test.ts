@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { expect, Page } from "@openremote/test";
+import { expect } from "@openremote/test";
 import { Alarm, AlarmSeverity, AlarmStatus } from "@openremote/model";
 import { Manager, adminStatePath, test } from "./fixtures/manager.js";
 
@@ -44,25 +44,6 @@ async function seedAlarm(
     expect(alarm.id).toBeTruthy();
     seededAlarmIds.push(alarm.id!);
     return { id: alarm.id!, title };
-}
-
-/**
- * Create a throwaway user with the given client roles in the given realm (REST), then log in as them through the UI.
- * Used to exercise the page under a specific permission set without disturbing the stored admin session.
- */
-async function createUserAndLogin(
-    manager: Manager,
-    page: Page,
-    { realm, username, roles }: { realm: string; username: string; roles: string[] }
-) {
-    // set an initial password (== username) so the throwaway user can log in via the UI
-    await manager.provisionUser(realm, { username, roles, password: username });
-
-    await manager.goToRealmStartPage(realm);
-    await page.getByRole("textbox", { name: "Username or email" }).fill(username);
-    await page.getByRole("textbox", { name: "Password" }).fill(username);
-    await page.keyboard.press("Enter");
-    await page.waitForURL("**/manager/**");
 }
 
 test.afterEach(async ({ manager }) => {
@@ -133,10 +114,9 @@ test.describe("Role-Based Access Control", () => {
      * @when That user opens the alarm
      * @then The status is shown but cannot be changed, and no alarm can be added
      */
-    test("should show the status read-only for a user without write permission", async ({ page, manager, alarmsPage }) => {
+    test("should show the status read-only for a user without write permission", async ({ manager, alarmsPage }) => {
         const { title } = await seedAlarm(manager, { realm: "smartcity" });
-        await createUserAndLogin(manager, page, {
-            realm: "smartcity",
+        await manager.provisionUserAndLogin("smartcity", {
             username: "e2e-alarm-viewer",
             roles: ["read:alarms"],
         });
