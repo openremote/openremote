@@ -50,7 +50,6 @@ public interface NotificationResource {
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_NOTIFICATIONS_ROLE})
-    @Operation(operationId = "getNotifications", summary = "Retrieve sent notifications matching the supplied criteria")
     @Operation(operationId = "getNotifications", summary = "Retrieve sent notifications matching filter criteria",
         description = "Returns sent-notification records filtered by identity, message type, time, realm, target, source, sorting, and pagination. Results are realm-scoped and sensitive target/source identifiers are redacted when the caller lacks user or asset read permission.")
     @OpenApiResponses.Ok
