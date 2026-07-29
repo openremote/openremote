@@ -37,11 +37,11 @@ public interface NotificationResource {
      * Gets sent notifications matching the supplied criteria; optionally limiting the scope by {@link
      * AbstractNotificationMessage} type, sent datetime, realm, target user/asset, {@link Notification.Source} and/or
      * pagination (offset/limit). Restricted users only ever see notifications they sent or that target them or their
-     * realm; non-superusers are limited to a realm they can access (their own when none is specified).
+     * realm.
      */
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ADMIN_ROLE, Constants.READ_NOTIFICATIONS_ROLE})
+    @RolesAllowed({Constants.READ_NOTIFICATIONS_ROLE})
     @Operation(operationId = "getNotifications", summary = "Retrieve sent notifications matching the supplied criteria")
     SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
                                         @QueryParam("id") Long id,
@@ -62,11 +62,9 @@ public interface NotificationResource {
      * request by {@link AbstractNotificationMessage} type and/or sent datetime. If type(s) or timestamp are not set
      * then it is assumed no type or time constraint is required. Can also provide a list of notification IDs to delete
      * specific notifications.
-     * <p>
-     * Only the superuser can call this operation.
      */
     @DELETE
-    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @RolesAllowed({Constants.WRITE_NOTIFICATIONS_ROLE})
     @Operation(operationId = "removeNotifications", summary = "Delete all sent notifications by targets")
     void removeNotifications(@BeanParam RequestParams requestParams,
                              @QueryParam("id") Long id,
@@ -79,12 +77,10 @@ public interface NotificationResource {
 
     /**
      * Remove a specific sent notification by ID.
-     * <p>
-     * Only the superuser can call this operation.
      */
     @DELETE
     @Path("{notificationId}")
-    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @RolesAllowed({Constants.WRITE_NOTIFICATIONS_ROLE})
     @Operation(operationId = "removeNotification", summary = "Delete a sent notification")
     void removeNotification(@BeanParam RequestParams requestParams,
                             @PathParam("notificationId") Long notificationId);
@@ -97,7 +93,7 @@ public interface NotificationResource {
     @POST
     @Path("alert")
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_ADMIN_ROLE, Constants.WRITE_NOTIFICATIONS_ROLE})
+    @RolesAllowed({Constants.WRITE_NOTIFICATIONS_ROLE})
     @Operation(operationId = "sendNotification", summary = "Send a notification to one or more targets")
     void sendNotification(@BeanParam RequestParams requestParams,
                           Notification notification);
@@ -137,7 +133,7 @@ public interface NotificationResource {
     @GET
     @Path("count")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ADMIN_ROLE, Constants.READ_NOTIFICATIONS_ROLE})
+    @RolesAllowed({Constants.READ_NOTIFICATIONS_ROLE})
     @Operation(operationId = "getNotificationsCount", summary = "Count sent notifications matching the supplied criteria")
     long getNotificationsCount(@BeanParam RequestParams requestParams,
                                @QueryParam("type") String type,

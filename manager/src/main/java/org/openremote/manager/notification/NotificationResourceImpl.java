@@ -23,9 +23,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
-import org.openremote.container.web.WebResource;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.http.RequestParams;
@@ -36,6 +37,7 @@ import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.security.User;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
@@ -50,23 +52,26 @@ import java.util.logging.Logger;
 import static jakarta.ws.rs.core.Response.Status.*;
 import static org.openremote.model.notification.Notification.Source.CLIENT;
 
-public class NotificationResourceImpl extends WebResource implements NotificationResource {
+public class NotificationResourceImpl extends ManagerWebResource implements NotificationResource {
 
     private static final Logger LOG = Logger.getLogger(NotificationResourceImpl.class.getName());
+
+    /** Restricted users can only read the notifications that involve them, so they may never delete any. */
+    protected static final String RESTRICTED_DELETE_DENIED = "Restricted users cannot delete notifications";
 
     final protected NotificationService notificationService;
     final protected MessageBrokerService messageBrokerService;
     final protected AssetStorageService assetStorageService;
-    final protected ManagerIdentityService managerIdentityService;
 
-    public NotificationResourceImpl(NotificationService notificationService,
+    public NotificationResourceImpl(TimerService timerService,
+                                    ManagerIdentityService identityService,
+                                    NotificationService notificationService,
                                     MessageBrokerService messageBrokerService,
-                                    AssetStorageService assetStorageService,
-                                    ManagerIdentityService managerIdentityService) {
+                                    AssetStorageService assetStorageService) {
+        super(timerService, identityService);
         this.notificationService = notificationService;
         this.messageBrokerService = messageBrokerService;
         this.assetStorageService = assetStorageService;
-        this.managerIdentityService = managerIdentityService;
     }
 
     @Override
@@ -83,8 +88,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                 realmId != null ? Collections.singletonList(realmId) : null,
                 userId != null ? Collections.singletonList(userId) : null,
                 assetId != null ? Collections.singletonList(assetId) : null,
-                source, sort, descending != null && descending, offset, limit, authContext,
-                managerIdentityService.getIdentityProvider().isRestrictedUser(authContext)
+                source, sort, descending != null && descending, offset, limit, authContext
             );
             sanitiseNotifications(notifications, authContext);
             return notifications.toArray(new SentNotification[0]);
@@ -95,15 +99,36 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
 
     @Override
     public void removeNotifications(RequestParams requestParams, Long id, String type, Long from, Long to, String realmId, String userId, String assetId) {
+        throwIfRestrictedUser(RESTRICTED_DELETE_DENIED);
+        String realm = resolveAndAuthoriseRealm(getAuthContext(), realmId);
+
+        if (id != null) {
+            throwIfNotRealmActiveAndAccessible(getNotification(id).getRealm());
+        }
+        if (userId != null) {
+            User user = identityService.getIdentityProvider().getUser(userId);
+            if (user == null) {
+                throw new WebApplicationException("User not found", NOT_FOUND);
+            }
+            throwIfNotRealmActiveAndAccessible(user.getRealm());
+        }
+        if (assetId != null) {
+            Asset<?> asset = assetStorageService.find(assetId, false);
+            if (asset == null) {
+                throw new WebApplicationException("Asset not found", NOT_FOUND);
+            }
+            throwIfNotRealmActiveAndAccessible(asset.getRealm());
+        }
+
         try {
             notificationService.removeNotifications(
-                id != null ? Collections.singletonList(id) : null,
-                type != null ? Collections.singletonList(type) : null,
+                id,
+                type,
                 from != null ? Instant.ofEpochMilli(from) : null,
                 to != null ? Instant.ofEpochMilli(to) : null,
-                realmId != null ? Collections.singletonList(realmId) : null,
-                userId != null ? Collections.singletonList(userId) : null,
-                assetId != null ? Collections.singletonList(assetId) : null);
+                realm,
+                userId,
+                assetId);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
@@ -115,7 +140,18 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             throw new WebApplicationException("Missing notification ID", BAD_REQUEST);
         }
 
+        throwIfRestrictedUser(RESTRICTED_DELETE_DENIED);
+        throwIfNotRealmActiveAndAccessible(getNotification(notificationId).getRealm());
+
         notificationService.removeNotification(notificationId);
+    }
+
+    protected SentNotification getNotification(Long notificationId) {
+        SentNotification sentNotification = notificationService.getSentNotification(notificationId);
+        if (sentNotification == null) {
+            throw new WebApplicationException("Notification not found", NOT_FOUND);
+        }
+        return sentNotification;
     }
 
     @Override
@@ -199,7 +235,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         } else {
             // Regular users can only update notifications sent to them or assets in their realm
             // Restricted users can only update notifications sent to them or assets linked to them
-            boolean isRestrictedUser = managerIdentityService.getIdentityProvider().isRestrictedUser(getAuthContext());
+            boolean isRestrictedUser = isRestrictedUser();
             switch (sentNotification.getTarget()) {
 
                 case REALM:
@@ -247,8 +283,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                 realmId != null ? Collections.singletonList(realmId) : null,
                 userId != null ? Collections.singletonList(userId) : null,
                 assetId != null ? Collections.singletonList(assetId) : null,
-                source, authContext,
-                managerIdentityService.getIdentityProvider().isRestrictedUser(authContext)
+                source, authContext
             );
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
@@ -256,9 +291,10 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     /**
-     * Resolves the realm to query and verifies the caller may access it. Superusers may query any realm (or all
-     * realms when {@code realmId} is null); other callers default to their own realm and may not query a realm they
-     * cannot access (which would otherwise let them read another realm's notifications by passing its ID).
+     * Resolves the realm a request applies to and verifies the caller may access it. Superusers may target any realm
+     * (or all realms when {@code realmId} is null); other callers are confined to their own realm and may not target
+     * a realm they cannot access (which would otherwise let them read or delete another realm's notifications by
+     * passing its ID).
      */
     protected String resolveAndAuthoriseRealm(AuthContext authContext, String realmId) {
         if (authContext == null || authContext.isSuperUser()) {
@@ -267,9 +303,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         if (realmId == null) {
             return authContext.getAuthenticatedRealmName();
         }
-        if (!managerIdentityService.getIdentityProvider().isRealmActiveAndAccessible(authContext, realmId)) {
-            throw new WebApplicationException("Realm '" + realmId + "' is nonexistent, inactive or inaccessible", FORBIDDEN);
-        }
+        throwIfNotRealmActiveAndAccessible(realmId);
         return realmId;
     }
 
