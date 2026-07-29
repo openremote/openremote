@@ -854,7 +854,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
             if (ev.detail.state) {
                 if (this._selectedIds === undefined) {
                     this._selectedIds = [alarm.id];
-                } else {
+                } else if (!this._selectedIds.includes(alarm.id)) {
+                    // selecting all emits an event per row, including rows that are already selected
                     this._selectedIds.push(alarm.id);
                     this.requestUpdate('_selectedIds');
                 }

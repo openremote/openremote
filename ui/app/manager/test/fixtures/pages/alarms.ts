@@ -56,6 +56,44 @@ export class AlarmsPage implements BasePage {
         return this.page.getByRole("button", { name: "Add Alarm" });
     }
 
+    // --- Selection and deletion --------------------------------------------
+
+    /** The "select all" checkbox in the table header. */
+    getSelectAllCheckbox(): Locator {
+        return this.getTable().locator("thead or-mwc-input[type=checkbox] #component > input");
+    }
+
+    /** The selection checkbox of the (first) row containing the given text. */
+    getRowCheckbox(rowText: string): Locator {
+        return this.getRowByText(rowText).first().locator("or-mwc-input[type=checkbox] #component > input");
+    }
+
+    /** The trash button above the table, only shown once rows are selected. */
+    getDeleteSelectedButton(): Locator {
+        return this.page.locator("#controls or-vaadin-button")
+            .filter({ has: this.page.locator("or-icon[icon='delete']") });
+    }
+
+    /**
+     * The open delete dialog, matched on it confirming the deletion of `count` alarms.
+     *
+     * `or-translate` interpolates the count into its own shadow root, so no light-DOM element holds that text and
+     * `getByText` cannot resolve it. Matching the dialog on the text its subtree contains keeps the locator on the
+     * dialog rather than on the translation element.
+     *
+     * Assert on its count, not its visibility: the dialog is only in the DOM while open, but its content is
+     * slotted into an overlay elsewhere in the page, leaving the element itself without a box to measure.
+     */
+    getDeleteConfirmation(count: number): Locator {
+        return this.page.getByRole("alertdialog")
+            .filter({ hasText: `delete ${count} selected alarm(s)` });
+    }
+
+    /** The confirm button of the open delete dialog. */
+    getConfirmDeleteButton(): Locator {
+        return this.page.getByRole("alertdialog").getByRole("button", { name: "Delete", exact: true });
+    }
+
     // --- Single alarm view -------------------------------------------------
 
     /** The properties column of the single-alarm view, holding the severity/status/assignee selects. */
