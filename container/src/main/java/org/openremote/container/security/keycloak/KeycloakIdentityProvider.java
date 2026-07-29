@@ -85,8 +85,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String OR_KEYCLOAK_PATH = "OR_KEYCLOAK_PATH";
     public static final String OR_KEYCLOAK_PATH_DEFAULT = "/auth";
     public static final String OIDC_CONFIG_PATH = "/realms/master/.well-known/openid-configuration";
-    public static final String KEYCLOAK_REQUEST_TIMEOUT = "KEYCLOAK_REQUEST_TIMEOUT";
-    public static final int KEYCLOAK_REQUEST_TIMEOUT_DEFAULT = 10000;
     public static final String OR_IDENTITY_SESSION_MAX_MINUTES = "OR_IDENTITY_SESSION_MAX_MINUTES";
     public static final int OR_IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24; // 1 day
     public static final String OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
@@ -100,6 +98,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected int sessionMaxSeconds;
     protected int sessionOfflineTimeoutSeconds;
     protected ResteasyWebTarget keycloakTarget;
+    protected String keycloakPublicUri;
     protected OAuthGrant oAuthGrant;
     protected ConcurrentLinkedQueue<RealmsResource> realmsResourcePool = new ConcurrentLinkedQueue<>();
     protected TokenVerifier tokenVerifier;
@@ -152,7 +151,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
 
-        // Get public URL of keycloak from the keycloak server
         String keycloakPublicUrl = getKeycloakPublicUrl();
         tokenVerifier = new TokenVerifierImpl(
                 keycloakServiceUri.build().toString(),
@@ -375,7 +373,14 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         return tokenVerifier.verify(realm, accessToken);
     }
 
+   /**
+    * Get public URL of keycloak from the keycloak server token endpoint issuer
+    */
     protected String getKeycloakPublicUrl() {
+        if (keycloakPublicUri != null) {
+           return keycloakPublicUri;
+        }
+
         WebTarget webTarget = new WebTargetBuilder(
                 WebTargetBuilder.getClient(),
                 keycloakServiceUri.build()).build().path(OIDC_CONFIG_PATH);
@@ -397,6 +402,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
 
         // We want the base public URI not the master specific one
-        return result != null ? result.issuer().replace("/realms/master", "") : keycloakServiceUri.build().toString();
+        keycloakPublicUri = result != null ? result.issuer().replace("/realms/master", "") : keycloakServiceUri.build().toString();
+        return keycloakPublicUri;
     }
 }

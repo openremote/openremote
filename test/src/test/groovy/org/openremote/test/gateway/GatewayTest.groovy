@@ -33,6 +33,8 @@ import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.gateway.*
 import org.openremote.model.geo.GeoJSONPoint
+import org.openremote.model.notification.AbstractNotificationMessage
+import org.openremote.model.notification.Notification
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.security.User
@@ -70,31 +72,50 @@ import static org.openremote.model.value.ValueType.*
 // TODO: Add tests for each supported version of the gateway API
 class GatewayTest extends Specification implements ManagerContainerTrait {
 
-    @Shared
-    Container container = startContainer(defaultConfig(), defaultServices())
-    @Shared
-    def assetProcessingService = container.getService(AssetProcessingService.class)
-    @Shared
-    def timerService = container.getService(TimerService.class)
-    @Shared
-    def assetStorageService = container.getService(AssetStorageService.class)
-    @Shared
-    def agentService = container.getService(AgentService.class)
-    @Shared
-    def gatewayService = container.getService(GatewayService.class)
-    @Shared
-    def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
-    @Shared
-    def identityProvider = container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider
-
     def setupSpec() {
-       gateway
+       // Mock the GatewayClientService so we can use a different port for authentication on the GatewayClientConnector
+       def services = defaultServices().toList()
+       def gatewayClientServiceIndex = services.findIndexOf {it instanceof GatewayClientService}
+       def gatewayClientService = services.removeAt(gatewayClientServiceIndex) as GatewayClientService
+       def spyGatewayClientService = Spy(gatewayClientService)
+       services.add(gatewayClientServiceIndex, spyGatewayClientService) // Must go back in the correct position as already sorted by priority
+
+       // This resolves the keycloak URL for the test instance which is different to the manager port typically as no proxy is running
+       def authTokenEndpointResolver = {
+          def identityProvider = container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider
+          def keycloakURL = identityProvider.getKeycloakPublicUrl()
+          return new URIBuilder(keycloakURL).setPath("auth/realms/" + connection.getRealm() + "/protocol/openid-connect/token").build().toString()
+       }
+
+       spyGatewayClientService.createClientConnector(_ as GatewayConnection) >> {
+          connection ->
+             GatewayClientConnector clientConnector = callRealMethod()
+             def spyClientConnector = Spy(clientConnector)
+             spyClientConnector.getAuthTokenEndpoint() >> {
+                authTokenEndpointResolver()
+             }
+             return spyClientConnector
+       }
+
+       // Start the container with the spy service
+       startContainer(defaultConfig(), services)
+    }
+
+    def cleanupSpec() {
+       stopContainer()
     }
 
     def "Gateway asset provisioning and local manager logic test"() {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def timerService = container.getService(TimerService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+        def gatewayService = container.getService(GatewayService.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def identityProvider = container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider
 
         expect: "the system should settle down"
         conditions.eventually {
@@ -782,13 +803,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 30, delay: 0.2)
         def delayedConditions = new PollingConditions(initialDelay: 1, delay: 1, timeout: 10)
-        def container = startContainer(defaultConfig(), defaultServices())
-        def timerService = container.getService(TimerService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def gatewayService = container.getService(GatewayService.class)
         def gatewayClientService = container.getService(GatewayClientService.class)
-        def agentService = container.getService(AgentService.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def clientEventService = container.getService(ClientEventService.class)
 
@@ -1111,16 +1129,11 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 30, delay: 0.2)
-        def delayedConditions = new PollingConditions(initialDelay: 1, delay: 1, timeout: 10)
-        def container = startContainer(defaultConfig(), defaultServices())
-        def timerService = container.getService(TimerService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def gatewayService = container.getService(GatewayService.class)
         def gatewayClientService = container.getService(GatewayClientService.class)
-        def agentService = container.getService(AgentService.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
-        def clientEventService = container.getService(ClientEventService.class)
 
         and: "an authenticated admin user"
         def accessToken = authenticate(
