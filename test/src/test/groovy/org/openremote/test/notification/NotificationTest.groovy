@@ -838,6 +838,13 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         then: "the admin console should have been created"
         adminConsole.id != null
 
+        and: "the push notification handler should have picked up the console token"
+        // The token map is updated from the asset persistence event, and sending to a console that is not in it yet
+        // fails the whole notification request
+        conditions.eventually {
+            assert pushNotificationHandler.consoleFCMTokenMap.containsKey(adminConsole.id)
+        }
+
         when: "the admin user sends a push notification to the entire MASTER realm (which is only himself)"
         notification.targets = [new Notification.Target(Notification.TargetType.REALM, MASTER_REALM)]
         adminNotificationResource.sendNotification(null, notification)
@@ -914,8 +921,11 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 ["manager"] as String[])
         def testuser1Console = testuser1ConsoleResource.register(null, testuser1ConsoleRegistration)
 
-        and: "the console is created"
-        testuser1Console.id != null
+        and: "the console is created and its token picked up by the push notification handler"
+        conditions.eventually {
+            assert testuser1Console.id != null
+            assert pushNotificationHandler.consoleFCMTokenMap.containsKey(testuser1Console.id)
+        }
 
         and: "the same notification is sent, now to both users"
         adminNotificationResource.sendNotification(null, notification)

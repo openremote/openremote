@@ -46,6 +46,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -82,21 +83,14 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     @Shared
     SimulatorAgent agent
 
-    @Shared
     ThingAsset asset
 
-    @Shared
-    ScheduledFuture<?> future = Mock(ScheduledFuture)
-
-    // Mock executor and rely on the delay argument to determine schedule
-    @Shared
-    ScheduledExecutorService executor = Mock(ScheduledExecutorService)
-
-    @Shared
     SimulatorProtocol protocol
 
-    @Shared
-    Long delay
+    ScheduledExecutorService originalExecutor
+
+    // Delay of every schedule, so the schedule of an attribute can be resolved through the protocol's replay map
+    final Map<ScheduledFuture<?>, Long> delayByFuture = new ConcurrentHashMap<>()
 
     def setupSpec() {
         given: "environment is setup"
@@ -122,26 +116,28 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         stopPseudoClock()
         setPseudoClock("1970-01-01T00:00:00.000Z")
 
-        future = Mock(ScheduledFuture)
-        executor = Mock(ScheduledExecutorService)
+        delayByFuture.clear()
+        // Mock executor and rely on the delay argument to determine schedule
+        def executor = Mock(ScheduledExecutorService)
 
         asset = new ThingAsset("Test asset").setRealm(Constants.MASTER_REALM)
         asset = assetStorageService.merge(asset)
 
         // Must use boxed Long type in Spock closures, so avoiding parameter expansion so it doesn't silently fail.
         executor.schedule(_ as Runnable, _ as Long, _ as TimeUnit) >> { args ->
-            delay = args[1] as Long
-
             // Create a fresh future *per invocation*
-            future = Mock(ScheduledFuture)
-            future.get() >> {
+            def scheduledFuture = Mock(ScheduledFuture)
+            scheduledFuture.get() >> {
                 (args[0] as Runnable).run()
                 return true
             }
-            return future
+            // Recorded before the future is returned, so the protocol cannot publish it before its delay is known
+            delayByFuture.put(scheduledFuture, args[1] as Long)
+            return scheduledFuture
         }
 
         protocol = (SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())
+        originalExecutor = protocol.scheduledExecutorService
         protocol.scheduledExecutorService = executor
     }
 
@@ -150,6 +146,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         conditions.eventually {
             protocol.linkedAttributes.size() == 0
         }
+        // The mock only lives as long as the feature that created it, so the protocol must not keep it afterwards
+        protocol.scheduledExecutorService = originalExecutor
     }
 
     private getDataPoints = {
@@ -160,12 +158,24 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             now.plus(1, ChronoUnit.HOURS),
     ) }
 
+    /**
+     * The delay and future the protocol currently has scheduled for an attribute, or null while it has none. The
+     * executor is not told which attribute it schedules for, so the future is matched through the protocol's replay map.
+     */
+    private Map<String, ?> scheduledFor(AttributeRef attributeRef) {
+        def future = protocol.replayMap.get(attributeRef)
+        def delay = future != null ? delayByFuture.get(future) : null
+        return delay != null ? [delay: delay, future: future] : null
+    }
+
     private long getDatapointTimestamp(Attribute attribute) {
-        return assetDatapointService.queryDatapoints(
+        def datapoints = assetDatapointService.queryDatapoints(
                 asset.getId(),
                 attribute.getName(),
                 getDataPoints.call()
-        ).get(0).getTimestamp()
+        )
+        assert !datapoints.isEmpty()
+        return datapoints.get(0).getTimestamp()
     }
 
     def "Check Simulator Agent protocol without replay"() {
@@ -251,12 +261,12 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
             then: "the delay is 1 hour"
             conditions.eventually {
-                delay == HOUR_IN_MILLIS
+                scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS
             }
 
             when: "fast forward 1 hour"
             advancePseudoClock(1, HOURS, container)
-            future.get() // resolve future manually, because we surpassed the delay
+            scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
             then: "datapoint is present"
             conditions.eventually {
@@ -265,12 +275,12 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
             and: "the delay is 11 hours"
             conditions.eventually {
-                delay == HOUR_IN_MILLIS * 11
+                scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 11
             }
 
             when: "fast forward 11 hours"
             advancePseudoClock(11, HOURS, container)
-            future.get() // resolve future manually, because we surpassed the delay
+            scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
             then: "datapoint is present"
             conditions.eventually {
@@ -279,12 +289,12 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
             and: "the delay is 12 hours"
             conditions.eventually {
-                delay == HOUR_IN_MILLIS * 12
+                scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 12
             }
 
             when: "fast forward 12 hour"
             advancePseudoClock(12, HOURS, container)
-            future.get() // resolve future manually, because we surpassed the delay
+            scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
             then: "datapoints are present"
             conditions.eventually {
@@ -293,65 +303,75 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         }
     }
 
-    // Won't work because the mocks will overwrite each other
-//    def "Check Simulator Agent protocol adds predicted datapoints for multiple attributes"() {
-//        when: "replayData is configured for both attributes to add a datapoint in 1hr every day"
-//        def attribute1 = asset.getAttribute(ThingAsset.NOTES).get()
-//        attribute1.addOrReplaceMeta(
-//                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-//                        new SimulatorReplayDatapoint(HOUR_IN_SECONDS, "test"),
-//                ))
-//        )
-//        def attribute2 = asset.getAttribute("test").get()
-//        attribute2.addOrReplaceMeta(
-//                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-//                        new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 2, "test"),
-//                ))
-//        )
-//        assetStorageService.merge(asset)
-//
-//        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
-//        conditions.eventually {
-//            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
-//            protocol.linkedAttributes.size() == 1
-//        }
-//
-//        (0..1).each { i ->
-//            def days = i * HOUR * 24 // Starts at 0 days, increments with 1 days
-//
-//            then: "the delay is 1 hour for attribute 1"
-//            conditions.eventually {
-//                delay == HOUR
-//            }
-//
-//            when: "fast forward 1 hour"
-//            advancePseudoClock(1, HOURS, container)
-//            future.get() // resolve future manually, because we surpassed the delay
-//
-//            then: "datapoint is present"
-//            conditions.eventually {
-//                getDatapointTimestamp(attribute1) == days + HOUR
-//            }
-//
-//            and: "the delay is 1 more hour for attribute 2"
-//            conditions.eventually {
-//                delay == HOUR
-//            }
-//
-//            when: "fast forward 1 hour"
-//            advancePseudoClock(1, HOURS, container)
-//            future.get() // resolve future manually, because we surpassed the delay
-//
-//            then: "datapoint is present"
-//            conditions.eventually {
-//                getDatapointTimestamp(attribute2) == days + HOUR * 2
-//            }
-//
-//            when: "fast forward 22 hours"
-//            advancePseudoClock(22, HOURS, container)
-//        }
-//        then: ""
-//    }
+    def "Check Simulator Agent protocol replays multiple attributes independently"() {
+        when: "one attribute replays daily from the epoch and another one once from the next day"
+        asset.addOrReplaceAttributes(
+                new Attribute<>("test8", ValueType.TEXT).addMeta(
+                        new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                                new SimulatorReplayDatapoint(HOUR_IN_SECONDS, "test"),
+                                new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 2, "test")
+                        ).setSchedule(new SimulatorProtocol.Schedule(
+                                LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC), null, "FREQ=DAILY"
+                        )))
+                ),
+                new Attribute<>("test9", ValueType.TEXT).addMeta(
+                        new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                                new SimulatorReplayDatapoint(HOUR_IN_SECONDS, "test"),
+                                new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 25, "test"),
+                                new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 49, "test")
+                        ).setSchedule(new SimulatorProtocol.Schedule(
+                                LocalDateTime.ofInstant(Instant.parse("1970-01-02T00:00:00.000Z"), ZoneOffset.UTC), null, null
+                        )))
+                )
+        )
+        asset = assetStorageService.merge(asset)
+        def attribute1 = asset.getAttribute("test8").get()
+        def attribute2 = asset.getAttribute("test9").get()
+        def attributeRef1 = new AttributeRef(asset.getId(), attribute1.getName())
+        def attributeRef2 = new AttributeRef(asset.getId(), attribute2.getName())
+
+        then: "both attributes should be linked to the protocol"
+        conditions.eventually {
+            protocol.linkedAttributes.get(attributeRef1) == attribute1
+            protocol.linkedAttributes.get(attributeRef2) == attribute2
+        }
+
+        and: "each attribute has its own delay"
+        conditions.eventually {
+            scheduledFor(attributeRef1)?.delay == HOUR_IN_MILLIS
+            scheduledFor(attributeRef2)?.delay == DAY_IN_MILLIS + HOUR_IN_MILLIS
+        }
+
+        when: "fast forward 1 hour and only the first attribute is resolved"
+        advancePseudoClock(1, HOURS, container)
+        scheduledFor(attributeRef1).future.get()
+
+        then: "only the first attribute has a datapoint"
+        conditions.eventually {
+            getDatapointTimestamp(attribute1) == HOUR_IN_MILLIS
+        }
+
+        and: "the second attribute is untouched"
+        assetDatapointService.getDatapoints(attributeRef2).size() == 0
+
+        and: "the first attribute is scheduled for its second datapoint and the second attribute is unchanged"
+        conditions.eventually {
+            scheduledFor(attributeRef1)?.delay == HOUR_IN_MILLIS
+            scheduledFor(attributeRef2)?.delay == DAY_IN_MILLIS + HOUR_IN_MILLIS
+        }
+
+        when: "fast forward to the second attribute's first datapoint and only that attribute is resolved"
+        advancePseudoClock(1, DAYS, container)
+        scheduledFor(attributeRef2).future.get()
+
+        then: "the second attribute has a datapoint"
+        conditions.eventually {
+            getDatapointTimestamp(attribute2) == DAY_IN_MILLIS + HOUR_IN_MILLIS
+        }
+
+        and: "the first attribute still has only its own datapoint"
+        assetDatapointService.getDatapoints(attributeRef1).size() == 1
+    }
 
     def "Check Simulator Agent protocol with replay startDate"() {
         when: "replayData is configured to replay in 1day and 1hr"
@@ -376,13 +396,13 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         and: "the delay is 25 hours"
         conditions.eventually {
-            delay == DAY_IN_MILLIS + HOUR_IN_MILLIS
+            scheduledFor(attributeRef)?.delay == DAY_IN_MILLIS + HOUR_IN_MILLIS
         }
 
         when: "fast forward 1 day and 1 hour"
         advancePseudoClock(1, DAYS, container)
         advancePseudoClock(1, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay
+        scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
         then: "datapoint is present"
         conditions.eventually {
@@ -395,12 +415,12 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
             and: "the delay is 24 hours"
             conditions.eventually {
-                delay == HOUR_IN_MILLIS * 24
+                scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 24
             }
 
             when: "fast forward 24 hours"
             advancePseudoClock(24, HOURS, container)
-            future.get() // resolve future manually, because we surpassed the delay
+            scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
             then: "datapoint is present"
             conditions.eventually {
@@ -441,13 +461,13 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         then: "the delay is 4 days and 1 hour"
         conditions.eventually {
             Instant.ofEpochMilli(getClockTimeOf(container)) == Instant.parse("1970-01-01T00:00:00.000Z")
-            delay == 4 * DAY_IN_MILLIS + HOUR_IN_MILLIS
+            scheduledFor(attributeRef)?.delay == 4 * DAY_IN_MILLIS + HOUR_IN_MILLIS
         }
 
         when: "fast forward 4 days and 1 hour"
         advancePseudoClock(4, DAYS, container)
         advancePseudoClock(1, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay
+        scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
         then: "datapoint is present"
         conditions.eventually {
@@ -461,12 +481,12 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             and: "the delay is 1 hour"
             conditions.eventually {
                 Instant.ofEpochMilli(getClockTimeOf(container)) == Instant.parse("1970-01-05T01:00:00.000Z").plusMillis(weeks)
-                delay == HOUR_IN_MILLIS
+                scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS
             }
 
             when: "fast forward 1 hour"
             advancePseudoClock(1, HOURS, container)
-            future.get() // resolve future manually, because we surpassed the delay
+            scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
             then: "datapoint is present"
             conditions.eventually {
@@ -476,13 +496,13 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             and: "the delay is 1 week and -1 hour"
             conditions.eventually {
                 Instant.ofEpochMilli(getClockTimeOf(container)) == Instant.parse("1970-01-05T02:00:00.000Z").plusMillis(weeks)
-                delay == WEEK_IN_MILLIS - HOUR_IN_MILLIS
+                scheduledFor(attributeRef)?.delay == WEEK_IN_MILLIS - HOUR_IN_MILLIS
             }
 
             when: "fast forward 1 week and -1 hour"
             advancePseudoClock(7, DAYS, container)
             advancePseudoClock(-1, HOURS, container)
-            future.get() // resolve future manually, because we surpassed the delay
+            scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
             then: "datapoint is present"
             conditions.eventually {
@@ -491,7 +511,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         }
 
         when: "fast forward past the end date"
-        future.get() // resolve future manually, because we surpassed the delay
+        scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
         then: "the attributeRef should be present"
         conditions.eventually {
@@ -502,7 +522,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         when: "fast forward 5 days and -1 hour"
         advancePseudoClock(5, DAYS, container)
         advancePseudoClock(-1, HOURS, container)
-        future.get() // resolve future manually
+        scheduledFor(attributeRef).future.get() // resolve future manually
 
         then: "the attributeRef is removed from the replayMap"
         conditions.eventually {
@@ -536,7 +556,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         (1..2).each { i ->
             and: "the delay is 1 hour"
             conditions.eventually {
-                delay == HOUR_IN_MILLIS
+                scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS
             }
 
             and: "the predicted datapoints are present"
@@ -551,7 +571,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
             when: "fast forward 1 hour"
             advancePseudoClock(1, HOURS, container)
-            future.get() // resolve future manually, because we surpassed the delay
+            scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
             then: "datapoint is present"
             conditions.eventually {
@@ -568,13 +588,13 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         and: "the delay is 1 day and -1 hour"
         conditions.eventually {
-            delay == DAY_IN_MILLIS - HOUR_IN_MILLIS
+            scheduledFor(attributeRef)?.delay == DAY_IN_MILLIS - HOUR_IN_MILLIS
         }
 
         when: "fast forward 1 day and 1 hour"
         advancePseudoClock(1, DAYS, container)
         advancePseudoClock(-1, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay
+        scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
         then: "datapoint is present"
         conditions.eventually {
@@ -622,7 +642,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         and: "the delay is 1 hour"
         conditions.eventually {
-            delay == HOUR_IN_MILLIS
+            scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS
         }
 
         and: "the predicted datapoints are present"
@@ -634,7 +654,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         when: "fast forward 1 hour"
         advancePseudoClock(1, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay
+        scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
         then: "the predicted datapoints are present"
         conditions.eventually {
@@ -671,7 +691,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         and: "the delay is 1 hour"
         conditions.eventually {
-            delay == HOUR_IN_MILLIS
+            scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS
         }
 
         and: "the predicted datapoints are present"
@@ -710,7 +730,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         and: "the delay is 11 hours"
         conditions.eventually {
-            delay == HOUR_IN_MILLIS * 11
+            scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 11
         }
 
         and: "the predicted datapoints are present"
@@ -724,11 +744,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         when: "fast forward 11 hours"
         advancePseudoClock(11, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay
+        scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
         then: "the delay is 12 hours"
         conditions.eventually {
-            delay == HOUR_IN_MILLIS * 12
+            scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 12
         }
 
         and: "the predicted datapoints are present"
@@ -742,11 +762,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         when: "fast forward 12 hours"
         advancePseudoClock(12, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay
+        scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
         then: "the delay is 1 hour"
         conditions.eventually {
-            delay == HOUR_IN_MILLIS
+            scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS
         }
 
         and: "the predicted datapoints are present"
@@ -759,11 +779,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         when: "fast forward 1 hours"
         advancePseudoClock(1, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay
+        scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
         then: "the delay is 11 hours"
         conditions.eventually {
-            delay == HOUR_IN_MILLIS * 11
+            scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 11
         }
 
         and: "the predicted datapoints are present"
@@ -775,11 +795,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         when: "fast forward 11 hours"
         advancePseudoClock(11, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay
+        scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
 
-        then: "the delay is 11 hours"
+        then: "nothing is scheduled anymore because the recurrence ended"
         conditions.eventually {
-            delay == HOUR_IN_MILLIS * 11 // delay hasn't changed as the recurrence ended
+            scheduledFor(attributeRef) == null
         }
 
         and: "the predicted datapoints are present"
