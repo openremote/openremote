@@ -104,7 +104,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         List<String> failedSubs = new CopyOnWriteArrayList()
         List<MQTTMessage<String>> received = new CopyOnWriteArrayList<>()
         def clientId = "ortest1"
-        def host = "localhost"
+        def host = "127.0.0.1"
         def port = 1883
         def secure = false
         def counter = 0

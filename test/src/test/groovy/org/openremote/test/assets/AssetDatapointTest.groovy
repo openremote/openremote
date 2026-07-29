@@ -88,7 +88,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$websocketRealm").build(),
             null,
             new OAuthPasswordGrant(
-                "http://127.0.0.1:$serverPort/auth/realms/$authRealm/protocol/openid-connect/token",
+                "http://127.0.0.1:8081/auth/realms/$authRealm/protocol/openid-connect/token",
                 KEYCLOAK_CLIENT_ID,
                 null,
                 null,
@@ -549,7 +549,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=master").build(),
             null,
             new OAuthPasswordGrant(
-                "http://127.0.0.1:$serverPort/auth/realms/master/protocol/openid-connect/token",
+                "http://127.0.0.1:8081/auth/realms/master/protocol/openid-connect/token",
                 KEYCLOAK_CLIENT_ID,
                 null,
                 null,

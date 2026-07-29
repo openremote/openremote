@@ -53,7 +53,7 @@
         <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="Defaults" enabled="true">
           <intProp name="HTTPSampler.connect_timeout">60000</intProp>
           <intProp name="HTTPSampler.response_timeout">60000</intProp>
-          <stringProp name="HTTPSampler.domain">${__P(MANAGER_HOSTNAME,localhost)}</stringProp>
+          <stringProp name="HTTPSampler.domain">${__P(MANAGER_HOSTNAME,127.0.0.1)}</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
             <collectionProp name="Arguments.arguments"/>
@@ -184,7 +184,7 @@
           </hashTree>
           <eu.luminis.jmeter.wssampler.OpenWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.OpenWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.OpenWebSocketSampler" testname="WebSocket Open Connection" enabled="true">
             <boolProp name="TLS">true</boolProp>
-            <stringProp name="server">${__P(MANAGER_HOSTNAME,localhost)}</stringProp>
+            <stringProp name="server">${__P(MANAGER_HOSTNAME,127.0.0.1)}</stringProp>
             <stringProp name="port">443</stringProp>
             <stringProp name="path">/websocket/events?Realm=master&amp;Authorization=Bearer%20${access_token}</stringProp>
             <stringProp name="connectTimeout">20000</stringProp>
@@ -194,7 +194,7 @@
           <eu.luminis.jmeter.wssampler.RequestResponseWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.RequestResponseWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.RequestResponseWebSocketSampler" testname="Subscribe attributes" enabled="true">
             <boolProp name="createNewConnection">false</boolProp>
             <boolProp name="TLS">true</boolProp>
-            <stringProp name="server">${__P(MANAGER_HOSTNAME,localhost)}</stringProp>
+            <stringProp name="server">${__P(MANAGER_HOSTNAME,127.0.0.1)}</stringProp>
             <stringProp name="port">443</stringProp>
             <stringProp name="path">/websocket/events?Realm=master&amp;Authorization=Bearer%20${access_token}</stringProp>
             <stringProp name="connectTimeout">20000</stringProp>

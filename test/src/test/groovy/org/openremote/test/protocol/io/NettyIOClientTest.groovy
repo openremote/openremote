@@ -29,7 +29,7 @@ class NettyIOClientTest extends Specification implements ManagerContainerTrait {
         def client = new WebsocketIOClient(
                 new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=random").build(),
                 null,
-                new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/random/protocol/openid-connect/token",
+                new OAuthClientCredentialsGrant("http://127.0.0.1:8081/auth/realms/random/protocol/openid-connect/token",
                         'abcd',
                         'abcd',
                         null).setBasicAuthHeader(true)

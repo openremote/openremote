@@ -69,7 +69,7 @@ export class Manager {
     public provisionedUsers: { realm: string; id: string }[] = [];
 
     constructor(readonly page: Page, readonly baseURL: string, request?: APIRequestContext) {
-        this.managerHost = process.env.managerUrl || "http://localhost:8080";
+        this.managerHost = process.env.managerUrl || "http://127.0.0.1:8080";
         rest.initialise(`${this.managerHost}/api/master/`);
         this.api = rest.api;
         this.axios = rest.axiosInstance;

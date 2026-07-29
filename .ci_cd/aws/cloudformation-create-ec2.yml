@@ -427,7 +427,7 @@ Resources:
                       sample_limit: 10000
                       static_configs:
                         - targets:
-                            - localhost:8404
+                            - 127.0.0.1:8404
                         - labels:
                             InstanceName: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
                       metric_relabel_configs:
@@ -444,7 +444,7 @@ Resources:
                       sample_limit: 10000
                       static_configs:
                         - targets:
-                            - localhost:8405
+                            - 127.0.0.1:8405
                         - labels:
                             InstanceName: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
                       metric_relabel_configs:

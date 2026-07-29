@@ -32,7 +32,7 @@ manager.addListener(event => {
 });
 
 manager.init({
-    managerUrl: "http://localhost:8080",
+    managerUrl: "http://127.0.0.1:8080",
     auth: Auth.KEYCLOAK,
     autoLogin: true,
     realm: "smartcity"

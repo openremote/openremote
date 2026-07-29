@@ -1,12 +1,7 @@
 # OpenRemote v3
 #
-# Profile for running the reverse proxy on https://localhost/ with the manager backend mapped to the host machine on
-# localhost:8080 and the keycloak backend mapped to the host machine on localhost:8081
-#
-# Your changes will be visible live on browser reload or after restart:
-#
-# - Run the manager in an IDE with the following required environment variables:
-#       OR_WEBSERVER_LISTEN_HOST=0.0.0.0
+# Profile for running the reverse proxy on https://127.0.0.1/ with the manager backend mapped to the host machine on
+# 127.0.0.1:8080 and the keycloak backend mapped to the host machine on 127.0.0.1:8081
 #
 # Please see deploy.yml for configuration details for each service.
 #
@@ -35,7 +30,7 @@ services:
       postgresql:
         condition: service_healthy
     environment:
-      KC_HOSTNAME: ${KC_HOSTNAME:-https://localhost/auth}
+      KC_HOSTNAME: ${KC_HOSTNAME:-https://127.0.0.1/auth}
 
   postgresql:
     extends:
@@ -44,7 +39,6 @@ services:
     volumes:
       - ../tmp:/storage
       - postgresql-data:/var/lib/postgresql/data
-    # Access directly if needed on localhost
     ports:
       - "5432:5432"
 

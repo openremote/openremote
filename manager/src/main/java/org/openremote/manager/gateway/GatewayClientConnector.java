@@ -47,6 +47,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -174,12 +175,7 @@ public class GatewayClientConnector implements AutoCloseable {
                             .setParameter(Constants.REALM_PARAM_NAME, connection.getRealm()).build(),
                     null,
                     new OAuthClientCredentialsGrant(
-                            new URIBuilder()
-                                    .setScheme(connection.isSecured() ? "https" : "http")
-                                    .setHost(connection.getHost())
-                                    .setPort(connection.getPort() == null ? -1 : connection.getPort())
-                                    .setPath("auth/realms/" + connection.getRealm() + "/protocol/openid-connect/token")
-                                    .build().toString(),
+                            getAuthTokenEndpoint(),
                             connection.getClientId(),
                             connection.getClientSecret(),
                             null).setBasicAuthHeader(true)
@@ -215,6 +211,15 @@ public class GatewayClientConnector implements AutoCloseable {
         }
 
         return null;
+    }
+
+    protected String getAuthTokenEndpoint() throws URISyntaxException {
+       return new URIBuilder()
+          .setScheme(connection.isSecured() ? "https" : "http")
+          .setHost(connection.getHost())
+          .setPort(connection.getPort() == null ? -1 : connection.getPort())
+          .setPath("auth/realms/" + connection.getRealm() + "/protocol/openid-connect/token")
+          .build().toString();
     }
 
     protected CompletableFuture<Void> doInit() {

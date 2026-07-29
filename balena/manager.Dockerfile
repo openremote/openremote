@@ -12,7 +12,7 @@ ENV TZ ${TZ:-Europe/Amsterdam}
 ENV OR_ADMIN_PASSWORD ${OR_ADMIN_PASSWORD:-secret}
 ENV OR_SETUP_TYPE ${OR_SETUP_TYPE}
 ENV OR_SSL_PORT ${OR_SSL_PORT:--1}
-ENV OR_HOSTNAME ${OR_HOSTNAME:-localhost}
+ENV OR_HOSTNAME ${OR_HOSTNAME:-127.0.0.1}
 ENV OR_EMAIL_HOST ${OR_EMAIL_HOST}
 ENV OR_EMAIL_USER ${OR_EMAIL_USER}
 ENV OR_EMAIL_PASSWORD ${OR_EMAIL_PASSWORD}
@@ -83,7 +83,7 @@ ADD ./manager-build/map /opt/map
 EXPOSE 8080
 EXPOSE 1883
 
-HEALTHCHECK --interval=5s --timeout=60s --start-period=5s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
+HEALTHCHECK --interval=5s --timeout=60s --start-period=5s --retries=120 CMD curl --fail --silent http://127.0.0.1:8080 || exit 1
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

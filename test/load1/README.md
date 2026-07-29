@@ -54,7 +54,7 @@ Simulates console devices registering with the Manager and subscribing to attrib
 * Listen for attribute events in a continuous loop until `DURATION` seconds elapse
 
 #### Test variables
-* MANAGER_HOSTNAME - The hostname/IP address of the OpenRemote Manager under test (default: `localhost`)
+* MANAGER_HOSTNAME - The hostname/IP address of the OpenRemote Manager under test (default: `127.0.0.1`)
 * THREAD_COUNT - Number of threads/users/devices (default: `1000`)
 * RAMP_RATE - Number of thread/users/devices to add / second (default: `50`)
 * DURATION - How long each thread should run for in seconds (default: `300`)
@@ -86,7 +86,7 @@ script to generate a new file the COUNT value is the number of devices to genera
 ***NOTE: THiS WILL TAKE SOME TIME TO RUN***
 
 #### Test variables
-* MANAGER_HOSTNAME - The hostname/IP address of the OpenRemote Manager under test (default: `localhost`)
+* MANAGER_HOSTNAME - The hostname/IP address of the OpenRemote Manager under test (default: `127.0.0.1`)
 * THREAD_COUNT - Number of threads/users/devices (default: `1000`)
 * RAMP_RATE - Number of thread/users/devices to add / second (default: `50`)
 * DURATION - How long each thread should run for in seconds (default: `300`)
@@ -113,7 +113,7 @@ time required for the system to settle down after a full restart. The test will 
 provisioned successfully and start publishing attribute events.
 
 #### Test variables
-* MANAGER_HOSTNAME - The hostname/IP address of the OpenRemote Manager under test (default: `localhost`)
+* MANAGER_HOSTNAME - The hostname/IP address of the OpenRemote Manager under test (default: `127.0.0.1`)
 * THREAD_COUNT - Number of threads/users/devices (default: `1000`)
 * RAMP_RATE - Number of thread/users/devices to add / second (default: `50`)
 * MILLIS_BETWEEN_PUBLISHES - How long to wait between each time the 2 attributes are published in milliseconds (default: `10000`)

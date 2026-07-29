@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings("deprecation")
 public class MockSerialChannel extends OioByteStreamChannel {
 
-    private static final JSerialCommDeviceAddress LOCAL_ADDRESS = new JSerialCommDeviceAddress("localhost");
+    private static final JSerialCommDeviceAddress LOCAL_ADDRESS = new JSerialCommDeviceAddress("127.0.0.1");
 
 
     public interface DataHandler {

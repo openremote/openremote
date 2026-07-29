@@ -81,7 +81,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
             if (StringUtils.isNotBlank(this.bindAddress)) {
                 localEndPoint = new InetSocketAddress(this.bindAddress, 0);
             } else {
-                InetAddress localHost = InetAddress.getLocalHost();
+                InetAddress localHost = InetAddress.getLoopbackAddress();
                 localEndPoint = new InetSocketAddress(localHost, 0);
             }
             if (!routingMode) {
@@ -121,9 +121,6 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
         catch (final KNXException | InterruptedException e) {
             LOG.log(Level.INFO, "Connection error", e.getMessage());
             scheduleReconnect();
-        }
-        catch (final UnknownHostException e) {
-            LOG.log(Level.INFO, "Connection error", e.getMessage());
         }
     }
 

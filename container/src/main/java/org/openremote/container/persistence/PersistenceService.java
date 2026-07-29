@@ -230,7 +230,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     public static final String OR_DB_VENDOR = "OR_DB_VENDOR";
     public static final String OR_DB_VENDOR_DEFAULT = Database.Product.POSTGRES.name();
     public static final String OR_DB_HOST = "OR_DB_HOST";
-    public static final String OR_DB_HOST_DEFAULT = "localhost";
+    public static final String OR_DB_HOST_DEFAULT = "127.0.0.1";
     public static final String OR_DB_PORT = "OR_DB_PORT";
     public static final int OR_DB_PORT_DEFAULT = 5432;
     public static final String OR_DB_NAME = "OR_DB_NAME";

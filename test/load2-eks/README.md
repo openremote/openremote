@@ -66,7 +66,7 @@ If a publish fails because the connection is lost and `RECONNECT_ATTEMPTS` is gr
 At the end of publish loop, it waits for DISCONNECT_DELAY before disconnecting from MQTT.
 
 The parameters are:  
-MANAGER_HOSTNAME: Hostname of the manager to be tested. Default is localhost.  
+MANAGER_HOSTNAME: Hostname of the manager to be tested. Default is 127.0.0.1.  
 THREAD_COUNT: Number of parallel accounts that will connect and publish in parallel. Default is 500.  
 ASSETS_COUNT: Number of Light assets for which to publish an attribute during each iteration. Default is 5.  
 RAMP_RATE: Number of thread to add per second during ramp-up. Default is 20.  
@@ -82,7 +82,7 @@ Once connected, it does 1 single publish every MILLIS_BETWEEN_PUBLISHES (default
 Goal is to measure the time it takes for the system to allow that many connections and stabilise.
 
 The parameters are:  
-MANAGER_HOSTNAME: Hostname of the manager to be tested. Default is localhost.  
+MANAGER_HOSTNAME: Hostname of the manager to be tested. Default is 127.0.0.1.  
 THREAD_COUNT: Number of parallel accounts that will connect and publish in parallel. Default is 1000.  
 RAMP_RATE: Number of thread to add per second during ramp-up. Default is 50.  
 MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration. Default is 30000.  

@@ -79,7 +79,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         "security-admin-console");
 
     public static final String OR_KEYCLOAK_HOST = "OR_KEYCLOAK_HOST";
-    public static final String OR_KEYCLOAK_HOST_DEFAULT = "localhost";
+    public static final String OR_KEYCLOAK_HOST_DEFAULT = "127.0.0.1";
     public static final String OR_KEYCLOAK_PORT = "OR_KEYCLOAK_PORT";
     public static final int OR_KEYCLOAK_PORT_DEFAULT = 8081;
     public static final String OR_KEYCLOAK_PATH = "OR_KEYCLOAK_PATH";

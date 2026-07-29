@@ -111,7 +111,7 @@ class OrDemo extends subscribe(manager)(LitElement) {
 }
 
 manager.init({
-    managerUrl: "http://localhost:8080",
+    managerUrl: "http://127.0.0.1:8080",
     auth: Auth.KEYCLOAK,
     autoLogin: false,
     realm: "smartcity",

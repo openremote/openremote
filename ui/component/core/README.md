@@ -35,8 +35,8 @@ Initialisation usage example:
 import openremote from "@openremote/core";
 
 openremote.init({
-    managerUrl: "http://localhost:8080",
-    keycloakUrl: "http://localhost:8080/auth",
+    managerUrl: "http://127.0.0.1:8080",
+    keycloakUrl: "http://127.0.0.1:8081/auth",
     auth: Auth.KEYCLOAK,
     autoLogin: false,
     realm: "building",

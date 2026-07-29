@@ -41,7 +41,7 @@ export async function resolveDirs(configDir: string, use: CtConfig) {
 }
 
 export function resolveEndpoint(use: CtConfig) {
-  const baseURL = new URL(use.baseURL || "http://localhost");
+  const baseURL = new URL(use.baseURL || "http://127.0.0.1");
   return {
     https: baseURL.protocol.startsWith("https:"),
     host: baseURL.hostname,

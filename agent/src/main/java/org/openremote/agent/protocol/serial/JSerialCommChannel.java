@@ -36,7 +36,7 @@ import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
 @SuppressWarnings("deprecation")
 public class JSerialCommChannel extends io.netty.channel.oio.OioByteStreamChannel {
 
-    private static final JSerialCommDeviceAddress LOCAL_ADDRESS = new JSerialCommDeviceAddress("localhost");
+    private static final JSerialCommDeviceAddress LOCAL_ADDRESS = new JSerialCommDeviceAddress("127.0.0.1");
 
     private final JSerialCommChannelConfig config;
 

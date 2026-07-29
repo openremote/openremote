@@ -73,8 +73,8 @@ async function loadOrTranslate(storyArgs: any) {
     console.debug("Loading OrTranslate...");
     const orTranslate = Object.assign(new OrTranslate(), storyArgs);
     console.debug("Waiting for i18next initialization...");
-    if(window.location.href.includes("localhost")) {
-        await i18next.use(i18nextBackend).init({lng: "en", backend: {loadPath: () => "http://localhost:8080/shared/locales/{{lng}}/or.json"}});
+    if(window.location.href.includes("127.0.0.1")) {
+        await i18next.use(i18nextBackend).init({lng: "en", backend: {loadPath: () => "http://127.0.0.1:8080/shared/locales/{{lng}}/or.json"}});
     } else {
         await i18next.use(i18nextBackend).init({lng: "en", backend: {loadPath: () => "/shared/locales/{{lng}}/or.json"}});
     }
