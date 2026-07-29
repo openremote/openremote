@@ -19,10 +19,14 @@
  */
 package org.openremote.model.query.filter;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.Arrays;
 
+@Schema(description = "Matches an asset ancestry path represented as ordered asset identifiers.")
 public class PathPredicate {
 
+    @Schema(description = "Ordered asset identifiers in the ancestry path.")
     public String[] path;
 
     public PathPredicate() {

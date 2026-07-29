@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+export { AlarmsPage } from "./alarms";
 export { AssetsPage } from "./assets";
 export { InsightsPage } from "./insights";
 export { RealmsPage } from "./realms";

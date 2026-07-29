@@ -21,9 +21,12 @@ package org.openremote.model.query.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(description = "Matches an exact realm name.")
 public class RealmPredicate {
 
+    @Schema(description = "Realm name.", example = "building")
     public String name;
 
     @JsonCreator

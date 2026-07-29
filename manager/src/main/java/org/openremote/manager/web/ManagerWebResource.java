@@ -24,6 +24,10 @@ import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.security.Realm;
 
+import jakarta.ws.rs.WebApplicationException;
+
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+
 public class ManagerWebResource extends WebResource {
 
     final protected TimerService timerService;
@@ -52,6 +56,24 @@ public class ManagerWebResource extends WebResource {
 
     public boolean isRealmActiveAndAccessible(Realm realm) {
         return identityService.getIdentityProvider().isRealmActiveAndAccessible(getAuthContext(), realm);
+    }
+
+    /**
+     * Rejects the request with a 403 when the caller cannot access the realm.
+     */
+    public void throwIfNotRealmActiveAndAccessible(String realm) {
+        if (!isRealmActiveAndAccessible(realm)) {
+            throw new WebApplicationException("Realm '" + realm + "' is nonexistent, inactive or inaccessible", FORBIDDEN);
+        }
+    }
+
+    /**
+     * Rejects the request with a 403 when the caller is a restricted user.
+     */
+    public void throwIfRestrictedUser(String message) {
+        if (isRestrictedUser()) {
+            throw new WebApplicationException(message, FORBIDDEN);
+        }
     }
 
 }

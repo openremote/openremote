@@ -19,6 +19,7 @@
  */
 package org.openremote.model.notification;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -30,6 +31,7 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @Entity
 @Table(name = "NOTIFICATION")
+@Schema(description = "One target-specific notification delivery record, including delivery and acknowledgement state.")
 public class SentNotification {
 
     /**
@@ -48,53 +50,67 @@ public class SentNotification {
     @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
     @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
+    @Schema(description = "Server-assigned numeric delivery-record identifier.", accessMode = Schema.AccessMode.READ_ONLY, example = "42")
     protected Long id;
 
     @Column(name = "NAME")
+    @Schema(description = "Human-readable notification name.", example = "High temperature alert")
     protected String name;
 
     @NotNull
     @Column(name = "TYPE", nullable = false, length = 50)
+    @Schema(description = "Notification message type discriminator.", example = "push")
     protected String type;
 
     @NotNull
     @Column(name = "TARGET", length = 50)
     @Enumerated(EnumType.STRING)
+    @Schema(description = "Kind of delivery target.")
     protected Notification.TargetType target;
 
     @NotNull
     @Column(name = "TARGET_ID")
+    @Schema(description = "User, asset, realm, or custom target identifier.")
     protected String targetId;
 
     @NotNull()
     @Column(name = "SOURCE", length = 50)
     @Enumerated(EnumType.STRING)
+    @Schema(description = "Kind of actor that created the notification.")
     protected Notification.Source source;
 
     @NotNull
     @Column(name = "REALM", nullable = false, updatable = false)
+    @Schema(description = "Realm associated with the delivery record.", example = "building")
     protected String realm;
 
     @Column(name = "SOURCE_ID", length = 43)
+    @Schema(description = "Identifier of the user, rule, or component that created the notification.")
     protected String sourceId;
 
     @Column(name = "MESSAGE")
     @JdbcTypeCode(SqlTypes.JSON)
+    @Schema(description = "Typed message payload as it was submitted.")
     protected AbstractNotificationMessage message;
 
     @Column(name = "ERROR", length = 4096)
+    @Schema(description = "Delivery error detail when sending failed.")
     protected String error;
 
     @Column(name = "SENT_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Schema(description = "Time the notification was sent or attempted.", accessMode = Schema.AccessMode.READ_ONLY)
     protected Instant sentOn;
 
     @Column(name = "DELIVERED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Schema(description = "Time the target marked the notification delivered.", accessMode = Schema.AccessMode.READ_ONLY)
     protected Instant deliveredOn;
 
     @Column(name = "ACKNOWLEDGED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Schema(description = "Time the target acknowledged the notification.", accessMode = Schema.AccessMode.READ_ONLY)
     protected Instant acknowledgedOn;
 
     @Column(name = "ACKNOWLEDGEMENT")
+    @Schema(description = "Optional JSON acknowledgement value serialized as text.")
     protected String acknowledgement;
 
     public Long getId() {

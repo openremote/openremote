@@ -209,7 +209,9 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         assetStorageService.delete([agent.id])
 
         then: "the associated protocol instance should be un-deployed"
-        conditions.eventually {
+        // Un-deploying takes the agent lock and tears down a servlet deployment, so it can be held up by other agents
+        // being deployed at the same time
+        new PollingConditions(timeout: 30, initialDelay: 1).eventually {
             assert agentService.getProtocolInstance(agent.id) == null
             assert Servlets.defaultContainer().getDeployment(AbstractHTTPServerProtocol.getDeploymentName(TestHTTPServerProtocol.class, agent.id)) == null
         }

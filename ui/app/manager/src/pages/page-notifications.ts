@@ -443,7 +443,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected render() {
-        const writeNotifications = manager.hasRole("write:admin") || manager.hasRole("write:notifications");
+        const writeNotifications = manager.hasRole("write:notifications");
         const hasRecipientType = manager.hasRole("read:admin")
             || manager.hasRole("read:assets")
             || manager.hasRole("read:users");

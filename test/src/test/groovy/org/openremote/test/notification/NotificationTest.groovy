@@ -477,15 +477,12 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null, null, null).count {it.deliveredOn != null} == 1
         }
 
-        when: "a regular user tries to remove notifications"
+        when: "a regular user removes notifications of their own realm"
         testuser1NotificationResource.removeNotifications(null, null, PushNotificationMessage.TYPE, null, null, MASTER_REALM, null, null)
 
-        then: "access should be forbidden"
-        ex = thrown()
-        ex.response.withCloseable { r ->
-            assert r.status == 403
-            return true
-        }
+        then: "write:notifications grants the delete and the other realm's notifications are untouched"
+        noExceptionThrown()
+        adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, null, null, null, null, null, null).length > 0
 
         when: "a restricted user tries to remove notifications"
         testuser3NotificationResource.removeNotifications(null, null, PushNotificationMessage.TYPE, null, null, realm, null, null)
@@ -841,6 +838,13 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         then: "the admin console should have been created"
         adminConsole.id != null
 
+        and: "the push notification handler should have picked up the console token"
+        // The token map is updated from the asset persistence event, and sending to a console that is not in it yet
+        // fails the whole notification request
+        conditions.eventually {
+            assert pushNotificationHandler.consoleFCMTokenMap.containsKey(adminConsole.id)
+        }
+
         when: "the admin user sends a push notification to the entire MASTER realm (which is only himself)"
         notification.targets = [new Notification.Target(Notification.TargetType.REALM, MASTER_REALM)]
         adminNotificationResource.sendNotification(null, notification)
@@ -917,8 +921,11 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 ["manager"] as String[])
         def testuser1Console = testuser1ConsoleResource.register(null, testuser1ConsoleRegistration)
 
-        and: "the console is created"
-        testuser1Console.id != null
+        and: "the console is created and its token picked up by the push notification handler"
+        conditions.eventually {
+            assert testuser1Console.id != null
+            assert pushNotificationHandler.consoleFCMTokenMap.containsKey(testuser1Console.id)
+        }
 
         and: "the same notification is sent, now to both users"
         adminNotificationResource.sendNotification(null, notification)
@@ -1066,7 +1073,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ((LocalizedNotificationMessage) invalidNotification.getMessage()).setMessage("nl", new PushNotificationMessage())*/
     }
 
-    def "Check get notifications by realm access control"() {
+    def "Check notification realm access control"() {
 
         List<Message> sentEmails = new CopyOnWriteArrayList<>()
 
@@ -1108,11 +1115,22 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         identityProvider.updateUserClientRoles(buildingRealm, notifUser.id, KEYCLOAK_CLIENT_ID, READ_NOTIFICATIONS_ROLE)
         def notifUserId = notifUser.id
 
+        and: "a transient master realm user with an email address, so a master realm notification gets persisted"
+        def masterUserInput = new User()
+        masterUserInput.username = "masternotifuser"
+        masterUserInput.firstName = "Master"
+        masterUserInput.lastName = "User"
+        masterUserInput.email = "masternotifuser@openremote.local"
+        masterUserInput.enabled = true
+        identityProvider.createUpdateUser(MASTER_REALM, masterUserInput, "masternotifuser", true)
+
         and: "authenticated users with differing permissions"
         def adminAccessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, MASTER_REALM_ADMIN_USER, getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT))
         def testuser2AccessToken = authenticate(container, buildingRealm, KEYCLOAK_CLIENT_ID, "testuser2", "testuser2")
         def buildingUserAccessToken = authenticate(container, buildingRealm, KEYCLOAK_CLIENT_ID, "building", "building")
         def notifUserAccessToken = authenticate(container, buildingRealm, KEYCLOAK_CLIENT_ID, "notifuser", "notifuser")
+        // testuser4 is a building realm admin (write:admin), i.e. it may delete but only within its own realm
+        def testuser4AccessToken = authenticate(container, buildingRealm, KEYCLOAK_CLIENT_ID, "testuser4", "testuser4")
 
         and: "a helper that requests notifications for a realm over REST as the given user"
         // realm is selected via the realmId query param (the consolidated endpoint has no realm path segment)
@@ -1120,6 +1138,26 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             getClientApiTarget(serverUri(serverPort), authRealm, token)
                     .path("notification").queryParam("realmId", realmId)
                     .request().get()
+        }
+
+        and: "a helper that reads the notifications of a realm with a given name as the superuser"
+        def notificationsNamed = { String realmId, String name ->
+            def response = requestNotificationsByRealm(MASTER_REALM, adminAccessToken, realmId)
+            def sent = response.readEntity(SentNotification[].class).findAll { it.name == name }
+            response.close()
+            return sent
+        }
+
+        and: "helpers that delete notifications over REST as the given user"
+        def deleteNotifications = { String authRealm, String token, Map<String, Object> queryParams ->
+            def target = getClientApiTarget(serverUri(serverPort), authRealm, token).path("notification")
+            queryParams.each { name, value -> target = target.queryParam(name, value) }
+            target.request().delete()
+        }
+        def deleteNotificationById = { String authRealm, String token, Long notificationId ->
+            getClientApiTarget(serverUri(serverPort), authRealm, token)
+                    .path("notification").path(notificationId.toString())
+                    .request().delete()
         }
 
         when: "an email notification is sent to the entire building realm"
@@ -1219,6 +1257,60 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         noRealmSent.size() == 1
         noRealmSent[0].targetId == buildingUserId
         noRealmResponse.close()
+
+        when: "an email notification is sent to the entire master realm"
+        def masterNotification = new Notification(
+                "MasterRealmAccessTest",
+                new EmailNotificationMessage().setSubject("Master realm test").setText("Hello master"),
+                Collections.singletonList(new Notification.Target(Notification.TargetType.REALM, MASTER_REALM)), null, null)
+        notificationService.sendNotification(masterNotification, Notification.Source.REALM_RULESET, MASTER_REALM)
+
+        then: "it is persisted against the master realm"
+        conditions.eventually {
+            assert notificationsNamed(MASTER_REALM, "MasterRealmAccessTest").size() > 0
+        }
+
+        when: "a realm admin of the building realm tries to delete the master realm's notifications"
+        def masterCount = notificationsNamed(MASTER_REALM, "MasterRealmAccessTest").size()
+        def crossRealmDelete = deleteNotifications(buildingRealm, testuser4AccessToken, [realmId: MASTER_REALM, type: EmailNotificationMessage.TYPE])
+
+        then: "the request is forbidden and the master realm's notifications are untouched"
+        crossRealmDelete.status == 403
+        crossRealmDelete.close()
+        notificationsNamed(MASTER_REALM, "MasterRealmAccessTest").size() == masterCount
+
+        when: "a realm admin of the building realm tries to delete a single master realm notification by id"
+        def masterNotificationId = notificationsNamed(MASTER_REALM, "MasterRealmAccessTest")[0].id
+        def byIdDelete = deleteNotificationById(buildingRealm, testuser4AccessToken, masterNotificationId)
+
+        then: "the request is forbidden and the notification remains"
+        byIdDelete.status == 403
+        byIdDelete.close()
+        notificationsNamed(MASTER_REALM, "MasterRealmAccessTest").any { it.id == masterNotificationId }
+
+        when: "the superuser deletes a notification that doesn't exist"
+        def missingDelete = deleteNotificationById(MASTER_REALM, adminAccessToken, Long.MAX_VALUE)
+
+        then: "the notification is reported as not found"
+        missingDelete.status == 404
+        missingDelete.close()
+
+        when: "a realm admin of the building realm deletes notifications by type without specifying a realm"
+        def ownRealmDelete = deleteNotifications(buildingRealm, testuser4AccessToken, [type: EmailNotificationMessage.TYPE])
+
+        then: "only their own realm's notifications are deleted"
+        ownRealmDelete.status == 204
+        ownRealmDelete.close()
+        notificationsNamed(buildingRealm, "RealmAccessTest").isEmpty()
+        notificationsNamed(MASTER_REALM, "MasterRealmAccessTest").size() == masterCount
+
+        when: "the superuser deletes notifications by type"
+        def superUserDelete = deleteNotifications(MASTER_REALM, adminAccessToken, [type: EmailNotificationMessage.TYPE])
+
+        then: "the delete is not confined to a realm"
+        superUserDelete.status == 204
+        superUserDelete.close()
+        notificationsNamed(MASTER_REALM, "MasterRealmAccessTest").isEmpty()
 
         cleanup: "the mock is removed"
         notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)

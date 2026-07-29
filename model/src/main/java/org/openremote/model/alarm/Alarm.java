@@ -20,8 +20,10 @@
 package org.openremote.model.alarm;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
+@Schema(description = "Operational alarm submitted to or returned by the alarm service.")
 public class Alarm {
     public enum Source {
         MANUAL,
@@ -50,25 +52,33 @@ public class Alarm {
     public static final String HEADER_SOURCE_ID = Alarm.class.getName() + ".SOURCEID";
 
     @NotNull
+    @Schema(description = "Short human-readable alarm title.", example = "Temperature threshold exceeded")
     protected String title;
 
+    @Schema(description = "Detailed alarm message.", example = "Boiler room temperature reached 42 °C.")
     protected String content;
 
     @NotNull
+    @Schema(description = "Operational impact of the alarm.")
     protected Severity severity;
 
     @NotNull
+    @Schema(description = "Current alarm workflow state.")
     protected Status status;
 
+    @Schema(description = "Identity-provider user assigned to handle the alarm.", example = "2f1c17e5-72b8-4dbe-9f8d-c49e66f82e10")
     protected String assigneeId;
 
     @NotNull
+    @Schema(description = "Realm that owns the alarm.", example = "building")
     protected String realm;
 
     @NotNull
+    @Schema(description = "Identifier of the rule, user, or system component that created the alarm.", accessMode = Schema.AccessMode.READ_ONLY)
     protected String sourceId;
 
     @NotNull
+    @Schema(description = "Kind of actor that created the alarm.", accessMode = Schema.AccessMode.READ_ONLY)
     protected Source source;
 
     @JsonCreator

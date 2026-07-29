@@ -25,13 +25,14 @@ import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
 
 import java.util.Map;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "UI Apps", description = "Operations on UI apps")
+@Tag(name = "UI Apps", description = "Discover installed Manager applications and load their public client configuration")
 @Path("apps")
 public interface AppResource {
 
@@ -40,7 +41,10 @@ public interface AppResource {
      */
     @GET
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getApps", summary = "Retrieve a list of the available applications")
+    @Operation(operationId = "getApps", summary = "Retrieve a list of the available applications",
+        description = "Returns the identifiers of applications installed in the Manager web root.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.ServerError
     String[] getApps(@BeanParam RequestParams requestParams);
 
     /**
@@ -49,7 +53,10 @@ public interface AppResource {
     @GET
     @Produces(APPLICATION_JSON)
     @Path("info")
-    @Operation(operationId = "getAppInfos", summary = "Retrieve the info of the available applications")
+    @Operation(operationId = "getAppInfos", summary = "Retrieve the info of the available applications",
+        description = "Loads each installed application's info.json file and returns the documents keyed by application identifier.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.ServerError
     Map<String, Object> getAppInfos(@BeanParam RequestParams requestParams);
 
     /**
@@ -58,6 +65,10 @@ public interface AppResource {
     @GET
     @Produces(APPLICATION_JSON)
     @Path("consoleConfig")
-    @Operation(operationId = "getConsoleConfig", summary = "Retrieve the console configuration")
+    @Operation(operationId = "getConsoleConfig", summary = "Retrieve the console configuration",
+        description = "Loads the public console_config.json document used to configure console clients before sign-in.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.NotFound
+    @OpenApiResponses.ServerError
     Object getConsoleConfig(@BeanParam RequestParams requestParams);
 }

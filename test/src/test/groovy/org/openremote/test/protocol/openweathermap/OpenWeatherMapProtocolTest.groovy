@@ -263,6 +263,9 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
 
         when: "a weather asset is provisioned"
         def protocol = (OpenWeatherMapProtocol) agentService.getProtocolInstance(agent.id)
+        // Attributes are linked asynchronously and only linked attributes are updated, so linking must be awaited
+        // before each update is triggered
+        def linkedAttributeCount = { assetId -> protocol.getLinkedAttributes().keySet().count { it.id == assetId } }
         def weatherAsset = protocol.provisionWeatherAsset()
 
         then: "the weather asset should be provisioned"
@@ -287,6 +290,7 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             assert weatherAsset.getAttribute(WeatherAsset.PROBABILITY_OF_PRECIPITATION).get().hasMeta(AGENT_LINK)
             assert weatherAsset.getAttribute(WeatherAsset.RAINFALL).get().hasMeta(AGENT_LINK)
             assert weatherAsset.getAttribute(WeatherAsset.UV_INDEX).get().hasMeta(AGENT_LINK)
+            assert linkedAttributeCount(weatherAsset.id) == 10
         }
 
 
@@ -320,7 +324,10 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             assert weatherAsset.getLocation().map{it.y}.orElse(null) == 52.3676d
         }
 
-        when: "a weather update is triggered"
+        when: "a weather update is triggered once the attributes are linked again after the merge"
+        conditions.eventually {
+            assert linkedAttributeCount(weatherAsset.id) == 10
+        }
         protocol.updateAllLinkedAttributes()
 
         then: "the weather data should be updated with current values according to the asset's location"
@@ -368,6 +375,7 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             assert weatherAsset2.parentId == agent.id
             assert weatherAsset2.getLocation().map{it.x}.orElse(null) == -0.1276d
             assert weatherAsset2.getLocation().map{it.y}.orElse(null) == 51.5072d
+            assert linkedAttributeCount(weatherAsset2.id) == 10
         }
 
         when: "a weather update is triggered"

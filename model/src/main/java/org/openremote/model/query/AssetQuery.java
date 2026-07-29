@@ -19,6 +19,7 @@
  */
 package org.openremote.model.query;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.query.filter.*;
@@ -31,10 +32,13 @@ import java.util.stream.Collectors;
 /**
  * Encapsulate asset query restriction, projection, and ordering of results.
  */
+@Schema(description = "Composable asset search request. Populated filters are combined to restrict results; limit and offset provide pagination.")
 public class AssetQuery implements Serializable {
 
+    @Schema(name = "AssetQuerySelect", description = "Response projection for controlling which asset attributes are returned.")
     public static class Select {
         protected static final String[] EMPTY_ATTRIBUTES = new String[0];
+        @Schema(description = "Attribute names to include. An empty array excludes all attributes; null returns all attributes.", example = "[\"temperature\",\"humidity\"]")
         public String[] attributes;
 
         public Select attributes(String... attributeNames) {
@@ -55,6 +59,7 @@ public class AssetQuery implements Serializable {
         }
     }
 
+    @Schema(name = "AssetQueryOrderBy", description = "Asset result ordering.")
     public static class OrderBy {
 
         public enum Property {
@@ -65,7 +70,9 @@ public class AssetQuery implements Serializable {
             REALM
         }
 
+        @Schema(description = "Asset property used for ordering.", example = "NAME")
         public Property property;
+        @Schema(description = "Reverse the default ascending order.", example = "false")
         public boolean descending;
 
         public OrderBy() {
@@ -168,22 +175,29 @@ public class AssetQuery implements Serializable {
         }
     }
 
+    @Schema(description = "When parent or path filters are used, include matching descendants.", example = "true")
     public boolean recursive;
     // Projection
     public Select select;
     // Restriction predicates
+    @Schema(description = "Requested visibility class relative to the caller.")
     public Access access;
+    @Schema(description = "Match these exact asset identifiers.")
     public String[] ids;
     public StringPredicate[] names;
     public ParentPredicate[] parents;
     public PathPredicate[] paths;
     public RealmPredicate realm;
+    @Schema(description = "Match assets linked to any of these users.")
     public String[] userIds;
+    @Schema(description = "Match registered asset type names; base types include their concrete subtypes.", example = "[\"ThingAsset\"]")
     public String[] types;
     public LogicGroup<AttributePredicate> attributes;
     // Ordering
     public OrderBy orderBy;
+    @Schema(description = "Maximum number of results; zero uses the server default.", example = "100")
     public int limit;
+    @Schema(description = "Number of matching results to skip.", example = "0")
     public int offset;
 
     public AssetQuery() {

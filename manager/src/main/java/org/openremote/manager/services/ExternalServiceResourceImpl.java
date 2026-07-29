@@ -113,10 +113,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
 
     @Override
     public ExternalService[] getServices(RequestParams requestParams, String realm) {
-        if (!isRealmActiveAndAccessible(realm)) {
-            throw new WebApplicationException("Realm '" + realm + "' is nonexistent, inactive or inaccessible",
-                    Response.Status.FORBIDDEN);
-        }
+        throwIfNotRealmActiveAndAccessible(realm);
 
         return externalServiceRegistry.getServices(realm);
     }
@@ -130,11 +127,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.NOT_FOUND);
         }
 
-        if (!isRealmActiveAndAccessible(service.getRealm())) {
-            throw new WebApplicationException(
-                    "Realm '" + service.getRealm() + "' is nonexistent, inactive or inaccessible",
-                    Response.Status.FORBIDDEN);
-        }
+        throwIfNotRealmActiveAndAccessible(service.getRealm());
 
         return service;
     }
@@ -159,11 +152,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.NOT_FOUND);
         }
 
-        if (!isRealmActiveAndAccessible(service.getRealm())) {
-            throw new WebApplicationException(
-                    "Realm '" + service.getRealm() + "' is nonexistent, inactive or inaccessible",
-                    Response.Status.FORBIDDEN);
-        }
+        throwIfNotRealmActiveAndAccessible(service.getRealm());
 
         // Restrict heartbeats to the user who registered the service
         if (!isServiceRegistrarCurrentUser(service)) {
@@ -196,11 +185,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.NOT_FOUND);
         }
 
-        if (!isRealmActiveAndAccessible(service.getRealm())) {
-            throw new WebApplicationException(
-                    "Realm '" + service.getRealm() + "' is nonexistent, inactive or inaccessible",
-                    Response.Status.FORBIDDEN);
-        }
+        throwIfNotRealmActiveAndAccessible(service.getRealm());
 
         // Restrict de-registering a service to the user who registered the service
         if (!isServiceRegistrarCurrentUser(service)) {

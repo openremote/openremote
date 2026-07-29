@@ -37,7 +37,7 @@ import {
     withPage,
 } from "@openremote/test";
 import { playwrightRequestAdapter } from "./request-adapter";
-import { AssetsPage, InsightsPage, NotificationsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
+import { AlarmsPage, AssetsPage, InsightsPage, NotificationsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
 import { MwcInput, MwcMenu } from "../../../../component/or-mwc-components/test/fixtures";
@@ -144,16 +144,34 @@ export class Manager {
     /**
      * Login as user, waits for username and password fields to be visible.
      * @param user Username (admin or other)
+     * @param password Password to log in with, defaulting to the one held for the known test users
      */
-    async login(user: Usernames) {
-        const username = this.page.getByRole("textbox", { name: "Username or email" });
-        const password = this.page.getByRole("textbox", { name: "Password" });
-        await username.waitFor();
-        if ((await username.isVisible()) && (await password.isVisible())) {
-            await username.fill(user);
-            await password.fill(users[user].password);
+    async login(user: Usernames | string, password: string = users[user as Usernames]?.password) {
+        const usernameField = this.page.getByRole("textbox", { name: "Username or email" });
+        const passwordField = this.page.getByRole("textbox", { name: "Password" });
+        await usernameField.waitFor();
+        if ((await usernameField.isVisible()) && (await passwordField.isVisible())) {
+            await usernameField.fill(user);
+            await passwordField.fill(password);
             await this.page.keyboard.press("Enter");
         }
+    }
+
+    /**
+     * Create a user with the given client roles in a realm (REST), then log in as them through the UI.
+     *
+     * Used to exercise a page under a specific permission set without disturbing the stored admin session.
+     * Requires a clean `storageState`, otherwise the stored session is used instead of the login form.
+     * @param realm The realm to create the user in
+     * @param user The username and client roles to give them
+     */
+    async provisionUserAndLogin(realm: string, { username, roles }: { username: string; roles?: string[] }) {
+        // set an initial password (== username) so the throwaway user can log in via the UI
+        await this.provisionUser(realm, { username, roles, password: username });
+
+        await this.goToRealmStartPage(realm);
+        await this.login(username, username);
+        await this.page.waitForURL("**/manager/**");
     }
 
     /**
@@ -574,6 +592,7 @@ function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; sha
 }
 
 interface PageFixtures {
+    alarmsPage: AlarmsPage;
     assetsPage: AssetsPage;
     insightsPage: InsightsPage;
     notificationsPage: NotificationsPage;
@@ -599,6 +618,7 @@ interface Fixtures extends PageFixtures, ComponentFixtures {
 export const test = base.extend<Fixtures>({
     manager: async ({ page, baseURL, request }, use) => await use(new Manager(page, baseURL!, request)),
     // Pages
+    alarmsPage: withManager(AlarmsPage),
     assetsPage: withManager(AssetsPage),
     insightsPage: withManager(InsightsPage),
     notificationsPage: withManager(NotificationsPage),

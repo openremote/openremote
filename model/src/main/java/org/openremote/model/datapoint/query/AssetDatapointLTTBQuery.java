@@ -1,5 +1,6 @@
 package org.openremote.model.datapoint.query;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.openremote.model.attribute.AttributeRef;
 
 import java.time.Instant;
@@ -7,8 +8,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashMap;
 
+@Schema(description = "Downsamples numeric or boolean datapoints from the inclusive range with the "
+        + "Largest-Triangle-Three-Buckets (LTTB) algorithm while preserving the series' visual shape. Use this "
+        + "to reduce a large series for charts. Results are chronological; boolean values are processed as "
+        + "1 for true and 0 for false. Other attribute value types are rejected.")
 public final class AssetDatapointLTTBQuery extends AssetDatapointQuery {
 
+    @Schema(description = "Requested maximum number of representative datapoints after downsampling. Fewer "
+            + "points are returned when the range contains fewer datapoints.",
+            example = "500",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     public int amountOfPoints;
 
     public AssetDatapointLTTBQuery() {}

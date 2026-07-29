@@ -484,6 +484,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
 
+        and: "the engine should have fired with the console inside the geofence, resetting the rule for the console"
+        awaitInsideGeofenceEvaluated(realmBuildingEngine, consoleRegistration.id, conditions)
+
         when: "the console device moves outside the home geofence again (as defined in the rule)"
         emailMessages.clear()
         assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(-10d, -4d)))
@@ -537,6 +540,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
 
+        and: "the engine should have fired with the console inside the geofence, resetting the rule for the console"
+        awaitInsideGeofenceEvaluated(realmBuildingEngine, consoleRegistration.id, conditions)
+
         when: "the console device moves outside the home geofence again (as defined in the rule)"
         attributeEvent = new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d))
         assetProcessingService.sendAttributeEvent(attributeEvent)
@@ -554,6 +560,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
+
+        and: "the engine should have fired with the console inside the geofence, resetting the rule for the console"
+        awaitInsideGeofenceEvaluated(realmBuildingEngine, consoleRegistration.id, conditions)
 
         when: "when time advances 5 hours"
         advancePseudoClock(5, HOURS, container)
@@ -1761,5 +1770,19 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         cleanup: "disable mock filter"
         mockServer.finished = true
+    }
+
+    /**
+     * A rule only fires for the console again once it has stopped matching it, so the engine must complete an execution
+     * with the inside location before the console can be moved out again.
+     */
+    private static void awaitInsideGeofenceEvaluated(RulesEngine engine, String consoleId, PollingConditions conditions) {
+        conditions.eventually {
+            def assetState = engine.facts.assetStates.find {it.id == consoleId && it.name == Asset.LOCATION.name}
+            assert assetState != null
+            assert assetState.getValue(GeoJSONPoint.class).map{it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x}.orElse(false)
+            assert assetState.getValue(GeoJSONPoint.class).map{it.y == ManagerTestSetup.SMART_BUILDING_LOCATION.y}.orElse(false)
+            assert engine.lastFireTimestamp > assetState.timestamp
+        }
     }
 }

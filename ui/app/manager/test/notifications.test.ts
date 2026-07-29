@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { expect, Page } from "@openremote/test";
+import { expect } from "@openremote/test";
 import { Asset, EmailNotificationMessage, Notification, NotificationTargetType } from "@openremote/model";
 import { type AxiosRequestConfig } from "axios";
 import { Manager, adminStatePath, test } from "./fixtures/manager.js";
@@ -99,25 +99,6 @@ async function createConsoleForUser(manager: Manager, realm: string, userId: str
         },
     } as Asset, config);
     await linkUsersToAsset(manager, realm, consoleId, [userId], config);
-}
-
-/**
- * Create a throwaway user with the given client roles in the given realm (REST), then log in as them through the UI.
- * Used to exercise the page under a specific permission set without disturbing the stored admin session.
- */
-async function createUserAndLogin(
-    manager: Manager,
-    page: Page,
-    { realm, username, roles }: { realm: string; username: string; roles: string[] },
-) {
-    // set an initial password (== username) so the throwaway user can log in via the UI
-    await manager.provisionUser(realm, { username, roles, password: username });
-
-    await manager.goToRealmStartPage(realm);
-    await page.getByRole("textbox", { name: "Username or email" }).fill(username);
-    await page.getByRole("textbox", { name: "Password" }).fill(username);
-    await page.keyboard.press("Enter");
-    await page.waitForURL("**/manager/**");
 }
 
 /** Format a Date as the local `YYYY-MM-DDTHH:mm` string the date-range pickers use. */
@@ -367,9 +348,8 @@ test.describe("Role-Based Access Control", () => {
      * @given A "smartcity" user with read:notifications only (no write:admin/write:notifications)
      * @then The table is visible but the write-gated "Send new" button is hidden
      */
-    test("should hide the send button for a user without write permission", async ({ page, manager, notificationsPage }) => {
-        await createUserAndLogin(manager, page, {
-            realm: "smartcity",
+    test("should hide the send button for a user without write permission", async ({ manager, notificationsPage }) => {
+        await manager.provisionUserAndLogin("smartcity", {
             username: "e2e-readonly",
             roles: ["read:notifications"],
         });
@@ -382,9 +362,8 @@ test.describe("Role-Based Access Control", () => {
      * @given A "smartcity" user with write:notifications but no read:admin/read:users/read:assets
      * @then The "Send new" button is shown (write permission) but disabled (no recipient type can be chosen)
      */
-    test("should disable the send button for a user who cannot choose any recipient type", async ({ page, manager, notificationsPage }) => {
-        await createUserAndLogin(manager, page, {
-            realm: "smartcity",
+    test("should disable the send button for a user who cannot choose any recipient type", async ({ manager, notificationsPage }) => {
+        await manager.provisionUserAndLogin("smartcity", {
             username: "e2e-sender",
             roles: ["read:notifications", "write:notifications"],
         });
@@ -399,10 +378,9 @@ test.describe("Role-Based Access Control", () => {
      * @when The create dialog is opened for the first time
      * @then The target type is forced to Users and the recipient checkbox list is populated
      */
-    test("should list user recipients on first open for a user who cannot read assets", async ({ page, manager, notificationsPage }) => {
+    test("should list user recipients on first open for a user who cannot read assets", async ({ manager, notificationsPage }) => {
         await ensureRecipient(manager, "smartcity", await manager.adminConfig());
-        await createUserAndLogin(manager, page, {
-            realm: "smartcity",
+        await manager.provisionUserAndLogin("smartcity", {
             username: "e2e-user-sender",
             roles: ["read:notifications", "write:notifications", "read:users"],
         });
@@ -418,10 +396,9 @@ test.describe("Role-Based Access Control", () => {
      * @when That user opens the notification's details dialog
      * @then The recipient type is shown, but the recipient's identity is sanitised away (shown as "-")
      */
-    test("should hide the recipient identity for a viewer without user/asset read permission", async ({ page, manager, notificationsPage }) => {
+    test("should hide the recipient identity for a viewer without user/asset read permission", async ({ manager, notificationsPage }) => {
         const subject = await seedNotification(manager, "smartcity");
-        await createUserAndLogin(manager, page, {
-            realm: "smartcity",
+        await manager.provisionUserAndLogin("smartcity", {
             username: "e2e-viewer",
             roles: ["read:notifications"],
         });

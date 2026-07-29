@@ -20,8 +20,14 @@
 package org.openremote.model.asset;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.Explode;
+import io.swagger.v3.oas.annotations.enums.ParameterStyle;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
@@ -34,6 +40,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.attribute.AttributeWriteResult;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.value.MetaItemType;
@@ -41,6 +48,8 @@ import org.openremote.model.value.MetaItemType;
 import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.openremote.model.http.OpenApiDescriptions.*;
+import static org.openremote.model.http.OpenApiExamples.*;
 
 /**
  * Asset<?> access rules:
@@ -67,7 +76,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * <li>{@link #writeAttributeValue}</li>
  * </ul>
  */
-@Tag(name = "Asset", description = "Operations on assets")
+@Tag(name = "Asset", description = "Query and manage assets, attributes, hierarchy, and user-to-asset links")
 @Path("asset")
 public interface AssetResource {
 
@@ -93,7 +102,11 @@ public interface AssetResource {
     @Path("user/current")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @Operation(operationId = "getCurrentUserAssets",  summary = "Retrieve the linked assets of the currently authenticated user")
+    @Operation(operationId = "getCurrentUserAssets", summary = "Retrieve assets accessible to the current user",
+        description = "Returns partial linked assets for a restricted user, root assets for an unrestricted realm user, and an empty array for a super user. Attributes and paths are omitted; use getAsset for full details.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
     Asset<?>[] getCurrentUserAssets(@BeanParam RequestParams requestParams);
 
     /**
@@ -113,11 +126,15 @@ public interface AssetResource {
     @Path("user/link")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @Operation(operationId = "getUserAssetLinks", summary = "Retrieve links between assets and users")
+    @Operation(operationId = "getUserAssetLinks", summary = "Retrieve links between assets and users",
+        description = "Returns user-asset links in the required realm, optionally filtered by userId and assetId. Missing users or assets produce an empty result; restricted users cannot call this operation.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
     UserAssetLink[] getUserAssetLinks(@BeanParam RequestParams requestParams,
-                                      @QueryParam("realm") String realm,
-                                      @QueryParam("userId") String userId,
-                                      @QueryParam("assetId") String assetId);
+                                      @Parameter(description = REALM + " Defaults to the authenticated realm.", example = EXAMPLE_REALM) @QueryParam("realm") String realm,
+                                      @Parameter(description = "Only return links for this user.", example = EXAMPLE_USER_ID) @QueryParam("userId") String userId,
+                                      @Parameter(description = "Only return links for this asset.", example = EXAMPLE_ASSET_ID) @QueryParam("assetId") String assetId);
 
     /**
      * Create all of the specified links; they must all be for the same realm and user.
@@ -132,8 +149,13 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @Operation(operationId = "createUserAssetLinks", summary = "Create links between users and assets")
-    void createUserAssetLinks(@BeanParam RequestParams requestParams, List<UserAssetLink> userAssets);
+    @Operation(operationId = "createUserAssetLinks", summary = "Create links between users and assets",
+        description = "Creates all supplied links as one operation. Every item must identify the same realm and user, and every referenced realm, user, and asset must exist.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    void createUserAssetLinks(@BeanParam RequestParams requestParams,
+                              @RequestBody(required = true, description = "Links to create. Every item must have the same realm and user ID.") List<UserAssetLink> userAssets);
 
     /**
      * Delete a link between asset and user.
@@ -148,11 +170,15 @@ public interface AssetResource {
     @DELETE
     @Path("user/link/{realm}/{userId}/{assetId}")
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @Operation(operationId = "deleteUserAssetLink", summary = "Delete a link between an asset and user")
+    @Operation(operationId = "deleteUserAssetLink", summary = "Delete a link between an asset and user",
+        description = "Removes the link identified by realm, user, and asset. The caller must be allowed to administer asset links in that realm.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
     void deleteUserAssetLink(@BeanParam RequestParams requestParams,
-                             @PathParam("realm") String realm,
-                             @PathParam("userId") String userId,
-                             @PathParam("assetId") String assetId);
+                             @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("realm") String realm,
+                             @Parameter(description = USER_ID, example = EXAMPLE_USER_ID) @PathParam("userId") String userId,
+                             @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId") String assetId);
 
     /**
      * Delete all of the specified links; they must all be for the same realm and user.
@@ -166,18 +192,27 @@ public interface AssetResource {
     @Path("user/link/delete")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @Operation(operationId = "deleteUserAssetLinks", summary = "Delete user asset links")
-    void deleteUserAssetLinks(@BeanParam RequestParams requestParams, List<UserAssetLink> userAssets);
+    @Operation(operationId = "deleteUserAssetLinks", summary = "Delete user asset links",
+        description = "Removes all supplied links. Every item must identify the same realm and user.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    void deleteUserAssetLinks(@BeanParam RequestParams requestParams,
+                              @RequestBody(required = true, description = "Links to remove. Every item must have the same realm and user ID.") List<UserAssetLink> userAssets);
 
     @DELETE
     @Path("user/link/{realm}/{userId}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @Operation(operationId = "deleteAllUserAssetLinks", summary = "Delete all user asset links")
+    @Operation(operationId = "deleteAllUserAssetLinks", summary = "Delete all links for a user",
+        description = "Removes every asset link belonging to the user in the requested realm.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
     void deleteAllUserAssetLinks(@BeanParam RequestParams requestParams,
-                                 @PathParam("realm") String realm,
-                                 @PathParam("userId") String userId);
+                                 @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("realm") String realm,
+                                 @Parameter(description = USER_ID, example = EXAMPLE_USER_ID) @PathParam("userId") String userId);
 
     /**
      * Retrieve the asset. Regular users can only access assets in their authenticated realm, the superuser can access
@@ -189,8 +224,14 @@ public interface AssetResource {
     @Path("{assetId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @Operation(operationId = "getAsset", summary = "Retrieve an asset")
-    Asset<?> get(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
+    @Operation(operationId = "getAsset", summary = "Retrieve an asset",
+        description = "Returns a fully loaded asset including its path and attributes. Access is constrained to the caller's realm and, for restricted users, linked assets.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.NotFound
+    Asset<?> get(@BeanParam RequestParams requestParams,
+                 @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId") String assetId);
 
     /**
      * Same as {@link #get} but only returns a partially loaded asset (no attributes or path)
@@ -199,8 +240,14 @@ public interface AssetResource {
     @Path("partial/{assetId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @Operation(operationId = "getPartialAsset", summary = "Retrieve a partially loaded asset (no attributes or path)")
-    Asset<?> getPartial(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
+    @Operation(operationId = "getPartialAsset", summary = "Retrieve a partially loaded asset",
+        description = "Returns the asset identity and properties without loading attributes or path data. The same access rules as getAsset apply.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.NotFound
+    Asset<?> getPartial(@BeanParam RequestParams requestParams,
+                        @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId") String assetId);
 
     /**
      * Updates the asset. Regular users can only update assets in their authenticated realm, the superuser can update
@@ -217,8 +264,18 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @Operation(operationId = "updateAsset", summary = "Update an asset")
-    Asset<?> update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, Asset<?> asset);
+    @Operation(operationId = "updateAsset", summary = "Update an asset",
+        description = "Replaces mutable asset data while preserving the path identifier. Realm, parent, restricted-user, and private-metadata rules are validated; disallowed restricted-user fields may be ignored.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.NotFound
+    @OpenApiResponses.Conflict
+    Asset<?> update(@BeanParam RequestParams requestParams,
+                    @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId") String assetId,
+                    @RequestBody(required = true, description = "Complete asset representation to store. The body ID, when present, must match the path ID; type and realm cannot be changed.",
+                        content = @Content(mediaType = APPLICATION_JSON,
+                            examples = @ExampleObject(name = "Update an asset", summary = "Rename an asset and update its attribute values", value = ASSET_UPDATE))) Asset<?> asset);
 
     /**
      * Updates an attribute of an asset. Regular users can only update assets in their authenticated realm, the
@@ -240,42 +297,71 @@ public interface AssetResource {
     @Path("{assetId}/attribute/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "writeAttributeValue", summary = "Write to a single attribute", responses = {
-        @ApiResponse(description = "The result of the write operation",
-            content = @Content(mediaType = "application/json",
-                schema = @Schema(implementation = AttributeWriteResult.class)))})
-    AttributeWriteResult writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, Object value);
+    @Operation(operationId = "writeAttributeValue", summary = "Write a value to one asset attribute",
+        description = "Submits an asynchronous attribute write using the current server time. The result reports whether the event was accepted, not whether downstream processing ultimately succeeded. Anonymous writes require public-write metadata.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Forbidden
+    @OpenApiResponses.NotFound
+    @ApiResponse(responseCode = "400", description = "The attribute write failed",
+        content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = AttributeWriteResult.class)))
+    @ApiResponse(responseCode = "406", description = "The supplied value is not valid for the attribute",
+        content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = AttributeWriteResult.class)))
+    @ApiResponse(responseCode = "429", description = "The attribute event queue is full; retry the write later",
+        content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = AttributeWriteResult.class)))
+    AttributeWriteResult writeAttributeValue(@BeanParam RequestParams requestParams,
+                                             @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId") String assetId,
+                                             @Parameter(description = ATTRIBUTE_NAME, example = EXAMPLE_ATTRIBUTE_NAME) @PathParam("attributeName") String attributeName,
+                                             @RequestBody(required = true, description = "Any JSON value accepted by the attribute's value descriptor. JSON null clears the value.",
+                                                 content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(nullable = true),
+                                                     examples = @ExampleObject(name = "Numeric value", summary = "Write a number attribute", value = ATTRIBUTE_VALUE))) Object value);
 
     @PUT
     //TODO: Using {timestamp:(\\d+)?} does not correctly tokenize when using the assetResource proxy client in Groovy tests.
     @Path("{assetId}/attribute/{attributeName}/{timestamp}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "writeAttributeValue", summary = "Write to a single attribute with a timestamp", responses = {
-            @ApiResponse(
-                    description = "The result of the write operation",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AttributeWriteResult.class))
-            )})
+    @Operation(operationId = "writeAttributeValueWithTimestamp", summary = "Write a timestamped value to one asset attribute",
+        description = "Submits an asynchronous attribute write using the supplied Unix timestamp in milliseconds. The result reports acceptance only; anonymous writes require public-write metadata.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Forbidden
+    @OpenApiResponses.NotFound
+    @ApiResponse(responseCode = "400", description = "The attribute write failed",
+        content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = AttributeWriteResult.class)))
+    @ApiResponse(responseCode = "406", description = "The supplied value is not valid for the attribute",
+        content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = AttributeWriteResult.class)))
+    @ApiResponse(responseCode = "429", description = "The attribute event queue is full; retry the write later",
+        content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = AttributeWriteResult.class)))
     AttributeWriteResult writeAttributeValue(@BeanParam RequestParams requestParams,
-                                 @PathParam("assetId") String assetId,
-                                 @PathParam("attributeName") String attributeName,
-                                 @PathParam("timestamp") Long timestamp,
-                                 Object value);
+                                 @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId") String assetId,
+                                 @Parameter(description = ATTRIBUTE_NAME, example = EXAMPLE_ATTRIBUTE_NAME) @PathParam("attributeName") String attributeName,
+                                 @Parameter(description = TIMESTAMP, example = EXAMPLE_TIMESTAMP) @PathParam("timestamp") Long timestamp,
+                                 @RequestBody(required = true, description = "Any JSON value accepted by the attribute's value descriptor. JSON null clears the value.",
+                                     content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(nullable = true),
+                                         examples = @ExampleObject(name = "Timestamped numeric value", summary = "Write a number with the path timestamp", value = ATTRIBUTE_VALUE))) Object value);
 
 
     @PUT
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Path("attributes")
-    @Operation(operationId = "writeAttributeValues", summary = "Update attribute values")
-    AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams, AttributeState[] attributeStates);
+    @Operation(operationId = "writeAttributeValues", summary = "Write values to multiple asset attributes",
+        description = "Submits a batch of attribute states using current server time and returns one result per input item. Authorization and processing failures are encoded in each AttributeWriteResult rather than returned as an HTTP error.")
+    @OpenApiResponses.Ok
+    AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams,
+                                                 @RequestBody(required = true, description = "Attribute references and values to write using the current server time.",
+                                                     content = @Content(mediaType = APPLICATION_JSON,
+                                                         array = @ArraySchema(schema = @Schema(implementation = AttributeState.class)),
+                                                         examples = @ExampleObject(name = "Write two attributes", summary = "Update temperature and humidity on one asset", value = ATTRIBUTE_STATES))) AttributeState[] attributeStates);
 
     @PUT
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Path("attributes/timestamp")
-    @Operation(operationId = "writeAttributeEvents", summary = "Update attribute values with timestamps")
-    AttributeWriteResult[] writeAttributeEvents(@BeanParam RequestParams requestParams, AttributeEvent[] attributeEvents);
+    @Operation(operationId = "writeAttributeEvents", summary = "Write timestamped values to multiple asset attributes",
+        description = "Submits a batch of complete attribute events and returns one result per input item. Supplied timestamps are preserved; authorization and processing failures are encoded per result rather than returned as an HTTP error.")
+    @OpenApiResponses.Ok
+    AttributeWriteResult[] writeAttributeEvents(@BeanParam RequestParams requestParams,
+                                                 @RequestBody(required = true, description = "Complete attribute events to write, including their timestamps.") AttributeEvent[] attributeEvents);
 
     /**
      * Creates an asset. The identifier value of the asset can be provided, it should be a globally unique string value,
@@ -289,8 +375,15 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @Operation(operationId = "createAsset", summary = "Create an asset")
-    Asset<?> create(@BeanParam RequestParams requestParams, Asset<?> asset);
+    @Operation(operationId = "createAsset", summary = "Create an asset",
+        description = "Creates an asset in an accessible realm and returns the persisted representation. The server generates an ID when absent; supplied IDs must be globally unique and 22 characters long.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    Asset<?> create(@BeanParam RequestParams requestParams,
+                    @RequestBody(required = true, description = "Asset to create. Omit id to let the server generate one; realm defaults to the authenticated realm.",
+                        content = @Content(mediaType = APPLICATION_JSON,
+                            examples = @ExampleObject(name = "Create a Thing asset", summary = "Create a sensor with temperature and humidity attributes", value = ASSET_CREATE))) Asset<?> asset);
 
     /**
      * Deletes an asset. Regular users can only delete assets in their authenticated realm, the superuser can delete
@@ -300,8 +393,14 @@ public interface AssetResource {
     @DELETE
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @Operation(operationId = "deleteAsset", summary = "Delete assets")
-    void delete(@BeanParam RequestParams requestParams, @QueryParam("assetId") List<String> assetIds);
+    @Operation(operationId = "deleteAsset", summary = "Delete assets",
+        description = "Permanently deletes every asset identified by repeated assetId query parameters, subject to realm and restricted-user access rules.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    void delete(@BeanParam RequestParams requestParams,
+                @Parameter(description = "Asset IDs to delete. Repeat the query parameter for multiple assets.", example = EXAMPLE_ASSET_ID,
+                    required = true, style = ParameterStyle.FORM, explode = Explode.TRUE) @QueryParam("assetId") List<String> assetIds);
 
     /**
      * Retrieve assets using an {@link AssetQuery}.
@@ -316,8 +415,15 @@ public interface AssetResource {
     @Path("query")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "queryAssets", summary = "Retrieve assets using a query")
-    Asset<?>[] queryAssets(@BeanParam RequestParams requestParams, AssetQuery query);
+    @Operation(operationId = "queryAssets", summary = "Retrieve assets using a query",
+        description = "Executes an AssetQuery after constraining realm and linked-asset access. Anonymous callers receive public-readable assets only; the query select clause controls which fields are populated.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.Forbidden
+    Asset<?>[] queryAssets(@BeanParam RequestParams requestParams,
+                           @RequestBody(description = "Optional asset query. An omitted or empty query selects all assets visible to the caller.",
+                               content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = AssetQuery.class),
+                                   examples = @ExampleObject(name = "Find sensors", summary = "Find Thing assets with sensor in their name and select two attributes", value = ASSET_QUERY))) AssetQuery query);
 
 
     /**
@@ -334,8 +440,13 @@ public interface AssetResource {
     @Path("tree")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "queryAssetTree", summary = "Retrieve part of the asset tree using a query, returns an optimized structure for tree display")
-    AssetTree queryAssetTree(@BeanParam RequestParams requestParams, AssetQuery query);
+    @Operation(operationId = "queryAssetTree", summary = "Retrieve an optimized asset tree using a query",
+        description = "Applies the same authorization and selection rules as queryAssets, then returns a hierarchy optimized for tree display rather than a flat asset array.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.Forbidden
+    AssetTree queryAssetTree(@BeanParam RequestParams requestParams,
+                             @RequestBody(description = "Optional asset query controlling the roots, filters, and fields included in the returned tree.") AssetQuery query);
 
     /**
      * Retrieve the amount of assets using an {@link AssetQuery}.
@@ -344,8 +455,13 @@ public interface AssetResource {
     @Path("count")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "queryCount", summary = "Counts the amount of assets using a query")
-    Integer queryCount(@BeanParam RequestParams requestParams, AssetQuery query);
+    @Operation(operationId = "queryCount", summary = "Count assets using a query",
+        description = "Returns only the number of assets matching an AssetQuery after applying the caller's realm, public, and linked-asset access constraints.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.Forbidden
+    Integer queryCount(@BeanParam RequestParams requestParams,
+                       @RequestBody(description = "Optional asset query to count. An omitted or empty query counts all assets visible to the caller.") AssetQuery query);
 
     /**
      * Change parent for a set of asset
@@ -355,8 +471,15 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @Operation(operationId = "updateAssetParent", summary = "Update the parent of assets")
-    void updateParent(@BeanParam RequestParams requestParams, @PathParam("parentAssetId") @NotNull(message = "Parent reference required") String parentId, @QueryParam("assetIds") @Size(min = 1, message = "At least one child to update parent reference") List<String> assetIds);
+    @Operation(operationId = "updateAssetParent", summary = "Move assets below a new parent",
+        description = "Sets parentAssetId as the parent of every asset listed in repeated assetIds query parameters. Parent and children must satisfy realm, access, and hierarchy constraints.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    void updateParent(@BeanParam RequestParams requestParams,
+                      @Parameter(description = "Asset that will become the new parent.", example = EXAMPLE_ASSET_ID) @PathParam("parentAssetId") @NotNull(message = "Parent reference required") String parentId,
+                      @Parameter(description = "Child asset IDs to move. Repeat the query parameter for multiple assets.", example = EXAMPLE_ASSET_ID,
+                          required = true, style = ParameterStyle.FORM, explode = Explode.TRUE) @QueryParam("assetIds") @Size(min = 1, message = "At least one child to update parent reference") List<String> assetIds);
 
     /**
      * Remove parent reference from each asset referenced in the query parameter assetIds
@@ -365,6 +488,12 @@ public interface AssetResource {
     @Path("/parent")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @Operation(operationId = "deleteAssetsParent", summary = "Delete the parent of assets")
-    void updateNoneParent(@BeanParam RequestParams requestParams, @QueryParam("assetIds") @Size(min = 1, message = "At least one child to update parent reference") List<String> assetIds);
+    @Operation(operationId = "deleteAssetsParent", summary = "Move assets to the realm root",
+        description = "Clears the parent reference of every asset listed in repeated assetIds query parameters.")
+    @OpenApiResponses.NoContent
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    void updateNoneParent(@BeanParam RequestParams requestParams,
+                          @Parameter(description = "Asset IDs to move to the realm root. Repeat the query parameter for multiple assets.", example = EXAMPLE_ASSET_ID,
+                              required = true, style = ParameterStyle.FORM, explode = Explode.TRUE) @QueryParam("assetIds") @Size(min = 1, message = "At least one child to update parent reference") List<String> assetIds);
 }
