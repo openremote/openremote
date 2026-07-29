@@ -55,6 +55,7 @@ import {
   type SupportedWellknownValueTypes,
 } from "./util";
 import { OrVaadinInput } from "./or-vaadin-input";
+import { OrVaadinDateTimePicker } from "./or-vaadin-date-time-picker";
 
 export interface ValueInputProviderOptions {
   label?: string;
@@ -361,6 +362,19 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     }
   }
 
+  // or-vaadin-date-time-picker works with local ISO strings, while the value is a timestamp or an ISO 8601 string
+  if (inputType === InputType.DATETIME) {
+    min = min === undefined ? undefined : OrVaadinDateTimePicker.getLocalizedISOString(new Date(min));
+    max = max === undefined ? undefined : OrVaadinDateTimePicker.getLocalizedISOString(new Date(max));
+    valueConverter = (v) => {
+      const timestamp = v ? Date.parse(v) : Number.NaN;
+      if (Number.isNaN(timestamp)) {
+        return null;
+      }
+      return valueDescriptor.jsonType === "string" ? new Date(timestamp).toISOString() : timestamp;
+    };
+  }
+
   if (inputType === InputType.NUMBER && format?.resolution) {
     step = format.resolution;
   }
@@ -389,7 +403,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
       if (elem?.checkValidity()) {
         const doRemoteUpdate =
           !OrVaadinInput.CHANGE_EVENTS.has(inputType) || OrVaadinInput.CHANGE_EVENTS.get(inputType) === ev.type;
-        valueChangeNotifier(valueConverter?.(elem.nativeValue) ?? elem.nativeValue, doRemoteUpdate);
+        valueChangeNotifier(valueConverter ? valueConverter(elem.nativeValue) : elem.nativeValue, doRemoteUpdate);
       }
     };
 
@@ -399,6 +413,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
       if (inputType === InputType.CHECKBOX || inputType === InputType.SWITCH) {
         checked = Boolean(value);
         value = undefined;
+      } else if (inputType === InputType.DATETIME && value !== undefined && value !== null) {
+        value = OrVaadinDateTimePicker.getLocalizedISOString(new Date(value));
       }
 
       return html`
