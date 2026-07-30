@@ -47,6 +47,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.*;
@@ -213,7 +214,10 @@ public class GatewayClientConnector implements AutoCloseable {
         return null;
     }
 
-    protected String getAuthTokenEndpoint() throws URISyntaxException {
+    protected String getAuthTokenEndpoint() throws URISyntaxException, IllegalArgumentException {
+       if (connection.getTokenEndpointURI() != null) {
+          return URI.create(connection.getTokenEndpointURI()).toString();
+       }
        return new URIBuilder()
           .setScheme(connection.isSecured() ? "https" : "http")
           .setHost(connection.getHost())

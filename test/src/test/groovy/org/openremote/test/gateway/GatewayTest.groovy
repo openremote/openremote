@@ -80,29 +80,17 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
        def spyGatewayClientService = Spy(gatewayClientService)
        services.add(gatewayClientServiceIndex, spyGatewayClientService) // Must go back in the correct position as already sorted by priority
 
-       // This resolves the keycloak URL for the test instance which is different to the manager port typically as no proxy is running
-       def authTokenEndpointResolver = {
-          def identityProvider = container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider
-          def keycloakURL = identityProvider.getKeycloakPublicUrl()
-          return new URIBuilder(keycloakURL).setPath("auth/realms/" + connection.getRealm() + "/protocol/openid-connect/token").build().toString()
-       }
-
        spyGatewayClientService.createClientConnector(_ as GatewayConnection) >> {
-          connection ->
-             GatewayClientConnector clientConnector = callRealMethod()
-             def spyClientConnector = Spy(clientConnector)
-             spyClientConnector.getAuthTokenEndpoint() >> {
-                authTokenEndpointResolver()
-             }
-             return spyClientConnector
+          GatewayConnection connection ->
+             def identityProvider = container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider
+             def keycloakURL = identityProvider.getKeycloakPublicUrl()
+             // Use keycloaks public URI as it's on a different port to the manager under test
+             connection.@tokenEndpointURI = new URIBuilder(keycloakURL).setPath("auth/realms/" + connection.getRealm() + "/protocol/openid-connect/token").build().toString()
+             callRealMethod()
        }
 
        // Start the container with the spy service
        startContainer(defaultConfig(), services)
-    }
-
-    def cleanupSpec() {
-       stopContainer()
     }
 
     def "Gateway asset provisioning and local manager logic test"() {
