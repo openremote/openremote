@@ -47,10 +47,12 @@ public class TokenVerifierImpl implements TokenVerifier {
     // The public URL of the keycloak server (must match the issuer in the generated tokens)
     protected final String keycloakPublicUrl;
     protected final Map<String, JWTProcessor<SecurityContext>> processorCache = new ConcurrentHashMap<>();
+    protected final boolean disableIssuerValidation;
 
-    public TokenVerifierImpl(String keycloakUrl, String keycloakPublicUrl) {
+    public TokenVerifierImpl(String keycloakUrl, String keycloakPublicUrl, boolean disableIssuerValidation) {
         keyResolverService = new KeyResolver(keycloakUrl);
         this.keycloakPublicUrl = keycloakPublicUrl;
+        this.disableIssuerValidation = disableIssuerValidation;
     }
 
     protected JWTProcessor<SecurityContext> getJwtProcessor(String realm) {
@@ -73,12 +75,14 @@ public class TokenVerifierImpl implements TokenVerifier {
         final JWTClaimsSetVerifier<SecurityContext> defaultClaimsVerifier = new DefaultJWTClaimsVerifier<>(null, null);
 
         JWTClaimsSetVerifier<SecurityContext> verifier = (claims, context) -> {
-            // Preserve Nimbus built-in checks for exp / nbf validation.
+            // Preserve Nimbus built-in checks for exp / nbf validation
             defaultClaimsVerifier.verify(claims, context);
 
-            // 1) issuer check (keep/remove depending on your policy)
-            if (claims.getIssuer() == null || !expectedIssuer.equals(claims.getIssuer())) {
-                throw new BadJWTException("Invalid token issuer");
+            // Issuer check unless disabled
+            if (!disableIssuerValidation) {
+               if (claims.getIssuer() == null || !expectedIssuer.equals(claims.getIssuer())) {
+                  throw new BadJWTException("Invalid token issuer");
+               }
             }
 
             // Keycloak uses azp to store client ID by default but we support aud for non keycloak auth servers

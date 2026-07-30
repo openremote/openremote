@@ -261,6 +261,9 @@ services:
       # Keycloak public URI (only set this if keycloak is not on the same base URI as the manager i.e. not accessible at /auth)
       OR_KEYCLOAK_PUBLIC_URI:
 
+      # Disable keycloak issuer validation, set this on edge gateway instances for tunneling to work (DO NOT USE THIS SETTING IN PUBLICLY EXPOSED DEPLOYMENTS)
+      OR_KEYCLOAK_DISABLE_ISSUER_VALIDATION:
+
       # Location of built in web content.
       OR_APP_DOCROOT: ${OR_APP_DOCROOT:-/opt/web}
 
@@ -410,7 +413,7 @@ services:
 
       # Configure web server (Can be a full URL, or just a hostname. When only hostname is provided, scheme, port and context path are resolved from the request)
       #KC_HOSTNAME: https://${OR_HOSTNAME:-127.0.0.1}/auth
-      # FOR DEVELOPMENT PURPOSES ONLY - DO NOT USE THIS SETTING IN PUBLICLY EXPOSED DEPLOYMENTS
+      # Set this on edge gateway instances for tunneling to work (DO NOT USE THIS SETTING IN PUBLICLY EXPOSED DEPLOYMENTS)
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME_DEBUG: true
       # Set the following for edge gateways not directly exposed to the internet

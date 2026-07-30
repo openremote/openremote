@@ -57,8 +57,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
-import static org.openremote.model.util.MapAccess.getInteger;
-import static org.openremote.model.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.*;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
@@ -82,6 +81,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String OR_KEYCLOAK_HOST_DEFAULT = "127.0.0.1";
     public static final String OR_KEYCLOAK_PORT = "OR_KEYCLOAK_PORT";
     public static final int OR_KEYCLOAK_PORT_DEFAULT = 8081;
+    public static final String OR_KEYCLOAK_DISABLE_ISSUER_VALIDATION = "OR_KEYCLOAK_DISABLE_ISSUER_VALIDATION";
     public static final String OR_KEYCLOAK_PATH = "OR_KEYCLOAK_PATH";
     public static final String OR_KEYCLOAK_PATH_DEFAULT = "/auth";
     public static final String OIDC_CONFIG_PATH = "/realms/master/.well-known/openid-configuration";
@@ -152,9 +152,17 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
 
         String keycloakPublicUrl = getKeycloakPublicUrl();
+
+        boolean disableIssuerValidation = getBoolean(container.getConfig(), OR_KEYCLOAK_DISABLE_ISSUER_VALIDATION, false);
+
+        if (disableIssuerValidation) {
+           LOG.warning("Token issuer validation disabled this should not be used for publicly exposed instances");
+        }
+
         tokenVerifier = new TokenVerifierImpl(
-                keycloakServiceUri.build().toString(),
-                keycloakPublicUrl != null ? keycloakPublicUrl : keycloakServiceUri.build().toString());
+            keycloakServiceUri.build().toString(),
+            keycloakPublicUrl != null ? keycloakPublicUrl : keycloakServiceUri.build().toString(),
+            disableIssuerValidation);
     }
 
     @Override

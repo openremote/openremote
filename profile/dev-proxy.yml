@@ -29,8 +29,6 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
-    environment:
-      KC_HOSTNAME: ${KC_HOSTNAME:-https://127.0.0.1/auth}
 
   postgresql:
     extends:
