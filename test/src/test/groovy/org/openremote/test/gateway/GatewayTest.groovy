@@ -383,6 +383,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def initDoneEventStr = clientReceivedMessages.find {it.contains(GatewayInitDoneEvent.TYPE)}
             def gatewayInitDoneEvent = ValueUtil.JSON.readValue(initDoneEventStr.substring(SharedEvent.MESSAGE_PREFIX.length()), GatewayInitDoneEvent.class)
+            gatewayInitDoneEvent != null
         }
 
         and: "the gateway client should now be CONNECTED"
@@ -767,22 +768,27 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "the gateway asset is deleted"
         def deleted = assetStorageService.delete([gateway.id])
+        def gatewayId = gateway.id
+        gateway = null
 
         then: "all descendant assets should have been removed"
         conditions.eventually {
-            assert assetStorageService.find(mapAssetId(gateway.id, assets[0].id, true)) == null
+            assert assetStorageService.find(mapAssetId(gatewayId, assets[0].id, true)) == null
         }
 
         then: "the keycloak client should also be removed"
         assert deleted
         conditions.eventually {
-            assert identityProvider.getClient(managerTestSetup.realmBuildingName, getGatewayClientId(gateway.getId())) == null
+            assert identityProvider.getClient(managerTestSetup.realmBuildingName, getGatewayClientId(gatewayId)) == null
         }
 
         cleanup: "cleanup the gateway client"
         if (gatewayClient != null) {
             gatewayClient.disconnect()
             gatewayClient.removeAllMessageConsumers()
+        }
+        if (gateway != null) {
+            assetStorageService.delete([gateway.id])
         }
     }
 
@@ -797,6 +803,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def gatewayClientService = container.getService(GatewayClientService.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def clientEventService = container.getService(ClientEventService.class)
+        def originalMicrophone1 = assetStorageService.find(managerTestSetup.microphone1Id)
 
         and: "an authenticated admin user"
         def accessToken = authenticate(
@@ -1110,6 +1117,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
         if (gateway != null) {
             assetStorageService.delete([gateway.id])
+        }
+        if (microphone2 != null) {
+            assetStorageService.delete([microphone2.id])
+        }
+        if (originalMicrophone1 != null) {
+            assetStorageService.merge(originalMicrophone1)
         }
     }
 
