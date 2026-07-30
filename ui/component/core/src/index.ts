@@ -356,28 +356,27 @@ export class Manager implements EventProviderFactory {
 
                 if (this._authServerUrl.startsWith("//")) {
                     this._authServerUrl = managerURL.protocol + this._authServerUrl;
-                }
-
-                try {
-                    authServerURL = new URL(this._authServerUrl);
-                } catch (e) {
-                    // Could be a relative URL
+                    this._config.keycloakUrl = this._authServerUrl;
+                } else if (this._authServerUrl.startsWith("http")) {
+                    this._config.keycloakUrl = this._authServerUrl;
+                } else {
+                    // Assume a relative URL
                     authServerURL = new URL(managerURL);
                     authServerURL.pathname = this._authServerUrl;
-                }
 
-                // Use manager URL info
-                if (!authServerURL.protocol) {
-                    authServerURL.protocol = managerURL.protocol;
-                }
-                if (!authServerURL.hostname) {
-                    authServerURL.hostname = managerURL.hostname;
-                }
-                if (!authServerURL.port) {
-                    authServerURL.port = managerURL.port;
-                }
+                    // Use manager URL info
+                    if (!authServerURL.protocol) {
+                        authServerURL.protocol = managerURL.protocol;
+                    }
+                    if (!authServerURL.hostname) {
+                        authServerURL.hostname = managerURL.hostname;
+                    }
+                    if (!authServerURL.port) {
+                        authServerURL.port = managerURL.port;
+                    }
 
-                this._config.keycloakUrl = authServerURL.toString();
+                    this._config.keycloakUrl = authServerURL.toString();
+                }
             }
 
             // If we still don't know auth server URL then use manager URL

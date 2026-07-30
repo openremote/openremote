@@ -33,7 +33,7 @@ services:
   # /etc/haproxy/certs (note custom certificates must include the full chain including the private key). Can also volume
   # map a custom proxy config file.
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-latest}
+    image: openremote/proxy:${PROXY_VERSION:-develop}
     restart: always
 #    volumes:
 #      - proxy-data:/deployment
