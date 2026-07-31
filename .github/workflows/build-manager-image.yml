@@ -106,6 +106,7 @@ jobs:
         if: ${{ always() && steps.meta.outputs.should_push == 'true' }}
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
+          category: grype-manager
 
       - name: Inspect Anchore scan SARIF report
         if: ${{ always() && steps.meta.outputs.should_push == 'true' }}
