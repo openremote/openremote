@@ -4,10 +4,9 @@ on:
   push:
     branches: [master]
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - "[0-9]+.[0-9]+.[0-9]+"
 
   workflow_dispatch:
-
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -165,7 +164,16 @@ jobs:
 
   build-manager-image:
     name: Build
-    needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+    needs:
+      [
+        detect-changes,
+        install-dist,
+        unit-tests,
+        integration-tests,
+        ui-check-outdated-translations,
+        ui-component-tests,
+        ui-app-tests,
+      ]
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/build-manager-image.yml"
     with:
@@ -181,7 +189,16 @@ jobs:
 
   publish-maven:
     name: Publish
-    needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+    needs:
+      [
+        detect-changes,
+        install-dist,
+        unit-tests,
+        integration-tests,
+        ui-check-outdated-translations,
+        ui-component-tests,
+        ui-app-tests,
+      ]
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/publish-maven.yml"
     secrets:
@@ -192,7 +209,16 @@ jobs:
 
   publish-npm:
     name: Publish
-    needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+    needs:
+      [
+        detect-changes,
+        install-dist,
+        unit-tests,
+        integration-tests,
+        ui-check-outdated-translations,
+        ui-component-tests,
+        ui-app-tests,
+      ]
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/publish-npm.yml"
     with:

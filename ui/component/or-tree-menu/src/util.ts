@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,11 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {TreeNode} from "./model";
+import type { TreeNode } from "./model";
 
 /**
  * Utility function that moves an array of {@link TreeNode} into another {@link TreeNode}, by adding them to their children.
@@ -27,42 +26,48 @@ import {TreeNode} from "./model";
  * @param groupNode - The group node to insert nodesToMove in.
  * @param treeNodes - Full list of nodes in the tree menu.
  */
-export function moveNodesToGroupNode(nodesToMove: TreeNode[], groupNode?: TreeNode, treeNodes: TreeNode[] = []): TreeNode[] {
-    console.debug(`Moving nodes '${nodesToMove.map(node => node.label).join(', ')}' into group '${groupNode?.label}'. Tree nodes are`, groupNode);
+export function moveNodesToGroupNode(
+  nodesToMove: TreeNode[],
+  groupNode?: TreeNode,
+  treeNodes: TreeNode[] = []
+): TreeNode[] {
+  console.debug(
+    `Moving nodes '${nodesToMove.map((node) => node.label).join(", ")}' into group '${groupNode?.label}'. Tree nodes are`,
+    groupNode
+  );
 
-    function filterAndAdd(nodes: TreeNode[]): TreeNode[] {
-        return nodes.map(node => {
+  function filterAndAdd(nodes: TreeNode[]): TreeNode[] {
+    return nodes
+      .map((node) => {
+        if (nodesToMove.some((nodeToMove) => node.id === nodeToMove.id)) {
+          console.debug("Removed the node from original position.");
+          return null; // Removes the node from its original position
+        }
 
-            if (nodesToMove.some(nodeToMove => node.id === nodeToMove.id)) {
-                console.debug("Removed the node from original position.")
-                return null; // Removes the node from its original position
-            }
+        const newNode: TreeNode = { ...node };
 
-            const newNode: TreeNode = { ...node };
+        // Recursively loop through children
+        if (newNode.children) {
+          newNode.children = filterAndAdd(newNode.children).filter((child) => child !== null);
+        }
 
-            // Recursively loop through children
-            if (newNode.children) {
-                newNode.children = filterAndAdd(newNode.children).filter(child => child !== null);
-            }
+        // If the currently looped node is the target group node, add the nodes to its children
+        if (groupNode && node.id === groupNode?.id) {
+          nodesToMove.forEach((nodeToMove) => {
+            newNode.children = newNode.children ? [...newNode.children, nodeToMove] : [nodeToMove];
+          });
+        }
+        return newNode;
+      })
+      .filter((node) => node !== null) as TreeNode[];
+  }
 
-            // If the currently looped node is the target group node, add the nodes to its children
-            if (groupNode && node.id === groupNode?.id) {
-                nodesToMove.forEach(nodeToMove => {
-                    newNode.children = newNode.children ? [...newNode.children, nodeToMove] : [nodeToMove];
-                });
-            }
-            return newNode;
+  // Start the recursive function
+  const newNodes = filterAndAdd(treeNodes);
 
-        }).filter(node => node !== null) as TreeNode[];
-    }
-
-    // Start the recursive function
-    const newNodes = filterAndAdd(treeNodes);
-
-    // If no groupNode is provided, add the nodesToMove to the top level
-    if (!groupNode) {
-        newNodes.push(...nodesToMove);
-    }
-    return newNodes;
+  // If no groupNode is provided, add the nodesToMove to the top level
+  if (!groupNode) {
+    newNodes.push(...nodesToMove);
+  }
+  return newNodes;
 }
-

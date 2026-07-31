@@ -1,7 +1,24 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { expect } from "@openremote/test";
-import { adminStatePath, test} from "./fixtures/manager";
+import { adminStatePath, test } from "./fixtures/manager";
 import permissions from "./fixtures/data/permissions";
-
 
 test.use({ storageState: adminStatePath });
 
@@ -12,7 +29,8 @@ test.use({ storageState: adminStatePath });
  * @and Searching by tag in the regular user table
  * @then Only the user with the matching tag should be visible
  */
-test(`Create regular users with tags and search by tag`, async ({ page, manager, usersPage }) => {await manager.goToRealmStartPage("master");
+test(`Create regular users with tags and search by tag`, async ({ page, manager, usersPage }) => {
+  await manager.goToRealmStartPage("master");
   await manager.switchToRealmByRealmPicker("smartcity");
   await manager.navigateToMenuItem("Users");
   await usersPage.addUser("user1", "password123", "Company1");
@@ -70,18 +88,18 @@ test(`Create service users with tags and search by tag`, async ({ page, manager,
  * @then The creation window still has the same state, so you can continue creating that user.
  */
 test(`Verify browser behavior while creating regular users`, async ({ page, usersPage }) => {
-    await usersPage.gotoUserCreation("master", "regular");
-    await page.getByLabel("Username").fill("mycustomusername");
-    await page.getByLabel("Email").fill("mycustom@email.com");
-    await usersPage.toHavePermissions();
-    await usersPage.toggleUserRoles("Read", "Write");
-    await usersPage.toHavePermissions(...permissions);
-    await page.evaluate(() => {
-        document.dispatchEvent(new Event('visibilitychange'));
-    });
-    await expect(await page.getByRole('textbox', {name: /username/i }).inputValue()).toBe("mycustomusername");
-    await expect(await page.getByRole('textbox', {name: /email/i }).inputValue()).toBe("mycustom@email.com");
-    await usersPage.toHavePermissions(...permissions);
+  await usersPage.gotoUserCreation("master", "regular");
+  await page.getByLabel("Username").fill("mycustomusername");
+  await page.getByLabel("Email").fill("mycustom@email.com");
+  await usersPage.toHavePermissions();
+  await usersPage.toggleUserRoles("Read", "Write");
+  await usersPage.toHavePermissions(...permissions);
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect(await page.getByRole("textbox", { name: /username/i }).inputValue()).toBe("mycustomusername");
+  await expect(await page.getByRole("textbox", { name: /email/i }).inputValue()).toBe("mycustom@email.com");
+  await usersPage.toHavePermissions(...permissions);
 });
 
 /**
@@ -115,7 +133,7 @@ test(`Verify gateway service user is read-only`, async ({ page, manager, usersPa
   await expect(activeCheckbox).toHaveAttribute("aria-readonly");
   const realmRolesSelect = page.getByLabel("Realm roles");
   await expect(realmRolesSelect).toHaveAttribute("readonly");
-  const managerRolesSelect = page.getByLabel('Manager roles');
+  const managerRolesSelect = page.getByLabel("Manager roles");
   await expect(managerRolesSelect).toHaveAttribute("readonly");
   const saveButton = page.getByRole("button", { name: "Save" });
   await expect(saveButton).toBeDisabled();

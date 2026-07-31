@@ -23,8 +23,8 @@
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'AWS Linux 2, docker compose, nfs support, cron support, cloud watch logging, route53 updating'
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "AWS Linux 2, docker compose, nfs support, cron support, cloud watch logging, route53 updating"
 Parameters:
   Host:
     Description: FQDN for host
@@ -49,8 +49,8 @@ Parameters:
     Default: ""
   ImageAMI:
     Description: AMI ID
-    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64'
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Default: "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
@@ -166,53 +166,53 @@ Resources:
           Value: !Ref Host
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: '80'
-          ToPort: '80'
+          FromPort: "80"
+          ToPort: "80"
           CidrIp: 0.0.0.0/0
           Description: HTTP
         - IpProtocol: tcp
-          FromPort: '443'
-          ToPort: '443'
+          FromPort: "443"
+          ToPort: "443"
           CidrIp: 0.0.0.0/0
           Description: HTTPS
         - IpProtocol: tcp
-          FromPort: '80'
-          ToPort: '80'
+          FromPort: "80"
+          ToPort: "80"
           CidrIpv6: ::/0
           Description: HTTP
         - IpProtocol: tcp
-          FromPort: '443'
-          ToPort: '443'
+          FromPort: "443"
+          ToPort: "443"
           CidrIpv6: ::/0
           Description: HTTPS
         - IpProtocol: tcp
-          FromPort: '8883'
-          ToPort: '8883'
+          FromPort: "8883"
+          ToPort: "8883"
           CidrIp: 0.0.0.0/0
           Description: MQTT
         - IpProtocol: tcp
-          FromPort: '8883'
-          ToPort: '8883'
+          FromPort: "8883"
+          ToPort: "8883"
           CidrIpv6: ::/0
           Description: MQTT
         - IpProtocol: udp
-          FromPort: '161'
-          ToPort: '162'
+          FromPort: "161"
+          ToPort: "162"
           CidrIp: 0.0.0.0/0
           Description: SNMP
         - IpProtocol: udp
-          FromPort: '161'
-          ToPort: '162'
+          FromPort: "161"
+          ToPort: "162"
           CidrIpv6: ::/0
           Description: SNMP
         - IpProtocol: icmp
-          FromPort: '8'
-          ToPort: '-1'
+          FromPort: "8"
+          ToPort: "-1"
           CidrIp: 0.0.0.0/0
           Description: Ping
         - IpProtocol: icmpv6
-          FromPort: '-1'
-          ToPort: '-1'
+          FromPort: "-1"
+          ToPort: "-1"
           CidrIpv6: ::/0
           Description: Ping
 
@@ -246,13 +246,12 @@ Resources:
                   echo "Swapfile already exists"
                   exit 0
                 fi
-                
+
                 dd if=/dev/zero of=/swapfile bs=128M count=16
                 chmod 600 /swapfile
                 mkswap /swapfile
                 swapon /swapfile
                 echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
-
 
         cloudwatch_config:
           files:
@@ -413,7 +412,7 @@ Resources:
                       }
                     }
                   }
-                - '{}'
+                - "{}"
             "/opt/aws/amazon-cloudwatch-agent/var/prometheus.yaml":
               content: !If
                 - MetricsEnabled
@@ -439,7 +438,7 @@ Resources:
                           regex: '(.*)'
                           replacement: '${Host}'
                           target_label: InstanceName
-                  
+
                     - job_name: manager
                       sample_limit: 10000
                       static_configs:
@@ -484,7 +483,7 @@ Resources:
             "/usr/local/bin/s3-backup":
               content: !Sub |
                 #!/bin/bash
-                
+
                 # ------------------------------------------------------------------------------------------------------
                 #
                 # Script for synchronising files in /deployment.local/backup with S3 bucket with same name as this host
@@ -492,11 +491,11 @@ Resources:
                 # ------------------------------------------------------------------------------------------------------
 
                 BUCKET=$(aws s3api list-buckets --query "Buckets[?Name=='${Host}'].Name" --output text)
-                
+
                 if [ -z "$BUCKET" ] || [ ! -d "/deployment.local/backup" ]; then
                   exit 0
                 fi
-                
+
                 aws s3 sync /deployment.local/backup s3://${Host}/backup
 
             "/lib/systemd/system/s3-backup.service":
@@ -517,11 +516,11 @@ Resources:
                 [Unit]
                 Description=Daily S3 backup timer
                 Requires=s3-backup.service
-                
+
                 [Timer]
                 Unit=s3-backup.service
                 OnCalendar=*-*-* 05:00:00
-                
+
                 [Install]
                 WantedBy=timers.target
 
@@ -543,22 +542,22 @@ Resources:
             "/usr/local/bin/dns-updater":
               content: !Sub |
                 #!/bin/bash
-                
+
                 # -------------------------------------------------------------------------------------------
                 #
                 # Script for updating the A record for this host on restarts
                 #
                 # -------------------------------------------------------------------------------------------
-                
+
                 if [ -z "${DNSHostedZoneName}" ]; then
                   echo "No DNS Hosted Zone provided so not updating DNS A record"
                   exit 0
                 fi
-                
+
                 echo "Running DNS record update"
                 PUBLIC_IPV4=$(curl v4.ident.me 2>/dev/null)
                 PUBLIC_IPV6=$(curl v6.ident.me 2>/dev/null)
-                
+
                 if [ -n "${DNSHostedZoneRoleArn}" ]; then
                   echo "Assuming role '${DNSHostedZoneRoleArn}' for DNS A record update"
                   # Assume DNS role in TLD account 
@@ -567,7 +566,7 @@ Resources:
                     echo "Failed to get assume role credentials"
                     exit 1
                   fi
-                
+
                   export AWS_ACCESS_KEY_ID=`echo $CREDENTIALS | jq -r '.Credentials.AccessKeyId'`
                   export AWS_SECRET_ACCESS_KEY=`echo $CREDENTIALS | jq -r '.Credentials.SecretAccessKey'`
                   export AWS_SESSION_TOKEN=`echo $CREDENTIALS | jq -r '.Credentials.SessionToken'`
@@ -575,7 +574,7 @@ Resources:
 
                 # Find hosted zone ID
                 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='${DNSHostedZoneName}.'].Id" --output text)
-                
+
                 if [ $? -ne 0 ] || [ -z "$HOSTED_ZONE_ID" ]; then
                   echo "Failed to get hosted zone ID for '${DNSHostedZoneName}'"
                   exit 1
@@ -588,7 +587,7 @@ Resources:
                 EOF
 
                 if [ -n "$PUBLIC_IPV4" ]; then
-                
+
                 read -r -d '' RECORDSET << EOF
                 $RECORDSET
                     {
@@ -603,14 +602,14 @@ Resources:
                 EOF
 
                 fi
-                
-                
+
+
                 if [ -n "$PUBLIC_IPV6" ]; then
-                
+
                   if [ -n "$PUBLIC_IPV4" ]; then
                     RECORDSET="$RECORDSET,"
                   fi
-                
+
                 read -r -d '' RECORDSET << EOF
                 $RECORDSET
                     {
@@ -624,13 +623,13 @@ Resources:
                     }
                 EOF
                 fi
-                
+
                 read -r -d '' RECORDSET << EOF
                 $RECORDSET
                   ]
                 }
                 EOF
-                
+
                 echo "$RECORDSET"
                 aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "$RECORDSET"
 
@@ -640,7 +639,7 @@ Resources:
                 Description=Route 53 DNS A record updater
                 After=network-online.target firewalld.service
                 Wants=network-online.target
-                
+
                 [Service]
                 ExecStart=/usr/local/bin/dns-updater
 
@@ -719,8 +718,8 @@ Resources:
                         choices=SMTP_REGIONS)
                     args = parser.parse_args()
                     print(calculate_key(args.secret, args.region))
-                
-                
+
+
                 if __name__ == '__main__':
                     main()
               owner: ec2-user
@@ -779,7 +778,7 @@ Resources:
               docker:
                 enabled: "true"
                 ensureRunning: "true"
-  
+
         cron_setup:
           packages:
             yum:
@@ -800,7 +799,7 @@ Resources:
 
         setupCfnHup:
           files:
-            '/etc/cfn/cfn-hup.conf':
+            "/etc/cfn/cfn-hup.conf":
               content: !Sub |
                 [main]
                 stack=${AWS::StackId}
@@ -810,14 +809,14 @@ Resources:
               owner: root
               group: root
 
-            '/etc/cfn/hooks.d/amazon-cloudwatch-agent-auto-reloader.conf':
+            "/etc/cfn/hooks.d/amazon-cloudwatch-agent-auto-reloader.conf":
               content: !Sub |
                 [cfn-auto-reloader-hook]
                 triggers=post.update
                 path=Resources.EC2Instance.Metadata.AWS::CloudFormation::Init
                 action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets default
                 runas=root
-              mode: '000400'
+              mode: "000400"
               owner: root
               group: root
 
@@ -848,19 +847,19 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref Host
-      IamInstanceProfile: !Ref 'InstanceRoleProfile'
+      IamInstanceProfile: !Ref "InstanceRoleProfile"
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
           # Install latest cfn scripts
           yum -y install aws-cfn-bootstrap
-          
+
           # Install cloudwatch agent
           yum -y install amazon-cloudwatch-agent
-          
+
           # Execute required config set
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets default --region ${AWS::Region}
-          
+
           # All done so signal result
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
 
@@ -886,7 +885,7 @@ Resources:
       AvailabilityZone: !GetAtt EC2Instance.AvailabilityZone
       Size: !Ref DataDiskSize
       VolumeType: gp3
-      SnapshotId: !If [SnapshotProvided, !Ref SnapshotId, !Ref 'AWS::NoValue']
+      SnapshotId: !If [SnapshotProvided, !Ref SnapshotId, !Ref "AWS::NoValue"]
       Tags:
         - Key: Name
           Value: !Sub ${Host}-data
@@ -900,9 +899,9 @@ Resources:
     DependsOn: EBSDataVolume
     Properties:
       ExecutionRoleArn: !Ref DLMExecutionRoleArn
-      Description: !Join 
-        - ''
-        - - 'Docker Volumes from instance '
+      Description: !Join
+        - ""
+        - - "Docker Volumes from instance "
           - !Ref EC2Instance
       State: ENABLED
       PolicyDetails:
@@ -911,19 +910,19 @@ Resources:
         TargetTags:
           - Key: Type
             Value: !Sub ${Host}-or-data-in-use
-        ResourceTypes: 
+        ResourceTypes:
           - VOLUME
         Schedules:
           - Name: Daily Backup
             CopyTags: true
             CreateRule:
-              CronExpression: 'cron(0 3 * * ? *)'
+              CronExpression: "cron(0 3 * * ? *)"
             RetainRule:
               Count: 7
           - Name: Weekly Backup
             CopyTags: true
             CreateRule:
-              CronExpression: 'cron(0 3 ? * MON *)'
+              CronExpression: "cron(0 3 ? * MON *)"
             RetainRule:
               Count: 4
       Tags:

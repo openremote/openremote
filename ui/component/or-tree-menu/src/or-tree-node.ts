@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,49 +12,51 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {css, html, LitElement, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import { css, html, LitElement, type TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
 
 const styles = css`
-    * {
-        box-sizing: border-box;
-    }
-    :host {
-        width: 100%;
-        height: var(--or-tree-node-height, 44px);
-        padding: 6px 12px 6px var(--or-tree-node-indent, 24px);
-        background: var(--or-tree-node-background, transparent);
-        border-left: 4px solid transparent;
-        display: flex;
-        align-items: center;
-        gap: var(--or-tree-node-gap, 8px);
-        overflow: hidden;
-        user-select: none;
-        --or-icon-width: 20px;
-    }
+  * {
+    box-sizing: border-box;
+  }
+  :host {
+    width: 100%;
+    height: var(--or-tree-node-height, 44px);
+    padding: 6px 12px 6px var(--or-tree-node-indent, 24px);
+    background: var(--or-tree-node-background, transparent);
+    border-left: 4px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: var(--or-tree-node-gap, 8px);
+    overflow: hidden;
+    user-select: none;
+    --or-icon-width: 20px;
+  }
 
-    :host(:not([readonly])) {
-        cursor: pointer;
-    }
-    
-    :host([readonly]) {
-        cursor: not-allowed;
-    }
+  :host(:not([readonly])) {
+    cursor: pointer;
+  }
 
-    :host(:not([readonly]):hover) {
-        background: var(--or-tree-node-backgrond--hovered, #f8f9fa);
-    }
-    
-    :host([selected]) {
-        background: var(--or-tree-node-background--selected, #f1f3f5);
-        border-left: 4px solid var(--or-tree-node-color--selected, var(--or-app-color4, #4d9d2a));
-    }
+  :host([readonly]) {
+    cursor: not-allowed;
+  }
 
-    ::slotted(*:not([slot])) {
-        flex: 1;
-    }
+  :host(:not([readonly]):hover) {
+    background: var(--or-tree-node-backgrond--hovered, #f8f9fa);
+  }
+
+  :host([selected]) {
+    background: var(--or-tree-node-background--selected, #f1f3f5);
+    border-left: 4px solid var(--or-tree-node-color--selected, var(--or-app-color4, #4d9d2a));
+  }
+
+  ::slotted(*:not([slot])) {
+    flex: 1;
+  }
 `;
 
 /**
@@ -76,28 +75,27 @@ const styles = css`
  */
 @customElement("or-tree-node")
 export class OrTreeNode extends LitElement {
+  /**
+   * HTML attribute that only applies CSS, showing this node cannot be interacted with.
+   */
+  @property({ type: Boolean, reflect: true })
+  public readonly = false;
 
-    /**
-     * HTML attribute that only applies CSS, showing this node cannot be interacted with.
-     */
-    @property({type: Boolean, reflect: true})
-    public readonly = false;
+  /**
+   * HTML attribute that only applies CSS, marking the node as 'selected'.
+   */
+  @property({ type: Boolean, reflect: true })
+  public selected = false;
 
-    /**
-     * HTML attribute that only applies CSS, marking the node as 'selected'.
-     */
-    @property({type: Boolean, reflect: true})
-    public selected = false;
+  static get styles() {
+    return [styles];
+  }
 
-    static get styles() {
-        return [styles];
-    }
-
-    protected render(): TemplateResult {
-        return html`
-            <slot name="prefix"></slot>
-            <slot></slot>
-            <slot name="suffix"></slot>
-        `;
-    }
+  protected render(): TemplateResult {
+    return html`
+      <slot name="prefix"></slot>
+      <slot></slot>
+      <slot name="suffix"></slot>
+    `;
+  }
 }

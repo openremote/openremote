@@ -5,9 +5,7 @@
     "rootDir": "src",
     "types": ["offscreencanvas"]
   },
-  "include": [
-    "./src"
-  ],
+  "include": ["./src"],
   "references": [
     { "path": "../core" },
     { "path": "../or-components" },

@@ -10,21 +10,21 @@ pluginManager.apply('com.diffplug.spotless')
 
 Map<String, Object> packageJson = new JsonSlurper().parse(rootProject.file('package.json')) as Map<String, Object>
 Map<String, String> devDependencies =
-  (packageJson.devDependencies as Map<String, Object>)
-    .collectEntries { String name, Object version ->
-      [(name): version.toString()]
-    }
+        (packageJson.devDependencies as Map<String, Object>)
+        .collectEntries { String name, Object version ->
+          [(name): version.toString()]
+        }
 Map<String, String> eslintDependencies = devDependencies.findAll { String name, String ignored ->
   name == 'eslint' ||
-    name == 'typescript' ||
-    name.startsWith('@typescript-eslint/') ||
-    name.startsWith('eslint-config-') ||
-    name.startsWith('eslint-plugin-')
+  name == 'typescript' ||
+  name.startsWith('@typescript-eslint/') ||
+  name.startsWith('eslint-config-') ||
+  name.startsWith('eslint-plugin-')
 }
 ['eslint', 'prettier', 'typescript'].each { String dependency ->
   if (!devDependencies.containsKey(dependency)) {
     throw new GradleException(
-      "Missing required formatter dependency '${dependency}' in package.json"
+    "Missing required formatter dependency '${dependency}' in package.json"
     )
   }
 }
@@ -32,36 +32,32 @@ String prettierVersion = devDependencies.prettier
 
 def readIgnorePatterns = { File ignoreFile ->
   List<String> patterns = ignoreFile
-    .readLines('UTF-8')
-    .collect { it.trim() }
-    .findAll { it && !it.startsWith('#') }
+  .readLines('UTF-8')
+  .collect { it.trim() }
+  .findAll { it && !it.startsWith('#') }
   List<String> unsupported = patterns.findAll {
     it.startsWith('!') || it.startsWith('/') || it.contains('\\')
   }
   if (!unsupported.isEmpty()) {
     throw new GradleException(
-      ".prettierignore contains patterns that cannot safely be reused as Gradle Ant patterns: ${unsupported}"
+    ".prettierignore contains patterns that cannot safely be reused as Gradle Ant patterns: ${unsupported}"
     )
   }
   return patterns
 }
 def prettierIgnorePatterns = readIgnorePatterns(rootProject.file('ui/.prettierignore'))
-def backendTarget = {
-  Collection<String> includes,
-  Collection<String> excludes = [] ->
-    rootProject.fileTree(rootProject.projectDir) {
-      includes.each { include it }
-      (prettierIgnorePatterns + excludes + ['ui/**']).each { exclude it }
-    }
+def backendTarget = { Collection<String> includes, Collection<String> excludes = [] ->
+  rootProject.fileTree(rootProject.projectDir) {
+    includes.each { include it }
+    (prettierIgnorePatterns + excludes + ['ui/**']).each { exclude it }
+  }
 }
-def uiTarget = {
-  Collection<String> includes,
-  Collection<String> excludes = [] ->
-    rootProject.fileTree(rootProject.file('ui')) {
-      includes.each { include it }
-      prettierIgnorePatterns.each { exclude it }
-      excludes.each { exclude it }
-    }
+def uiTarget = { Collection<String> includes, Collection<String> excludes = [] ->
+  rootProject.fileTree(rootProject.file('ui')) {
+    includes.each { include it }
+    prettierIgnorePatterns.each { exclude it }
+    excludes.each { exclude it }
+  }
 }
 
 String defaultLicenseHeader = rootProject.file('tools/spotless/openremote-license-header.txt').getText('UTF-8').stripTrailing()
@@ -71,7 +67,7 @@ spotless {
   format('css') {
     target uiTarget(['**/*.css'])
     toggleOffOn()
-    licenseHeaderFile( rootProject.file('tools/spotless/openremote-license-header.txt'), blockCommentLicenseDelimiter).skipLinesMatching('^@charset\\s+.*$')
+    licenseHeaderFile(rootProject.file('tools/spotless/openremote-license-header.txt'), blockCommentLicenseDelimiter).skipLinesMatching('^@charset\\s+.*$')
     prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
     endWithNewline()
   }
@@ -109,7 +105,11 @@ spotless {
   }
 
   format('helmTemplates') {
-    target backendTarget(['kubernetes/**/templates/**/*.yaml', 'kubernetes/**/templates/**/*.yml', 'kubernetes/**/templates/**/*.tpl'])
+    target backendTarget([
+      'kubernetes/**/templates/**/*.yaml',
+      'kubernetes/**/templates/**/*.yml',
+      'kubernetes/**/templates/**/*.tpl'
+    ])
     trimTrailingWhitespace()
     endWithNewline()
   }
@@ -171,9 +171,9 @@ spotless {
       int candidateEnd = -1
       if (source.startsWith(prettierIgnoreStart)) {
         int end = source.indexOf(
-          prettierIgnoreEnd,
-          prettierIgnoreStart.length()
-        )
+                prettierIgnoreEnd,
+                prettierIgnoreStart.length()
+                )
         if (end >= 0) {
           candidateEnd = end + prettierIgnoreEnd.length()
           candidate = source.substring(0, candidateEnd)
@@ -230,7 +230,12 @@ spotless {
   }
 
   format('typescriptStorybook') {
-    target uiTarget(['**/.storybook/**/*.ts', '**/.storybook/**/*.tsx', '**/.storybook/**/*.mts', '**/.storybook/**/*.cts'])
+    target uiTarget([
+      '**/.storybook/**/*.ts',
+      '**/.storybook/**/*.tsx',
+      '**/.storybook/**/*.mts',
+      '**/.storybook/**/*.cts'
+    ])
     toggleOffOn()
     prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
     licenseHeaderFile(rootProject.file('tools/spotless/openremote-license-header.txt'),'(import|export|declare|const|let|var|type|interface|class|enum|function) ')
@@ -253,13 +258,34 @@ spotless {
 }
 
 def spotlessFormatGroups = [
-  Backend: ['GradleRoot', 'GradleBackend', 'Groovy', 'HelmTemplates', 'Java', 'MarkdownBackend', 'MarkdownRoot', 'Xml', 'Yaml'],
-  Ui: ['Css', 'GradleRoot', 'GradleUi', 'Javascript', 'MarkdownRoot', 'MarkdownUi', 'Mdx', 'MiscUi', 'Typescript', 'TypescriptStorybook']
+  Backend: [
+    'GradleRoot',
+    'GradleBackend',
+    'Groovy',
+    'HelmTemplates',
+    'Java',
+    'MarkdownBackend',
+    'MarkdownRoot',
+    'Xml',
+    'Yaml'
+  ],
+  Ui: [
+    'Css',
+    'GradleRoot',
+    'GradleUi',
+    'Javascript',
+    'MarkdownRoot',
+    'MarkdownUi',
+    'Mdx',
+    'MiscUi',
+    'Typescript',
+    'TypescriptStorybook'
+  ]
 ]
 
 def spotlessOperations = [
-  Apply   : 'Apply formatting to',
-  Check   : 'Check formatting of',
+  Apply : 'Apply formatting to',
+  Check : 'Check formatting of',
   Diagnose: 'Diagnose formatting of'
 ]
 
@@ -268,7 +294,7 @@ spotlessFormatGroups.each { groupName, formats ->
     tasks.register("spotless${groupName}${operation}") { task ->
       task.group = LifecycleBasePlugin.VERIFICATION_GROUP
       task.description =
-        "${operationDescription} ${groupName.toLowerCase()} sources."
+              "${operationDescription} ${groupName.toLowerCase()} sources."
 
       task.dependsOn formats.collect { format ->
         "spotless${format}${operation}"

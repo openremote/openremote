@@ -66,10 +66,10 @@ runs:
 
         if eventName == "push" and refType == "branch" and isinstance(eventConfig, dict):
           eventConfig = eventConfig.get(refName)
-        
+
         if eventConfig is not None:
           deploys = eventConfig.get('deploy')
-        
+
           if eventName == "workflow_dispatch" and isinstance(deploys, dict):
             deploys = deploys["release"] if isRelease else deploys["snapshot"]
 
@@ -77,13 +77,13 @@ runs:
             distributeConfig = data.get("release")
           else:
             distributeConfig = eventConfig
-        
+
           if distributeConfig is not None and 'distribute' in distributeConfig:
             if 'docker' in distributeConfig['distribute']:
               dockerPublishTags = distributeConfig['distribute']['docker']
             if 'npm' in distributeConfig['distribute']:
               npmPublishTag = distributeConfig['distribute']['npm']
-        
+
         if isMainRepo:
 
           if dockerPublishTags is not None:

@@ -20,12 +20,11 @@
 # OR_IDENTITY_PROVIDER
 #
 volumes:
-#  postgresql-data: # Needed if you want to persist postgres data outside of container
+  #  postgresql-data: # Needed if you want to persist postgres data outside of container
   manager-data: # A storage volume for file persistence in the manager (can be used by services and protocols)
   proxy-data: #Needed to persist SSL certificates to avoid excessive requests to Letsencrypt
 
 services:
-
   # Reverse proxy which auto-generates any Internet Assigned Numbers Authority TLD subdomain SSL certificates using
   # Lets Encrypt the domain name to generate a certificate for should be specified using DOMAINNAME (single domain name)
   # or DOMAINNAMES (multiple comma separated list of domain names). The proxy will fallback to self-signed certificate
@@ -35,10 +34,9 @@ services:
   proxy:
     image: openremote/proxy:${PROXY_VERSION:-latest}
     restart: always
-#    volumes:
-#      - proxy-data:/deployment
+    #    volumes:
+    #      - proxy-data:/deployment
     environment:
-
       # It is important that all services have the same timezone and are time synchronized.
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: ${TZ:-Europe/Amsterdam}
@@ -113,7 +111,7 @@ services:
       - "8883:8883" # MQTTS
       - "127.0.0.1:8404:8404" # Localhost metrics access
       - "${PRIVATE_IP:-127.0.0.1}:8404:8404" # Allows to also expose metrics on a given IP address,
-                                             # intended to be IP of the interface of the private subnet of the EC2 VM
+        # intended to be IP of the interface of the private subnet of the EC2 VM
 
   # The OpenRemote Manager
   manager:
@@ -140,7 +138,7 @@ services:
     #  - "8085:8085" # JMX port - FOR DIAGNOSTICS ONLY!!!
     #  - "127.0.0.1:8405:8405" # Localhost metrics access
     #  - "${PRIVATE_IP:-127.0.0.1}:8405:8405" # Allows to also expose metrics on a given IP address,
-                                              # intended to be IP of the interface of the private subnet of the EC2 VM
+    # intended to be IP of the interface of the private subnet of the EC2 VM
     logging:
       options:
         # Use very little logging for container STDOUT, this is
@@ -152,7 +150,6 @@ services:
         #
         max-size: "1m"
     environment:
-
       # It is important that all services have the same timezone and are time synchronized.
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts
       TZ: ${TZ:-Europe/Amsterdam}
@@ -385,13 +382,12 @@ services:
     restart: always
     # Map any custom themes into the /deployment/keycloak/themes dir:
     #volumes:
-      # Map custom themes
-      # - ../deployment:/deployment
-      # - deployment-data:/deployment
+    # Map custom themes
+    # - ../deployment:/deployment
+    # - deployment-data:/deployment
     #ports:
     #  - "8081:8080" # Web server port
     environment:
-
       # It is important that all services are time synchronized. Bearer tokens are
       # only valid for minutes, and authentication fails if Keycloak drifts
       TZ: ${TZ:-Europe/Amsterdam}
@@ -463,11 +459,10 @@ services:
     volumes:
       # Needs to be available on the same path as the manager for data exports to work
       - manager-data:/storage
-#      - postgresql-data:/var/lib/postgresql/data
+    #      - postgresql-data:/var/lib/postgresql/data
     #ports:
     #  - "5432:5432" # DB server
     environment:
-
       # It is important that all services have the same timezone and are time synchronized.
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: ${TZ:-Europe/Amsterdam}
@@ -494,7 +489,7 @@ services:
     volumes:
       # Mount deployment-data volume containing config.yaml for query-exporter configuration
       # Config file should be at: /deployment/query-exporter/config.yaml
-        - deployment-data:/deployment
+      - deployment-data:/deployment
     ports:
       - "127.0.0.1:8406:9560" # Localhost metrics access
       - "${PRIVATE_IP:-127.0.0.1}:8406:9560" # Allows to also expose metrics on a given IP address,
@@ -516,7 +511,6 @@ services:
     restart: always
     #ports:
     #  - "8082:80" # Web server port
-
 
   sish:
     image: antoniomika/sish:latest
