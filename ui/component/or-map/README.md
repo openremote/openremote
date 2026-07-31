@@ -1,8 +1,8 @@
 # @openremote/or-map  \<or-map\>
 [![NPM Version][npm-image]][npm-url]
 
-Web Component for displaying a MapLibre map; either raster or vector (default). This component requires an OpenRemote
-Manager to retrieve map settings and tiles.
+Web Component for displaying a MapLibre map. This component requires an OpenRemote Manager to retrieve map settings
+and tiles.
 
 ## Install
 ```bash
@@ -23,11 +23,16 @@ is parsed as `lng,lat`.
 
 Other properties on `or-map`:
 
-* `cluster` - clusters nearby asset markers into a single `or-cluster-marker`
+* `cluster` - a `ClusterConfig` (`cluster`, `clusterRadius`, `clusterMaxZoom`) overriding how registered assets are
+clustered; clustering is on by default
 * `geoJson` and `showGeoJson` - overlay a GeoJSON layer
 * `boundary` and `showBoundaryBoxControl` - restrict and edit the visible area
-* `filters` - filter which asset markers are shown
-* `showGeoCodingControl`, `useZoomControl`, `showLegend` - toggle the built in map controls
+* `filters` - a list of `MapFilter` presets; adds a control for picking one and limits the registered assets to those
+it matches
+* `showGeoCodingControl` - add the search control, `showLegend` - add the asset type legend once at least two types
+are registered
+* `useZoomControl` - apply the zoom limits from the `mapsettings`
+* `controls` - replace the default navigation and geolocate controls with custom `IControl` instances
 
 Markers can be added via markup as children:
 
@@ -46,6 +51,29 @@ assetMarker.assetId = apartment1.id!;
 map.appendChild(assetMarker);
 ```
 
+### Assets
+Markers added as children are drawn as they are and take no part in clustering, filtering or the legend. Assets that
+should do so are registered with the map instead, which owns the decision of what is worth drawing at the current
+viewport:
+
+```typescript
+map.addAssets(assets);
+map.updateAttribute(attributeEvent);
+map.removeAssets([assetId]);
+map.removeAllAssets();
+```
+
+Each registered asset needs an `id`, a `type` and a `location` attribute. The map then reports the assets that survive
+clustering and filtering through `or-map-markers-changed`, and the consumer renders a marker per asset:
+
+```html
+<or-map @or-map-markers-changed="${(e) => this._assetsOnScreen = e.detail}">
+    ${this._assetsOnScreen.map(asset => html`
+        <or-map-marker-asset .asset="${asset}" .config="${this.markerConfig}"></or-map-marker-asset>
+    `)}
+</or-map>
+```
+
 There are two types of built in markers:
 
 ### \<or-map-marker\>
@@ -57,7 +85,7 @@ This is a basic marker and the base class for any other markers and it has the f
 * `color` and `activeColor` (override the marker colour, the latter while `active` is set)
 * `active` (renders the marker in its larger, highlighted form)
 * `interactive` (sets pointer events for the marker)
-* `radius` (draws a circle of the given radius in metres around the marker)
+* `radius` (draws a circle of the given radius in metres around the marker; only one marker at a time can show one)
 * `displayValue` (text rendered next to the marker)
 * `direction` (rotates the marker, in degrees)
 
@@ -79,7 +107,7 @@ properties:
 
 The Asset must be valid, accessible and must have a valid `location` attribute otherwise no marker will be shown. By
 default the asset type is used to set the icon of the marker but this can be controlled by setting the
-`assetTypeAsIcon` property.
+`assetTypeAsIcon` property, which is read while the asset resolves and so has to be set up front.
 
 ### Styling
 All styling is done through CSS, the following CSS variables can be used:
@@ -110,10 +138,12 @@ The following DOM events may be fired by the component and markers:
 * `or-map-loaded` (`OrMapLoadedEvent`) - The underlying map has finished loading
 * `or-map-clicked` (`OrMapClickedEvent`) - The map itself was clicked; detail contains the clicked coordinates
 * `or-map-long-press` (`OrMapLongPressEvent`) - The map was long pressed; detail contains the coordinates
-* `or-map-markers-changed` (`OrMapMarkersChangedEvent`) - The set of visible asset markers changed
+* `or-map-markers-changed` (`OrMapMarkersChangedEvent`) - The registered assets in view changed; detail is the list of
+assets to render a marker for
 * `or-map-marker-clicked` (`OrMapMarkerClickedEvent`) - A marker was clicked; detail contains the clicked `marker`
 * `or-map-marker-changed` (`OrMapMarkerChangedEvent`) - A marker was modified; detail contains the changed `marker`
 and the name of the changed `property`
+* `or-map-geocoder-change` (`OrMapGeocoderChangeEvent`) - A search result was picked; detail contains the `geocode`
 
 ## Supported Browsers
 The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge.

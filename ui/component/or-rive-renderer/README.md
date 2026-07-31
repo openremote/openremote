@@ -10,16 +10,20 @@ yarn add @openremote/or-rive-renderer
 ```
 
 ## Usage
+The renderer fills the element it is placed in, so it needs a height from its own style or from its parent, otherwise
+it collapses to nothing.
+
 ```html
-<or-rive-renderer url="animations/my-animation.riv"></or-rive-renderer>
+<style>or-rive-renderer { height: 256px; }</style>
+
+<or-rive-renderer url="https://cdn.rive.app/animations/vehicles.riv"></or-rive-renderer>
 ```
 
 A `.riv` file can hold several artboards and state machines. `artboard` picks which one to render and
-`stateMachines` names the state machines to run; both default to the ones marked as default in the file. The renderer
-resizes with its host element.
+`stateMachines` names the state machines to run; both default to the ones marked as default in the file.
 
 ```html
-<or-rive-renderer url="animations/my-animation.riv" artboard="Dashboard"
+<or-rive-renderer url="https://cdn.rive.app/animations/vehicles.riv" artboard="Dashboard"
                   .stateMachines="${["State Machine 1"]}">
 </or-rive-renderer>
 ```
@@ -33,7 +37,7 @@ animation, which is how live data is fed into it. The type is inferred from the 
 const renderer = this.shadowRoot.querySelector("or-rive-renderer");
 
 await renderer.setValue("temperature", 21.5);
-await renderer.setValue("statusColor", "#4caf50", "color");
+await renderer.setValue("label", "Living room");
 await renderer.setValue("blink");
 ```
 

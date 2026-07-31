@@ -16,10 +16,10 @@ The component renders a label describing the current schedule plus a dialog for 
 `CalendarEvent` and listen for changes; the component does not persist anything itself.
 
 ```html
-<or-scheduler header="scheduleRuleActivity"
-              .schedule="${this.ruleset.meta.validity}"
-              @or-scheduler-changed="${(e) => this.validity = e.detail.value}"
-              @or-scheduler-removed="${() => this.validity = undefined}">
+<or-scheduler header="scheduleActivity" removable
+              .schedule="${this.schedule}"
+              @or-scheduler-changed="${(e) => this.schedule = e.detail.value}"
+              @or-scheduler-removed="${() => this.schedule = undefined}">
 </or-scheduler>
 ```
 
@@ -32,7 +32,8 @@ without times, and `timezoneOffset` shifts the displayed times.
 recurrence parts, and `disableNegativeByPartValues` suppresses the negative offsets, for example the last day of a
 month.
 
-`disabledByPartCombinations` maps each frequency to the parts that make no sense for it. Two presets are exported:
+Some recurrence parts make no sense for a given frequency, such as a day of the month on a weekly schedule, so
+`disabledByPartCombinations` maps each frequency to the parts to hide for it. Two presets are exported:
 `RFC_STRICT_NOT_APPLICABLE` (the default) disables only what RFC 5545 forbids, while `INTUITIVE_NOT_APPLICABLE` also
 hides combinations that are valid but confusing.
 

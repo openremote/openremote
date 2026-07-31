@@ -18,9 +18,9 @@ The component pairs a rule tree with an editor for the selected ruleset, and loa
 <or-rules></or-rules>
 ```
 
-`realm` selects which realm's rulesets are listed, defaulting to the current one, and `language` is the ruleset
-language used for newly created rules (`JSON`, `FLOW`, `GROOVY` or `JAVASCRIPT`). Set `readonly` to browse without
-editing.
+The rulesets shown are those of the realm the user is currently viewing; superusers can switch between realm and
+global rulesets from the tree. New rules can be written in `JSON`, `FLOW` or `GROOVY`. `JAVASCRIPT` rulesets are
+legacy, they can be viewed but not created or saved. Set `readonly` to browse without editing.
 
 ### Restricting the editor
 `config.controls` narrows what the JSON rule editor offers, which is how an app exposes a simplified subset of the
@@ -30,7 +30,7 @@ rules engine:
 const config: RulesConfig = {
     controls: {
         allowedLanguages: [RulesetLang.JSON],
-        allowedConditionTypes: ["assetQuery"],
+        allowedConditionTypes: [ConditionType.ASSET_QUERY],
         hideWhenAddGroup: true,
         multiSelect: false
     }

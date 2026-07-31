@@ -55,24 +55,18 @@ try {
 }
 ```
 
-It is possible to add additional request interceptors by calling the `addRequestInterceptor` method, it is also possible
-to access the `AxiosInstance` by calling the `axiosInstance` property.
-
-It is also possible to instantiate the `RestApi` object on demand but note that `initialise` requires the API base URL,
-and you will need to ensure the Authorization header is correctly set if calling secure endpoints on the OpenRemote
-Manager REST API.
+Additional request interceptors can be added with `addRequestInterceptor`, the underlying `AxiosInstance` is available
+on the `axiosInstance` property, and `setTimeout` overrides the request timeout.
 
 ```typescript
-import {RestApi} from "@openremote/rest";
-
-const rest = new RestApi();
-rest.setTimeout(10000);
 rest.addRequestInterceptor((config) => {
-    config.headers.Authorization = "Bearer " + token;
+    config.headers["X-Request-Id"] = crypto.randomUUID();
     return config;
 });
-rest.initialise("http://localhost:8080/api/master");
 ```
+
+`Manager` `init` already installs an interceptor that adds the Authorization header, but only when the request does not
+carry one, so an interceptor added here can supply its own credentials.
 
 
 ## Supported Browsers

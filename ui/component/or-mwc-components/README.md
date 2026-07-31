@@ -1,8 +1,9 @@
 # @openremote/or-mwc-* \<or-mwc-*\>
 [![NPM Version][npm-image]][npm-url]
 
-Web components wrapper for `MDC` web UI components, the standard `MWC` components are not complete, and they have a
-horrible icon font dependency (hopefully this will removed) whereas we use `SVG` based icon sets.
+Web components built on the Material Design Components (`@material/*`) packages. They exist because the official
+`@material/mwc-*` set is incomplete and depends on the Material icon font, whereas OpenRemote renders SVG icon sets
+through `or-icon`.
 
 ## Install
 ```bash
@@ -19,8 +20,9 @@ Each element is a separate entry point, so import only the ones being used:
 import "@openremote/or-mwc-components/or-mwc-table";
 ```
 
-Note that `or-mwc-input` and the menu helpers in `or-mwc-menu` are deprecated in favour of
-[@openremote/or-vaadin-components](../or-vaadin-components).
+`or-mwc-input` and the menu helpers in `or-mwc-menu` are deprecated in favour of
+[@openremote/or-vaadin-components](../or-vaadin-components), which is where inputs, menus and dialogs are headed. The
+remaining elements have no replacement yet.
 
 ### \<or-mwc-dialog\>
 Dialogs are usually constructed and passed to `showDialog`, which attaches them to the document and removes them once
@@ -72,8 +74,8 @@ showSnackbar(undefined, "saveFailed", "retry", () => this._save());
 ```
 
 ### \<or-mwc-tabs\> and \<or-mwc-drawer\>
-`or-mwc-tabs` renders a tab bar over a set of panels, and `or-mwc-drawer` is a slide out panel with `header` and
-default slots, toggled through its `open` property.
+`or-mwc-tabs` renders a tab bar over a set of panels, and `or-mwc-drawer` is a slide out panel that takes its header
+as a template through the `header` property and its body through the default slot, toggled through `open`.
 
 ## Supported Browsers
 The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge.

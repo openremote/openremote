@@ -13,7 +13,7 @@ yarn add @openremote/or-tree-menu
 For a full list of properties, methods and options refer to the TypeDoc generated [documentation]().
 
 The menu renders a list of `TreeNode` objects; a node with `children` becomes a group. It holds no domain knowledge,
-so consumers such as `or-services` subclass it to render their own node content.
+so consumers subclass it to render their own node content.
 
 ```html
 <or-tree-menu menu-title="Assets" .nodes="${this.nodes}"
@@ -39,9 +39,9 @@ including groups, and `MULTI` allows several using control and shift. `deselectA
 `expandGroup(groupId)` opens a group.
 
 ### Sorting and layout
-`sort-options` lists the sort choices offered in the header and `sort-by` is the active one; both default to
-alphabetical. Set `group-first` to float groups above the other nodes, and `no-header` to drop the header including
-its title and sort control.
+`sort-options` lists the sort choices offered in the header, so leaving it unset leaves the sort menu empty. `sort-by`
+is the active choice and defaults to alphabetical. Set `group-first` to float groups above the other nodes, and
+`no-header` to drop the header including its title and sort control.
 
 ### Dragging
 Setting `draggable` lets the user drag nodes into and out of groups. The move fires a cancelable `or-tree-drag` first,
