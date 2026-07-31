@@ -71,11 +71,13 @@ Depending on the type, it derives the default value as follows:
 ### Example usage
 
 ```typescript
-import { html } from 'lit';
-import { ErrorObject, StandardRenderers } from "@openremote/or-json-forms";
+import { html, LitElement } from 'lit';
+import { customElement } from 'lit/decorators.js';
+import { ErrorObject } from "@openremote/or-json-forms";
 import "@openremote/or-json-forms";
 
-public class MyJsonForms extends LitElement {
+@customElement("my-json-forms")
+export class MyJsonForms extends LitElement {
     private static schema = {
         $schema: "http://json-schema.org/draft-07/schema#",
         title: "MyObject",
@@ -90,7 +92,8 @@ public class MyJsonForms extends LitElement {
     private static uiSchema: any = { type: "Control", scope: "#" };
 
     render() {
-        return html`<or-json-forms .renderers="${jsonFormsAttributeRenderers}" .schema="${schema}" .uischema="${uiSchema}" .onChange="${onChanged}"></or-json-forms>`
+        return html`<or-json-forms .schema="${MyJsonForms.schema}" .uischema="${MyJsonForms.uiSchema}"
+                                   .data="${this.data}" .onChange="${(d) => this.onChanged(d)}"></or-json-forms>`
     }
 
     onChanged(dataAndErrors: { errors: ErrorObject[] | undefined, data: any }) {
@@ -99,7 +102,26 @@ public class MyJsonForms extends LitElement {
 };
 ```
 
+`data` seeds the form and `onChange` reports every edit along with the current validation errors; the component does
+not mutate the object it was given. `label` and `required` describe the form itself, and `readonly` renders it
+without editors.
+
 ### Custom renderers
+`renderers` defaults to `StandardRenderers`. Supply your own registry to add or replace a renderer, where each entry
+pairs a tester that ranks how well it matches a schema with the renderer to use when it wins.
+
+```typescript
+import { rankWith, uiTypeIs } from "@jsonforms/core";
+import { StandardRenderers } from "@openremote/or-json-forms";
+
+const renderers = [
+    ...StandardRenderers,
+    {
+        tester: rankWith(10, uiTypeIs("Control")),
+        renderer: (state, props) => html`...`
+    }
+];
+```
 
 ### Styling
 All styling is done through CSS, the following CSS variables can be used:

@@ -17,6 +17,28 @@ npm i @openremote/or-dashboard-builder
 yarn add @openremote/or-dashboard-builder
 ```
 
+## Usage
+
+The builder loads and saves dashboards itself; the consumer supplies the realm and user, and owns the view state that
+belongs in the URL.
+
+```html
+<or-dashboard-builder .realm="${manager.displayRealm}" .userId="${this._userId}"
+                      .selectedId="${this._dashboardId}"
+                      .editMode="${this._editMode}" .fullscreen="${this._fullscreen}"
+                      .readonly="${!manager.hasRole(ClientRole.WRITE_INSIGHTS)}"
+                      @selected="${(e) => this._dashboardId = e.detail?.id}"
+                      @editToggle="${(e) => this._editMode = e.detail}"
+                      @fullscreenToggle="${(e) => this._fullscreen = e.detail}">
+</or-dashboard-builder>
+```
+
+`userId` is required, since dashboard access is resolved per user. `selectedId` is the dashboard being shown,
+`editMode` switches between viewing and editing, and `fullscreen` hides the dashboard tree. Set `readonly` for users
+without write access to keep them out of edit mode.
+
+The `selected`, `editToggle` and `fullscreenToggle` events report the builder's own state changes, so a page that
+puts these in its route stays in step when the user navigates inside the builder.
 
 
 ## Terminology:

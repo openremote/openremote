@@ -22,18 +22,17 @@ If used in conjunction with `@openremote/core` and the `Manager` `init` method h
 will be ready to use, the endpoints can be accessed via the `RestApi` `api` property and each JAX-RS resource defined
 in the OpenRemote Manager is also defined with the same name in the `RestApi` object.
 
-```$typescript
+```typescript
 import openremote from "@openremote/core";
 import rest from "@openremote/rest";
 
 openremote.init({
     ...
-}).then((success) => {
+}).then(async (success) => {
     if (success) {
-        let assetQuery = ...;
-        let response = await rest.api.AssetResource.queryAssets(assetQuery);
-        let assets = response.data;
-        
+        const response = await rest.api.AssetResource.queryAssets(assetQuery);
+        const assets = response.data;
+
         // Do something with the assets
     } else {
         // Something has gone wrong
@@ -41,25 +40,37 @@ openremote.init({
 });
 ```
 
-It is possible to add additional request interceptors by calling the `addRequestInterceptor` method, it is also possible
-to access the `AxiosInstance` by calling the `axiosInstance` property.
+Every method returns an Axios response, so the payload is on `data` and failures reject; use `isAxiosError` to
+distinguish an HTTP error from any other rejection.
 
-It is also possible to instantiate the `RestApi` object on demand but note you will need to ensure the Authorization
-header is correctly set if calling secure endpoints on the OpenRemote Manager REST API.
+```typescript
+import {isAxiosError} from "@openremote/rest";
 
-```$typescript
-import {RestApi} from "@openremote/rest";
-
-let rest = new RestApi();
-rest.setTimeout(10000);
-rest.addRequestInterceptor(...);
-rest.initialise();
+try {
+    await rest.api.AssetResource.get(assetId);
+} catch (e) {
+    if (isAxiosError(e) && e.response?.status === 404) {
+        // No such asset
+    }
+}
 ```
+
+Additional request interceptors can be added with `addRequestInterceptor`, the underlying `AxiosInstance` is available
+on the `axiosInstance` property, and `setTimeout` overrides the request timeout.
+
+```typescript
+rest.addRequestInterceptor((config) => {
+    config.headers["X-Request-Id"] = crypto.randomUUID();
+    return config;
+});
+```
+
+`Manager` `init` already installs an interceptor that adds the Authorization header, but only when the request does not
+carry one, so an interceptor added here can supply its own credentials.
 
 
 ## Supported Browsers
-The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition,
-Internet Explorer 11 is also supported.
+The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge.
 
 
 ## License
