@@ -17,6 +17,10 @@ Running `./gradlew clean` deletes the root `tmp/` directory that is mounted into
 
 ## UI
 
+### Definition of done
+
+Adding a component means adding its README, its tests and its Storybook story alongside it. Changing a component means updating all three wherever the change leaves them wrong or incomplete, including the usage examples.
+
 ### Generated model types
 
 `ui/component/model/src/model.ts` is generated from the Java backend by typescript-generator. Do not edit it by hand. When a TypeScript type mirrors a backend class, import it from `@openremote/model` instead of redeclaring a local interface. Regenerate it from the backend rather than patching the output.
