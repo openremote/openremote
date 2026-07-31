@@ -1,3 +1,4 @@
 org.openremote.manager.mqtt.DefaultMQTTHandler
 org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler
+org.openremote.manager.mqtt.GatewayMQTTHandler
 org.openremote.manager.mqtt.ConnectionMonitorHandler
