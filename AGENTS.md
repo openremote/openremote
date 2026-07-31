@@ -27,7 +27,7 @@ Adding a component means adding its README, its tests and its Storybook story al
 
 ### API docs
 
-`yarn docs` runs TypeDoc over `@openremote/model`, `@openremote/rest` and `@openremote/core`, writing HTML to `ui/docs`. Cross-package imports resolve to each package's built `.d.ts`, so the generated model must exist first; `./gradlew installDist` takes care of that and generates the docs. `ui/typedoc.json` holds the package list and, in `packageOptions`, the options applied to each of them.
+`yarn docs` runs TypeDoc over every `ui/component` package that has a `tsconfig.json`, writing HTML to `ui/docs`. Cross-package imports resolve to each package's built `.d.ts`, so the generated model must exist first; `./gradlew installDist` takes care of that and generates the docs. `ui/typedoc.json` holds the package list and, in `packageOptions`, the options applied to each of them.
 
 ### Base element
 

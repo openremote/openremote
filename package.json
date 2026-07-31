@@ -10,7 +10,7 @@
     "ui/demo/*"
   ],
   "scripts": {
-    "docs": "npx tsc -b ui/component/model ui/component/rest ui/component/core && npx typedoc --options ui/typedoc.json"
+    "docs": "npx tsc -b ui/component/*/tsconfig.json && npx typedoc --options ui/typedoc.json"
   },
   "devDependencies": {
     "typedoc": "0.28"

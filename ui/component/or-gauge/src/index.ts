@@ -1,7 +1,9 @@
 import {css, html, LitElement} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {Asset, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model";
-import { Gauge, GaugeOptions } from "gaugeJS";
+import { Gauge } from "gaugeJS";
+// Type only import from the typed package name so consumers of the emitted declarations resolve it too
+import type { GaugeOptions } from "gaugejs";
 import manager, { Util } from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
 import debounce from "lodash.debounce";

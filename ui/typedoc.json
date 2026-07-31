@@ -3,9 +3,7 @@
     "name": "OpenRemote UI",
     "entryPointStrategy": "packages",
     "entryPoints": [
-        "component/model",
-        "component/rest",
-        "component/core"
+        "component/*"
     ],
     "packageOptions": {
         "entryPointStrategy": "expand",
@@ -17,5 +15,8 @@
     },
     "out": "docs",
     "includeVersion": true,
-    "readme": "none"
+    "readme": "none",
+    "exclude": [
+        "**/component/theme"
+    ]
 }
