@@ -42,6 +42,8 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.attribute.MetaMap
+import org.openremote.model.value.MathExpressionValueFilter
+import org.openremote.model.value.ValueFilter
 import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
@@ -922,6 +924,149 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             agent = assetStorageService.find(agent.getId())
             assert agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+    }
+
+    def "Modbus TCP Test - Write Value Filter Only Applies To The Modbus Write"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        when: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "a Modbus TCP agent is created"
+        def agent = new ModbusTcpAgent("Modbus TCP Write Filter Test")
+        agent.setRealm(MASTER_REALM)
+        agent.setHost("127.0.0.1")
+        agent.setPort(modbusServerPort)
+        agent = assetStorageService.merge(agent)
+
+        then: "the agent should connect successfully"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            agent = assetStorageService.find(agent.getId())
+            assert agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+        when: "a write-only attribute with a x*10 write value filter is created"
+        def device = new ThingAsset("Write Filter Device")
+        device.setRealm(MASTER_REALM)
+        device.addOrReplaceAttributes(
+                new Attribute<>("scaledWrite", ValueType.NUMBER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.HOLDING)
+                                    it.setWriteAddress(600)
+                                    it.setWriteValueFilters([new MathExpressionValueFilter("x*10")] as ValueFilter[])
+                                }
+                        )
+                )
+        )
+        device = assetStorageService.merge(device)
+
+        then: "the attribute should be linked"
+        conditions.eventually {
+            device = assetStorageService.find(device.getId(), true)
+            assert device.getAttribute("scaledWrite").isPresent()
+        }
+
+        when: "the user writes 5 to the attribute"
+        latestWriteMessage.set(null)
+        assetProcessingService.sendAttributeEvent(
+                new AttributeEvent(device.getId(), "scaledWrite", 5), "ClientEventService")
+
+        then: "the filtered value should be sent to the Modbus server"
+        conditions.eventually {
+            def msg = (latestWriteMessage.get() as ModbusMessage)?.unwrap(RegistersModbusMessage)
+            assert msg != null
+            assert msg.getAddress() == 599
+            assert msg.dataDecodeUnsigned()[0] == 50
+        }
+
+        and: "the attribute should keep the value the user wrote, not the filtered one"
+        conditions.eventually {
+            device = assetStorageService.find(device.getId(), true)
+            assert device.getAttribute("scaledWrite").flatMap { it.getValue() }.orElse(null) == 5
+        }
+    }
+
+    def "Modbus TCP Test - Write Value Filter Applied To Interval Writes"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+
+        when: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "a Modbus TCP agent is created"
+        def agent = new ModbusTcpAgent("Modbus TCP Write Filter Interval Test")
+        agent.setRealm(MASTER_REALM)
+        agent.setHost("127.0.0.1")
+        agent.setPort(modbusServerPort)
+        agent = assetStorageService.merge(agent)
+
+        then: "the agent should connect successfully"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            agent = assetStorageService.find(agent.getId())
+            assert agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+        when: "a write interval attribute with a x*10 write value filter is created"
+        def device = new ThingAsset("Write Filter Interval Device")
+        device.setRealm(MASTER_REALM)
+        device.addOrReplaceAttributes(
+                new Attribute<>("scaledIntervalWrite", ValueType.NUMBER, 7).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setRequestInterval(1000)
+                                    it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.HOLDING)
+                                    it.setWriteAddress(601)
+                                    it.setWriteValueFilters([new MathExpressionValueFilter("x*10")] as ValueFilter[])
+                                }
+                        )
+                )
+        )
+        device = assetStorageService.merge(device)
+
+        then: "the periodic write should send the filtered value"
+        conditions.eventually {
+            def msg = (latestWriteMessage.get() as ModbusMessage)?.unwrap(RegistersModbusMessage)
+            assert msg != null
+            assert msg.getAddress() == 600
+            assert msg.dataDecodeUnsigned()[0] == 70
+        }
+
+        and: "the attribute should still hold the unfiltered value"
+        conditions.eventually {
+            device = assetStorageService.find(device.getId(), true)
+            assert device.getAttribute("scaledIntervalWrite").flatMap { it.getValue() }.orElse(null) == 7
+        }
+
+        when: "the user writes 3 to the attribute"
+        assetProcessingService.sendAttributeEvent(
+                new AttributeEvent(device.getId(), "scaledIntervalWrite", 3), "ClientEventService")
+        Thread.sleep(2000)
+        latestWriteMessage.set(null)
+
+        then: "the periodic writes should keep sending the newly filtered value"
+        conditions.eventually {
+            def msg = (latestWriteMessage.get() as ModbusMessage)?.unwrap(RegistersModbusMessage)
+            assert msg != null
+            assert msg.dataDecodeUnsigned()[0] == 30
+        }
+
+        and: "the attribute should still hold the unfiltered value"
+        conditions.eventually {
+            device = assetStorageService.find(device.getId(), true)
+            assert device.getAttribute("scaledIntervalWrite").flatMap { it.getValue() }.orElse(null) == 3
         }
     }
 

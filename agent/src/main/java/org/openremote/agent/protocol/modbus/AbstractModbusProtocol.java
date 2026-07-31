@@ -33,7 +33,9 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -301,13 +303,14 @@ public abstract class AbstractModbusProtocol<T extends AbstractModbusProtocol<T,
             if (event.getSource() != null) {
                 if (agentLink.getReadAddress() == null) {
                     // Write-only: update the local linkedAttributes cache and notify the system
+                    Object attributeValue = event.getValue().orElse(null);
                     Attribute<?> attribute = linkedAttributes.get(event.getRef());
                     if (attribute != null) {
                         @SuppressWarnings("unchecked")
                         Attribute<Object> attr = (Attribute<Object>) attribute;
-                        attr.setValue(processedValue);
+                        attr.setValue(attributeValue);
                     }
-                    updateLinkedAttribute(event.getRef(), processedValue);
+                    updateLinkedAttribute(event.getRef(), attributeValue);
                     LOG.finest(getProtocolName() + " - Write-only attribute updated: " + event.getRef());
                 } else {
                     // Write + Read: trigger immediate read to verify write
@@ -546,10 +549,18 @@ public abstract class AbstractModbusProtocol<T extends AbstractModbusProtocol<T,
                     return;
                 }
 
-                AttributeEvent syntheticEvent = new AttributeEvent(ref, currentValue);
-                doLinkedAttributeWrite(agentLink, syntheticEvent, currentValue);
+                Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(
+                        ref, agentLink, currentValue, dynamicAttributes.contains(ref), timerService.getNow());
 
-                LOG.finest(getProtocolName() + " - Write interval executed for " + ref + " with value: " + currentValue);
+                if (ignoreAndConverted.key) {
+                    LOG.finest(getProtocolName() + " - Skipping write interval for " + ref + " - value processing returned ignore");
+                    return;
+                }
+
+                AttributeEvent syntheticEvent = new AttributeEvent(ref, currentValue);
+                doLinkedAttributeWrite(agentLink, syntheticEvent, ignoreAndConverted.value);
+
+                LOG.finest(getProtocolName() + " - Write interval executed for " + ref + " with value: " + ignoreAndConverted.value);
             } catch (Exception e) {
                 LOG.log(Level.WARNING, getProtocolName() + " - Exception during write interval for " + ref + ": " + e.getMessage(), e);
             }
