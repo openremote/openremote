@@ -1,4 +1,5 @@
 dist/
 lib/
+/docs/
 custom-elements.json
 custom-elements-jsx.d.ts

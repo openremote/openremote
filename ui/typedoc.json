@@ -1,0 +1,21 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "name": "OpenRemote UI",
+    "entryPointStrategy": "packages",
+    "entryPoints": [
+        "component/model",
+        "component/rest",
+        "component/core"
+    ],
+    "packageOptions": {
+        "entryPointStrategy": "expand",
+        "entryPoints": ["src"],
+        "excludeProtected": true,
+        "excludeInternal": true,
+        "excludeExternals": true,
+        "categorizeByGroup": true
+    },
+    "out": "docs",
+    "includeVersion": true,
+    "readme": "none"
+}

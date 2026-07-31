@@ -25,6 +25,10 @@ Adding a component means adding its README, its tests and its Storybook story al
 
 `ui/component/model/src/model.ts` is generated from the Java backend by typescript-generator. Do not edit it by hand. When a TypeScript type mirrors a backend class, import it from `@openremote/model` instead of redeclaring a local interface. Regenerate it from the backend rather than patching the output.
 
+### API docs
+
+`yarn docs` runs TypeDoc over `@openremote/model`, `@openremote/rest` and `@openremote/core`, writing HTML to `ui/docs`. Cross-package imports resolve to each package's built `.d.ts`, so the generated model must exist first; `./gradlew installDist` takes care of that and generates the docs. `ui/typedoc.json` holds the package list and, in `packageOptions`, the options applied to each of them.
+
 ### Base element
 
 Own Lit components extend `OrElement` from `@openremote/or-element` instead of `LitElement` (also through mixins, e.g. `translate(i18next)(OrElement)`). It applies the shared shadow-DOM styling automatically. Vaadin wrappers are exempt; they extend their Vaadin base and are themed via Lumo.

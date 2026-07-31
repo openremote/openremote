@@ -1,0 +1,8 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "excludeProtected": true,
+    "excludeInternal": true,
+    "excludeExternals": true,
+    "categorizeByGroup": true,
+    "entryPointStrategy": "expand"
+}

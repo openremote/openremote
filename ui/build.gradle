@@ -19,6 +19,21 @@ tasks.register("modelWatch") {
     dependsOn ":ui:component:model:build", ":ui:component:rest:build"
 }
 
+tasks.register("clean", Delete) {
+    delete layout.projectDirectory.dir("docs")
+}
+
+tasks.register("npmDocs", Exec) {
+    mustRunAfter clean
+    dependsOn getYarnInstallTask(), ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
+    workingDir project.rootDir
+    commandLine npmCommand("yarn"), "run", "docs"
+}
+
+tasks.register("installDist") {
+    dependsOn npmDocs
+}
+
 tasks.register("installKnipDeps", Exec) {
     // Required to load the `rspack.config.js` and `rsbuild.config.ts` files, ref https://knip.dev/reference/known-issues#exceptions-from-config-files
     commandLine npmCommand("yarn"), "workspaces", "focus", "@openremote/util", "@openremote/manager", "@openremote/storybook"

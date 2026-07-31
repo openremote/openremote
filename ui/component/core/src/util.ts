@@ -782,14 +782,14 @@ export function resolveUnits(units: string[] | undefined, valueStr?: string): st
 }
 
 /**
- * Looks for {@link ValueConstraint[]} for the specified {@link Attribute} (see {@link getValueFormatConstraintOrUnits})
+ * Looks for {@link ValueConstraint[]} for the specified {@link Attribute} (see `getValueFormatConstraintOrUnits`)
  */
 export function getAttributeValueConstraints(attribute: Attribute<any> | undefined, descriptor: AttributeDescriptor | string | undefined, assetType: string | undefined): ValueConstraint[] | undefined {
     return getValueFormatConstraintOrUnits(WellknownMetaItems.CONSTRAINTS, attribute, descriptor, assetType, true);
 }
 
 /**
- * Looks for {@link ValueConstraint[]} for the specified {@link NameValueHolder} (see {@link getValueFormatConstraintOrUnits})
+ * Looks for {@link ValueConstraint[]} for the specified {@link NameValueHolder} (see `getValueFormatConstraintOrUnits`)
  */
 export function getMetaValueConstraints(metaItem: NameValueHolder<any> | undefined, descriptor: MetaItemDescriptor | string, assetType: string | undefined): ValueConstraint[] | undefined {
     const metaValueHolder = metaItem || getMetaItemNameValueHolder(descriptor, null);
@@ -797,14 +797,14 @@ export function getMetaValueConstraints(metaItem: NameValueHolder<any> | undefin
 }
 
 /**
- * Looks for units string[] for the specified {@link Attribute} (see {@link getValueFormatConstraintOrUnits})
+ * Looks for units string[] for the specified {@link Attribute} (see `getValueFormatConstraintOrUnits`)
  */
 export function getAttributeUnits(attribute: Attribute<any> | undefined, descriptor: AttributeDescriptor | ValueDescriptor | string | undefined, assetType: string | undefined): string[] | undefined {
     return getValueFormatConstraintOrUnits(WellknownMetaItems.UNITS, attribute, descriptor, assetType, true);
 }
 
 /**
- * Looks for units string[] for the specified {@link MetaItem} (see {@link getValueFormatConstraintOrUnits})
+ * Looks for units string[] for the specified {@link NameValueHolder} (see `getValueFormatConstraintOrUnits`)
  */
 export function getMetaUnits(metaItem: NameValueHolder<any> | undefined, descriptor: MetaItemDescriptor | string, assetType: string | undefined): string[] | undefined {
     const metaValueHolder = metaItem || getMetaItemNameValueHolder(descriptor, null);
@@ -812,14 +812,14 @@ export function getMetaUnits(metaItem: NameValueHolder<any> | undefined, descrip
 }
 
 /**
- * Looks for a {@link ValueFormat} for the specified {@link Attribute} (see {@link getValueFormatConstraintOrUnits})
+ * Looks for a {@link ValueFormat} for the specified {@link Attribute} (see `getValueFormatConstraintOrUnits`)
  */
 export function getAttributeValueFormat(attribute: Attribute<any> | undefined, descriptor: AttributeDescriptor | string | undefined, assetType: string | undefined): ValueFormat | undefined {
     return getValueFormatConstraintOrUnits(WellknownMetaItems.FORMAT, attribute, descriptor, assetType, true);
 }
 
 /**
- * Looks for a {@see ValueFormat} for the specified {@link MetaItem} (see {@link getValueFormatConstraintOrUnits})
+ * Looks for a {@link ValueFormat} for the specified {@link NameValueHolder} (see `getValueFormatConstraintOrUnits`)
  */
 export function getMetaValueFormat(metaItem: NameValueHolder<any> | undefined, descriptor: MetaItemDescriptor | string, assetType: string | undefined): ValueFormat | undefined {
     const metaValueHolder = metaItem || getMetaItemNameValueHolder(descriptor, null);
