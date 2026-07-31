@@ -81,10 +81,13 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
         String lastMessage
         client.addMessageConsumer({
             message ->
+                getLOG().info("Message received: $message")
                 lastMessage = message
         })
         client.addConnectionStatusConsumer({
-            status -> connectionStatus = status
+            status ->
+               getLOG().info("Connection status changed: $status")
+               connectionStatus = status
         })
 
         when: "the server is started"
