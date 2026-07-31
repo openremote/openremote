@@ -1,47 +1,53 @@
 plugins {
-    id 'java-library'
+  id 'java-library'
 }
 
 configurations {
-    managerRuntime
+  managerRuntime
 }
 
 dependencies {
-    api project(":setup")
-    managerRuntime project(':manager')
+  api project(":setup")
+  managerRuntime project(':manager')
 }
 
 tasks.register('license', Copy) {
-    from(rootProject.layout.projectDirectory.file("LICENSE.txt"))
-    into(layout.buildDirectory.dir("image/manager/app"))
+  from(rootProject.layout.projectDirectory.file("LICENSE.txt"))
+  into(layout.buildDirectory.dir("image/manager/app"))
 }
 
 tasks.register('installDist', Copy) {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    dependsOn(parent.getTasksByName('installDist', true).findAll {
-        // Don't create circular dependency or depend on built in openremote submodule apps
-        it.project != project && !it.project.path.startsWith(":openremote:ui:app")
-    })
-    dependsOn(tasks.named('license'))
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  dependsOn(parent.getTasksByName('installDist', true).findAll {
+    // Don't create circular dependency or depend on built in openremote submodule apps
+    it.project != project && !it.project.path.startsWith(":openremote:ui:app")
+  })
+  dependsOn(tasks.named('license'))
 
-    into(layout.buildDirectory)
+  into(layout.buildDirectory)
 
-    from "Dockerfile"
+  from "Dockerfile"
 
-    into("image") {
-        from projectDir
-        exclude "build.gradle", "Dockerfile", "build", "**/*.mbtiles", "src", "**/*.md", ".gitignore", "**/*.encrypted"
+  into("image") {
+    from projectDir
+    exclude "build.gradle", "Dockerfile", "build", "**/*.mbtiles", "src", "**/*.md", ".gitignore", "**/*.encrypted"
+  }
+
+  into("image/manager/extensions") {
+    from configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.collect {
+      it.file
     }
-
-    into("image/manager/extensions") {
-        from configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.collect {it.file }
-        // Don't include deps baked into the manager docker image
-        exclude configurations.managerRuntime.resolvedConfiguration.resolvedArtifacts.collect {it.file.name }
-        // Don't include any ui packaged JARs (used for dev purposes only)
-        exclude { (it.file.path.contains(".gradle")  || it.file.path.contains(".m2")) && it.file.path.contains("io.openremote.ui") }
+    // Don't include deps baked into the manager docker image
+    exclude configurations.managerRuntime.resolvedConfiguration.resolvedArtifacts.collect {
+      it.file.name
     }
-
-    into("image/manager/extensions") {
-        from project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
+    // Don't include any ui packaged JARs (used for dev purposes only)
+    exclude {
+      (it.file.path.contains(".gradle") || it.file.path.contains(".m2")) && it.file.path.contains("io.openremote.ui")
     }
+  }
+
+  into("image/manager/extensions") {
+    from project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
+  }
 }

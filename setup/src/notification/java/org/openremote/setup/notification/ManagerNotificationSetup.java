@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,10 +12,21 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.setup.notification;
 
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.value.MetaItemType.RULE_STATE;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
@@ -36,155 +44,193 @@ import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.security.User;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.value.MetaItemType.RULE_STATE;
-
 public class ManagerNotificationSetup extends ManagerSetup {
 
-    /**
-     * Value of the notes attribute (with RULE_STATE meta) on the seeded assets; can be matched in the when
-     * clause of manually created rules to test rule triggered notifications.
-     */
-    public static final String RULE_TRIGGER_VALUE = "notification-test";
+  /**
+   * Value of the notes attribute (with RULE_STATE meta) on the seeded assets; can be matched in the
+   * when clause of manually created rules to test rule triggered notifications.
+   */
+  public static final String RULE_TRIGGER_VALUE = "notification-test";
 
-    private final KeycloakNotificationSetup keycloakSetup;
+  private final KeycloakNotificationSetup keycloakSetup;
 
-    public ManagerNotificationSetup(Container container, KeycloakNotificationSetup keycloakSetup) {
-        super(container);
-        this.keycloakSetup = keycloakSetup;
-    }
+  public ManagerNotificationSetup(Container container, KeycloakNotificationSetup keycloakSetup) {
+    super(container);
+    this.keycloakSetup = keycloakSetup;
+  }
 
-    @Override
-    public void onStart() throws Exception {
-        super.onStart();
+  @Override
+  public void onStart() throws Exception {
+    super.onStart();
 
-        // Create a shared test asset in the master realm; the notes attribute is matched by the notification rulesets
-        // and needs the RULE_STATE meta item so it is available as a fact in the rule engines
-        ThingAsset testAsset = new ThingAsset("Notification Test Asset");
-        testAsset.setRealm(MASTER_REALM);
-        testAsset.setNotes(RULE_TRIGGER_VALUE);
-        testAsset.getAttribute(Asset.NOTES).ifPresent(attr -> attr.addMeta(new MetaItem<>(RULE_STATE, true)));
-        testAsset = assetStorageService.merge(testAsset);
-        final String assetId = testAsset.getId();
+    // Create a shared test asset in the master realm; the notes attribute is matched by the
+    // notification rulesets
+    // and needs the RULE_STATE meta item so it is available as a fact in the rule engines
+    ThingAsset testAsset = new ThingAsset("Notification Test Asset");
+    testAsset.setRealm(MASTER_REALM);
+    testAsset.setNotes(RULE_TRIGGER_VALUE);
+    testAsset
+        .getAttribute(Asset.NOTES)
+        .ifPresent(attr -> attr.addMeta(new MetaItem<>(RULE_STATE, true)));
+    testAsset = assetStorageService.merge(testAsset);
+    final String assetId = testAsset.getId();
 
-        // Link all users to the asset
-        List<User> users = List.of(
+    // Link all users to the asset
+    List<User> users =
+        List.of(
             keycloakSetup.notifRead,
             keycloakSetup.notifAssets,
             keycloakSetup.notifUsers,
             keycloakSetup.notifViewUsers,
             keycloakSetup.notifWrite,
             keycloakSetup.notifRestricted,
-            keycloakSetup.notifRestrictedAssets
-        );
+            keycloakSetup.notifRestrictedAssets);
 
-        assetStorageService.storeUserAssetLinks(
-            users.stream()
-                .map(u -> new UserAssetLink(MASTER_REALM, u.getId(), assetId))
-                .toList()
-        );
+    assetStorageService.storeUserAssetLinks(
+        users.stream().map(u -> new UserAssetLink(MASTER_REALM, u.getId(), assetId)).toList());
 
-        // Provision a console asset per user so push notification targets resolve to consoles in dev
-        for (User user : users) {
-            createConsole(MASTER_REALM, user);
-        }
+    // Provision a console asset per user so push notification targets resolve to consoles in dev
+    for (User user : users) {
+      createConsole(MASTER_REALM, user);
+    }
 
-        // Persist three notifications per user spaced 1 minute apart, oldest first
-        Instant base = Instant.now();
-        int slot = 0;
-        for (User user : users) {
-            persistPushNotification("Welcome", "Welcome to OpenRemote notifications", user.getId(), assetId, MASTER_REALM, base.minus(++slot, ChronoUnit.MINUTES));
-            persistPushNotification("Test Alert", "This is a pending test notification", user.getId(), assetId, MASTER_REALM, base.minus(++slot, ChronoUnit.MINUTES));
-            persistEmailNotification("Email Alert", "<p>This is a test email notification</p>", user.getId(), assetId, MASTER_REALM, base.minus(++slot, ChronoUnit.MINUTES));
-        }
+    // Persist three notifications per user spaced 1 minute apart, oldest first
+    Instant base = Instant.now();
+    int slot = 0;
+    for (User user : users) {
+      persistPushNotification(
+          "Welcome",
+          "Welcome to OpenRemote notifications",
+          user.getId(),
+          assetId,
+          MASTER_REALM,
+          base.minus(++slot, ChronoUnit.MINUTES));
+      persistPushNotification(
+          "Test Alert",
+          "This is a pending test notification",
+          user.getId(),
+          assetId,
+          MASTER_REALM,
+          base.minus(++slot, ChronoUnit.MINUTES));
+      persistEmailNotification(
+          "Email Alert",
+          "<p>This is a test email notification</p>",
+          user.getId(),
+          assetId,
+          MASTER_REALM,
+          base.minus(++slot, ChronoUnit.MINUTES));
+    }
 
-        // Smartcity realm: asset, user-asset link, and seeded notifications
-        ThingAsset smartCityAsset = new ThingAsset("Smart City Test Asset");
-        smartCityAsset.setRealm(KeycloakNotificationSetup.SMARTCITY_REALM);
-        smartCityAsset.setNotes(RULE_TRIGGER_VALUE);
-        smartCityAsset.getAttribute(Asset.NOTES).ifPresent(attr -> attr.addMeta(new MetaItem<>(RULE_STATE, true)));
-        smartCityAsset = assetStorageService.merge(smartCityAsset);
-        final String smartCityAssetId = smartCityAsset.getId();
+    // Smartcity realm: asset, user-asset link, and seeded notifications
+    ThingAsset smartCityAsset = new ThingAsset("Smart City Test Asset");
+    smartCityAsset.setRealm(KeycloakNotificationSetup.SMARTCITY_REALM);
+    smartCityAsset.setNotes(RULE_TRIGGER_VALUE);
+    smartCityAsset
+        .getAttribute(Asset.NOTES)
+        .ifPresent(attr -> attr.addMeta(new MetaItem<>(RULE_STATE, true)));
+    smartCityAsset = assetStorageService.merge(smartCityAsset);
+    final String smartCityAssetId = smartCityAsset.getId();
 
-        assetStorageService.storeUserAssetLinks(List.of(
-            new UserAssetLink(KeycloakNotificationSetup.SMARTCITY_REALM, keycloakSetup.smartCityUser.getId(), smartCityAssetId)
-        ));
+    assetStorageService.storeUserAssetLinks(
+        List.of(
+            new UserAssetLink(
+                KeycloakNotificationSetup.SMARTCITY_REALM,
+                keycloakSetup.smartCityUser.getId(),
+                smartCityAssetId)));
 
-        createConsole(KeycloakNotificationSetup.SMARTCITY_REALM, keycloakSetup.smartCityUser);
+    createConsole(KeycloakNotificationSetup.SMARTCITY_REALM, keycloakSetup.smartCityUser);
 
-        persistPushNotification("Welcome", "Welcome to Smart City", keycloakSetup.smartCityUser.getId(), smartCityAssetId, KeycloakNotificationSetup.SMARTCITY_REALM, base.minus(++slot, ChronoUnit.MINUTES));
-        persistPushNotification("Test Alert", "This is a pending test notification", keycloakSetup.smartCityUser.getId(), smartCityAssetId, KeycloakNotificationSetup.SMARTCITY_REALM, base.minus(++slot, ChronoUnit.MINUTES));
+    persistPushNotification(
+        "Welcome",
+        "Welcome to Smart City",
+        keycloakSetup.smartCityUser.getId(),
+        smartCityAssetId,
+        KeycloakNotificationSetup.SMARTCITY_REALM,
+        base.minus(++slot, ChronoUnit.MINUTES));
+    persistPushNotification(
+        "Test Alert",
+        "This is a pending test notification",
+        keycloakSetup.smartCityUser.getId(),
+        smartCityAssetId,
+        KeycloakNotificationSetup.SMARTCITY_REALM,
+        base.minus(++slot, ChronoUnit.MINUTES));
 
-        // Realm ruleset whose Groovy script body sends notifications directly once on deployment, so notifications
-        // with the REALM_RULESET source show up for testing the source filter. Plain rules with a when clause
-        // don't evaluate reliably on initial deployment.
-        rulesetStorageService.merge(new RealmRuleset(
+    // Realm ruleset whose Groovy script body sends notifications directly once on deployment, so
+    // notifications
+    // with the REALM_RULESET source show up for testing the source filter. Plain rules with a when
+    // clause
+    // don't evaluate reliably on initial deployment.
+    rulesetStorageService.merge(
+        new RealmRuleset(
             MASTER_REALM,
             "Notification test realm rule",
             Ruleset.Lang.GROOVY,
-            buildNotificationRulesGroovy("Realm rule", assetId)
-        ));
+            buildNotificationRulesGroovy("Realm rule", assetId)));
 
-        // Global rulesets are too problematic to use for this (see global-ruleset-issues.md) so the
-        // GLOBAL_RULESET source records are persisted directly instead
-        persistGlobalRuleNotifications(assetId, MASTER_REALM, base.minus(++slot, ChronoUnit.MINUTES));
-        persistGlobalRuleNotifications(smartCityAssetId, KeycloakNotificationSetup.SMARTCITY_REALM, base.minus(++slot, ChronoUnit.MINUTES));
-    }
+    // Global rulesets are too problematic to use for this (see global-ruleset-issues.md) so the
+    // GLOBAL_RULESET source records are persisted directly instead
+    persistGlobalRuleNotifications(assetId, MASTER_REALM, base.minus(++slot, ChronoUnit.MINUTES));
+    persistGlobalRuleNotifications(
+        smartCityAssetId,
+        KeycloakNotificationSetup.SMARTCITY_REALM,
+        base.minus(++slot, ChronoUnit.MINUTES));
+  }
 
-    /**
-     * Persists a push and an email notification record with the {@link Notification.Source#GLOBAL_RULESET} source
-     * targeting the given asset, mimicking what a global ruleset notification action would produce.
-     */
-    private void persistGlobalRuleNotifications(String assetId, String realm, Instant sentOn) {
-        SentNotification push = new SentNotification()
+  /**
+   * Persists a push and an email notification record with the {@link
+   * Notification.Source#GLOBAL_RULESET} source targeting the given asset, mimicking what a global
+   * ruleset notification action would produce.
+   */
+  private void persistGlobalRuleNotifications(String assetId, String realm, Instant sentOn) {
+    SentNotification push =
+        new SentNotification()
             .setName("Global rule push")
             .setType(PushNotificationMessage.TYPE)
             .setSource(Notification.Source.GLOBAL_RULESET)
             .setSourceId("")
             .setTarget(Notification.TargetType.ASSET)
             .setTargetId(assetId)
-            .setMessage(new PushNotificationMessage()
-                .setTitle("Global rule push")
-                .setBody("Rule triggered push notification"))
+            .setMessage(
+                new PushNotificationMessage()
+                    .setTitle("Global rule push")
+                    .setBody("Rule triggered push notification"))
             .setRealm(realm)
             .setSentOn(sentOn);
 
-        SentNotification email = new SentNotification()
+    SentNotification email =
+        new SentNotification()
             .setName("Global rule email")
             .setType(EmailNotificationMessage.TYPE)
             .setSource(Notification.Source.GLOBAL_RULESET)
             .setSourceId("")
             .setTarget(Notification.TargetType.ASSET)
             .setTargetId(assetId)
-            .setMessage(new EmailNotificationMessage()
-                .setSubject("Global rule email")
-                .setHtml("<p>Rule triggered email notification</p>"))
+            .setMessage(
+                new EmailNotificationMessage()
+                    .setSubject("Global rule email")
+                    .setHtml("<p>Rule triggered email notification</p>"))
             .setRealm(realm)
             .setSentOn(sentOn);
 
-        persistenceService.doTransaction(em -> {
-            em.merge(push);
-            em.merge(email);
+    persistenceService.doTransaction(
+        em -> {
+          em.merge(push);
+          em.merge(email);
         });
-    }
+  }
 
-    /**
-     * Builds a Groovy ruleset whose script body executes once on deployment and sends a push and an email
-     * notification targeting the given assets; push resolves to the consoles of linked users, email to their addresses.
-     */
-    private static String buildNotificationRulesGroovy(String namePrefix, String... assetIds) {
-        String targets = Arrays.stream(assetIds)
+  /**
+   * Builds a Groovy ruleset whose script body executes once on deployment and sends a push and an
+   * email notification targeting the given assets; push resolves to the consoles of linked users,
+   * email to their addresses.
+   */
+  private static String buildNotificationRulesGroovy(String namePrefix, String... assetIds) {
+    String targets =
+        Arrays.stream(assetIds)
             .map(id -> "new Notification.Target(Notification.TargetType.ASSET, \"" + id + "\")")
             .collect(Collectors.joining(", "));
 
-        return """
+    return """
             import org.openremote.model.notification.EmailNotificationMessage
             import org.openremote.model.notification.Notification
             import org.openremote.model.notification.PushNotificationMessage
@@ -205,46 +251,66 @@ public class ManagerNotificationSetup extends ManagerSetup {
                     .setHtml("<p>Rule triggered email notification</p>"))
             email.setTargets(%2$s)
             notifications.send(email)
-            """.formatted(namePrefix, targets);
-    }
+            """
+        .formatted(namePrefix, targets);
+  }
 
-    /**
-     * Creates a {@link ConsoleAsset} with a (fake) FCM push provider token and links it to the given user, mirroring
-     * what a real console registration does, so USER/ASSET/REALM push targets resolve to consoles in dev.
-     */
-    private void createConsole(String realm, User user) {
-        ConsoleAsset console = new ConsoleAsset(user.getUsername() + " console")
+  /**
+   * Creates a {@link ConsoleAsset} with a (fake) FCM push provider token and links it to the given
+   * user, mirroring what a real console registration does, so USER/ASSET/REALM push targets resolve
+   * to consoles in dev.
+   */
+  private void createConsole(String realm, User user) {
+    ConsoleAsset console =
+        new ConsoleAsset(user.getUsername() + " console")
             .setConsoleName(user.getUsername() + " console")
             .setConsoleVersion("1.0.0")
             .setConsolePlatform("Android 14")
-            .setConsoleProvider(PushNotificationMessage.TYPE, new ConsoleProvider(
-                "fcm", true, true, true, true, false, Map.of("token", "dev-fcm-token-" + user.getUsername())
-            ));
-        console.setRealm(realm);
-        console = assetStorageService.merge(console);
+            .setConsoleProvider(
+                PushNotificationMessage.TYPE,
+                new ConsoleProvider(
+                    "fcm",
+                    true,
+                    true,
+                    true,
+                    true,
+                    false,
+                    Map.of("token", "dev-fcm-token-" + user.getUsername())));
+    console.setRealm(realm);
+    console = assetStorageService.merge(console);
 
-        assetStorageService.storeUserAssetLinks(List.of(new UserAssetLink(realm, user.getId(), console.getId())));
-    }
+    assetStorageService.storeUserAssetLinks(
+        List.of(new UserAssetLink(realm, user.getId(), console.getId())));
+  }
 
-    private void persistPushNotification(String title, String body, String userId, String assetId, String realm, Instant sentOn) {
-        PushNotificationMessage message = new PushNotificationMessage()
-            .setTitle(title)
-            .setBody(body);
+  private void persistPushNotification(
+      String title, String body, String userId, String assetId, String realm, Instant sentOn) {
+    PushNotificationMessage message = new PushNotificationMessage().setTitle(title).setBody(body);
 
-        persistNotification(title, PushNotificationMessage.TYPE, message, userId, assetId, realm, sentOn);
-    }
+    persistNotification(
+        title, PushNotificationMessage.TYPE, message, userId, assetId, realm, sentOn);
+  }
 
-    private void persistEmailNotification(String subject, String html, String userId, String assetId, String realm, Instant sentOn) {
-        EmailNotificationMessage message = new EmailNotificationMessage()
-            .setSubject(subject)
-            .setHtml(html);
+  private void persistEmailNotification(
+      String subject, String html, String userId, String assetId, String realm, Instant sentOn) {
+    EmailNotificationMessage message =
+        new EmailNotificationMessage().setSubject(subject).setHtml(html);
 
-        persistNotification(subject, EmailNotificationMessage.TYPE, message, userId, assetId, realm, sentOn);
-    }
+    persistNotification(
+        subject, EmailNotificationMessage.TYPE, message, userId, assetId, realm, sentOn);
+  }
 
-    private void persistNotification(String name, String type, AbstractNotificationMessage message, String userId, String assetId, String realm, Instant sentOn) {
-        // One notification targeting the user directly
-        SentNotification toUser = new SentNotification()
+  private void persistNotification(
+      String name,
+      String type,
+      AbstractNotificationMessage message,
+      String userId,
+      String assetId,
+      String realm,
+      Instant sentOn) {
+    // One notification targeting the user directly
+    SentNotification toUser =
+        new SentNotification()
             .setName(name)
             .setType(type)
             .setSource(Notification.Source.INTERNAL)
@@ -255,8 +321,9 @@ public class ManagerNotificationSetup extends ManagerSetup {
             .setRealm(realm)
             .setSentOn(sentOn);
 
-        // One notification targeting the shared asset
-        SentNotification toAsset = new SentNotification()
+    // One notification targeting the shared asset
+    SentNotification toAsset =
+        new SentNotification()
             .setName(name)
             .setType(type)
             .setSource(Notification.Source.INTERNAL)
@@ -267,9 +334,10 @@ public class ManagerNotificationSetup extends ManagerSetup {
             .setRealm(realm)
             .setSentOn(sentOn);
 
-        persistenceService.doTransaction(em -> {
-            em.merge(toUser);
-            em.merge(toAsset);
+    persistenceService.doTransaction(
+        em -> {
+          em.merge(toUser);
+          em.merge(toAsset);
         });
-    }
+  }
 }

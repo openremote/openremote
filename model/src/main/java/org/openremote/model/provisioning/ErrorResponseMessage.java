@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.provisioning;
 
@@ -23,34 +22,32 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 public class ErrorResponseMessage extends ProvisioningMessage {
 
-    public enum Error {
-        MESSAGE_INVALID,
-        CERTIFICATE_INVALID,
-        UNAUTHORIZED,
-        FORBIDDEN,
-        UNIQUE_ID_MISMATCH,
-        CONFIG_DISABLED,
-        USER_DISABLED,
-        SERVER_ERROR,
-        ASSET_ERROR,
-        SERVER_BUSY
-    }
+  public enum Error {
+    MESSAGE_INVALID,
+    CERTIFICATE_INVALID,
+    UNAUTHORIZED,
+    FORBIDDEN,
+    UNIQUE_ID_MISMATCH,
+    CONFIG_DISABLED,
+    USER_DISABLED,
+    SERVER_ERROR,
+    ASSET_ERROR,
+    SERVER_BUSY
+  }
 
-    protected Error error;
+  protected Error error;
 
-    @JsonCreator
-    public ErrorResponseMessage(Error error) {
-        this.error = error;
-    }
+  @JsonCreator
+  public ErrorResponseMessage(Error error) {
+    this.error = error;
+  }
 
-    public Error getError() {
-        return error;
-    }
+  public Error getError() {
+    return error;
+  }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "error=" + error +
-            '}';
-    }
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "{" + "error=" + error + '}';
+  }
 }

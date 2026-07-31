@@ -52,7 +52,6 @@
 # - OR_ADMIN_PASSWORD     - The admin password to set for clean installs
 # ---------------------------------------------------------------------------------------------------------------------
 
-
 name: CI/CD
 
 on:
@@ -70,29 +69,29 @@ on:
   workflow_dispatch:
     inputs:
       ENVIRONMENT:
-        description: 'Environment to use (if any)'
+        description: "Environment to use (if any)"
       MANAGER_TAG:
-        description: 'Manager docker tag to pull'
+        description: "Manager docker tag to pull"
       CLEAN_INSTALL:
-        description: 'Delete data before starting'
+        description: "Delete data before starting"
         type: boolean
       PUSH_SNAPSHOT:
-        description: 'Push SNAPSHOT docker image to ECR'
+        description: "Push SNAPSHOT docker image to ECR"
         type: boolean
       COMMIT:
-        description: 'Repo branch or commit SHA to checkout'
+        description: "Repo branch or commit SHA to checkout"
       OR_HOSTNAME:
-        description: 'Host to deploy to (e.g. demo.openremote.app)'
+        description: "Host to deploy to (e.g. demo.openremote.app)"
       OR_ADMIN_PASSWORD:
-        description: 'Admin password override'
+        description: "Admin password override"
 
   workflow_call:
-      inputs:
-        INPUTS:
-          type: string
-      secrets:
-        SECRETS:
-          required: false
+    inputs:
+      INPUTS:
+        type: string
+    secrets:
+      SECRETS:
+        required: false
 
 permissions:
   id-token: write
@@ -104,7 +103,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   build:
     name: CI/CD
     runs-on: ubuntu-latest
@@ -175,7 +173,7 @@ jobs:
           ref: ${{ steps.process-inputs.outputs.COMMIT }}
           submodules: recursive
           fetch-depth: 200
-          lfs: 'true'
+          lfs: "true"
 
       # Check which files have changed to only run appropriate tests and checks
       - name: Backend files changed
@@ -289,9 +287,9 @@ jobs:
         id: java
         uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
 
       - name: Get version details
         id: get-version-details

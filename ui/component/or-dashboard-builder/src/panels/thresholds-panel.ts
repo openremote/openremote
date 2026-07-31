@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,58 +12,56 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {ifDefined} from "lit/directives/if-defined.js";
-import {DefaultColor5} from "@openremote/core";
-import {style} from "../style";
-import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
-import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { css, type CSSResult, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { ifDefined } from "lit/directives/if-defined.js";
+import { DefaultColor5 } from "@openremote/core";
+import { style } from "../style";
+import type { OrVaadinNumberField } from "@openremote/or-vaadin-components/or-vaadin-number-field";
+import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
 
 export class ThresholdChangeEvent extends CustomEvent<[number, string][]> {
+  public static readonly NAME = "threshold-change";
 
-    public static readonly NAME = "threshold-change";
-
-    constructor(thresholds: [number, string][]) {
-        super(ThresholdChangeEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: thresholds
-        });
-    }
+  constructor(thresholds: [number, string][]) {
+    super(ThresholdChangeEvent.NAME, {
+      bubbles: true,
+      composed: true,
+      detail: thresholds,
+    });
+  }
 }
 
 export class TextColorsChangeEvent extends CustomEvent<[string, string][]> {
+  public static readonly NAME = "text-colors-change";
 
-    public static readonly NAME = "text-colors-change";
-
-    constructor(textColors: [string, string][]) {
-        super(TextColorsChangeEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: textColors
-        });
-    }
+  constructor(textColors: [string, string][]) {
+    super(TextColorsChangeEvent.NAME, {
+      bubbles: true,
+      composed: true,
+      detail: textColors,
+    });
+  }
 }
 
-export class BoolColorsChangeEvent extends CustomEvent<{ type: string, false: string, true: string }> {
+export class BoolColorsChangeEvent extends CustomEvent<{ type: string; false: string; true: string }> {
+  public static readonly NAME = "bool-colors-change";
 
-    public static readonly NAME = "bool-colors-change";
-
-    constructor(boolColors: { type: string, false: string, true: string }) {
-        super(BoolColorsChangeEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: boolColors
-        });
-    }
+  constructor(boolColors: { type: string; false: string; true: string }) {
+    super(BoolColorsChangeEvent.NAME, {
+      bubbles: true,
+      composed: true,
+      detail: boolColors,
+    });
+  }
 }
 
 const styling = css`
-
   #thresholds-list {
     display: flex;
     flex-direction: column;
@@ -102,217 +97,256 @@ const styling = css`
   .button-clear:hover {
     --or-icon-fill: var(--or-app-color4);
   }
-
 `;
 
 @customElement("thresholds-panel")
 export class ThresholdsPanel extends LitElement {
+  @property()
+  protected thresholds: [number, string][] = [];
 
-    @property()
-    protected thresholds: [number, string][] = [];
+  @property()
+  protected textColors: [string, string][] = [];
 
-    @property()
-    protected textColors: [string, string][] = [];
+  @property()
+  protected boolColors!: { type: string; false: string; true: string };
 
-    @property()
-    protected boolColors!: { type: string, false: string, true: string };
+  @property()
+  protected readonly min?: number;
 
-    @property()
-    protected readonly min?: number;
+  @property()
+  protected readonly max?: number;
 
-    @property()
-    protected readonly max?: number;
+  @property()
+  protected readonly valueType!: string;
 
-    @property()
-    protected readonly valueType!: string;
+  static get styles(): CSSResult[] {
+    return [styling, style];
+  }
 
-    static get styles(): CSSResult[] {
-        return [styling, style];
+  protected updated(changedProps: PropertyValues) {
+    if (changedProps.has("thresholds") && this.thresholds) {
+      this.dispatchEvent(new ThresholdChangeEvent(this.thresholds));
     }
-
-    protected updated(changedProps: PropertyValues) {
-        if (changedProps.has('thresholds') && this.thresholds) {
-            this.dispatchEvent(new ThresholdChangeEvent(this.thresholds));
-        }
-        if (changedProps.has('textColors') && this.textColors) {
-            this.dispatchEvent(new TextColorsChangeEvent(this.textColors));
-        }
-        if (changedProps.has('boolColors') && this.boolColors) {
-            this.dispatchEvent(new BoolColorsChangeEvent(this.boolColors));
-        }
+    if (changedProps.has("textColors") && this.textColors) {
+      this.dispatchEvent(new TextColorsChangeEvent(this.textColors));
     }
-
-    private get colorValue() {
-        return (color?: string) => {
-            if (!color) return "#000000";
-            return color.startsWith('#') ? color : '#' + color;
-        }
+    if (changedProps.has("boolColors") && this.boolColors) {
+      this.dispatchEvent(new BoolColorsChangeEvent(this.boolColors));
     }
+  }
 
-    protected render(): TemplateResult {
-        return html`
-            <div id="thresholds-list" class="expanded-panel">
+  private get colorValue() {
+    return (color?: string) => {
+      if (!color) return "#000000";
+      return color.startsWith("#") ? color : "#" + color;
+    };
+  }
 
-                <!-- Thresholds by number -->
-                ${(this.valueType === 'number' || this.valueType === 'integer' || this.valueType === 'positiveInteger'
-                        || this.valueType === 'positiveNumber' || this.valueType === 'negativeInteger'
-                        || this.valueType === 'negativeNumber') ? html`
-                    ${(this.thresholds as [number, string][]).sort((x, y) => (x[0] < y[0]) ? -1 : 1).map((threshold, index) => {
-                        return html`
-                            <div class="threshold-list-item">
-                                <div class="threshold-list-item-colour">
-                                    <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                      this.thresholds[index][1] = event.detail.value;
-                                                      this.requestUpdate('thresholds');
-                                                  }}"
-                                    ></or-mwc-input>
-                                </div>
-                                <or-vaadin-number-field value=${threshold[0]} min=${ifDefined(this.min)} max=${ifDefined(this.max)}
-                                                        ?disabled=${index === 0 && this.max} @change=${(ev: Event) => {
-                                                            const elem = ev.currentTarget as OrVaadinNumberField;
-                                                            if(elem.checkValidity()) {
-                                                                this.thresholds[index][0] = Number(elem.value);
-                                                                this.requestUpdate('thresholds');
-                                                            }
-                                                        }}
-                                ></or-vaadin-number-field>
-                                ${index === 0 ? html`
-                                    <button class="button-clear"
-                                            style="margin-left: 8px;">
-                                        <or-icon icon="lock" style="--or-icon-fill: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});"></or-icon>
-                                    </button>
-                                ` : html`
-                                    <button class="button-clear"
-                                            style="margin-left: 8px;"
-                                            @click="${() => {
-                                                this.removeThreshold(threshold);
-                                            }}">
-                                        <or-icon icon="close-circle"></or-icon>
-                                    </button>
-                                `}
-                            </div>
-                        `
-                    })}
-                    <or-vaadin-button style="margin-top: 8px;" @click=${() => this.addNewThreshold()}>
-                        <or-icon slot="prefix" icon="plus"></or-icon>
-                        <or-translate value="threshold"></or-translate>
-                    </or-vaadin-button>
-                ` : null}
-
-                <!-- Thresholds by boolean -->
-                ${(this.valueType === 'boolean' && this.boolColors) ? html`
-                    <div class="threshold-list-item">
+  protected render(): TemplateResult {
+    return html`
+      <div id="thresholds-list" class="expanded-panel">
+        <!-- Thresholds by number -->
+        ${
+          this.valueType === "number" ||
+          this.valueType === "integer" ||
+          this.valueType === "positiveInteger" ||
+          this.valueType === "positiveNumber" ||
+          this.valueType === "negativeInteger" ||
+          this.valueType === "negativeNumber"
+            ? html`
+                ${(this.thresholds as [number, string][])
+                  .sort((x, y) => (x[0] < y[0] ? -1 : 1))
+                  .map((threshold, index) => {
+                    return html`
+                      <div class="threshold-list-item">
                         <div class="threshold-list-item-colour">
-                            <or-mwc-input type="${InputType.COLOUR}" value="${this.colorValue(this.boolColors?.true)}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {   
-                                          this.onBoolColorChange(true, event.detail.value)}}"
-                            ></or-mwc-input>
+                          <or-mwc-input
+                            type="${InputType.COLOUR}"
+                            value="${threshold[1]}"
+                            @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                              this.thresholds[index][1] = event.detail.value;
+                              this.requestUpdate("thresholds");
+                            }}"
+                          ></or-mwc-input>
                         </div>
-                        <or-vaadin-text-field value="True" readonly></or-vaadin-text-field>
-                    </div>
+                        <or-vaadin-number-field
+                          value=${threshold[0]}
+                          min=${ifDefined(this.min)}
+                          max=${ifDefined(this.max)}
+                          ?disabled=${index === 0 && this.max}
+                          @change=${(ev: Event) => {
+                            const elem = ev.currentTarget as OrVaadinNumberField;
+                            if (elem.checkValidity()) {
+                              this.thresholds[index][0] = Number(elem.value);
+                              this.requestUpdate("thresholds");
+                            }
+                          }}
+                        ></or-vaadin-number-field>
+                        ${
+                          index === 0
+                            ? html`
+                                <button class="button-clear" style="margin-left: 8px;">
+                                  <or-icon
+                                    icon="lock"
+                                    style="--or-icon-fill: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});"
+                                  ></or-icon>
+                                </button>
+                              `
+                            : html`
+                                <button
+                                  class="button-clear"
+                                  style="margin-left: 8px;"
+                                  @click="${() => {
+                                    this.removeThreshold(threshold);
+                                  }}"
+                                >
+                                  <or-icon icon="close-circle"></or-icon>
+                                </button>
+                              `
+                        }
+                      </div>
+                    `;
+                  })}
+                <or-vaadin-button style="margin-top: 8px;" @click=${() => this.addNewThreshold()}>
+                  <or-icon slot="prefix" icon="plus"></or-icon>
+                  <or-translate value="threshold"></or-translate>
+                </or-vaadin-button>
+              `
+            : null
+        }
+
+        <!-- Thresholds by boolean -->
+        ${
+          this.valueType === "boolean" && this.boolColors
+            ? html`
+                <div class="threshold-list-item">
+                  <div class="threshold-list-item-colour">
+                    <or-mwc-input
+                      type="${InputType.COLOUR}"
+                      value="${this.colorValue(this.boolColors?.true)}"
+                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                        this.onBoolColorChange(true, event.detail.value);
+                      }}"
+                    ></or-mwc-input>
+                  </div>
+                  <or-vaadin-text-field value="True" readonly></or-vaadin-text-field>
+                </div>
+                <div class="threshold-list-item">
+                  <div class="threshold-list-item-colour">
+                    <or-mwc-input
+                      type="${InputType.COLOUR}"
+                      value="${this.colorValue(this.boolColors?.false)}"
+                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                        this.onBoolColorChange(false, event.detail.value);
+                      }}"
+                    ></or-mwc-input>
+                  </div>
+                  <or-vaadin-text-field value="False" readonly></or-vaadin-text-field>
+                </div>
+              `
+            : null
+        }
+
+        <!-- Thresholds by string -->
+        ${
+          this.valueType === "text" && this.textColors
+            ? html`
+                ${(this.textColors as [string, string][]).map((threshold, index) => {
+                  return html`
                     <div class="threshold-list-item">
-                        <div class="threshold-list-item-colour">
-                            <or-mwc-input type="${InputType.COLOUR}" value="${this.colorValue(this.boolColors?.false)}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                            this.onBoolColorChange(false, event.detail.value)}}"
-                            ></or-mwc-input>
-                        </div>
-                        <or-vaadin-text-field value="False" readonly></or-vaadin-text-field>
+                      <div class="threshold-list-item-colour">
+                        <or-mwc-input
+                          type="${InputType.COLOUR}"
+                          value="${threshold[1]}"
+                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                            this.textColors[index][1] = event.detail.value;
+                            this.requestUpdate("textColors");
+                          }}"
+                        ></or-mwc-input>
+                      </div>
+                      <or-vaadin-text-field
+                        value=${threshold[0]}
+                        @change=${(ev: Event) => {
+                          this.textColors[index][0] = (ev.currentTarget as OrVaadinTextField).value;
+                          this.requestUpdate("textColors");
+                        }}
+                      ></or-vaadin-text-field>
+                      <button
+                        class="button-clear"
+                        style="margin-left: 8px;"
+                        @click="${() => {
+                          this.removeThreshold(threshold);
+                        }}"
+                      >
+                        <or-icon icon="close-circle"></or-icon>
+                      </button>
                     </div>
-                ` : null}
-
-                <!-- Thresholds by string -->
-                ${(this.valueType === 'text' && this.textColors) ? html`
-                    ${(this.textColors as [string, string][]).map((threshold, index) => {
-                        return html`
-                            <div class="threshold-list-item">
-                                <div class="threshold-list-item-colour">
-                                    <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                      this.textColors[index][1] = event.detail.value;
-                                                      this.requestUpdate('textColors');
-                                                  }}"
-                                    ></or-mwc-input>
-                                </div>
-                                <or-vaadin-text-field value=${threshold[0]}
-                                                      @change=${(ev: Event) => {
-                                                          this.textColors[index][0] = (ev.currentTarget as OrVaadinTextField).value;
-                                                          this.requestUpdate('textColors');
-                                                      }}
-                                ></or-vaadin-text-field>
-                                <button class="button-clear"
-                                        style="margin-left: 8px;"
-                                        @click="${() => {
-                                           this.removeThreshold(threshold);
-                                        }}">
-                                   <or-icon icon="close-circle"></or-icon>
-                               </button>
-                            </div>
-                        `
-                    })}
-                    <or-vaadin-button style="margin-top: 8px;" @click=${() => this.addNewThreshold()}>
-                        <or-icon slot="prefix" icon="plus"></or-icon>
-                        <or-translate value="threshold"></or-translate>
-                    </or-vaadin-button>
-                ` : null}
-            </div>
-        `
-    }
-
-    protected onBoolColorChange(isTrue: boolean, newColor: string) {
-         // in case newColor already has '#' prefix
-        const color = newColor.startsWith('#') ? newColor.substring(1) : newColor;
-        
-        if (!this.boolColors) {
-            this.boolColors = {
-                type: 'boolean',
-                true: '4caf50',
-                false: 'ef5350'
-            };
+                  `;
+                })}
+                <or-vaadin-button style="margin-top: 8px;" @click=${() => this.addNewThreshold()}>
+                  <or-icon slot="prefix" icon="plus"></or-icon>
+                  <or-translate value="threshold"></or-translate>
+                </or-vaadin-button>
+              `
+            : null
         }
+      </div>
+    `;
+  }
 
-        this.boolColors = {
-            ...this.boolColors,
-            [isTrue ? 'true' : 'false']: color
-        };
+  protected onBoolColorChange(isTrue: boolean, newColor: string) {
+    // in case newColor already has '#' prefix
+    const color = newColor.startsWith("#") ? newColor.substring(1) : newColor;
+
+    if (!this.boolColors) {
+      this.boolColors = {
+        type: "boolean",
+        true: "4caf50",
+        false: "ef5350",
+      };
     }
 
-    protected removeThreshold(threshold: [any, string]) {
-        switch (typeof threshold[0]) {
-            case "number":
-                this.thresholds = (this.thresholds as [number, string][]).filter((x) => x !== threshold);
-                break;
-            default: 
-                this.textColors = (this.textColors as [string, string][]).filter((x) => x !== threshold);
-                break;
-        }
-    }
+    this.boolColors = {
+      ...this.boolColors,
+      [isTrue ? "true" : "false"]: color,
+    };
+  }
 
-    protected addThreshold(threshold: [any, string]) {
-        switch (typeof threshold[0]) {
-            case "number":
-                (this.thresholds as [number, string][]).push(threshold as [number, string]);
-                this.requestUpdate('thresholds');
-                break;
-            default:
-                (this.textColors as [string, string][]).push(threshold as [string, string]);
-                this.requestUpdate('textColors');
-                break;
-        }
+  protected removeThreshold(threshold: [any, string]) {
+    switch (typeof threshold[0]) {
+      case "number":
+        this.thresholds = (this.thresholds as [number, string][]).filter((x) => x !== threshold);
+        break;
+      default:
+        this.textColors = (this.textColors as [string, string][]).filter((x) => x !== threshold);
+        break;
     }
+  }
 
-    protected addNewThreshold() {
-        if (this.valueType === 'text') {
-            this.addThreshold(["new", "#000000"]);
-        } else {
-            const suggestedValue = (this.thresholds[this.thresholds.length - 1][0] + 10);
-            this.addThreshold([(!this.max || suggestedValue <= this.max ? suggestedValue : this.max), "#000000"]);
-        }
-        this.updateComplete.then(() => {
-            const elem = this.shadowRoot?.getElementById('thresholds-list') as HTMLElement;
-            const inputField = Array.from(elem.children)[elem.children.length - 2] as HTMLElement;
-            (inputField.children[1] as HTMLElement).setAttribute('focused', 'true');
-        })
+  protected addThreshold(threshold: [any, string]) {
+    switch (typeof threshold[0]) {
+      case "number":
+        (this.thresholds as [number, string][]).push(threshold as [number, string]);
+        this.requestUpdate("thresholds");
+        break;
+      default:
+        (this.textColors as [string, string][]).push(threshold as [string, string]);
+        this.requestUpdate("textColors");
+        break;
     }
+  }
+
+  protected addNewThreshold() {
+    if (this.valueType === "text") {
+      this.addThreshold(["new", "#000000"]);
+    } else {
+      const suggestedValue = this.thresholds[this.thresholds.length - 1][0] + 10;
+      this.addThreshold([!this.max || suggestedValue <= this.max ? suggestedValue : this.max, "#000000"]);
+    }
+    this.updateComplete.then(() => {
+      const elem = this.shadowRoot?.getElementById("thresholds-list") as HTMLElement;
+      const inputField = Array.from(elem.children)[elem.children.length - 2] as HTMLElement;
+      (inputField.children[1] as HTMLElement).setAttribute("focused", "true");
+    });
+  }
 }

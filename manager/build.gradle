@@ -1,251 +1,251 @@
 import java.nio.file.Paths
 
 plugins {
-    id 'java-library'
-    id 'groovy'
-    id 'application'
-    id 'distribution'
-    id 'maven-publish'
-    id 'signing'
-    alias libs.plugins.swagger
+  id 'java-library'
+  id 'groovy'
+  id 'application'
+  id 'distribution'
+  id 'maven-publish'
+  id 'signing'
+  alias libs.plugins.swagger
 }
 
 application {
-    mainClass = "org.openremote.manager.Main"
+  mainClass = "org.openremote.manager.Main"
 }
 
 configurations {
-    demoExtension
+  demoExtension
 }
 
 dependencies {
 
-    api project(":container")
-    api project(":agent")
-    api project(":model")
+  api project(":container")
+  api project(":agent")
+  api project(":model")
 
-    implementation libs.sqliteJdbc
+  implementation libs.sqliteJdbc
 
-    api libs.ical4j
+  api libs.ical4j
 
-    implementation libs.geotoolsMain
-    implementation libs.firebaseAdmin
-    implementation libs.angusMail
-    implementation libs.swaggerJaxrs2Jakarta
-    implementation libs.camelUndertow
+  implementation libs.geotoolsMain
+  implementation libs.firebaseAdmin
+  implementation libs.angusMail
+  implementation libs.swaggerJaxrs2Jakarta
+  implementation libs.camelUndertow
 
-    // Indirect dep from org.apache.activemq:artemis-mqtt-protocol
-    api(libs.nettyCodecMqtt) {
-        version {
-            strictly libs.versions.netty.get()
-        }
+  // Indirect dep from org.apache.activemq:artemis-mqtt-protocol
+  api(libs.nettyCodecMqtt) {
+    version {
+      strictly libs.versions.netty.get()
     }
+  }
 
-    implementation(libs.artemisMqttProtocol) {
-        exclude group: "org.osgi"
-        exclude group: "org.jboss.logmanager"
-    }
+  implementation(libs.artemisMqttProtocol) {
+    exclude group: "org.osgi"
+    exclude group: "org.jboss.logmanager"
+  }
 
-    // Needed for reference in tests
-    api(libs.artemisServer) {
-        exclude group: "org.osgi"
-        exclude group: "org.jboss.logmanager"
-    }
+  // Needed for reference in tests
+  api(libs.artemisServer) {
+    exclude group: "org.osgi"
+    exclude group: "org.jboss.logmanager"
+  }
 
-    implementation(libs.quartz) {
-        exclude module: "c3p0"
-        exclude module: "HikariCP-java7"
-    }
+  implementation(libs.quartz) {
+    exclude module: "c3p0"
+    exclude module: "HikariCP-java7"
+  }
 
-    implementation libs.suncalc
-    implementation libs.prometheusMetricsExporterHttpserver
+  implementation libs.suncalc
+  implementation libs.prometheusMetricsExporterHttpserver
 
-    implementation libs.sshdNetty
+  implementation libs.sshdNetty
 
-    // Select the newest published demo extension up to and including the
-    // current project version, falling back to an earlier version when the
-    // current version has not been published yet.
-    def demoExtensionMaxVersion = project.version.toString().replaceFirst(/-SNAPSHOT$/, "")
-    demoExtension "io.openremote.extension:openremote-demo-setup-extension:(,${demoExtensionMaxVersion}]"
+  // Select the newest published demo extension up to and including the
+  // current project version, falling back to an earlier version when the
+  // current version has not been published yet.
+  def demoExtensionMaxVersion = project.version.toString().replaceFirst(/-SNAPSHOT$/, "")
+  demoExtension "io.openremote.extension:openremote-demo-setup-extension:(,${demoExtensionMaxVersion}]"
 
-    testImplementation libs.groovyAll
-    testImplementation platform(libs.spockBom)
-    testImplementation libs.spockCore
-    testImplementation libs.byteBuddy
-    testImplementation libs.byteBuddyAgent
-    testRuntimeOnly libs.objenesis
+  testImplementation libs.groovyAll
+  testImplementation platform(libs.spockBom)
+  testImplementation libs.spockCore
+  testImplementation libs.byteBuddy
+  testImplementation libs.byteBuddyAgent
+  testRuntimeOnly libs.objenesis
 }
 
 sourceSets {
-    test {
-        groovy.srcDirs = ['test/src/groovy']
-    }
+  test {
+    groovy.srcDirs = ['test/src/groovy']
+  }
 }
 
 base {
-    archivesName = "openremote-${project.name}"
+  archivesName = "openremote-${project.name}"
 }
 
 configurations {
-    runtime {
-        canBeConsumed = true
-        canBeResolved = false
-        extendsFrom implementation, runtimeOnly
-    }
+  runtime {
+    canBeConsumed = true
+    canBeResolved = false
+    extendsFrom implementation, runtimeOnly
+  }
 }
 
 artifacts {
-    runtime(jar)
+  runtime(jar)
 }
 
 afterEvaluate {
-    // Change the working directory for the run task
-    tasks.run.workingDir = rootProject.projectDir
+  // Change the working directory for the run task
+  tasks.run.workingDir = rootProject.projectDir
 }
 
 resolve {
-    outputFileName = 'openapi'
-    outputFormat = 'JSONANDYAML'
-    outputDir = layout.buildDirectory.dir("openapi")
+  outputFileName = 'openapi'
+  outputFormat = 'JSONANDYAML'
+  outputDir = layout.buildDirectory.dir("openapi")
 
-    prettyPrint = true
-    sortOutput = true
-    defaultResponseCode = '200'
+  prettyPrint = true
+  sortOutput = true
+  defaultResponseCode = '200'
 
-    classpath = sourceSets.main.runtimeClasspath
+  classpath = sourceSets.main.runtimeClasspath
 
-    // Required so that the plugin itself uses the Jakarta Swagger/JAX-RS
-    // dependencies from the OpenRemote runtime classpath.
-    buildClasspath = sourceSets.main.runtimeClasspath
+  // Required so that the plugin itself uses the Jakarta Swagger/JAX-RS
+  // dependencies from the OpenRemote runtime classpath.
+  buildClasspath = sourceSets.main.runtimeClasspath
 
-    resourcePackages = ['org.openremote.model']
-    openApiFile = layout.projectDirectory.file('src/main/resources/openapi-base.yaml')
-    objectMapperProcessorClass = 'org.openremote.manager.web.ManagerObjectMapperProcessor'
+  resourcePackages = ['org.openremote.model']
+  openApiFile = layout.projectDirectory.file('src/main/resources/openapi-base.yaml')
+  objectMapperProcessorClass = 'org.openremote.manager.web.ManagerObjectMapperProcessor'
 }
 
 tasks.withType(Sync).configureEach {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 tasks.withType(Tar){
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 tasks.withType(Zip) {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 distributions {
-    main {
-        contents {
-            from(project.projectDir) {
-                include("*Dockerfile", "entrypoint.sh", "heapdump-rename.sh")
-            }
-            into ("web") {
-                from("${rootDir}/LICENSE.txt")
-            }
-            into ("map") {
-                from("${projectDir}/src/map")
-            }
-        }
+  main {
+    contents {
+      from(project.projectDir) {
+        include("*Dockerfile", "entrypoint.sh", "heapdump-rename.sh")
+      }
+      into("web") {
+        from("${rootDir}/LICENSE.txt")
+      }
+      into("map") {
+        from("${projectDir}/src/map")
+      }
     }
+  }
 }
 
 javadoc {
-    failOnError = false
+  failOnError = false
 }
 
 java {
-    withJavadocJar()
-    withSourcesJar()
+  withJavadocJar()
+  withSourcesJar()
 }
 
 def openApiJsonFile = layout.buildDirectory.file('openapi/openapi.json')
 def openApiYamlFile = layout.buildDirectory.file('openapi/openapi.yaml')
 
 publishing {
-    publications {
-        maven(MavenPublication) {
-            group = "io.openremote"
-            artifactId = "openremote-${project.name}"
-            from components.java
+  publications {
+    maven(MavenPublication) {
+      group = "io.openremote"
+      artifactId = "openremote-${project.name}"
+      from components.java
 
-            artifact(openApiJsonFile) {
-                classifier = 'openapi'
-                extension = 'json'
-                builtBy tasks.named('resolve')
-            }
+      artifact(openApiJsonFile) {
+        classifier = 'openapi'
+        extension = 'json'
+        builtBy tasks.named('resolve')
+      }
 
-            artifact(openApiYamlFile) {
-                classifier = 'openapi'
-                extension = 'yaml'
-                builtBy tasks.named('resolve')
-            }
+      artifact(openApiYamlFile) {
+        classifier = 'openapi'
+        extension = 'yaml'
+        builtBy tasks.named('resolve')
+      }
 
-            pom {
-                name = 'OpenRemote Manager'
-                description = 'Provides core container services and is the main component of the OpenRemote backend; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
-                url = 'https://github.com/openremote/openremote'
-                licenses {
-                    license {
-                        name = 'GNU Affero General Public License v3.0'
-                        url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'developers'
-                        name = 'Developers'
-                        email = 'developers@openremote.io'
-                        organization = 'OpenRemote'
-                        organizationUrl = 'https://openremote.io'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:git://github.com/openremote/openremote.git'
-                    developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
-                    url = 'https://github.com/openremote/openremote/tree/master'
-                }
-            }
+      pom {
+        name = 'OpenRemote Manager'
+        description = 'Provides core container services and is the main component of the OpenRemote backend; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
+        url = 'https://github.com/openremote/openremote'
+        licenses {
+          license {
+            name = 'GNU Affero General Public License v3.0'
+            url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
+          }
         }
-    }
-
-    repositories {
-        maven {
-            if (!version.endsWith('-LOCAL')) {
-                credentials {
-                    username = findProperty("publishUsername")
-                    password = findProperty("publishPassword")
-                }
-            }
-            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
+        developers {
+          developer {
+            id = 'developers'
+            name = 'Developers'
+            email = 'developers@openremote.io'
+            organization = 'OpenRemote'
+            organizationUrl = 'https://openremote.io'
+          }
         }
+        scm {
+          connection = 'scm:git:git://github.com/openremote/openremote.git'
+          developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
+          url = 'https://github.com/openremote/openremote/tree/master'
+        }
+      }
     }
+  }
+
+  repositories {
+    maven {
+      if (!version.endsWith('-LOCAL')) {
+        credentials {
+          username = findProperty("publishUsername")
+          password = findProperty("publishPassword")
+        }
+      }
+      url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
+    }
+  }
 }
 
 signing {
-    def signingKey = findProperty("signingKey")
-    def signingPassword = findProperty("signingPassword")
-    if (signingKey && signingPassword) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign publishing.publications.maven
-    }
+  def signingKey = findProperty("signingKey")
+  def signingPassword = findProperty("signingPassword")
+  if (signingKey && signingPassword) {
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.maven
+  }
 }
 
 tasks.named('resolve') {
-    dependsOn tasks.named('classes')
+  dependsOn tasks.named('classes')
 }
 
 tasks.register('generateOpenApi') {
-    group = 'documentation'
-    description = 'Generates the OpenRemote OpenAPI specification'
-    dependsOn tasks.named('resolve')
+  group = 'documentation'
+  description = 'Generates the OpenRemote OpenAPI specification'
+  dependsOn tasks.named('resolve')
 }
 
 // Output version.properties file
 tasks.register('setVersionProperties', WriteProperties) {
-    destinationFile = Paths.get(projectDir.path, "src", "main", "resources", "version.properties").toFile()
-    property 'version', project.version
+  destinationFile = Paths.get(projectDir.path, "src", "main", "resources", "version.properties").toFile()
+  property 'version', project.version
 }
 
 publish.mustRunAfter(setVersionProperties)
@@ -255,15 +255,15 @@ sourcesJar.dependsOn(setVersionProperties)
 
 
 tasks.named("run", JavaExec) {
-    def setupType = System.getenv("OR_SETUP_TYPE")
-    if (setupType != null) {
-        classpath += configurations.demoExtension
-        classpath += files({
-            def setupProject = project(':setup')
-            def targetSourceSet = setupProject.sourceSets.findByName(setupType)
-            if (targetSourceSet != null) {
-                return targetSourceSet.output
-            }
-        })
-    }
+  def setupType = System.getenv("OR_SETUP_TYPE")
+  if (setupType != null) {
+    classpath += configurations.demoExtension
+    classpath += files({
+      def setupProject = project(':setup')
+      def targetSourceSet = setupProject.sourceSets.findByName(setupType)
+      if (targetSourceSet != null) {
+        return targetSourceSet.output
+      }
+    })
+  }
 }

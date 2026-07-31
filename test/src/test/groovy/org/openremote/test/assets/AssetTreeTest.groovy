@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.test.assets
 
 import org.openremote.manager.setup.SetupService
@@ -89,15 +107,15 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
         and: "the asset tree should contain assets"
         assert assetTree.getAssets().size() > 0
 
-        and: "the hasChildren flag should be set correctly"        
-        def livingRoom1 = assetTree.getAssets().find { asset -> 
+        and: "the hasChildren flag should be set correctly"
+        def livingRoom1 = assetTree.getAssets().find { asset ->
             asset.id == managerTestSetup.apartment1LivingroomId
         }
         if (livingRoom1) {
             assert !livingRoom1.hasChildren()
         }
 
-        def smartBuilding = assetTree.getAssets().find { asset -> 
+        def smartBuilding = assetTree.getAssets().find { asset ->
             asset.id == managerTestSetup.smartBuildingId
         }
         if (smartBuilding) {
@@ -127,9 +145,9 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
         def readAssetTreeEvent = new ReadAssetTreeEvent(new AssetQuery()
             .realm(new RealmPredicate(managerTestSetup.realmBuildingName))
             .limit(3))
-        
+
         // Set the response consumer
-        readAssetTreeEvent.setResponseConsumer({ event -> 
+        readAssetTreeEvent.setResponseConsumer({ event ->
             clientEventService.publishEvent(event)
         })
 
@@ -159,9 +177,9 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
             .realm(new RealmPredicate(managerTestSetup.realmBuildingName))
             .limit(3)
             .offset(3))
-        
+
         // Set the response consumer
-        readAssetTreeEvent.setResponseConsumer({ event -> 
+        readAssetTreeEvent.setResponseConsumer({ event ->
             clientEventService.publishEvent(event)
         })
 
@@ -189,9 +207,9 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
         when: "we send a read asset tree event to test the hasChildren flag"
         readAssetTreeEvent = new ReadAssetTreeEvent(new AssetQuery()
             .realm(new RealmPredicate(managerTestSetup.realmBuildingName)))
-        
+
         // Set the response consumer
-        readAssetTreeEvent.setResponseConsumer({ event -> 
+        readAssetTreeEvent.setResponseConsumer({ event ->
             clientEventService.publishEvent(event)
         })
 
@@ -213,11 +231,11 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
 
             and: "the hasMore flag should be false since we queried without a limit"
             assert assetTree3.hasMore() == false
-            
+
 
             and: "the hasChildren flag should be set correctly"
             // Check hasChildren flag for a room asset (should not have children)
-            def livingRoom1 = assetTree3.getAssets().find { asset -> 
+            def livingRoom1 = assetTree3.getAssets().find { asset ->
                 asset.id == managerTestSetup.apartment1LivingroomId
             }
             if (livingRoom1) {
@@ -225,7 +243,7 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
             }
 
             // Check hasChildren flag for a building asset (should have children)
-            def smartBuilding = assetTree3.getAssets().find { asset -> 
+            def smartBuilding = assetTree3.getAssets().find { asset ->
                 asset.id == managerTestSetup.smartBuildingId
             }
             if (smartBuilding) {

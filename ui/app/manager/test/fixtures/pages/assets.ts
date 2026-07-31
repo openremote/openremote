@@ -1,9 +1,31 @@
-import { BasePage, Page, Shared, expect } from "@openremote/test";
-import { Manager } from "../manager";
-import { Asset } from "@openremote/model";
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { type BasePage, type Page, type Shared, expect } from "@openremote/test";
+import type { Manager } from "../manager";
+import type { Asset } from "@openremote/model";
 
 export class AssetsPage implements BasePage {
-  constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}
+  constructor(
+    private readonly page: Page,
+    private readonly shared: Shared,
+    private readonly manager: Manager
+  ) {}
 
   async goto() {
     this.manager.navigateToTab("Assets");
@@ -44,6 +66,6 @@ export class AssetsPage implements BasePage {
     await this.page.click(".mdi-delete");
     await this.page.getByRole("button", { name: "Delete" }).click();
     await expect(assetLocator).toHaveCount(0);
-    manager.assets = manager.assets.filter(a => a.name !== asset); // Remove asset from cache as well
+    manager.assets = manager.assets.filter((a) => a.name !== asset); // Remove asset from cache as well
   }
 }

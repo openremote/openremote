@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { ct, expect } from "@openremote/test";
 
@@ -92,7 +91,9 @@ ct.describe("Height", () => {
 
     // A native resize drag writes an inline height on the textarea;
     // later value changes must not snap it back to the min-rows height.
-    await input.evaluate((el) => { el.style.height = "208px"; });
+    await input.evaluate((el) => {
+      el.style.height = "208px";
+    });
     await input.fill(lines(90));
     await expect(input).toHaveCSS("height", "208px");
   });
@@ -152,7 +153,9 @@ ct.describe("Height", () => {
 
     // Compare on the same element: mount() returns a shared #root locator,
     // so a second mount would measure the same node.
-    await component.evaluate((el: any) => { el.minRows = 8; });
+    await component.evaluate((el: any) => {
+      el.minRows = 8;
+    });
     await expect.poll(async () => (await component.boundingBox())!.height).toBeGreaterThan(twoRows);
   });
 

@@ -1,167 +1,167 @@
 plugins {
-    id 'java-library'
-    id 'groovy'
-    id 'maven-publish'
-    id 'signing'
-    alias libs.plugins.protobuf
+  id 'java-library'
+  id 'groovy'
+  id 'maven-publish'
+  id 'signing'
+  alias libs.plugins.protobuf
 }
 
 dependencies {
 
-    api project(":container")
+  api project(":container")
 
-    api libs.nettyCodec
-    api libs.nettyCodecHttp
+  api libs.nettyCodec
+  api libs.nettyCodecHttp
 
-    api libs.jserialcomm
+  api libs.jserialcomm
 
-    api libs.calimeroCore
+  api libs.calimeroCore
 
-    api(libs.calimeroTools) {
-        // Has a dependency on the SLF4J simple provider
-        exclude group: "org.slf4j"
-    }
+  api(libs.calimeroTools) {
+    // Has a dependency on the SLF4J simple provider
+    exclude group: "org.slf4j"
+  }
 
-    api libs.saxonHe
+  api libs.saxonHe
 
-    //IKEA Tradfri agent dependencies
-    api libs.californiumCore
-    api libs.californiumScandium
+  //IKEA Tradfri agent dependencies
+  api libs.californiumCore
+  api libs.californiumScandium
 
-    api(libs.orZwave) {
-        exclude group: "org.bidib.com.neuronrobotics"
-        exclude group: "jdom" // We don't want to bring jdom 1.x dependency from or-zwave, it contains vulnerabilities
-    }
+  api(libs.orZwave) {
+    exclude group: "org.bidib.com.neuronrobotics"
+    exclude group: "jdom" // We don't want to bring jdom 1.x dependency from or-zwave, it contains vulnerabilities
+  }
 
-    api libs.hiveMqttClient
+  api libs.hiveMqttClient
 
-    api(libs.blessedBluez) {
-        exclude group: "com.github.weliem.blessed-bluez", module: "blessed-test"
-    }
+  api(libs.blessedBluez) {
+    exclude group: "com.github.weliem.blessed-bluez", module: "blessed-test"
+  }
 
-    implementation libs.failsafe
+  implementation libs.failsafe
 
-    implementation libs.angusMail
+  implementation libs.angusMail
 
-    implementation libs.jdom2
+  implementation libs.jdom2
 
-    implementation libs.jacksonDataformatCsv
-    implementation libs.jacksonDatabind
+  implementation libs.jacksonDataformatCsv
+  implementation libs.jacksonDatabind
 
-    implementation libs.grpcNettyShaded
-    implementation libs.grpcProtobuf
-    implementation libs.grpcStub
+  implementation libs.grpcNettyShaded
+  implementation libs.grpcProtobuf
+  implementation libs.grpcStub
 
-    compileOnly libs.javaxAnnotationApi
+  compileOnly libs.javaxAnnotationApi
 
-    testImplementation libs.junitJupiterApi
-    testImplementation libs.mockitoCore
-    testRuntimeOnly libs.junitJupiterEngine
-    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+  testImplementation libs.junitJupiterApi
+  testImplementation libs.mockitoCore
+  testRuntimeOnly libs.junitJupiterEngine
+  testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 
-    implementation libs.bouncycastleBcprovJdk18on
+  implementation libs.bouncycastleBcprovJdk18on
 }
 
 
 def artifactNotation = { dependencyProvider ->
-    def dependency = dependencyProvider.get()
-    "${dependency.group}:${dependency.name}:${dependency.version}"
+  def dependency = dependencyProvider.get()
+  "${dependency.group}:${dependency.name}:${dependency.version}"
 }
 
 protobuf {
-    protoc {
-        artifact = artifactNotation(libs.protoc)
+  protoc {
+    artifact = artifactNotation(libs.protoc)
+  }
+  plugins {
+    grpc {
+      artifact = artifactNotation(libs.protocGenGrpcJava)
     }
-    plugins {
-        grpc {
-            artifact = artifactNotation(libs.protocGenGrpcJava)
-        }
+  }
+  generateProtoTasks {
+    all()*.plugins {
+      grpc {}
     }
-    generateProtoTasks {
-        all()*.plugins {
-            grpc {}
-        }
-    }
+  }
 }
 
 sourceSets {
-    main {
-        proto {
-            srcDirs.clear()
-            srcDirs = [
-                'src/main/proto/chirpstack',
-                'src/main/proto/tts',
-                'src/main/proto/shared'
-            ]
-        }
+  main {
+    proto {
+      srcDirs.clear()
+      srcDirs = [
+        'src/main/proto/chirpstack',
+        'src/main/proto/tts',
+        'src/main/proto/shared'
+      ]
     }
+  }
 }
 
 base {
-    archivesName = "openremote-${project.name}"
+  archivesName = "openremote-${project.name}"
 }
 
 javadoc {
-    failOnError = false
+  failOnError = false
 }
 
 java {
-    withJavadocJar()
-    withSourcesJar()
+  withJavadocJar()
+  withSourcesJar()
 }
 
 publishing {
-    publications {
-        maven(MavenPublication) {
-            group = "io.openremote"
-            artifactId = "openremote-${project.name}"
-            from components.java
-            pom {
-                name = 'OpenRemote Agent'
-                description = 'Provides agent SPI and built in agents; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
-                url = 'https://github.com/openremote/openremote'
-                licenses {
-                    license {
-                        name = 'GNU Affero General Public License v3.0'
-                        url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'developers'
-                        name = 'Developers'
-                        email = 'developers@openremote.io'
-                        organization = 'OpenRemote'
-                        organizationUrl = 'https://openremote.io'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:git://github.com/openremote/openremote.git'
-                    developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
-                    url = 'https://github.com/openremote/openremote/tree/master'
-                }
-            }
+  publications {
+    maven(MavenPublication) {
+      group = "io.openremote"
+      artifactId = "openremote-${project.name}"
+      from components.java
+      pom {
+        name = 'OpenRemote Agent'
+        description = 'Provides agent SPI and built in agents; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
+        url = 'https://github.com/openremote/openremote'
+        licenses {
+          license {
+            name = 'GNU Affero General Public License v3.0'
+            url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
+          }
         }
+        developers {
+          developer {
+            id = 'developers'
+            name = 'Developers'
+            email = 'developers@openremote.io'
+            organization = 'OpenRemote'
+            organizationUrl = 'https://openremote.io'
+          }
+        }
+        scm {
+          connection = 'scm:git:git://github.com/openremote/openremote.git'
+          developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
+          url = 'https://github.com/openremote/openremote/tree/master'
+        }
+      }
     }
+  }
 
-    repositories {
-        maven {
-            if (!version.endsWith('-LOCAL')) {
-                credentials {
-                    username = findProperty("publishUsername")
-                    password = findProperty("publishPassword")
-                }
-            }
-            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
+  repositories {
+    maven {
+      if (!version.endsWith('-LOCAL')) {
+        credentials {
+          username = findProperty("publishUsername")
+          password = findProperty("publishPassword")
         }
+      }
+      url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
     }
+  }
 }
 
 signing {
-    def signingKey = findProperty("signingKey")
-    def signingPassword = findProperty("signingPassword")
-    if (signingKey && signingPassword) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign publishing.publications.maven
-    }
+  def signingKey = findProperty("signingKey")
+  def signingPassword = findProperty("signingPassword")
+  if (signingKey && signingPassword) {
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.maven
+  }
 }

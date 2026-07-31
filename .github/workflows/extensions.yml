@@ -67,7 +67,7 @@ jobs:
   create-extensions-release:
     name: Create release
     runs-on: ubuntu-latest
-    needs: [ check-artifacts, update-openremote-version ]
+    needs: [check-artifacts, update-openremote-version]
     if: ${{ inputs.is_release == 'true' }}
     steps:
       - name: Create extensions release token

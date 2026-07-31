@@ -1,65 +1,65 @@
 plugins {
-    id 'java-library'
+  id 'java-library'
 }
 
 var setupJar = project.hasProperty("SETUP_JAR") ? project.getProperties().get("SETUP_JAR") : ""
 
 base {
-    archivesName = "openremote-${setupJar}-${project.name}"
+  archivesName = "openremote-${setupJar}-${project.name}"
 }
 
 sourceSets {
-    clustering
-    integration
-    load1
-    load2
-    notification
+  clustering
+  integration
+  load1
+  load2
+  notification
 }
 
 // dependencies declaration
 configurations {
-    clusteringImplementation.extendsFrom(implementation)
-    integrationImplementation.extendsFrom(implementation)
-    load1Implementation.extendsFrom(implementation)
-    load2Implementation.extendsFrom(implementation)
-    notificationImplementation.extendsFrom(implementation)
+  clusteringImplementation.extendsFrom(implementation)
+  integrationImplementation.extendsFrom(implementation)
+  load1Implementation.extendsFrom(implementation)
+  load2Implementation.extendsFrom(implementation)
+  notificationImplementation.extendsFrom(implementation)
 }
 
 dependencies {
-    implementation project(":manager")
+  implementation project(":manager")
 }
 
 tasks.register('clusteringJar', Jar) {
-    archiveBaseName.set("openremote-clustering-${project.name}")
-    from sourceSets.clustering.output
+  archiveBaseName.set("openremote-clustering-${project.name}")
+  from sourceSets.clustering.output
 }
 
 tasks.register('load1Jar', Jar) {
-    archiveBaseName.set("openremote-load1-${project.name}")
-    from sourceSets.load1.output
+  archiveBaseName.set("openremote-load1-${project.name}")
+  from sourceSets.load1.output
 }
 
 tasks.register('load2Jar', Jar) {
-    archiveBaseName.set("openremote-load2-${project.name}")
-    from sourceSets.load2.output
+  archiveBaseName.set("openremote-load2-${project.name}")
+  from sourceSets.load2.output
 }
 
 tasks.register('notificationJar', Jar) {
-    archiveBaseName.set("openremote-notification-${project.name}")
-    from sourceSets.notification.output
+  archiveBaseName.set("openremote-notification-${project.name}")
+  from sourceSets.notification.output
 }
 
 tasks.named("compileJava") {
-    dependsOn("load1Jar", "load2Jar")
+  dependsOn("load1Jar", "load2Jar")
 }
 
 tasks.register('installDist', Copy) {
-    def setupTask = getTasksByName("${setupJar}Jar", false)[0] as org.gradle.jvm.tasks.Jar
-    if (setupTask != null) {
-        System.out.println(setupTask.name)
-        dependsOn setupTask
-        dependsOn ":manager:installDist"
-        from setupTask.archiveFile
-        into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
-    }
+  def setupTask = getTasksByName("${setupJar}Jar", false)[0] as org.gradle.jvm.tasks.Jar
+  if (setupTask != null) {
+    System.out.println(setupTask.name)
+    dependsOn setupTask
+    dependsOn ":manager:installDist"
+    from setupTask.archiveFile
+    into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
+  }
 }

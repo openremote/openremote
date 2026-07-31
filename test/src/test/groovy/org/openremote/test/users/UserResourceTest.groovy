@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.test.users
 
@@ -347,15 +346,15 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         when: "a user with ${Constants.WRITE_USER_ROLE} role updates their own user information"
         keycloakTestSetup.testuser3.setAttribute("selfUpdate", "success")
         def updatedUser = regularUserBuildingResource.updateCurrent(null, keycloakTestSetup.testuser3)
-        
+
         then: "the update should succeed"
         updatedUser != null
         updatedUser.attributes.any { it.name == "selfUpdate" && it.value == "success" }
-        
+
         when: "the user tries to update another user's information"
         keycloakTestSetup.testuser2.setAttribute("unauthorizedUpdate", "shouldFail")
         regularUserBuildingResource.updateCurrent(null, keycloakTestSetup.testuser2)
-        
+
         then: "an exception should be thrown"
         thrown(ForbiddenException)
 
@@ -365,10 +364,10 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 
         then: "the update should succeed"
         updatedUser.attributes.any { it.name == "authorizedUpdate" && it.value == "shouldNotFail" }
-        
+
         when: "the admin verifies the user's attributes were updated"
         def verifiedUser = adminUserResource.get(null, keycloakTestSetup.testuser3.realm, keycloakTestSetup.testuser3.id)
-        
+
         then: "the self-update attribute should be present"
         verifiedUser.attributes.any { it.name == "selfUpdate" && it.value == "success" }
 
