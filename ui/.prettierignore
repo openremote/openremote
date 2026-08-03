@@ -6,6 +6,7 @@
 
 # Gradle and Spotless output
 **/build/**
+**/bin/**
 
 # Compiled output
 **/dist/**
@@ -14,7 +15,9 @@
 # Test and coverage output
 **/coverage/**
 **/test-results/**
-**/playwright-report/**
+**/app-test-report/**
+**/component-test-report/**
+**/.auth/**
 
 # Generated files
 **/generated/**
