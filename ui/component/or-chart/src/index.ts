@@ -627,7 +627,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color") || "#FFFFFF",
         tooltip: {
           trigger: "axis",
-          appendTo: 'body',
+          appendTo: "body",
           confine: true,
           extraCssText: "white-space: normal; word-wrap: break-word;",
           axisPointer: {

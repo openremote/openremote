@@ -530,7 +530,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
           backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
           tooltip: {
             trigger: "axis",
-            appendTo: 'body',
+            appendTo: "body",
             confine: true,
             extraCssText: "white-space: normal; word-wrap: break-word;",
             axisPointer: { type: "cross" },

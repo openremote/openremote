@@ -1446,7 +1446,7 @@ export class OrAttributeBarChart extends LitElement {
       backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
       tooltip: {
         trigger: "axis",
-        appendTo: 'body',
+        appendTo: "body",
         confine: true,
         extraCssText: "white-space: normal; word-wrap: break-word;",
         axisPointer: {
