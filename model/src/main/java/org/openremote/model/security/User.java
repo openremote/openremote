@@ -307,7 +307,8 @@ public class User {
             ", firstName='" + firstName + '\'' +
             ", lastName='" + lastName + '\'' +
             ", email='" + email + '\'' +
-            ", enabled=" + enabled +
+            ", enabled=" + enabled + '\'' +
+            ", attributes=" + (attributes != null ? Arrays.toString(attributes.toArray()) : "") +
             '}';
     }
 }

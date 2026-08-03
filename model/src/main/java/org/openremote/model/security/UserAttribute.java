@@ -26,6 +26,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
+import java.util.Objects;
+
 @Entity
 @Subselect("select * from PUBLIC.USER_ATTRIBUTE") // Map this immutable to an SQL view, don't use/create table
 public class UserAttribute {
@@ -54,4 +56,25 @@ public class UserAttribute {
     public String getValue() {
         return value;
     }
+
+   @Override
+   public boolean equals(Object o) {
+      if (o == null || getClass() != o.getClass()) return false;
+      UserAttribute that = (UserAttribute) o;
+      return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(value, that.value);
+   }
+
+   @Override
+   public int hashCode() {
+      return Objects.hash(id, name, value);
+   }
+
+   @Override
+   public String toString() {
+      return "UserAttribute{" +
+         "id='" + id + '\'' +
+         ", name='" + name + '\'' +
+         ", value='" + value + '\'' +
+         '}';
+   }
 }
