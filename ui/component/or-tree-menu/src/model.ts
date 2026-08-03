@@ -92,9 +92,9 @@ export class OrTreeDragEvent extends CustomEvent<OrTreeGroupEventDetail> {
             composed: true,
             cancelable: true,
             detail: {
-                nodes: nodes,
-                groupNode: groupNode,
-                newNodes: newNodes
+                nodes,
+                groupNode,
+                newNodes
             } as OrTreeGroupEventDetail
         });
     }

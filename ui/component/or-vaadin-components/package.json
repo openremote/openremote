@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-vaadin-components",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "Vaadin Components packaged as components aligned with the OpenRemote design system",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -36,6 +36,7 @@
     "@vaadin/checkbox": "~25.2.4",
     "@vaadin/checkbox-group": "~25.2.4",
     "@vaadin/combo-box": "~25.2.4",
+    "@vaadin/confirm-dialog": "~25.2.4",
     "@vaadin/date-picker": "~25.2.4",
     "@vaadin/date-time-picker": "~25.2.4",
     "@vaadin/dialog": "~25.2.4",

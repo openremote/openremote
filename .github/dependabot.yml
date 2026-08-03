@@ -12,7 +12,10 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Europe/Amsterdam"
     groups:
       vaadin:
         patterns:
@@ -38,5 +41,8 @@ updates:
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Europe/Amsterdam"
     rebase-strategy: disabled # Prevent unnecessary pipeline runs

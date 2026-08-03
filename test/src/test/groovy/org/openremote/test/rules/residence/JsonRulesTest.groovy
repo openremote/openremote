@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.test.rules.residence
 
 import com.google.firebase.messaging.Message
@@ -387,33 +405,33 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                     message.type == EmailNotificationMessage.TYPE
                 }
             }
-            
+
             // Verify email content
             assert emailMessages.stream().allMatch {
                 it.getMessages().values().stream().allMatch(m -> {
                     ((EmailNotificationMessage) m).getHtml() == expectedHtml
                 })
             }
-            
+
             assert emailMessages.stream().filter {
                 it.getMessages().values().stream().allMatch {
                     ((EmailNotificationMessage) it).getSubject() == "Demo Apartment - All Lights Off"
                 }
             }.count() == 3
-            
+
             assert emailMessages.stream().filter {
                 it.getMessages().values().stream().allMatch {
                     ((EmailNotificationMessage) it).getSubject() == "Linked user localized user test"
                 }
             }.count() == 2
-            
+
             // Get push messages
             def pushMessages = localizedMessages.findAll { localizedMsg ->
                 localizedMsg.getMessages().values().stream().allMatch { message ->
                     message.type == PushNotificationMessage.TYPE
                 }
             }
-            
+
             // Verify push notifications
             def assetIdPushNotification = pushMessages.find { localizedMsg ->
                 localizedMsg.getMessages().get("en") instanceof PushNotificationMessage &&
@@ -436,7 +454,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             // Count notifications for users with test-realm-role
             def linkedNotifications = pushTargetsAndMessages.findAll {
-                it.v2.title == "Linked Asset ID Test" && 
+                it.v2.title == "Linked Asset ID Test" &&
                 it.v2.body == "This notification is about asset: ${consoleRegistration.id}"
             }
             assert linkedNotifications.size() == 2 // should be sent to both linked users
@@ -447,7 +465,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             // First find the relevant message
             def targetMessage = pushTargetsAndMessages.find { it.v2.title == "URL Asset ID Test" }
             assert targetMessage != null
-            
+
             // Then verify URL
             assert targetMessage.v2.action?.url == "/assets/${consoleRegistration.id}/details"
         }
@@ -462,7 +480,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             pushTargetsAndMessages.each { target, msg ->
                 println "Target: ${target}, Message: title='${msg.title}', body='${msg.body}'"
             }
-            
+
             assert pushTargetsAndMessages.any {
                 it.v1.type == Notification.TargetType.ASSET &&
                 it.v2.title == "Asset ID Test" &&
@@ -483,6 +501,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
+
+        and: "the engine should have fired with the console inside the geofence, resetting the rule for the console"
+        awaitInsideGeofenceEvaluated(realmBuildingEngine, consoleRegistration.id, conditions)
 
         when: "the console device moves outside the home geofence again (as defined in the rule)"
         emailMessages.clear()
@@ -537,6 +558,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
 
+        and: "the engine should have fired with the console inside the geofence, resetting the rule for the console"
+        awaitInsideGeofenceEvaluated(realmBuildingEngine, consoleRegistration.id, conditions)
+
         when: "the console device moves outside the home geofence again (as defined in the rule)"
         attributeEvent = new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d))
         assetProcessingService.sendAttributeEvent(attributeEvent)
@@ -554,6 +578,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
+
+        and: "the engine should have fired with the console inside the geofence, resetting the rule for the console"
+        awaitInsideGeofenceEvaluated(realmBuildingEngine, consoleRegistration.id, conditions)
 
         when: "when time advances 5 hours"
         advancePseudoClock(5, HOURS, container)
@@ -881,7 +908,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 .setRealm(keycloakTestSetup.realmBuilding.name)
                 .setLocation(new GeoJSONPoint(0, 0))
 
-     
+
         def ruleState = new MetaItem<>(MetaItemType.RULE_STATE)
         lightAsset.getAttributes().get("brightness").get().addMeta(ruleState)
         lightAsset.getAttributes().get("onOff").get().addMeta(ruleState)
@@ -1298,7 +1325,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 .setRealm(keycloakTestSetup.realmBuilding.name)
                 .setLocation(new GeoJSONPoint(0, 0))
 
-     
+
         def ruleState = new MetaItem<>(MetaItemType.RULE_STATE)
         lightAsset.getAttributes().get("brightness").get().addMeta(ruleState)
         lightAsset.getAttributes().get("onOff").get().addMeta(ruleState)
@@ -1761,5 +1788,19 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         cleanup: "disable mock filter"
         mockServer.finished = true
+    }
+
+    /**
+     * A rule only fires for the console again once it has stopped matching it, so the engine must complete an execution
+     * with the inside location before the console can be moved out again.
+     */
+    private static void awaitInsideGeofenceEvaluated(RulesEngine engine, String consoleId, PollingConditions conditions) {
+        conditions.eventually {
+            def assetState = engine.facts.assetStates.find {it.id == consoleId && it.name == Asset.LOCATION.name}
+            assert assetState != null
+            assert assetState.getValue(GeoJSONPoint.class).map{it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x}.orElse(false)
+            assert assetState.getValue(GeoJSONPoint.class).map{it.y == ManagerTestSetup.SMART_BUILDING_LOCATION.y}.orElse(false)
+            assert engine.lastFireTimestamp > assetState.timestamp
+        }
     }
 }

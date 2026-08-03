@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,13 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.system;
+
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,27 +26,36 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import org.openremote.model.Constants;
-
 import java.util.Map;
+import org.openremote.model.Constants;
+import org.openremote.model.http.OpenApiResponses;
 
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-
-@Tag(name = "Status", description = "Operations on system status")
+@Tag(name = "Status", description = "Read Manager health and build information")
 @Path("")
 public interface StatusResource {
 
-    // TODO: Replace this with prometheus metrics
-    @Path("health")
-    @GET
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    @Operation(operationId = "getHealthStatus", summary = "Retrieve the health status of the system")
-    Map<String, Object> getHealthStatus();
+  // TODO: Replace this with prometheus metrics
+  @Path("health")
+  @GET
+  @Produces(APPLICATION_JSON)
+  @RolesAllowed({Constants.READ_ADMIN_ROLE})
+  @Operation(
+      operationId = "getHealthStatus",
+      summary = "Retrieve the health status of the system",
+      description =
+          "Returns health data keyed by registered health-provider name. A null provider result is represented as JSON null.")
+  @OpenApiResponses.Ok
+  @OpenApiResponses.Authenticated
+  Map<String, Object> getHealthStatus();
 
-    @Path("info")
-    @GET
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getInfo", summary = "Retrieve the system information")
-    Map<String, Object> getInfo();
+  @Path("info")
+  @GET
+  @Produces(APPLICATION_JSON)
+  @Operation(
+      operationId = "getInfo",
+      summary = "Retrieve the system information",
+      description =
+          "Returns public bootstrap information, including the Manager version and identity-provider URL.")
+  @OpenApiResponses.Ok
+  Map<String, Object> getInfo();
 }

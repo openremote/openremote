@@ -24,11 +24,10 @@ x-logging: &awslogs
     options:
       awslogs-region: ${AWS_REGION:-eu-west-1}
       awslogs-group: ${OR_HOSTNAME}
-      awslogs-create-group: 'true'
+      awslogs-create-group: "true"
       tag: "{{.Name}}/{{.ID}}"
 
 services:
-
   deployment:
     image: openremote/deployment:${DEPLOYMENT_VERSION?DEPLOYMENT_VERSION must be set}
     volumes:
@@ -90,7 +89,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
-      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
+      KC_LOG_CONSOLE_FORMAT: "%-5p [%c] (%t) %s%e%n"
     <<: *awslogs
 
   manager:
@@ -127,4 +126,3 @@ services:
       - manager-data:/storage
       - deployment-data:/deployment
     <<: *awslogs
-

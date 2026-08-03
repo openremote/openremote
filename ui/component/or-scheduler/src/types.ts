@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,20 +12,15 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { Frequency as FrequencyValue, Options } from "rrule";
+import type { Frequency as FrequencyValue, Options } from "rrule";
 
 export type ByRRuleParts = Pick<
-    Options,
-    | "bymonth"
-    | "byweekno"
-    | "byyearday"
-    | "bymonthday"
-    | "byweekday"
-    | "byhour"
-    | "byminute"
-    | "bysecond"
+  Options,
+  "bymonth" | "byweekno" | "byyearday" | "bymonthday" | "byweekday" | "byhour" | "byminute" | "bysecond"
 >;
 export type ByRRulePartsKeys = keyof ByRRuleParts;
 export type ByRRuleCombination = Record<keyof typeof FrequencyValue, ByRRulePartsKeys[]>;
@@ -60,20 +52,14 @@ export type ByRRuleCombination = Record<keyof typeof FrequencyValue, ByRRulePart
  * @see {@link RRule} and {@link https://labix.org/python-dateutil/#head-a65103993a21b717f6702063f3717e6e75b4ba66|python-dateutil}.
  */
 export type RRuleParts = Pick<
-    Options,
-    | "interval"
-    | "freq" // Must exist (should default to DAILY?)
-    | "count"
-    | "until"
-> & ByRRuleParts;
+  Options,
+  | "interval"
+  | "freq" // Must exist (should default to DAILY?)
+  | "count"
+  | "until"
+> &
+  ByRRuleParts;
 
 export type Frequency = keyof typeof FrequencyValue;
 export type RRulePartKeys = keyof RRuleParts;
-export type PartKeys =
-  | RRulePartKeys
-  | "start"
-  | "start-time"
-  | "end"
-  | "end-time"
-  | "all-day"
-  | "recurrence-ends";
+export type PartKeys = RRulePartKeys | "start" | "start-time" | "end" | "end-time" | "all-day" | "recurrence-ends";

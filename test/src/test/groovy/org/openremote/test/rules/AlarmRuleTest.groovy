@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.test.rules
 
 import jakarta.mail.Message
@@ -26,8 +44,6 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-
-import java.time.Instant
 
 class AlarmRuleTest extends Specification implements ManagerContainerTrait {
 
@@ -157,6 +173,9 @@ getLOG()
         }
 
         and: "the created alarm matches the rule action configuration"
+        // Timestamps are written from the container clock, which the test setup puts ahead of the wall clock, so the
+        // wall clock cannot be used as the upper bound
+        def alarmClockNow = getInstantTimeOf(container)
         def alarm = alarms.get(0)
         alarm.id >= 0L
         alarm.realm == managerTestSetup.realmBuildingName
@@ -171,21 +190,27 @@ Value: 6000
         alarm.status == Alarm.Status.OPEN
         alarm.source == Alarm.Source.REALM_RULESET
         alarm.sourceId == Long.toString(realmRuleset.id)
-        alarm.createdOn.isAfter(Instant.now().minusSeconds(30))
-        alarm.createdOn.isBefore(Instant.now())
+        alarm.createdOn.isAfter(alarmClockNow.minusSeconds(30))
+        !alarm.createdOn.isAfter(alarmClockNow)
         alarm.acknowledgedOn == null
         alarm.createdOn == alarm.lastModified
         alarm.assigneeId == assigneeId
 
         and: "the asset is linked to the alarm"
-        def assetLinks = alarmService.getAssetLinks(alarm.id, managerTestSetup.realmBuildingName)
-        assetLinks.size() == 1
+        def assetLinks = null
+        conditions.eventually {
+            // The link is stored in its own transaction after the alarm, so it can still be missing once the alarm is
+            // readable
+            assetLinks = alarmService.getAssetLinks(alarm.id, managerTestSetup.realmBuildingName)
+            assert assetLinks.size() == 1
+        }
+        def linkClockNow = getInstantTimeOf(container)
         def assetLink = assetLinks.get(0)
         assetLink.id.alarmId == alarm.id
         assetLink.id.realm == managerTestSetup.realmBuildingName
         assetLink.id.assetId == managerTestSetup.apartment2LivingroomId
-        assetLink.createdOn.isAfter(Instant.now().minusSeconds(30))
-        assetLink.createdOn.isBefore(Instant.now())
+        assetLink.createdOn.isAfter(linkClockNow.minusSeconds(30))
+        !assetLink.createdOn.isAfter(linkClockNow)
         assetLink.assetName == "Living Room 2"
         assetLink.parentAssetName == "Apartment 2"
 

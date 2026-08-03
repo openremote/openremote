@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.test.protocol.http
 
@@ -209,7 +208,9 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         assetStorageService.delete([agent.id])
 
         then: "the associated protocol instance should be un-deployed"
-        conditions.eventually {
+        // Un-deploying takes the agent lock and tears down a servlet deployment, so it can be held up by other agents
+        // being deployed at the same time
+        new PollingConditions(timeout: 30, initialDelay: 1).eventually {
             assert agentService.getProtocolInstance(agent.id) == null
             assert Servlets.defaultContainer().getDeployment(AbstractHTTPServerProtocol.getDeploymentName(TestHTTPServerProtocol.class, agent.id)) == null
         }

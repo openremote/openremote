@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,23 +12,25 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { TreeNode } from "@openremote/or-tree-menu";
-import { ExternalService } from "@openremote/model";
+import type { TreeNode } from "@openremote/or-tree-menu";
+import type { ExternalService } from "@openremote/model";
 
 export enum ExternalServiceStatusIcon {
-    AVAILABLE = "play",
-    UNAVAILABLE = "alert-octagon",
+  AVAILABLE = "play",
+  UNAVAILABLE = "alert-octagon",
 }
 
 export enum ExternalServiceStatusColor {
-    AVAILABLE = "iconfill-gray",
-    UNAVAILABLE = "iconfill-red",
+  AVAILABLE = "iconfill-gray",
+  UNAVAILABLE = "iconfill-red",
 }
 
 export interface ServiceTreeNode extends TreeNode {
-    service?: ExternalService;
+  service?: ExternalService;
 }
 
 /**
@@ -39,13 +38,13 @@ export interface ServiceTreeNode extends TreeNode {
  * Once a service is selected, the selected service will be shared with the consumer elements.
  */
 export class OrServiceSelectedEvent extends CustomEvent<ExternalService> {
-    public static readonly NAME = "or-service-selected";
+  public static readonly NAME = "or-service-selected";
 
-    constructor(service: ExternalService) {
-        super(OrServiceSelectedEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: service,
-        });
-    }
+  constructor(service: ExternalService) {
+    super(OrServiceSelectedEvent.NAME, {
+      bubbles: true,
+      composed: true,
+      detail: service,
+    });
+  }
 }

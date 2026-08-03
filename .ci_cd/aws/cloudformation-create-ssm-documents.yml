@@ -4,8 +4,8 @@
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'SSM documents for attaching, detaching and replacing an EBS data volume'
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "SSM documents for attaching, detaching and replacing an EBS data volume"
 Resources:
   SSMMountVolumeDocument:
     Type: AWS::SSM::Document
@@ -15,13 +15,13 @@ Resources:
       TargetType: /AWS::EC2::Instance
       Name: mount_volume
       Content:
-        schemaVersion: '2.2'
-        description: 'Script for mounting an EBS data volume'
+        schemaVersion: "2.2"
+        description: "Script for mounting an EBS data volume"
         parameters:
           DeviceName:
             type: String
-            description: '(Required) Specify the Device name where the volume should be mounted on'
-            allowedPattern: '^/dev/sd[b-z]$'
+            description: "(Required) Specify the Device name where the volume should be mounted on"
+            allowedPattern: "^/dev/sd[b-z]$"
         mainSteps:
           # Mount the specified EBS data volume to the instance
           - name: MountVolume
@@ -65,13 +65,13 @@ Resources:
       TargetType: /AWS::EC2::Instance
       Name: umount_volume
       Content:
-        schemaVersion: '2.2'
-        description: 'Script for umounting an EBS data volume'
+        schemaVersion: "2.2"
+        description: "Script for umounting an EBS data volume"
         parameters:
           DeviceName:
             type: String
-            description: '(Required) Specify the Device name where the volume is mounted on'
-            allowedPattern: '^/dev/sd[b-z]$'
+            description: "(Required) Specify the Device name where the volume is mounted on"
+            allowedPattern: "^/dev/sd[b-z]$"
         mainSteps:
           # Stop the Docker service and socket
           - name: StopDocker
@@ -83,7 +83,7 @@ Resources:
           - name: RemoveFileSystemEntry
             action: aws:runShellScript
             inputs:
-              runCommand: 
+              runCommand:
                 - |
                   UUID=$(blkid -o value -s UUID {{ DeviceName }})
                   if [ -n "$UUID" ]; then
@@ -114,21 +114,21 @@ Resources:
       TargetType: /AWS::EC2::Instance
       Name: attach_volume
       Content:
-        schemaVersion: '0.3'
-        description: 'Script for attaching an EBS data volume'
+        schemaVersion: "0.3"
+        description: "Script for attaching an EBS data volume"
         parameters:
           VolumeId:
             type: String
-            description: '(Required) Specify the VolumeId of the volume that should be attached'
-            allowedPattern: '^vol-[a-z0-9]{8,17}$'
+            description: "(Required) Specify the VolumeId of the volume that should be attached"
+            allowedPattern: "^vol-[a-z0-9]{8,17}$"
           InstanceId:
             type: String
-            description: '(Required) Specify the InstanceId of the instance where the volume should be attached'
-            allowedPattern: '^i-[a-z0-9]{8,17}$'
+            description: "(Required) Specify the InstanceId of the instance where the volume should be attached"
+            allowedPattern: "^i-[a-z0-9]{8,17}$"
           DeviceName:
             type: String
-            description: '(Required) Specify the Device name where the volume should be mounted on'
-            allowedPattern: '^/dev/sd[b-z]$'
+            description: "(Required) Specify the Device name where the volume should be mounted on"
+            allowedPattern: "^/dev/sd[b-z]$"
         mainSteps:
           # Retrieve instance details to get the Host name.
           - name: GetInstanceDetails
@@ -139,7 +139,7 @@ Resources:
               Service: ec2
               Api: DescribeInstances
               InstanceIds:
-                - '{{ InstanceId }}'
+                - "{{ InstanceId }}"
             outputs:
               - Name: Host
                 Selector: $.Reservations[0].Instances[0].Tags[?(@.Key == 'Name')].Value
@@ -154,9 +154,9 @@ Resources:
             inputs:
               Service: ec2
               Api: AttachVolume
-              VolumeId: '{{ VolumeId }}'
-              InstanceId: '{{ InstanceId }}'
-              Device: '{{ DeviceName }}'
+              VolumeId: "{{ VolumeId }}"
+              InstanceId: "{{ InstanceId }}"
+              Device: "{{ DeviceName }}"
             nextStep: WaitForVolumeAttachment
           # Wait until the EBS data volume is successfully attached
           - name: WaitForVolumeAttachment
@@ -167,8 +167,8 @@ Resources:
               Service: ec2
               Api: DescribeVolumes
               VolumeIds:
-                - '{{ VolumeId }}'
-              PropertySelector: '$.Volumes[0].Attachments[0].State'
+                - "{{ VolumeId }}"
+              PropertySelector: "$.Volumes[0].Attachments[0].State"
               DesiredValues:
                 - attached
             nextStep: MountVolume
@@ -182,9 +182,9 @@ Resources:
               DocumentName: mount_volume
               Parameters:
                 DeviceName:
-                  - '{{ DeviceName }}'
+                  - "{{ DeviceName }}"
               InstanceIds:
-                - '{{ InstanceId }}'
+                - "{{ InstanceId }}"
             nextStep: WaitForVolumeMounting
           # Wait until the EBS data volume is successfully mounted
           - name: WaitForVolumeMounting
@@ -194,9 +194,9 @@ Resources:
             inputs:
               Service: ssm
               Api: GetCommandInvocation
-              CommandId: '{{ MountVolume.CommandId }}'
-              InstanceId: '{{ InstanceId }}'
-              PropertySelector: '$.StatusDetails'
+              CommandId: "{{ MountVolume.CommandId }}"
+              InstanceId: "{{ InstanceId }}"
+              PropertySelector: "$.StatusDetails"
               DesiredValues:
                 - Success
             nextStep: UpdateTag
@@ -207,11 +207,11 @@ Resources:
             onFailure: Abort
             inputs:
               ResourceType: EC2
-              ResourceIds: 
-                - '{{ VolumeId }}'
+              ResourceIds:
+                - "{{ VolumeId }}"
               Tags:
                 - Key: Type
-                  Value: '{{ GetInstanceDetails.Host }}-or-data-in-use'
+                  Value: "{{ GetInstanceDetails.Host }}-or-data-in-use"
 
   SSMDetachVolumeDocument:
     Type: AWS::SSM::Document
@@ -221,13 +221,13 @@ Resources:
       TargetType: /AWS::EC2::Instance
       Name: detach_volume
       Content:
-        schemaVersion: '0.3'
-        description: 'Script for detaching an EBS data volume'
+        schemaVersion: "0.3"
+        description: "Script for detaching an EBS data volume"
         parameters:
           VolumeId:
             type: String
-            description: '(Required) Specify the VolumeId of the volume that should be detached'
-            allowedPattern: '^vol-[a-z0-9]{8,17}$'
+            description: "(Required) Specify the VolumeId of the volume that should be detached"
+            allowedPattern: "^vol-[a-z0-9]{8,17}$"
         mainSteps:
           # Retrieve EBS data volume details to get the InstanceId and Devicename
           - name: GetVolumeDetails
@@ -238,13 +238,13 @@ Resources:
               Service: ec2
               Api: DescribeVolumes
               VolumeIds:
-                - '{{ VolumeId }}'
+                - "{{ VolumeId }}"
             outputs:
               - Name: InstanceId
-                Selector: '$.Volumes[0].Attachments[0].InstanceId'
+                Selector: "$.Volumes[0].Attachments[0].InstanceId"
                 Type: String
               - Name: DeviceName
-                Selector: '$.Volumes[0].Attachments[0].Device'
+                Selector: "$.Volumes[0].Attachments[0].Device"
                 Type: String
             nextStep: GetInstanceDetails
           # Retrieve instance details to get the Hostname
@@ -256,7 +256,7 @@ Resources:
               Service: ec2
               Api: DescribeInstances
               InstanceIds:
-                - '{{ GetVolumeDetails.InstanceId }}'
+                - "{{ GetVolumeDetails.InstanceId }}"
             outputs:
               - Name: Host
                 Selector: $.Reservations[0].Instances[0].Tags[?(@.Key == 'Name')].Value
@@ -269,11 +269,11 @@ Resources:
             onFailure: Abort
             inputs:
               DocumentName: umount_volume
-              Parameters: 
-                DeviceName: 
-                  - '{{ GetVolumeDetails.DeviceName }}'
+              Parameters:
+                DeviceName:
+                  - "{{ GetVolumeDetails.DeviceName }}"
               InstanceIds:
-                - '{{ GetVolumeDetails.InstanceId }}'
+                - "{{ GetVolumeDetails.InstanceId }}"
             nextStep: WaitForUmount
           # Wait until the SSM document for umounting the EBS data volume is successfully executed
           - name: WaitForUmount
@@ -283,9 +283,9 @@ Resources:
             inputs:
               Service: ssm
               Api: GetCommandInvocation
-              CommandId: '{{ UmountVolume.CommandId }}'
-              InstanceId: '{{ GetVolumeDetails.InstanceId }}'
-              PropertySelector: '$.StatusDetails'
+              CommandId: "{{ UmountVolume.CommandId }}"
+              InstanceId: "{{ GetVolumeDetails.InstanceId }}"
+              PropertySelector: "$.StatusDetails"
               DesiredValues:
                 - Success
             nextStep: DetachVolume
@@ -298,7 +298,7 @@ Resources:
             inputs:
               Service: ec2
               Api: DetachVolume
-              VolumeId: '{{ VolumeId }}'
+              VolumeId: "{{ VolumeId }}"
             nextStep: WaitForVolumeDetachment
           # Wait until the EBS data volume is succesfully detached
           - name: WaitForVolumeDetachment
@@ -308,9 +308,9 @@ Resources:
             inputs:
               Service: ec2
               Api: DescribeVolumes
-              VolumeIds: 
-                - '{{ VolumeId }}'
-              PropertySelector: '$.Volumes[0].State'
+              VolumeIds:
+                - "{{ VolumeId }}"
+              PropertySelector: "$.Volumes[0].State"
               DesiredValues:
                 - available
             nextStep: UpdateTag
@@ -321,12 +321,12 @@ Resources:
             onFailure: Abort
             inputs:
               ResourceType: EC2
-              ResourceIds: 
-                - '{{ VolumeId }}'
+              ResourceIds:
+                - "{{ VolumeId }}"
               Tags:
                 - Key: Type
-                  Value: '{{ GetInstanceDetails.Host }}-or-data-not-in-use'
-  
+                  Value: "{{ GetInstanceDetails.Host }}-or-data-not-in-use"
+
   SSMReplaceVolumeDocument:
     Type: AWS::SSM::Document
     Properties:
@@ -335,20 +335,20 @@ Resources:
       TargetType: /AWS::EC2::Instance
       Name: replace_volume
       Content:
-        schemaVersion: '0.3'
-        description: 'Script for replacing an EBS data volume with a specified snapshot'
+        schemaVersion: "0.3"
+        description: "Script for replacing an EBS data volume with a specified snapshot"
         parameters:
           VolumeId:
             type: String
-            description: '(Required) Specify the VolumeId of the volume that needs to be replaced'
-            allowedPattern: '^vol-[a-z0-9]{8,17}$'
+            description: "(Required) Specify the VolumeId of the volume that needs to be replaced"
+            allowedPattern: "^vol-[a-z0-9]{8,17}$"
           SnapshotId:
             type: String
-            description: '(Required) Specify the SnapshotId of the snapshot to be used for the new volume'
-            allowedPattern: '^snap-[a-z0-9]{8,17}$'
+            description: "(Required) Specify the SnapshotId of the snapshot to be used for the new volume"
+            allowedPattern: "^snap-[a-z0-9]{8,17}$"
           DeleteVolume:
             type: Boolean
-            description: '(Optional) Choose whether you want to delete the current volume'
+            description: "(Optional) Choose whether you want to delete the current volume"
             default: false
         mainSteps:
           # Retrieve EBS data volume details to get the DeviceName and InstanceId
@@ -360,13 +360,13 @@ Resources:
               Service: ec2
               Api: DescribeVolumes
               VolumeIds:
-                - '{{ VolumeId }}'
+                - "{{ VolumeId }}"
             outputs:
               - Name: InstanceId
-                Selector: '$.Volumes[0].Attachments[0].InstanceId'
+                Selector: "$.Volumes[0].Attachments[0].InstanceId"
                 Type: String
               - Name: DeviceName
-                Selector: '$.Volumes[0].Attachments[0].Device'
+                Selector: "$.Volumes[0].Attachments[0].Device"
                 Type: String
             nextStep: GetInstanceDetails
           # Retrieve instance details to get the AvailabilityZone and Hostname
@@ -378,10 +378,10 @@ Resources:
               Service: ec2
               Api: DescribeInstances
               InstanceIds:
-                - '{{ GetVolumeDetails.InstanceId }}'
+                - "{{ GetVolumeDetails.InstanceId }}"
             outputs:
               - Name: AvailabilityZone
-                Selector: '$.Reservations[0].Instances[0].Placement.AvailabilityZone'
+                Selector: "$.Reservations[0].Instances[0].Placement.AvailabilityZone"
                 Type: String
               - Name: Host
                 Selector: $.Reservations[0].Instances[0].Tags[?(@.Key == 'Name')].Value
@@ -395,19 +395,19 @@ Resources:
             inputs:
               Service: ec2
               Api: CreateVolume
-              AvailabilityZone: '{{ GetInstanceDetails.AvailabilityZone }}'
-              SnapshotId: '{{ SnapshotId }}'
+              AvailabilityZone: "{{ GetInstanceDetails.AvailabilityZone }}"
+              SnapshotId: "{{ SnapshotId }}"
               VolumeType: gp3
               TagSpecifications:
                 - ResourceType: volume
                   Tags:
                     - Key: Name
-                      Value: '{{ GetInstanceDetails.Host }}-data'
+                      Value: "{{ GetInstanceDetails.Host }}-data"
                     - Key: Type
-                      Value: '{{ GetInstanceDetails.Host }}-or-data-not-in-use'
+                      Value: "{{ GetInstanceDetails.Host }}-or-data-not-in-use"
             outputs:
               - Name: VolumeId
-                Selector: '$.VolumeId'
+                Selector: "$.VolumeId"
                 Type: String
             nextStep: WaitForVolumeCreation
           # Wait until the EBS data volume is succesfully created
@@ -419,8 +419,8 @@ Resources:
               Service: ec2
               Api: DescribeVolumes
               VolumeIds:
-                - '{{ CreateVolume.VolumeId }}'
-              PropertySelector: '$.Volumes[0].State'
+                - "{{ CreateVolume.VolumeId }}"
+              PropertySelector: "$.Volumes[0].State"
               DesiredValues:
                 - available
             nextStep: DetachVolume
@@ -433,8 +433,8 @@ Resources:
             inputs:
               DocumentName: detach_volume
               RuntimeParameters:
-                VolumeId: 
-                  - '{{ VolumeId }}'
+                VolumeId:
+                  - "{{ VolumeId }}"
             nextStep: WaitForVolumeDetachment
           # Wait until the current EBS data volume is succesfully detached
           - name: WaitForVolumeDetachment
@@ -444,8 +444,8 @@ Resources:
             inputs:
               Service: ssm
               Api: GetAutomationExecution
-              AutomationExecutionId: '{{ DetachVolume.ExecutionId }}'
-              PropertySelector: '$.AutomationExecution.AutomationExecutionStatus'
+              AutomationExecutionId: "{{ DetachVolume.ExecutionId }}"
+              PropertySelector: "$.AutomationExecution.AutomationExecutionStatus"
               DesiredValues:
                 - Success
             nextStep: AttachVolume
@@ -459,11 +459,11 @@ Resources:
               DocumentName: attach_volume
               RuntimeParameters:
                 DeviceName:
-                  - '{{ GetVolumeDetails.DeviceName }}'
-                VolumeId: 
-                  - '{{ CreateVolume.VolumeId }}'
-                InstanceId: 
-                  - '{{ GetVolumeDetails.InstanceId }}'
+                  - "{{ GetVolumeDetails.DeviceName }}"
+                VolumeId:
+                  - "{{ CreateVolume.VolumeId }}"
+                InstanceId:
+                  - "{{ GetVolumeDetails.InstanceId }}"
             nextStep: WaitForVolumeAttachment
           # Wait until the newly created EBS data volume is succesfully attached
           - name: WaitForVolumeAttachment
@@ -473,8 +473,8 @@ Resources:
             inputs:
               Service: ssm
               Api: GetAutomationExecution
-              AutomationExecutionId: '{{ AttachVolume.ExecutionId }}'
-              PropertySelector: '$.AutomationExecution.AutomationExecutionStatus'
+              AutomationExecutionId: "{{ AttachVolume.ExecutionId }}"
+              PropertySelector: "$.AutomationExecution.AutomationExecutionStatus"
               DesiredValues:
                 - Success
             nextStep: ChooseVolumeDeletion
@@ -484,7 +484,7 @@ Resources:
             inputs:
               Choices:
                 - NextStep: DeleteVolume
-                  Variable: '{{ DeleteVolume }}'
+                  Variable: "{{ DeleteVolume }}"
                   BooleanEquals: true
             isEnd: true
           # Delete old EBS data volume if DeleteVolume variable is equal to true
@@ -495,4 +495,4 @@ Resources:
             inputs:
               Service: ec2
               Api: DeleteVolume
-              VolumeId: '{{ VolumeId }}'
+              VolumeId: "{{ VolumeId }}"
