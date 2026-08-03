@@ -29,7 +29,7 @@
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
     "test": "npx tsc -b && npx playwright test",
-    "prepack": "npx tsc -b"
+    "prepack": "npx tsc -b && npx rspack"
   },
   "author": "OpenRemote",
   "repository": "https://github.com/openremote/openremote",

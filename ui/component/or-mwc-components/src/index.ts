@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-const util = require("@openremote/util");
-
-bundles = {
-  "index.bundle": {
-    excludeOr: true,
-  },
-};
-
-module.exports = util.generateExports(__dirname);
+export * from "./or-mwc-dialog";
+export * from "./or-mwc-drawer";
+export * from "./or-mwc-input";
+export * from "./or-mwc-list";
+export * from "./or-mwc-menu";
+export * from "./or-mwc-snackbar";
+export * from "./or-mwc-table";
+export * from "./or-mwc-tabs";
+export * from "./style";

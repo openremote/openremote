@@ -30,7 +30,7 @@
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
     "test": "echo \"No tests\" && exit 0",
-    "prepack": "npx tsc -b"
+    "prepack": "npx tsc -b && npx rspack"
   },
   "dependencies": {
     "@openremote/core": "workspace:*",
