@@ -11,7 +11,8 @@
   },
   "types": "build/lib/index.d.ts",
   "files": [
-    "build"
+    "build/lib",
+    "build/dist"
   ],
   "scripts": {
     "build": "npx tsc -b",

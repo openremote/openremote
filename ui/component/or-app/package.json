@@ -9,6 +9,7 @@
   "module": "build/lib/index.js",
   "exports": {
     ".": "./build/lib/index.js",
+    "./images/*": "./src/images/*",
     "./*": "./build/lib/*.js",
     "./jsx": {
       "types": "./build/custom-elements-jsx.d.ts"

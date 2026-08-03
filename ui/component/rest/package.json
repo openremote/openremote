@@ -10,7 +10,8 @@
     "./*": "./build/lib/*.js"
   },
   "files": [
-    "build"
+    "build/lib",
+    "build/dist"
   ],
   "scripts": {
     "build": "npx tsc -b",

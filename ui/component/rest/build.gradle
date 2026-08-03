@@ -34,10 +34,6 @@ def generateTypeScriptTask = tasks.named("generateTypeScript") {
   dependsOn ":ui:component:model:generateTypeScript"
 }
 
-tasks.named("clean", Delete) {
-  delete layout.buildDirectory
-}
-
 tasks.register('npmBuild', Exec) {
   mustRunAfter npmClean
   dependsOn getYarnInstallTask()
