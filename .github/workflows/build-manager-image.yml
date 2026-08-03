@@ -89,7 +89,7 @@ jobs:
         id: manager-anchore-scan
         with:
           image: ${{ steps.meta.outputs.first_tag }}
-          fail-build: false
+          fail-build: true
           severity-cutoff: critical
 
       - name: Upload Grype scan report
