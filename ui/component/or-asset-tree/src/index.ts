@@ -158,9 +158,11 @@ export class OrAssetTreeChangeParentEvent extends CustomEvent<ChangeParentEventD
     });
   }
 }
+
 export interface ToggleExpandEventDetail {
   node: UiAssetTreeNode;
 }
+
 export class OrAssetTreeToggleExpandEvent extends CustomEvent<ToggleExpandEventDetail> {
   public static readonly NAME = "or-asset-tree-expand";
 
@@ -508,22 +510,22 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     const canAdd = this._canAdd();
     const menuItems: MenuBarItem[] = [
       {
-        component: createMenuBarItem(html`<or-icon icon="sort-variant"></or-icon>`),
+        component: createMenuBarItem(html` <or-icon icon="sort-variant"></or-icon>`),
         children: [
           {
             className: "name",
             checked: this.sortBy === "name",
-            component: createMenuBarItem(html`<or-translate value="name"></or-translate>`),
+            component: createMenuBarItem(html` <or-translate value="name"></or-translate>`),
           },
           {
             className: "type",
             checked: this.sortBy === "type",
-            component: createMenuBarItem(html`<or-translate value="type"></or-translate>`),
+            component: createMenuBarItem(html` <or-translate value="type"></or-translate>`),
           },
           {
             className: "createdOn",
             checked: this.sortBy === "createdOn",
-            component: createMenuBarItem(html`<or-translate value="createdOn"></or-translate>`),
+            component: createMenuBarItem(html` <or-translate value="createdOn"></or-translate>`),
           },
         ],
       },
@@ -1624,7 +1626,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
       });
     } catch (e) {
       console.error("Failed to copy asset", e);
-      showErrorDialog("Failed to copy asset");
+      showErrorDialog(this.shadowRoot!, "Failed to copy asset");
     }
   }
 
@@ -1657,7 +1659,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         .setActions([
           {
             actionName: "cancel",
-            content: html`<or-vaadin-button><or-translate value="cancel"></or-translate></or-vaadin-button>`,
+            content: html` <or-vaadin-button>
+              <or-translate value="cancel"></or-translate>
+            </or-vaadin-button>`,
           },
           {
             actionName: "add",
@@ -1729,6 +1733,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
           <style>
             .mdc-dialog__content {
               padding: 0 !important;
+              border-bottom: solid var(--or-app-color5, #cccccc) 1px;
+              border-top: solid var(--or-app-color5, #cccccc) 1px;
             }
           </style>
         `)
@@ -1814,11 +1820,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         .then((response) => {
           this._onDeselectClicked();
           if (response.status !== 204) {
-            showErrorDialog(i18next.t("deleteAssetsFailed"));
+            showErrorDialog(this.shadowRoot!, "deleteAssetsFailed");
           }
         })
         .catch((reason) => {
-          showErrorDialog(i18next.t("deleteAssetsFailed"));
+          showErrorDialog(this.shadowRoot!, "deleteAssetsFailed");
         })
         .finally(() => {
           this.disabled = false;
@@ -1826,15 +1832,25 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     };
 
     // Confirm deletion request
-    showOkCancelDialog(
-      i18next.t("deleteAssets"),
-      i18next.t("deleteAssetsConfirm", { assetNames: assetNames.join(",\n- ") }),
-      i18next.t("delete")
-    ).then((ok) => {
-      if (ok) {
-        doDelete();
-      }
-    });
+    showConfirmDialog(
+      this.shadowRoot!,
+      html`
+        <or-vaadin-confirm-dialog @confirm=${() => doDelete()}>
+          ${getConfirmDialogContent(
+            "error",
+            "deleteAssets",
+            html`
+              <or-translate value="deleteAssetsConfirm"></or-translate>
+              <ul>
+                ${assetNames.map((n) => html` <li>${n}</li>`)}
+              </ul>
+            `,
+            "delete",
+            "cancel"
+          )}
+        </or-vaadin-confirm-dialog>
+      `
+    );
   }
 
   protected _canAdd(): boolean {
@@ -2410,19 +2426,28 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
           <div class="node-name">
             <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
             ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, filterColorForNonMatchingAsset ? "d3d3d3" : undefined)}
-            <span style="color: ${filterColorForNonMatchingAsset ? "#d3d3d3;" : ""}">${treeNode.asset!.name}</span>
+            <span
+              class="${this.checkboxes ? "node-name-withCheck" : "node-name-noCheck"}"
+              title="${treeNode.asset!.name}"
+              style="color: ${filterColorForNonMatchingAsset ? "#d3d3d3;" : ""}"
+            >${treeNode.asset!.name}</span
+            >
             ${
               this.checkboxes
                 ? html` <span class="mdc-list-item__graphic">
                     ${
                       treeNode.expandable
-                        ? html`<div class="mdc-checkbox">
+                        ? html` <div class="mdc-checkbox">
                             <or-icon class="mdc-checkbox--parent" icon="${parentCheckboxIcon}"></or-icon>
                           </div>`
                         : ``
                     }
                     <div class="mdc-checkbox">
-                      ${treeNode.selected ? html`<or-icon icon="checkbox-marked"></or-icon>` : html`<or-icon icon="checkbox-blank-outline"></or-icon>`}
+                      ${
+                        treeNode.selected
+                          ? html` <or-icon icon="checkbox-marked"></or-icon>`
+                          : html` <or-icon icon="checkbox-blank-outline"></or-icon>`
+                      }
                     </div>
                   </span>`
                 : ``
