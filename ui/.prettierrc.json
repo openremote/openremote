@@ -2,6 +2,7 @@
   "trailingComma": "es5",
   "printWidth": 120,
   "singleQuote": false,
-  "tabWidth": 4,
-  "useTabs": false
+  "tabWidth": 2,
+  "useTabs": false,
+  "embeddedLanguageFormatting": "auto"
 }

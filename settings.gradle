@@ -1,18 +1,18 @@
 pluginManagement {
-    resolutionStrategy {
-        eachPlugin {
-            if (requested.id.toString() == "io.openremote.com.cherryperry.gradle-file-encrypt") {
-                useModule("com.github.openremote:GradleFileEncrypt:$requested.version")
-            }
-        }
+  resolutionStrategy {
+    eachPlugin {
+      if (requested.id.toString() == "io.openremote.com.cherryperry.gradle-file-encrypt") {
+        useModule("com.github.openremote:GradleFileEncrypt:$requested.version")
+      }
     }
+  }
 
-    repositories {
-        gradlePluginPortal()
-        maven {
-            url = "https://jitpack.io"
-        }
+  repositories {
+    gradlePluginPortal()
+    maven {
+      url = "https://jitpack.io"
     }
+  }
 }
 
 // TODO: These plugins remain here because project.gradle imports their classes,
@@ -20,33 +20,34 @@ pluginManagement {
 // configuration into convention plugins/build logic so their versions can be
 // managed through libs.versions.toml.
 plugins {
-    id 'cz.habarta.typescript-generator' version "$typescriptGeneratorVersion" apply false
-    id 'org.jetbrains.gradle.plugin.idea-ext' version "$ideaExtPluginVersion" apply false
+  id 'com.diffplug.spotless' version "$spotlessVersion" apply false
+  id 'cz.habarta.typescript-generator' version "$typescriptGeneratorVersion" apply false
+  id 'org.jetbrains.gradle.plugin.idea-ext' version "$ideaExtPluginVersion" apply false
 }
 
 rootProject.name = "openremote"
 
 // Include sub-projects dynamically, every directory with a build.gradle (and no .buildignore)
 fileTree(
-        dir: rootDir,
-        include: "**/build.gradle",
-        excludes: [
-                ".git/**",
-                "**/.git/**",
-                ".gradle/**",
-                "**/.gradle/**",
-                "**/build/**",
-                "**/node_modules/**",
-                "**/generic_app/**",
-                "**/dist/**",
-                "**/lib/**"
-        ]
+  dir: rootDir,
+  include: "**/build.gradle",
+  excludes: [
+    ".git/**",
+    "**/.git/**",
+    ".gradle/**",
+    "**/.gradle/**",
+    "**/build/**",
+    "**/node_modules/**",
+    "**/generic_app/**",
+    "**/dist/**",
+    "**/lib/**"
+  ]
 )
-        .filter { it.parentFile != rootDir }
-        .filter { !new File(it.parentFile, ".buildignore").exists() }
-        .each {
-            include it.parentFile.canonicalPath
-                    .replace(rootDir.canonicalPath, "")
-                    .replace("\\", ":")
-                    .replace("/", ":")
-        }
+  .filter { it.parentFile != rootDir }
+  .filter { !new File(it.parentFile, ".buildignore").exists() }
+  .each {
+    include it.parentFile.canonicalPath
+      .replace(rootDir.canonicalPath, "")
+      .replace("\\", ":")
+      .replace("/", ":")
+  }

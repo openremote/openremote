@@ -208,7 +208,7 @@ scmVersion {
 }
 
 allprojects {
-    apply from: "${findProject(':openremote') != null ? project(':openremote').projectDir : rootDir}/project.gradle"
+    apply from: "${rootDir}/project.gradle"
     version = rootProject.scmVersion.version
 }
 
@@ -261,7 +261,6 @@ checkFilesGitIgnoredNew.enabled = gitFile.exists() && gitFile.isDirectory()
 tasks.named('clean') {
     delete 'tmp'
 }
-
 
 subprojects {
     // Search across all java projects for a runtime dependency e.g. ./gradlew insightRuntime --dependency my-dep

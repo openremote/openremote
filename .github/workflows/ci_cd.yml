@@ -152,19 +152,19 @@ jobs:
         shell: bash
         run: |
           OPTS="-sf -m 5"
-          
+
           # Try Primary v4 -> Fallback v4 -> Default to empty
           PUBLIC_IPV4=$(curl $OPTS v4.ident.me || curl $OPTS 4.tnedi.me || true)
-          
+
           # Try Primary v6 -> Fallback v6 -> Default to empty
           PUBLIC_IPV6=$(curl $OPTS v6.ident.me || curl $OPTS 6.tnedi.me || true)
-          
+
           # Validation: Ensure at least one IP was found
           if [[ -z "$PUBLIC_IPV4" && -z "$PUBLIC_IPV6" ]]; then
           echo "::error::Could not determine Public IP (both v4 and v6 failed)."
           exit 1
           fi
-          
+
           echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT
           echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT
 
@@ -691,6 +691,16 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
         env:
           VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
+
+      - name: Run Spotless backend check
+        id: run-spotless-backend-check
+        if: steps.backend-files-changed.outputs.any_modified  == 'true'
+        run: ./gradlew spotlessBackendCheck
+
+      - name: Run Spotless UI check
+        id: run-spotless-frontend-check
+        if: steps.ui-files-changed.outputs.any_modified == 'true'
+        run: ./gradlew spotlessUiCheck
 
       - name: Check for outdated translations
         if: steps.is_main_repo.outputs.value == 'true'

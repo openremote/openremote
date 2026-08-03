@@ -2,11 +2,31 @@
   "name": "openremote",
   "packageManager": "yarn@4.17.1",
   "private": true,
+  "scripts": {
+    "lint": "cd ui && eslint . --cache --cache-location ../.eslintcache",
+    "lint:fix": "cd ui && eslint . --fix --cache --cache-location ../.eslintcache",
+    "format": "cd ui && prettier . --write",
+    "format:check": "cd ui && prettier . --check"
+  },
   "workspaces": [
     "ui/util",
     "ui/test",
     "ui/app/*",
     "ui/component/*",
     "ui/demo/*"
-  ]
+  ],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "8.40.0",
+    "@typescript-eslint/parser": "8.40.0",
+    "eslint": "8.57.1",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-config-standard": "17.1.0",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-lit": "2.3.1",
+    "eslint-plugin-n": "16.6.2",
+    "eslint-plugin-promise": "6.6.0",
+    "eslint-plugin-wc": "3.1.0",
+    "prettier": "3.9.6",
+    "typescript": "5.8.3"
+  }
 }
