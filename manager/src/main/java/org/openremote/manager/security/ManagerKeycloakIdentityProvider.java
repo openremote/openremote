@@ -1060,7 +1060,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
           realmRepresentation.setPasswordPolicy(realm.getPasswordPolicyString());
           realmRepresentation.setNotBefore(
               realm.getNotBefore() != null ? realm.getNotBefore().intValue() : null);
-          configureRealm(realmRepresentation);
+          configureRealm(realmRepresentation, realmResource);
           realmResource.update(realmRepresentation);
 
           realmCache.invalidate(realm.getName());
@@ -1111,7 +1111,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
   }
 
   @Override
-  public Realm createRealm(Realm realm) throws ClientErrorException {
+  public Realm    createRealm(Realm realm) throws ClientErrorException {
     LOG.fine("Create realm: " + realm);
     return getRealms(
         realmsResource -> {
@@ -1125,7 +1125,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
             realmRepresentation = realmResource.toRepresentation();
 
             // Need a committed realmRepresentation to update the security
-            configureRealm(realmRepresentation);
+            configureRealm(realmRepresentation, realmResource);
             realmResource.update(realmRepresentation);
 
             // Create realm roles inserting
@@ -1154,13 +1154,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
             realmResource
                 .flows()
                 .updateRequiredAction("VERIFY_PROFILE", requiredActionConfigRepresentation);
-
-            // Since Keycloak 26.7.0 Unmanaged user attributes are disabled for new realms but not
-            // the master realm
-            UserProfileResource userProfileResource = realmResource.users().userProfile();
-            UPConfig upConfig = userProfileResource.getConfiguration();
-            upConfig.setUnmanagedAttributePolicy(UPConfig.UnmanagedAttributePolicy.ADMIN_EDIT);
-            userProfileResource.update(upConfig);
 
             // Auto create the standard openremote client
             ClientRepresentation clientRepresentation = generateOpenRemoteClientRepresentation();
@@ -1570,7 +1563,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
     return frontendURI;
   }
 
-  protected void configureRealm(RealmRepresentation realmRepresentation) {
+  protected void configureRealm(RealmRepresentation realmRepresentation, RealmResource realmResource) {
 
     realmRepresentation.setAccessTokenLifespan(Constants.ACCESS_TOKEN_LIFESPAN_SECONDS);
 
@@ -1604,6 +1597,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
 
     // Internationalization must be enabled for locale attribute to be persisted
     realmRepresentation.setInternationalizationEnabled(true);
+
+    // Since Keycloak 26.7.0 Unmanaged user attributes are disabled for all realms
+    UserProfileResource userProfileResource = realmResource.users().userProfile();
+    UPConfig upConfig = userProfileResource.getConfiguration();
+    upConfig.setUnmanagedAttributePolicy(UPConfig.UnmanagedAttributePolicy.ADMIN_EDIT);
+    userProfileResource.update(upConfig);
 
     // Configure SMTP
     String host = container.getConfig().getOrDefault(OR_EMAIL_HOST, null);
