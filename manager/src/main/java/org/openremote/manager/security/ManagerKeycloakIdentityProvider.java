@@ -1111,7 +1111,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
   }
 
   @Override
-  public Realm    createRealm(Realm realm) throws ClientErrorException {
+  public Realm createRealm(Realm realm) throws ClientErrorException {
     LOG.fine("Create realm: " + realm);
     return getRealms(
         realmsResource -> {
@@ -1563,7 +1563,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
     return frontendURI;
   }
 
-  protected void configureRealm(RealmRepresentation realmRepresentation, RealmResource realmResource) {
+  protected void configureRealm(
+      RealmRepresentation realmRepresentation, RealmResource realmResource) {
 
     realmRepresentation.setAccessTokenLifespan(Constants.ACCESS_TOKEN_LIFESPAN_SECONDS);
 
