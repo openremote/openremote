@@ -22,7 +22,6 @@ services:
     extends:
       file: deploy.yml
       service: postgresql
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-develop-slim}
     volumes:
       - ../tmp:/storage
       - postgresql-data:/var/lib/postgresql/data
