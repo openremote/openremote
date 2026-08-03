@@ -2,17 +2,16 @@
   "name": "@openremote/core",
   "version": "1.28.0-snapshot",
   "description": "OpenRemote 3.x Core",
-  "main": "dist/umd/index.bundle.js",
-  "module": "lib/index.js",
+  "main": "build/dist/umd/index.bundle.js",
+  "module": "build/lib/index.js",
   "exports": {
-    ".": "./lib/index.js",
-    "./*": "./lib/*.js",
-    "./lib/util": "./lib/util.js"
+    ".": "./build/lib/index.js",
+    "./*": "./build/lib/*.js",
+    "./lib/util": "./build/lib/util.js"
   },
-  "types": "lib/index.d.ts",
+  "types": "build/lib/index.d.ts",
   "files": [
-    "lib",
-    "dist"
+    "build"
   ],
   "scripts": {
     "build": "npx tsc -b",

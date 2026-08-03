@@ -2,13 +2,13 @@
   "name": "@openremote/or-element",
   "version": "1.28.0-snapshot",
   "description": "Base element and shared shadow-DOM styling for OpenRemote UI components",
-  "main": "lib/index.js",
-  "module": "lib/index.js",
+  "main": "build/lib/index.js",
+  "module": "build/lib/index.js",
   "exports": {
-    ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    ".": "./build/lib/index.js",
+    "./*": "./build/lib/*.js"
   },
-  "types": "lib/index.d.ts",
+  "types": "build/lib/index.d.ts",
   "scripts": {
     "build": "npx tsc -b",
     "test": "npx tsc -b && npx playwright test",

@@ -2,16 +2,15 @@
   "name": "@openremote/rest",
   "version": "1.28.0-snapshot",
   "description": "OpenRemote 3.x REST API",
-  "main": "dist/umd/index.bundle.js",
-  "module": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "build/dist/umd/index.bundle.js",
+  "module": "build/lib/index.js",
+  "types": "build/lib/index.d.ts",
   "exports": {
-    ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    ".": "./build/lib/index.js",
+    "./*": "./build/lib/*.js"
   },
   "files": [
-    "lib",
-    "dist"
+    "build"
   ],
   "scripts": {
     "build": "npx tsc -b",

@@ -4,34 +4,21 @@
 # Dependencies
 **/node_modules/**
 
-# Gradle and Spotless output
+# Build, test and cache output, all of which each package writes to its own build dir
 **/build/**
-**/bin/**
-
-# Compiled output
-**/dist/**
-**/lib/**
-
-# Test and coverage output
-**/coverage/**
-**/test-results/**
-**/app-test-report/**
-**/component-test-report/**
-**/.auth/**
 
 # Generated files
 **/generated/**
 **/*.generated.*
-**/custom-elements.json
 **/src/model.ts
 **/src/restclient.ts
 
 # Caches
-**/.cache/**
 **/.gradle/**
 **/.yarn/**
 
 # IDE metadata
+**/bin/**
 **/.idea/**
 **/.settings/**
 **/.vscode/**

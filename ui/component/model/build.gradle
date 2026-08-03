@@ -45,8 +45,7 @@ tasks.named("npmBuild") {
 
 clean {
   doLast {
-    delete "dist"
-    delete "lib"
+    delete layout.buildDirectory
   }
 }
 

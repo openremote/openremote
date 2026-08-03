@@ -84,7 +84,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
       bundle: "./src/index.ts",
     },
     output: {
-      path: dirname + "/dist",
+      path: dirname + "/build/dist",
       publicPath: isDevServer ? "/" + dirname.split(path.sep).slice(-1)[0] + "/" : "./",
       filename: production ? "[name].[contenthash].js" : "[name].js",
     },
@@ -279,7 +279,7 @@ function generateExports(dirname) {
       mode: "production",
       output: {
         filename: "[name].js",
-        path: path.resolve(dirname, "dist/umd"),
+        path: path.resolve(dirname, "build/dist/umd"),
         library: libName,
         libraryTarget: "umd",
       },

@@ -2,17 +2,17 @@
   "name": "@openremote/or-dashboard-builder",
   "version": "1.28.0-snapshot",
   "description": "OpenRemote Dashboard Builder",
-  "customElements": "custom-elements.json",
-  "main": "dist/umd/index.bundle.js",
-  "module": "lib/index.js",
+  "customElements": "build/custom-elements.json",
+  "main": "build/dist/umd/index.bundle.js",
+  "module": "build/lib/index.js",
   "exports": {
-    ".": "./lib/index.js",
-    "./*": "./lib/*.js",
+    ".": "./build/lib/index.js",
+    "./*": "./build/lib/*.js",
     "./jsx": {
-      "types": "./custom-elements-jsx.d.ts"
+      "types": "./build/custom-elements-jsx.d.ts"
     }
   },
-  "types": "lib/index.d.ts",
+  "types": "build/lib/index.d.ts",
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "test": "echo \"No tests\" && exit 0",
