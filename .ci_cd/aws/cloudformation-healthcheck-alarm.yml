@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------------------------------------------------------------
 # Creates an alarm for Route53 Health Check - must be run in the us-east-1 region
 # ---------------------------------------------------------------------------------------------------------------------
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Route53 Health Check alarm'
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Route53 Health Check alarm"
 Parameters:
   Host:
     Description: FQDN for host
@@ -15,7 +15,7 @@ Resources:
       HealthCheckConfig:
         Port: 443
         Type: HTTPS
-        ResourcePath: '/api/master/info'
+        ResourcePath: "/api/master/info"
         FullyQualifiedDomainName: !Sub ${Host}
         RequestInterval: 30
         FailureThreshold: 5

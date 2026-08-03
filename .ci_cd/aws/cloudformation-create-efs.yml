@@ -2,8 +2,8 @@
 # Provisions an EFS using the specified VPC and subnets; creates a security group called
 # `or-map`; but doesn't pre-configure ingress rules on this security group.
 # ---------------------------------------------------------------------------------------------
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Hosts EFS'
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Hosts EFS"
 Parameters:
   VpcId:
     Type: String
@@ -37,7 +37,7 @@ Resources:
           Value: or-map
 
   FileSystem:
-    Type: 'AWS::EFS::FileSystem'
+    Type: "AWS::EFS::FileSystem"
     Properties:
       BackupPolicy:
         Status: DISABLED
@@ -48,17 +48,17 @@ Resources:
       FileSystemTags:
         - Key: Name
           Value: or-map-efs
-#      FileSystemPolicy:
-#        Version: "2012-10-17"
-#        Statement:
-#          - Effect: "Allow"
-#            Action:
-#              - "elasticfilesystem:ClientMount"
-#            Principal:
-#              AWS: '*'
-#            Condition:
-#              StringEquals:
-#                'aws:PrincipalOrgID': o-dhb7rpaban
+  #      FileSystemPolicy:
+  #        Version: "2012-10-17"
+  #        Statement:
+  #          - Effect: "Allow"
+  #            Action:
+  #              - "elasticfilesystem:ClientMount"
+  #            Principal:
+  #              AWS: '*'
+  #            Condition:
+  #              StringEquals:
+  #                'aws:PrincipalOrgID': o-dhb7rpaban
 
   MountTargetResource1:
     Type: AWS::EFS::MountTarget

@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,14 +12,16 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {css, html, TemplateResult } from "lit";
+import { css, html, type TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
-import {AttributeInputWidgetConfig} from "../widgets/attribute-input-widget";
-import {AttributesSelectEvent} from "../panels/attributes-panel";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {AssetWidgetSettings} from "../util/or-asset-widget";
+import type { AttributeInputWidgetConfig } from "../widgets/attribute-input-widget";
+import type { AttributesSelectEvent } from "../panels/attributes-panel";
+import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { AssetWidgetSettings } from "../util/or-asset-widget";
 
 const styling = css`
   .switch-container {
@@ -34,65 +33,71 @@ const styling = css`
 
 @customElement("attribute-input-settings")
 export class AttributeInputSettings extends AssetWidgetSettings {
+  protected readonly widgetConfig!: AttributeInputWidgetConfig;
 
-    protected readonly widgetConfig!: AttributeInputWidgetConfig;
+  static get styles() {
+    return [...super.styles, styling];
+  }
 
-    static get styles() {
-        return [...super.styles, styling];
-    }
+  protected render(): TemplateResult {
+    return html`
+      <div>
+        <!-- Attribute selection -->
+        <settings-panel displayName="attributes" expanded="${true}">
+          <attributes-panel
+            .attributeRefs="${this.widgetConfig.attributeRefs}"
+            style="padding-bottom: 12px;"
+            @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
+          ></attributes-panel>
+        </settings-panel>
 
-    protected render(): TemplateResult {
-        return html`
-            <div>
-                <!-- Attribute selection -->
-                <settings-panel displayName="attributes" expanded="${true}">
-                    <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" style="padding-bottom: 12px;"
-                                      @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
-                    ></attributes-panel>
-                </settings-panel>
-
-                <!-- Other settings -->
-                <settings-panel displayName="settings" expanded="${true}">
-                    <div>
-                        <!-- Toggle readonly -->
-                        <div class="switch-container">
-                            <span><or-translate value="dashboard.userCanEdit"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.readonly}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onReadonlyToggle(ev)}"
-                            ></or-mwc-input>
-                        </div>
-                        <!-- Toggle helper text -->
-                        <div class="switch-container">
-                            <span><or-translate value="dashboard.showHelperText"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showHelperText}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onHelperTextToggle(ev)}"
-                            ></or-mwc-input>
-                        </div>
-                    </div>
-                </settings-panel>
+        <!-- Other settings -->
+        <settings-panel displayName="settings" expanded="${true}">
+          <div>
+            <!-- Toggle readonly -->
+            <div class="switch-container">
+              <span><or-translate value="dashboard.userCanEdit"></or-translate></span>
+              <or-mwc-input
+                .type="${InputType.SWITCH}"
+                style="margin: 0 -10px;"
+                .value="${!this.widgetConfig.readonly}"
+                @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onReadonlyToggle(ev)}"
+              ></or-mwc-input>
             </div>
-        `;
-    }
+            <!-- Toggle helper text -->
+            <div class="switch-container">
+              <span><or-translate value="dashboard.showHelperText"></or-translate></span>
+              <or-mwc-input
+                .type="${InputType.SWITCH}"
+                style="margin: 0 -10px;"
+                .value="${this.widgetConfig.showHelperText}"
+                @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onHelperTextToggle(ev)}"
+              ></or-mwc-input>
+            </div>
+          </div>
+        </settings-panel>
+      </div>
+    `;
+  }
 
-    protected onAttributesSelect(ev: AttributesSelectEvent) {
-        this.widgetConfig.attributeRefs = ev.detail.attributeRefs;
-        if(ev.detail.attributeRefs.length === 1) {
-            const asset = ev.detail.assets.find((asset) => asset.id === ev.detail.attributeRefs[0].id);
-            if(asset) {
-                this.setDisplayName!(asset.name);
-            }
-        }
-        this.notifyConfigUpdate();
+  protected onAttributesSelect(ev: AttributesSelectEvent) {
+    this.widgetConfig.attributeRefs = ev.detail.attributeRefs;
+    if (ev.detail.attributeRefs.length === 1) {
+      const asset = ev.detail.assets.find((asset) => asset.id === ev.detail.attributeRefs[0].id);
+      if (asset) {
+        this.setDisplayName!(asset.name);
+      }
     }
+    this.notifyConfigUpdate();
+  }
 
-    protected onReadonlyToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.readonly = !ev.detail.value;
-        this.notifyConfigUpdate();
-    }
+  protected onReadonlyToggle(ev: OrInputChangedEvent) {
+    this.widgetConfig.readonly = !ev.detail.value;
+    this.notifyConfigUpdate();
+  }
 
-    protected onHelperTextToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showHelperText = ev.detail.value;
-        this.notifyConfigUpdate();
-    }
-
+  protected onHelperTextToggle(ev: OrInputChangedEvent) {
+    this.widgetConfig.showHelperText = ev.detail.value;
+    this.notifyConfigUpdate();
+  }
 }

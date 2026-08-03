@@ -1,482 +1,550 @@
-import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 import manager, {
-    DefaultBoxShadowBottom,
-    DefaultColor1,
-    DefaultColor2,
-    DefaultColor3,
-    DefaultColor4,
-    DefaultColor5,
-    DefaultHeaderHeight,
-    DEFAULT_LANGUAGES,
-    Languages
+  DefaultBoxShadowBottom,
+  DefaultColor1,
+  DefaultColor2,
+  DefaultColor3,
+  DefaultColor4,
+  DefaultColor5,
+  DefaultHeaderHeight,
+  DEFAULT_LANGUAGES,
+  Languages,
 } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
-import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
-import {AlarmEvent, Realm} from "@openremote/model";
-import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
-import {AppStateKeyed, router, updateRealm} from "./index";
-import {AnyAction, Store} from "@reduxjs/toolkit";
+import type { OrVaadinSelect } from "@openremote/or-vaadin-components/or-vaadin-select";
+import type { AlarmEvent, Realm } from "@openremote/model";
+import { createMenuBarItem, type MenuBarItem } from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import { type AppStateKeyed, router, updateRealm } from "./index";
+import type { AnyAction, Store } from "@reduxjs/toolkit";
 import * as Model from "@openremote/model";
-import {i18next} from "@openremote/or-translate";
-import {when} from "lit/directives/when.js";
+import { i18next } from "@openremote/or-translate";
+import { when } from "lit/directives/when.js";
 
-
-export {DEFAULT_LANGUAGES, Languages}
+export { DEFAULT_LANGUAGES, Languages };
 
 export interface HeaderConfig {
-    mainMenu: HeaderItem[];
-    secondaryMenu?: HeaderItem[];
+  mainMenu: HeaderItem[];
+  secondaryMenu?: HeaderItem[];
 }
 
 export interface HeaderItem {
-   icon: string;
-   text: string;
-   value?: string;
-   href?: string;
-   absolute?: boolean;
-   action?: () => void;
-   hideMobile?: boolean;
-   roles?: string[] | {[client: string]: string[]} | (() => boolean);
+  icon: string;
+  text: string;
+  value?: string;
+  href?: string;
+  absolute?: boolean;
+  action?: () => void;
+  hideMobile?: boolean;
+  roles?: string[] | { [client: string]: string[] } | (() => boolean);
 }
 
 function hasRequiredRole(option: HeaderItem): boolean {
-    if (!option.roles) {
-        return true;
-    }
+  if (!option.roles) {
+    return true;
+  }
 
-    if (Array.isArray(option.roles)) {
-        return option.roles.some((r) => manager.hasRole(r));
-    }
+  if (Array.isArray(option.roles)) {
+    return option.roles.some((r) => manager.hasRole(r));
+  }
 
-    if (typeof option.roles === "function") {
-        return (option.roles as () => boolean)();
-    }
+  if (typeof option.roles === "function") {
+    return (option.roles as () => boolean)();
+  }
 
-    return Object.entries(option.roles).some(([client, roles]) => roles.some((r: string) => manager.hasRole(r, client)));
+  return Object.entries(option.roles).some(([client, roles]) => roles.some((r: string) => manager.hasRole(r, client)));
 }
 
-
 function getCurrentMenuItemRef(defaultRef?: string): string | undefined {
-    const menu = window.location.hash.substr(2).split("/")[0];
-	return menu || defaultRef;
+  const menu = window.location.hash.substr(2).split("/")[0];
+  return menu || defaultRef;
 }
 
 @customElement("or-header")
 export class OrHeader extends LitElement {
-
-    // language=CSS
-    static get styles() {
-        return css`
-        
-            :host {
-                --internal-or-header-color: var(--or-header-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));    
-                --internal-or-header-selected-color: var(--or-header-selected-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
-                --internal-or-header-text-color: var(--or-header-text-color, var(--or-app-color3, inherit));
-                --internal-or-header-height: var(--or-header-height, ${unsafeCSS(DefaultHeaderHeight)});
-                --internal-or-header-logo-margin: var(--or-header-logo-margin, 0 40px 0 0);
-                --internal-or-header-logo-height: var(--or-header-logo-height, var(--internal-or-header-height, ${unsafeCSS(DefaultHeaderHeight)}));
-                --internal-or-header-item-size: var(--or-header-item-size, calc(${unsafeCSS(DefaultHeaderHeight)} - 20px));
-                --internal-or-header-drawer-color: var(--or-header-drawer-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
-                --internal-or-header-drawer-text-color: var(--or-header-drawer-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-                --internal-or-header-drawer-item-size: var(--or-header-drawer-item-size, 30px);
-                --internal-or-header-drawer-separator-color: var(--or-header-drawer-separator-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
-                
-                display: block;
-                z-index: 4;
-            }
-              
-            #toolbar-top {
-                display: flex;
-                padding: 0;
-            }
-            
-            #logo-mobile {
-                margin: 8px;
-                height: calc(var(--internal-or-header-logo-height) - 16px);
-                display: block;
-            }
-    
-            #logo {
-                display: none;
-            }
-                                            
-            #header {
-                opacity: 1;
-                width: 100%;
-                height: var(--internal-or-header-height);
-                text-align: center;
-                background-color: var(--internal-or-header-color);
-                color: var(--internal-or-header-text-color);
-                --or-icon-fill: var(--internal-or-header-text-color);
-                --or-icon-height: calc(var(--internal-or-header-item-size) - 12px);
-                --or-icon-width: calc(var(--internal-or-header-item-size) - 12px);
-                z-index: 9999999;
-            }
-    
-            .shadow {
-                -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
-                -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
-                box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
-            }
-                    
-            #drawer-menu vaadin-menu-bar-item::part(content) {
-                gap: 8px;
-            }
-              
-            .menu-btn {
-                background: none;
-                border: none;
-                cursor: pointer;
-                padding: 0 16px;
-                height: 100%;
-            }
-            
-            #mobile-right {
-                display: flex;
-                padding-right: 4px;
-                gap: 4px;
-                align-items: center;
-                margin-left: auto;
-                --or-icon-height: calc(var(--internal-or-header-item-size) - 8px);
-                --or-icon-width: calc(var(--internal-or-header-item-size) - 8px);
-            }
-            
-            #desktop-right {
-                margin-left: auto;
-                padding-right: 10px;
-                display: none;
-            }
-    
-            .mobile-bottom-border {
-                border-top: 1px solid var(--internal-or-header-drawer-separator-color);
-                margin-top: 16px;
-                padding-top: 8px;
-            }
-          
-            .menu-item {
-                opacity: 0.7;
-                cursor: pointer;
-                text-decoration: none !important;         
-                color: inherit;       
-                padding: 0 10px;
-                font-size: 14px;       
-            }        
-            
-            .menu-item:hover,
-            .menu-item[selected] {
-                opacity: 1;
-            }                
-            #desktop-left .menu-item or-icon {
-                margin-right: 10px;
-            }
-            #desktop-left .menu-item  {
-                display: none;
-                line-height: calc(var(--internal-or-header-height) - 4px);
-            }
-            
-            #desktop-right .menu-item  {
-                line-height: var(--internal-or-header-height);
-            }
-            
-            #drawer .menu-item  {
-                display: block;
-                line-height: var(--internal-or-header-drawer-item-size);
-                margin: 6px 0;
-                padding: 8px 16px;
-            }
-            
-            #drawer .menu-item  or-icon {
-                margin: 0 10px;
-            }
-
-            #desktop-left .menu-item[selected] {
-                display: inline-block;
-                line-height: var(--internal-or-header-height);
-            }
-            
-            .or-language-container {
-                display: flex;
-                height: 50px;
-                align-items: center;
-            }
-          
-            #realm-picker {
-                min-width: 140px;
-            }
-            
-            /* Hides the default menu bar content (three horizontal dots) and replace it ourselves using the slot="prefix" */
-            #drawer-menu-button::part(label) {
-                display: none;
-            }
-          
-            /* Wide layout: when the viewport width is bigger than 768px, layout
-            changes to a wide layout. */
-            @media (min-width: 900px) {
-                #mobile-right {
-                    display: none;
-                }
-    
-                #drawer {
-                    display: none;
-                }
-                
-                #desktop-right {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-                
-                #desktop-left .menu-item {
-                    display: inline-block;
-                }
-                
-                #desktop-left .menu-item or-icon {
-                    display: none;
-                }
-    
-                #desktop-left .menu-item[selected] {                
-                    border-bottom: 4px solid var(--internal-or-header-selected-color);
-                    line-height: calc(var(--internal-or-header-height) - 4px);
-                }
-
-                #logo {
-                    margin: var(--internal-or-header-logo-margin);
-                    height: var(--internal-or-header-logo-height);
-                    display: block;
-                }
-    
-                #logo-mobile {
-                    display: none;
-                }
-
-                #realm-picker {
-                    min-width: 160px;
-                }
-                
-                #desktop-left ::slotted(*) {
-                    display: inline-block;
-                }
-    
-                #desktop-left ::slotted(*[selected]) {                
-                    border-bottom: 4px solid var(--internal-or-header-selected-color);
-                    line-height: calc(var(--internal-or-header-height) - 4px);
-                }
-
-                .menu-item {
-                    padding: 0 20px;
-                }
-            }
-            
-            @media (min-width: 1100px) {
-               
-    
-                #desktop-left .menu-item or-icon{
-                    display: inline-block;
-                }
-            }
-    `;
-    }
-
-    @property({type: Array})
-    public realms!: Realm[];
-
-    @property({type: String})
-    public realm!: string;
-
-    @property({type: Object})
-    public store!: Store<AppStateKeyed, AnyAction>;
-
-    @property({type: String})
-    public logo?: string;
-
-    @property({ type: String })
-    public logoMobile?: string;
-
-    @property({ type: Object })
-    public config?: HeaderConfig;
-
-    @query("div[id=mobile-bottom]")
-    protected _mobileBottomDiv!: HTMLDivElement;
-
-    @property()
-    public activeMenu: string | undefined;
-
-    @state()
-    private _drawerOpened = false;
-
-    @state()
-    private alarmButton = 'bell-outline';
-
-    @state()
-    private alarmColor = '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
-
-    private _eventSubscriptionId?: string;
-
-    public _onRealmSelect(realm: string) {
-        this.store.dispatch(updateRealm(realm));
-    }
-
-    protected shouldUpdate(changedProperties: PropertyValues): boolean {
-        if (changedProperties.has("config")) {
-            this.activeMenu = getCurrentMenuItemRef(this.config && this.config.mainMenu && this.config.mainMenu.length > 0 ? this.config.mainMenu[0].href : undefined);
-        }
-        if (changedProperties.has("realm")) {
-            this._getAlarmButton();
-        }
-        return super.shouldUpdate(changedProperties);
-    }
-
-    connectedCallback() {
-        super.connectedCallback();
-        this._subscribeEvents();
-    }
-
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this._unsubscribeEvents();
-    }
-
-    protected async _subscribeEvents() {
-        if (manager.events) {
-            this._eventSubscriptionId = await manager.events.subscribe<AlarmEvent>({
-                eventType: "alarm"
-            }, (ev) => this._getAlarmButton());
-        }
-    }
-
-    protected _unsubscribeEvents() {
-        if (this._eventSubscriptionId) {
-            manager.events!.unsubscribe(this._eventSubscriptionId);
-            this._eventSubscriptionId = undefined;
-        }
-    }
-
-    protected render() {
-
-        if (!this.config) {
-            return html``;
-        }
-
-        const mainItems: HeaderItem[] | undefined = this.config.mainMenu?.filter(hasRequiredRole);
-        const secondaryItems: HeaderItem[] | undefined = this.config.secondaryMenu?.filter(hasRequiredRole);
-
-        return html`
-           <!-- Header -->
-            <div id="header" class="shadow">
-                <div id="toolbar-top">
-                    <div><img id="logo" src="${this.logo}" /><img id="logo-mobile" src="${this.logoMobile}" /></div>
-
-                    <!-- This gets hidden on a small screen-->
-                    <nav id="toolbar-list">
-                        <div id="desktop-left">
-                            ${mainItems ? mainItems.map((headerItem) => {
-                                return html`
-                                    <a class="menu-item" href=${this._getHeaderHref(headerItem)} @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem, e)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
-                                `;
-                            }) : ``}
-                        </div>
-                    </nav>
-                    <div id="desktop-right">
-                        <or-vaadin-button theme="icon" title=${i18next.t("alarm.alarm_plural")} @click=${() => router.navigate('alarms')}>
-                            <or-icon icon=${this.alarmButton} style="color:var(${this.alarmColor})"></or-icon>
-                        </or-vaadin-button>
-                        ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
-                        ${when(secondaryItems, () => this._getSecondaryMenu([secondaryItems ?? []]))}
-                    </div>
-                    <div id="mobile-right">
-                        ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
-                        ${when(secondaryItems, () => this._getSecondaryMenu([
-                            (mainItems?.filter(i => !i.hideMobile) ?? []),
-                            (secondaryItems?.filter(i => !i.hideMobile) ?? [])
-                        ]))}
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    protected _getRealmMenu(callback: (realm: string) => void): TemplateResult {
-        if (!manager.isSuperUser()) return html``;
-
-        const currentRealm = this.realms.find((t) => t.name === this.realm);
-        const items = this.realms.map(r => ({value: r.name, label: r.displayName}));
-
-        return html`
-            <or-vaadin-select id="realm-picker" .items=${items} .value=${currentRealm?.name} ?disabled=${(items?.length ?? 0) <= 1}
-                              @change="${(ev: CustomEvent) => callback((ev.currentTarget as OrVaadinSelect).value)}"
-            ></or-vaadin-select>
-        `;
-    }
-
-    protected async _getAlarmButton() {
-        let newAlarms = false;
-        if (manager.hasRole("read:alarms") || manager.hasRole("read:admin")) {
-            const response = await manager.rest.api.AlarmResource.getAlarms({realm: manager.displayRealm, status: Model.AlarmStatus.OPEN});
-            newAlarms = response.data.length > 0;
-        }
-        this.alarmButton = newAlarms ? 'bell-badge-outline' : 'bell-outline';
-        this.alarmColor = newAlarms ? '--or-app-color4, ${unsafeCSS(DefaultColor4)}' : '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
-    }
-
-    protected _getSecondaryMenu(items: HeaderItem[][]): TemplateResult {
-        const menuItems: MenuBarItem[][] = items.map(group => {
-            return group.map(s => ({...s, text: undefined,
-                component: createMenuBarItem(html`
-                    <or-icon icon=${s.icon}></or-icon>
-                    <or-translate value=${s.text}></or-translate>
-                `)
-            }));
-        });
-        const flatItems: MenuBarItem[] = menuItems.flatMap((group, i) =>
-            (i < menuItems.length - 1) ? [...group, {component: createMenuBarItem(html`<hr style="width: 100%; color: white;">`)}] : group
+  // language=CSS
+  static get styles() {
+    return css`
+      :host {
+        --internal-or-header-color: var(--or-header-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-header-selected-color: var(
+          --or-header-selected-color,
+          var(--or-app-color4, ${unsafeCSS(DefaultColor4)})
         );
-        return html`
-            <or-vaadin-menu-bar id="drawer-menu" theme="icon" .items=${flatItems} style="min-width: 40px; width: 40px;"
-                                @item-selected=${(ev: CustomEvent)=> this._onSecondaryMenuSelect((ev.detail.value as HeaderItem).value!)}>
-                <vaadin-menu-bar-button slot="overflow" id="drawer-menu-button" theme="icon">
-                    <or-icon slot="prefix" icon="dots-vertical"></or-icon>
-                </vaadin-menu-bar-button>
-            </or-vaadin-menu-bar>
-        `;
-    }
+        --internal-or-header-text-color: var(--or-header-text-color, var(--or-app-color3, inherit));
+        --internal-or-header-height: var(--or-header-height, ${unsafeCSS(DefaultHeaderHeight)});
+        --internal-or-header-logo-margin: var(--or-header-logo-margin, 0 40px 0 0);
+        --internal-or-header-logo-height: var(
+          --or-header-logo-height,
+          var(--internal-or-header-height, ${unsafeCSS(DefaultHeaderHeight)})
+        );
+        --internal-or-header-item-size: var(--or-header-item-size, calc(${unsafeCSS(DefaultHeaderHeight)} - 20px));
+        --internal-or-header-drawer-color: var(
+          --or-header-drawer-color,
+          var(--or-app-color2, ${unsafeCSS(DefaultColor2)})
+        );
+        --internal-or-header-drawer-text-color: var(
+          --or-header-drawer-text-color,
+          var(--or-app-color3, ${unsafeCSS(DefaultColor3)})
+        );
+        --internal-or-header-drawer-item-size: var(--or-header-drawer-item-size, 30px);
+        --internal-or-header-drawer-separator-color: var(
+          --or-header-drawer-separator-color,
+          var(--or-app-color5, ${unsafeCSS(DefaultColor5)})
+        );
 
-    protected _onSecondaryMenuSelect(value: string) {
-        const headerItem = [...this.config!.mainMenu!, ...this.config!.secondaryMenu!].find((item) => item.value === value);
-        if (headerItem) {
-            this._onHeaderItemSelect(headerItem);
-        } else {
-            console.warn("Could not find header item to navigate towards.");
+        display: block;
+        z-index: 4;
+      }
+
+      #toolbar-top {
+        display: flex;
+        padding: 0;
+      }
+
+      #logo-mobile {
+        margin: 8px;
+        height: calc(var(--internal-or-header-logo-height) - 16px);
+        display: block;
+      }
+
+      #logo {
+        display: none;
+      }
+
+      #header {
+        opacity: 1;
+        width: 100%;
+        height: var(--internal-or-header-height);
+        text-align: center;
+        background-color: var(--internal-or-header-color);
+        color: var(--internal-or-header-text-color);
+        --or-icon-fill: var(--internal-or-header-text-color);
+        --or-icon-height: calc(var(--internal-or-header-item-size) - 12px);
+        --or-icon-width: calc(var(--internal-or-header-item-size) - 12px);
+        z-index: 9999999;
+      }
+
+      .shadow {
+        -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+        -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+        box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+      }
+
+      #drawer-menu vaadin-menu-bar-item::part(content) {
+        gap: 8px;
+      }
+
+      .menu-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0 16px;
+        height: 100%;
+      }
+
+      #mobile-right {
+        display: flex;
+        padding-right: 4px;
+        gap: 4px;
+        align-items: center;
+        margin-left: auto;
+        --or-icon-height: calc(var(--internal-or-header-item-size) - 8px);
+        --or-icon-width: calc(var(--internal-or-header-item-size) - 8px);
+      }
+
+      #desktop-right {
+        margin-left: auto;
+        padding-right: 10px;
+        display: none;
+      }
+
+      .mobile-bottom-border {
+        border-top: 1px solid var(--internal-or-header-drawer-separator-color);
+        margin-top: 16px;
+        padding-top: 8px;
+      }
+
+      .menu-item {
+        opacity: 0.7;
+        cursor: pointer;
+        text-decoration: none !important;
+        color: inherit;
+        padding: 0 10px;
+        font-size: 14px;
+      }
+
+      .menu-item:hover,
+      .menu-item[selected] {
+        opacity: 1;
+      }
+      #desktop-left .menu-item or-icon {
+        margin-right: 10px;
+      }
+      #desktop-left .menu-item {
+        display: none;
+        line-height: calc(var(--internal-or-header-height) - 4px);
+      }
+
+      #desktop-right .menu-item {
+        line-height: var(--internal-or-header-height);
+      }
+
+      #drawer .menu-item {
+        display: block;
+        line-height: var(--internal-or-header-drawer-item-size);
+        margin: 6px 0;
+        padding: 8px 16px;
+      }
+
+      #drawer .menu-item or-icon {
+        margin: 0 10px;
+      }
+
+      #desktop-left .menu-item[selected] {
+        display: inline-block;
+        line-height: var(--internal-or-header-height);
+      }
+
+      .or-language-container {
+        display: flex;
+        height: 50px;
+        align-items: center;
+      }
+
+      #realm-picker {
+        min-width: 140px;
+      }
+
+      /* Hides the default menu bar content (three horizontal dots) and replace it ourselves using the slot="prefix" */
+      #drawer-menu-button::part(label) {
+        display: none;
+      }
+
+      /* Wide layout: when the viewport width is bigger than 768px, layout
+            changes to a wide layout. */
+      @media (min-width: 900px) {
+        #mobile-right {
+          display: none;
         }
-    }
 
-    protected _onHeaderItemSelect(headerItem: HeaderItem, e?: MouseEvent) {
-        if (headerItem.action) {
-            e?.preventDefault();
-            headerItem.action();
-            return;
+        #drawer {
+          display: none;
         }
-        // If not triggered by a MouseEvent, we should navigate manually instead of using <a href="">
-        if (!e && headerItem.href) {
-            if (headerItem.absolute) {
-                globalThis.location.assign(headerItem.href);
-            } else {
-                router.navigate(headerItem.href);
-            }
+
+        #desktop-right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
+
+        #desktop-left .menu-item {
+          display: inline-block;
+        }
+
+        #desktop-left .menu-item or-icon {
+          display: none;
+        }
+
+        #desktop-left .menu-item[selected] {
+          border-bottom: 4px solid var(--internal-or-header-selected-color);
+          line-height: calc(var(--internal-or-header-height) - 4px);
+        }
+
+        #logo {
+          margin: var(--internal-or-header-logo-margin);
+          height: var(--internal-or-header-logo-height);
+          display: block;
+        }
+
+        #logo-mobile {
+          display: none;
+        }
+
+        #realm-picker {
+          min-width: 160px;
+        }
+
+        #desktop-left ::slotted(*) {
+          display: inline-block;
+        }
+
+        #desktop-left ::slotted(*[selected]) {
+          border-bottom: 4px solid var(--internal-or-header-selected-color);
+          line-height: calc(var(--internal-or-header-height) - 4px);
+        }
+
+        .menu-item {
+          padding: 0 20px;
+        }
+      }
+
+      @media (min-width: 1100px) {
+        #desktop-left .menu-item or-icon {
+          display: inline-block;
+        }
+      }
+    `;
+  }
+
+  @property({ type: Array })
+  public realms!: Realm[];
+
+  @property({ type: String })
+  public realm!: string;
+
+  @property({ type: Object })
+  public store!: Store<AppStateKeyed, AnyAction>;
+
+  @property({ type: String })
+  public logo?: string;
+
+  @property({ type: String })
+  public logoMobile?: string;
+
+  @property({ type: Object })
+  public config?: HeaderConfig;
+
+  @query("div[id=mobile-bottom]")
+  protected _mobileBottomDiv!: HTMLDivElement;
+
+  @property()
+  public activeMenu: string | undefined;
+
+  @state()
+  private _drawerOpened = false;
+
+  @state()
+  private alarmButton = "bell-outline";
+
+  @state()
+  private alarmColor = "--or-app-color3, ${unsafeCSS(DefaultColor3)}";
+
+  private _eventSubscriptionId?: string;
+
+  public _onRealmSelect(realm: string) {
+    this.store.dispatch(updateRealm(realm));
+  }
+
+  protected shouldUpdate(changedProperties: PropertyValues): boolean {
+    if (changedProperties.has("config")) {
+      this.activeMenu = getCurrentMenuItemRef(
+        this.config && this.config.mainMenu && this.config.mainMenu.length > 0
+          ? this.config.mainMenu[0].href
+          : undefined
+      );
+    }
+    if (changedProperties.has("realm")) {
+      this._getAlarmButton();
+    }
+    return super.shouldUpdate(changedProperties);
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._subscribeEvents();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubscribeEvents();
+  }
+
+  protected async _subscribeEvents() {
+    if (manager.events) {
+      this._eventSubscriptionId = await manager.events.subscribe<AlarmEvent>(
+        {
+          eventType: "alarm",
+        },
+        (ev) => this._getAlarmButton()
+      );
+    }
+  }
+
+  protected _unsubscribeEvents() {
+    if (this._eventSubscriptionId) {
+      manager.events!.unsubscribe(this._eventSubscriptionId);
+      this._eventSubscriptionId = undefined;
+    }
+  }
+
+  protected render() {
+    if (!this.config) {
+      return html``;
     }
 
-    protected _getHeaderHref({ href, absolute }: HeaderItem): string {
-        if (!href) return "#";
-        return absolute ? href : `#/${href}`;
-    }
+    const mainItems: HeaderItem[] | undefined = this.config.mainMenu?.filter(hasRequiredRole);
+    const secondaryItems: HeaderItem[] | undefined = this.config.secondaryMenu?.filter(hasRequiredRole);
 
-    protected _closeDrawer() {
-        this._drawerOpened = false;
-    }
+    return html`
+      <!-- Header -->
+      <div id="header" class="shadow">
+        <div id="toolbar-top">
+          <div><img id="logo" src="${this.logo}" /><img id="logo-mobile" src="${this.logoMobile}" /></div>
 
-    protected _toggleDrawer() {
-        this._drawerOpened = !this._drawerOpened;
+          <!-- This gets hidden on a small screen-->
+          <nav id="toolbar-list">
+            <div id="desktop-left">
+              ${
+                mainItems
+                  ? mainItems.map((headerItem) => {
+                      return html`
+                        <a
+                          class="menu-item"
+                          href=${this._getHeaderHref(headerItem)}
+                          @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem, e)}"
+                          ?selected="${this.activeMenu === headerItem.href}"
+                          ><or-icon icon="${headerItem.icon}"></or-icon
+                          ><or-translate value="${headerItem.text}"></or-translate
+                        ></a>
+                      `;
+                    })
+                  : ``
+              }
+            </div>
+          </nav>
+          <div id="desktop-right">
+            <or-vaadin-button
+              theme="icon"
+              title=${i18next.t("alarm.alarm_plural")}
+              @click=${() => router.navigate("alarms")}
+            >
+              <or-icon icon=${this.alarmButton} style="color:var(${this.alarmColor})"></or-icon>
+            </or-vaadin-button>
+            ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
+            ${when(secondaryItems, () => this._getSecondaryMenu([secondaryItems ?? []]))}
+          </div>
+          <div id="mobile-right">
+            ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
+            ${when(secondaryItems, () =>
+              this._getSecondaryMenu([
+                mainItems?.filter((i) => !i.hideMobile) ?? [],
+                secondaryItems?.filter((i) => !i.hideMobile) ?? [],
+              ])
+            )}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  protected _getRealmMenu(callback: (realm: string) => void): TemplateResult {
+    if (!manager.isSuperUser()) return html``;
+
+    const currentRealm = this.realms.find((t) => t.name === this.realm);
+    const items = this.realms.map((r) => ({ value: r.name, label: r.displayName }));
+
+    return html`
+      <or-vaadin-select
+        id="realm-picker"
+        .items=${items}
+        .value=${currentRealm?.name}
+        ?disabled=${(items?.length ?? 0) <= 1}
+        @change="${(ev: CustomEvent) => callback((ev.currentTarget as OrVaadinSelect).value)}"
+      ></or-vaadin-select>
+    `;
+  }
+
+  protected async _getAlarmButton() {
+    let newAlarms = false;
+    if (manager.hasRole("read:alarms") || manager.hasRole("read:admin")) {
+      const response = await manager.rest.api.AlarmResource.getAlarms({
+        realm: manager.displayRealm,
+        status: Model.AlarmStatus.OPEN,
+      });
+      newAlarms = response.data.length > 0;
     }
+    this.alarmButton = newAlarms ? "bell-badge-outline" : "bell-outline";
+    this.alarmColor = newAlarms
+      ? "--or-app-color4, ${unsafeCSS(DefaultColor4)}"
+      : "--or-app-color3, ${unsafeCSS(DefaultColor3)}";
+  }
+
+  protected _getSecondaryMenu(items: HeaderItem[][]): TemplateResult {
+    const menuItems: MenuBarItem[][] = items.map((group) => {
+      return group.map((s) => ({
+        ...s,
+        text: undefined,
+        component: createMenuBarItem(html`
+          <or-icon icon=${s.icon}></or-icon>
+          <or-translate value=${s.text}></or-translate>
+        `),
+      }));
+    });
+    const flatItems: MenuBarItem[] = menuItems.flatMap((group, i) =>
+      i < menuItems.length - 1
+        ? [...group, { component: createMenuBarItem(html`<hr style="width: 100%; color: white;" />`) }]
+        : group
+    );
+    return html`
+      <or-vaadin-menu-bar
+        id="drawer-menu"
+        theme="icon"
+        .items=${flatItems}
+        style="min-width: 40px; width: 40px;"
+        @item-selected=${(ev: CustomEvent) => this._onSecondaryMenuSelect((ev.detail.value as HeaderItem).value!)}
+      >
+        <vaadin-menu-bar-button slot="overflow" id="drawer-menu-button" theme="icon">
+          <or-icon slot="prefix" icon="dots-vertical"></or-icon>
+        </vaadin-menu-bar-button>
+      </or-vaadin-menu-bar>
+    `;
+  }
+
+  protected _onSecondaryMenuSelect(value: string) {
+    const headerItem = [...this.config!.mainMenu!, ...this.config!.secondaryMenu!].find((item) => item.value === value);
+    if (headerItem) {
+      this._onHeaderItemSelect(headerItem);
+    } else {
+      console.warn("Could not find header item to navigate towards.");
+    }
+  }
+
+  protected _onHeaderItemSelect(headerItem: HeaderItem, e?: MouseEvent) {
+    if (headerItem.action) {
+      e?.preventDefault();
+      headerItem.action();
+      return;
+    }
+    // If not triggered by a MouseEvent, we should navigate manually instead of using <a href="">
+    if (!e && headerItem.href) {
+      if (headerItem.absolute) {
+        globalThis.location.assign(headerItem.href);
+      } else {
+        router.navigate(headerItem.href);
+      }
+    }
+  }
+
+  protected _getHeaderHref({ href, absolute }: HeaderItem): string {
+    if (!href) return "#";
+    return absolute ? href : `#/${href}`;
+  }
+
+  protected _closeDrawer() {
+    this._drawerOpened = false;
+  }
+
+  protected _toggleDrawer() {
+    this._drawerOpened = !this._drawerOpened;
+  }
 }

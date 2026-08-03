@@ -1,1012 +1,1224 @@
-import {css, html, LitElement, PropertyValues} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, type PropertyValues } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 import {
-    Asset,
-    AssetDescriptor,
-    AssetModelUtil,
-    AssetQuery,
-    AssetQueryMatch,
-    AssetQueryOperator as AQO,
-    AssetTypeInfo,
-    Attribute,
-    AttributeDescriptor,
-    AttributePredicate,
-    LogicGroup,
-    LogicGroupOperator,
-    RuleCondition,
-    ValueDescriptor,
-    ValuePredicateUnion,
-    WellknownMetaItems,
-    WellknownValueTypes
+  type Asset,
+  type AssetDescriptor,
+  AssetModelUtil,
+  type AssetQuery,
+  AssetQueryMatch,
+  AssetQueryOperator as AQO,
+  type AssetTypeInfo,
+  type Attribute,
+  type AttributeDescriptor,
+  type AttributePredicate,
+  type LogicGroup,
+  LogicGroupOperator,
+  type RuleCondition,
+  type ValueDescriptor,
+  type ValuePredicateUnion,
+  WellknownMetaItems,
+  WellknownValueTypes,
 } from "@openremote/model";
-import {AssetQueryOperator, getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
+import { AssetQueryOperator, getAssetIdsFromQuery, getAssetTypeFromQuery, type RulesConfig } from "../index";
 import "@openremote/or-attribute-input";
-import {Util} from "@openremote/core";
-import {i18next, translate} from "@openremote/or-translate";
-import {buttonStyle} from "../style";
-import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
+import { Util } from "@openremote/core";
+import { i18next, translate } from "@openremote/or-translate";
+import { buttonStyle } from "../style";
+import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
+import type { OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
-import {ifDefined} from "lit/directives/if-defined.js";
-import {when} from "lit/directives/when.js";
+import { ifDefined } from "lit/directives/if-defined.js";
+import { when } from "lit/directives/when.js";
 import moment from "moment";
-import {
-    ComboBoxDataProviderCallback,
-    ComboBoxDataProviderParams,
-    OrVaadinComboBox
+import type {
+  ComboBoxDataProviderCallback,
+  ComboBoxDataProviderParams,
+  OrVaadinComboBox,
 } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
-import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
-import {InputType} from "@openremote/or-vaadin-components/util";
+import type { OrVaadinNumberField } from "@openremote/or-vaadin-components/or-vaadin-number-field";
+import { InputType } from "@openremote/or-vaadin-components/util";
 import debounce from "lodash.debounce";
 
 // language=CSS
 const style = css`
-    
-    ${buttonStyle}
-    
-    :host {
-        display: block;
-    }
-    
-    .attribute-group {
-        flex-grow: 1;
-        display: flex;
-        align-items: start;
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
+  ${buttonStyle}
 
-    .min-width {
-        flex: 0 0 200px;
-    }
-    
-    .attribute-group > * {
-        margin: 10px 3px 6px 3px;
-    }
-    .attributes {
-        flex: 1 1 min-content;
-        display: flex;
-        flex-direction: column;
-        row-gap: 10px;
-    }
-    or-icon.small {
-        --or-icon-width: 14px;
-        --or-icon-height: 14px;
-    }
-    .attribute {
-        display: flex;
-        align-items: baseline;
-    }
-    .attribute > div {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: baseline;
-        gap: 6px;
-    }
-    .attribute > div > or-rule-radial-modal {
-        min-width: auto;
-    }
-    .attribute > div > or-vaadin-button {
-        min-width: auto;
-    }
-    .attribute > div > :is(or-vaadin-combo-box, or-vaadin-number-field) {
-        width: 200px;
-    }
-    .attribute > div > or-attribute-input {
-        width: 200px;
-    }
-    .attribute > div > * {
-        min-width: 200px;
-    }
-    .button-clear {
-        margin-left: auto;
-    }
-    .attribute:hover .button-clear {
-        visibility: visible;
-    }
-    
-    .invalidLabel {
-        display: flex;
-        align-items: baseline;
-        height: 48px; /* Same as the icon size */
-    }
+  :host {
+    display: block;
+  }
+
+  .attribute-group {
+    flex-grow: 1;
+    display: flex;
+    align-items: start;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .min-width {
+    flex: 0 0 200px;
+  }
+
+  .attribute-group > * {
+    margin: 10px 3px 6px 3px;
+  }
+  .attributes {
+    flex: 1 1 min-content;
+    display: flex;
+    flex-direction: column;
+    row-gap: 10px;
+  }
+  or-icon.small {
+    --or-icon-width: 14px;
+    --or-icon-height: 14px;
+  }
+  .attribute {
+    display: flex;
+    align-items: baseline;
+  }
+  .attribute > div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .attribute > div > or-rule-radial-modal {
+    min-width: auto;
+  }
+  .attribute > div > or-vaadin-button {
+    min-width: auto;
+  }
+  .attribute > div > :is(or-vaadin-combo-box, or-vaadin-number-field) {
+    width: 200px;
+  }
+  .attribute > div > or-attribute-input {
+    width: 200px;
+  }
+  .attribute > div > * {
+    min-width: 200px;
+  }
+  .button-clear {
+    margin-left: auto;
+  }
+  .attribute:hover .button-clear {
+    visibility: visible;
+  }
+
+  .invalidLabel {
+    display: flex;
+    align-items: baseline;
+    height: 48px; /* Same as the icon size */
+  }
 `;
 
 @customElement("or-rule-asset-query")
 export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
+  @property({ type: Object, attribute: false })
+  public condition!: RuleCondition;
 
-    @property({type: Object, attribute: false})
-    public condition!: RuleCondition;
+  public readonly?: boolean;
 
-    public readonly?: boolean;
+  @property({ type: Object })
+  public config?: RulesConfig;
 
-    @property({type: Object})
-    public config?: RulesConfig;
+  @property({ type: Object })
+  public assetInfos?: AssetTypeInfo[];
 
-    @property({type: Object})
-    public assetInfos?: AssetTypeInfo[];
+  @property({ type: Object })
+  public assetProvider!: (type: string, query?: AssetQuery) => Promise<Asset[] | undefined>;
 
-    @property({type: Object})
-    public assetProvider!: (type: string, query?: AssetQuery) => Promise<Asset[] | undefined>;
+  @state()
+  protected _cache?: { query: AssetQuery; assets: Asset[] };
 
-    @state()
-    protected _cache?: {query: AssetQuery, assets: Asset[]};
+  @state()
+  protected _selected?: Asset;
 
-    @state()
-    protected _selected?: Asset;
+  protected _loading = false;
 
-    protected _loading = false;
+  // Value predicates for specific value descriptors
+  protected _queryOperatorsMap: { [type: string]: AssetQueryOperator[] } = {};
 
-    // Value predicates for specific value descriptors
-    protected _queryOperatorsMap: {[type: string]: AssetQueryOperator[]} = {};
+  constructor() {
+    super();
 
-    constructor() {
-        super();
+    this._queryOperatorsMap[WellknownValueTypes.GEOJSONPOINT] = [
+      AssetQueryOperator.EQUALS,
+      AssetQueryOperator.NOT_EQUALS,
+      AssetQueryOperator.WITHIN_RADIUS,
+      AssetQueryOperator.OUTSIDE_RADIUS,
+      AssetQueryOperator.WITHIN_RECTANGLE,
+      AssetQueryOperator.OUTSIDE_RECTANGLE,
+      AssetQueryOperator.INSIDE_AREA,
+      AssetQueryOperator.OUTSIDE_AREA,
+      AssetQueryOperator.VALUE_EMPTY,
+      AssetQueryOperator.VALUE_NOT_EMPTY,
+      AssetQueryOperator.NOT_UPDATED_FOR,
+    ];
+    this._queryOperatorsMap.string = [
+      AssetQueryOperator.EQUALS,
+      AssetQueryOperator.NOT_EQUALS,
+      AssetQueryOperator.CONTAINS,
+      AssetQueryOperator.NOT_CONTAINS,
+      AssetQueryOperator.STARTS_WITH,
+      AssetQueryOperator.NOT_STARTS_WITH,
+      AssetQueryOperator.ENDS_WITH,
+      AssetQueryOperator.NOT_ENDS_WITH,
+      AssetQueryOperator.VALUE_EMPTY,
+      AssetQueryOperator.VALUE_NOT_EMPTY,
+      AssetQueryOperator.NOT_UPDATED_FOR,
+    ];
+    this._queryOperatorsMap.number = [
+      AssetQueryOperator.EQUALS,
+      AssetQueryOperator.NOT_EQUALS,
+      AssetQueryOperator.GREATER_THAN,
+      AssetQueryOperator.GREATER_EQUALS,
+      AssetQueryOperator.LESS_THAN,
+      AssetQueryOperator.LESS_EQUALS,
+      AssetQueryOperator.BETWEEN,
+      AssetQueryOperator.NOT_BETWEEN,
+      AssetQueryOperator.VALUE_EMPTY,
+      AssetQueryOperator.VALUE_NOT_EMPTY,
+      AssetQueryOperator.NOT_UPDATED_FOR,
+    ];
+    this._queryOperatorsMap.boolean = [
+      AssetQueryOperator.IS_TRUE,
+      AssetQueryOperator.IS_FALSE,
+      AssetQueryOperator.VALUE_EMPTY,
+      AssetQueryOperator.VALUE_NOT_EMPTY,
+      AssetQueryOperator.NOT_UPDATED_FOR,
+    ];
+    this._queryOperatorsMap.array = [
+      AssetQueryOperator.CONTAINS,
+      AssetQueryOperator.NOT_CONTAINS,
+      AssetQueryOperator.INDEX_CONTAINS,
+      AssetQueryOperator.NOT_INDEX_CONTAINS,
+      AssetQueryOperator.LENGTH_EQUALS,
+      AssetQueryOperator.NOT_LENGTH_EQUALS,
+      AssetQueryOperator.LENGTH_LESS_THAN,
+      AssetQueryOperator.LENGTH_GREATER_THAN,
+      AssetQueryOperator.VALUE_EMPTY,
+      AssetQueryOperator.VALUE_NOT_EMPTY,
+      AssetQueryOperator.NOT_UPDATED_FOR,
+    ];
+    this._queryOperatorsMap.object = [
+      AssetQueryOperator.CONTAINS_KEY,
+      AssetQueryOperator.NOT_CONTAINS_KEY,
+      AssetQueryOperator.VALUE_EMPTY,
+      AssetQueryOperator.VALUE_NOT_EMPTY,
+      AssetQueryOperator.NOT_UPDATED_FOR,
+    ];
+  }
 
-        this._queryOperatorsMap[WellknownValueTypes.GEOJSONPOINT] = [
-            AssetQueryOperator.EQUALS,
-            AssetQueryOperator.NOT_EQUALS,
-            AssetQueryOperator.WITHIN_RADIUS,
-            AssetQueryOperator.OUTSIDE_RADIUS,
-            AssetQueryOperator.WITHIN_RECTANGLE,
-            AssetQueryOperator.OUTSIDE_RECTANGLE,
-            AssetQueryOperator.INSIDE_AREA,
-            AssetQueryOperator.OUTSIDE_AREA,
-            AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY,
-            AssetQueryOperator.NOT_UPDATED_FOR
-        ];
-        this._queryOperatorsMap["string"] = [
-            AssetQueryOperator.EQUALS,
-            AssetQueryOperator.NOT_EQUALS,
-            AssetQueryOperator.CONTAINS,
-            AssetQueryOperator.NOT_CONTAINS,
-            AssetQueryOperator.STARTS_WITH,
-            AssetQueryOperator.NOT_STARTS_WITH,
-            AssetQueryOperator.ENDS_WITH,
-            AssetQueryOperator.NOT_ENDS_WITH,
-            AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY,
-            AssetQueryOperator.NOT_UPDATED_FOR
-        ];
-        this._queryOperatorsMap["number"] = [
-            AssetQueryOperator.EQUALS,
-            AssetQueryOperator.NOT_EQUALS,
-            AssetQueryOperator.GREATER_THAN,
-            AssetQueryOperator.GREATER_EQUALS,
-            AssetQueryOperator.LESS_THAN,
-            AssetQueryOperator.LESS_EQUALS,
-            AssetQueryOperator.BETWEEN,
-            AssetQueryOperator.NOT_BETWEEN,
-            AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY,
-            AssetQueryOperator.NOT_UPDATED_FOR
-        ];
-        this._queryOperatorsMap["boolean"] = [
-            AssetQueryOperator.IS_TRUE,
-            AssetQueryOperator.IS_FALSE,
-            AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY,
-            AssetQueryOperator.NOT_UPDATED_FOR
-        ];
-        this._queryOperatorsMap["array"] = [
-            AssetQueryOperator.CONTAINS,
-            AssetQueryOperator.NOT_CONTAINS,
-            AssetQueryOperator.INDEX_CONTAINS,
-            AssetQueryOperator.NOT_INDEX_CONTAINS,
-            AssetQueryOperator.LENGTH_EQUALS,
-            AssetQueryOperator.NOT_LENGTH_EQUALS,
-            AssetQueryOperator.LENGTH_LESS_THAN,
-            AssetQueryOperator.LENGTH_GREATER_THAN,
-            AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY,
-            AssetQueryOperator.NOT_UPDATED_FOR
-        ];
-        this._queryOperatorsMap["object"] = [
-            AssetQueryOperator.CONTAINS_KEY,
-            AssetQueryOperator.NOT_CONTAINS_KEY,
-            AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY,
-            AssetQueryOperator.NOT_UPDATED_FOR
-        ];
+  public refresh() {
+    // Clear assets
+    this._cache = undefined;
+  }
+
+  protected attributePredicateEditorTemplate(
+    assetTypeInfo: AssetTypeInfo,
+    asset: Asset | undefined,
+    attributePredicate: AttributePredicate
+  ) {
+    const assetDescriptor = assetTypeInfo.assetDescriptor!;
+    const operator = this.getOperator(attributePredicate);
+    const attributeName = this.getAttributeName(attributePredicate);
+    const attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
+    let attributes: { value: any; label: string }[] = [];
+    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(
+      asset ? asset.type : assetDescriptor.name,
+      attribute || attributeName,
+      attribute
+    );
+
+    if (asset && asset.attributes) {
+      attributes = Object.values(asset.attributes)
+        .filter(
+          (attr) =>
+            attr.meta &&
+            (attr.meta.hasOwnProperty(WellknownMetaItems.RULESTATE)
+              ? attr.meta[WellknownMetaItems.RULESTATE]
+              : attr.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK))
+        )
+        .map((attr) => {
+          const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
+          const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, false);
+          return { value: attr.name!, label };
+        });
+    } else {
+      attributes =
+        !assetTypeInfo || !assetTypeInfo.attributeDescriptors
+          ? []
+          : assetTypeInfo.attributeDescriptors.map((ad) => {
+              const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetDescriptor.name, ad);
+              const label = Util.getAttributeLabel(
+                undefined,
+                descriptors ? descriptors[0] : undefined,
+                assetDescriptor.name,
+                false
+              );
+              return { value: ad.name!, label };
+            });
     }
 
-    public refresh() {
-        // Clear assets
-        this._cache = undefined;
+    attributes.sort(Util.sortByString((attr) => attr.label));
+
+    const operators: { value: any; label: string }[] = attributeName
+      ? this.getOperators(
+          assetDescriptor,
+          descriptors ? descriptors[0] : undefined,
+          descriptors ? descriptors[1] : undefined,
+          attribute,
+          attributeName
+        )
+      : [];
+
+    return html`
+      <or-vaadin-combo-box
+        ?readonly=${this.readonly}
+        .items=${attributes}
+        value=${attributeName}
+        @change=${(ev: Event) => this.setAttributeName(attributePredicate, (ev.currentTarget as OrVaadinComboBox).value)}
+      >
+        <or-translate slot="label" value="attribute"></or-translate>
+      </or-vaadin-combo-box>
+      ${when(
+        attributeName,
+        () => html`
+          <or-vaadin-combo-box
+            ?readonly=${this.readonly}
+            .items=${operators}
+            value="${operator}"
+            @change=${(ev: Event) => this.setOperator(assetDescriptor, attribute, attributeName!, attributePredicate, (ev.currentTarget as OrVaadinComboBox).value)}
+            >]
+            <or-translate slot="label" value="operator"></or-translate>
+          </or-vaadin-combo-box>
+        `
+      )}
+      ${when(attributePredicate, () => this.attributePredicateValueEditorTemplate(assetDescriptor, asset, attributePredicate))}
+    `;
+  }
+
+  protected attributePredicateValueEditorTemplate(
+    assetDescriptor: AssetDescriptor,
+    asset: Asset | undefined,
+    attributePredicate: AttributePredicate
+  ) {
+    const operator = this.getOperator(attributePredicate);
+
+    if (operator === AssetQueryOperator.NOT_UPDATED_FOR) {
+      const duration = attributePredicate.timestampOlderThan
+        ? moment.duration(attributePredicate.timestampOlderThan)
+        : undefined;
+      return html`
+        <or-vaadin-number-field
+          min="0"
+          value=${duration?.asMinutes()}
+          @change=${(ev: Event) => {
+            const elem = ev.currentTarget as OrVaadinNumberField;
+            if (elem.checkValidity()) {
+              const minutes = Number(elem.value);
+              const newDuration = moment.duration(minutes, "minutes");
+              attributePredicate.timestampOlderThan = minutes > 0 ? newDuration.toISOString() : undefined;
+              this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+            }
+          }}
+        >
+          <or-translate slot="label" value="rulesEditorDuration"></or-translate>
+        </or-vaadin-number-field>
+      `;
     }
 
-    protected attributePredicateEditorTemplate(assetTypeInfo: AssetTypeInfo, asset: Asset | undefined, attributePredicate: AttributePredicate) {
+    const valuePredicate = attributePredicate.value;
 
-        const assetDescriptor = assetTypeInfo.assetDescriptor!;
-        const operator = this.getOperator(attributePredicate);
-        const attributeName = this.getAttributeName(attributePredicate);
-        const attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
-        let attributes: {value: any, label: string}[] = [];
-        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset ? asset.type : assetDescriptor.name, attribute || attributeName, attribute);
+    if (!assetDescriptor || !valuePredicate) {
+      return ``;
+    }
 
-        if (asset && asset.attributes) {
-            attributes = Object.values(asset.attributes)
-                .filter(attr => attr.meta && (attr.meta.hasOwnProperty(WellknownMetaItems.RULESTATE) ? attr.meta[WellknownMetaItems.RULESTATE] : attr.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
-                .map(attr => {
-                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
-                    const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, false);
-                    return {value: attr.name!, label: label};
-                });
-        } else {
-            attributes = !assetTypeInfo || !assetTypeInfo.attributeDescriptors ? [] :
-                assetTypeInfo.attributeDescriptors
-                    .map(ad => {
-                        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetDescriptor.name, ad);
-                        const label = Util.getAttributeLabel(undefined, descriptors ? descriptors[0] : undefined, assetDescriptor.name, false);
-                        return {value: ad.name!, label: label};
-                    });
-        }  
-        
-        attributes.sort(Util.sortByString(attr => attr.label));
+    const attributeName = this.getAttributeName(attributePredicate);
+    const assetType = getAssetTypeFromQuery(this.query);
+    const attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
+    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, attributeName, attribute);
 
-        const operators: {value: any, label: string}[] = attributeName ? this.getOperators(assetDescriptor, descriptors ? descriptors[0] : undefined, descriptors ? descriptors[1] : undefined, attribute, attributeName) : [];
+    // @ts-ignore
+    const value = valuePredicate ? valuePredicate.value : undefined;
 
+    switch (valuePredicate.predicateType) {
+      case "string":
+        return html`<or-attribute-input
+          @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}"
+          .customProvider="${this.config?.inputProvider}"
+          .label="${i18next.t("value")}"
+          .assetType="${assetType}"
+          .attributeDescriptor="${descriptors[0]}"
+          .attributeValueDescriptor="${descriptors[1]}"
+          .value="${value}"
+          .readonly="${this.readonly || false}"
+          .fullWidth="${true}"
+        ></or-attribute-input>`;
+      case "boolean":
+        return html``; // Handled by the operator IS_TRUE or IS_FALSE
+      case "datetime":
+        return html`<span>NOT IMPLEMENTED</span>`;
+      case "number":
+        if (valuePredicate.operator === AQO.BETWEEN) {
+          return html`
+            <or-attribute-input
+              .inputType="${InputType.NUMBER}"
+              @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}"
+              .customProvider="${this.config?.inputProvider}"
+              .label="${i18next.t("between")}"
+              .assetType="${assetType}"
+              .attributeDescriptor="${descriptors[0]}"
+              .attributeValueDescriptor="${descriptors[1]}"
+              .value="${value}"
+              .readonly="${this.readonly || false}"
+              .fullWidth="${true}"
+            ></or-attribute-input>
+            <span style="display: inline-flex; align-items: center;">&</span>
+            <or-attribute-input
+              .inputType="${InputType.NUMBER}"
+              @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "rangeValue", ev.detail.value)}"
+              .customProvider="${this.config?.inputProvider}"
+              .label="${i18next.t("and")}"
+              .assetType="${assetType}"
+              .attributeDescriptor="${descriptors[0]}"
+              .attributeValueDescriptor="${descriptors[1]}"
+              .value="${valuePredicate.rangeValue}"
+              .readonly="${this.readonly || false}"
+              .fullWidth="${true}"
+            ></or-attribute-input>
+          `;
+        }
+        let inputType;
+        if (descriptors[0]?.format?.asSlider) inputType = InputType.NUMBER;
+        return html`<or-attribute-input
+          .inputType="${ifDefined(inputType)}"
+          @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}"
+          .customProvider="${this.config?.inputProvider}"
+          .label=""
+          .assetType="${assetType}"
+          .attributeDescriptor="${descriptors[0]}"
+          .attributeValueDescriptor="${descriptors[1]}"
+          .value="${value}"
+          .readonly="${this.readonly || false}"
+          .fullWidth="${true}"
+        ></or-attribute-input>`;
+      case "radial":
+        return html`<or-rule-radial-modal
+          .query="${this.query}"
+          .assetDescriptor="${assetDescriptor}"
+          .attributePredicate="${attributePredicate}"
+          ?readonly=${this.readonly}
+        ></or-rule-radial-modal>`;
+      case "rect":
+        return html`<span>NOT IMPLEMENTED</span>`;
+      case "geojson":
+        const geoJsonConfig =
+          valuePredicate.predicateType === "geojson" && (valuePredicate as any).geoJSON
+            ? (() => {
+                try {
+                  return { source: JSON.parse((valuePredicate as any).geoJSON), layers: [] };
+                } catch {
+                  return undefined;
+                }
+              })()
+            : undefined;
         return html`
-            <or-vaadin-combo-box ?readonly=${this.readonly} .items=${attributes} value=${attributeName}
-                                 @change=${(ev: Event) => this.setAttributeName(attributePredicate, (ev.currentTarget as OrVaadinComboBox).value)}>
-                <or-translate slot="label" value="attribute"></or-translate>
+          <or-conf-map-geojson
+            .geoJson="${geoJsonConfig}"
+            @update="${(e: CustomEvent) => {
+              const cfg = e.detail.value; // GeoJsonConfig {source, layers}
+              const src = cfg && cfg.source ? JSON.stringify(cfg.source) : "";
+              this.setValuePredicateProperty(valuePredicate, "geoJSON", src);
+            }}"
+          ></or-conf-map-geojson>
+        `;
+      case "value-empty":
+        return ``;
+      case "array":
+        // TODO: Update once we can determine inner type of array
+        // Assume string array
+        return html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}" .fullWidth="${true}></or-attribute-input>`;
+      default:
+        return html`<span>NOT IMPLEMENTED</span>`;
+    }
+  }
+
+  protected attributeDurationTemplate(
+    durationMap: Map<number, string | undefined>,
+    index: number,
+    onAdd: (index: number) => void,
+    onChange: (index: number, duration: string | undefined) => void
+  ) {
+    const attributePredicate = this.query.attributes?.items?.[index];
+    const operator = attributePredicate ? this.getOperator(attributePredicate) : undefined;
+
+    // Don't show duration button if NOT_UPDATED_FOR is selected
+    if (operator === AssetQueryOperator.NOT_UPDATED_FOR) {
+      return html``;
+    }
+
+    if (durationMap.has(index)) {
+      const isoDuration = durationMap.get(index);
+      const duration = isoDuration ? moment.duration(isoDuration) : undefined;
+      return html`
+        <or-vaadin-number-field
+          min="0"
+          ?readonly=${this.readonly}
+          value=${duration?.asMinutes()}
+          @change=${(ev: Event) => {
+            const elem = ev.currentTarget as OrVaadinNumberField;
+            if (elem.checkValidity()) {
+              const newDuration = moment.duration(elem.value, "minutes");
+              if (newDuration.asMinutes() > 0) {
+                onChange(index, newDuration.toISOString());
+              } else {
+                onChange(index, undefined);
+              }
+            }
+          }}
+        >
+          <or-translate slot="label" value="rulesEditorDuration"></or-translate>
+        </or-vaadin-number-field>
+      `;
+    } else {
+      return html`
+        <or-vaadin-button
+          theme="icon"
+          ?disabled=${this.readonly}
+          title=${i18next.t("rulesEditorAddDuration")}
+          @click=${() => onAdd(index)}
+        >
+          <or-icon icon="clock-plus-outline"></or-icon>
+        </or-vaadin-button>
+      `;
+    }
+  }
+
+  static get styles() {
+    return style;
+  }
+
+  public shouldUpdate(changedProps: PropertyValues): boolean {
+    if (changedProps.has("condition")) {
+      this._cache = undefined;
+    }
+    return super.shouldUpdate(changedProps);
+  }
+
+  protected get query() {
+    return this.condition.assets!;
+  }
+
+  /**
+   * Returns a Map<number, string> with all configured durations of a {@link RuleCondition}.
+   * The number represents an index of the attribute array, and the string an ISO8601 duration expression.
+   */
+  protected get duration(): Map<number, string | undefined> {
+    if (this.condition?.duration) {
+      return new Map(Object.entries(this.condition.duration).map(([key, value]) => [Number(key), value as string]));
+    } else {
+      return new Map<number, string | undefined>();
+    }
+  }
+
+  /**
+   * Updates the duration property in {@link condition}, based on the {@link durationMap} parameter.
+   * The number represents an index of the attribute array, and the string an ISO8601 duration expression.
+   */
+  protected set duration(durationMap: Map<number, string | undefined>) {
+    if (durationMap.size > 0) {
+      this.condition.duration = Object.fromEntries(durationMap);
+    } else {
+      this.condition.duration = undefined;
+    }
+  }
+
+  protected _assetDataProvider = debounce(
+    (params: ComboBoxDataProviderParams, callback: ComboBoxDataProviderCallback<{ value: any; label: string }>) => {
+      const assetType = getAssetTypeFromQuery(this.query);
+      const ids = getAssetIdsFromQuery(this.query);
+      const idValue = ids && ids.length > 0 ? ids[0] : "*";
+      console.debug(`Searching for ${assetType} assets with filter '${params.filter}'...`);
+      this.loadAssets(assetType!, params.filter, idValue).finally(() => {
+        const assets = this._cache?.assets ?? [];
+        const filtered = assets.filter((a) => a.name?.toLowerCase().includes(params.filter.toLowerCase()));
+        callback(
+          filtered.map((a) => ({ value: a.id, label: a.name! })),
+          filtered.length
+        );
+      });
+    },
+    500
+  );
+
+  protected render() {
+    const assetType = getAssetTypeFromQuery(this.query);
+    const assetIds = getAssetIdsFromQuery(this.query);
+
+    if (!assetType) {
+      return html`<span class="invalidLabel">${i18next.t("errorOccurred")}</span>`;
+    }
+
+    const assetTypeInfo = this.assetInfos
+      ? this.assetInfos.find((assetTypeInfo) => assetTypeInfo.assetDescriptor!.name === assetType)
+      : undefined;
+
+    if (!assetTypeInfo) {
+      return html`<span class="invalidLabel">${i18next.t("errorOccurred")}</span>`;
+    }
+
+    if (!this._cache && !this._loading) {
+      this.loadAssets(assetType, undefined, assetIds?.[0]);
+    }
+
+    if (!this.query.attributes) {
+      this.query.attributes = {};
+    }
+
+    if (!this.query.attributes.items || this.query.attributes.items.length === 0) {
+      this.query.attributes.items = [{}];
+    }
+
+    const showRemoveAttribute =
+      !this.readonly && this.query.attributes && this.query.attributes.items && this.query.attributes.items.length > 1;
+
+    // TODO: Add multiselect support
+    const idValue = assetIds?.[0] ?? "*";
+    const idOptions: { value: any; label: string }[] = [{ value: "*", label: i18next.t("anyOfThisType") }];
+
+    // Set list of displayed assets, and filtering assets out if needed.
+    // If <= 25 assets: display everything
+    // If between 25 and 100 assets: display everything with search functionality
+    // If >= 100 assets: only display if in line with search input
+    const assets: Asset[] = this._cache ? this._cache.assets : [];
+
+    return html`
+      <div class="attribute-group">
+        <!-- Show SELECT input with 'loading' until the assets are retrieved -->
+        ${when(
+          !this._cache || this._loading,
+          () => html`
+            <or-vaadin-combo-box id="idSelect" class="min-width" readonly>
+              <or-translate slot="label" value="loading"></or-translate>
             </or-vaadin-combo-box>
-            ${when(attributeName, () => html`
-                <or-vaadin-combo-box ?readonly=${this.readonly} .items=${operators} value="${operator}"
-                                     @change=${(ev: Event) => this.setOperator(assetDescriptor, attribute, attributeName!, attributePredicate, (ev.currentTarget as OrVaadinComboBox).value)}>]
-                    <or-translate slot="label" value="operator"></or-translate>
-                </or-vaadin-combo-box>
-            `)}
-            ${when(attributePredicate, () => this.attributePredicateValueEditorTemplate(assetDescriptor, asset, attributePredicate))}
-        `;
-    }
+          `,
+          () => {
+            assets.forEach((a) => idOptions.push({ value: a.id!, label: a.name! }));
 
-    protected attributePredicateValueEditorTemplate(assetDescriptor: AssetDescriptor, asset: Asset | undefined, attributePredicate: AttributePredicate) {
-        const operator = this.getOperator(attributePredicate);
+            const showAddAttribute =
+              !this.readonly &&
+              (!this.config || !this.config.controls || this.config.controls.hideWhenAddAttribute !== true);
 
-        if (operator === AssetQueryOperator.NOT_UPDATED_FOR) {
-            const duration = attributePredicate.timestampOlderThan ? 
-                moment.duration(attributePredicate.timestampOlderThan) : undefined;
+            const onDurationAdd = (index: number) => {
+              this.duration = this.duration.set(index, undefined);
+              this.requestUpdate();
+            };
+            const onDurationChange = (index: number, duration: string | undefined) => {
+              console.debug("Updating duration of rule condition to ", duration);
+              this.duration = this.duration.set(index, duration);
+              this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+              this.requestUpdate();
+            };
+
             return html`
-                <or-vaadin-number-field min="0" value=${duration?.asMinutes()}
-                                        @change=${(ev: Event) => {
-                                            const elem = ev.currentTarget as OrVaadinNumberField;
-                                            if(elem.checkValidity()) {
-                                                const minutes = Number(elem.value);
-                                                const newDuration = moment.duration(minutes, "minutes");
-                                                attributePredicate.timestampOlderThan = minutes > 0 ?
-                                                        newDuration.toISOString() : undefined;
-                                                this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-                                            }
-                                        }}>
-                    <or-translate slot="label" value="rulesEditorDuration"></or-translate>
-                </or-vaadin-number-field>
-            `;
-        }
-
-        const valuePredicate = attributePredicate.value;
-
-        if (!assetDescriptor || !valuePredicate) {
-            return ``;
-        }
-
-        const attributeName = this.getAttributeName(attributePredicate);
-        const assetType = getAssetTypeFromQuery(this.query);
-        const attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
-        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, attributeName, attribute);
-
-        // @ts-ignore
-        const value = valuePredicate ? valuePredicate.value : undefined;
-
-        switch (valuePredicate.predicateType) {
-            case "string":
-                return html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${i18next.t("value")}" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}" .fullWidth="${true}"></or-attribute-input>`;
-            case "boolean":
-                return html ``; // Handled by the operator IS_TRUE or IS_FALSE
-            case "datetime":
-                return html `<span>NOT IMPLEMENTED</span>`;
-            case "number":
-                if (valuePredicate.operator === AQO.BETWEEN) {
-                    return html`
-                        <or-attribute-input .inputType="${InputType.NUMBER}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${i18next.t("between")}" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}" .fullWidth="${true}"></or-attribute-input>
-                        <span style="display: inline-flex; align-items: center;">&</span>
-                        <or-attribute-input .inputType="${InputType.NUMBER}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "rangeValue", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${i18next.t("and")}" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${valuePredicate.rangeValue}" .readonly="${this.readonly || false}" .fullWidth="${true}"></or-attribute-input>
-                    `;
-                }            
-                let inputType;
-                if(descriptors[0]?.format?.asSlider) inputType = InputType.NUMBER;
-                return html`<or-attribute-input .inputType="${ifDefined(inputType)}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}" .fullWidth="${true}"></or-attribute-input>`;
-            case "radial":
-                return html`<or-rule-radial-modal .query="${this.query}" .assetDescriptor="${assetDescriptor}" .attributePredicate="${attributePredicate}" ?readonly=${this.readonly}></or-rule-radial-modal>`;
-            case "rect":
-                return html `<span>NOT IMPLEMENTED</span>`;
-            case "geojson":
-                const geoJsonConfig = valuePredicate.predicateType === "geojson" && (valuePredicate as any).geoJSON
-                    ? (() => { try { return { source: JSON.parse((valuePredicate as any).geoJSON), layers: [] }; } catch { return undefined; } })()
-                    : undefined;
-                return html`
-                    <or-conf-map-geojson .geoJson="${geoJsonConfig}" @update="${(e: CustomEvent) => {
-                        const cfg = e.detail.value; // GeoJsonConfig {source, layers}
-                        const src = cfg && cfg.source ? JSON.stringify(cfg.source) : "";
-                        this.setValuePredicateProperty(valuePredicate, "geoJSON", src)
-                    }}"></or-conf-map-geojson>
-                    `;
-            case "value-empty":
-                return ``;
-            case "array":
-                // TODO: Update once we can determine inner type of array
-                // Assume string array
-                return html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}" .fullWidth="${true}></or-attribute-input>`;
-            default:
-                return html `<span>NOT IMPLEMENTED</span>`;
-        }
-    }
-
-    protected attributeDurationTemplate(durationMap: Map<number, string | undefined>, index: number, onAdd: (index: number) => void, onChange: (index: number, duration: string | undefined) => void) {
-        const attributePredicate = this.query.attributes?.items?.[index];
-        const operator = attributePredicate ? this.getOperator(attributePredicate) : undefined;
-        
-        // Don't show duration button if NOT_UPDATED_FOR is selected
-        if (operator === AssetQueryOperator.NOT_UPDATED_FOR) {
-            return html``;
-        }
-
-        if(durationMap.has(index)) {
-            const isoDuration = durationMap.get(index);
-            const duration = isoDuration ? moment.duration(isoDuration) : undefined;
-            return html`
-                <or-vaadin-number-field min="0" ?readonly=${this.readonly} value=${duration?.asMinutes()}
-                                        @change=${(ev: Event) => {
-                                            const elem = ev.currentTarget as OrVaadinNumberField;
-                                            if(elem.checkValidity()) {
-                                                const newDuration = moment.duration(elem.value, "minutes");
-                                                if(newDuration.asMinutes() > 0) {
-                                                    onChange(index, newDuration.toISOString());
-                                                } else {
-                                                    onChange(index, undefined);
-                                                }
-                                            }
-                                        }}>
-                    <or-translate slot="label" value="rulesEditorDuration"></or-translate>
-                </or-vaadin-number-field>
-            `;
-        } else {
-            return html`
-                <or-vaadin-button theme="icon" ?disabled=${this.readonly} title=${i18next.t("rulesEditorAddDuration")}
-                                  @click=${() => onAdd(index)}>
-                    <or-icon icon="clock-plus-outline"></or-icon>
-                </or-vaadin-button>
-            `;
-        }
-    }
-
-    static get styles() {
-        return style;
-    }
-
-    public shouldUpdate(changedProps: PropertyValues): boolean {
-        if (changedProps.has("condition")) {
-            this._cache = undefined;
-        }
-        return super.shouldUpdate(changedProps);
-    }
-
-    protected get query() {
-        return this.condition.assets!;
-    }
-
-    /**
-     * Returns a Map<number, string> with all configured durations of a {@link RuleCondition}.
-     * The number represents an index of the attribute array, and the string an ISO8601 duration expression.
-     */
-    protected get duration(): Map<number, string | undefined> {
-        if(this.condition?.duration) {
-            return new Map(Object.entries(this.condition.duration).map(([key, value]) => [Number(key), value as string]));
-        } else {
-            return new Map<number, string | undefined>();
-        }
-    }
-
-    /**
-     * Updates the duration property in {@link condition}, based on the {@link durationMap} parameter.
-     * The number represents an index of the attribute array, and the string an ISO8601 duration expression.
-     */
-    protected set duration(durationMap: Map<number, string | undefined>) {
-        if(durationMap.size > 0) {
-            this.condition.duration = Object.fromEntries(durationMap);
-        } else {
-            this.condition.duration = undefined;
-        }
-    }
-
-    protected _assetDataProvider = debounce((params: ComboBoxDataProviderParams, callback: ComboBoxDataProviderCallback<{value: any, label: string}>) => {
-        const assetType = getAssetTypeFromQuery(this.query);
-        const ids = getAssetIdsFromQuery(this.query);
-        const idValue = ids && ids.length > 0 ? ids[0] : "*";
-        console.debug(`Searching for ${assetType} assets with filter '${params.filter}'...`);
-        this.loadAssets(assetType!, params.filter, idValue).finally(() => {
-            const assets = this._cache?.assets ?? [];
-            const filtered = assets.filter(a => a.name?.toLowerCase().includes(params.filter.toLowerCase()));
-            callback(filtered.map(a => ({value: a.id, label: a.name!})), filtered.length);
-        })
-    }, 500);
-
-    protected render() {
-
-        const assetType = getAssetTypeFromQuery(this.query);
-        const assetIds = getAssetIdsFromQuery(this.query);
-
-        if (!assetType) {
-            return html`<span class="invalidLabel">${i18next.t("errorOccurred")}</span>`;
-        }
-
-        const assetTypeInfo = this.assetInfos ? this.assetInfos.find(assetTypeInfo => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
-
-        if (!assetTypeInfo) {
-            return html`<span class="invalidLabel">${i18next.t("errorOccurred")}</span>`;
-        }
-
-        if (!this._cache && !this._loading) {
-            this.loadAssets(assetType, undefined, assetIds?.[0]);
-        }
-
-        if (!this.query.attributes) {
-            this.query.attributes = {};
-        }
-
-        if (!this.query.attributes.items || this.query.attributes.items.length === 0) {
-            this.query.attributes.items = [{}];
-        }
-
-        const showRemoveAttribute = !this.readonly && this.query.attributes && this.query.attributes.items && this.query.attributes.items.length > 1;
-
-        // TODO: Add multiselect support
-        const idValue = assetIds?.[0] ?? "*";
-        const idOptions: {value: any, label: string}[] = [
-            {value: "*", label: i18next.t("anyOfThisType")}
-        ];
-
-        // Set list of displayed assets, and filtering assets out if needed.
-        // If <= 25 assets: display everything
-        // If between 25 and 100 assets: display everything with search functionality
-        // If >= 100 assets: only display if in line with search input
-        const assets: Asset[] = this._cache ? this._cache.assets : [];
-
-        return html`
-            <div class="attribute-group">
-            
-                <!-- Show SELECT input with 'loading' until the assets are retrieved -->
-                ${when((!this._cache || this._loading), () => html`
-                    <or-vaadin-combo-box id="idSelect" class="min-width" readonly>
-                        <or-translate slot="label" value="loading"></or-translate>
-                    </or-vaadin-combo-box>
-                `, () => {
-                    assets.forEach(a => idOptions.push({value: a.id!, label: a.name!}));
-
-                    const showAddAttribute = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddAttribute !== true);
-                    
-                    const onDurationAdd = (index: number) => {
-                        this.duration = this.duration.set(index, undefined);
-                        this.requestUpdate();
-                    };
-                    const onDurationChange = (index: number, duration: string | undefined) => {
-                        console.debug("Updating duration of rule condition to ", duration);
-                        this.duration = this.duration.set(index, duration);
-                        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-                        this.requestUpdate();
-                    };
-                    
-                    return html`
-                        ${when(idOptions.length >= 100, () => html`
-                            <or-vaadin-combo-box id="idSelect" class="min-width" ?readonly=${this.readonly} value=${idValue}
-                                                 .filteredItems=${idOptions} .dataProvider=${this._assetDataProvider}
-                                                 @change=${(ev: Event) => this._assetId = (ev.currentTarget as OrVaadinComboBox).value}>
-                                <or-translate slot="label" value="asset"></or-translate>
-                            </or-vaadin-combo-box>
-                        `, () => html`
-                            <or-vaadin-combo-box id="idSelect" class="min-width" ?readonly=${this.readonly} value=${idValue} .items=${idOptions}
-                                                 @change=${(ev: Event) => this._assetId = (ev.currentTarget as OrVaadinComboBox).value}>
-                                <or-translate slot="label" value="asset"></or-translate>
-                            </or-vaadin-combo-box>
-                        `)}
-                        <div class="attributes">
-                            ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate, index) => {
-                                return html`
-                                    ${index > 0 ? html`<or-icon class="small" icon="ampersand"></or-icon>` : ``}
-                                    <div class="attribute">
-                                        <div>
-                                            ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._cache!.assets.find(asset => asset.id === idValue) : undefined, attributePredicate)}
-                                            ${this.attributeDurationTemplate(this.duration, index, onDurationAdd, onDurationChange)}
-                                        </div>
-                                    ${showRemoveAttribute ? html`
+              ${when(
+                idOptions.length >= 100,
+                () => html`
+                  <or-vaadin-combo-box
+                    id="idSelect"
+                    class="min-width"
+                    ?readonly=${this.readonly}
+                    value=${idValue}
+                    .filteredItems=${idOptions}
+                    .dataProvider=${this._assetDataProvider}
+                    @change=${(ev: Event) => (this._assetId = (ev.currentTarget as OrVaadinComboBox).value)}
+                  >
+                    <or-translate slot="label" value="asset"></or-translate>
+                  </or-vaadin-combo-box>
+                `,
+                () => html`
+                  <or-vaadin-combo-box
+                    id="idSelect"
+                    class="min-width"
+                    ?readonly=${this.readonly}
+                    value=${idValue}
+                    .items=${idOptions}
+                    @change=${(ev: Event) => (this._assetId = (ev.currentTarget as OrVaadinComboBox).value)}
+                  >
+                    <or-translate slot="label" value="asset"></or-translate>
+                  </or-vaadin-combo-box>
+                `
+              )}
+              <div class="attributes">
+                ${
+                  this.query.attributes && this.query.attributes.items
+                    ? this.query.attributes.items.map((attributePredicate, index) => {
+                        return html`
+                          ${index > 0 ? html`<or-icon class="small" icon="ampersand"></or-icon>` : ``}
+                          <div class="attribute">
+                            <div>
+                              ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._cache!.assets.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
+                              ${this.attributeDurationTemplate(this.duration, index, onDurationAdd, onDurationChange)}
+                            </div>
+                            ${
+                              showRemoveAttribute
+                                ? html`
                                         <button class="button-clear" @click="${() => this.removeAttributePredicate(this.query!.attributes!, attributePredicate)}"><or-icon icon="close-circle"></or-icon></input>
-                                    </div>` : ``}
-                                `;
-                            }) : ``}
-                            ${when(showAddAttribute, () => html`
-                                <or-vaadin-button class="plus-button" @click=${() => this.addAttributePredicate(this.query!.attributes!)}>
-                                    <or-icon slot="prefix" icon="plus"></or-icon>
-                                    <or-translate value="rulesEditorAddAttribute"></or-translate>
-                                </or-vaadin-button>
-                            `)}
-                        </div>
-                    `;
-                })}
-            </div>
-        `;
+                                    </div>`
+                                : ``
+                            }
+                          </div>
+                        `;
+                      })
+                    : ``
+                }
+                ${when(
+                  showAddAttribute,
+                  () => html`
+                    <or-vaadin-button
+                      class="plus-button"
+                      @click=${() => this.addAttributePredicate(this.query!.attributes!)}
+                    >
+                      <or-icon slot="prefix" icon="plus"></or-icon>
+                      <or-translate value="rulesEditorAddAttribute"></or-translate>
+                    </or-vaadin-button>
+                  `
+                )}
+              </div>
+            `;
+          }
+        )}
+      </div>
+    `;
+  }
+
+  protected set _assetId(assetId: string | undefined) {
+    if (!assetId || assetId === "*") {
+      this.query.ids = undefined;
+    } else {
+      this._selected = this._cache?.assets?.find((a) => a.id === assetId);
+      this.query.ids = [assetId];
+    }
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
+  }
+
+  protected getAttributeName(attributePredicate: AttributePredicate): string | undefined {
+    return attributePredicate && attributePredicate.name ? attributePredicate.name.value : undefined;
+  }
+
+  protected setAttributeName(attributePredicate: AttributePredicate, attributeName: string | undefined) {
+    if (!attributePredicate!.name) {
+      attributePredicate!.name = {
+        predicateType: "string",
+      };
     }
 
-    protected set _assetId(assetId: string | undefined) {
-        if (!assetId || assetId === "*") {
-            this.query.ids = undefined;
+    attributePredicate!.name.match = AssetQueryMatch.EXACT;
+    attributePredicate!.name.value = attributeName;
+    attributePredicate!.value = undefined;
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
+  }
+
+  protected getOperatorMapValue(
+    operatorMap: { [type: string]: AssetQueryOperator[] },
+    assetType?: string,
+    attributeName?: string,
+    _attributeDescriptor?: AttributeDescriptor,
+    valueDescriptor?: ValueDescriptor
+  ) {
+    let assetAttributeMatch: AssetQueryOperator[] | undefined;
+    let attributeDescriptorMatch: AssetQueryOperator[] | undefined;
+    let attributeValueDescriptorMatch: AssetQueryOperator[] | undefined;
+
+    if (assetType && attributeName) {
+      if (operatorMap[assetType + ":" + attributeName]) {
+        return operatorMap[assetType + ":" + attributeName];
+      }
+    }
+    if (valueDescriptor) {
+      if (operatorMap[valueDescriptor.name!]) {
+        return operatorMap[valueDescriptor.name!];
+      }
+      if (operatorMap[valueDescriptor.jsonType!]) {
+        return operatorMap[valueDescriptor.jsonType!];
+      }
+      if (valueDescriptor.arrayDimensions) {
+        return operatorMap.array;
+      }
+    }
+  }
+
+  protected getOperators(
+    _assetDescriptor: AssetDescriptor,
+    attributeDescriptor: AttributeDescriptor | undefined,
+    valueDescriptor: ValueDescriptor | undefined,
+    _attribute: Attribute<any> | undefined,
+    attributeName: string
+  ): { value: any; label: string }[] {
+    let operators: AssetQueryOperator[] | undefined;
+
+    if (this.config && this.config.controls && this.config.controls.allowedAssetQueryOperators) {
+      operators = this.getOperatorMapValue(
+        this.config.controls.allowedAssetQueryOperators,
+        getAssetTypeFromQuery(this.query),
+        attributeName,
+        attributeDescriptor,
+        valueDescriptor
+      );
+    }
+
+    if (!operators) {
+      operators = this.getOperatorMapValue(
+        this._queryOperatorsMap,
+        getAssetTypeFromQuery(this.query),
+        attributeName,
+        attributeDescriptor,
+        valueDescriptor
+      );
+    }
+
+    return operators ? operators.map((v) => ({ value: v, label: i18next.t(v) })) : [];
+  }
+
+  protected getOperator(attributePredicate: AttributePredicate): string | undefined {
+    if (!attributePredicate) {
+      return;
+    }
+
+    // Check for timestampOlderThan, it's independent of value predicate
+    if (attributePredicate.timestampOlderThan !== undefined) {
+      return AssetQueryOperator.NOT_UPDATED_FOR;
+    }
+
+    if (!attributePredicate.value) {
+      return;
+    }
+
+    const valuePredicate = attributePredicate.value;
+
+    switch (valuePredicate.predicateType) {
+      case "string":
+        switch (valuePredicate.match) {
+          case AssetQueryMatch.EXACT:
+            return valuePredicate.negate ? AssetQueryOperator.NOT_EQUALS : AssetQueryOperator.EQUALS;
+          case AssetQueryMatch.BEGIN:
+            return valuePredicate.negate ? AssetQueryOperator.NOT_STARTS_WITH : AssetQueryOperator.STARTS_WITH;
+          case AssetQueryMatch.END:
+            return valuePredicate.negate ? AssetQueryOperator.NOT_ENDS_WITH : AssetQueryOperator.ENDS_WITH;
+          case AssetQueryMatch.CONTAINS:
+            return valuePredicate.negate ? AssetQueryOperator.NOT_CONTAINS : AssetQueryOperator.CONTAINS;
+        }
+        return;
+      case "boolean":
+        return valuePredicate.value ? AssetQueryOperator.IS_TRUE : AssetQueryOperator.IS_FALSE;
+      case "datetime":
+      case "number":
+        switch (valuePredicate.operator) {
+          case AQO.EQUALS:
+            return valuePredicate.negate ? AssetQueryOperator.NOT_EQUALS : AssetQueryOperator.EQUALS;
+          case AQO.GREATER_THAN:
+            return valuePredicate.negate ? AssetQueryOperator.LESS_EQUALS : AssetQueryOperator.GREATER_THAN;
+          case AQO.GREATER_EQUALS:
+            return valuePredicate.negate ? AssetQueryOperator.LESS_THAN : AssetQueryOperator.GREATER_EQUALS;
+          case AQO.LESS_THAN:
+            return valuePredicate.negate ? AssetQueryOperator.GREATER_EQUALS : AssetQueryOperator.LESS_THAN;
+          case AQO.LESS_EQUALS:
+            return valuePredicate.negate ? AssetQueryOperator.GREATER_THAN : AssetQueryOperator.LESS_EQUALS;
+          case AQO.BETWEEN:
+            return valuePredicate.negate ? AssetQueryOperator.NOT_BETWEEN : AssetQueryOperator.BETWEEN;
+        }
+        return;
+      case "radial":
+        return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_RADIUS : AssetQueryOperator.WITHIN_RADIUS;
+      case "rect":
+        return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_RECTANGLE : AssetQueryOperator.WITHIN_RECTANGLE;
+      case "geojson":
+        return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_AREA : AssetQueryOperator.INSIDE_AREA;
+      case "array":
+        if (valuePredicate.value && valuePredicate.index) {
+          return valuePredicate.negated ? AssetQueryOperator.NOT_INDEX_CONTAINS : AssetQueryOperator.INDEX_CONTAINS;
+        }
+        if (valuePredicate.lengthEquals) {
+          return valuePredicate.negated ? AssetQueryOperator.NOT_LENGTH_EQUALS : AssetQueryOperator.LENGTH_EQUALS;
+        }
+        if (valuePredicate.lengthGreaterThan) {
+          return valuePredicate.negated ? AssetQueryOperator.LENGTH_LESS_THAN : AssetQueryOperator.LENGTH_GREATER_THAN;
+        }
+        if (valuePredicate.lengthLessThan) {
+          return valuePredicate.negated ? AssetQueryOperator.LENGTH_GREATER_THAN : AssetQueryOperator.LENGTH_LESS_THAN;
+        }
+        return valuePredicate.negated ? AssetQueryOperator.NOT_CONTAINS : AssetQueryOperator.CONTAINS;
+      case "value-empty":
+        return valuePredicate.negate ? AssetQueryOperator.VALUE_NOT_EMPTY : AssetQueryOperator.VALUE_EMPTY;
+    }
+  }
+
+  protected updateDurationMap(index: number): void {
+    if (this.duration) {
+      // re-assign durations by filtering out the index and adjusting remaining indices
+      const newDurationEntries = Array.from(this.duration.entries())
+        .filter(([k, _]) => k !== index)
+        .map(([k, v]) => {
+          const newIndex = k > index ? k - 1 : k;
+          return [newIndex, v] as [number, string | undefined]; // adjust indices after the removed index
+        });
+
+      this.duration = new Map<number, string | undefined>(newDurationEntries);
+    }
+  }
+
+  protected setOperator(
+    assetDescriptor: AssetDescriptor,
+    attribute: Attribute<any> | undefined,
+    attributeName: string,
+    attributePredicate: AttributePredicate,
+    operator: string | undefined
+  ) {
+    if (
+      !this.query ||
+      !this.query.attributes ||
+      !this.query.attributes.items ||
+      this.query.attributes.items.length === 0
+    ) {
+      return;
+    }
+
+    if (!operator) {
+      attributePredicate.value = undefined;
+      this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+      this.requestUpdate();
+      return;
+    }
+
+    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(
+      assetDescriptor.name,
+      attribute || attributeName
+    );
+    const value = operator as AssetQueryOperator;
+
+    if (!descriptors || !descriptors[1] || !value) {
+      attributePredicate.value = undefined;
+      this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+      this.requestUpdate();
+      return;
+    }
+
+    attributePredicate.timestampOlderThan = undefined;
+
+    const valueDescriptor = descriptors[1];
+    let predicate: ValuePredicateUnion | undefined;
+
+    switch (value) {
+      // // object
+      // case AssetQueryOperator.NOT_CONTAINS_KEY:
+      // case AssetQueryOperator.CONTAINS_KEY:
+      //     if (valueType === ValueType.OBJECT) {
+      //         predicate = {
+      //             predicateType: "object-value-key",
+      //             negated: value === AssetQueryOperator.NOT_CONTAINS_KEY
+      //         };
+      //     }
+      //     break;
+
+      // array
+      case AssetQueryOperator.INDEX_CONTAINS:
+      case AssetQueryOperator.NOT_INDEX_CONTAINS:
+      case AssetQueryOperator.LENGTH_EQUALS:
+      case AssetQueryOperator.NOT_LENGTH_EQUALS:
+      case AssetQueryOperator.LENGTH_LESS_THAN:
+      case AssetQueryOperator.LENGTH_GREATER_THAN:
+        if (valueDescriptor.arrayDimensions) {
+          predicate = {
+            predicateType: "array",
+            negated: value === AssetQueryOperator.NOT_INDEX_CONTAINS || value === AssetQueryOperator.NOT_LENGTH_EQUALS,
+            index:
+              value === AssetQueryOperator.INDEX_CONTAINS || value === AssetQueryOperator.NOT_INDEX_CONTAINS
+                ? 0
+                : undefined,
+            lengthEquals:
+              value === AssetQueryOperator.LENGTH_EQUALS || value === AssetQueryOperator.NOT_LENGTH_EQUALS
+                ? 0
+                : undefined,
+            lengthGreaterThan: value === AssetQueryOperator.LENGTH_GREATER_THAN ? 0 : undefined,
+            lengthLessThan: value === AssetQueryOperator.LENGTH_GREATER_THAN ? 0 : undefined,
+          };
+        }
+        break;
+
+      // geo point
+      case AssetQueryOperator.WITHIN_RADIUS:
+      case AssetQueryOperator.OUTSIDE_RADIUS:
+        predicate = {
+          predicateType: "radial",
+          negated: value === AssetQueryOperator.OUTSIDE_RADIUS,
+          lat: 0,
+          lng: 0,
+          radius: 100,
+        };
+        break;
+      case AssetQueryOperator.WITHIN_RECTANGLE:
+      case AssetQueryOperator.OUTSIDE_RECTANGLE:
+        predicate = {
+          predicateType: "rect",
+          negated: value === AssetQueryOperator.OUTSIDE_RECTANGLE,
+          latMin: -0.1,
+          lngMin: -0.1,
+          latMax: 0.1,
+          lngMax: 0.1,
+        };
+        break;
+      case AssetQueryOperator.INSIDE_AREA:
+      case AssetQueryOperator.OUTSIDE_AREA:
+        predicate = {
+          predicateType: "geojson",
+          negated: value === AssetQueryOperator.OUTSIDE_AREA,
+          geoJSON: "",
+        };
+        break;
+
+      // boolean
+      case AssetQueryOperator.IS_TRUE:
+      case AssetQueryOperator.IS_FALSE:
+        if (valueDescriptor.jsonType === "boolean") {
+          predicate = {
+            predicateType: "boolean",
+            value: value === AssetQueryOperator.IS_TRUE,
+          };
+          break;
+        }
+
+      // string
+      case AssetQueryOperator.STARTS_WITH:
+      case AssetQueryOperator.NOT_STARTS_WITH:
+        if (valueDescriptor.jsonType === "string") {
+          predicate = {
+            predicateType: "string",
+            negate: value === AssetQueryOperator.NOT_STARTS_WITH,
+            match: AssetQueryMatch.BEGIN,
+          };
+        }
+        break;
+      case AssetQueryOperator.ENDS_WITH:
+      case AssetQueryOperator.NOT_ENDS_WITH:
+        if (valueDescriptor.jsonType === "string") {
+          predicate = {
+            predicateType: "string",
+            negate: value === AssetQueryOperator.NOT_ENDS_WITH,
+            match: AssetQueryMatch.END,
+          };
+        }
+        break;
+
+      // number or datetime
+      case AssetQueryOperator.NOT_BETWEEN:
+        if (valueDescriptor.jsonType === "number" || valueDescriptor.jsonType === "bigint") {
+          predicate = {
+            predicateType: "number",
+            operator: AQO.BETWEEN,
+            negate: true,
+          };
         } else {
-            this._selected = this._cache?.assets?.find(a => a.id === assetId);
-            this.query.ids = [assetId];
+          // Assume datetime
+          predicate = {
+            predicateType: "datetime",
+            operator: AQO.BETWEEN,
+            negate: true,
+          };
         }
-        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
-    }
-
-    protected getAttributeName(attributePredicate: AttributePredicate): string | undefined {
-        return attributePredicate && attributePredicate.name ? attributePredicate.name.value : undefined;
-    }
-
-    protected setAttributeName(attributePredicate: AttributePredicate, attributeName: string | undefined) {
-
-        if (!attributePredicate!.name) {
-            attributePredicate!.name = {
-                predicateType: "string"
-            };
-        }
-
-        attributePredicate!.name.match = AssetQueryMatch.EXACT;
-        attributePredicate!.name.value = attributeName;
-        attributePredicate!.value = undefined;
-        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
-    }
-
-    protected getOperatorMapValue(operatorMap: {[type: string]: AssetQueryOperator[]}, assetType?: string, attributeName?: string, _attributeDescriptor?: AttributeDescriptor, valueDescriptor?: ValueDescriptor) {
-
-        let assetAttributeMatch: AssetQueryOperator[] | undefined;
-        let attributeDescriptorMatch: AssetQueryOperator[] | undefined;
-        let attributeValueDescriptorMatch: AssetQueryOperator[] | undefined;
-
-        if (assetType && attributeName) {
-            if (operatorMap[assetType + ":" + attributeName]) {
-                return operatorMap[assetType + ":" + attributeName];
-            }
-        }
-        if (valueDescriptor) {
-            if (operatorMap[valueDescriptor.name!]) {
-                return operatorMap[valueDescriptor.name!];
-            }
-            if (operatorMap[valueDescriptor.jsonType!]) {
-                return operatorMap[valueDescriptor.jsonType!];
-            }
-            if (valueDescriptor.arrayDimensions) {
-                return operatorMap["array"];
-            }
-        }
-    }
-    
-    protected getOperators(_assetDescriptor: AssetDescriptor, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: ValueDescriptor | undefined, _attribute: Attribute<any> | undefined, attributeName: string): {value: any, label: string}[] {
-
-        let operators: AssetQueryOperator[] | undefined;
-
-        if (this.config && this.config.controls && this.config.controls.allowedAssetQueryOperators) {
-            operators = this.getOperatorMapValue(this.config.controls.allowedAssetQueryOperators, getAssetTypeFromQuery(this.query), attributeName, attributeDescriptor, valueDescriptor);
-        }
-
-        if (!operators) {
-            operators = this.getOperatorMapValue(this._queryOperatorsMap, getAssetTypeFromQuery(this.query), attributeName, attributeDescriptor, valueDescriptor);
-        }
-
-        return operators ? operators.map(v => ({value: v, label: i18next.t(v) })) : [];
-    }
-
-    protected getOperator(attributePredicate: AttributePredicate): string | undefined {
-        if (!attributePredicate) {
-            return;
-        }
-
-        // Check for timestampOlderThan, it's independent of value predicate
-        if (attributePredicate.timestampOlderThan !== undefined) {
-            return AssetQueryOperator.NOT_UPDATED_FOR;
-        }
-
-        if (!attributePredicate.value) {
-            return;
-        }
-
-        const valuePredicate = attributePredicate.value;
-
-        switch (valuePredicate.predicateType) {
-            case "string":
-                switch (valuePredicate.match) {
-                    case AssetQueryMatch.EXACT:
-                        return valuePredicate.negate ? AssetQueryOperator.NOT_EQUALS : AssetQueryOperator.EQUALS;
-                    case AssetQueryMatch.BEGIN:
-                        return valuePredicate.negate ? AssetQueryOperator.NOT_STARTS_WITH : AssetQueryOperator.STARTS_WITH;
-                    case AssetQueryMatch.END:
-                        return valuePredicate.negate ? AssetQueryOperator.NOT_ENDS_WITH : AssetQueryOperator.ENDS_WITH;
-                    case AssetQueryMatch.CONTAINS:
-                        return valuePredicate.negate ? AssetQueryOperator.NOT_CONTAINS : AssetQueryOperator.CONTAINS;
-                }
-                return;
-            case "boolean":
-                return valuePredicate.value ? AssetQueryOperator.IS_TRUE : AssetQueryOperator.IS_FALSE;
-            case "datetime":
-            case "number":
-                switch (valuePredicate.operator) {
-                    case AQO.EQUALS:
-                        return valuePredicate.negate ? AssetQueryOperator.NOT_EQUALS : AssetQueryOperator.EQUALS;
-                    case AQO.GREATER_THAN:
-                        return valuePredicate.negate ? AssetQueryOperator.LESS_EQUALS : AssetQueryOperator.GREATER_THAN;
-                    case AQO.GREATER_EQUALS:
-                        return valuePredicate.negate ? AssetQueryOperator.LESS_THAN : AssetQueryOperator.GREATER_EQUALS;
-                    case AQO.LESS_THAN:
-                        return valuePredicate.negate ? AssetQueryOperator.GREATER_EQUALS : AssetQueryOperator.LESS_THAN;
-                    case AQO.LESS_EQUALS:
-                        return valuePredicate.negate ? AssetQueryOperator.GREATER_THAN : AssetQueryOperator.LESS_EQUALS;
-                    case AQO.BETWEEN:
-                        return valuePredicate.negate ? AssetQueryOperator.NOT_BETWEEN : AssetQueryOperator.BETWEEN;
-                }
-                return;
-            case "radial":
-                return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_RADIUS : AssetQueryOperator.WITHIN_RADIUS;
-            case "rect":
-                return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_RECTANGLE : AssetQueryOperator.WITHIN_RECTANGLE;
-            case "geojson":
-                return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_AREA : AssetQueryOperator.INSIDE_AREA;
-            case "array":
-                if (valuePredicate.value && valuePredicate.index) {
-                    return valuePredicate.negated ? AssetQueryOperator.NOT_INDEX_CONTAINS : AssetQueryOperator.INDEX_CONTAINS;
-                }
-                if (valuePredicate.lengthEquals) {
-                    return valuePredicate.negated ? AssetQueryOperator.NOT_LENGTH_EQUALS : AssetQueryOperator.LENGTH_EQUALS;
-                }
-                if (valuePredicate.lengthGreaterThan) {
-                    return valuePredicate.negated ? AssetQueryOperator.LENGTH_LESS_THAN : AssetQueryOperator.LENGTH_GREATER_THAN;
-                }
-                if (valuePredicate.lengthLessThan) {
-                    return valuePredicate.negated ? AssetQueryOperator.LENGTH_GREATER_THAN : AssetQueryOperator.LENGTH_LESS_THAN;
-                }
-                return valuePredicate.negated ? AssetQueryOperator.NOT_CONTAINS : AssetQueryOperator.CONTAINS;
-            case "value-empty":
-                return valuePredicate.negate ? AssetQueryOperator.VALUE_NOT_EMPTY : AssetQueryOperator.VALUE_EMPTY;
-        }
-    }
-
-    protected updateDurationMap(index: number): void {
-        if (this.duration) {
-            // re-assign durations by filtering out the index and adjusting remaining indices
-            const newDurationEntries = Array.from(this.duration.entries())
-                .filter(([k, _]) => k !== index)
-                .map(([k, v]) => {
-                    const newIndex = k > index ? k - 1 : k;
-                    return [newIndex, v] as [number, string | undefined]; // adjust indices after the removed index
-                });
-
-            this.duration = new Map<number, string | undefined>(newDurationEntries);
-        }
-    }
-
-    protected setOperator(assetDescriptor: AssetDescriptor, attribute: Attribute<any> | undefined, attributeName: string, attributePredicate: AttributePredicate, operator: string | undefined) {
-
-        if (!this.query
-            || !this.query.attributes
-            || !this.query.attributes.items
-            || this.query.attributes.items.length === 0) {
-            return;
-        }
-
-        if (!operator) {
-            attributePredicate.value = undefined;
-            this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-            this.requestUpdate();
-            return;
-        }
-
-        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetDescriptor.name, attribute || attributeName);
-        const value = operator as AssetQueryOperator;
-
-        if (!descriptors || !descriptors[1] || !value) {
-            attributePredicate.value = undefined;
-            this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-            this.requestUpdate();
-            return;
-        }
-
-        attributePredicate.timestampOlderThan = undefined;
-
-        const valueDescriptor = descriptors[1];
-        let predicate: ValuePredicateUnion | undefined;
-
-        switch (value) {
-
-            // // object
-            // case AssetQueryOperator.NOT_CONTAINS_KEY:
-            // case AssetQueryOperator.CONTAINS_KEY:
-            //     if (valueType === ValueType.OBJECT) {
-            //         predicate = {
-            //             predicateType: "object-value-key",
-            //             negated: value === AssetQueryOperator.NOT_CONTAINS_KEY
-            //         };
-            //     }
-            //     break;
-
-            // array
-            case AssetQueryOperator.INDEX_CONTAINS:
-            case AssetQueryOperator.NOT_INDEX_CONTAINS:
-            case AssetQueryOperator.LENGTH_EQUALS:
-            case AssetQueryOperator.NOT_LENGTH_EQUALS:
-            case AssetQueryOperator.LENGTH_LESS_THAN:
-            case AssetQueryOperator.LENGTH_GREATER_THAN:
-                if (valueDescriptor.arrayDimensions) {
-                    predicate = {
-                        predicateType: "array",
-                        negated: value === AssetQueryOperator.NOT_INDEX_CONTAINS || value === AssetQueryOperator.NOT_LENGTH_EQUALS,
-                        index: value === AssetQueryOperator.INDEX_CONTAINS || value === AssetQueryOperator.NOT_INDEX_CONTAINS ? 0 : undefined,
-                        lengthEquals: value === AssetQueryOperator.LENGTH_EQUALS || value === AssetQueryOperator.NOT_LENGTH_EQUALS ? 0 : undefined,
-                        lengthGreaterThan: value === AssetQueryOperator.LENGTH_GREATER_THAN ? 0 : undefined,
-                        lengthLessThan: value === AssetQueryOperator.LENGTH_GREATER_THAN ? 0 : undefined
-                    };
-                }
-                break;
-
-            // geo point
-            case AssetQueryOperator.WITHIN_RADIUS:
-            case AssetQueryOperator.OUTSIDE_RADIUS:
-                predicate = {
-                    predicateType: "radial",
-                    negated: value === AssetQueryOperator.OUTSIDE_RADIUS,
-                    lat: 0,
-                    lng: 0,
-                    radius: 100
-                };
-                break;
-            case AssetQueryOperator.WITHIN_RECTANGLE:
-            case AssetQueryOperator.OUTSIDE_RECTANGLE:
-                predicate = {
-                    predicateType: "rect",
-                    negated: value === AssetQueryOperator.OUTSIDE_RECTANGLE,
-                    latMin: -0.1,
-                    lngMin: -0.1,
-                    latMax: 0.1,
-                    lngMax: 0.1
-                };
-                break;
-            case AssetQueryOperator.INSIDE_AREA:
-            case AssetQueryOperator.OUTSIDE_AREA:
-                predicate = {
-                    predicateType: "geojson",
-                    negated: value === AssetQueryOperator.OUTSIDE_AREA,
-                    geoJSON: ""
-                };
-                break;
-
-            // boolean
-            case AssetQueryOperator.IS_TRUE:
-            case AssetQueryOperator.IS_FALSE:
-                if (valueDescriptor.jsonType === "boolean") {
-                    predicate = {
-                        predicateType: "boolean",
-                        value: value === AssetQueryOperator.IS_TRUE
-                    };
-                    break;
-                }
-
-            // string
-            case AssetQueryOperator.STARTS_WITH:
-            case AssetQueryOperator.NOT_STARTS_WITH:
-                if (valueDescriptor.jsonType === "string") {
-                    predicate = {
-                        predicateType: "string",
-                        negate: value === AssetQueryOperator.NOT_STARTS_WITH,
-                        match: AssetQueryMatch.BEGIN
-                    };
-                }
-                break;
-            case AssetQueryOperator.ENDS_WITH:
-            case AssetQueryOperator.NOT_ENDS_WITH:
-                if (valueDescriptor.jsonType === "string") {
-                    predicate = {
-                        predicateType: "string",
-                        negate: value === AssetQueryOperator.NOT_ENDS_WITH,
-                        match: AssetQueryMatch.END
-                    };
-                }
-                break;
-
-            // number or datetime
-            case AssetQueryOperator.NOT_BETWEEN:
-                if (valueDescriptor.jsonType === "number" || valueDescriptor.jsonType === "bigint") {
-                    predicate = {
-                        predicateType: "number",
-                        operator: AQO.BETWEEN,
-                        negate: true
-                    };
-                } else {
-                    // Assume datetime
-                    predicate = {
-                        predicateType: "datetime",
-                        operator: AQO.BETWEEN,
-                        negate: true
-                    };
-                }
-                break;
-            case AssetQueryOperator.GREATER_THAN:
-            case AssetQueryOperator.GREATER_EQUALS:
-            case AssetQueryOperator.LESS_THAN:
-            case AssetQueryOperator.LESS_EQUALS:
-            case AssetQueryOperator.BETWEEN:
-                if (valueDescriptor.jsonType === "number") {
-                    predicate = {
-                        predicateType: "number",
-                        operator: Util.getEnumKeyAsString(AssetQueryOperator, value) as AQO
-                    };
-                } else {
-                    // Assume datetime
-                    predicate = {
-                        predicateType: "datetime",
-                        operator: Util.getEnumKeyAsString(AssetQueryOperator, value) as AQO
-                    };
-                }
-                break;
-
-            // multiple
-            case AssetQueryOperator.EQUALS:
-            case AssetQueryOperator.NOT_EQUALS:
-                if (valueDescriptor.jsonType === "date") {
-                    predicate = {
-                        predicateType: "datetime",
-                        negate: value === AssetQueryOperator.NOT_EQUALS,
-                        operator: AQO.EQUALS
-                    };
-                } else if (valueDescriptor.jsonType === "number") {
-                    predicate = {
-                        predicateType: "number",
-                        negate: value === AssetQueryOperator.NOT_EQUALS,
-                        operator: AQO.EQUALS
-                    };
-                } else if (valueDescriptor.jsonType === "string") {
-                    predicate = {
-                        predicateType: "string",
-                        negate: value === AssetQueryOperator.NOT_EQUALS,
-                        match: AssetQueryMatch.EXACT
-                    };
-                }
-                break;
-            case AssetQueryOperator.VALUE_EMPTY:
-                predicate = {
-                    predicateType: "value-empty"
-                };
-                break;
-            case AssetQueryOperator.VALUE_NOT_EMPTY:
-                predicate = {
-                    predicateType: "value-empty",
-                    negate: true
-                };
-                break;
-            case AssetQueryOperator.CONTAINS:
-            case AssetQueryOperator.NOT_CONTAINS:
-                if (valueDescriptor.arrayDimensions) {
-                    predicate = {
-                        predicateType: "array",
-                        negated: value === AssetQueryOperator.NOT_CONTAINS
-                    };
-                } else if (valueDescriptor.jsonType === "string") {
-                    predicate = {
-                        predicateType: "string",
-                        negate: value === AssetQueryOperator.NOT_CONTAINS,
-                        match: AssetQueryMatch.CONTAINS
-                    };
-                }
-                break;
-            // operator without value predicate - since timestamp is being used rather than attribute value
-            case AssetQueryOperator.NOT_UPDATED_FOR:
-                attributePredicate.timestampOlderThan = "";
-
-                const index = this.query.attributes.items.indexOf(attributePredicate);
-                this.updateDurationMap(index);
-                break;
-        }
-
-        attributePredicate.value = predicate;
-        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
-    }
-
-    protected get attributePredicate(): AttributePredicate | undefined {
-        return this.query
-        && this.query.attributes
-        && this.query.attributes.items
-        && this.query.attributes.items.length > 0
-            ? this.query.attributes.items[0] : undefined;
-    }
-
-    protected setValuePredicateProperty(valuePredicate: ValuePredicateUnion | undefined, propertyName: string, value: any) {
-        if (!valuePredicate) {
-            return;
-        }
-
-        (valuePredicate as any)[propertyName] = value;
-        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
-    }
-
-    protected removeAttributePredicate(group: LogicGroup<AttributePredicate>, attributePredicate: AttributePredicate) {
-        const index = group.items!.indexOf(attributePredicate);
-        if (index >= 0) {
-            group.items!.splice(index, 1);
-            this.updateDurationMap(index);
-        }
-        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
-    }
-
-    protected addAttributePredicate(group: LogicGroup<AttributePredicate>) {
-        group.items ??= [];
-        group.items.push({});
-        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
-    }
-
-    protected toggleAttributeGroup(group: LogicGroup<AttributePredicate>) {
-        if (group.operator === LogicGroupOperator.OR) {
-            group.operator = LogicGroupOperator.AND;
+        break;
+      case AssetQueryOperator.GREATER_THAN:
+      case AssetQueryOperator.GREATER_EQUALS:
+      case AssetQueryOperator.LESS_THAN:
+      case AssetQueryOperator.LESS_EQUALS:
+      case AssetQueryOperator.BETWEEN:
+        if (valueDescriptor.jsonType === "number") {
+          predicate = {
+            predicateType: "number",
+            operator: Util.getEnumKeyAsString(AssetQueryOperator, value) as AQO,
+          };
         } else {
-            group.operator = LogicGroupOperator.OR;
+          // Assume datetime
+          predicate = {
+            predicateType: "datetime",
+            operator: Util.getEnumKeyAsString(AssetQueryOperator, value) as AQO,
+          };
         }
-        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
+        break;
+
+      // multiple
+      case AssetQueryOperator.EQUALS:
+      case AssetQueryOperator.NOT_EQUALS:
+        if (valueDescriptor.jsonType === "date") {
+          predicate = {
+            predicateType: "datetime",
+            negate: value === AssetQueryOperator.NOT_EQUALS,
+            operator: AQO.EQUALS,
+          };
+        } else if (valueDescriptor.jsonType === "number") {
+          predicate = {
+            predicateType: "number",
+            negate: value === AssetQueryOperator.NOT_EQUALS,
+            operator: AQO.EQUALS,
+          };
+        } else if (valueDescriptor.jsonType === "string") {
+          predicate = {
+            predicateType: "string",
+            negate: value === AssetQueryOperator.NOT_EQUALS,
+            match: AssetQueryMatch.EXACT,
+          };
+        }
+        break;
+      case AssetQueryOperator.VALUE_EMPTY:
+        predicate = {
+          predicateType: "value-empty",
+        };
+        break;
+      case AssetQueryOperator.VALUE_NOT_EMPTY:
+        predicate = {
+          predicateType: "value-empty",
+          negate: true,
+        };
+        break;
+      case AssetQueryOperator.CONTAINS:
+      case AssetQueryOperator.NOT_CONTAINS:
+        if (valueDescriptor.arrayDimensions) {
+          predicate = {
+            predicateType: "array",
+            negated: value === AssetQueryOperator.NOT_CONTAINS,
+          };
+        } else if (valueDescriptor.jsonType === "string") {
+          predicate = {
+            predicateType: "string",
+            negate: value === AssetQueryOperator.NOT_CONTAINS,
+            match: AssetQueryMatch.CONTAINS,
+          };
+        }
+        break;
+      // operator without value predicate - since timestamp is being used rather than attribute value
+      case AssetQueryOperator.NOT_UPDATED_FOR:
+        attributePredicate.timestampOlderThan = "";
+
+        const index = this.query.attributes.items.indexOf(attributePredicate);
+        this.updateDurationMap(index);
+        break;
     }
 
-    /**
-     * Fetches assets using the {@link assetProvider} from the parent component.
-     * This is often linked to the OpenRemote HTTP API to request assets from using an {@link AssetQuery} object.
-     * @param type - The asset type name to filter by
-     * @param search - The asset name to filter by (acts as a search)
-     * @param idValue - Selected asset ID to query along
-     * @protected
-     */
-    protected async loadAssets(type: string, search?: string, idValue?: string): Promise<Asset[] | undefined> {
-        const promises: Promise<Asset[] | undefined>[] = [];
+    attributePredicate.value = predicate;
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
+  }
 
-        const query: AssetQuery = { limit: 100 };
-        if (search) {
-            query.names ??= [];
-            query.names.push({ predicateType: "string", match: AssetQueryMatch.CONTAINS, value: search });
-        }
-        // If the cache contains assets from the same query, don't send HTTP request again
-        const isQueryCached = this._cache?.query && Util.objectsEqual(this._cache.query, query, true);
-        if (!this._loading && !isQueryCached) {
-            this._loading = true;
+  protected get attributePredicate(): AttributePredicate | undefined {
+    return this.query && this.query.attributes && this.query.attributes.items && this.query.attributes.items.length > 0
+      ? this.query.attributes.items[0]
+      : undefined;
+  }
 
-            // Use assetProvider from the parent component to retrieve assets using HTTP
-            promises.push(this.assetProvider(type, {...query}));
-
-            // When idValue is present, it should also be fetched alongside the other assets
-            if (idValue && idValue !== "*") {
-                promises.push(this.assetProvider(type, { ids: [idValue] }));
-            }
-
-            // Start retrieving assets through the assetProvider
-            const responses = await Promise.all(promises);
-            this._loading = false;
-
-            // Only update the state when we retrieve new assets
-            const assets = responses.filter(value => !!value).flat();
-            const cachedIds = this._cache?.assets.map(asset => asset.id) ?? [];
-            this._cache = {
-                query: query,
-                assets: [...(this._cache?.assets ?? []), ...(assets?.filter(a => !cachedIds.includes(a.id)) ?? [])]
-            };
-            return assets;
-        }
-        return this._cache?.assets;
+  protected setValuePredicateProperty(
+    valuePredicate: ValuePredicateUnion | undefined,
+    propertyName: string,
+    value: any
+  ) {
+    if (!valuePredicate) {
+      return;
     }
+
+    (valuePredicate as any)[propertyName] = value;
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
+  }
+
+  protected removeAttributePredicate(group: LogicGroup<AttributePredicate>, attributePredicate: AttributePredicate) {
+    const index = group.items!.indexOf(attributePredicate);
+    if (index >= 0) {
+      group.items!.splice(index, 1);
+      this.updateDurationMap(index);
+    }
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
+  }
+
+  protected addAttributePredicate(group: LogicGroup<AttributePredicate>) {
+    group.items ??= [];
+    group.items.push({});
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
+  }
+
+  protected toggleAttributeGroup(group: LogicGroup<AttributePredicate>) {
+    if (group.operator === LogicGroupOperator.OR) {
+      group.operator = LogicGroupOperator.AND;
+    } else {
+      group.operator = LogicGroupOperator.OR;
+    }
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
+  }
+
+  /**
+   * Fetches assets using the {@link assetProvider} from the parent component.
+   * This is often linked to the OpenRemote HTTP API to request assets from using an {@link AssetQuery} object.
+   * @param type - The asset type name to filter by
+   * @param search - The asset name to filter by (acts as a search)
+   * @param idValue - Selected asset ID to query along
+   * @protected
+   */
+  protected async loadAssets(type: string, search?: string, idValue?: string): Promise<Asset[] | undefined> {
+    const promises: Promise<Asset[] | undefined>[] = [];
+
+    const query: AssetQuery = { limit: 100 };
+    if (search) {
+      query.names ??= [];
+      query.names.push({ predicateType: "string", match: AssetQueryMatch.CONTAINS, value: search });
+    }
+    // If the cache contains assets from the same query, don't send HTTP request again
+    const isQueryCached = this._cache?.query && Util.objectsEqual(this._cache.query, query, true);
+    if (!this._loading && !isQueryCached) {
+      this._loading = true;
+
+      // Use assetProvider from the parent component to retrieve assets using HTTP
+      promises.push(this.assetProvider(type, { ...query }));
+
+      // When idValue is present, it should also be fetched alongside the other assets
+      if (idValue && idValue !== "*") {
+        promises.push(this.assetProvider(type, { ids: [idValue] }));
+      }
+
+      // Start retrieving assets through the assetProvider
+      const responses = await Promise.all(promises);
+      this._loading = false;
+
+      // Only update the state when we retrieve new assets
+      const assets = responses.filter((value) => !!value).flat();
+      const cachedIds = this._cache?.assets.map((asset) => asset.id) ?? [];
+      this._cache = {
+        query,
+        assets: [...(this._cache?.assets ?? []), ...(assets?.filter((a) => !cachedIds.includes(a.id)) ?? [])],
+      };
+      return assets;
+    }
+    return this._cache?.assets;
+  }
 }

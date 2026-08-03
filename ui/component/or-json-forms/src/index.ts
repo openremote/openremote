@@ -1,214 +1,227 @@
-import {css, html, LitElement, PropertyValues} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
-import {ErrorObject} from "ajv";
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, type PropertyValues } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { ErrorObject } from "ajv";
 import {
-    Actions,
-    configReducer,
-    CoreActions,
-    coreReducer,
-    createAjv,
-    createDefaultValue,
-    Dispatch,
-    generateDefaultUISchema,
-    generateJsonSchema,
-    JsonFormsCellRendererRegistryEntry,
-    JsonFormsCore,
-    JsonFormsProps,
-    JsonFormsRendererRegistryEntry,
-    JsonFormsSubStates,
-    JsonFormsUISchemaRegistryEntry,
-    JsonSchema,
-    mapStateToJsonFormsRendererProps,
-    OwnPropsOfJsonFormsRenderer,
-    setConfig,
-    UISchemaElement
+  Actions,
+  configReducer,
+  type CoreActions,
+  coreReducer,
+  createAjv,
+  createDefaultValue,
+  type Dispatch,
+  generateDefaultUISchema,
+  generateJsonSchema,
+  type JsonFormsCellRendererRegistryEntry,
+  type JsonFormsCore,
+  type JsonFormsProps,
+  type JsonFormsRendererRegistryEntry,
+  type JsonFormsSubStates,
+  type JsonFormsUISchemaRegistryEntry,
+  type JsonSchema,
+  mapStateToJsonFormsRendererProps,
+  type OwnPropsOfJsonFormsRenderer,
+  setConfig,
+  type UISchemaElement,
 } from "@jsonforms/core";
-import {getTemplateWrapper, StandardRenderers} from "./standard-renderers";
-import {getLabel, getTemplateFromProps} from "./util";
-import {baseStyle} from "./styles";
-import {Util} from "@openremote/core";
-import {AdditionalProps} from "./base-element";
-import {i18next, translate} from "@openremote/or-translate";
+import { getTemplateWrapper, StandardRenderers } from "./standard-renderers";
+import { getLabel, getTemplateFromProps } from "./util";
+import { baseStyle } from "./styles";
+import { Util } from "@openremote/core";
+import type { AdditionalProps } from "./base-element";
+import { i18next, translate } from "@openremote/or-translate";
 
 export * from "@jsonforms/core";
 
 declare global {
-    interface SymbolConstructor {
-        readonly observable: symbol;
-    }
+  interface SymbolConstructor {
+    readonly observable: symbol;
+  }
 }
 
-export {
-    ErrorObject,
-    StandardRenderers,
-    getTemplateWrapper
-};
+export { ErrorObject, StandardRenderers, getTemplateWrapper };
 
 export interface JsonFormsStateContext extends JsonFormsSubStates {
-    dispatch: Dispatch<CoreActions>;
+  dispatch: Dispatch<CoreActions>;
 }
 
 // language=CSS
 const styles = css`
-    .delete-container {
-        width: 0;
-    }
+  .delete-container {
+    width: 0;
+  }
 
-    .item-container {
-        margin: 0; /* Remove inherited margin */
-    }
+  .item-container {
+    margin: 0; /* Remove inherited margin */
+  }
 `;
 
 @customElement("or-json-forms")
-export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
+export class OrJSONForms
+  extends translate(i18next)(LitElement)
+  implements OwnPropsOfJsonFormsRenderer, AdditionalProps
+{
+  @property({ type: Object })
+  public uischema?: UISchemaElement;
 
-    @property({type: Object})
-    public uischema?: UISchemaElement;
+  @property({ type: Object })
+  public schema?: JsonSchema;
 
-    @property({type: Object})
-    public schema?: JsonSchema;
+  @property({ type: Object, attribute: false })
+  public data: any;
 
-    @property({type: Object, attribute: false})
-    public data: any;
+  @property({ type: Array })
+  public renderers?: JsonFormsRendererRegistryEntry[] = StandardRenderers;
 
-    @property({type: Array})
-    public renderers?: JsonFormsRendererRegistryEntry[] = StandardRenderers;
+  @property({ type: Array })
+  public cells?: JsonFormsCellRendererRegistryEntry[];
 
-    @property({type: Array})
-    public cells?: JsonFormsCellRendererRegistryEntry[];
+  @property({ type: String, attribute: false })
+  public onChange?: (dataAndErrors: { errors: ErrorObject[] | undefined; data: any }) => void;
 
-    @property({type: String, attribute: false})
-    public onChange?: (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => void;
+  @property({ type: String, attribute: false })
+  public config: any;
 
-    @property({type: String, attribute: false})
-    public config: any;
+  @property({ type: Array })
+  public uischemas?: JsonFormsUISchemaRegistryEntry[];
 
-    @property({type: Array})
-    public uischemas?: JsonFormsUISchemaRegistryEntry[];
+  @property({ type: Boolean })
+  public readonly: boolean = false;
 
-    @property({type: Boolean})
-    public readonly: boolean = false;
+  @property({ type: String })
+  public label!: string;
 
-    @property({type: String})
-    public label!: string;
+  @property({ type: Boolean })
+  public required: boolean = false;
 
-    @property({type: Boolean})
-    public required: boolean = false;
+  public static get styles() {
+    return [baseStyle, styles];
+  }
 
-    public static get styles() {
-        return [
-            baseStyle,
-            styles
-        ];
+  @state()
+  protected core?: JsonFormsCore;
+
+  @state()
+  protected contextValue?: JsonFormsSubStates;
+
+  protected previousData: any;
+  protected previousErrors: ErrorObject[] = [];
+
+  public checkValidity() {
+    return this.previousErrors.length === 0;
+  }
+
+  shouldUpdate(_changedProperties: PropertyValues) {
+    super.shouldUpdate(_changedProperties);
+
+    if (!this.schema) {
+      this.schema = this.data !== undefined ? generateJsonSchema(this.data) : {};
     }
 
-    @state()
-    protected core?: JsonFormsCore;
-    @state()
-    protected contextValue?: JsonFormsSubStates;
-    protected previousData: any;
-    protected previousErrors: ErrorObject[] = [];
-
-    public checkValidity() {
-        return this.previousErrors.length === 0;
+    if (!this.data) {
+      // AJV will not modify the root instance, only properties, thus we initialize with a default
+      // see https://ajv.js.org/guide/modifying-data.html#general-considerations
+      this.data = createDefaultValue(this.schema, this.schema);
     }
 
-    shouldUpdate(_changedProperties: PropertyValues) {
-        super.shouldUpdate(_changedProperties);
-
-        if (!this.schema) {
-            this.schema = this.data !== undefined ? generateJsonSchema(this.data) : {};
-        }
-
-        if (!this.data) {
-            // AJV will not modify the root instance, only properties, thus we initialize with a default
-            // see https://ajv.js.org/guide/modifying-data.html#general-considerations
-            this.data = createDefaultValue(this.schema, this.schema);
-        }
-
-        if (!this.uischema) {
-            this.uischema = generateDefaultUISchema(this.schema!);
-        }
-
-        if (!this.core) {
-            const ajv = createAjv({
-                discriminator: true,   // This is required for polymorphic types that contain defaults in their subtypes
-                useDefaults: true,     // AJV will mutate the data adding missing properties that have a "default"
-                validateFormats: false
-            });
-            this.updateCore(Actions.init(this.data, this.schema, this.uischema, ajv));
-            this.config = configReducer(undefined, setConfig(this.config));
-        }
-
-        if (_changedProperties.has("data") || _changedProperties.has("schema") || _changedProperties.has("uischema")) {
-            this.updateCore(
-                Actions.updateCore(this.data, this.schema, this.uischema)
-            );
-        }
-
-        if (!this.contextValue
-            || _changedProperties.has("core")
-            || _changedProperties.has("renderers")
-            || _changedProperties.has("cells")
-            || _changedProperties.has("config")
-            || _changedProperties.has("readonly")
-            || _changedProperties.has("_language")
-        ) {
-            this.contextValue = {
-                core: this.core,
-                renderers: this.renderers,
-                cells: this.cells,
-                config: this.config,
-                uischemas: this.uischemas,
-                readonly: this.readonly,
-                dispatch: (action: CoreActions) => this.updateCore(action),
-                i18n: {
-                    locale: this._language,
-                    translate: (id, defaultMessage, { errors: [error] }) => {
-                        const defaultValue = defaultMessage || error?.message || "";
-                        return i18next.t(id, { defaultValue })
-                            || i18next.t(id, { defaultValue, lng: "en" });
-                    }
-                }
-            }
-        }
-
-        if (_changedProperties.has("core")) {
-            const data = this.core!.data;
-            const errors = this.core!.errors ?? [];
-
-            // Normalize undefined to [] before comparing (previousErrors is always an array),
-            // and treat two empty arrays as equal so a rebuilt empty errors array from a
-            // validation cycle doesn't fire a spurious onChange.
-            const errorsChanged = errors !== this.previousErrors && (errors.length > 0 || this.previousErrors.length > 0);
-            if (this.onChange && (data !== this.previousData || errorsChanged)) {
-                this.previousErrors = errors;
-                this.previousData = data;
-                this.onChange({data: data, errors: errors});
-            }
-        }
-
-        return true;
+    if (!this.uischema) {
+      this.uischema = generateDefaultUISchema(this.schema!);
     }
 
-    updateCore<T extends CoreActions>(coreAction: T): T {
-        const coreState = coreReducer(this.core, coreAction);
-        if(coreState !== this.core) {
-            this.core = coreState;
-        }
-        return coreAction;
+    if (!this.core) {
+      const ajv = createAjv({
+        discriminator: true, // This is required for polymorphic types that contain defaults in their subtypes
+        useDefaults: true, // AJV will mutate the data adding missing properties that have a "default"
+        validateFormats: false,
+      });
+      this.updateCore(Actions.init(this.data, this.schema, this.uischema, ajv));
+      this.config = configReducer(undefined, setConfig(this.config));
     }
 
-    render() {
-        if (!this.contextValue) {
-            return html``;
-        }
-
-        const props: JsonFormsProps & AdditionalProps = {
-            ...mapStateToJsonFormsRendererProps({jsonforms: {...this.contextValue}}, this),
-            label: getLabel(this.schema!, this.uischema!, this.label, undefined) || "",
-            required: this.required
-        };
-        return getTemplateFromProps(this.contextValue, props) || html``;
+    if (_changedProperties.has("data") || _changedProperties.has("schema") || _changedProperties.has("uischema")) {
+      this.updateCore(Actions.updateCore(this.data, this.schema, this.uischema));
     }
+
+    if (
+      !this.contextValue ||
+      _changedProperties.has("core") ||
+      _changedProperties.has("renderers") ||
+      _changedProperties.has("cells") ||
+      _changedProperties.has("config") ||
+      _changedProperties.has("readonly") ||
+      _changedProperties.has("_language")
+    ) {
+      this.contextValue = {
+        core: this.core,
+        renderers: this.renderers,
+        cells: this.cells,
+        config: this.config,
+        uischemas: this.uischemas,
+        readonly: this.readonly,
+        dispatch: (action: CoreActions) => this.updateCore(action),
+        i18n: {
+          locale: this._language,
+          translate: (id, defaultMessage, { errors: [error] }) => {
+            const defaultValue = defaultMessage || error?.message || "";
+            return i18next.t(id, { defaultValue }) || i18next.t(id, { defaultValue, lng: "en" });
+          },
+        },
+      };
+    }
+
+    if (_changedProperties.has("core")) {
+      const data = this.core!.data;
+      const errors = this.core!.errors ?? [];
+
+      // Normalize undefined to [] before comparing (previousErrors is always an array),
+      // and treat two empty arrays as equal so a rebuilt empty errors array from a
+      // validation cycle doesn't fire a spurious onChange.
+      const errorsChanged = errors !== this.previousErrors && (errors.length > 0 || this.previousErrors.length > 0);
+      if (this.onChange && (data !== this.previousData || errorsChanged)) {
+        this.previousErrors = errors;
+        this.previousData = data;
+        this.onChange({ data, errors });
+      }
+    }
+
+    return true;
+  }
+
+  updateCore<T extends CoreActions>(coreAction: T): T {
+    const coreState = coreReducer(this.core, coreAction);
+    if (coreState !== this.core) {
+      this.core = coreState;
+    }
+    return coreAction;
+  }
+
+  render() {
+    if (!this.contextValue) {
+      return html``;
+    }
+
+    const props: JsonFormsProps & AdditionalProps = {
+      ...mapStateToJsonFormsRendererProps({ jsonforms: { ...this.contextValue } }, this),
+      label: getLabel(this.schema!, this.uischema!, this.label, undefined) || "",
+      required: this.required,
+    };
+    return getTemplateFromProps(this.contextValue, props) || html``;
+  }
 }

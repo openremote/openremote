@@ -6,7 +6,7 @@
 
 [Source](https://github.com/openremote/openremote) **·** [Documentation](https://docs.openremote.io) **·** [Forum](https://forum.openremote.io) **·** [Issues](https://github.com/openremote/openremote/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](https://openremote.io)
 
-Welcome to OpenRemote; an intuitive user-friendly 100% open source IoT platform. You can build a complete IoT device management solution including: device management and auto provisioning, customisation of asset types, automation via when-then, flow, javascript and groovy rules, data analytics, connectivity via several protocol agents and manager APIs (e.g. MQTT broker, HTTP/REST, WS), Multi-tenancy (realms), Users and roles management, Edge gateway, Front-end UI web components and consoles, and an Insights dashboard builder. 
+Welcome to OpenRemote; an intuitive user-friendly 100% open source IoT platform. You can build a complete IoT device management solution including: device management and auto provisioning, customisation of asset types, automation via when-then, flow, javascript and groovy rules, data analytics, connectivity via several protocol agents and manager APIs (e.g. MQTT broker, HTTP/REST, WS), Multi-tenancy (realms), Users and roles management, Edge gateway, Front-end UI web components and consoles, and an Insights dashboard builder.
 
 As the code base is 100% open source, applications are limitless. Here's an architecture overview:
 
@@ -18,38 +18,46 @@ You can quickly try the online demo with restricted access, login credentials ar
 
 [Online demo](https://demo.openremote.app/manager/?realm=smartcity)
 
-The quickest way to get your own environment with full access is to make use of our docker images (both `amd64` and `arm64` are supported). 
-1. Make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop) installed (v18+). 
+The quickest way to get your own environment with full access is to make use of our docker images (both `amd64` and `arm64` are supported).
+
+1. Make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop) installed (v18+).
 2. Download the docker compose file:
-[OpenRemote Stack](https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml) (Right click 'Save link as...')
+   [OpenRemote Stack](https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml) (Right click 'Save link as...')
 3. In a terminal `cd` to where you just saved the compose file and then run:
+
 ```
 docker compose pull
 docker compose -p openremote up
 ```
-If all goes well then you should now be able to access the OpenRemote Manager UI at [https://127.0.0.1](https://127.0.01). You will need to accept the self-signed 
+
+If all goes well then you should now be able to access the OpenRemote Manager UI at [https://127.0.0.1](https://127.0.01). You will need to accept the self-signed
 certificate, see [here](https://www.technipages.com/google-chrome-bypass-your-connection-is-not-private-message) for details how to do this in Chrome (similar for other browsers).
 
-
 ### Login credentials
+
 Username: admin  
 Password: secret
 
 ### Changing host and/or port
+
 The URL you use to access the system is important, the default is configured as `https://127.0.0.1` if you are using a VM then you will need to set the `OR_HOSTNAME` environment variable, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command:
 
-BASH: 
+BASH:
+
 ```shell
 OR_HOSTNAME=192.168.1.1 docker-compose -p openremote up -d
 ```
+
 or
 
 CMD:
+
 ```shell
 cmd /C "set OR_HOSTNAME=192.168.1.1 && docker-compose -p openremote up -d"
 ```
 
 ## What next
+
 Try creating assets, agents, rules, users, realms, etc. using the Manager UI, please refer to the [documentation](https://docs.openremote.io) for more information, some things to try:
 
 - [Manager UI Guide](https://docs.openremote.io/docs/user-guide/manager-ui/) - Learn more about the User Interface
@@ -60,10 +68,10 @@ Try creating assets, agents, rules, users, realms, etc. using the Manager UI, pl
 - [Creating a custom project](https://docs.openremote.io/docs/developer-guide/creating-a-custom-project) - Create a project with custom protocols, asset types and setup code
 
 ## Where's the data stored?
+
 Persistent data is stored in a PostgreSQL DB which is stored in the `openremote_postgresql-data` docker volume which is durably stored independently of the running containers (see all with `docker volume ls`).
 Note that historical attribute data is purged daily based on value of `OR_DATA_POINTS_MAX_AGE_DAYS`; this value can also be overridden for individual attributes by using the `dataPointsMaxAgeDays` configuration item.
 See the [Developer Guide](https://docs.openremote.io/docs/developer-guide/useful-commands-and-queries/#backuprestore-openremote-db) for details on making backups of the database.
-
 
 ## Contributing to OpenRemote
 

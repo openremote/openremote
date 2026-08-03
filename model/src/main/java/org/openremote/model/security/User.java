@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.security;
 
@@ -27,10 +26,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import org.hibernate.annotations.Formula;
-import org.hibernate.annotations.Subselect;
-import org.openremote.model.persistence.InstantEpochConverter;
-
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -38,277 +33,313 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.hibernate.annotations.Formula;
+import org.hibernate.annotations.Subselect;
+import org.openremote.model.persistence.InstantEpochConverter;
 
-/**
- * This can be used (among other things) to query the USER_ENTITY table in JPA queries.
- */
+/** This can be used (among other things) to query the USER_ENTITY table in JPA queries. */
 // TODO: Add user roles as a transient property
 @Entity
-@Subselect("select * from PUBLIC.USER_ENTITY") // Map this immutable to an SQL view, don't use/create table
-@Schema(description = "Identity-provider user or service account. Administrative fields may be omitted according to caller permissions.")
+@Subselect(
+    "select * from PUBLIC.USER_ENTITY") // Map this immutable to an SQL view, don't use/create table
+@Schema(
+    description =
+        "Identity-provider user or service account. Administrative fields may be omitted according to caller permissions.")
 public class User {
-    public static final String SERVICE_ACCOUNT_PREFIX = "service-account-";
-    public static final String SYSTEM_ACCOUNT_ATTRIBUTE = "systemAccount";
-    public static final String EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE = "emailNotificationsDisabled";
-    public static final String PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE = "pushNotificationsDisabled";
-    public static final String LOCALE_ATTRIBUTE = "locale";
-    public static final String USERNAME_PATTERN = "^(?=[\\p{IsLatin}|\\p{IsCommon}]+$)(?=[^<>&\"'\\s\\v\\h$%!#?§,;:*~/\\\\|^=\\[\\]{}()`\\p{Cntrl}]+$).*$"; // Based on Keycloak username validation
-    protected static Field[] propertyFields;
+  public static final String SERVICE_ACCOUNT_PREFIX = "service-account-";
+  public static final String SYSTEM_ACCOUNT_ATTRIBUTE = "systemAccount";
+  public static final String EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE = "emailNotificationsDisabled";
+  public static final String PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE = "pushNotificationsDisabled";
+  public static final String LOCALE_ATTRIBUTE = "locale";
+  public static final String USERNAME_PATTERN =
+      "^(?=[\\p{IsLatin}|\\p{IsCommon}]+$)(?=[^<>&\"'\\s\\v\\h$%!#?§,;:*~/\\\\|^=\\[\\]{}()`\\p{Cntrl}]+$).*$"; // Based on Keycloak username validation
+  protected static Field[] propertyFields;
 
-    @Formula("(select r.NAME from PUBLIC.REALM r where r.ID = REALM_ID)")
-    @Schema(description = "Realm name that owns the user.", example = "building")
-    protected String realm;
+  @Formula("(select r.NAME from PUBLIC.REALM r where r.ID = REALM_ID)")
+  @Schema(description = "Realm name that owns the user.", example = "building")
+  protected String realm;
 
-    @Column(name = "REALM_ID")
-    @Schema(description = "Identity-provider internal realm identifier.", accessMode = Schema.AccessMode.READ_ONLY)
-    protected String realmId;
+  @Column(name = "REALM_ID")
+  @Schema(
+      description = "Identity-provider internal realm identifier.",
+      accessMode = Schema.AccessMode.READ_ONLY)
+  protected String realmId;
 
-    @Id
-    @Schema(description = "Identity-provider user identifier.", example = "2f1c17e5-72b8-4dbe-9f8d-c49e66f82e10")
-    protected String id;
+  @Id
+  @Schema(
+      description = "Identity-provider user identifier.",
+      example = "2f1c17e5-72b8-4dbe-9f8d-c49e66f82e10")
+  protected String id;
 
-    @JsonIgnore
-    @Column(name = "USERNAME")
-    @Schema(description = "Unique login name within the realm.", example = "alex")
-    protected String username;
+  @JsonIgnore
+  @Column(name = "USERNAME")
+  @Schema(description = "Unique login name within the realm.", example = "alex")
+  protected String username;
 
-    @Column(name = "FIRST_NAME")
-    @Schema(description = "Given name.", example = "Alex")
-    protected String firstName;
+  @Column(name = "FIRST_NAME")
+  @Schema(description = "Given name.", example = "Alex")
+  protected String firstName;
 
-    @Column(name = "LAST_NAME")
-    @Schema(description = "Family name.", example = "Morgan")
-    protected String lastName;
+  @Column(name = "LAST_NAME")
+  @Schema(description = "Family name.", example = "Morgan")
+  protected String lastName;
 
-    @Column(name = "EMAIL")
-    @Schema(description = "Email address.", example = "alex@example.com")
-    protected String email;
+  @Column(name = "EMAIL")
+  @Schema(description = "Email address.", example = "alex@example.com")
+  protected String email;
 
-    @Column(name = "ENABLED")
-    @Schema(description = "Whether this identity can authenticate.", example = "true")
-    protected Boolean enabled;
+  @Column(name = "ENABLED")
+  @Schema(description = "Whether this identity can authenticate.", example = "true")
+  protected Boolean enabled;
 
-    @Column(name = "CREATED_TIMESTAMP")
-    @Convert(converter = InstantEpochConverter.class)
-    @Schema(description = "Identity creation time.", accessMode = Schema.AccessMode.READ_ONLY, example = "2026-01-01T00:00:00Z")
-    protected Instant createdOn;
+  @Column(name = "CREATED_TIMESTAMP")
+  @Convert(converter = InstantEpochConverter.class)
+  @Schema(
+      description = "Identity creation time.",
+      accessMode = Schema.AccessMode.READ_ONLY,
+      example = "2026-01-01T00:00:00Z")
+  protected Instant createdOn;
 
-    @Formula("(SELECT C.SECRET FROM PUBLIC.CLIENT C WHERE C.ID = SERVICE_ACCOUNT_CLIENT_LINK)")
-    @Schema(description = "Client secret for a service user. Returned only by operations that explicitly expose or reset it.", accessMode = Schema.AccessMode.READ_ONLY)
-    protected String secret; // For service users
+  @Formula("(SELECT C.SECRET FROM PUBLIC.CLIENT C WHERE C.ID = SERVICE_ACCOUNT_CLIENT_LINK)")
+  @Schema(
+      description =
+          "Client secret for a service user. Returned only by operations that explicitly expose or reset it.",
+      accessMode = Schema.AccessMode.READ_ONLY)
+  protected String secret; // For service users
 
-    @OneToMany(fetch = FetchType.EAGER)
-    @JoinColumn(name = "USER_ID")
-    @JsonIgnore
-    @Schema(description = "Identity-provider user attributes represented as name/value collections.")
-    protected List<UserAttribute> attributes;
+  @OneToMany(fetch = FetchType.EAGER)
+  @JoinColumn(name = "USER_ID")
+  @JsonIgnore
+  @Schema(description = "Identity-provider user attributes represented as name/value collections.")
+  protected List<UserAttribute> attributes;
 
-    public User() {
+  public User() {}
+
+  public String getRealm() {
+    return realm;
+  }
+
+  public User setRealm(String realm) {
+    this.realm = realm;
+    return this;
+  }
+
+  public String getRealmId() {
+    return realmId;
+  }
+
+  public User setRealmId(String realmId) {
+    this.realmId = realmId;
+    return this;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public User setId(String id) {
+    this.id = id;
+    return this;
+  }
+
+  @Size(min = 3, max = 255, message = "{User.username.Size}") @Pattern(regexp = USERNAME_PATTERN, message = "{User.username.Pattern}") @JsonProperty
+  public String getUsername() {
+    return username == null ? null : username.replace(SERVICE_ACCOUNT_PREFIX, "");
+  }
+
+  @JsonSetter("username")
+  public User setUsername(String username) {
+
+    boolean isService = isServiceAccount() || username.startsWith(SERVICE_ACCOUNT_PREFIX);
+
+    username = username.replace(SERVICE_ACCOUNT_PREFIX, "");
+
+    if (isService) {
+      username = SERVICE_ACCOUNT_PREFIX + username;
     }
 
-    public String getRealm() {
-        return realm;
+    this.username = username;
+    return this;
+  }
+
+  @JsonProperty
+  public boolean isServiceAccount() {
+    return username != null && username.startsWith(SERVICE_ACCOUNT_PREFIX);
+  }
+
+  @JsonIgnore
+  public List<UserAttribute> getAttributes() {
+    return attributes;
+  }
+
+  @JsonIgnore
+  public User setAttributes(UserAttribute... attributes) {
+    this.attributes = attributes == null ? null : Arrays.asList(attributes);
+    return this;
+  }
+
+  @JsonProperty
+  protected User setAttributes(Map<String, List<String>> attributes) {
+    if (attributes == null) {
+      this.attributes = new ArrayList<>();
+    } else {
+      this.attributes =
+          new ArrayList<>(
+              attributes.entrySet().stream()
+                  .flatMap(
+                      entry ->
+                          entry.getValue().stream().map(v -> new UserAttribute(entry.getKey(), v)))
+                  .toList());
     }
+    return this;
+  }
 
-    public User setRealm(String realm) {
-        this.realm = realm;
-        return this;
+  @JsonProperty("attributes")
+  public Map<String, List<String>> getAttributeMap() {
+    if (attributes == null) {
+      return null;
     }
+    return attributes.stream()
+        .collect(
+            Collectors.groupingBy(
+                UserAttribute::getName,
+                Collectors.mapping(UserAttribute::getValue, Collectors.toList())));
+  }
 
-    public String getRealmId() {
-        return realmId;
+  public User setAttribute(String key, String value) {
+    if (attributes == null) {
+      attributes = new ArrayList<>();
+    } else {
+      attributes.removeIf(attr -> attr.getName().equals(key));
     }
+    attributes.add(new UserAttribute(key, value));
+    return this;
+  }
 
-    public User setRealmId(String realmId) {
-        this.realmId = realmId;
-        return this;
+  public User setAttribute(String key, List<String> values) {
+    if (attributes == null) {
+      attributes = new ArrayList<>();
+    } else {
+      attributes.removeIf(attr -> attr.getName().equals(key));
     }
+    values.forEach(value -> attributes.add(new UserAttribute(key, value)));
+    return this;
+  }
 
-    public String getId() {
-        return id;
+  public boolean hasAttribute(String key) {
+    return attributes != null && attributes.stream().anyMatch(attr -> attr.getName().equals(key));
+  }
+
+  public User removeAttribute(String key) {
+    if (attributes != null) {
+      attributes.removeIf(attr -> attr.getName().equals(key));
     }
+    return this;
+  }
 
-    public User setId(String id) {
-        this.id = id;
-        return this;
+  public User setServiceAccount(boolean serviceAccount) {
+    if (username != null) {
+      username =
+          serviceAccount
+              ? SERVICE_ACCOUNT_PREFIX + username.replace(SERVICE_ACCOUNT_PREFIX, "")
+              : username.replace(SERVICE_ACCOUNT_PREFIX, "");
+    } else {
+      username = serviceAccount ? SERVICE_ACCOUNT_PREFIX : null;
     }
+    return this;
+  }
 
-    @Size(min = 3, max = 255, message = "{User.username.Size}")
-    @Pattern(regexp = USERNAME_PATTERN, message = "{User.username.Pattern}")
-    @JsonProperty
-    public String getUsername() {
-        return username == null ? null : username.replace(SERVICE_ACCOUNT_PREFIX, "");
+  public boolean isSystemAccount() {
+    return hasAttribute(SYSTEM_ACCOUNT_ATTRIBUTE);
+  }
+
+  /** Will hide this user from HTTP API */
+  public User setSystemAccount(boolean systemAccount) {
+
+    if (systemAccount) {
+      setAttribute(SYSTEM_ACCOUNT_ATTRIBUTE, "true");
+    } else {
+      removeAttribute(SYSTEM_ACCOUNT_ATTRIBUTE);
     }
+    return this;
+  }
 
-    @JsonSetter("username")
-    public User setUsername(String username) {
+  @Size(min = 0, max = 127, message = "{User.firstName.Size}") public String getFirstName() {
+    return firstName;
+  }
 
-        boolean isService = isServiceAccount() || username.startsWith(SERVICE_ACCOUNT_PREFIX);
+  public User setFirstName(String firstName) {
+    this.firstName = firstName;
+    return this;
+  }
 
-        username = username.replace(SERVICE_ACCOUNT_PREFIX, "");
+  @Size(min = 0, max = 127, message = "{User.lastName.Size}") public String getLastName() {
+    return lastName;
+  }
 
-        if (isService) {
-            username = SERVICE_ACCOUNT_PREFIX + username;
-        }
+  public User setLastName(String lastName) {
+    this.lastName = lastName;
+    return this;
+  }
 
-        this.username = username;
-        return this;
-    }
+  @Email(message = "{User.email.Email}") public String getEmail() {
+    return email;
+  }
 
-    @JsonProperty
-    public boolean isServiceAccount() {
-        return username != null && username.startsWith(SERVICE_ACCOUNT_PREFIX);
-    }
+  public User setEmail(String email) {
+    this.email = email;
+    return this;
+  }
 
-    @JsonIgnore
-    public List<UserAttribute> getAttributes() {
-        return attributes;
-    }
+  public Boolean getEnabled() {
+    return enabled;
+  }
 
-    @JsonIgnore
-    public User setAttributes(UserAttribute...attributes) {
-        this.attributes = attributes == null ? null : Arrays.asList(attributes);
-        return this;
-    }
+  public User setEnabled(Boolean enabled) {
+    this.enabled = enabled;
+    return this;
+  }
 
-    @JsonProperty
-    protected User setAttributes(Map<String, List<String>> attributes) {
-        if (attributes == null) {
-            this.attributes = new ArrayList<>();
-        } else {
-            this.attributes = new ArrayList<>(attributes.entrySet().stream().flatMap(entry -> entry.getValue().stream().map(v -> new UserAttribute(entry.getKey(), v))).toList());
-        }
-        return this;
-    }
+  public String getFullName() {
+    return getUsername() + " (" + getFirstName() + " " + getLastName() + ")";
+  }
 
-    @JsonProperty("attributes")
-    public Map<String, List<String>> getAttributeMap() {
-        if (attributes == null) {
-            return null;
-        }
-        return attributes.stream().collect(Collectors.groupingBy(UserAttribute::getName, Collectors.mapping(UserAttribute::getValue, Collectors.toList())));
-    }
+  public User setSecret(String secret) {
+    this.secret = secret;
+    return this;
+  }
 
-    public User setAttribute(String key, String value) {
-        if (attributes == null) {
-            attributes = new ArrayList<>();
-        } else {
-            attributes.removeIf(attr -> attr.getName().equals(key));
-        }
-        attributes.add(new UserAttribute(key, value));
-        return this;
-    }
+  public String getSecret() {
+    return secret;
+  }
 
-    public User setAttribute(String key, List<String> values) {
-        if (attributes == null) {
-            attributes = new ArrayList<>();
-        } else {
-            attributes.removeIf(attr -> attr.getName().equals(key));
-        }
-        values.forEach(value -> attributes.add(new UserAttribute(key, value)));
-        return this;
-    }
-
-    public boolean hasAttribute(String key) {
-        return attributes != null && attributes.stream().anyMatch(attr -> attr.getName().equals(key));
-    }
-
-    public User removeAttribute(String key) {
-        if (attributes != null) {
-            attributes.removeIf(attr -> attr.getName().equals(key));
-        }
-        return this;
-    }
-
-    public User setServiceAccount(boolean serviceAccount) {
-        if (username != null) {
-            username = serviceAccount ? SERVICE_ACCOUNT_PREFIX + username.replace(SERVICE_ACCOUNT_PREFIX, "") : username.replace(SERVICE_ACCOUNT_PREFIX, "");
-        } else {
-            username = serviceAccount ? SERVICE_ACCOUNT_PREFIX : null;
-        }
-        return this;
-    }
-
-    public boolean isSystemAccount() {
-        return hasAttribute(SYSTEM_ACCOUNT_ATTRIBUTE);
-    }
-
-    /**
-     * Will hide this user from HTTP API
-     */
-    public User setSystemAccount(boolean systemAccount) {
-
-        if (systemAccount) {
-            setAttribute(SYSTEM_ACCOUNT_ATTRIBUTE, "true");
-        } else {
-            removeAttribute(SYSTEM_ACCOUNT_ATTRIBUTE);
-        }
-        return this;
-    }
-
-    @Size(min = 0, max = 127, message = "{User.firstName.Size}")
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public User setFirstName(String firstName) {
-        this.firstName = firstName;
-        return this;
-    }
-
-    @Size(min = 0, max = 127, message = "{User.lastName.Size}")
-    public String getLastName() {
-        return lastName;
-    }
-
-    public User setLastName(String lastName) {
-        this.lastName = lastName;
-        return this;
-    }
-
-    @Email(message = "{User.email.Email}")
-    public String getEmail() {
-        return email;
-    }
-
-    public User setEmail(String email) {
-        this.email = email;
-        return this;
-    }
-
-    public Boolean getEnabled() {
-        return enabled;
-    }
-
-    public User setEnabled(Boolean enabled) {
-        this.enabled = enabled;
-        return this;
-    }
-
-    public String getFullName() {
-        return getUsername() + " (" + getFirstName() + " " + getLastName() + ")";
-    }
-
-    public User setSecret(String secret) {
-        this.secret = secret;
-        return this;
-    }
-
-    public String getSecret() {
-        return secret;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getName() + "{" +
-            "realm='" + realm + '\'' +
-            ", id='" + id + '\'' +
-            ", username='" + username + '\'' +
-            ", firstName='" + firstName + '\'' +
-            ", lastName='" + lastName + '\'' +
-            ", email='" + email + '\'' +
-            ", enabled=" + enabled + '\'' +
-            ", attributes=" + (attributes != null ? Arrays.toString(attributes.toArray()) : "") +
-            '}';
-    }
+  @Override
+  public String toString() {
+    return getClass().getName()
+        + "{"
+        + "realm='"
+        + realm
+        + '\''
+        + ", id='"
+        + id
+        + '\''
+        + ", username='"
+        + username
+        + '\''
+        + ", firstName='"
+        + firstName
+        + '\''
+        + ", lastName='"
+        + lastName
+        + '\''
+        + ", email='"
+        + email
+        + '\''
+        + ", enabled="
+        + enabled
+        + '\''
+        + ", attributes="
+        + (attributes != null ? Arrays.toString(attributes.toArray()) : "")
+        + '}';
+  }
 }

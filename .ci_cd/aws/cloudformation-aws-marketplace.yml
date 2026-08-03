@@ -5,13 +5,13 @@
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Deploy OpenRemote via the AWS Marketplace'
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Deploy OpenRemote via the AWS Marketplace"
 Metadata:
-  AWS::CloudFormation::Interface: 
+  AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Instance Configuration 
+          default: Instance Configuration
         Parameters:
           - Host
           - InstanceType
@@ -40,7 +40,7 @@ Metadata:
         default: Which AMI (Amazon Machine Image) do you want to use for this instance?
       DiskSize:
         default: How much storage would you like to allocate to the virtual machine?
-      Keypair: 
+      Keypair:
         default: Which key pair would you like to use for this instance?
       ElasticIP:
         default: Would you like to assign an Elastic IP?
@@ -95,26 +95,26 @@ Parameters:
       - "Yes"
       - "No"
   Password:
-      Description: The password you enter here will be used for the administrator account within the OpenRemote manager. Leave empty to use the default one.
-      Type: String
-      NoEcho: true
+    Description: The password you enter here will be used for the administrator account within the OpenRemote manager. Leave empty to use the default one.
+    Type: String
+    NoEcho: true
   RepeatPassword:
-      Description: Repeat the password you have entered above.
-      Type: String
-      NoEcho: true
+    Description: Repeat the password you have entered above.
+    Type: String
+    NoEcho: true
   SMTPHost:
-      Description: The hostname you enter here will be used for sending e-mails e.g. mail.example.com.
-      Type: String
+    Description: The hostname you enter here will be used for sending e-mails e.g. mail.example.com.
+    Type: String
   SMTPUser:
-      Description: The username for authenticating with the SMTP server. In most cases this is the e-mail address of the sending account.
-      Type: String
+    Description: The username for authenticating with the SMTP server. In most cases this is the e-mail address of the sending account.
+    Type: String
   SMTPPassword:
-      Description: The password for authenticating with the SMTP server.
-      Type: String
-      NoEcho: true
+    Description: The password for authenticating with the SMTP server.
+    Type: String
+    NoEcho: true
   SMTPFrom:
-      Description: The e-mail address is visible for the receivers. e.g. noreply@example.com.
-      Type: String
+    Description: The e-mail address is visible for the receivers. e.g. noreply@example.com.
+    Type: String
 
 Mappings:
   DiskSize:
@@ -138,16 +138,15 @@ Rules:
   IsPasswordProvided:
     RuleCondition: !Not [!Equals [!Ref Password, .+]]
     Assertions:
-      - Assert:
-          !Equals
-           - !Ref Password
-           - !Ref RepeatPassword
+      - Assert: !Equals
+          - !Ref Password
+          - !Ref RepeatPassword
         AssertDescription: The password and repeat password field must be the same.
 
 Resources:
   VPC:
     Type: AWS::EC2::VPC
-    Properties: 
+    Properties:
       CidrBlock: 10.0.0.0/16
       EnableDnsHostnames: true
       EnableDnsSupport: true
@@ -155,47 +154,47 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-or-vpc
-  
+
   IPv6CIDRBlock:
     Type: AWS::EC2::VPCCidrBlock
     Properties:
       VpcId: !Ref VPC
       AmazonProvidedIpv6CidrBlock: true
-  
+
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
-      Tags: 
+      Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-or-internet-gateway
-  
+
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
-  
+
   PublicSubnet:
     Type: AWS::EC2::Subnet
     DependsOn: IPv6CIDRBlock
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
-      CidrBlock: !Select [ 1, !Cidr [!GetAtt VPC.CidrBlock, 6, 8]]
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Select [1, !Cidr [!GetAtt VPC.CidrBlock, 6, 8]]
       Ipv6CidrBlock: !Select [1, !Cidr [!Select [0, !GetAtt VPC.Ipv6CidrBlocks], 7, 64]]
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-or-public-subnet
-  
+
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
-      Tags: 
+      Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-or-routetable
-  
+
   PublicRouteIPv4:
     Type: AWS::EC2::Route
     DependsOn: InternetGatewayAttachment
@@ -203,7 +202,7 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
       RouteTableId: !Ref PublicRouteTable
-  
+
   PublicRouteIPv6:
     Type: AWS::EC2::Route
     DependsOn: InternetGatewayAttachment
@@ -211,13 +210,13 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       GatewayId: !Ref InternetGateway
       DestinationIpv6CidrBlock: ::/0
-  
+
   PublicRouteTableAssociate:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnet
-  
+
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -265,14 +264,14 @@ Resources:
           FromPort: 161
           ToPort: 162
           CidrIpv6: ::/0
-  
+
   SSHSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: OpenRemote SSH whitelist
       GroupName: !Sub ${AWS::StackName}-or-ssh-whitelist
       VpcId: !Ref VPC
-    
+
   EC2Instance:
     Type: AWS::EC2::Instance
     CreationPolicy:
@@ -286,7 +285,7 @@ Resources:
             - docker_installation
             - openremote_installation
             - start_openremote
-        
+
         docker_installation:
           packages:
             yum:
@@ -303,7 +302,7 @@ Resources:
               docker:
                 enabled: true
                 ensureRunning: true
-        
+
         openremote_installation:
           commands:
             01_openremote_installation:
@@ -315,10 +314,10 @@ Resources:
           commands:
             01_start_openremote:
               command: !Sub |
-                
+
                 # If hostname is not provided, use the IPv4 address of the EC2 instance, otherwise use the hostname.
                 export OR_HOSTNAME=$( [ -z "${Host}" ] && curl -s v4.ident.me || echo "${Host}" )
-                
+
                 # Avoid parameter expansion if the password contains `$`
                 if [ -n "${Password}" ]; then
                   export OR_ADMIN_PASSWORD=$(cat << 'EOF'
@@ -326,14 +325,14 @@ Resources:
                 EOF
                 )
                 fi
-                
+
                 if [ -n "${SMTPPassword}" ]; then
                   export OR_EMAIL_PASSWORD=$(cat << 'EOF'
                 ${SMTPPassword}
                 EOF
                 )
                 fi
-                
+
                 # Configure SMTP credentials if provided.
                 if [ -n "${SMTPHost}" ]; then
                   export OR_EMAIL_HOST="${SMTPHost}"
@@ -344,7 +343,7 @@ Resources:
                 if [ -n "${SMTPFrom}" ]; then
                   export OR_EMAIL_FROM="${SMTPFrom}"
                 fi
-              
+
                 # Start OpenRemote using the Docker Compose file.
                 docker-compose -f /home/ec2-user/docker-compose.yml -p or up -d
 
@@ -354,20 +353,20 @@ Resources:
       KeyName: !Ref Keypair
       SubnetId: !Ref PublicSubnet
       SecurityGroupIds:
-        -  !Ref SecurityGroup
-        -  !Ref SSHSecurityGroup
+        - !Ref SecurityGroup
+        - !Ref SSHSecurityGroup
       Ipv6AddressCount: 1
       Tags:
-      - Key: Name
-        Value: OpenRemote
+        - Key: Name
+          Value: OpenRemote
       BlockDeviceMappings:
-      - DeviceName: /dev/xvda
-        Ebs:
-          VolumeSize: !FindInMap [DiskSize, !Ref DiskSize , DiskSize]
-          VolumeType: gp3
-          DeleteOnTermination: true
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !FindInMap [DiskSize, !Ref DiskSize, DiskSize]
+            VolumeType: gp3
+            DeleteOnTermination: true
       UserData:
-        Fn::Base64: 
+        Fn::Base64:
           Fn::Sub: |
             #!/bin/bash -xe
             # Install CFN scripts.
@@ -378,7 +377,7 @@ Resources:
 
             # Wait for signal that OpenRemote is successfully installed.
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource EC2Instance
-  
+
   IPAddress:
     Type: AWS::EC2::EIP
     Condition: ElasticIP
@@ -386,7 +385,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-host
-  
+
   ElasticIPAssoc:
     Type: AWS::EC2::EIPAssociation
     Condition: ElasticIP

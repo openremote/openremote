@@ -1,270 +1,308 @@
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {JsonRule, LogicGroup, LogicGroupOperator, RuleCondition, WellknownAssets, AssetTypeInfo, Asset, AssetQuery} from "@openremote/model";
-import {OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
-import {buttonStyle} from "../style";
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import {
+  type JsonRule,
+  type LogicGroup,
+  LogicGroupOperator,
+  type RuleCondition,
+  WellknownAssets,
+  type AssetTypeInfo,
+  type Asset,
+  type AssetQuery,
+} from "@openremote/model";
+import { OrRulesRuleUnsupportedEvent, type RulesConfig } from "../index";
+import { buttonStyle } from "../style";
 import "./or-rule-condition";
-import {i18next, translate} from "@openremote/or-translate"
-import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import {getWhenTypesMenu, updateRuleConditionType} from "./or-rule-condition";
-import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import { i18next, translate } from "@openremote/or-translate";
+import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
+import { getWhenTypesMenu, updateRuleConditionType } from "./or-rule-condition";
+import { createMenuBarItem, type MenuBarItem } from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import { when } from "lit/directives/when.js";
 
 enum ResetOption {
-    NO_LONGER_MATCHES = "noLongerMatches",
-    VALUE_CHANGES = "valueChanges"
+  NO_LONGER_MATCHES = "noLongerMatches",
+  VALUE_CHANGES = "valueChanges",
 }
 
 // language=CSS
 const style = css`
-    
-    :host {
-        display: block;
-    }
-    
-    ${buttonStyle}
-    
-    .rule-group-items {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .rule-group .rule-group-items > div {
-        margin: 10px 0;
-    }
-    
-    .rule-condition {
-        display: flex;
-        padding-right: 5px;
-    }
-     
-    .rule-condition > * {
-        flex-grow: 0;
-    }
-    
-    .rule-condition > or-rule-condition {
-        flex-grow: 1;
-    }
-    
-    or-rule-condition {
-        margin-bottom: 10px;
-    }
+  :host {
+    display: block;
+  }
 
-    .rule-group-item > or-icon {
-        padding-left: 17px;
-    }
-    
-    or-icon.small {
-        --or-icon-width: 14px;
-        --or-icon-height: 14px;
-    }
-    
-    or-panel {
-        margin: 10px 10px 20px 10px;
-        position: relative;
-    }
-    
-    or-panel > .remove-button {
-        position: absolute;
-        right: 0;
-        top: 0;
-        width: 24px;
-        height: 24px;
-        transform: translate(50%, -50%);
-    }
+  ${buttonStyle}
 
-    .rule-condition:hover .button-clear {
-        visibility: visible;
-    }
+  .rule-group-items {
+    display: flex;
+    flex-direction: column;
+  }
 
-    or-panel:hover .remove-button.button-clear {
-        visibility: visible;
-    }
-    
-    .add-button-wrapper {
-        display: flex;
-        align-items: center;
-        white-space: nowrap;
-    }
-    
-    .add-button-wrapper > * {
-        margin-right: 6px;
-    }
+  .rule-group .rule-group-items > div {
+    margin: 10px 0;
+  }
 
-    strong {
-        margin: var(--internal-or-panel-heading-margin);
-        font-size: var(--internal-or-panel-heading-font-size);
-    }
+  .rule-condition {
+    display: flex;
+    padding-right: 5px;
+  }
+
+  .rule-condition > * {
+    flex-grow: 0;
+  }
+
+  .rule-condition > or-rule-condition {
+    flex-grow: 1;
+  }
+
+  or-rule-condition {
+    margin-bottom: 10px;
+  }
+
+  .rule-group-item > or-icon {
+    padding-left: 17px;
+  }
+
+  or-icon.small {
+    --or-icon-width: 14px;
+    --or-icon-height: 14px;
+  }
+
+  or-panel {
+    margin: 10px 10px 20px 10px;
+    position: relative;
+  }
+
+  or-panel > .remove-button {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 24px;
+    height: 24px;
+    transform: translate(50%, -50%);
+  }
+
+  .rule-condition:hover .button-clear {
+    visibility: visible;
+  }
+
+  or-panel:hover .remove-button.button-clear {
+    visibility: visible;
+  }
+
+  .add-button-wrapper {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  .add-button-wrapper > * {
+    margin-right: 6px;
+  }
+
+  strong {
+    margin: var(--internal-or-panel-heading-margin);
+    font-size: var(--internal-or-panel-heading-font-size);
+  }
 `;
 
 @customElement("or-rule-when")
 class OrRuleWhen extends translate(i18next)(LitElement) {
+  static get styles() {
+    return style;
+  }
 
-    static get styles() {
-        return style;
+  @property({ type: Object })
+  public rule?: JsonRule;
+
+  @property({ type: Boolean })
+  public readonly?: boolean;
+
+  @property({ type: Object })
+  public assetProvider?: (type: string, query?: AssetQuery) => Promise<Asset[]>;
+
+  public config?: RulesConfig;
+
+  @property({ type: Object, attribute: false })
+  public assetInfos?: AssetTypeInfo[];
+
+  protected ruleGroupTemplate(
+    group: LogicGroup<RuleCondition>,
+    parentGroup?: LogicGroup<RuleCondition>
+  ): TemplateResult | undefined {
+    if (!group) {
+      return html``;
     }
 
-    @property({type: Object})
-    public rule?: JsonRule;
+    const isTopLevel = !parentGroup;
+    const showAddCondition =
+      !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddCondition !== true);
+    const showRemoveCondition = !this.readonly;
+    const showRemoveGroup = !this.readonly;
 
-    @property({type: Boolean})
-    public readonly?: boolean;
+    let wrapper: (
+      content: TemplateResult,
+      item: LogicGroup<RuleCondition> | RuleCondition,
+      parent: LogicGroup<RuleCondition>,
+      isGroup: boolean,
+      isFirst: boolean
+    ) => TemplateResult;
 
-    @property({type: Object})
-    public assetProvider?: (type: string, query?: AssetQuery) => Promise<Asset[]>
+    if (isTopLevel) {
+      wrapper = (content, item, parent, isGroup, isFirst) => {
+        return html` <or-panel .heading="${i18next.t(isFirst ? "when" : "orWhen")}...">
+          ${
+            showRemoveGroup
+              ? html`
+                  <button class="button-clear remove-button" @click="${() => this.removeItem(item, parent, isGroup)}">
+                    <or-icon icon="close-circle"></or-icon>
+                  </button>
+                `
+              : ``
+          }
+          ${content}
+        </or-panel>`;
+      };
+    } else {
+      wrapper = (content, item, parent, isGroup, isFirst) => {
+        return html` ${!isFirst ? html` <or-icon class="small" icon="ampersand"></or-icon> ` : ``} ${content} `;
+        return content;
+      };
+    }
 
-    public config?: RulesConfig;
+    let groupsTemplate: TemplateResult | string = ``;
+    let itemsTemplate: TemplateResult | string = ``;
+    let addTemplate: TemplateResult | string = ``;
+    let isFirst = true;
 
-    @property({type: Object, attribute: false})
-    public assetInfos?: AssetTypeInfo[];
+    if (group.groups && group.groups.length > 0) {
+      groupsTemplate = html`
+        ${group.groups.map((childGroup: LogicGroup<RuleCondition>, index) => {
+          const content = html` <div class="rule-group-item">${this.ruleGroupTemplate(childGroup, group)}</div> `;
+          return wrapper(content, childGroup, group, true, index == 0);
+        })}
+      `;
+      isFirst = false;
+    }
 
-    protected ruleGroupTemplate(group: LogicGroup<RuleCondition>, parentGroup?: LogicGroup<RuleCondition>): TemplateResult | undefined {
-
-        if (!group) {
-            return html``;
-        }
-
-        const isTopLevel = !parentGroup;
-        const showAddCondition = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddCondition !== true);
-        const showRemoveCondition = !this.readonly;
-        const showRemoveGroup = !this.readonly;
-
-        let wrapper: (content: TemplateResult, item: LogicGroup<RuleCondition> | RuleCondition, parent: LogicGroup<RuleCondition>, isGroup: boolean, isFirst: boolean) => TemplateResult;
-
-        if (isTopLevel) {
-            wrapper = (content, item, parent, isGroup, isFirst) => {
-                return html`
-                    <or-panel .heading="${i18next.t(isFirst ? "when" : "orWhen")}...">
-                        ${showRemoveGroup ? html`
-                            <button class="button-clear remove-button" @click="${() => this.removeItem(item, parent, isGroup)}">
-                                <or-icon icon="close-circle"></or-icon>  
-                            </button>
-                        ` : ``}
-                        ${content}
-                    </or-panel>`;
-            };
-        } else {
-            wrapper = (content, item, parent, isGroup, isFirst) => {
-                return html`
-                    ${!isFirst ? html`
-                        <or-icon class="small" icon="ampersand"></or-icon>
-                    ` : ``}
-                    ${content}
-                `;
-                return content;
-            }
-        }
-
-        let groupsTemplate: TemplateResult | string = ``;
-        let itemsTemplate: TemplateResult | string = ``;
-        let addTemplate: TemplateResult | string = ``;
-        let isFirst = true;
-
-        if (group.groups && group.groups.length > 0) {
-            groupsTemplate = html`
-                ${group.groups.map((childGroup: LogicGroup<RuleCondition>, index) => {
-                    const content = html`
-                        <div class="rule-group-item">
-                            ${this.ruleGroupTemplate(childGroup, group)}
-                        </div>
-                    `;
-                    return wrapper(content, childGroup, group, true, index == 0);
-                })}
-            `;
-            isFirst = false;
-        }
-
-        if (group.items && group.items.length > 0) {
-            itemsTemplate = html`
-                ${group.items.map((condition: RuleCondition, index) => {
-                    const content = html`
-                        <div class="rule-group-item">
-                            <div class="rule-condition">
-                                <or-rule-condition .config="${this.config}" .assetInfos="${this.assetInfos}" .ruleCondition="${condition}" .readonly="${this.readonly}" .assetProvider="${this.assetProvider}"></or-rule-condition>
-                                ${showRemoveGroup ? html`
+    if (group.items && group.items.length > 0) {
+      itemsTemplate = html`
+        ${group.items.map((condition: RuleCondition, index) => {
+          const content = html`
+            <div class="rule-group-item">
+              <div class="rule-condition">
+                <or-rule-condition
+                  .config="${this.config}"
+                  .assetInfos="${this.assetInfos}"
+                  .ruleCondition="${condition}"
+                  .readonly="${this.readonly}"
+                  .assetProvider="${this.assetProvider}"
+                ></or-rule-condition>
+                ${
+                  showRemoveGroup
+                    ? html`
                                     <button class="button-clear ${showRemoveCondition ? "" : "hidden"}" @click="${() => this.removeItem(condition, group, false)}"><or-icon icon="close-circle"></or-icon></input>
-                                ` : ``}
-                            </div>
-                        </div>
-                    `;
-                    return wrapper(content, condition, group, true, isFirst && index === 0);
-                })}
-            `;
-            isFirst = false;
-        }
-
-        if (!isTopLevel && showAddCondition) {
-            const menuItems: MenuBarItem[] = [{
-                component: createMenuBarItem(html`
-                    <div style="display: flex; align-items: center; gap: 0.25em;">
-                        <or-icon icon="plus"></or-icon>
-                        <or-translate value="rulesEditorAddCondition"></or-translate>
-                    </div>
-                `),
-                children: getWhenTypesMenu(this.config, this.assetInfos)
-            }]
-            addTemplate = html`
-                <span class="add-button-wrapper">
-                    <or-vaadin-menu-bar .items=${menuItems}
-                                        @item-selected=${(ev: CustomEvent) => this.addCondition(group, ev.detail.value.value)}
-                    ></or-vaadin-menu-bar>
-                </span>
-            `;
-        }
-        return html`
-            ${groupsTemplate}
-            ${itemsTemplate}
-            ${addTemplate}
-        `;
-    }
-
-    protected dateTimePredicateTemplate() {
-        return html`<span>DATE TIME PREDICATE NOT IMPLEMENTED</span>`;
-    }
-
-    public shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("rule")) {
-            if (this.rule) {
-                if (!this.rule.when) {
-                    this.rule.when = {
-                        operator: LogicGroupOperator.OR
-                    };
-                } else {
-                    // Check this is a rule compatible with this editor
-                    if (!OrRuleWhen._isRuleWhenCompatible(this.rule.when)) {
-                        this.rule = undefined;
-                        this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
-                    }
+                                `
+                    : ``
                 }
-            }
-        }
-
-        return super.shouldUpdate(_changedProperties);
+              </div>
+            </div>
+          `;
+          return wrapper(content, condition, group, true, isFirst && index === 0);
+        })}
+      `;
+      isFirst = false;
     }
 
-    protected render() {
-        if (!this.rule || !this.rule.when) {
-            return html``;
-        }
-
-        const showAddGroup = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddGroup !== true);
-
-        return html`
-            <div>
-                ${this.ruleGroupTemplate(this.rule.when)}
+    if (!isTopLevel && showAddCondition) {
+      const menuItems: MenuBarItem[] = [
+        {
+          component: createMenuBarItem(html`
+            <div style="display: flex; align-items: center; gap: 0.25em;">
+              <or-icon icon="plus"></or-icon>
+              <or-translate value="rulesEditorAddCondition"></or-translate>
             </div>
-            
-            ${when(showAddGroup, () => {
-                const menuItems: MenuBarItem[] = [{
-                    component: createMenuBarItem(html`
-                        <div style="display: flex; align-items: center; gap: 0.25em;">
-                            <or-icon icon="plus"></or-icon>
-                            <or-translate value="rulesEditorAddCondition"></or-translate>
-                        </div>
-                    `),
-                    children: getWhenTypesMenu(this.config, this.assetInfos)
-                }]
-                return html`
+          `),
+          children: getWhenTypesMenu(this.config, this.assetInfos),
+        },
+      ];
+      addTemplate = html`
+        <span class="add-button-wrapper">
+          <or-vaadin-menu-bar
+            .items=${menuItems}
+            @item-selected=${(ev: CustomEvent) => this.addCondition(group, ev.detail.value.value)}
+          ></or-vaadin-menu-bar>
+        </span>
+      `;
+    }
+    return html` ${groupsTemplate} ${itemsTemplate} ${addTemplate} `;
+  }
+
+  protected dateTimePredicateTemplate() {
+    return html`<span>DATE TIME PREDICATE NOT IMPLEMENTED</span>`;
+  }
+
+  public shouldUpdate(_changedProperties: PropertyValues): boolean {
+    if (_changedProperties.has("rule")) {
+      if (this.rule) {
+        if (!this.rule.when) {
+          this.rule.when = {
+            operator: LogicGroupOperator.OR,
+          };
+        } else {
+          // Check this is a rule compatible with this editor
+          if (!OrRuleWhen._isRuleWhenCompatible(this.rule.when)) {
+            this.rule = undefined;
+            this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
+          }
+        }
+      }
+    }
+
+    return super.shouldUpdate(_changedProperties);
+  }
+
+  protected render() {
+    if (!this.rule || !this.rule.when) {
+      return html``;
+    }
+
+    const showAddGroup =
+      !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddGroup !== true);
+
+    return html`
+      <div>${this.ruleGroupTemplate(this.rule.when)}</div>
+
+      ${when(showAddGroup, () => {
+        const menuItems: MenuBarItem[] = [
+          {
+            component: createMenuBarItem(html`
+              <div style="display: flex; align-items: center; gap: 0.25em;">
+                <or-icon icon="plus"></or-icon>
+                <or-translate value="rulesEditorAddCondition"></or-translate>
+              </div>
+            `),
+            children: getWhenTypesMenu(this.config, this.assetInfos),
+          },
+        ];
+        return html`
                     <or-panel>
                         <strong><or-translate value=${this.rule?.when?.groups?.length ? "orWhen" : "when"}></or-translate>...</strong>
                         <span class="add-button-wrapper">
@@ -273,132 +311,134 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                             </or-vaadin-menu-bar>
                         </span>
                     </or-panel>
-                `
-            })}
-        `;
+                `;
+      })}
+    `;
+  }
+
+  /**
+   * Currently only support a top level OR group and then N child AND groups with no more descendants
+   */
+  protected static _isRuleWhenCompatible(when: LogicGroup<RuleCondition>): boolean {
+    if (when.operator !== LogicGroupOperator.OR) {
+      console.warn("Incompatible rule: when operator not set to 'OR'");
+      return false;
     }
 
-    /**
-     * Currently only support a top level OR group and then N child AND groups with no more descendants
-     */
-    protected static _isRuleWhenCompatible(when: LogicGroup<RuleCondition>): boolean {
-        if (when.operator !== LogicGroupOperator.OR) {
-            console.warn("Incompatible rule: when operator not set to 'OR'");
-            return false;
-        }
-
-        if (when.items && when.items.length > 0) {
-            console.warn("Incompatible rule: when items not supported");
-            return false;
-        }
-
-        if (when.groups && when.groups.find((g) => !this._isWhenGroupCompatible(g))) {
-            console.warn("Incompatible rule: when groups incompatible");
-            return false;
-        }
-
-        return true;
+    if (when.items && when.items.length > 0) {
+      console.warn("Incompatible rule: when items not supported");
+      return false;
     }
 
-    protected static _isWhenGroupCompatible(group: LogicGroup<RuleCondition>): boolean {
-        if (group.operator === LogicGroupOperator.OR) {
-            console.warn("Incompatible rule: when group operator not set to 'AND'");
-            return false;
-        }
-
-        if (group.groups && group.groups.length > 0) {
-            console.warn("Incompatible rule: when group nested groups not supported");
-            return false;
-        }
-
-        return true;
+    if (when.groups && when.groups.find((g) => !this._isWhenGroupCompatible(g))) {
+      console.warn("Incompatible rule: when groups incompatible");
+      return false;
     }
 
-    private addGroup(parent: LogicGroup<RuleCondition>, type: string | undefined) {
-        if (!this.rule || !this.rule.when || parent !== this.rule.when) {
-            return;
-        }
+    return true;
+  }
 
-        let newGroup: LogicGroup<RuleCondition> = {
-            operator: LogicGroupOperator.AND
-        };
+  protected static _isWhenGroupCompatible(group: LogicGroup<RuleCondition>): boolean {
+    if (group.operator === LogicGroupOperator.OR) {
+      console.warn("Incompatible rule: when group operator not set to 'AND'");
+      return false;
+    }
 
-        if (this.config && this.config.json && this.config.json.whenGroup) {
-            newGroup = JSON.parse(JSON.stringify(this.config.json.whenGroup)) as LogicGroup<RuleCondition>;
-        }
+    if (group.groups && group.groups.length > 0) {
+      console.warn("Incompatible rule: when group nested groups not supported");
+      return false;
+    }
 
-        if (newGroup.operator !== LogicGroupOperator.AND) {
-            console.warn("JSON rules editor doesn't support top level logic group with type OR");
-            this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
-            return;
-        }
+    return true;
+  }
 
-        if (newGroup.groups && newGroup.groups.length > 0) {
-            console.warn("JSON rules editor doesn't support multiple top level logic groups");
-            this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
-            return;
-        }
+  private addGroup(parent: LogicGroup<RuleCondition>, type: string | undefined) {
+    if (!this.rule || !this.rule.when || parent !== this.rule.when) {
+      return;
+    }
 
+    let newGroup: LogicGroup<RuleCondition> = {
+      operator: LogicGroupOperator.AND,
+    };
 
-        newGroup.groups = undefined;
+    if (this.config && this.config.json && this.config.json.whenGroup) {
+      newGroup = JSON.parse(JSON.stringify(this.config.json.whenGroup)) as LogicGroup<RuleCondition>;
+    }
 
-        // Add an item if none exist
-        if (!newGroup.items || newGroup.items!.length === 0) {
-            this.addCondition(newGroup, type, true);
-        }
+    if (newGroup.operator !== LogicGroupOperator.AND) {
+      console.warn("JSON rules editor doesn't support top level logic group with type OR");
+      this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
+      return;
+    }
 
-        if (!parent.groups) {
-            parent.groups = [];
-        }
-        parent.groups.push(newGroup);
+    if (newGroup.groups && newGroup.groups.length > 0) {
+      console.warn("JSON rules editor doesn't support multiple top level logic groups");
+      this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
+      return;
+    }
 
+    newGroup.groups = undefined;
+
+    // Add an item if none exist
+    if (!newGroup.items || newGroup.items!.length === 0) {
+      this.addCondition(newGroup, type, true);
+    }
+
+    if (!parent.groups) {
+      parent.groups = [];
+    }
+    parent.groups.push(newGroup);
+
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
+  }
+
+  private removeItem(
+    item: LogicGroup<RuleCondition> | RuleCondition,
+    parent: LogicGroup<RuleCondition>,
+    isGroup: boolean
+  ) {
+    let removed = false;
+
+    if (parent) {
+      if (isGroup) {
+        const index = parent.groups!.indexOf(item as LogicGroup<RuleCondition>);
+        parent.groups!.splice(index, 1);
+        removed = index >= 0;
+      } else {
+        const index = parent.items!.indexOf(item as RuleCondition);
+        parent.items!.splice(index, 1);
+        removed = index >= 0;
+      }
+
+      if (removed) {
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
+      }
+    }
+  }
+
+  private addCondition(parent: LogicGroup<RuleCondition>, type: string | undefined, silent?: boolean) {
+    if (!parent) {
+      return;
     }
 
-    private removeItem(item: LogicGroup<RuleCondition> | RuleCondition, parent: LogicGroup<RuleCondition>, isGroup: boolean) {
-
-        let removed = false;
-
-        if (parent) {
-            if (isGroup) {
-                const index = parent.groups!.indexOf(item as LogicGroup<RuleCondition>);
-                parent.groups!.splice(index, 1);
-                removed = index >= 0;
-            } else {
-                const index = parent.items!.indexOf(item as RuleCondition);
-                parent.items!.splice(index, 1);
-                removed = index >= 0;
-            }
-
-            if (removed) {
-                this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-                this.requestUpdate();
-            }
-        }
+    if (!parent.items) {
+      parent.items = [];
     }
 
-    private addCondition(parent: LogicGroup<RuleCondition>, type: string | undefined, silent?: boolean) {
-        if (!parent) {
-            return;
-        }
+    let newCondition: RuleCondition = {};
 
-        if (!parent.items) {
-            parent.items = [];
-        }
-
-        let newCondition: RuleCondition = {};
-
-        if (this.config && this.config.json && this.config.json.whenCondition) {
-            newCondition = JSON.parse(JSON.stringify(this.config.json.whenCondition)) as RuleCondition;
-        } else {
-            updateRuleConditionType(newCondition, type || WellknownAssets.THINGASSET, this.config);
-        }
-
-        parent.items.push(newCondition);
-        if (!silent) {
-            this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-            this.requestUpdate();
-        }
+    if (this.config && this.config.json && this.config.json.whenCondition) {
+      newCondition = JSON.parse(JSON.stringify(this.config.json.whenCondition)) as RuleCondition;
+    } else {
+      updateRuleConditionType(newCondition, type || WellknownAssets.THINGASSET, this.config);
     }
+
+    parent.items.push(newCondition);
+    if (!silent) {
+      this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+      this.requestUpdate();
+    }
+  }
 }

@@ -5,11 +5,6 @@
     "rootDir": "src",
     "typeRoots": ["./@types"]
   },
-  "include": [
-    "./src",
-    "./@types"
-  ],
-  "references": [
-    { "path": "../model" }
-  ]
+  "include": ["./src", "./@types"],
+  "references": [{ "path": "../model" }]
 }

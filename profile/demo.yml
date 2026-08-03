@@ -24,11 +24,10 @@ x-logging: &awslogs
     options:
       awslogs-region: ${AWS_REGION:-eu-west-1}
       awslogs-group: ${OR_HOSTNAME}
-      awslogs-create-group: 'true'
+      awslogs-create-group: "true"
       tag: "{{.Name}}/{{.ID}}"
 
 services:
-
   deployment:
     image: openremote/deployment:${DEPLOYMENT_VERSION?DEPLOYMENT_VERSION must be set}
     volumes:
@@ -124,4 +123,3 @@ services:
       - manager-data:/storage
       - deployment-data:/deployment
     <<: *awslogs
-

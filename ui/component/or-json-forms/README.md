@@ -1,4 +1,5 @@
-# @openremote/or-json-forms  \<or-json-forms\>
+# @openremote/or-json-forms \<or-json-forms\>
+
 [![NPM Version][npm-image]][npm-url]
 
 Web Component for generating forms based on JSON Schema. This can be useful for creating forms for complex data structures and validating user input.
@@ -6,12 +7,14 @@ Web Component for generating forms based on JSON Schema. This can be useful for 
 This component expects the JSON Schemas to be formatted as described in [Usage](#usage).
 
 ## Install
+
 ```bash
 npm i @openremote/or-json-forms
 yarn add @openremote/or-json-forms
 ```
 
 ## Usage
+
 <!--For a full list of properties, methods and options refer to the TypeDoc generated [documentation]().-->
 
 The JSON Forms expects [Draft-07](http://json-schema.org/draft-07) schemas.
@@ -27,11 +30,11 @@ The following keywords are not (fully) supported:
 
 ### Behavior Specification
 
-- `{ "type": "string" }`  - Displays a text input field.
-- `{ "type": "number" }`  - Displays a number input field.
+- `{ "type": "string" }` - Displays a text input field.
+- `{ "type": "number" }` - Displays a number input field.
 - `{ "type": "integer" }` - Displays a number input field.
-- `{ "type": "array" }`   - Displays a wrapper with a button to add items.
-- `{ "type": "object" }`  - Displays a wrapper with a button to add properties.
+- `{ "type": "array" }` - Displays a wrapper with a button to add items.
+- `{ "type": "object" }` - Displays a wrapper with a button to add properties.
 
 #### Renderers & Testers
 
@@ -45,12 +48,12 @@ The JSON Forms will resolve default values from the schema based on the `default
 
 It derives the type from the schema's `type` property, or from properties that are characteristic of the type.
 
-| property                | type               |
-| ----------------------- | ------------------ |
-| `type`                  | The specified type |
-| `properties`            | object             |
-| `additionalProperties`  | object             |
-| `items`                 | array              |
+| property               | type               |
+| ---------------------- | ------------------ |
+| `type`                 | The specified type |
+| `properties`           | object             |
+| `additionalProperties` | object             |
+| `items`                | array              |
 
 <!--CombinatorKeyword[] = ['oneOf', 'anyOf', 'allOf']-->
 
@@ -58,15 +61,15 @@ It derives the type from the schema's `type` property, or from properties that a
 
 Depending on the type, it derives the default value as follows:
 
-| type                    | value | formats | Formatted default |
-| ----------------------- | ----- | ------- | ------- |
-| [...] (array of values) | [...]    |  |       | 
-| string                  | `""`    |  date-time, date, time       | `new Date()` |
-| integer, number         | `0`     |         |  |
-| boolean                 | `false` |         |
-| array                   | `[]`    |         |
-| object                  | An object with the required properties, otherwise an empty object |         |
-| null                    | `null`  |         |
+| type                    | value                                                             | formats               | Formatted default |
+| ----------------------- | ----------------------------------------------------------------- | --------------------- | ----------------- |
+| [...] (array of values) | [...]                                                             |                       |                   |
+| string                  | `""`                                                              | date-time, date, time | `new Date()`      |
+| integer, number         | `0`                                                               |                       |                   |
+| boolean                 | `false`                                                           |                       |
+| array                   | `[]`                                                              |                       |
+| object                  | An object with the required properties, otherwise an empty object |                       |
+| null                    | `null`                                                            |                       |
 
 ### Example usage
 
@@ -102,6 +105,7 @@ public class MyJsonForms extends LitElement {
 ### Custom renderers
 
 ### Styling
+
 All styling is done through CSS, the following CSS variables can be used:
 
 ```css
@@ -112,9 +116,11 @@ All styling is done through CSS, the following CSS variables can be used:
 ```
 
 ## Supported Browsers
+
 The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge.
 
 ## License
+
 [GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
 [npm-image]: https://img.shields.io/npm/v/@openremote/or-json-forms.svg

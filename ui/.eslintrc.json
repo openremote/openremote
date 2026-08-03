@@ -12,19 +12,12 @@
     "plugin:lit/recommended",
     "prettier"
   ],
-  "plugins": [
-    "@typescript-eslint"
-  ],
+  "plugins": ["@typescript-eslint"],
   "env": {
     "browser": true,
     "es2021": true
   },
-  "ignorePatterns": [
-    "build",
-    "dist",
-    "lib",
-    "node_modules"
-  ],
+  "ignorePatterns": ["build", "dist", "lib", "node_modules"],
   "rules": {
     // Required because inline type imports may otherwise appear duplicated
     "import/no-duplicates": "off",

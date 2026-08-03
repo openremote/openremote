@@ -1,21 +1,22 @@
 <!doctype html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes" />
 
     <title>Demo</title>
-</head>
-<body>
-<div id="info"></div>
-<br />
-<br />
-<div id="asset"></div>
-</body>
-<script src="core/dist/umd/index.orbundle.js"></script>
-<script src="or-asset-tree/dist/umd/index.bundle.js"></script>
-<script>
-    ORCore.manager.init({
+  </head>
+  <body>
+    <div id="info"></div>
+    <br />
+    <br />
+    <div id="asset"></div>
+  </body>
+  <script src="core/dist/umd/index.orbundle.js"></script>
+  <script src="or-asset-tree/dist/umd/index.bundle.js"></script>
+  <script>
+    ORCore.manager
+      .init({
         managerUrl: "http://127.0.0.1:8080",
         keycloakUrl: "http://127.0.0.1:8081/auth",
         auth: "KEYCLOAK",
@@ -23,19 +24,19 @@
         loadIcons: true,
         realm: "demo",
         configureTranslationsOptions: (options) => {
-            options.lng = "nl"; // Change initial language to dutch
-        }
-    }).then((success) => {
+          options.lng = "nl"; // Change initial language to dutch
+        },
+      })
+      .then((success) => {
         if (success) {
-
-            if (ORCore.manager.authenticated) {
-                console.log("AUTHENTICATED");
-            }
+          if (ORCore.manager.authenticated) {
+            console.log("AUTHENTICATED");
+          }
         }
-    });
-</script>
+      });
+  </script>
 
-<or-icon icon="access-point"></or-icon>
-<or-map style="width: 500px; height: 500px"></or-map>
-<or-asset-tree style="width: 500px; height: 800px;" realm="demo"></or-asset-tree>
+  <or-icon icon="access-point"></or-icon>
+  <or-map style="width: 500px; height: 500px"></or-map>
+  <or-asset-tree style="width: 500px; height: 800px" realm="demo"></or-asset-tree>
 </html>

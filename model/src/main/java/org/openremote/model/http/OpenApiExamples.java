@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,16 +12,17 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.http;
 
-/**
- * Reusable JSON examples for common OpenAPI request bodies.
- */
+/** Reusable JSON examples for common OpenAPI request bodies. */
 public final class OpenApiExamples {
 
-    public static final String ASSET_CREATE = """
+  public static final String ASSET_CREATE =
+      """
         {
           "type": "ThingAsset",
           "name": "Boiler room sensor",
@@ -44,7 +42,8 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String ASSET_UPDATE = """
+  public static final String ASSET_UPDATE =
+      """
         {
           "id": "7A6p4AnLTkKxJUCQAAABAA",
           "version": 3,
@@ -67,7 +66,8 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String ASSET_QUERY = """
+  public static final String ASSET_QUERY =
+      """
         {
           "realm": {
             "name": "building"
@@ -97,9 +97,10 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String ATTRIBUTE_VALUE = "21.5";
+  public static final String ATTRIBUTE_VALUE = "21.5";
 
-    public static final String ATTRIBUTE_STATES = """
+  public static final String ATTRIBUTE_STATES =
+      """
         [
           {
             "ref": {
@@ -118,7 +119,8 @@ public final class OpenApiExamples {
         ]
         """;
 
-    public static final String DATAPOINT_ALL_QUERY = """
+  public static final String DATAPOINT_ALL_QUERY =
+      """
         {
           "type": "all",
           "fromTime": "2026-01-01T00:00:00Z",
@@ -126,7 +128,8 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String DATAPOINT_INTERVAL_QUERY = """
+  public static final String DATAPOINT_INTERVAL_QUERY =
+      """
         {
           "type": "interval",
           "fromTimestamp": 1767225600000,
@@ -137,7 +140,8 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String DATAPOINT_LTTB_QUERY = """
+  public static final String DATAPOINT_LTTB_QUERY =
+      """
         {
           "type": "lttb",
           "fromTimestamp": 1767225600000,
@@ -146,14 +150,16 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String DATAPOINT_NEAREST_QUERY = """
+  public static final String DATAPOINT_NEAREST_QUERY =
+      """
         {
           "type": "nearest",
           "fromTimestamp": 1767312000
         }
         """;
 
-    public static final String USER_QUERY = """
+  public static final String USER_QUERY =
+      """
         {
           "realmPredicate": {
             "name": "building"
@@ -178,7 +184,8 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String USER_CREATE = """
+  public static final String USER_CREATE =
+      """
         {
           "username": "alex",
           "firstName": "Alex",
@@ -193,7 +200,8 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String ALARM_CREATE = """
+  public static final String ALARM_CREATE =
+      """
         {
           "title": "Temperature threshold exceeded",
           "content": "Boiler room temperature reached 42 °C.",
@@ -203,7 +211,8 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String ALARM_ASSET_LINK_SINGLE = """
+  public static final String ALARM_ASSET_LINK_SINGLE =
+      """
         [
           {
             "id": {
@@ -215,7 +224,8 @@ public final class OpenApiExamples {
         ]
         """;
 
-    public static final String ALARM_ASSET_LINK_MULTIPLE = """
+  public static final String ALARM_ASSET_LINK_MULTIPLE =
+      """
         [
           {
             "id": {
@@ -234,7 +244,8 @@ public final class OpenApiExamples {
         ]
         """;
 
-    public static final String ALARM_ASSET_LINK_INVALID_MULTIPLE_ALARMS = """
+  public static final String ALARM_ASSET_LINK_INVALID_MULTIPLE_ALARMS =
+      """
         [
           {
             "id": {
@@ -253,7 +264,8 @@ public final class OpenApiExamples {
         ]
         """;
 
-    public static final String PUSH_NOTIFICATION = """
+  public static final String PUSH_NOTIFICATION =
+      """
         {
           "name": "High temperature alert",
           "message": {
@@ -275,7 +287,8 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String DASHBOARD_QUERY = """
+  public static final String DASHBOARD_QUERY =
+      """
         {
           "realm": {
             "name": "building"
@@ -300,7 +313,8 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String DASHBOARD_CREATE = """
+  public static final String DASHBOARD_CREATE =
+      """
         {
           "realm": "building",
           "displayName": "Operations overview",
@@ -320,7 +334,8 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String DASHBOARD_UPDATE = """
+  public static final String DASHBOARD_UPDATE =
+      """
         {
           "id": "operations-overview",
           "version": 2,
@@ -344,7 +359,8 @@ public final class OpenApiExamples {
         }
         """;
 
-    public static final String ASSET_RULESET_CREATE = """
+  public static final String ASSET_RULESET_CREATE =
+      """
         {
           "assetId": "7A6p4AnLTkKxJUCQAAABAA",
           "name": "High temperature alert",
@@ -355,6 +371,5 @@ public final class OpenApiExamples {
         }
         """;
 
-    private OpenApiExamples() {
-    }
+  private OpenApiExamples() {}
 }

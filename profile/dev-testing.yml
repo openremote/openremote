@@ -7,7 +7,6 @@
 volumes:
   postgresql-data:
 services:
-
   keycloak:
     extends:
       file: deploy.yml

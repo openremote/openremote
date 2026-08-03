@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.test.services
 
 import jakarta.ws.rs.WebApplicationException
@@ -205,7 +223,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
 
 
         // === Tests related to interacting with global services as a service user from a realm different from the master realm ===
-        
+
         when: "the building service user tries to retrieve the global services"
         def globalServicesForBuildingRealm = buildingExternalServiceResource.getGlobalServices()
 
@@ -266,7 +284,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         // == Tests related to a regular user trying to interact with external services ===
 
         when: "the regular user tries to retrieve the global external services"
-        
+
         def regularUserGlobalServices = regularUserExternalServiceResource.getGlobalServices()
 
         then: "the regular user should receive a list of all global external services, since they are available to all realms"

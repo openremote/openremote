@@ -9,7 +9,6 @@ volumes:
   postgresql-data:
 
 services:
-
   proxy:
     extends:
       file: deploy.yml

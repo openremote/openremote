@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.test.protocol.io
 
 import org.apache.http.client.utils.URIBuilder
@@ -21,11 +39,11 @@ class NettyIOClientTest extends Specification implements ManagerContainerTrait {
         given: "A NettyIOClient that pauses before scheduling connection"
         // Speed up the retry interval for the test
         def oldDelay = AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS
-        AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS = 10 
-        
+        AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS = 10
+
         def pauseLatch = new CountDownLatch(1)
         def startChannelCount = new AtomicInteger(0)
-        
+
         def client = new WebsocketIOClient(
                 new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=random").build(),
                 null,
@@ -59,7 +77,7 @@ class NettyIOClientTest extends Specification implements ManagerContainerTrait {
                 super.scheduleDoConnect(initialDelay)
             }
         }
-        
+
         // Use a dedicated executor for the retry logic
         client.executorService = Executors.newCachedThreadPool()
 
@@ -67,7 +85,7 @@ class NettyIOClientTest extends Specification implements ManagerContainerTrait {
         Thread.start {
             client.connect()
         }
-        
+
         // Wait until the client enters the connecting state (and hits the pauseLatch)
         new PollingConditions().eventually {
             assert client.connectionStatus == ConnectionStatus.CONNECTING
@@ -76,7 +94,7 @@ class NettyIOClientTest extends Specification implements ManagerContainerTrait {
         Thread.sleep(100)
 
         and: "Disconnect is called immediately by the main thread"
-        // This runs while the other thread is paused. 
+        // This runs while the other thread is paused.
         // Crucially, 'connectRetry' is still null in the client, so disconnect() fails to cancel any future.
         // It destroys the bootstrap and sets status to DISCONNECTED.
         client.disconnect()
@@ -91,7 +109,7 @@ class NettyIOClientTest extends Specification implements ManagerContainerTrait {
         new PollingConditions(initialDelay: 1, timeout: 5, delay: 2).eventually {
             assert startChannelCount.get() == 0
         }
-        
+
         cleanup:
         AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS = oldDelay
     }

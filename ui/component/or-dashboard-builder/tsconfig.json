@@ -4,12 +4,6 @@
     "outDir": "./lib",
     "rootDir": "src"
   },
-  "include": [
-    "./src"
-  ],
-  "references": [
-    { "path": "../core" },
-    { "path": "../rest" },
-    { "path": "../model" }
-  ]
+  "include": ["./src"],
+  "references": [{ "path": "../core" }, { "path": "../rest" }, { "path": "../model" }]
 }
