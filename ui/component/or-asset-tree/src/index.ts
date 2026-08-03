@@ -508,7 +508,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     const canAdd = this._canAdd();
     const menuItems: MenuBarItem[] = [
       {
-        component: createMenuBarItem(html` <or-icon icon="sort-variant"></or-icon>`),
+        component: createMenuBarItem(html`<or-icon icon="sort-variant"></or-icon>`),
         children: [
           {
             className: "name",
@@ -691,7 +691,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
       )}
       ${when(
         !this._nodes,
-        () => html` <span id="loading"><or-translate value="loading"></or-translate></span> `,
+        () => html`<span id="loading"><or-translate value="loading"></or-translate></span> `,
         () => html`
           ${when(
             this._nodes!.length === 0 || !this.atLeastOneNodeToBeShown(),
@@ -1657,11 +1657,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         .setActions([
           {
             actionName: "cancel",
-            content: html` <or-vaadin-button><or-translate value="cancel"></or-translate></or-vaadin-button>`,
+            content: html`<or-vaadin-button><or-translate value="cancel"></or-translate></or-vaadin-button>`,
           },
           {
             actionName: "add",
-            content: html` <or-vaadin-button id="add-btn" theme="primary" disabled>
+            content: html`<or-vaadin-button id="add-btn" theme="primary" disabled>
               <or-translate value="add"></or-translate>
             </or-vaadin-button>`,
             action: () => {
@@ -1838,7 +1838,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             html`
               <or-translate value="deleteAssetsConfirm"></or-translate>
               <ul>
-                ${assetNames.map((n) => html` <li>${n}</li>`)}
+                ${assetNames.map((n) => html`<li>${n}</li>`)}
               </ul>
             `,
             "delete",
@@ -2430,7 +2430,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             >
             ${
               this.checkboxes
-                ? html` <span class="mdc-list-item__graphic">
+                ? html`<span class="mdc-list-item__graphic">
                     ${
                       treeNode.expandable
                         ? html`<div class="mdc-checkbox">
@@ -2439,7 +2439,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         : ``
                     }
                     <div class="mdc-checkbox">
-                      ${treeNode.selected ? html` <or-icon icon="checkbox-marked"></or-icon>` : html` <or-icon icon="checkbox-blank-outline"></or-icon>`}
+                      ${treeNode.selected ? html`<or-icon icon="checkbox-marked"></or-icon>` : html`<or-icon icon="checkbox-blank-outline"></or-icon>`}
                     </div>
                   </span>`
                 : ``
