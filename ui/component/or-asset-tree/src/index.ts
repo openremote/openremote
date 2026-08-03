@@ -158,11 +158,9 @@ export class OrAssetTreeChangeParentEvent extends CustomEvent<ChangeParentEventD
     });
   }
 }
-
 export interface ToggleExpandEventDetail {
   node: UiAssetTreeNode;
 }
-
 export class OrAssetTreeToggleExpandEvent extends CustomEvent<ToggleExpandEventDetail> {
   public static readonly NAME = "or-asset-tree-expand";
 
@@ -515,17 +513,17 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
           {
             className: "name",
             checked: this.sortBy === "name",
-            component: createMenuBarItem(html` <or-translate value="name"></or-translate>`),
+            component: createMenuBarItem(html`<or-translate value="name"></or-translate>`),
           },
           {
             className: "type",
             checked: this.sortBy === "type",
-            component: createMenuBarItem(html` <or-translate value="type"></or-translate>`),
+            component: createMenuBarItem(html`<or-translate value="type"></or-translate>`),
           },
           {
             className: "createdOn",
             checked: this.sortBy === "createdOn",
-            component: createMenuBarItem(html` <or-translate value="createdOn"></or-translate>`),
+            component: createMenuBarItem(html`<or-translate value="createdOn"></or-translate>`),
           },
         ],
       },
@@ -1659,9 +1657,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         .setActions([
           {
             actionName: "cancel",
-            content: html` <or-vaadin-button>
-              <or-translate value="cancel"></or-translate>
-            </or-vaadin-button>`,
+            content: html` <or-vaadin-button><or-translate value="cancel"></or-translate></or-vaadin-button>`,
           },
           {
             actionName: "add",
@@ -2430,24 +2426,20 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
               class="${this.checkboxes ? "node-name-withCheck" : "node-name-noCheck"}"
               title="${treeNode.asset!.name}"
               style="color: ${filterColorForNonMatchingAsset ? "#d3d3d3;" : ""}"
-            >${treeNode.asset!.name}</span
+              >${treeNode.asset!.name}</span
             >
             ${
               this.checkboxes
                 ? html` <span class="mdc-list-item__graphic">
                     ${
                       treeNode.expandable
-                        ? html` <div class="mdc-checkbox">
+                        ? html`<div class="mdc-checkbox">
                             <or-icon class="mdc-checkbox--parent" icon="${parentCheckboxIcon}"></or-icon>
                           </div>`
                         : ``
                     }
                     <div class="mdc-checkbox">
-                      ${
-                        treeNode.selected
-                          ? html` <or-icon icon="checkbox-marked"></or-icon>`
-                          : html` <or-icon icon="checkbox-blank-outline"></or-icon>`
-                      }
+                      ${treeNode.selected ? html` <or-icon icon="checkbox-marked"></or-icon>` : html` <or-icon icon="checkbox-blank-outline"></or-icon>`}
                     </div>
                   </span>`
                 : ``
