@@ -9,6 +9,9 @@
     "./*": "./build/lib/*.js"
   },
   "types": "build/lib/index.d.ts",
+  "files": [
+    "build/lib/**"
+  ],
   "scripts": {
     "build": "npx tsc -b",
     "test": "npx tsc -b && npx playwright test",

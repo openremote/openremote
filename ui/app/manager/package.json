@@ -15,6 +15,9 @@
       ]
     }
   },
+  "files": [
+    "build/lib/**"
+  ],
   "types": "build/lib/index.d.ts",
   "scripts": {
     "clean": "npx tsc -b --clean && npx shx rm -rf build",

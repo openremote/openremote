@@ -13,6 +13,12 @@
     }
   },
   "types": "build/lib/index.d.ts",
+  "files": [
+    "build/lib/**",
+    "build/dist/**",
+    "build/custom-elements.json",
+    "build/custom-elements-jsx.d.ts"
+  ],
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "test": "echo \"No tests\" && exit 0",

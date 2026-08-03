@@ -10,8 +10,8 @@
   },
   "types": "build/lib/index.d.ts",
   "files": [
-    "build/lib",
-    "build/dist"
+    "build/lib/**",
+    "build/dist/**"
   ],
   "scripts": {
     "build": "npx tsc -b --force",

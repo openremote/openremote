@@ -12,6 +12,7 @@
 **/*.generated.*
 **/src/model.ts
 **/src/restclient.ts
+**/src/typescript-generator-info.json
 
 # Caches
 **/.gradle/**

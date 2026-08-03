@@ -10,6 +10,11 @@
     "./*": "./build/lib/*.js"
   },
   "types": "build/lib/index.d.ts",
+  "files": [
+    "build/lib/**",
+    "build/dist/**",
+    "build/custom-elements.json"
+  ],
   "scripts": {
     "clean": "npx tsc -b --clean && npx shx rm -rf build",
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",

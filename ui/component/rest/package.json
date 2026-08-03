@@ -5,14 +5,14 @@
   "main": "build/dist/umd/index.bundle.js",
   "module": "build/lib/index.js",
   "types": "build/lib/index.d.ts",
+  "files": [
+    "build/lib/**",
+    "build/dist/**"
+  ],
   "exports": {
     ".": "./build/lib/index.js",
     "./*": "./build/lib/*.js"
   },
-  "files": [
-    "build/lib",
-    "build/dist"
-  ],
   "scripts": {
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",

@@ -18,6 +18,12 @@
       ]
     }
   },
+  "files": [
+    "build/lib/**",
+    "build/dist/**",
+    "build/custom-elements.json",
+    "build/custom-elements-jsx.d.ts"
+  ],
   "scripts": {
     "clean": "npx tsc -b --clean && npx shx rm -rf build",
     "analyze": "npx cem analyze --config custom-elements-manifest.config.mjs",
