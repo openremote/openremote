@@ -1012,7 +1012,7 @@ test.describe("Geocoder control", () => {
      * @given a map with bounds configured in mapsettings.json
      * @when searching for a location outside the configured map bounds (Eindhoven)
      * @then the Nominatim request includes viewbox and bounded=1 params derived from the map bounds
-     * @and no results are shown because Eindhoven is outside the bounded area
+     * @and a "No results found" item is shown because Eindhoven is outside the bounded area
      *
      * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
      */
@@ -1035,7 +1035,8 @@ test.describe("Geocoder control", () => {
         const request = await requestPromise;
         expect(request.url()).toContain("viewbox=");
         expect(request.url()).toContain("bounded=1");
-        await expect(page.locator("vaadin-combo-box-item")).not.toBeVisible();
+        await expect(page.locator("vaadin-combo-box-item.no-results-item")).toBeVisible();
+        await expect(page.locator("vaadin-combo-box-item")).toHaveCount(1);
     });
 });
 

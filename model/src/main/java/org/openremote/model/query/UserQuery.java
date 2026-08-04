@@ -1,17 +1,23 @@
 package org.openremote.model.query;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 
 import java.util.Arrays;
 
+@Schema(description = "Composable identity-provider user search request. Populated restrictions are combined, except role arrays which match any supplied role.")
 public class UserQuery {
 
+    @Schema(description = "Predicate for matching an identity-provider user attribute by name and optional value.")
     public static class AttributeValuePredicate {
+        @Schema(description = "Invert this attribute predicate.", example = "false")
         public boolean negated;
+        @Schema(description = "Attribute-name matcher.")
         public StringPredicate name;
+        @Schema(description = "Optional attribute-value matcher.")
         public StringPredicate value;
 
         public AttributeValuePredicate(boolean negated, StringPredicate name) {
@@ -63,7 +69,9 @@ public class UserQuery {
         }
     }
 
+    @Schema(name = "UserQuerySelect", description = "User response projection.")
     public static class Select {
+        @Schema(description = "Return basic identity fields only, omitting administrative details.", example = "true")
         public boolean basic;
 
         public Select basic(boolean basic) {
@@ -79,6 +87,7 @@ public class UserQuery {
         }
     }
 
+    @Schema(name = "UserQueryOrderBy", description = "User result ordering.")
     public static class OrderBy {
 
         public enum Property {
@@ -89,7 +98,9 @@ public class UserQuery {
             EMAIL
         }
 
+        @Schema(description = "User property used for ordering.", example = "USERNAME")
         public Property property;
+        @Schema(description = "Reverse the default ascending order.", example = "false")
         public boolean descending;
 
         public OrderBy() {
@@ -125,22 +136,28 @@ public class UserQuery {
 
     // Restriction predicates
     public RealmPredicate realmPredicate;
+    @Schema(description = "Match users linked to any of these asset identifiers.")
     public String[] assets;
     public PathPredicate pathPredicate;
+    @Schema(description = "Match these exact identity-provider user identifiers.")
     public String[] ids;
     public Select select;
     public StringPredicate[] usernames;
     /**
      * AND condition is assumed between values
      */
+    @Schema(description = "Attribute predicates combined with AND.")
     public AttributeValuePredicate[] attributes;
     /**
      * OR condition is assumed between values (AND filtering can be applied by the caller on the results)
      */
     public StringPredicate[] clientRoles;
     public StringPredicate[] realmRoles;
+    @Schema(description = "True selects service users, false selects human users, null includes both.", nullable = true)
     public Boolean serviceUsers;
+    @Schema(description = "Maximum number of results.", example = "100")
     public Integer limit;
+    @Schema(description = "Number of matching results to skip.", example = "0")
     public Integer offset;
     public OrderBy orderBy;
 

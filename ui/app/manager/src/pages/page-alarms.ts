@@ -20,7 +20,7 @@ import {getAlarmsRoute} from "../routes";
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
 import {guard} from "lit/directives/guard.js";
-import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {
     OrMwcTable,
@@ -31,6 +31,7 @@ import "../components/alarms/or-alarms-table";
 import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
 import moment from "moment";
 import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 export interface PageAlarmsConfig {
     initialFilter?: string;
@@ -569,21 +570,25 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     private _deleteAlarm(alarm: SentAlarm) {
-        showOkCancelDialog(i18next.t("alarm.deleteAlarm"), i18next.t("alarm.deleteAlarmConfirm", {alarm: alarm.title}), i18next.t("delete"))
-            .then((ok) => {
-                if (ok) {
-                    this.doDelete(alarm.id);
-                }
-            });
+        showConfirmDialog(this.shadowRoot!, html`
+            <or-vaadin-confirm-dialog @confirm=${() => this.doDelete(alarm.id)}>
+                ${getConfirmDialogContent("error", "alarm.deleteAlarm", "alarm.deleteAlarmConfirm", "delete", "cancel")}
+            </or-vaadin-confirm-dialog>
+        `);
     }
 
     private _deleteAlarms() {
-        showOkCancelDialog(i18next.t("alarm.deleteAlarms"), i18next.t("alarm.deleteAlarmsConfirm", {count: this._selectedIds.length}), i18next.t("delete"))
-            .then((ok) => {
-                if (ok) {
-                    this.doMultipleDelete(this._selectedIds);
-                }
-            });
+        showConfirmDialog(this.shadowRoot!, html`
+            <or-vaadin-confirm-dialog @confirm=${() => this.doMultipleDelete(this._selectedIds)}>
+                ${getConfirmDialogContent(
+                    "error", 
+                    "alarm.deleteAlarms", 
+                    html`<or-translate value="alarm.deleteAlarmsConfirm" .options="${{ count: this._selectedIds.length }}"></or-translate>`, 
+                    "delete",
+                    "cancel"
+                )}
+            </or-vaadin-confirm-dialog>
+        `);
     }
 
     private doDelete(alarmId: any) {
@@ -686,7 +691,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                               }}>
                                 <or-translate slot="label" value="alarm.severity"></or-translate>
                             </or-vaadin-select>
-                            
+
+                            <or-vaadin-select class="alarm-input" ?readonly=${!write}
+                                              .items=${this._getAddStatusOptions()} value=${alarm.status}
+                                              @change=${(ev: Event) => {
+                                                  alarm.status = (ev.currentTarget as OrVaadinSelect).value as AlarmStatus;
+                                                  this.onAlarmChanged(ev);
+                                              }}>
+                                <or-translate slot="label" value="alarm.status"></or-translate>
+                            </or-vaadin-select>
+
                             <or-vaadin-select class="alarm-input"
                                               ?readonly=${!manager.hasRole("read:users") && !manager.hasRole("read:admin")}
                                               .items=${this._getUsers()} value=${alarm.assigneeId}
@@ -840,7 +854,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
             if (ev.detail.state) {
                 if (this._selectedIds === undefined) {
                     this._selectedIds = [alarm.id];
-                } else {
+                } else if (!this._selectedIds.includes(alarm.id)) {
+                    // selecting all emits an event per row, including rows that are already selected
                     this._selectedIds.push(alarm.id);
                     this.requestUpdate('_selectedIds');
                 }

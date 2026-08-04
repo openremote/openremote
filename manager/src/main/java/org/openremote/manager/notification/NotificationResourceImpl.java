@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -20,75 +20,115 @@
 package org.openremote.manager.notification;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.web.WebResource;
+import org.openremote.container.security.AuthContext;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.notification.AbstractNotificationMessage;
+import org.openremote.model.notification.LocalizedNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationResource;
+import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.security.User;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
+
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
 import static jakarta.ws.rs.core.Response.Status.*;
 import static org.openremote.model.notification.Notification.Source.CLIENT;
 
-public class NotificationResourceImpl extends WebResource implements NotificationResource {
+public class NotificationResourceImpl extends ManagerWebResource implements NotificationResource {
 
     private static final Logger LOG = Logger.getLogger(NotificationResourceImpl.class.getName());
+
+    /** Restricted users can only read the notifications that involve them, so they may never delete any. */
+    protected static final String RESTRICTED_DELETE_DENIED = "Restricted users cannot delete notifications";
 
     final protected NotificationService notificationService;
     final protected MessageBrokerService messageBrokerService;
     final protected AssetStorageService assetStorageService;
-    final protected ManagerIdentityService managerIdentityService;
 
-    public NotificationResourceImpl(NotificationService notificationService,
+    public NotificationResourceImpl(TimerService timerService,
+                                    ManagerIdentityService identityService,
+                                    NotificationService notificationService,
                                     MessageBrokerService messageBrokerService,
-                                    AssetStorageService assetStorageService,
-                                    ManagerIdentityService managerIdentityService) {
+                                    AssetStorageService assetStorageService) {
+        super(timerService, identityService);
         this.notificationService = notificationService;
         this.messageBrokerService = messageBrokerService;
         this.assetStorageService = assetStorageService;
-        this.managerIdentityService = managerIdentityService;
     }
 
     @Override
-    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
+    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long from, Long to, String realmId, String userId, String assetId, Notification.Source source, SentNotification.SortField sort, Boolean descending, Integer offset, Integer limit) {
+        AuthContext authContext = getAuthContext();
+        realmId = resolveAndAuthoriseRealm(authContext, realmId);
+
         try {
-            return notificationService.getNotifications(
+            List<SentNotification> notifications = notificationService.getNotifications(
                 id != null ? Collections.singletonList(id) : null,
                 type != null ? Collections.singletonList(type) : null,
-                fromTimestamp,
-                toTimestamp,
+                from != null ? Instant.ofEpochMilli(from) : null,
+                to != null ? Instant.ofEpochMilli(to) : null,
                 realmId != null ? Collections.singletonList(realmId) : null,
                 userId != null ? Collections.singletonList(userId) : null,
-                assetId != null ? Collections.singletonList(assetId) : null
-            ).toArray(new SentNotification[0]);
+                assetId != null ? Collections.singletonList(assetId) : null,
+                source, sort, descending != null && descending, offset, limit, authContext
+            );
+            sanitiseNotifications(notifications, authContext);
+            return notifications.toArray(new SentNotification[0]);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
     }
 
     @Override
-    public void removeNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
+    public void removeNotifications(RequestParams requestParams, Long id, String type, Long from, Long to, String realmId, String userId, String assetId) {
+        throwIfRestrictedUser(RESTRICTED_DELETE_DENIED);
+        String realm = resolveAndAuthoriseRealm(getAuthContext(), realmId);
+
+        if (id != null) {
+            throwIfNotRealmActiveAndAccessible(getNotification(id).getRealm());
+        }
+        if (userId != null) {
+            User user = identityService.getIdentityProvider().getUser(userId);
+            if (user == null) {
+                throw new WebApplicationException("User not found", NOT_FOUND);
+            }
+            throwIfNotRealmActiveAndAccessible(user.getRealm());
+        }
+        if (assetId != null) {
+            Asset<?> asset = assetStorageService.find(assetId, false);
+            if (asset == null) {
+                throw new WebApplicationException("Asset not found", NOT_FOUND);
+            }
+            throwIfNotRealmActiveAndAccessible(asset.getRealm());
+        }
+
         try {
             notificationService.removeNotifications(
-                id != null ? Collections.singletonList(id) : null,
-                type != null ? Collections.singletonList(type) : null,
-                fromTimestamp,
-                toTimestamp,
-                realmId != null ? Collections.singletonList(realmId) : null,
-                userId != null ? Collections.singletonList(userId) : null,
-                assetId != null ? Collections.singletonList(assetId) : null);
+                id,
+                type,
+                from != null ? Instant.ofEpochMilli(from) : null,
+                to != null ? Instant.ofEpochMilli(to) : null,
+                realm,
+                userId,
+                assetId);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
@@ -100,7 +140,18 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             throw new WebApplicationException("Missing notification ID", BAD_REQUEST);
         }
 
+        throwIfRestrictedUser(RESTRICTED_DELETE_DENIED);
+        throwIfNotRealmActiveAndAccessible(getNotification(notificationId).getRealm());
+
         notificationService.removeNotification(notificationId);
+    }
+
+    protected SentNotification getNotification(Long notificationId) {
+        SentNotification sentNotification = notificationService.getSentNotification(notificationId);
+        if (sentNotification == null) {
+            throw new WebApplicationException("Notification not found", NOT_FOUND);
+        }
+        return sentNotification;
     }
 
     @Override
@@ -169,7 +220,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                 throw new WebApplicationException("Anonymous request can only update public assets", FORBIDDEN);
             }
 
-            // Check asset is public read amd not linked to any users
+            // Check asset is public read and not linked to any users
             Asset<?> asset = assetStorageService.find(sentNotification.getTargetId(), false, AssetQuery.Access.PUBLIC);
             if (asset == null) {
                 LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that doesn't exist or isn't public");
@@ -184,7 +235,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         } else {
             // Regular users can only update notifications sent to them or assets in their realm
             // Restricted users can only update notifications sent to them or assets linked to them
-            boolean isRestrictedUser = managerIdentityService.getIdentityProvider().isRestrictedUser(getAuthContext());
+            boolean isRestrictedUser = isRestrictedUser();
             switch (sentNotification.getTarget()) {
 
                 case REALM:
@@ -218,4 +269,110 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             }
         }
     }
+
+    @Override
+    public long getNotificationsCount(RequestParams requestParams, String type, Long from, Long to, String realmId, String userId, String assetId, Notification.Source source) {
+        AuthContext authContext = getAuthContext();
+        realmId = resolveAndAuthoriseRealm(authContext, realmId);
+
+        try {
+            return notificationService.getNotificationsCount(
+                type != null ? Collections.singletonList(type) : null,
+                from != null ? Instant.ofEpochMilli(from) : null,
+                to != null ? Instant.ofEpochMilli(to) : null,
+                realmId != null ? Collections.singletonList(realmId) : null,
+                userId != null ? Collections.singletonList(userId) : null,
+                assetId != null ? Collections.singletonList(assetId) : null,
+                source, authContext
+            );
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Resolves the realm a request applies to and verifies the caller may access it. Superusers may target any realm
+     * (or all realms when {@code realmId} is null); other callers are confined to their own realm and may not target
+     * a realm they cannot access (which would otherwise let them read or delete another realm's notifications by
+     * passing its ID).
+     */
+    protected String resolveAndAuthoriseRealm(AuthContext authContext, String realmId) {
+        if (authContext == null || authContext.isSuperUser()) {
+            return realmId;
+        }
+        if (realmId == null) {
+            return authContext.getAuthenticatedRealmName();
+        }
+        throwIfNotRealmActiveAndAccessible(realmId);
+        return realmId;
+    }
+
+    /**
+     * Strips data the caller isn't allowed to see: user IDs (CLIENT source, USER target) and CUSTOM target IDs
+     * (which can contain email addresses) without read:users, asset IDs (ASSET_RULESET source, ASSET target)
+     * without read:assets. REALM_RULESET source IDs are realm
+     * names and stay visible; realm access is enforced separately. Delivery details stored on the message after
+     * handler resolution (push device tokens) are stripped for every caller.
+     */
+    protected void sanitiseNotifications(List<SentNotification> notifications, AuthContext authContext) {
+        boolean canReadUsers = authContext != null && (authContext.isSuperUser()
+            || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
+            || authContext.hasResourceRole(Constants.READ_USERS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
+        boolean canReadAssets = authContext != null && (authContext.isSuperUser()
+            || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
+            || authContext.hasResourceRole(Constants.READ_ASSETS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
+
+        notifications.forEach(n -> sanitiseNotification(n, canReadUsers, canReadAssets));
+    }
+
+    protected void sanitiseNotification(SentNotification n, boolean canReadUsers, boolean canReadAssets) {
+        sanitiseMessage(n.getMessage());
+
+        if (!canReadUsers) {
+            if (n.getSource() == Notification.Source.CLIENT) {
+                redactErrorId(n, n.getSourceId());
+                n.setSourceId(null);
+            }
+            // Custom targets can carry raw email addresses
+            if (n.getTarget() == Notification.TargetType.USER || n.getTarget() == Notification.TargetType.CUSTOM) {
+                redactErrorId(n, n.getTargetId());
+                n.setTargetId(null);
+            }
+        }
+        if (!canReadAssets) {
+            if (n.getSource() == Notification.Source.ASSET_RULESET) {
+                redactErrorId(n, n.getSourceId());
+                n.setSourceId(null);
+            }
+            if (n.getTarget() == Notification.TargetType.ASSET) {
+                redactErrorId(n, n.getTargetId());
+                n.setTargetId(null);
+            }
+        }
+    }
+
+    /**
+     * Redacts a stripped id (asset/user id or custom email address) from the stored error message, which
+     * handlers embed verbatim (e.g. "No recipients set for asset: {id}"). The error text is kept so the row
+     * still reports as failed.
+     */
+    protected void redactErrorId(SentNotification n, String id) {
+        if (n.getError() != null && id != null && !id.isEmpty()) {
+            n.setError(n.getError().replace(id, "***"));
+        }
+    }
+
+    /**
+     * Removes delivery-only fields from a stored message: push messages carry the resolved FCM device token in
+     * their target after sending, which must never leave the server. Recurses into localized messages.
+     */
+    protected void sanitiseMessage(AbstractNotificationMessage message) {
+        if (message instanceof PushNotificationMessage pushMessage) {
+            pushMessage.setTarget(null);
+            pushMessage.setTargetType(null);
+        } else if (message instanceof LocalizedNotificationMessage localizedMessage && localizedMessage.getMessages() != null) {
+            localizedMessage.getMessages().values().forEach(this::sanitiseMessage);
+        }
+    }
+
 }

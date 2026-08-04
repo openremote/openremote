@@ -22,6 +22,7 @@ package org.openremote.model.security;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
 // TODO: Add user roles as a transient property
 @Entity
 @Subselect("select * from PUBLIC.USER_ENTITY") // Map this immutable to an SQL view, don't use/create table
+@Schema(description = "Identity-provider user or service account. Administrative fields may be omitted according to caller permissions.")
 public class User {
     public static final String SERVICE_ACCOUNT_PREFIX = "service-account-";
     public static final String SYSTEM_ACCOUNT_ATTRIBUTE = "systemAccount";
@@ -54,40 +56,51 @@ public class User {
     protected static Field[] propertyFields;
 
     @Formula("(select r.NAME from PUBLIC.REALM r where r.ID = REALM_ID)")
+    @Schema(description = "Realm name that owns the user.", example = "building")
     protected String realm;
 
     @Column(name = "REALM_ID")
+    @Schema(description = "Identity-provider internal realm identifier.", accessMode = Schema.AccessMode.READ_ONLY)
     protected String realmId;
 
     @Id
+    @Schema(description = "Identity-provider user identifier.", example = "2f1c17e5-72b8-4dbe-9f8d-c49e66f82e10")
     protected String id;
 
     @JsonIgnore
     @Column(name = "USERNAME")
+    @Schema(description = "Unique login name within the realm.", example = "alex")
     protected String username;
 
     @Column(name = "FIRST_NAME")
+    @Schema(description = "Given name.", example = "Alex")
     protected String firstName;
 
     @Column(name = "LAST_NAME")
+    @Schema(description = "Family name.", example = "Morgan")
     protected String lastName;
 
     @Column(name = "EMAIL")
+    @Schema(description = "Email address.", example = "alex@example.com")
     protected String email;
 
     @Column(name = "ENABLED")
+    @Schema(description = "Whether this identity can authenticate.", example = "true")
     protected Boolean enabled;
 
     @Column(name = "CREATED_TIMESTAMP")
     @Convert(converter = InstantEpochConverter.class)
+    @Schema(description = "Identity creation time.", accessMode = Schema.AccessMode.READ_ONLY, example = "2026-01-01T00:00:00Z")
     protected Instant createdOn;
 
     @Formula("(SELECT C.SECRET FROM PUBLIC.CLIENT C WHERE C.ID = SERVICE_ACCOUNT_CLIENT_LINK)")
+    @Schema(description = "Client secret for a service user. Returned only by operations that explicitly expose or reset it.", accessMode = Schema.AccessMode.READ_ONLY)
     protected String secret; // For service users
 
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "USER_ID")
     @JsonIgnore
+    @Schema(description = "Identity-provider user attributes represented as name/value collections.")
     protected List<UserAttribute> attributes;
 
     public User() {

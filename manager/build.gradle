@@ -1,14 +1,21 @@
 import java.nio.file.Paths
 
-apply plugin: "java-library"
-apply plugin: "groovy"
-apply plugin: "application"
-apply plugin: "distribution"
-apply plugin: "maven-publish"
-apply plugin: "signing"
+plugins {
+    id 'java-library'
+    id 'groovy'
+    id 'application'
+    id 'distribution'
+    id 'maven-publish'
+    id 'signing'
+    alias libs.plugins.swagger
+}
 
 application {
     mainClass = "org.openremote.manager.Main"
+}
+
+configurations {
+    demoExtension
 }
 
 dependencies {
@@ -55,6 +62,12 @@ dependencies {
 
     implementation libs.sshdNetty
 
+    // Select the newest published demo extension up to and including the
+    // current project version, falling back to an earlier version when the
+    // current version has not been published yet.
+    def demoExtensionMaxVersion = project.version.toString().replaceFirst(/-SNAPSHOT$/, "")
+    demoExtension "io.openremote.extension:openremote-demo-setup-extension:(,${demoExtensionMaxVersion}]"
+
     testImplementation libs.groovyAll
     testImplementation platform(libs.spockBom)
     testImplementation libs.spockCore
@@ -88,6 +101,26 @@ artifacts {
 afterEvaluate {
     // Change the working directory for the run task
     tasks.run.workingDir = rootProject.projectDir
+}
+
+resolve {
+    outputFileName = 'openapi'
+    outputFormat = 'JSONANDYAML'
+    outputDir = layout.buildDirectory.dir("openapi")
+
+    prettyPrint = true
+    sortOutput = true
+    defaultResponseCode = '200'
+
+    classpath = sourceSets.main.runtimeClasspath
+
+    // Required so that the plugin itself uses the Jakarta Swagger/JAX-RS
+    // dependencies from the OpenRemote runtime classpath.
+    buildClasspath = sourceSets.main.runtimeClasspath
+
+    resourcePackages = ['org.openremote.model']
+    openApiFile = layout.projectDirectory.file('src/main/resources/openapi-base.yaml')
+    objectMapperProcessorClass = 'org.openremote.manager.web.ManagerObjectMapperProcessor'
 }
 
 tasks.withType(Sync).configureEach {
@@ -127,12 +160,28 @@ java {
     withSourcesJar()
 }
 
+def openApiJsonFile = layout.buildDirectory.file('openapi/openapi.json')
+def openApiYamlFile = layout.buildDirectory.file('openapi/openapi.yaml')
+
 publishing {
     publications {
         maven(MavenPublication) {
             group = "io.openremote"
             artifactId = "openremote-${project.name}"
             from components.java
+
+            artifact(openApiJsonFile) {
+                classifier = 'openapi'
+                extension = 'json'
+                builtBy tasks.named('resolve')
+            }
+
+            artifact(openApiYamlFile) {
+                classifier = 'openapi'
+                extension = 'yaml'
+                builtBy tasks.named('resolve')
+            }
+
             pom {
                 name = 'OpenRemote Manager'
                 description = 'Provides core container services and is the main component of the OpenRemote backend; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
@@ -183,6 +232,16 @@ signing {
     }
 }
 
+tasks.named('resolve') {
+    dependsOn tasks.named('classes')
+}
+
+tasks.register('generateOpenApi') {
+    group = 'documentation'
+    description = 'Generates the OpenRemote OpenAPI specification'
+    dependsOn tasks.named('resolve')
+}
+
 // Output version.properties file
 tasks.register('setVersionProperties', WriteProperties) {
     destinationFile = Paths.get(projectDir.path, "src", "main", "resources", "version.properties").toFile()
@@ -194,13 +253,6 @@ publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
 sourcesJar.dependsOn(setVersionProperties)
 
-configurations {
-    demoExtension
-}
-
-dependencies {
-    demoExtension project(":extension:demo-setup")
-}
 
 tasks.named("run", JavaExec) {
     def setupType = System.getenv("OR_SETUP_TYPE")

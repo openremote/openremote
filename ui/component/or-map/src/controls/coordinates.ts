@@ -22,24 +22,38 @@ import { OrMapBaseControl } from "./base";
 import "@openremote/or-vaadin-components/or-vaadin-text-field";
 import "@openremote/or-icon";
 
-export const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(-?\\d+\\.?\\d*)[ ]*$";
+const CoordinateNumberPattern = "-?\\d+\\.?\\d*";
+export const CoordinatesRegexPattern = `^[ ]*(?:Lat:[ ]*(${CoordinateNumberPattern})[, ]+Lng:[ ]*(${CoordinateNumberPattern})|(${CoordinateNumberPattern})[, ]+(${CoordinateNumberPattern}))[ ]*$`;
 
-export function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | undefined) => void) {
+export function commitCoordinatesInputValue(e: Event, valueChangedHandler: (value: LngLat | null) => void) {
+    const input = e.target as HTMLInputElement;
+    if (input.readOnly || input.disabled || input.hasAttribute("readonly") || input.hasAttribute("disabled")) {
+        return;
+    }
+
+    if (!input.value.trim()) {
+        valueChangedHandler(null);
+        return;
+    }
+
+    const match = new RegExp(CoordinatesRegexPattern).exec(input.value);
+    if (!match) {
+        return;
+    }
+
+    const lng = Number(match[2] ?? match[3]);
+    const lat = Number(match[1] ?? match[4]);
+    if (!Number.isFinite(lng) || !Number.isFinite(lat) || lng < -180 || lng > 180 || lat < -90 || lat > 90) {
+        return;
+    }
+
+    valueChangedHandler(new LngLat(lng, lat));
+}
+
+export function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | null) => void) {
     return (e: KeyboardEvent) => {
         if (e.code === "Enter" || e.code === "NumpadEnter") {
-            const valStr = (e.target as any).value as string;
-            let value: LngLat | undefined = !valStr ? undefined : {} as LngLat;
-
-            if (valStr) {
-                const lngLatArr = valStr.split(/[ ,]/).filter(v => !!v);
-                if (lngLatArr.length === 2) {
-                    value = new LngLat(
-                        Number.parseFloat(lngLatArr[0]),
-                        Number.parseFloat(lngLatArr[1])
-                    );
-                }
-            }
-            valueChangedHandler(value);
+            commitCoordinatesInputValue(e, valueChangedHandler);
         }
     };
 }
@@ -48,9 +62,9 @@ export class CoordinatesControl extends OrMapBaseControl {
     protected input?: HTMLElement;
     protected _readonly = false;
     protected _value: any;
-    protected _valueChangedHandler: (value: LngLat | undefined) => void;
+    protected _valueChangedHandler: (value: LngLat | null) => void;
 
-    constructor(disabled = false, valueChangedHandler: (value: LngLat | undefined) => void) {
+    constructor(disabled = false, valueChangedHandler: (value: LngLat | null) => void) {
         super();
         this._readonly = disabled;
         this._valueChangedHandler = valueChangedHandler;
@@ -64,6 +78,7 @@ export class CoordinatesControl extends OrMapBaseControl {
         if (this._value != null) (input as any).value = this._value;
         input.setAttribute("pattern", CoordinatesRegexPattern);
         input.addEventListener("keyup", getCoordinatesInputKeyHandler(this._valueChangedHandler) as EventListener);
+        input.addEventListener("change", (e) => commitCoordinatesInputValue(e, this._valueChangedHandler));
 
         const icon = document.createElement("or-icon") as HTMLElement;
         icon.setAttribute("icon", "mdi:crosshairs");

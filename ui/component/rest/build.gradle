@@ -13,11 +13,6 @@ plugins {
 }
 
 dependencies {
-    // TODO: Remove this as shouldn't build custom project code into this package
-    def customModel = findProject(":model")
-    if (customModel != null) {
-        implementation customModel
-    }
     compileOnly project(":model-util")
     implementation project(":model")
     implementation libs.typescriptGeneratorCore
@@ -36,10 +31,10 @@ generateTypeScript createTSGeneratorConfigForClient(
 def generateTypeScriptTask = tasks.named("generateTypeScript") {
     // Work around typescript-generator exposing non-serializable configuration objects as Gradle task inputs.
     doNotTrackState("typescript-generator uses non-serializable task input types")
-    dependsOn resolveTask(":ui:component:model:generateTypeScript")
+    dependsOn ":ui:component:model:generateTypeScript"
 }
 
-tasks.named('clean', Delete) {
+tasks.named("clean", Delete) {
     delete layout.projectDirectory.dir('dist')
     delete layout.projectDirectory.dir('lib')
 }

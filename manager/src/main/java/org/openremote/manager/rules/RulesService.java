@@ -72,6 +72,7 @@ import static java.util.logging.Level.FINEST;
 import static java.util.logging.Level.SEVERE;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.model.util.MapAccess.getBoolean;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 
@@ -106,6 +107,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
     public static final int OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT = 50000; // Just under a minute to catch 1 min timer rules
     public static final String OR_RULES_QUICK_FIRE_MILLIS = "OR_RULES_QUICK_FIRE_MILLIS";
     public static final int OR_RULES_QUICK_FIRE_MILLIS_DEFAULT = 3000;
+    public static final String OR_RULES_GROOVY_EXECUTION_ENABLED = "OR_RULES_GROOVY_EXECUTION_ENABLED";
+    public static final boolean OR_RULES_GROOVY_EXECUTION_ENABLED_DEFAULT = true;
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
     protected final AtomicReference<RulesEngine<GlobalRuleset>> globalEngine = new AtomicReference<>();
     protected final Map<String, RulesEngine<RealmRuleset>> realmEngines = new ConcurrentHashMap<>();
@@ -138,6 +141,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
     protected final Map<AttributeRef, AttributeEvent> preInitAttributeEvents = new LinkedHashMap<>();
     protected long tempFactExpirationMillis;
     protected long quickFireMillis;
+    protected boolean groovyRulesExecutionEnabled;
     protected boolean initDone;
     protected boolean startDone;
     protected io.micrometer.core.instrument.Timer rulesFiringTimer;
@@ -167,6 +171,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
         tempFactExpirationMillis = getInteger(container.getConfig(), OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS, OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT);
         quickFireMillis = getInteger(container.getConfig(), OR_RULES_QUICK_FIRE_MILLIS, OR_RULES_QUICK_FIRE_MILLIS_DEFAULT);
+        groovyRulesExecutionEnabled = getBoolean(container.getConfig(), OR_RULES_GROOVY_EXECUTION_ENABLED, OR_RULES_GROOVY_EXECUTION_ENABLED_DEFAULT);
 
         if (initDone) {
             return;
@@ -383,6 +388,10 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
         return metaHolder.getMeta().getValue(MetaItemType.RULE_STATE)
             .orElse(metaHolder.getMeta().has(MetaItemType.AGENT_LINK));
+    }
+
+    public boolean isGroovyRulesExecutionEnabled() {
+        return groovyRulesExecutionEnabled;
     }
 
     /**

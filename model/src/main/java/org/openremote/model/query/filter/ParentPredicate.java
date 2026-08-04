@@ -19,8 +19,12 @@
  */
 package org.openremote.model.query.filter;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Matches assets by direct parent identifier; a null id represents root assets.")
 public class ParentPredicate {
 
+    @Schema(description = "Direct parent asset identifier; null selects root assets.", nullable = true)
     public String id;
 
     public ParentPredicate() {

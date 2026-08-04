@@ -21,9 +21,11 @@ package org.openremote.model.notification;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.*;
 
+@Schema(description = "Notification submission containing a typed message, one or more targets, and optional repeat scheduling.")
 public class Notification {
 
     public enum Source {
@@ -41,6 +43,7 @@ public class Notification {
         CUSTOM
     }
 
+    @Schema(description = "Delivery target. The target type determines whether id refers to a user, asset, realm, or custom address.")
     public static class Target {
 
         protected TargetType type;
@@ -125,10 +128,15 @@ public class Notification {
     public static final String HEADER_SOURCE = Notification.class.getName() + ".SOURCE";
     public static final String HEADER_SOURCE_ID = Notification.class.getName() + ".SOURCEID";
 
+    @Schema(description = "Optional human-readable notification name used in delivery records.", example = "High temperature alert")
     protected String name;
+    @Schema(description = "Typed notification message; its discriminator selects email, push, or another installed message subtype.")
     protected AbstractNotificationMessage message;
+    @Schema(description = "Optional repeat cadence for scheduled delivery.")
     protected RepeatFrequency repeatFrequency;
+    @Schema(description = "Repeat interval expression interpreted with repeatFrequency.")
     protected String repeatInterval;
+    @Schema(description = "One or more recipients. Authorization is checked for the complete set before anything is queued.")
     protected List<Target> targets;
 
     public Notification() {

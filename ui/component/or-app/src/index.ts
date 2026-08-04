@@ -9,7 +9,8 @@ import {updateMetadata} from "pwa-helpers/metadata";
 import {i18next} from "@openremote/or-translate"
 import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
-import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showErrorDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 import {OrMwcSnackbar, showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, setOffline, setVisibility, updatePage, updateRealm} from "./app";
@@ -233,25 +234,25 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 this.doAppConfigInit();
 
                 if (!this.appConfig) {
-                    showErrorDialog("appError.noConfig", document.body);
+                    showErrorDialog(document.body, "appError.noConfig");
                     console.error("No AppConfig supplied");
                     return;
                 }
 
                 if (!this._config) {
-                    showErrorDialog("appError.noConfig", document.body);
+                    showErrorDialog(document.body, "appError.noConfig");
                     console.error("No default AppConfig or realm specific config provided so cannot render");
                     return;
                 }
 
                 if (!this._store) {
-                    showErrorDialog("appError.noReduxStore", document.body);
+                    showErrorDialog(document.body, "appError.noReduxStore");
                     console.error("No Redux store supplied");
                     return;
                 }
 
                 if (!this.appConfig.pages || Object.keys(this.appConfig.pages).length === 0) {
-                    showErrorDialog("appError.noPages", document.body);
+                    showErrorDialog(document.body, "appError.noPages");
                     console.error("No page providers");
                     return;
                 }
@@ -307,7 +308,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 }
                 router.resolve();
             } else {
-                showErrorDialog(manager.isError ? "managerError." + manager.error : "");
+                showErrorDialog(this.shadowRoot!, manager.isError ? "managerError." + manager.error : "");
             }
         });
     }
@@ -465,7 +466,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             this.requestUpdate();
         } catch (e) {
             console.error(e);
-            showErrorDialog("errorOccurred", document.body);
+            showErrorDialog(document.body, "errorOccurred");
         }
     }
 

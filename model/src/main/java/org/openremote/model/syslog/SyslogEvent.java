@@ -19,6 +19,7 @@
  */
 package org.openremote.model.syslog;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.openremote.model.event.shared.EventFilter;
@@ -30,6 +31,7 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @Entity
 @Table(name = "SYSLOG_EVENT")
+@Schema(description = "Persisted Manager log event with Unix-millisecond timestamp, severity, category, optional subcategory, and message.")
 public class SyslogEvent extends SharedEvent {
 
     static public class LevelCategoryFilter implements EventFilter<SyslogEvent> {
@@ -83,22 +85,27 @@ public class SyslogEvent extends SharedEvent {
     @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
     @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
+    @Schema(description = "Server-assigned numeric event identifier.", accessMode = Schema.AccessMode.READ_ONLY)
     protected Long id;
 
     @NotNull
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "LEVEL", nullable = false)
+    @Schema(description = "Log severity.")
     protected SyslogLevel level;
 
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "CATEGORY", nullable = false)
+    @Schema(description = "High-level Manager subsystem category.")
     protected SyslogCategory category;
 
     @Column(name = "SUBCATEGORY", length = 1024)
+    @Schema(description = "Optional component, logger, or class within the category.", example = "org.openremote.manager.asset")
     protected String subCategory;
 
     @Column(name = "MESSAGE", length = 131072)
+    @Schema(description = "Rendered log message.")
     protected String message;
 
     protected SyslogEvent() {

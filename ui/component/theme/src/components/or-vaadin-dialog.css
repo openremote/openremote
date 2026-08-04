@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -21,8 +21,10 @@
 
 @media lumo_components_dialog-overlay-internal {
     :host::part(overlay) {
-        max-width: 600px;
         width: 100%;
+    }
+    :host(:not([has-footer])) [part="content"] {
+      padding: 0 var(--lumo-space-l) var(--lumo-space-l) !important;
     }
 }
 

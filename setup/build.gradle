@@ -1,6 +1,8 @@
-apply plugin: "java-library"
+plugins {
+    id 'java-library'
+}
 
-var setupJar = project.hasProperty("SETUP_JAR") ? project.getProperties().get("SETUP_JAR") : "demo"
+var setupJar = project.hasProperty("SETUP_JAR") ? project.getProperties().get("SETUP_JAR") : ""
 
 base {
     archivesName = "openremote-${setupJar}-${project.name}"
@@ -11,6 +13,7 @@ sourceSets {
     integration
     load1
     load2
+    notification
 }
 
 // dependencies declaration
@@ -19,6 +22,7 @@ configurations {
     integrationImplementation.extendsFrom(implementation)
     load1Implementation.extendsFrom(implementation)
     load2Implementation.extendsFrom(implementation)
+    notificationImplementation.extendsFrom(implementation)
 }
 
 dependencies {
@@ -40,6 +44,11 @@ tasks.register('load2Jar', Jar) {
     from sourceSets.load2.output
 }
 
+tasks.register('notificationJar', Jar) {
+    archiveBaseName.set("openremote-notification-${project.name}")
+    from sourceSets.notification.output
+}
+
 tasks.named("compileJava") {
     dependsOn("load1Jar", "load2Jar")
 }
@@ -49,7 +58,7 @@ tasks.register('installDist', Copy) {
     if (setupTask != null) {
         System.out.println(setupTask.name)
         dependsOn setupTask
-        dependsOn resolveTask(":manager:installDist")
+        dependsOn ":manager:installDist"
         from setupTask.archiveFile
         into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
     }

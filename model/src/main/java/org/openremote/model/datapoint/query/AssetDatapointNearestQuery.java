@@ -1,5 +1,6 @@
 package org.openremote.model.datapoint.query;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.openremote.model.attribute.AttributeRef;
 
 import java.util.HashMap;
@@ -9,6 +10,9 @@ import java.util.HashMap;
  * associated with a specific `AttributeRef` at a specified timestamp. It is designed to find the
  * closest datapoint that precedes the requested timestamp.
  */
+@Schema(description = "Returns at most one numeric datapoint: the closest value at or before the requested "
+        + "time. Use `fromTimestamp` as a Unix-seconds timestamp at the HTTP API boundary. `toTimestamp`, "
+        + "`fromTime`, and `toTime` are ignored. The equality boundary is inclusive.")
 public class AssetDatapointNearestQuery extends AssetDatapointQuery {
 
     public AssetDatapointNearestQuery() {

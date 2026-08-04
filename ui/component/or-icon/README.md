@@ -1,7 +1,5 @@
 # @openremote/or-icon \<or-icon\>
 [![NPM Version][npm-image]][npm-url]
-[![Linux Build][travis-image]][travis-url]
-[![Test Coverage][coveralls-image]][coveralls-url]
 
 Web Component for displaying an icon from a loaded iconset.
 
@@ -53,9 +51,5 @@ Internet Explorer 11 is also supported.
 ## License
 [GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
-[npm-image]: https://img.shields.io/npm/v/live-xxx.svg
-[npm-url]: https://npmjs.org/package/@openremote/or-icon
-[travis-image]: https://img.shields.io/travis/live-js/live-xxx/master.svg
-[travis-url]: https://travis-ci.org/live-js/live-xxx
-[coveralls-image]: https://img.shields.io/coveralls/live-js/live-xxx/master.svg
-[coveralls-url]: https://coveralls.io/r/live-js/live-xxx?branch=master
+[npm-image]: https://img.shields.io/npm/v/@openremote/or-icon.svg
+[npm-url]: https://www.npmjs.com/package/@openremote/or-icon

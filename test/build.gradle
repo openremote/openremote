@@ -1,11 +1,10 @@
 plugins {
-    id 'com.adarshr.test-logger' version "$testLoggerPluginVersion"
+    id 'java-library'
+    id 'groovy'
+    id 'maven-publish'
+    id 'signing'
+    alias libs.plugins.testLogger
 }
-
-apply plugin: "java-library"
-apply plugin: "groovy"
-apply plugin: "maven-publish"
-apply plugin: "signing"
 
 dependencies {
 

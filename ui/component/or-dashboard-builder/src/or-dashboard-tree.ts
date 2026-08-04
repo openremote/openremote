@@ -24,13 +24,13 @@ import {style} from './style';
 import {Dashboard} from '@openremote/model';
 import manager, {Util} from '@openremote/core';
 import {ListItem} from '@openremote/or-mwc-components/or-mwc-list';
-import {showOkCancelDialog} from '@openremote/or-mwc-components/or-mwc-dialog';
 import {i18next, translate} from '@openremote/or-translate';
 import {showSnackbar} from '@openremote/or-mwc-components/or-mwc-snackbar';
 import {style as OrAssetTreeStyle} from '@openremote/or-asset-tree';
 import {DashboardService, DashboardSizeOption} from './service/dashboard-service';
 import {isAxiosError} from '@openremote/rest';
 import {when} from "lit/directives/when.js";
+import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 // language=css
 const treeStyling = css`
@@ -159,11 +159,7 @@ export class OrDashboardTree extends translate(i18next)(LitElement) {
     protected duplicateDashboard(dashboard: Dashboard) {
         if (dashboard?.id !== null) {
             if(this.hasChanged) {
-                this.showDiscardChangesModal().then(ok => {
-                    if(ok) {
-                        this._doDuplicateDashboard(dashboard);
-                    }
-                })
+                this.showDiscardChangesModal(() => this._doDuplicateDashboard(dashboard));
             } else {
                 this._doDuplicateDashboard(dashboard);
             }
@@ -215,17 +211,19 @@ export class OrDashboardTree extends translate(i18next)(LitElement) {
     protected onDashboardClick(dashboardId: string) {
         if (dashboardId !== this.selected?.id) {
             if (this.hasChanged) {
-                this.showDiscardChangesModal().then(ok => {
-                    if(ok) this.selectDashboard(dashboardId);
-                })
+                this.showDiscardChangesModal(() => this.selectDashboard(dashboardId))
             } else {
                 this.selectDashboard(dashboardId);
             }
         }
     }
 
-    protected showDiscardChangesModal(): Promise<boolean> {
-        return showOkCancelDialog(i18next.t('areYouSure'), i18next.t('confirmContinueDashboardModified'), i18next.t('discard'));
+    protected showDiscardChangesModal(onconfirm: () => void): void {
+        showConfirmDialog(this.shadowRoot!, html`
+            <or-vaadin-confirm-dialog @confirm=${() => onconfirm()}>
+                ${getConfirmDialogContent("error", "areYouSure", "confirmContinueDashboardModified", "discard", "cancel")}
+            </or-vaadin-confirm-dialog>
+        `);
     }
 
     // Element render method
@@ -252,9 +250,17 @@ export class OrDashboardTree extends translate(i18next)(LitElement) {
                                 </or-vaadin-button>
                                 <or-vaadin-button theme="icon" title=${i18next.t("delete")} @click=${() => {
                                     if (this.selected != null) {
-                                        showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deletePermanentWarning', {dashboard: this.selected.displayName}), i18next.t('delete')).then((ok: boolean) => {
-                                            if (ok) this.deleteDashboard(this.selected!);
-                                        });
+                                        showConfirmDialog(this.shadowRoot!, html`
+                                            <or-vaadin-confirm-dialog @confirm=${() => this.deleteDashboard(this.selected!)}>
+                                                ${getConfirmDialogContent(
+                                                    "error",
+                                                    "areYouSure",
+                                                    html`<or-translate value="dashboard.deletePermanentWarning" .options=${{dashboard: this.selected.displayName}}></or-translate>`,
+                                                    "delete",
+                                                    "cancel"
+                                                )}
+                                            </or-vaadin-confirm-dialog>
+                                        `);
                                     }
                                 }}>
                                     <or-icon icon="delete"></or-icon>

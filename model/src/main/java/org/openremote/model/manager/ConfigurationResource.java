@@ -19,11 +19,16 @@
  */
 package org.openremote.model.manager;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import org.openremote.model.Constants;
 import org.openremote.model.file.FileInfo;
+import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
 
 import jakarta.annotation.security.RolesAllowed;
@@ -31,7 +36,7 @@ import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Configuration", description = "Operations on configurations")
+@Tag(name = "Configuration", description = "Read public Manager UI configuration and administer its configuration and images")
 @Path("configuration")
 public interface ConfigurationResource {
 
@@ -40,30 +45,48 @@ public interface ConfigurationResource {
     @Produces(APPLICATION_JSON)
     @Path("manager")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    @Operation(operationId = "updateConfiguration", summary = "Update manager configuration")
-    ManagerAppConfig update(@BeanParam RequestParams requestParams, ManagerAppConfig managerConfiguration);
+    @Operation(operationId = "updateConfiguration", summary = "Update manager configuration",
+        description = "Replaces manager_config.json and returns the stored configuration. This administrative change affects Manager UI branding and behavior.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.ServerError
+    ManagerAppConfig update(@BeanParam RequestParams requestParams,
+                            @RequestBody(required = true, description = "Complete public Manager UI configuration to persist as manager_config.json.") ManagerAppConfig managerConfiguration);
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Path("manager/file")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    @Operation(operationId = "fileUpload", summary = "Upload a file")
+    @Operation(operationId = "fileUpload", summary = "Upload a Manager configuration image",
+        description = "Decodes and stores the supplied FileInfo under the requested relative path, then returns its Manager API path.")
+    @OpenApiResponses.Ok
+    @OpenApiResponses.Authenticated
+    @OpenApiResponses.BadRequest
+    @OpenApiResponses.ServerError
     String fileUpload(
             @BeanParam RequestParams requestParams,
-            @QueryParam("path")
-            String path,
-            FileInfo fileInfo
+            @Parameter(description = "Relative storage path and filename for the image.", example = "images/logo.svg", required = true) @QueryParam("path") String path,
+            @RequestBody(required = true, description = "File metadata and Base64 or text contents to store.") FileInfo fileInfo
     );
 
     @GET
     @Produces(APPLICATION_JSON)
     @Path("manager")
-    @Operation(operationId = "getManagerConfig", summary = "Retrieve the manager configuration JSON")
+    @Operation(operationId = "getManagerConfig", summary = "Retrieve the manager configuration JSON",
+        description = "Returns the public Manager application configuration used by clients before and after authentication.")
+    @OpenApiResponses.Ok
     ManagerAppConfig getManagerConfig();
 
     @GET
     @Path("manager/image/{filename: .+}")
-    @Operation(operationId = "getManagerConfigImage", summary = "Retrieve manager configuration images")
-    Object getManagerConfigImage(@PathParam("filename")String fileName);
+    @Operation(operationId = "getManagerConfigImage", summary = "Retrieve a Manager configuration image",
+        description = "Streams a previously uploaded configuration image using its detected media type.")
+    @ApiResponse(responseCode = "200", description = "The image file",
+        content = @Content(mediaType = "application/octet-stream", schema = @Schema(type = "string", format = "binary")))
+    @OpenApiResponses.NotFound
+    @OpenApiResponses.ServerError
+    Object getManagerConfigImage(
+        @Parameter(description = "Relative image path below the Manager configuration image directory.", example = "images/logo.svg") @PathParam("filename") String fileName);
 }

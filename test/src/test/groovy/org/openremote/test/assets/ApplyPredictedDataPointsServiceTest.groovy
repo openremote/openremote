@@ -6,9 +6,11 @@ import org.openremote.manager.datapoint.ApplyPredictedDataPointsService
 import org.openremote.manager.datapoint.AssetPredictedDatapointService
 import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
+import org.openremote.model.attribute.MetaMap
 import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.ManagerTestSetup
@@ -27,9 +29,23 @@ import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS
 
 class ApplyPredictedDataPointsServiceTest extends Specification implements ManagerContainerTrait {
 
-    ScheduledExecutorService executor = Mock(ScheduledExecutorService)
-    ScheduledFuture<?> future = Mock(ScheduledFuture)
-    Long delay
+    // Delay and future of the last schedule as a single value, so a delay can never be paired with a stale future
+    volatile Map<String, ?> scheduled
+    ApplyPredictedDataPointsService mockedApplyService
+    ScheduledExecutorService originalExecutor
+
+    def cleanup() {
+        if (mockedApplyService != null) {
+            synchronized (mockedApplyService.scheduleLock) {
+                mockedApplyService.scheduledFuture?.cancel(true)
+                mockedApplyService.scheduledFuture = null
+                mockedApplyService.scheduledEntries.clear()
+                mockedApplyService.scheduleQueue.clear()
+                mockedApplyService.scheduledExecutorService = originalExecutor
+            }
+            mockedApplyService = null
+        }
+    }
 
     def "Applies predicted datapoints when timestamps match"() {
         given: "a running container and target attribute with required meta"
@@ -47,9 +63,8 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         and: "the scheduled executor is mocked to allow manual triggering"
         setupScheduler(applyService)
 
-        and: "the attribute is tagged for predicted datapoint application"
-        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue1")
-        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+        and: "the attribute is created tagged for predicted datapoint application"
+        def attributeRef = createTestAttributeWithApplyMeta(assetStorageService, managerTestSetup.thingId, "predictedValue1")
 
         when: "predicted datapoints are added in the future"
         def predictedDatapoints = [
@@ -63,8 +78,9 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         )
 
         and: "time advances to the first datapoint"
+        awaitScheduled(applyService, attributeRef, conditions)
         advancePseudoClock(1, TimeUnit.MINUTES, container)
-        future.get()
+        scheduled.future.get()
         then: "the first predicted value should be applied"
         conditions.eventually {
             def asset = assetStorageService.find(attributeRef.getId(), true)
@@ -74,8 +90,9 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         }
 
         when: "time advances to the next datapoint"
+        awaitScheduled(applyService, attributeRef, conditions)
         advancePseudoClock(1, TimeUnit.MINUTES, container)
-        future.get()
+        scheduled.future.get()
 
         then: "the second predicted value should be applied"
         conditions.eventually {
@@ -233,8 +250,8 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
 
         and: "time advances beyond the datapoints"
         advancePseudoClock(3, TimeUnit.MINUTES, container)
-        if (future != null) {
-            future.get()
+        if (scheduled != null) {
+            scheduled.future.get()
         }
 
         then: "the attribute value should remain unchanged"
@@ -277,8 +294,8 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
 
         and: "time advances beyond the datapoints"
         advancePseudoClock(3, TimeUnit.MINUTES, container)
-        if (future != null) {
-            future.get()
+        if (scheduled != null) {
+            scheduled.future.get()
         }
 
         then: "the attribute value should remain unchanged"
@@ -321,8 +338,8 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
 
         and: "time advances beyond the datapoints"
         advancePseudoClock(3, TimeUnit.MINUTES, container)
-        if (future != null) {
-            future.get()
+        if (scheduled != null) {
+            scheduled.future.get()
         }
 
         then: "the attribute value should remain unchanged"
@@ -340,6 +357,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def clientEventService = container.getService(ClientEventService.class)
         def applyService = container.getService(ApplyPredictedDataPointsService.class)
 
         and: "the clock is stopped for deterministic scheduling"
@@ -349,8 +367,18 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         and: "the scheduled executor is mocked to allow manual triggering"
         setupScheduler(applyService)
 
+        and: "we capture attribute events"
+        List<AttributeEvent> events = new CopyOnWriteArrayList<>()
+        Consumer<AttributeEvent> consumer = { event -> events.add(event) }
+        clientEventService.addSubscription(AttributeEvent.class, null, consumer)
+
         and: "a plain attribute exists without meta"
         def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue7")
+
+        and: "the creation event without meta has been delivered, so it cannot arrive after the meta is added"
+        conditions.eventually {
+            assert events.any { it.ref == attributeRef && !it.getMeta()?.has(APPLY_PREDICTED_DATA_POINTS) }
+        }
 
         and: "predicted datapoints are added in the future"
         assetPredictedDatapointService.updateValues(
@@ -364,24 +392,77 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
 
         when: "time advances to the first datapoint"
         advancePseudoClock(1, TimeUnit.MINUTES, container)
-        if (future != null) {
-            future.get()
+        if (scheduled != null) {
+            scheduled.future.get()
         }
 
         and: "required meta is added"
         enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
 
         and: "time advances to the second datapoint"
+        awaitScheduled(applyService, attributeRef, conditions)
         advancePseudoClock(1, TimeUnit.MINUTES, container)
-        if (future != null) {
-            future.get()
-        }
+        scheduled.future.get()
+
         then: "the second predicted value should be applied"
         conditions.eventually {
             def asset = assetStorageService.find(attributeRef.getId(), true)
             def attribute = asset.getAttribute(attributeRef.getName()).get()
             assert attribute.getValue(Double.class).orElse(null) == 20d
             assert attribute.getTimestamp().orElse(0L) == now + TimeUnit.MINUTES.toMillis(2)
+        }
+    }
+
+    def "Keeps the schedule when an attribute event carries stale meta"() {
+        given: "a running container and target attribute with required meta"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def applyService = container.getService(ApplyPredictedDataPointsService.class)
+
+        and: "the clock is stopped for deterministic scheduling"
+        stopPseudoClock()
+        def now = getClockTimeOf(container)
+
+        and: "the scheduled executor is mocked to allow manual triggering"
+        setupScheduler(applyService)
+
+        and: "an attribute with the required meta is created in a single update"
+        def attributeRef = createTestAttributeWithApplyMeta(assetStorageService, managerTestSetup.thingId, "predictedValue11")
+
+        and: "predicted datapoints are added in the future"
+        assetPredictedDatapointService.updateValues(
+            attributeRef.getId(),
+            attributeRef.getName(),
+            [
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
+            ]
+        )
+
+        and: "the first datapoint is scheduled"
+        awaitScheduled(applyService, attributeRef, conditions)
+
+        when: "an event without the required meta is delivered, as can happen when events arrive out of order"
+        applyService.onAttributeEvent(
+            new AttributeEvent(attributeRef, 0d, now).setMeta(new MetaMap())
+        )
+
+        then: "the schedule should be kept because the stored attribute still has the required meta"
+        assert isScheduled(applyService, attributeRef)
+
+        when: "time advances to the first datapoint"
+        advancePseudoClock(1, TimeUnit.MINUTES, container)
+        scheduled.future.get()
+
+        then: "the first predicted value should still be applied"
+        conditions.eventually {
+            def asset = assetStorageService.find(attributeRef.getId(), true)
+            def attribute = asset.getAttribute(attributeRef.getName()).get()
+            assert attribute.getValue(Double.class).orElse(null) == 10d
+            assert attribute.getTimestamp().orElse(0L) == now + TimeUnit.MINUTES.toMillis(1)
         }
     }
 
@@ -401,9 +482,8 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         and: "the scheduled executor is mocked to allow manual triggering"
         setupScheduler(applyService)
 
-        and: "a plain attribute exists with required meta"
-        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue8")
-        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+        and: "an attribute with the required meta is created in a single update"
+        def attributeRef = createTestAttributeWithApplyMeta(assetStorageService, managerTestSetup.thingId, "predictedValue8")
 
         and: "predicted datapoints are added in the future"
         assetPredictedDatapointService.updateValues(
@@ -416,10 +496,9 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         )
 
         when: "time advances to the first datapoint"
+        awaitScheduled(applyService, attributeRef, conditions)
         advancePseudoClock(1, TimeUnit.MINUTES, container)
-        if (future != null) {
-            future.get()
-        }
+        scheduled.future.get()
 
         then: "the first predicted value should be applied"
         conditions.eventually {
@@ -435,8 +514,8 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
 
         and: "time advances beyond the datapoints"
         advancePseudoClock(2, TimeUnit.MINUTES, container)
-        if (future != null) {
-            future.get()
+        if (scheduled != null) {
+            scheduled.future.get()
         }
 
         then: "the attribute value should remain unchanged"
@@ -464,14 +543,19 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         and: "the scheduled executor is mocked to allow manual triggering"
         setupScheduler(applyService)
 
-        and: "a plain attribute exists with required meta"
-        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue9")
-        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
-
         and: "we capture attribute events"
         List<AttributeEvent> events = new CopyOnWriteArrayList<>()
         Consumer<AttributeEvent> consumer = { event -> events.add(event) }
         clientEventService.addSubscription(AttributeEvent.class, null, consumer)
+
+        and: "an attribute with the required meta is created in a single update"
+        def attributeRef = createTestAttributeWithApplyMeta(assetStorageService, managerTestSetup.thingId, "predictedValue9")
+
+        and: "the creation event has been delivered to the service before it is observed here"
+        conditions.eventually {
+            assert events.any { it.ref == attributeRef && it.getMeta()?.has(APPLY_PREDICTED_DATA_POINTS) }
+        }
+        events.clear()
 
         and: "predicted datapoints are added in the future"
         assetPredictedDatapointService.updateValues(
@@ -486,8 +570,8 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
 
         when: "time advances to the middle of the predicted datapoints"
         advancePseudoClock(1, TimeUnit.MINUTES, container)
-        if (future != null) {
-            future.get()
+        if (scheduled != null) {
+            scheduled.future.get()
         }
 
         then: "an attribute event should have been emitted for the applied value"
@@ -508,14 +592,17 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         when: "we clear events and advance time past all datapoints"
         events.clear()
         advancePseudoClock(3, TimeUnit.MINUTES, container)
-        if (future != null) {
-            future.get()
+        if (scheduled != null) {
+            scheduled.future.get()
         }
 
-        then: "no further attribute events should be emitted"
+        then: "the scheduled prediction for the attribute is cancelled"
         conditions.eventually {
-            assert events.isEmpty()
+            assert !applyService.scheduledEntries.containsKey(attributeRef)
         }
+
+        and: "no further non-deletion attribute events are emitted for the attribute"
+        assert !events.any { it.ref == attributeRef && !it.deleted }
     }
 
     def "Does not emit attribute events after asset deletion"() {
@@ -535,14 +622,19 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         and: "the scheduled executor is mocked to allow manual triggering"
         setupScheduler(applyService)
 
-        and: "a plain attribute exists with required meta"
-        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue10")
-        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
-
         and: "we capture attribute events"
         List<AttributeEvent> events = new CopyOnWriteArrayList<>()
         Consumer<AttributeEvent> consumer = { event -> events.add(event) }
         clientEventService.addSubscription(AttributeEvent.class, null, consumer)
+
+        and: "an attribute with the required meta is created in a single update"
+        def attributeRef = createTestAttributeWithApplyMeta(assetStorageService, managerTestSetup.thingId, "predictedValue10")
+
+        and: "the creation event has been delivered to the service before it is observed here"
+        conditions.eventually {
+            assert events.any { it.ref == attributeRef && it.getMeta()?.has(APPLY_PREDICTED_DATA_POINTS) }
+        }
+        events.clear()
 
         and: "predicted datapoints are added in the future"
         assetPredictedDatapointService.updateValues(
@@ -557,8 +649,8 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
 
         when: "time advances to the middle of the predicted datapoints"
         advancePseudoClock(1, TimeUnit.MINUTES, container)
-        if (future != null) {
-            future.get()
+        if (scheduled != null) {
+            scheduled.future.get()
         }
 
         then: "an attribute event should have been emitted for the applied value"
@@ -577,14 +669,17 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         when: "we clear events and advance time past all datapoints"
         events.clear()
         advancePseudoClock(3, TimeUnit.MINUTES, container)
-        if (future != null) {
-            future.get()
+        if (scheduled != null) {
+            scheduled.future.get()
         }
 
-        then: "no further attribute events should be emitted"
+        then: "the scheduled prediction for the attribute is cancelled"
         conditions.eventually {
-            assert events.isEmpty()
+            assert !applyService.scheduledEntries.containsKey(attributeRef)
         }
+
+        and: "no further non-deletion attribute events are emitted for the attribute"
+        assert !events.any { it.ref == attributeRef && !it.deleted }
     }
 
     private static void enablePredictedApplyMeta(AssetStorageService assetStorageService, String assetId, String attributeName) {
@@ -606,6 +701,18 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         return new AttributeRef(assetId, attributeName)
     }
 
+    private static AttributeRef createTestAttributeWithApplyMeta(AssetStorageService assetStorageService, String assetId, String attributeName) {
+        def asset = assetStorageService.find(assetId)
+        def attribute = new Attribute<>(attributeName, ValueType.NUMBER, 0d)
+        attribute.addOrReplaceMeta(
+            new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true),
+            new MetaItem<>(APPLY_PREDICTED_DATA_POINTS, true)
+        )
+        asset.getAttributes().addOrReplace(attribute)
+        assetStorageService.merge(asset)
+        return new AttributeRef(assetId, attributeName)
+    }
+
     private static void addMeta(AssetStorageService assetStorageService, AttributeRef attributeRef, MetaItem<?> metaItem) {
         def asset = assetStorageService.find(attributeRef.getId())
         def attribute = asset.getAttribute(attributeRef.getName()).get()
@@ -621,22 +728,43 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
     }
 
     private void setupScheduler(ApplyPredictedDataPointsService applyService) {
-        executor = Mock(ScheduledExecutorService)
-        future = Mock(ScheduledFuture)
-        delay = null
+        mockedApplyService = applyService
+        originalExecutor = applyService.scheduledExecutorService
+        def executor = Mock(ScheduledExecutorService)
+        scheduled = null
 
         executor.schedule(_ as Runnable, _ as Long, _ as TimeUnit) >> { args ->
-            delay = args[1] as Long
-            future = Mock(ScheduledFuture)
-            future.get() >> {
+            def scheduledFuture = Mock(ScheduledFuture)
+            scheduledFuture.get() >> {
                 (args[0] as Runnable).run()
                 return true
             }
-            return future
+            // Published only once the future is stubbed, so awaiting a schedule also awaits its future
+            scheduled = [delay: args[1] as Long, future: scheduledFuture]
+            return scheduledFuture
         }
 
-        applyService.scheduledFuture?.cancel(true)
-        applyService.scheduledFuture = null
-        applyService.scheduledExecutorService = executor
+        synchronized (applyService.scheduleLock) {
+            applyService.scheduledFuture?.cancel(true)
+            applyService.scheduledFuture = null
+            applyService.scheduledExecutorService = executor
+        }
+    }
+
+    /**
+     * The service schedules on a container thread in response to events, so the schedule must be awaited before the
+     * clock is advanced; without this the test can resolve a future from an earlier schedule, or none at all.
+     */
+    private void awaitScheduled(ApplyPredictedDataPointsService applyService, AttributeRef attributeRef, PollingConditions conditions) {
+        conditions.eventually {
+            assert isScheduled(applyService, attributeRef)
+            assert scheduled != null
+        }
+    }
+
+    private static boolean isScheduled(ApplyPredictedDataPointsService applyService, AttributeRef attributeRef) {
+        synchronized (applyService.scheduleLock) {
+            return applyService.scheduledEntries.containsKey(attributeRef)
+        }
     }
 }

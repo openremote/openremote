@@ -1,9 +1,29 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {type OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import {type OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
 import {comboBoxRenderer, ComboBoxLitRenderer, OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import {getConfirmDialogContent, showConfirmDialog, showErrorDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 import "@openremote/or-icon";
 import {
     Asset,
@@ -34,7 +54,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrMwcDialog, showDialog, showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -1455,7 +1475,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             });
         } catch (e) {
             console.error("Failed to copy asset", e);
-            showErrorDialog("Failed to copy asset");
+            showErrorDialog(this.shadowRoot!, "Failed to copy asset");
         }
     }
 
@@ -1556,6 +1576,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <style>
                         .mdc-dialog__content {
                             padding: 0 !important;
+                            border-bottom: solid var(--or-app-color5, #CCCCCC) 1px;
+                            border-top: solid var(--or-app-color5, #CCCCCC) 1px;
                         }
                     </style>
                 `)
@@ -1639,22 +1661,30 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }).then((response) => {
                 this._onDeselectClicked();
                 if (response.status !== 204) {
-                    showErrorDialog(i18next.t("deleteAssetsFailed"));
+                    showErrorDialog(this.shadowRoot!, "deleteAssetsFailed");
                 }
             }).catch((reason) => {
-                showErrorDialog(i18next.t("deleteAssetsFailed"));
+                showErrorDialog(this.shadowRoot!, "deleteAssetsFailed");
             }).finally(() => {
                 this.disabled = false;
             });
         };
 
         // Confirm deletion request
-        showOkCancelDialog(i18next.t("deleteAssets"), i18next.t("deleteAssetsConfirm", { assetNames: assetNames.join(",\n- ") }), i18next.t("delete"))
-            .then((ok) => {
-                if (ok) {
-                    doDelete();
-                }
-            });
+        showConfirmDialog(this.shadowRoot!, html`
+            <or-vaadin-confirm-dialog @confirm=${() => doDelete()}>
+                ${getConfirmDialogContent(
+                    "error",
+                    "deleteAssets",
+                    html`
+                        <or-translate value="deleteAssetsConfirm"></or-translate>
+                        <ul>${assetNames.map(n => html`<li>${n}</li>`)}</ul>
+                    `,
+                    "delete",
+                    "cancel"
+                )}
+            </or-vaadin-confirm-dialog>
+        `);
     }
 
     protected _canAdd(): boolean {
@@ -2177,7 +2207,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
                         ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColorForNonMatchingAsset ? 'd3d3d3' : undefined))}
-                        <span style="color: ${filterColorForNonMatchingAsset ? '#d3d3d3;' : ''}">${treeNode.asset!.name}</span>
+                        <span class="${this.checkboxes ? 'node-name-withCheck' : 'node-name-noCheck'}" title="${treeNode.asset!.name}" style="color: ${filterColorForNonMatchingAsset ? '#d3d3d3;' : ''}">${treeNode.asset!.name}</span>
                         ${this.checkboxes ? html`
                             <span class="mdc-list-item__graphic">
                                 ${treeNode.expandable 

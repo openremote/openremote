@@ -23,12 +23,13 @@ import {
 import manager, {DefaultBoxShadow, DefaultColor5, Util} from "@openremote/core";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {createSlice, Store, createSelector} from "@reduxjs/toolkit";
-import {DialogAction, OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {i18next} from "@openremote/or-translate"
 import {Asset, AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
 import {getAlarmsRoute, getAssetsRoute, getUsersRoute} from "../routes";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -403,12 +404,11 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
     protected _confirmContinue(action: () => void) {
         if (this._viewer.isModified()) {
-            showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueAssetModified"), i18next.t("discard"))
-                .then((ok) => {
-                    if (ok) {
-                        action();
-                    }
-                });
+            showConfirmDialog(this.shadowRoot, html`
+                <or-vaadin-confirm-dialog @confirm=${() => action()}>
+                    ${getConfirmDialogContent("error", "loseChanges", "confirmContinueAssetModified", "discard", "cancel")}
+                </or-vaadin-confirm-dialog>
+            `);
         } else {
             action();
         }

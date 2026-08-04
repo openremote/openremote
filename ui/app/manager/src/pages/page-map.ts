@@ -11,7 +11,7 @@ import {
     OrMapMarkerClickedEvent,
     OrMapGeocoderChangeEvent,
     MapMarkerAssetConfig,
-    OrMapMarkersChangedEvent,
+    OrMapMarkersChangedEvent
 } from "@openremote/or-map";
 import manager, { Util } from "@openremote/core";
 import {createSelector} from "reselect";
@@ -23,7 +23,7 @@ import {
     AttributeEvent,
     GeoJSONPoint,
     WellknownAttributes,
-    WellknownMetaItems,
+    WellknownMetaItems
 } from "@openremote/model";
 import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";

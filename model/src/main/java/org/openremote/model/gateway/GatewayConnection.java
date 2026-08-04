@@ -20,6 +20,7 @@
 package org.openremote.model.gateway;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,39 +38,48 @@ import java.util.Map;
 
 @Entity
 @Table(name = "GATEWAY_CONNECTION")
+@Schema(description = "Connection from a local realm to a remote OpenRemote gateway, including credentials and synchronization rules.")
 public class GatewayConnection {
 
     @Id
     @Column(name = "LOCAL_REALM", nullable = false)
+    @Schema(description = "Local realm whose assets participate in this gateway connection.", example = "building")
     protected String localRealm;
 
     @NotNull(message = "{GatewayConnection.host.NotNull}")
     @Size(min = 1, max = 255, message = "{GatewayConnection.host.Size}")
     @Column(name = "HOST", nullable = false)
+    @Schema(description = "Remote gateway hostname without a scheme.", example = "gateway.example.com")
     protected String host;
 
     @Min(value = 1, message = "{GatewayConnection.port.Range}")
     @Max(value = 65536, message = "{GatewayConnection.port.Range}")
     @Column(name = "PORT")
+    @Schema(description = "Remote HTTPS or HTTP port.", example = "443")
     protected Integer port;
 
     @Column(name = "REALM", nullable = false)
+    @Schema(description = "Realm used to authenticate on the remote gateway.", example = "master")
     protected String realm;
 
     @NotNull(message = "{GatewayConnection.clientId.NotNull}")
     @Size(min = 1, max = 255, message = "{GatewayConnection.clientId.Size}")
     @Column(name = "CLIENT_ID", nullable = false, length = 36)
+    @Schema(description = "Remote identity-provider client identifier.", example = "openremote")
     protected String clientId;
 
     @NotNull(message = "{GatewayConnection.clientSecret.NotNull}")
     @Size(min = 36, max = 36, message = "{GatewayConnection.clientSecret.Size}")
     @Column(name = "CLIENT_SECRET", nullable = false, length = 36)
+    @Schema(description = "Remote identity-provider client secret.", format = "password")
     protected String clientSecret;
 
     @Column(name = "SECURED")
+    @Schema(description = "Use TLS for the remote connection; defaults to true.", example = "true")
     protected Boolean secured;
 
     @Column(name = "DISABLED")
+    @Schema(description = "Keep the configuration but prevent connection and synchronization.", example = "false")
     protected boolean disabled;
 
     /**
@@ -79,6 +89,7 @@ public class GatewayConnection {
      */
     @Column(name = "ATTRIBUTE_FILTERS")
     @JdbcTypeCode(SqlTypes.JSON)
+    @Schema(description = "Ordered attribute-event filters; the first matching filter is applied.")
     protected List<GatewayAttributeFilter> attributeFilters;
 
     /**
@@ -87,6 +98,7 @@ public class GatewayConnection {
      */
     @Column(name = "SYNC_RULES")
     @JdbcTypeCode(SqlTypes.JSON)
+    @Schema(description = "Synchronization rules keyed by asset type; use * as a wildcard.")
     protected Map<String, GatewayAssetSyncRule> assetSyncRules;
 
     /**

@@ -1,17 +1,10 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion"
-    }
+plugins {
+    id 'java-library'
+    id 'groovy'
+    id 'maven-publish'
+    id 'signing'
+    alias libs.plugins.protobuf
 }
-
-apply plugin: "java-library"
-apply plugin: "groovy"
-apply plugin: "maven-publish"
-apply plugin: "signing"
-apply plugin: "com.google.protobuf"
 
 dependencies {
 
@@ -69,13 +62,19 @@ dependencies {
     implementation libs.bouncycastleBcprovJdk18on
 }
 
+
+def artifactNotation = { dependencyProvider ->
+    def dependency = dependencyProvider.get()
+    "${dependency.group}:${dependency.name}:${dependency.version}"
+}
+
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:$protobufVersion"
+        artifact = artifactNotation(libs.protoc)
     }
     plugins {
         grpc {
-            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
+            artifact = artifactNotation(libs.protocGenGrpcJava)
         }
     }
     generateProtoTasks {

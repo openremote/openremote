@@ -64,6 +64,8 @@ export interface ValueInputProviderOptions {
     outlined?: boolean;
     comfortable?: boolean;
     resizeVertical?: boolean;
+    minRows?: number;
+    manualresize?: boolean;
     inputType?: InputType;
 }
 
@@ -105,7 +107,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
     const format: ValueFormat | undefined = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType));
 
-    const supportsVaadinInput = (type: InputType) => (OrVaadinInput.TEMPLATES.has(type) && !format?.asOnOff);
+    const supportsVaadinInput = (type: InputType) => OrVaadinInput.TEMPLATES.has(type);
 
     // Enforces which value types are supported making SUPPORTED_WELLKNOWN_VALUE_TYPES the single source of truth through type checking
     let _exhaustiveTypeCheck: never
@@ -333,9 +335,9 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
 
         if (supportsVaadinInput(inputType)) {
 
-            // or-vaadin-checkbox has multiple states (like indeterminate), so it uses the 'checked' HTML attribute instead of 'value'.
+            // or-vaadin-checkbox and or-vaadin-toggle represent a boolean state, so they use the 'checked' HTML attribute instead of 'value'.
             let checked = false;
-            if (inputType === InputType.CHECKBOX) {
+            if (inputType === InputType.CHECKBOX || inputType === InputType.SWITCH) {
                 checked = Boolean(value);
                 value = undefined;
             }
@@ -347,6 +349,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                                  ?autofocus=${focused} ?required=${required} ?readonly=${readonly} ?disabled=${disabled}
                                  .items=${ifDefined(selectOptions)} step=${ifDefined(step)}
                                  helper-text="${ifDefined(helperText)}" ?resizeVertical="${resizeVertical}"
+                                 min-rows="${ifDefined(inputType === InputType.TEXTAREA ? options.minRows : undefined)}"
+                                 ?manualresize="${inputType === InputType.TEXTAREA && !!options.manualresize}"
                                  ?rounded="${options.rounded}" ?outlined="${options.outlined}"
                                  @change="${onValueChange}"
                                  @submit="${onValueChange}"

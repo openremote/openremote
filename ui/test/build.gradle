@@ -1,9 +1,9 @@
-tasks.register("clean", Delete) {
+tasks.register('clean', Delete) {
     delete "tmp"
 }
 
 tasks.register("installBrowsers", Exec) {
-    mustRunAfter(resolveTask(":deployment:installDist"))
+    mustRunAfter ":deployment:installDist"
     commandLine npmCommand("npx"), "playwright", "install", "chromium"
 }
 
