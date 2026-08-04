@@ -349,9 +349,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
    */
   protected abstract OAuthGrant generateStoredCredentials(Container container);
 
-  /**
-   * Called by the Keycloak init setup task
-   */
+  /** Called by the Keycloak init setup task */
   public abstract void onSetupDone(Container container);
 
   /**
