@@ -73,11 +73,10 @@ function subscribeAssetEvents(ids, requestCurrentValues, callback) {
 
 // TODO: consider rewriting this to use a mock `WebSocketEventProvider` so we can test @openremote/core and other components
 manager.init = async () => {
-  manager._basicIdentity = {
-    // token: string | undefined,
-    // user: User | undefined,
-    roles: [ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES],
-  };
+  // Shadow the prototype getter so `manager.hasRole` sees these roles without authenticating
+  Object.defineProperty(manager, "roles", {
+    get: () => new Map([["openremote", [ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES]]]),
+  });
   manager._config = {
     clientId: "openremote",
     autoLogin: false,

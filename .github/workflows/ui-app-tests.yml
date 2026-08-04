@@ -46,6 +46,9 @@ jobs:
       - name: Run UI App Tests
         timeout-minutes: 20
         run: |
+          # Make temp dir with 777 mask as docker seems to run as root
+          mkdir -pm 777 tmp
+
           # Start the stack
           docker compose -f profile/dev-testing.yml up -d --no-build
 
