@@ -1,31 +1,31 @@
 
 afterEvaluate {
-    // Add dependencies on model and rest typescript generation
-    rootProject.getTasksByName('installDist', true).forEach {
-        it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
-    }
-    rootProject.getTasksByName('prepareUi', true).forEach {
-        it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
-    }
-    rootProject.getTasksByName('publishUi', true).forEach {
-        it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
-    }
-    rootProject.getTasksByName('npmBuild', true).forEach {
-        it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
-    }
+  // Add dependencies on model and rest typescript generation
+  rootProject.getTasksByName('installDist', true).forEach {
+    it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
+  }
+  rootProject.getTasksByName('prepareUi', true).forEach {
+    it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
+  }
+  rootProject.getTasksByName('publishUi', true).forEach {
+    it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
+  }
+  rootProject.getTasksByName('npmBuild', true).forEach {
+    it.dependsOn ":ui:component:model:generateTypeScript", ":ui:component:rest:generateTypeScript"
+  }
 }
 
 tasks.register("modelWatch") {
-    dependsOn ":ui:component:model:build", ":ui:component:rest:build"
+  dependsOn ":ui:component:model:build", ":ui:component:rest:build"
 }
 
 tasks.register("installKnipDeps", Exec) {
-    // Required to load the `rspack.config.js` and `rsbuild.config.ts` files, ref https://knip.dev/reference/known-issues#exceptions-from-config-files
-    commandLine npmCommand("yarn"), "workspaces", "focus", "@openremote/util", "@openremote/manager", "@openremote/storybook"
+  // Required to load the `rspack.config.js` and `rsbuild.config.ts` files, ref https://knip.dev/reference/known-issues#exceptions-from-config-files
+  commandLine npmCommand("yarn"), "workspaces", "focus", "@openremote/util", "@openremote/manager", "@openremote/storybook"
 }
 
 tasks.register("knip", Exec) {
-    dependsOn installKnipDeps
-    workingDir project.rootDir
-    commandLine npmCommand("npx"), "knip@5.88.0", "-c", "ui/knip.jsonc"
+  dependsOn installKnipDeps
+  workingDir project.rootDir
+  commandLine npmCommand("npx"), "knip@5.88.0", "-c", "ui/knip.jsonc"
 }

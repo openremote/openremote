@@ -4,11 +4,13 @@
 -->
 
 ## Description
+
 <!--
   Please describe the changes and add a link to the related issue(s) #
 -->
 
 ## Checklist
+
 <!--
   With all these boxes checked this PR conforms to our Definition of Done.
 -->
@@ -18,6 +20,6 @@
 - [ ] 3. Changes are manually tested by you and the reviewer
 - [ ] 4. Documentation is written or updated
 
-<!-- 
-  Thank you for your contribution <3 
+<!--
+  Thank you for your contribution <3
 -->

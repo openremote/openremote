@@ -3,9 +3,7 @@
   "compilerOptions": {
     "outDir": "./lib"
   },
-  "include": [
-    "./src"
-  ],
+  "include": ["./src"],
   "references": [
     { "path": "../../component/core" },
     { "path": "../../component/or-translate" },

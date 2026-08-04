@@ -1,235 +1,267 @@
-import {Node, NodeCollection, NodeConnection, NodeSocket} from "@openremote/model";
-import {EventEmitter} from "events";
-import {EditorWorkspace} from "../components/editor-workspace";
-import {input} from "../components/flow-editor";
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import type { Node, NodeCollection, NodeConnection, NodeSocket } from "@openremote/model";
+import { EventEmitter } from "events";
+import type { EditorWorkspace } from "../components/editor-workspace";
+import { input } from "../components/flow-editor";
 import manager from "@openremote/core";
-import {NodeUtilities} from "../node-structure";
-import {SocketTypeMatcher} from "../node-structure/socket.type.matcher";
+import { NodeUtilities } from "../node-structure";
+import { SocketTypeMatcher } from "../node-structure/socket.type.matcher";
 
 export class Project extends EventEmitter {
-    public nodes: Node[] = [];
-    public connections: NodeConnection[] = [];
-    public workspace!: EditorWorkspace;
+  public nodes: Node[] = [];
+  public connections: NodeConnection[] = [];
+  public workspace!: EditorWorkspace;
 
-    public existingFlowRuleId = -1;
-    public existingFlowRuleName: string | null = null;
-    public existingFlowRuleDesc: string | null = null;
-    private isInUnsavedState = false;
+  public existingFlowRuleId = -1;
+  public existingFlowRuleName: string | null = null;
+  public existingFlowRuleDesc: string | null = null;
+  private isInUnsavedState = false;
 
-    private isConnecting = false;
-    private connectionStartSocket!: NodeSocket | null;
-    private connectionEndSocket!: NodeSocket | null;
+  private isConnecting = false;
+  private connectionStartSocket!: NodeSocket | null;
+  private connectionEndSocket!: NodeSocket | null;
 
-    private history: NodeCollection[] = [];
-    private historyIndex = 0;
+  private history: NodeCollection[] = [];
+  private historyIndex = 0;
 
-    constructor() {
-        super();
-        this.setMaxListeners(1024);
+  constructor() {
+    super();
+    this.setMaxListeners(1024);
+  }
+
+  public get isCurrentlyConnecting() {
+    return this.isConnecting;
+  }
+
+  public set unsavedState(state: boolean) {
+    this.isInUnsavedState = state;
+    this.emit("unsavedstateset", state);
+  }
+
+  public get unsavedState() {
+    return this.isInUnsavedState;
+  }
+
+  public setCurrentProject(id: number, name: string | null, desc: string | null) {
+    this.unsavedState = false;
+    this.existingFlowRuleId = id;
+    this.existingFlowRuleName = name;
+    this.existingFlowRuleDesc = desc;
+    this.history = [];
+    this.emit("projectset", id);
+  }
+
+  public notifyChange() {
+    this.unsavedState = true;
+    this.emit("changed");
+  }
+
+  public createUndoSnapshot() {
+    this.history = this.history.splice(0, this.historyIndex + 1);
+    this.history.push(JSON.parse(JSON.stringify(this.toNodeCollection("", ""))));
+    this.historyIndex = this.history.length - 1;
+  }
+
+  public async undo() {
+    if (this.history.length === 0 || this.historyIndex === -1) {
+      return;
+    }
+    if (this.historyIndex === this.history.length - 1) {
+      this.history.push(JSON.parse(JSON.stringify(this.toNodeCollection("", ""))));
+    }
+    await this.fromNodeCollection(this.history[this.historyIndex]);
+    this.historyIndex--;
+    this.notifyChange();
+  }
+
+  public async redo() {
+    if (this.history.length === 0 || this.historyIndex >= this.history.length - 2) {
+      return;
+    }
+    this.historyIndex++;
+    await this.fromNodeCollection(this.history[this.historyIndex + 1]);
+    this.notifyChange();
+  }
+
+  public async fromNodeCollection(collection: NodeCollection) {
+    await this.clear();
+
+    collection.nodes!.forEach((node) => {
+      this.addNode(node);
+    });
+
+    collection.connections!.forEach((conn) => {
+      this.createConnection(conn.from!, conn.to!);
+    });
+
+    this.emit("nodecollectionloaded", collection);
+    this.unsavedState = false;
+  }
+
+  public toNodeCollection(name: string, description: string): NodeCollection {
+    return {
+      name,
+      description,
+      connections: this.connections,
+      nodes: this.nodes,
+    };
+  }
+
+  public async clear(alsoResetProject = false) {
+    input.clearSelection();
+    this.nodes.forEach((n) => {
+      this.removeNode(n);
+    });
+    this.nodes = [];
+    this.connections = [];
+    this.unsavedState = !alsoResetProject;
+    if (alsoResetProject) {
+      this.setCurrentProject(-1, null, null);
+    }
+    this.emit("cleared");
+  }
+
+  public addNode(node: Node) {
+    if (this.nodes.filter((n) => n.id === node.id).length > 0) {
+      throw new Error("Node with identical identity already exists in the project");
+    }
+    this.nodes.push(node);
+    this.emit("nodeadded", node);
+  }
+
+  public removeNode(node: Node) {
+    input.clearSelection();
+    this.connections
+      .filter((c) => {
+        const from = NodeUtilities.getSocketFromID(c.from!, this.nodes);
+        const to = NodeUtilities.getSocketFromID(c.to!, this.nodes);
+        return from!.nodeId === node.id || to!.nodeId === node.id;
+      })
+      .forEach((c) => {
+        this.removeConnection(c);
+      });
+    this.nodes
+      .filter((n) => n.id === node.id)
+      .forEach((n) => {
+        this.nodes.splice(this.nodes.indexOf(n), 1);
+        this.emit("noderemoved", n);
+      });
+  }
+
+  public startConnectionDrag = (e: MouseEvent, socket: NodeSocket, isInputNode: boolean) => {
+    this.connectionStartSocket = null;
+    this.connectionEndSocket = null;
+
+    if (isInputNode) {
+      this.connectionEndSocket = socket;
+    } else {
+      this.connectionStartSocket = socket;
     }
 
-    public get isCurrentlyConnecting() {
-        return this.isConnecting;
+    this.isConnecting = true;
+    this.emit("connectionstart", e, socket);
+  };
+
+  public connectionDragging = (e: MouseEvent) => {
+    this.emit("connecting", e);
+  };
+
+  public endConnectionDrag = (e: MouseEvent, socket: NodeSocket | null, isInputNode: boolean) => {
+    if (!this.isConnecting) {
+      return;
+    }
+    if (isInputNode) {
+      this.connectionEndSocket = socket;
+    } else {
+      this.connectionStartSocket = socket;
     }
 
-    public set unsavedState(state: boolean) {
-        this.isInUnsavedState = state;
-        this.emit("unsavedstateset", state);
+    this.isConnecting = false;
+    this.emit("connectionend", e, socket);
+    if (this.connectionEndSocket && this.connectionStartSocket) {
+      this.createConnection(this.connectionStartSocket.id!, this.connectionEndSocket.id!);
     }
+  };
 
-    public get unsavedState() {
-        return this.isInUnsavedState;
-    }
-
-    public setCurrentProject(id: number, name: string | null, desc: string | null) {
-        this.unsavedState = false;
-        this.existingFlowRuleId = id;
-        this.existingFlowRuleName = name;
-        this.existingFlowRuleDesc = desc;
-        this.history = [];
-        this.emit("projectset", id);
-    }
-
-    public notifyChange() {
-        this.unsavedState = true;
-        this.emit("changed");
-    }
-
-    public createUndoSnapshot() {
-        this.history = this.history.splice(0, this.historyIndex + 1);
-        this.history.push(JSON.parse(JSON.stringify(this.toNodeCollection("", ""))));
-        this.historyIndex = this.history.length - 1;
-    }
-
-    public async undo() {
-        if (this.history.length === 0 || this.historyIndex === -1) { return; }
-        if (this.historyIndex === this.history.length - 1) {
-            this.history.push(JSON.parse(JSON.stringify(this.toNodeCollection("", ""))));
-        }
-        await this.fromNodeCollection(this.history[this.historyIndex]);
-        this.historyIndex--;
-        this.notifyChange();
-    }
-
-    public async redo() {
-        if (this.history.length === 0 || this.historyIndex >= (this.history.length - 2)) { return; }
-        this.historyIndex++;
-        await this.fromNodeCollection(this.history[this.historyIndex + 1]);
-        this.notifyChange();
-    }
-
-    public async fromNodeCollection(collection: NodeCollection) {
-        await this.clear();
-        
-        collection.nodes!.forEach((node) => {
-            this.addNode(node);
-        });
-
-        collection.connections!.forEach((conn) => {
-            this.createConnection(conn.from!, conn.to!);
-        });
-
-        this.emit("nodecollectionloaded", collection);
-        this.unsavedState = false;
-    }
-
-    public toNodeCollection(name: string, description: string): NodeCollection {
-        return {
-            name,
-            description,
-            connections: this.connections,
-            nodes: this.nodes
-        };
-    }
-
-    public async clear(alsoResetProject = false) {
-        input.clearSelection();
-        this.nodes.forEach((n) => {
-            this.removeNode(n);
-        });
-        this.nodes = [];
-        this.connections = [];
-        this.unsavedState = !alsoResetProject;
-        if (alsoResetProject) {
-            this.setCurrentProject(-1, null, null);
-        }
-        this.emit("cleared");
-    }
-
-    public addNode(node: Node) {
-        if (this.nodes.filter((n) => n.id === node.id).length > 0) {
-            throw new Error("Node with identical identity already exists in the project");
-        }
-        this.nodes.push(node);
-        this.emit("nodeadded", node);
-    }
-
-    public removeNode(node: Node) {
-        input.clearSelection();
-        this.connections.filter((c) => {
-            const from = NodeUtilities.getSocketFromID(c.from!, this.nodes);
-            const to = NodeUtilities.getSocketFromID(c.to!, this.nodes);
-            return from!.nodeId === node.id || to!.nodeId === node.id;
-        }).forEach((c) => {
-            this.removeConnection(c);
-        });
-        this.nodes.filter((n) => n.id === node.id).forEach((n) => {
-            this.nodes.splice(this.nodes.indexOf(n), 1);
-            this.emit("noderemoved", n);
-        });
-    }
-
-    public startConnectionDrag = (e: MouseEvent, socket: NodeSocket, isInputNode: boolean) => {
-        this.connectionStartSocket = null;
-        this.connectionEndSocket = null;
-
-        if (isInputNode) {
-            this.connectionEndSocket = socket;
+  public removeConnection(connection: NodeConnection) {
+    input.clearSelection();
+    this.connections
+      .filter((c) => c.from === connection.from && c.to === connection.to)
+      .forEach((c) => {
+        const index = this.connections.indexOf(c);
+        if (index === -1) {
+          console.warn("attempt to delete nonexistent connection");
         } else {
-            this.connectionStartSocket = socket;
+          this.connections.splice(index, 1);
+          this.emit("connectionremoved", c);
         }
+      });
+  }
 
-        this.isConnecting = true;
-        this.emit("connectionstart", e, socket);
+  public isValidConnection(connection: NodeConnection) {
+    const fromSocket = NodeUtilities.getSocketFromID(connection.from!, this.nodes);
+    const toSocket = NodeUtilities.getSocketFromID(connection.to!, this.nodes);
+    if (!fromSocket || !toSocket) {
+      return false;
     }
 
-    public connectionDragging = (e: MouseEvent) => {
-        this.emit("connecting", e);
+    return !(
+      !SocketTypeMatcher.match(fromSocket.type!, toSocket.type!) ||
+      fromSocket.id === toSocket.id ||
+      fromSocket.nodeId === toSocket.nodeId
+    );
+  }
+
+  public createConnection(fromSocket: string, toSocket: string): boolean {
+    const connection = {
+      from: fromSocket,
+      to: toSocket,
+    };
+
+    if (!this.isValidConnection(connection)) {
+      return false;
     }
 
-    public endConnectionDrag = (e: MouseEvent, socket: NodeSocket | null, isInputNode: boolean) => {
-        if (!this.isConnecting) { return; }
-        if (isInputNode) {
-            this.connectionEndSocket = socket;
-        } else {
-            this.connectionStartSocket = socket;
-        }
-
-        this.isConnecting = false;
-        this.emit("connectionend", e, socket);
-        if (this.connectionEndSocket && this.connectionStartSocket) {
-            this.createConnection(this.connectionStartSocket.id!, this.connectionEndSocket.id!);
-        }
+    // If the type contains _ARRAY, then assume that we allow multiple nodes to connect to that socket.
+    if (!NodeUtilities.getSocketFromID(connection.to, this.nodes)!.type!.includes("_ARRAY")) {
+      for (const c of this.connections.filter((j) => j.to === toSocket)) {
+        // TODO: this.connections should contain the types of the other nodes, so that we only remove
+        this.removeConnection(c);
+      }
     }
 
-    public removeConnection(connection: NodeConnection) {
-        input.clearSelection();
-        this.connections.filter((c) => c.from === connection.from && c.to === connection.to).forEach((c) => {
-            const index = this.connections.indexOf(c);
-            if (index === -1) {
-                console.warn("attempt to delete nonexistent connection");
-            } else {
-                this.connections.splice(index, 1);
-                this.emit("connectionremoved", c);
-            }
-        });
+    this.connections.push(connection);
+    this.emit("connectioncreated", fromSocket, toSocket);
+    return true;
+  }
+
+  public removeInvalidConnections() {
+    for (const c of this.connections.map((c) => this.enrichConnection(c)).filter((j) => !this.isValidConnection(j))) {
+      this.removeConnection(c);
     }
+  }
 
-    public isValidConnection(connection: NodeConnection) {
-        const fromSocket = NodeUtilities.getSocketFromID(connection.from!, this.nodes);
-        const toSocket = NodeUtilities.getSocketFromID(connection.to!, this.nodes);
-        if (!fromSocket ||
-            !toSocket) {
-            return false;
-        }
-
-        return !(!SocketTypeMatcher.match(fromSocket.type!, toSocket.type!) ||
-            fromSocket.id === toSocket.id ||
-            fromSocket.nodeId === toSocket.nodeId);
-    }
-
-    public createConnection(fromSocket: string, toSocket: string): boolean {
-        const connection = {
-            from: fromSocket,
-            to: toSocket
-        };
-
-        if (!(this.isValidConnection(connection))) { return false; }
-
-
-        // If the type contains _ARRAY, then assume that we allow multiple nodes to connect to that socket.
-        if(!((NodeUtilities.getSocketFromID(connection.to, this.nodes)!.type)!.includes("_ARRAY"))){
-            for (const c of this.connections.filter((j) => j.to === toSocket)) {
-                // TODO: this.connections should contain the types of the other nodes, so that we only remove
-                this.removeConnection(c);
-            }
-        }
-
-        this.connections.push(connection);
-        this.emit("connectioncreated", fromSocket, toSocket);
-        return true;
-    }
-
-    public removeInvalidConnections() {
-        for (const c of this.connections.map(c => this.enrichConnection(c)).filter(j => !this.isValidConnection(j))) {
-            this.removeConnection(c);
-        }
-    }
-
-    private enrichConnection(c: NodeConnection): NodeConnection {
-        return {
-            from: NodeUtilities.getSocketFromID(c.from!, this.nodes)?.id,
-            to: NodeUtilities.getSocketFromID(c.to!, this.nodes)?.id
-        }
-    }
+  private enrichConnection(c: NodeConnection): NodeConnection {
+    return {
+      from: NodeUtilities.getSocketFromID(c.from!, this.nodes)?.id,
+      to: NodeUtilities.getSocketFromID(c.to!, this.nodes)?.id,
+    };
+  }
 }

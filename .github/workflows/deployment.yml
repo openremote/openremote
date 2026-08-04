@@ -6,7 +6,7 @@ on:
         type: string
       COMMIT:
         type: string
-        description: 'Repo branch or commit SHA to checkout'
+        description: "Repo branch or commit SHA to checkout"
 
 jobs:
   deployment:

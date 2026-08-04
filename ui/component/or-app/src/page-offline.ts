@@ -1,88 +1,111 @@
-import {Page, PageProvider} from "./types";
-import {css, html, TemplateResult} from "lit";
-import {customElement, state} from "lit/decorators.js";
-import {AppStateKeyed} from "./app";
-import {Store} from "@reduxjs/toolkit";
-import manager, {OREvent} from "@openremote/core";
-import {asyncReplace} from 'lit/directives/async-replace.js';
-import {when} from 'lit/directives/when.js';
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { Page, type PageProvider } from "./types";
+import { css, html, type TemplateResult } from "lit";
+import { customElement, state } from "lit/decorators.js";
+import type { AppStateKeyed } from "./app";
+import type { Store } from "@reduxjs/toolkit";
+import manager, { OREvent } from "@openremote/core";
+import { asyncReplace } from "lit/directives/async-replace.js";
+import { when } from "lit/directives/when.js";
 
 // language=css
 const styling = css`
-    #offline-wrapper {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100%;
-        width: 100%;
-        flex-direction: column;
-        gap: 32px;
-        padding: 0 32px;
-    }
+  #offline-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    flex-direction: column;
+    gap: 32px;
+    padding: 0 32px;
+  }
 
-    #offline-icon {
-        font-size: 64px;
-    }
+  #offline-icon {
+    font-size: 64px;
+  }
 
-    #offline-text-container {
-        display: flex;
-        align-items: center;
-        flex-direction: column;
-        gap: 16px;
-    }
+  #offline-text-container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 16px;
+  }
 
-    #offline-title {
-        font-size: 24px;
-        font-weight: bold;
-    }
-    
-    #reconnecting-text:after {
-        display: inline-block;
-        animation: dotty steps(2,end) 2s infinite;
-        content: '';
-    }
+  #offline-title {
+    font-size: 24px;
+    font-weight: bold;
+  }
 
-    @keyframes dotty {
-        0%   { content: ''; }
-        25%  { content: '.'; }
-        50%  { content: '..'; }
-        75%  { content: '...'; }
-        100% { content: ''; }
+  #reconnecting-text:after {
+    display: inline-block;
+    animation: dotty steps(2, end) 2s infinite;
+    content: "";
+  }
+
+  @keyframes dotty {
+    0% {
+      content: "";
     }
-`
+    25% {
+      content: ".";
+    }
+    50% {
+      content: "..";
+    }
+    75% {
+      content: "...";
+    }
+    100% {
+      content: "";
+    }
+  }
+`;
 
 async function* countDown(count: number) {
-    while (count > 0) {
-        yield count--;
-        await new Promise((r) => setTimeout(r, 1000));
-    }
+  while (count > 0) {
+    yield count--;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
 }
 
 export function pageOfflineProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
-    return {
-        name: "offline",
-        routes: [
-            "offline"
-        ],
-        pageCreator: () => {
-            return new PageOffline(store);
-        }
-    };
+  return {
+    name: "offline",
+    routes: ["offline"],
+    pageCreator: () => {
+      return new PageOffline(store);
+    },
+  };
 }
-
 
 @customElement("page-offline")
 export class PageOffline extends Page<AppStateKeyed> {
+  static get styles() {
+    return [styling];
+  }
 
-    static get styles() {
-        return [styling]
-    }
+  public stateChanged(state: AppStateKeyed) {}
 
-    public stateChanged(state: AppStateKeyed) {
-    }
-
-    protected render(): TemplateResult {
-        return html`
+  protected render(): TemplateResult {
+    return html`
             <div id="offline-wrapper">
                 <or-icon id="offline-icon" icon="web-off"></or-icon>
                 <div id="offline-text-container">
@@ -93,10 +116,10 @@ export class PageOffline extends Page<AppStateKeyed> {
                     <span><or-translate id="reconnecting-text" value="reconnecting"></or-translate></span>
                 </div>
             </div>
-        `
-    }
+        `;
+  }
 
-    get name(): string {
-        return "offline";
-    }
+  get name(): string {
+    return "offline";
+  }
 }

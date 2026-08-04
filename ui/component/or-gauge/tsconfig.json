@@ -5,10 +5,7 @@
     "rootDir": "src",
     "typeRoots": ["./@types"]
   },
-  "include": [
-    "./src",
-    "./@types"
-  ],
+  "include": ["./src", "./@types"],
   "references": [
     { "path": "../core" },
     { "path": "../or-components" },

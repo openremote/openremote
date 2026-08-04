@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { ct, expect, type Locator } from "@openremote/test";
 
@@ -336,9 +335,7 @@ ct.describe("Styling", () => {
 
     // Off state: the knob must be visible at the left inset. The Vaadin base styles hide the
     // checkmark marker when unchecked, which must not apply to the knob.
-    await expect
-      .poll(() => getKnobStyles(track))
-      .toEqual({ width: "14px", height: "14px", opacity: "1", left: "3px" });
+    await expect.poll(() => getKnobStyles(track)).toEqual({ width: "14px", height: "14px", opacity: "1", left: "3px" });
 
     await component.getByRole("switch").click();
 
