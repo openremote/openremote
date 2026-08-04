@@ -233,6 +233,17 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
     }
   }
 
+  // TODO: Remove this once #3156 is implemented
+  @Override
+  public void onSetupDone(Container container) {
+    // Need to add the attribute to the keycloak user now the master realm is properly configured
+    User keycloakProxyUser = getUserByUsername(MASTER_REALM, MANAGER_CLIENT_ID);
+    if (keycloakProxyUser != null) {
+      keycloakProxyUser.setSystemAccount(true);
+      createUpdateUser(MASTER_REALM, keycloakProxyUser, null, true);
+    }
+  }
+
   @Override
   protected void addClientRedirectUris(String client, List<String> redirectUrls, boolean devMode) {
     // Callback URL used by Manager web client authentication, any relative path to "ourselves" is

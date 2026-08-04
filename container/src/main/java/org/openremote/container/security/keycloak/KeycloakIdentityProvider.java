@@ -350,6 +350,11 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
   protected abstract OAuthGrant generateStoredCredentials(Container container);
 
   /**
+   * Called by the Keycloak init setup task
+   */
+  public abstract void onSetupDone(Container container);
+
+  /**
    * There must be _some_ valid redirect URIs for the application or authentication will not be
    * possible.
    */
