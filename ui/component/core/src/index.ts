@@ -24,15 +24,7 @@ import { type EventProvider, type EventProviderFactory, EventProviderStatus, Web
 import i18next, { type InitOptions } from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import {
-  AssetModelUtil,
-  Auth,
-  type ConsoleAppConfig,
-  EventProviderType,
-  type ManagerConfig,
-  type User,
-  type UsernamePassword,
-} from "@openremote/model";
+import { AssetModelUtil, Auth, type ConsoleAppConfig, EventProviderType, type ManagerConfig } from "@openremote/model";
 import * as Util from "./util";
 import { createMdiIconSet, createSvgIconSet, IconSets, OrIconSet } from "@openremote/or-icon";
 import Keycloak from "keycloak-js";
@@ -84,13 +76,6 @@ export enum OREvent {
 export interface LoginOptions {
   redirectUrl?: string;
   action?: string;
-  credentials?: UsernamePassword;
-}
-
-export interface BasicLoginResult {
-  username: string;
-  password: string;
-  cancel: boolean;
 }
 
 export interface Languages {
@@ -221,8 +206,6 @@ export class Manager implements EventProviderFactory {
           });
         }
       }
-    } else if (this._basicIdentity && this._basicIdentity.roles) {
-      roleMap.set(this._config.clientId!, this._basicIdentity.roles!);
     }
 
     return roleMap;
@@ -308,16 +291,9 @@ export class Manager implements EventProviderFactory {
   private _config!: ManagerConfig;
   private _authenticated: boolean = false;
   private _ready: boolean = false;
-  private _readyCallback?: () => PromiseLike<any>;
   private _name: string = "";
   private _username: string = "";
   private _keycloak?: Keycloak;
-  private _basicIdentity?: {
-    token: string | undefined;
-    user: User | undefined;
-    roles: string[] | undefined;
-  };
-
   private _keycloakUpdateTokenInterval?: number = undefined;
   private _managerVersion: string = "";
   public _authServerUrl: string = "";
@@ -372,11 +348,7 @@ export class Manager implements EventProviderFactory {
     });
     this._console = orConsole;
 
-    if (this._config.auth === Auth.BASIC) {
-      // BASIC auth will likely require UI so lets init translation at least
-      success = (await this.doTranslateInit()) && success;
-      success = await this.doAuthInit();
-    } else if (this._config.auth === Auth.KEYCLOAK) {
+    if (this._config.auth === Auth.KEYCLOAK) {
       // The info endpoint of the manager might return a relative URL (relative to the manager)
       if (!this._config.keycloakUrl && this._authServerUrl) {
         const managerURL = new URL(this._config.managerUrl!);
@@ -417,14 +389,6 @@ export class Manager implements EventProviderFactory {
       this._config.keycloakUrl = this._config.keycloakUrl.replace(/\/+$/, "");
 
       success = await this.doAuthInit();
-
-      // If failed then we can assume keycloak auth requested but unavailable
-      if (!success && !this._config.skipFallbackToBasicAuth) {
-        // Try fallback to BASIC
-        console.debug("Falling back to basic auth");
-        this._config.auth = Auth.BASIC;
-        success = await this.doAuthInit();
-      }
     }
 
     if (!success) {
@@ -455,9 +419,6 @@ export class Manager implements EventProviderFactory {
     if (success) {
       success = await this.doEventsSubscriptionInit();
 
-      if (this._readyCallback) {
-        await this._readyCallback();
-      }
       this._ready = true;
       this._emitEvent(OREvent.READY);
     } else {
@@ -583,9 +544,6 @@ export class Manager implements EventProviderFactory {
   protected async doAuthInit(): Promise<boolean> {
     let success = true;
     switch (this._config.auth) {
-      case Auth.BASIC:
-        success = await this.initialiseBasicAuth();
-        break;
       case Auth.KEYCLOAK:
         success = await this.loadAndInitialiseKeycloak();
         break;
@@ -751,24 +709,11 @@ export class Manager implements EventProviderFactory {
         this._keycloakUpdateTokenInterval = undefined;
       }
       this._keycloak.logout(redirectUrl && redirectUrl !== "" ? { redirectUri: redirectUrl } : undefined);
-    } else if (this._basicIdentity) {
-      this._basicIdentity = undefined;
-      if (redirectUrl) {
-        window.location.href = redirectUrl;
-      } else {
-        window.location.reload();
-      }
     }
   }
 
   public login(options?: LoginOptions) {
     switch (this._config.auth) {
-      case Auth.BASIC:
-        if (options && options.credentials) {
-          this._config.credentials = Object.assign({}, options.credentials);
-        }
-        this.doBasicLogin();
-        break;
       case Auth.KEYCLOAK:
         if (this._keycloak) {
           const keycloakOptions: any = {};
@@ -786,92 +731,6 @@ export class Manager implements EventProviderFactory {
         break;
       case Auth.NONE:
         break;
-    }
-  }
-
-  protected async initialiseBasicAuth(): Promise<boolean> {
-    if (!this.config.basicLoginProvider) {
-      console.debug("No basicLoginProvider defined on config so cannot display login UI");
-      return false;
-    }
-
-    if (this.config.autoLogin) {
-      // Delay basic login until other inits are done
-      this._readyCallback = () => {
-        return this.doBasicLogin();
-      };
-    }
-
-    return true;
-  }
-
-  protected async doBasicLogin() {
-    if (!this.config.basicLoginProvider) {
-      return;
-    }
-
-    let result: BasicLoginResult = {
-      username: this.config.credentials?.username ? this.config.credentials?.username : "",
-      password: this.config.credentials?.password ? this.config.credentials?.password : "",
-      cancel: false,
-    };
-    let authenticated = false;
-
-    this._basicIdentity = {
-      roles: undefined,
-      token: undefined,
-      user: undefined,
-    };
-
-    while (!authenticated) {
-      result = await this.config.basicLoginProvider(result.username, result.password);
-
-      if (result.cancel) {
-        console.debug("Basic authentication cancelled by user");
-        break;
-      }
-
-      if (!result.username || !result.password) {
-        continue;
-      }
-
-      // Update basic token so we can use rest api to make calls
-      this._basicIdentity!.token = btoa(result.username + ":" + result.password);
-      let success = false;
-
-      try {
-        const userResponse = await rest.api.UserResource.getCurrent();
-        if (userResponse.status === 200) {
-          success = true;
-          this._basicIdentity!.user = userResponse.data;
-        }
-
-        if (!success) {
-          // Undertow incorrectly returns 403 when no authorization header and a 401 when it is set and not valid
-          if (userResponse.status === 401 || userResponse.status === 403) {
-            console.debug("Basic authentication invalid credentials, trying again");
-          }
-        }
-      } catch (e) {
-        console.error("Basic auth failed: ", e);
-      }
-
-      if (success) {
-        console.debug("Basic authentication successful");
-        authenticated = true;
-
-        // Get user roles
-        const rolesResponse = await rest.api.UserResource.getCurrentUserClientRoles(this.clientId);
-        this._basicIdentity!.roles = rolesResponse.data;
-      } else {
-        console.debug("Unknown response so aborting");
-        this._basicIdentity = undefined;
-        break;
-      }
-    }
-
-    if (authenticated) {
-      this._onAuthenticated();
     }
   }
 
@@ -907,10 +766,6 @@ export class Manager implements EventProviderFactory {
     if (this.getKeycloakToken()) {
       return "Bearer " + this.getKeycloakToken();
     }
-
-    if (this.getBasicToken()) {
-      return "Basic " + this.getBasicToken();
-    }
   }
 
   /**
@@ -921,8 +776,6 @@ export class Manager implements EventProviderFactory {
     const keycloakToken = await this.retrieveKeycloakToken();
     if (keycloakToken) {
       return "Bearer " + keycloakToken;
-    } else {
-      return "Basic " + this.getBasicToken();
     }
   }
 
@@ -943,10 +796,6 @@ export class Manager implements EventProviderFactory {
       return this._keycloak!.token;
     }
     return undefined;
-  }
-
-  public getBasicToken(): string | undefined {
-    return this._basicIdentity ? this._basicIdentity.token : undefined;
   }
 
   public getRealm(): string | undefined {
