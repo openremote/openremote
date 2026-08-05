@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import type { BasePage, Page, Shared } from "@openremote/test";
+import { type BasePage, type Locator, type Page, type Shared, expect } from "@openremote/test";
 import type { Manager } from "../manager";
 
 export class RulesPage implements BasePage {
@@ -27,6 +27,50 @@ export class RulesPage implements BasePage {
   ) {}
 
   async goto() {
-    this.manager.navigateToTab("Rules");
+    await this.manager.navigateToTab("Rules");
+  }
+
+  /** The rule editor's save button, only enabled once the rule is both modified and valid. */
+  getSaveButton(): Locator {
+    return this.page.getByRole("button", { name: "Save", exact: true });
+  }
+
+  getWhenClause(): Locator {
+    return this.page.locator("or-rule-when");
+  }
+
+  getThenClause(): Locator {
+    return this.page.locator("or-rule-then-otherwise");
+  }
+
+  /** Add an action of the given type (e.g. "Email", "Alarm") to the then clause. */
+  async addThenAction(type: string) {
+    await this.getThenClause().getByRole("menuitem", { name: "Add action" }).click();
+    await this.getThenClause().getByRole("menuitem", { name: type, exact: true }).click();
+  }
+
+  /**
+   * The open action dialog.
+   *
+   * Every action keeps its dialog in the DOM whether or not it is showing, so this matches on the MDC open state
+   * rather than on the element, to avoid resolving to a closed one.
+   */
+  getOpenDialog(): Locator {
+    return this.page.locator(".mdc-dialog--open");
+  }
+
+  /** Open an action's dialog through its own button ("Message" for notifications/webhooks, "Settings" for alarms). */
+  async openActionDialog(openWith: string) {
+    await this.getThenClause().getByRole("button", { name: openWith, exact: true }).click();
+    await expect(this.getOpenDialog()).toBeVisible();
+  }
+
+  getDialogButton(name: string): Locator {
+    return this.getOpenDialog().getByRole("button", { name, exact: true });
+  }
+
+  /** A text field inside the open dialog, located by its visible label. */
+  getDialogField(label: string): Locator {
+    return this.getOpenDialog().getByRole("textbox", { name: label, exact: true });
   }
 }

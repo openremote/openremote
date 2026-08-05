@@ -17,50 +17,38 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { css, html, LitElement, type PropertyValues } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import { type RuleActionAlarm, type AssetQuery, AlarmSeverity } from "@openremote/model";
 
 import "@openremote/or-mwc-components/or-mwc-input";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next, translate } from "@openremote/or-translate";
-import {
-  type DialogAction,
-  type OrMwcDialog,
-  OrMwcDialogOpenedEvent,
-} from "@openremote/or-mwc-components/or-mwc-dialog";
+import type { DialogAction, OrMwcDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import type { OrVaadinSelect, SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
+import { isFormValid } from "../util";
 
-const checkValidity = (form: HTMLElement | null, dialog: OrMwcDialog) => {
-  if (form) {
-    const inputs = form.querySelectorAll("or-mwc-input");
-    const elements = Array.prototype.slice.call(inputs);
+export class OrRulesAlarmModalCancelEvent extends CustomEvent<void> {
+  public static readonly NAME = "or-rules-alarm-modal-cancel";
 
-    const valid = elements.every((element) => {
-      if (element.shadowRoot) {
-        const input = element.shadowRoot.querySelector("input, textarea") as any;
-
-        if (element.type === InputType.SELECT) {
-          return true;
-        }
-
-        if (input && input.checkValidity()) {
-          return true;
-        } else {
-          element._mdcComponent.valid = false;
-          element._mdcComponent.helperTextContent = "required";
-
-          return false;
-        }
-      } else {
-        return false;
-      }
+  constructor() {
+    super(OrRulesAlarmModalCancelEvent.NAME, {
+      bubbles: true,
+      composed: true,
     });
-    if (valid) {
-      dialog.close();
-    }
   }
-};
+}
+
+export class OrRulesAlarmModalOkEvent extends CustomEvent<void> {
+  public static readonly NAME = "or-rules-alarm-modal-ok";
+
+  constructor() {
+    super(OrRulesAlarmModalOkEvent.NAME, {
+      bubbles: true,
+      composed: true,
+    });
+  }
+}
 
 // language=CSS
 const style = css`
@@ -91,14 +79,30 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
   @property({ type: Object })
   public query?: AssetQuery;
 
-  constructor() {
-    super();
-    this.addEventListener(OrMwcDialogOpenedEvent.NAME, this.initDialog);
+  @query("#alarm-modal")
+  protected _orMwcDialog?: OrMwcDialog;
+
+  connectedCallback() {
+    this.addEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
+    return super.connectedCallback();
   }
 
-  initDialog() {
-    const modal = this.shadowRoot!.getElementById("alarm-modal");
-    if (!modal) return;
+  disconnectedCallback() {
+    this.removeEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
+    return super.disconnectedCallback();
+  }
+
+  protected _onJsonRuleChanged(ev: Event) {
+    // The severity select sits in the action row, not in the dialog, and dispatches from this element; it applies
+    // straight away like any other action control.
+    if (ev.composedPath()[0] === this) {
+      return;
+    }
+
+    // Keep edits inside the dialog: the rule is only really changed once "ok" is pressed, so letting this
+    // reach the rule editor would arm its save button while the dialog is still open (and cancellable).
+    ev.stopPropagation();
+    this.validateForm();
   }
 
   renderDialogHTML(action: RuleActionAlarm) {
@@ -123,19 +127,28 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
     if (changedProperties.has("action")) {
       this.renderDialogHTML(this.action);
     }
+    // Possibly, a render is triggered by renderDialogHTML(), so we await the pending update. (if there is any)
+    this.getUpdateComplete().finally(() => {
+      this.validateForm();
+    });
+  }
+
+  validateForm() {
+    const valid = this.checkForm();
+    this._orMwcDialog?.setActions(
+      this._orMwcDialog?.actions?.map((action) => {
+        if (action.actionName === "ok") {
+          action.disabled = !valid;
+        }
+        return action;
+      })
+    );
   }
 
   checkForm() {
-    const dialog: OrMwcDialog = this.shadowRoot!.host as OrMwcDialog;
-
-    if (this.shadowRoot) {
-      const alarmConfig = this.shadowRoot.querySelector("or-rule-form-alarm");
-
-      if (alarmConfig && alarmConfig.shadowRoot) {
-        const form = alarmConfig.shadowRoot.querySelector("form");
-        return checkValidity(form, dialog);
-      }
-    }
+    // renderDialogHTML() moves the slotted form into the dialog's content, so it lives in the dialog's shadow root
+    const form = this._orMwcDialog?.shadowRoot?.querySelector("or-rule-form-alarm");
+    return isFormValid(form?.shadowRoot);
   }
 
   protected render() {
@@ -149,16 +162,13 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
           .type="${InputType.BUTTON}"
           .label="${i18next.t("cancel")}"
         ></or-mwc-input>`,
-        action: (dialog) => {},
+        action: () => this.dispatchEvent(new OrRulesAlarmModalCancelEvent()),
       },
       {
-        actionName: "",
-        content: html`<or-mwc-input
-          class="button"
-          .type="${InputType.BUTTON}"
-          .label="${i18next.t("ok")}"
-          @or-mwc-input-changed="${this.checkForm}"
-        ></or-mwc-input>`,
+        actionName: "ok",
+        content: "ok",
+        disabled: true, // (by default, can be changed in validateForm())
+        action: () => this.dispatchEvent(new OrRulesAlarmModalOkEvent()),
       },
     ];
 
