@@ -18,6 +18,7 @@
  */
 package org.openremote.container.web
 
+import org.openremote.container.security.IdentityService
 import org.openremote.model.Container
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -33,7 +34,10 @@ class WebServiceEntitySizeConfigTest extends Specification {
         ] + overrides
         def container = Stub(Container) {
             getConfig() >> config
-            getService(_) >> null
+            getService(IdentityService) >> null
+            getService(_) >> { Class type ->
+                throw new IllegalStateException("Service not available in test container: " + type.name)
+            }
         }
         def service = new TrackingWebService()
 
@@ -48,7 +52,7 @@ class WebServiceEntitySizeConfigTest extends Specification {
         scenario     | overrides                                                                                                                 || expectedMultipartLimit                                    | expectedMaxLimit
         "default"    | [:]                                                                                                                       || WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT | WebService.OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT
         "configured" | [(WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE): "1024", (WebService.OR_WEBSERVER_MAX_ENTITY_SIZE): "2048"]           || 1024L                                                     | 2048L
-        "default"    | [(WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE): "invalid", (WebService.OR_WEBSERVER_MAX_ENTITY_SIZE): "also_invalid"] || WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT | WebService.OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT
+        "invalid"    | [(WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE): "invalid", (WebService.OR_WEBSERVER_MAX_ENTITY_SIZE): "also_invalid"] || WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT | WebService.OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT
     }
 
     static class TrackingWebService extends WebService {
