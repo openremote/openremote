@@ -21,7 +21,9 @@ jobs:
       # See https://github.com/tj-actions/changed-files/tree/2bb135777322059ee3a3c9239999b159ff49febc#outputs-
       any_modified: ${{ steps.changed-files.outputs.backend_any_modified == 'true' || steps.changed-files.outputs.ui_any_modified == 'true' }}
       backend_any_modified: ${{ steps.changed-files.outputs.backend_any_modified }}
+      backend_spotless_any_modified: ${{ steps.changed-files.outputs.backend_spotless_any_modified }}
       ui_any_modified: ${{ steps.changed-files.outputs.ui_any_modified }}
+      ui_spotless_any_modified: ${{ steps.changed-files.outputs.ui_spotless_any_modified }}
       # Version details
       version: ${{ steps.get-version-details.outputs.version }}
       version_with_qualifier: ${{ steps.get-version-details.outputs.version_with_qualifier }}
@@ -57,10 +59,25 @@ jobs:
               - '!.yarnrc.yml'
               - '!package.json'
               - '!yarn.lock'
+            # Sources and configuration that spotlessBackendCheck reads
+            backend_spotless:
+              - '**/*.{gradle,groovy,java,md,tpl,xml,xsd,yaml,yml}'
+              - '!ui/**'
+              - 'package.json'
+              - 'tools/spotless/**'
+              - 'ui/.prettierignore'
+              - 'ui/.prettierrc.json'
+            # Sources and configuration that spotlessUiCheck reads
+            ui_spotless:
+              - '*.{gradle,md}'
+              - 'package.json'
+              - 'tools/spotless/**'
+              - 'ui/**/*.{cjs,css,cts,gradle,html,js,json,jsonc,jsx,md,mdx,mjs,mts,ts,tsx}'
+              - 'ui/.prettierignore'
 
       - name: Get version details
         id: get-version-details
-        uses: openremote/openremote/.github/actions/get-version-details@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
+        uses: openremote/openremote/.github/actions/get-version-details@9c7e40a10d98927dc433ef18738bbaae7af8c093
 
       - name: Check if main repo
         id: is_main_repo
@@ -81,7 +98,7 @@ jobs:
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/check-spotless.yml"
     with:
-      skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}
+      skip: ${{ needs.detect-changes.outputs.backend_spotless_any_modified != 'true' }}
 
   ui-check-dependencies:
     name: Lint
@@ -97,7 +114,7 @@ jobs:
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/ui-check-spotless.yml"
     with:
-      skip: ${{ needs.detect-changes.outputs.ui_any_modified != 'true' }}
+      skip: ${{ needs.detect-changes.outputs.ui_spotless_any_modified != 'true' }}
 
   ui-check-outdated-translations:
     name: Lint
