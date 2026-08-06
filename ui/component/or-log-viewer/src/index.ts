@@ -24,6 +24,11 @@ import manager, { DefaultColor2, DefaultColor3, Util } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
+import "@openremote/or-vaadin-components/or-vaadin-button";
+import "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
+import "@openremote/or-vaadin-components/or-vaadin-select";
+import "@openremote/or-vaadin-components/or-vaadin-text-field";
 import type { MDCDataTable } from "@material/data-table";
 import moment from "moment";
 import type { GenericAxiosResponse } from "axios";
@@ -413,8 +418,8 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
               </or-vaadin-date-time-picker>
               <or-vaadin-button
                 theme="icon"
-                ?disabled="${disabled || isLive}@click"
-                =${() => (this.timestamp = this._calculateTimestamp(this.timestamp!, true))}
+                ?disabled=${disabled || isLive}
+                @click=${() => (this.timestamp = this._calculateTimestamp(this.timestamp!, true))}
               >
                 <or-icon icon="chevron-right"></or-icon>
               </or-vaadin-button>
