@@ -26,7 +26,6 @@ import org.openremote.model.util.JSONSchemaUtil.*
 import org.openremote.model.value.ValueType
 import org.reflections.Reflections
 import spock.lang.Specification
-import spock.lang.Unroll
 
 import java.time.*
 
@@ -161,7 +160,6 @@ class JSONSchemaUtilTest extends Specification {
     assertEquals(expected.toString(), actual.toString(), false);
   }
 
-  @Unroll
   def "schema handles map type #mapType.simpleName"() {
     expect:
     JsonNode expected =

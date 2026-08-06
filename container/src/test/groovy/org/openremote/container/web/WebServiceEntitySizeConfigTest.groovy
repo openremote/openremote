@@ -21,11 +21,9 @@ package org.openremote.container.web
 import org.openremote.container.security.IdentityService
 import org.openremote.model.Container
 import spock.lang.Specification
-import spock.lang.Unroll
 
 class WebServiceEntitySizeConfigTest extends Specification {
 
-    @Unroll
     def "uses #scenario entity size limits"() {
         given:
         def config = [
