@@ -164,6 +164,12 @@ const style = css`
     word-wrap: break-word;
     white-space: pre-wrap;
   }
+
+  #table th:not(.icon-cell) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 @customElement("or-log-viewer")
