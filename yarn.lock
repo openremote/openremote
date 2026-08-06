@@ -1918,6 +1918,8 @@ __metadata:
 "@openremote/model@workspace:*, @openremote/model@workspace:ui/component/model":
   version: 0.0.0-use.local
   resolution: "@openremote/model@workspace:ui/component/model"
+  dependencies:
+    "@openremote/util": "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -2386,6 +2388,7 @@ __metadata:
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
+    "@openremote/util": "workspace:*"
     "@vaadin/badge": "npm:~25.2.4"
     "@vaadin/button": "npm:~25.2.4"
     "@vaadin/checkbox": "npm:~25.2.4"

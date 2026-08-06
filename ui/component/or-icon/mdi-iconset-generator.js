@@ -27,10 +27,10 @@ if (!fs.existsSync("src")) {
 }
 
 const mdiSvgDir = path.join(path.dirname(require.resolve("@mdi/svg/package.json")), "svg");
-if (!fs.existsSync("dist")) {
-  fs.mkdirSync("dist");
+if (!fs.existsSync("build")) {
+  fs.mkdirSync("build");
 }
-const mdiStream = fs.createWriteStream("./dist/mdi-icons.json", { flags: "w+" });
+const mdiStream = fs.createWriteStream("./build/mdi-icons.json", { flags: "w+" });
 mdiStream.write('{"size":24,"icons":{');
 
 const files = fs.readdirSync(mdiSvgDir).sort();

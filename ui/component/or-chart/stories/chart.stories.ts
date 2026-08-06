@@ -21,7 +21,7 @@ import { getORStorybookHelpers } from "../../storybook-utils";
 import { type Asset, type AssetQuery, WellknownMetaItems } from "@openremote/model";
 import manager from "@openremote/core";
 import { html } from "lit";
-import customElements from "../custom-elements.json" with { type: "json" };
+import customElements from "../build/custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
 import { OrChart } from "../src/index";
 import "../src/index";

@@ -50,9 +50,9 @@ import { Auth, type ManagerConfig, type Realm } from "@openremote/model";
 import { pageOfflineProvider } from "./page-offline";
 import { ifDefined } from "lit/directives/if-defined.js";
 
-export const DefaultLogo = require("../images/logo.svg");
-export const DefaultMobileLogo = require("../images/logo-mobile.svg");
-export const DefaultFavIcon = require("../images/favicon.ico");
+export const DefaultLogo = require("@openremote/or-app/images/logo.svg");
+export const DefaultMobileLogo = require("@openremote/or-app/images/logo-mobile.svg");
+export const DefaultFavIcon = require("@openremote/or-app/images/favicon.ico");
 
 export { AnyAction };
 export * from "./app";
