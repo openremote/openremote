@@ -19,7 +19,6 @@
 package org.openremote.container.timer
 
 import spock.lang.Specification
-import spock.lang.Unroll
 
 import java.time.LocalDate
 import java.time.LocalTime
@@ -35,7 +34,6 @@ class PseudoClockTest extends Specification {
         clock.stop()
     }
 
-    @Unroll
     def "setTime sets #date at midnight in #zone to #expected milliseconds"() {
         expect:
         clock.setTime(LocalDate.parse(date), LocalTime.MIDNIGHT, ZoneId.of(zone)) == expected
@@ -49,7 +47,6 @@ class PseudoClockTest extends Specification {
         "1970-01-02" | "CET" || 23L * 3_600_000
     }
 
-    @Unroll
     def "setTime sets #timestamp to #expected milliseconds"() {
         expect:
         clock.setTime(timestamp) == expected

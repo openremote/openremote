@@ -19,6 +19,7 @@
 package org.openremote.model.util
 
 import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.*
 
@@ -60,100 +61,56 @@ class LockByKeyTest extends Specification {
         void resume() {
             resumeLatch.countDown()
         }
-
-        int getQueueSize(String key) {
-            LockWrapper lockWrapper = locks.get(key)
-            if (lockWrapper != null) {
-                return lockWrapper.numberOfThreadsInQueue.get()
-            }
-            0
-        }
     }
 
-    def testThreadStarvation() throws InterruptedException {
-        expect:
-        final ControllableLockByKey lockByKey = new ControllableLockByKey()
-        final String key = "testKey"
-        final ExecutorService executor = Executors.newFixedThreadPool(3)
-        final CountDownLatch threadWaitingLatch = new CountDownLatch(2)
-        final CountDownLatch threadResumeLatch = new CountDownLatch(1)
+    def "threads queued behind an unlock are not starved"() {
+        given:
+        def conditions = new PollingConditions(timeout: 5)
+        def lockByKey = new ControllableLockByKey()
+        def key = "testKey"
+        def executor = Executors.newFixedThreadPool(3)
+        def threadResumeLatch = new CountDownLatch(1)
 
-        // Thread 1: Acquires and releases the lock, pausing in the middle of unlock
-        Future<?> future1 =
-            executor.submit {
-                lockByKey.lock(key)
-                lockByKey.unlock(key)
-            }
-
-        // Wait for Thread 1 to pause in the unlock method
+        when: "a thread acquires and releases the lock, pausing in the middle of unlock"
+        def future1 = executor.submit {
+            lockByKey.lock(key)
+            lockByKey.unlock(key)
+        }
         lockByKey.waitForPause()
 
-        // Thread 2: Tries to acquire the lock while Thread 1 is trying to unlock
-        Future<?> future2 =
-            executor.submit {
-                try {
-                    threadWaitingLatch.countDown()
-                    lockByKey.lock(key)
-                    threadResumeLatch.await(5, TimeUnit.SECONDS)
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e)
-                }
-                lockByKey.unlock(key)
+        and: "two more threads try to acquire the lock while the first is unlocking"
+        def contenders = new CopyOnWriteArrayList<Thread>()
+        def contend = {
+            contenders.add(Thread.currentThread())
+            lockByKey.lock(key)
+            threadResumeLatch.await(5, TimeUnit.SECONDS)
+            lockByKey.unlock(key)
+        }
+        def future2 = executor.submit(contend)
+        def future3 = executor.submit(contend)
+
+        then: "both contend for the lock the first thread is about to remove"
+        conditions.eventually {
+            assert contenders.size() == 2
+            assert contenders.every {
+                it.state == Thread.State.BLOCKED || it.state == Thread.State.WAITING
             }
-
-        // Thread 3: Tries to acquire the lock while Thread 1 is trying to unlock
-        Future<?> future3 =
-            executor.submit {
-                try {
-                    Thread.sleep(1000)
-                    threadWaitingLatch.countDown()
-                    lockByKey.lock(key)
-                    threadResumeLatch.await(5, TimeUnit.SECONDS)
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e)
-                }
-                lockByKey.unlock(key)
-            }
-
-        // Wait for Thread 2 & 3 to try and acquire the lock
-        threadWaitingLatch.await(5, TimeUnit.SECONDS)
-
-        def counter = 0
-        while (lockByKey.getQueueSize(key) != 2 && counter < 10) {
-            Thread.sleep(100)
-            counter++
         }
 
-        // Allow Thread 1 to complete its unlock and remove the LockWrapper
+        when: "the first thread completes its unlock and removes the LockWrapper"
         lockByKey.resume()
 
-        // Wait for Thread 1 to finish
-        try {
-            future1.get(1, TimeUnit.SECONDS)
-        } catch (Exception e) {
-            throw new AssertionError("Thread 1 failed to complete", e)
-        }
-        assert future1.isDone(): "Thread 1 should have completed"
+        then:
+        future1.get(5, TimeUnit.SECONDS) == null
 
-        // Allow Thread 2 & 3 to continue
+        when: "the queued threads are released"
         threadResumeLatch.countDown()
 
-        // Wait for Thread 2 & 3 to finish
-        try {
-            future2.get(1, TimeUnit.SECONDS)
-            future3.get(1, TimeUnit.SECONDS)
-        } catch (TimeoutException e) {
-            // We expect a timeout here, which indicates a thread is stuck
-        } catch (Exception e) {
-            throw new AssertionError("An unexpected exception occurred", e)
-        }
+        then: "neither is stuck"
+        future2.get(5, TimeUnit.SECONDS) == null
+        future3.get(5, TimeUnit.SECONDS) == null
 
-        assert future2.isDone(): "Thread 2 should have completed"
-
-        // Thread 3 should complete
-        assert future3.isDone(): "Thread 3 should have completed"
-
-        def ignored = executor.shutdownNow()
-        true
+        cleanup:
+        executor.shutdownNow()
     }
 }
