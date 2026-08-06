@@ -56,7 +56,6 @@ dependencies {
 }
 
 dependencies {
-  testImplementation libs.groovy
   testImplementation platform(libs.spockBom)
   testImplementation libs.spockCore
   testRuntimeOnly "org.junit.platform:junit-platform-launcher"
