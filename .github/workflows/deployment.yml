@@ -20,7 +20,7 @@ jobs:
 
       - name: Get version details
         id: get-version-details
-        uses: openremote/openremote/.github/actions/get-version-details@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
+        uses: openremote/openremote/.github/actions/get-version-details@9c7e40a10d98927dc433ef18738bbaae7af8c093
 
       - name: Check if main repo
         id: is_main_repo
