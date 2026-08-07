@@ -744,7 +744,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                                   value=${this._getSourceText()}>
                                 <or-translate slot="label" value="alarm.source"></or-translate>
                             </or-vaadin-text-field>
-                            
+
                             <or-vaadin-select class="alarm-input" ?readonly=${!write}
                                               .items=${this._getAddSeverityOptions()} value=${alarm.severity}
                                               @change=${(ev: Event) => {
@@ -926,12 +926,17 @@ export class PageAlarms extends Page<AppStateKeyed> {
     if (!ev.detail.index && ev.detail.index != 0) {
       return;
     }
-    this.alarm = this._data?.[ev.detail.index] as AlarmModel;
-    this.alarm.loaded = false;
-    this.alarm.loading = false;
-    this.alarm.alarmAssetLinks = [];
-    this.loadAlarm(this.alarm);
-    this.requestUpdate();
+    const alarm = this._data?.[ev.detail.index] as AlarmModel;
+    if (alarm) {
+      this.alarm = alarm;
+      this.alarm.loaded = false;
+      this.alarm.loading = false;
+      this.alarm.alarmAssetLinks = [];
+      this.loadAlarm(this.alarm);
+      this.requestUpdate();
+    } else {
+      console.warn("Tried selecting an alarm that does not exist?");
+    }
   }
 
   protected _getUsers() {
