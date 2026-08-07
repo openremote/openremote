@@ -692,7 +692,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
       )}
       ${when(
         !this._nodes,
-        () => html` <span id="loading"><or-translate value="loading"></or-translate></span> `,
+        () => html`<span id="loading"><or-translate value="loading"></or-translate></span> `,
         () => html`
           ${when(
             this._nodes!.length === 0 || !this.atLeastOneNodeToBeShown(),
@@ -1375,7 +1375,8 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     if (this._filter.attribute.length > 0) {
       attributeCond = {
         operator: LogicGroupOperator.AND,
-        items: this._filter.attribute.map((attributeName: string) => {
+        items: this._filter.attribute.map((attributeName: string, index) => {
+          const value = this._filter?.attributeValue?.[index];
           return {
             name: {
               predicateType: "string",
@@ -1383,6 +1384,12 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
               value: Util.sentenceCaseToCamelCase(attributeName),
               caseSensitive: false,
             },
+            value: value
+              ? {
+                  predicateType: "string",
+                  value,
+                }
+              : undefined,
           };
         }),
       };
@@ -1655,7 +1662,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
           },
           {
             actionName: "add",
-            content: html` <or-vaadin-button id="add-btn" theme="primary" disabled>
+            content: html`<or-vaadin-button id="add-btn" theme="primary" disabled>
               <or-translate value="add"></or-translate>
             </or-vaadin-button>`,
             action: () => {
@@ -2424,7 +2431,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
             >
             ${
               this.checkboxes
-                ? html` <span class="mdc-list-item__graphic">
+                ? html`<span class="mdc-list-item__graphic">
                     ${
                       treeNode.expandable
                         ? html`<div class="mdc-checkbox">
