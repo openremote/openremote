@@ -25,7 +25,7 @@ const os = require("node:os");
 process.chdir(path.resolve(__dirname, "../.."));
 
 // --- Default Environment Variables ---
-process.env.OR_STORAGE_DIR = process.env.OR_STORAGE_DIR || "ui/test/tmp"; // Changed to relative local directory
+process.env.OR_STORAGE_DIR = process.env.OR_STORAGE_DIR || "tmp"; // Changed to relative local directory
 process.env.OR_APP_DOCROOT = process.env.OR_APP_DOCROOT || "manager/build/install/manager/web";
 // Variables without defaults
 process.env.OR_LOGGING_CONFIG_FILE =

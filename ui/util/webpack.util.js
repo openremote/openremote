@@ -127,7 +127,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
     }),
     // Remove any unused locales
     new MomentLocalesPlugin({
-      localesToKeep: ["ar", "zh-cn", "de", "en", "es", "fr", "it", "nl", "pl", "pt", "ro", "uk"],
+      localesToKeep: ["ar", "zh-cn", "de", "en", "es", "fr", "it", "nl", "pl", "pt", "ro", "uk", "cs"],
     }),
   ];
 

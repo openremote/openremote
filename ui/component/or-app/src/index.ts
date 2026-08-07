@@ -27,23 +27,20 @@ import "@openremote/or-icon";
 import { updateMetadata } from "pwa-helpers/metadata";
 import { i18next } from "@openremote/or-translate";
 import manager, {
-  type BasicLoginResult,
   DefaultColor2,
   DefaultColor3,
   DefaultColor4,
   type Manager,
   normaliseConfig,
-  ORError,
   OREvent,
   Util,
 } from "@openremote/core";
 import { DEFAULT_LANGUAGES, HeaderConfig } from "./or-header";
-import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { OrMwcDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { showErrorDialog } from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 import { OrMwcSnackbar, showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { AnyAction, type Store, type Unsubscribe } from "@reduxjs/toolkit";
 import { type AppStateKeyed, setOffline, setVisibility, updatePage, updateRealm } from "./app";
-import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {
   dialogFooterRenderer,
   dialogHeaderRenderer,
@@ -246,24 +243,9 @@ export class OrApp<S extends AppStateKeyed> extends OrElement {
     if (!managerConfig.defaultLanguage) {
       managerConfig.defaultLanguage = Util.getBrowserLanguage();
     }
-    managerConfig.skipFallbackToBasicAuth = true; // We do this so we can load styling config before displaying basic login
-    managerConfig.basicLoginProvider = (u: any, p: any) => this.doBasicLogin(u, p);
-
     console.info("Initialising the manager");
 
     manager.init(managerConfig).then(async (success) => {
-      if (
-        !success &&
-        manager.error === ORError.AUTH_FAILED &&
-        (!managerConfig.auth || managerConfig.auth === Auth.KEYCLOAK)
-      ) {
-        this.doAppConfigInit();
-
-        // Fallback to basic auth now styling is loaded
-        managerConfig.auth = Auth.BASIC;
-        success = await manager.init(managerConfig);
-      }
-
       if (success) {
         this.doAppConfigInit();
 
@@ -649,71 +631,6 @@ export class OrApp<S extends AppStateKeyed> extends OrElement {
     if (!this._config) {
       this._config = this._getConfig();
     }
-  }
-
-  protected doBasicLogin(username: string | undefined, password: string | undefined): PromiseLike<BasicLoginResult> {
-    const deferred = new Util.Deferred<BasicLoginResult>();
-
-    let u = username;
-    let p = password;
-
-    // language=CSS
-    const styles = html`
-      #login-logo { width: 24px; height: 24px; } #login_wrapper > or-mwc-input { margin: 10px 0; width: 100%; }
-    `;
-
-    const dialog = showDialog(
-      new OrMwcDialog()
-        .setStyles(
-          html`<style>
-            ${styles}
-          </style>`
-        )
-        .setHeading(
-          html`<img id="login-logo" src="${this._config.logoMobile || this._config.logo}" /></or-icon><or-translate value="login"></or-translate>`
-        )
-        .setContent(html`
-          <div id="login_wrapper">
-            <or-mwc-input
-              label="${i18next.t("user")}"
-              .type="${InputType.TEXT}"
-              min="1"
-              required
-              .value="${username}"
-              @or-mwc-input-changed="${(e: OrInputChangedEvent) => (u = e.detail.value)}"
-            ></or-mwc-input>
-            <or-mwc-input
-              label="${i18next.t("password")}"
-              .type="${InputType.PASSWORD}"
-              min="1"
-              required
-              .value="${password}"
-              @or-mwc-input-changed="${(e: OrInputChangedEvent) => (p = e.detail.value)}"
-            ></or-mwc-input>
-          </div>
-        `)
-        .setActions([
-          {
-            actionName: "submit",
-            default: true,
-            action: () => {
-              deferred.resolve({
-                cancel: false,
-                username: u!,
-                password: p!,
-              });
-            },
-            content: html`<or-mwc-input
-              .type=${InputType.BUTTON}
-              label="${i18next.t("submit")}"
-              raised
-            ></or-mwc-input>`,
-          },
-        ]),
-      document.body
-    ); // Attach to document as or-app isn't visible until initialised
-
-    return deferred.promise;
   }
 
   protected updateWindowTitle() {

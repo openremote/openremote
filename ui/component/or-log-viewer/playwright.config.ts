@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,9 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-package org.openremote.model.manager;
+import { defineCtConfig } from "@openremote/test/component.config";
 
-public enum Auth {
-  KEYCLOAK,
-  NONE
-}
+export default defineCtConfig(__dirname);

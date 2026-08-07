@@ -1447,7 +1447,9 @@ export class OrAttributeBarChart extends OrElement {
       backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
       tooltip: {
         trigger: "axis",
-        confine: true, // make tooltip not go outside frame bounds
+        appendTo: "body",
+        confine: true,
+        extraCssText: "white-space: normal; word-wrap: break-word;",
         axisPointer: {
           type: "cross",
           label: {

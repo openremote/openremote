@@ -312,8 +312,6 @@ services:
       # The identity provider implementation to use for managing user identities, roles, and
       # access authorization. The default is 'keycloak' which requires a separate service but
       # provides full multi-tenancy identity, role permissions, and user session timeouts.
-      # The 'basic' provider supports only superusers and their text passwords, managed in a
-      # simple database table, and always requires a new login when a page is reloaded.
       OR_IDENTITY_PROVIDER: ${OR_IDENTITY_PROVIDER:-keycloak}
 
       # For the Keycloak identity provider, you may configure session timeouts of frontend apps. This
