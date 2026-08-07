@@ -37,6 +37,7 @@ import {
 } from "@openremote/model";
 import manager, { DefaultColor1, DefaultColor3 } from "@openremote/core";
 import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import type { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import { type AppStateKeyed, Page, type PageProvider } from "@openremote/or-app";
 import type { Store } from "@reduxjs/toolkit";
 import { OrAssetTypeAttributePicker, OrAssetTypeAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
@@ -315,12 +316,11 @@ export class PageGateway extends Page<AppStateKeyed> {
         <div style="gap: 20px;">
           <div>
             <or-translate value="enabled"></or-translate>
-            <or-mwc-input
-              .type="${InputType.SWITCH}"
-              .value="${!connection.disabled}"
+            <or-vaadin-toggle
+              .checked="${!connection.disabled}"
               ?disabled="${disabled}"
-              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("disabled", !e.detail.value)}"
-            ></or-mwc-input>
+              @change="${(e: Event) => this._setConnectionProperty("disabled", !(e.currentTarget as OrVaadinToggle).checked)}"
+            ></or-vaadin-toggle>
           </div>
           <or-vaadin-button
             theme="primary"
