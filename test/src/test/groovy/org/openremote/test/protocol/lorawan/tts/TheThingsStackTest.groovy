@@ -89,7 +89,7 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
     static final String VENDOR_ID  = "dragino"
     static final String MODEL_ID = "lht65"
     static final String FIRMWARE_VERSION = "1.8"
-    static final String HOST = "localhost"
+    static final String HOST = "127.0.0.1"
     static final Integer UPLINK_PORT = 2
     static final Integer DOWNLINK_PORT = 4
     static final Double TEMPERATURE_VALUE = 20.4

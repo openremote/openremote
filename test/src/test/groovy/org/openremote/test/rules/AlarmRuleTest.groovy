@@ -83,7 +83,7 @@ class AlarmRuleTest extends Specification implements ManagerContainerTrait {
         keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
 
-        User alarmsReadWriteUser = keycloakTestSetup.createUser(managerTestSetup.realmBuildingName, "alarmsrwuser1", "alarmsrwuser1", "Alarms R/W", "User", "alarmsrwuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES)
+        User alarmsReadWriteUser = keycloakTestSetup.createUser(managerTestSetup.realmBuildingName, "alarmsrwuser1", "alarmsrwuser1", "Alarms RW", "User", "alarmsrwuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES)
         alarmsReadWriteUserId = alarmsReadWriteUser.getId()
 
         alarmService = container.getService(AlarmService.class)

@@ -68,7 +68,7 @@ props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(0
       </ThreadGroup>
       <hashTree>
         <net.xmeter.samplers.ConnectSampler guiclass="net.xmeter.gui.ConnectSamplerUI" testclass="net.xmeter.samplers.ConnectSampler" testname="connect" enabled="true">
-          <stringProp name="mqtt.server">${__P(MANAGER_HOSTNAME,localhost)}</stringProp>
+          <stringProp name="mqtt.server">${__P(MANAGER_HOSTNAME,127.0.0.1)}</stringProp>
           <stringProp name="mqtt.port">8883</stringProp>
           <stringProp name="mqtt.version">3.1</stringProp>
           <stringProp name="mqtt.conn_timeout">10</stringProp>

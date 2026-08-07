@@ -104,7 +104,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
                 executor,
                 scheduledExecutor,
                 "pop3",
-                "localhost",
+                "127.0.0.1",
                 greenMail.getPop3().getServerSetup().getPort())
             .setBasicAuth("or", "secret")
             .setCheckIntervalSeconds(2)
@@ -180,7 +180,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
             executor,
             scheduledExecutor,
             "pop3",
-            "localhost",
+            "127.0.0.1",
             greenMail.getPop3().getServerSetup().getPort())
             .setBasicAuth("or", "secret")
             .setCheckIntervalSeconds(2)
@@ -237,7 +237,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
                 executor,
                 scheduledExecutor,
                 "imap",
-                "localhost",
+                "127.0.0.1",
                 greenMail.getImap().getServerSetup().getPort())
                 .setBasicAuth("or", "secret")
                 .setCheckIntervalSeconds(2)
