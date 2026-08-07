@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import type { RuleActionAlarm, Alarm, User } from "@openremote/model";
@@ -25,7 +26,7 @@ import { i18next } from "@openremote/or-translate";
 import type { OrVaadinSelect } from "@openremote/or-vaadin-components/or-vaadin-select";
 
 @customElement("or-rule-form-alarm")
-export class OrRuleFormAlarm extends LitElement {
+export class OrRuleFormAlarm extends OrElement {
   @property({ type: Object, attribute: false })
   public action!: RuleActionAlarm;
 

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues } from "lit";
+import { css, html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { ErrorObject } from "ajv";
 import {
@@ -74,10 +75,7 @@ const styles = css`
 `;
 
 @customElement("or-json-forms")
-export class OrJSONForms
-  extends translate(i18next)(LitElement)
-  implements OwnPropsOfJsonFormsRenderer, AdditionalProps
-{
+export class OrJSONForms extends translate(i18next)(OrElement) implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
   @property({ type: Object })
   public uischema?: UISchemaElement;
 

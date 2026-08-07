@@ -27,6 +27,7 @@
     "@openremote/or-attribute-input": "workspace:*",
     "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-components": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-map": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
 import * as Model from "@openremote/model";
@@ -173,7 +174,7 @@ const style = css`
 `;
 
 @customElement("or-log-viewer")
-export class OrLogViewer extends translate(i18next)(LitElement) {
+export class OrLogViewer extends translate(i18next)(OrElement) {
   public static DEFAULT_TIMESTAMP_FORMAT = "L HH:mm:ss";
   public static DEFAULT_LIMIT = 50;
   public static DEFAULT_LEVEL = Model.SyslogLevel.INFO;

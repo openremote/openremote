@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { customElement, property, query } from "lit/decorators.js";
-import { LitElement, type PropertyValues, css, html } from "lit";
+import { type PropertyValues, css, html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { Rive, RuntimeLoader, type ViewModelInstance } from "@rive-app/webgl2";
 import debounce from "lodash.debounce";
 
@@ -28,7 +29,7 @@ import riveWASMResource from "@rive-app/webgl2/rive.wasm";
 RuntimeLoader.setWasmUrl(riveWASMResource);
 
 @customElement("or-rive-renderer")
-export class OrRiveRenderer extends LitElement {
+export class OrRiveRenderer extends OrElement {
   static get styles() {
     return [
       css`

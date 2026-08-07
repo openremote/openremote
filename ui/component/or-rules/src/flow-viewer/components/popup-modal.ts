@@ -16,13 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, css, html, type TemplateResult } from "lit";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { modal } from "./flow-editor";
 import { translate, i18next } from "@openremote/or-translate";
 
 @customElement("popup-modal")
-export class PopupModal extends translate(i18next)(LitElement) {
+export class PopupModal extends translate(i18next)(OrElement) {
   @property({ type: Boolean }) public closeButton = true;
   @property({ type: String }) public header?: string;
   @property({ attribute: false }) public content?: TemplateResult;
