@@ -542,7 +542,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     return false;
   }
 
-  public boolean deleteGateway(String gatewayId) {
+  public AssetStorageService.DeleteResult deleteGatewayUntilFinished(String gatewayId) {
     GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
     if (connector == null) {
@@ -563,8 +563,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             .collect(Collectors.toList());
 
     gatewayAssetIds.add(gatewayId);
-
-    return assetStorageService.delete(gatewayAssetIds, true);
+    LOG.info("Deleting gateway asset and descendants: IDs=" + String.join(",", gatewayAssetIds));
+    return assetStorageService.deleteWithResult(gatewayAssetIds, true);
   }
 
   public Collection<GatewayTunnelInfo> getTunnelInfos() {

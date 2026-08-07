@@ -100,11 +100,11 @@ public class AlarmAssetLink {
       columnDefinition = "TIMESTAMP WITH TIME ZONE")
   protected Instant createdOn;
 
-  @Formula("(select a.NAME from ASSET a where a.ID = ASSET_ID)")
+  @Formula("(select a.NAME from ASSET a where a.ID = ASSET_ID and a.DELETE_PENDING is false)")
   protected String assetName;
 
   @Formula(
-      "(select pa.NAME from ASSET a left outer join ASSET pa on a.PARENT_ID = pa.ID where a.ID = ASSET_ID)")
+      "(select pa.NAME from ASSET a left outer join ASSET pa on a.PARENT_ID = pa.ID and pa.DELETE_PENDING is false where a.ID = ASSET_ID and a.DELETE_PENDING is false)")
   protected String parentAssetName;
 
   protected AlarmAssetLink() {}

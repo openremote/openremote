@@ -26,6 +26,7 @@ import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttribu
 import static org.openremote.model.query.AssetQuery.*;
 import static org.openremote.model.query.AssetQuery.Access.*;
 import static org.openremote.model.query.filter.ValuePredicate.asPredicateOrTrue;
+import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.value.MetaItemType.ACCESS_PUBLIC_READ;
 import static org.openremote.model.value.MetaItemType.ACCESS_RESTRICTED_READ;
@@ -37,9 +38,17 @@ import jakarta.persistence.TypedQuery;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import java.sql.*;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -75,6 +84,7 @@ import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.EventSubscription;
@@ -109,6 +119,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
   }
 
+  public record DeleteResult(boolean accepted, CompletableFuture<Boolean> completion) {
+
+    public static DeleteResult rejected() {
+      return new DeleteResult(false, CompletableFuture.completedFuture(false));
+    }
+
+    public static DeleteResult accepted(CompletableFuture<Boolean> completion) {
+      return new DeleteResult(true, completion);
+    }
+  }
+
   public interface ParameterBinder
       extends BiConsumer<EntityManager, org.hibernate.query.Query<Object>> {
 
@@ -127,6 +148,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
   private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
   public static final int PRIORITY = MED_PRIORITY;
+  public static final String OR_ASSET_DELETE_DATAPOINT_BATCH_THRESHOLD =
+      "OR_ASSET_DELETE_DATAPOINT_BATCH_THRESHOLD";
+  public static final int OR_ASSET_DELETE_DATAPOINT_BATCH_THRESHOLD_DEFAULT = 100000;
+  public static final String OR_ASSET_DELETE_DATAPOINT_BATCH_WEEKS =
+      "OR_ASSET_DELETE_DATAPOINT_BATCH_WEEKS";
+  public static final int OR_ASSET_DELETE_DATAPOINT_BATCH_WEEKS_DEFAULT = 4;
+  protected static final long FAILED_ASSET_DELETE_RETRY_PERIOD_HOURS = 1L;
 
   //    protected static final Field assetParentNameField;
   //    protected static final Field assetParentTypeField;
@@ -237,7 +265,18 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
   protected ClientEventService clientEventService;
   protected GatewayService gatewayService;
   protected ExecutorService executorService;
+  protected ScheduledExecutorService scheduledExecutorService;
   protected final LockByKey assetLocks = new LockByKey();
+  protected final AtomicReference<CompletableFuture<Void>> pendingAssetDeleteFuture =
+      new AtomicReference<>(CompletableFuture.completedFuture(null));
+  protected final AtomicReference<LocalDateTime> oldestAssetDatapointChunkStart =
+      new AtomicReference<>();
+  protected final Set<String> failedAssetDeleteIds =
+      Collections.synchronizedSet(new LinkedHashSet<>());
+  protected ScheduledFuture<?> failedAssetDeleteRetryFuture;
+  protected int assetDeleteDatapointBatchThreshold;
+  protected int assetDeleteDatapointBatchWeeks;
+  protected volatile boolean pendingAssetDeleteStopping;
 
   /**
    * Will evaluate each {@link CalendarEventPredicate} and apply it depending on the {@link
@@ -331,6 +370,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     clientEventService = container.getService(ClientEventService.class);
     gatewayService = container.getService(GatewayService.class);
     executorService = container.getExecutor();
+    scheduledExecutorService = container.getScheduledExecutor();
+    assetDeleteDatapointBatchThreshold =
+        getInteger(
+            container.getConfig(),
+            OR_ASSET_DELETE_DATAPOINT_BATCH_THRESHOLD,
+            OR_ASSET_DELETE_DATAPOINT_BATCH_THRESHOLD_DEFAULT);
+    assetDeleteDatapointBatchWeeks =
+        Math.max(
+            1,
+            getInteger(
+                container.getConfig(),
+                OR_ASSET_DELETE_DATAPOINT_BATCH_WEEKS,
+                OR_ASSET_DELETE_DATAPOINT_BATCH_WEEKS_DEFAULT));
     EventSubscriptionAuthorizer assetEventAuthorizer =
         AssetStorageService.assetInfoAuthorizer(identityService, this);
 
@@ -392,10 +444,26 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
   }
 
   @Override
-  public void start(Container container) throws Exception {}
+  public void start(Container container) throws Exception {
+    pendingAssetDeleteStopping = false;
+    failedAssetDeleteRetryFuture =
+        scheduledExecutorService.scheduleAtFixedRate(
+            this::retryFailedAssetDeletes,
+            FAILED_ASSET_DELETE_RETRY_PERIOD_HOURS,
+            FAILED_ASSET_DELETE_RETRY_PERIOD_HOURS,
+            TimeUnit.HOURS);
+    queueAssetsDeletion();
+  }
 
   @Override
-  public void stop(Container container) throws Exception {}
+  public void stop(Container container) throws Exception {
+    pendingAssetDeleteStopping = true;
+    pendingAssetDeleteFuture.get().cancel(false);
+    if (failedAssetDeleteRetryFuture != null) {
+      failedAssetDeleteRetryFuture.cancel(false);
+      failedAssetDeleteRetryFuture = null;
+    }
+  }
 
   @SuppressWarnings("unchecked")
   @Override
@@ -569,7 +637,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     return persistenceService.doReturningTransaction(
         em -> {
           List<Object[]> result =
-              em.createQuery("select a.id, a.name from Asset a where a.id in :ids", Object[].class)
+              em.createQuery(
+                      "select a.id, a.name from Asset a where a.id in :ids and a.deletePending is false",
+                      Object[].class)
                   .setParameter("ids", Arrays.asList(ids))
                   .getResultList();
           List<String> names = new ArrayList<>();
@@ -639,7 +709,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
       throws IllegalStateException, ConstraintViolationException {
 
     if (LOG.isLoggable(Level.FINEST)) {
-      LOG.finest("Merging asset: " + asset);
+      LOG.finest("Asset merge: " + asset.toStringAll());
+    } else {
+      LOG.fine("Asset merge: " + asset);
     }
 
     long startTime = System.currentTimeMillis();
@@ -702,6 +774,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                           : (T) em.find(Asset.class, asset.getId());
 
                   if (existingAsset != null) {
+                    if (existingAsset.isDeletePending()) {
+                      String msg = "Asset is pending deletion: asset=" + asset;
+                      LOG.warning(msg);
+                      throw new IllegalStateException(msg);
+                    }
 
                     // Verify type has not been changed
                     if (!existingAsset.getType().equals(asset.getType())) {
@@ -770,13 +847,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     Asset<?> parent = find(em, asset.getParentId(), true);
 
                     // The parent must exist
-                    if (parent == null) {
+                    if (parent == null || parent.isDeletePending()) {
                       String msg = "Asset parent not found: asset=" + asset;
                       LOG.warning(msg);
                       throw new IllegalStateException(msg);
                     }
 
-                    // The parent can not be a child of the asset
+                    // The parent cannot be a child of the asset
                     if (parent.pathContains(asset.getId())) {
                       String msg =
                           "Asset parent cannot be a descendant of the asset: asset=" + asset;
@@ -906,10 +983,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     updatedAsset = em.merge(asset);
                   }
 
-                  if (LOG.isLoggable(FINE)) {
-                    LOG.fine(
-                        "Asset merge took: " + (System.currentTimeMillis() - startTime) + "ms");
+                  String msgPrefix = existingAsset != null ? "Asset updated: " : "Asset created: ";
+                  if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest(msgPrefix + asset.toStringAll());
+                  } else {
+                    LOG.info(msgPrefix + asset);
                   }
+
+                  LOG.finest(
+                      () -> "Asset merge took: " + (System.currentTimeMillis() - startTime) + "ms");
 
                   if (user != null) {
                     createUserAssetLinks(
@@ -940,16 +1022,49 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
   }
 
   /**
-   * @return <code>true</code> if the assets were deleted, false if any of the assets still have
-   *     children and can't be deleted.
+   * @return <code>true</code> if all assets were accepted for deletion and marked as delete
+   *     pending, <code>false</code> if any asset still has children, doesn't exist, or can't be
+   *     marked delete pending.
    */
   public boolean delete(List<String> assetIds) {
     return delete(assetIds, false);
   }
 
+  public boolean isDeletePending(String assetId) {
+    if (isNullOrEmpty(assetId)) {
+      throw new IllegalArgumentException("Can't query null or empty asset identifier");
+    }
+
+    Asset<?> asset =
+        find(
+            new AssetQuery()
+                .ids(assetId)
+                .includeDeletePending(true)
+                .select(new Select().excludeAttributes()));
+
+    return asset != null && asset.isDeletePending();
+  }
+
   public boolean delete(List<String> assetIds, boolean skipGatewayCheck) {
+    return deleteWithResult(assetIds, skipGatewayCheck).accepted();
+  }
+
+  public CompletableFuture<Boolean> deleteUntilFinished(List<String> assetIds) {
+    return deleteUntilFinished(assetIds, false);
+  }
+
+  public CompletableFuture<Boolean> deleteUntilFinished(
+      List<String> assetIds, boolean skipGatewayCheck) {
+    DeleteResult result = deleteWithResult(assetIds, skipGatewayCheck);
+    return result.accepted() ? result.completion() : CompletableFuture.completedFuture(false);
+  }
+
+  public DeleteResult deleteWithResult(List<String> assetIds, boolean skipGatewayCheck) {
 
     List<String> ids = new ArrayList<>(assetIds);
+
+    LOG.info(
+        () -> "Asset deletion: count=" + assetIds.size() + ", IDs=" + String.join(", ", assetIds));
 
     if (!skipGatewayCheck) {
 
@@ -970,68 +1085,411 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
       if (!gatewayIds.isEmpty()) {
         // Handle gateway asset deletion in a special way
+        LOG.fine("Deleting gateway assets: IDs=" + String.join(",", gatewayIds));
         ids.removeAll(gatewayIds);
+        CompletableFuture<Boolean> gatewayDeleteFuture = CompletableFuture.completedFuture(true);
         for (String gatewayId : gatewayIds) {
+          DeleteResult gatewayDeleteResult;
           try {
-            boolean deleted = gatewayService.deleteGateway(gatewayId);
-            if (!deleted) {
-              return false;
-            }
+            gatewayDeleteResult = gatewayService.deleteGatewayUntilFinished(gatewayId);
           } catch (Exception e) {
             LOG.log(WARNING, "Failed to delete gateway asset: " + gatewayId, e);
-            return false;
+            return DeleteResult.rejected();
           }
+          if (!gatewayDeleteResult.accepted()) {
+            return DeleteResult.rejected();
+          }
+          gatewayDeleteFuture =
+              gatewayDeleteFuture.thenCombine(
+                  gatewayDeleteResult
+                      .completion()
+                      .exceptionally(
+                          ex -> {
+                            LOG.log(WARNING, "Failed to delete gateway asset: " + gatewayId, ex);
+                            return false;
+                          }),
+                  (deleted, gatewayDeleted) -> deleted && gatewayDeleted);
         }
+        DeleteResult assetDeleteResult = markAssetsForDeletionAndQueue(ids, assetIds);
+        if (!assetDeleteResult.accepted()) {
+          return DeleteResult.rejected();
+        }
+        return DeleteResult.accepted(
+            gatewayDeleteFuture.thenCombine(
+                assetDeleteResult.completion(),
+                (gatewaysDeleted, assetsDeleted) -> gatewaysDeleted && assetsDeleted));
       }
     }
 
+    return markAssetsForDeletionAndQueue(ids, assetIds);
+  }
+
+  protected DeleteResult markAssetsForDeletionAndQueue(List<String> ids, List<String> assetIds) {
     if (!ids.isEmpty()) {
       try {
         // Get locks for each asset ID
         ids.forEach(assetLocks::lock);
 
+        List<Asset<?>> assets = new ArrayList<>();
         persistenceService.doTransaction(
             em -> {
-              List<Asset<?>> assets =
+              assets.addAll(
                   em
                       .createQuery(
-                          "select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and not child.id in :ids) and a.id in :ids",
+                          "select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and child.deletePending is false and not child.id in :ids) and a.id in :ids",
                           Asset.class)
                       .setParameter("ids", ids)
                       .getResultList()
                       .stream()
                       .map(asset -> (Asset<?>) asset)
-                      .collect(Collectors.toList());
+                      .sorted(
+                          Comparator.comparingInt(
+                                  (Asset<?> asset) ->
+                                      asset.getPath() != null ? asset.getPath().length : 0)
+                              .reversed()
+                              .thenComparing(Asset::getCreatedOn))
+                      .toList());
 
               if (ids.size() != assets.size()) {
                 throw new IllegalArgumentException(
                     "Cannot delete one or more requested assets as they either have children or don't exist");
               }
 
-              assets.sort(
-                  Comparator.comparingInt(
-                          (Asset<?> asset) -> asset.getPath() == null ? 0 : asset.getPath().length)
-                      .reversed());
-
-              // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
-              // and the minimum supported TimescaleDB version includes that fix.
-              em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
-
-              assets.forEach(em::remove);
-              em.flush();
+              assets.forEach(
+                  asset -> {
+                    if (LOG.isLoggable(Level.FINEST)) {
+                      LOG.finest("Asset delete: " + asset.toStringAll());
+                    } else {
+                      LOG.fine("Asset delete: " + asset);
+                    }
+                    asset.setDeletePending(true);
+                  });
             });
+
+        return DeleteResult.accepted(
+            queueAssetsDeletion(assets.stream().map(Asset::getId).toList()));
       } catch (Exception e) {
         LOG.log(
             SEVERE,
             "Failed to delete one or more requested assets: " + Arrays.toString(assetIds.toArray()),
             e);
-        return false;
+        return DeleteResult.rejected();
       } finally {
         // Release all of the locks
         ids.forEach(assetLocks::unlock);
       }
     }
-    return true;
+    return DeleteResult.accepted(CompletableFuture.completedFuture(true));
+  }
+
+  protected void queueAssetsDeletion() {
+    queueAssetsDeletion(findPendingDeleteAssetIds());
+  }
+
+  protected CompletableFuture<Boolean> queueAssetsDeletion(List<String> orderedAssetIds) {
+    if (pendingAssetDeleteStopping) {
+      return CompletableFuture.completedFuture(false);
+    }
+
+    if (orderedAssetIds.isEmpty()) {
+      return CompletableFuture.completedFuture(true);
+    }
+
+    CompletableFuture<Boolean> deleteResult = new CompletableFuture<>();
+    Map<String, Long> datapointCounts = findAssetDatapointCounts(orderedAssetIds);
+    LOG.fine(
+        "Scheduling asset deletion: count="
+            + orderedAssetIds.size()
+            + ", IDs="
+            + String.join(", ", orderedAssetIds));
+
+    pendingAssetDeleteFuture.updateAndGet(
+        existingFuture ->
+            existingFuture
+                .exceptionally(ex -> null)
+                .thenRunAsync(
+                    () -> {
+                      boolean allDeleted = true;
+                      for (String assetId : orderedAssetIds) {
+                        if (pendingAssetDeleteStopping) {
+                          deleteResult.complete(false);
+                          return;
+                        }
+                        allDeleted =
+                            doAssetDeletion(assetId, datapointCounts.getOrDefault(assetId, 0L))
+                                && allDeleted;
+                      }
+                      deleteResult.complete(allDeleted);
+                    },
+                    executorService)
+                .exceptionally(
+                    ex -> {
+                      LOG.log(SEVERE, "Failed to process queued asset deletions", ex);
+                      deleteResult.complete(false);
+                      return null;
+                    }));
+
+    return deleteResult;
+  }
+
+  protected void retryFailedAssetDeletes() {
+    if (pendingAssetDeleteStopping) {
+      return;
+    }
+
+    List<String> failedAssetIds;
+    synchronized (failedAssetDeleteIds) {
+      if (failedAssetDeleteIds.isEmpty()) {
+        return;
+      }
+      failedAssetIds = new ArrayList<>(failedAssetDeleteIds);
+      failedAssetDeleteIds.clear();
+    }
+
+    LOG.fine("Retrying failed pending asset deletes: count=" + failedAssetIds.size());
+    requestPendingAssetDeletionRetry(failedAssetIds);
+  }
+
+  protected void requestPendingAssetDeletionRetry(List<String> assetIds) {
+    if (pendingAssetDeleteStopping || assetIds.isEmpty()) {
+      return;
+    }
+
+    pendingAssetDeleteFuture.updateAndGet(
+        existingFuture ->
+            existingFuture
+                .exceptionally(ex -> null)
+                .thenRunAsync(
+                    () -> {
+                      for (String assetId : assetIds) {
+                        if (pendingAssetDeleteStopping) {
+                          return;
+                        }
+                        deletePendingAsset(assetId);
+                      }
+                    },
+                    executorService));
+  }
+
+  @SuppressWarnings("unchecked")
+  protected List<String> findPendingDeleteAssetIds() {
+    return persistenceService.doReturningTransaction(
+        em ->
+            (List<String>)
+                em.createNativeQuery(
+                        "select id from asset where delete_pending is true order by nlevel(path) desc, created_on asc")
+                    .getResultList());
+  }
+
+  protected boolean deleteAssetDatapointsBeforeAsset(long datapointCount) {
+    return datapointCount > assetDeleteDatapointBatchThreshold;
+  }
+
+  protected Map<String, Long> findAssetDatapointCounts(Collection<String> assetIds) {
+    if (assetIds.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    long start = System.currentTimeMillis();
+    Map<String, Long> datapointCounts =
+        persistenceService.doReturningTransaction(
+            em -> {
+              @SuppressWarnings("unchecked")
+              List<Object[]> result =
+                  em.createNativeQuery(
+                          "select entity_id, count(*) from "
+                              + AssetDatapoint.TABLE_NAME
+                              + " where entity_id in (:assetIds) group by entity_id")
+                      .setParameter("assetIds", assetIds)
+                      .getResultList();
+
+              return result.stream()
+                  .collect(
+                      Collectors.toMap(
+                          row -> (String) row[0], row -> ((Number) row[1]).longValue()));
+            });
+
+    LOG.finer(
+        "Counted asset datapoints for pending asset delete: assetCount="
+            + assetIds.size()
+            + ", durationMillis="
+            + (System.currentTimeMillis() - start));
+    return datapointCounts;
+  }
+
+  protected boolean doAssetDeletion(String assetId, long datapointCount) {
+    long start = System.currentTimeMillis();
+
+    if (deleteAssetDatapointsBeforeAsset(datapointCount)) {
+      LOG.fine(
+          "Purging asset datapoints: assetId="
+              + assetId
+              + ", datapoints="
+              + datapointCount
+              + ", threshold="
+              + assetDeleteDatapointBatchThreshold);
+      try {
+        deleteAssetDatapoints(assetId);
+        LOG.fine(
+            "Purged asset datapoints: assetId="
+                + assetId
+                + ", durationMillis="
+                + (System.currentTimeMillis() - start));
+      } catch (Exception e) {
+        LOG.log(WARNING, "Purge asset datapoints failed: assetId=" + assetId, e);
+      }
+    }
+
+    if (pendingAssetDeleteStopping) {
+      return false;
+    }
+
+    return deletePendingAsset(assetId);
+  }
+
+  protected boolean deletePendingAsset(String assetId) {
+    if (pendingAssetDeleteStopping) {
+      return false;
+    }
+
+    LOG.fine("Deleting asset: assetId=" + assetId);
+
+    AtomicReference<Boolean> blockedByFailedPath = new AtomicReference<>(false);
+
+    try {
+      persistenceService.doTransaction(
+          em -> {
+            useCustomQueryPlansForTimescaleDelete(em);
+            Asset<?> asset = em.find(Asset.class, assetId);
+
+            if (asset == null) {
+              return;
+            }
+
+            synchronized (failedAssetDeleteIds) {
+              if (blockedByFailedPath.updateAndGet(
+                  blocked ->
+                      failedAssetDeleteIds.stream()
+                          .anyMatch(
+                              failedAssetId ->
+                                  !failedAssetId.equals(assetId)
+                                      && asset.pathContains(failedAssetId)))) {
+                return;
+              }
+            }
+
+            em.remove(asset);
+            em.flush();
+          });
+
+      if (blockedByFailedPath.get()) {
+        failedAssetDeleteIds.add(assetId);
+        LOG.fine(
+            "Asset delete skipped because a failed pending delete asset is in its path: assetId="
+                + assetId);
+        return false;
+      }
+
+      failedAssetDeleteIds.remove(assetId);
+      return true;
+    } catch (Exception e) {
+      failedAssetDeleteIds.add(assetId);
+      // TODO: Raise an alarm for asset deletion failure.
+      LOG.log(SEVERE, "Failed to delete pending asset, queued for retry: assetId=" + assetId, e);
+      return false;
+    }
+  }
+
+  // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
+  // and the minimum supported TimescaleDB version includes that fix.
+  protected void useCustomQueryPlansForTimescaleDelete(EntityManager em) {
+    em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
+  }
+
+  protected void deleteAssetDatapoints(String assetId) {
+    LocalDateTime oldestChunkStart = findOldestAssetDatapointChunkStart();
+
+    if (oldestChunkStart == null) {
+      LOG.fine("No asset datapoint chunks found for pending asset delete: assetId=" + assetId);
+      return;
+    }
+
+    if (pendingAssetDeleteStopping) {
+      return;
+    }
+
+    LocalDateTime rangeStart = oldestChunkStart;
+    LocalDateTime finalEnd = LocalDateTime.ofInstant(timerService.getNow(), ZoneId.systemDefault());
+
+    while (rangeStart.isBefore(finalEnd) && !pendingAssetDeleteStopping) {
+      LocalDateTime nextEnd =
+          rangeStart.plus((long) assetDeleteDatapointBatchWeeks * 7L, ChronoUnit.DAYS);
+      LocalDateTime rangeEnd = nextEnd.isBefore(finalEnd) ? nextEnd : finalEnd;
+      LocalDateTime batchStart = rangeStart;
+      LocalDateTime batchEnd = rangeEnd;
+      long start = System.currentTimeMillis();
+
+      int deleted =
+          persistenceService.doReturningTransaction(
+              em -> {
+                useCustomQueryPlansForTimescaleDelete(em);
+                return em.createNativeQuery(
+                        "delete from "
+                            + AssetDatapoint.TABLE_NAME
+                            + " where entity_id = :assetId and timestamp >= :rangeStart and timestamp < :rangeEnd")
+                    .setParameter("assetId", assetId)
+                    .setParameter("rangeStart", batchStart)
+                    .setParameter("rangeEnd", batchEnd)
+                    .executeUpdate();
+              });
+
+      if (LOG.isLoggable(FINE)) {
+        LOG.fine(
+            "Deleted asset datapoints for pending asset: assetId="
+                + assetId
+                + ", chunkRangeStart="
+                + batchStart
+                + ", chunkRangeEnd="
+                + batchEnd
+                + ", rows="
+                + deleted
+                + ", durationMillis="
+                + (System.currentTimeMillis() - start));
+      }
+
+      rangeStart = rangeEnd;
+    }
+  }
+
+  protected LocalDateTime findOldestAssetDatapointChunkStart() {
+    LocalDateTime cachedStart = oldestAssetDatapointChunkStart.get();
+    if (cachedStart != null) {
+      return cachedStart;
+    }
+
+    LocalDateTime start =
+        persistenceService.doReturningTransaction(
+            em ->
+                em.unwrap(Session.class)
+                    .createNativeQuery(
+                        """
+                    select min(range_start::timestamp)
+                    from timescaledb_information.chunks
+                    where hypertable_schema = current_schema()
+                      and hypertable_name = :hypertableName
+                      and range_start is not null
+                    """,
+                        LocalDateTime.class)
+                    .setParameter("hypertableName", AssetDatapoint.TABLE_NAME)
+                    .getSingleResult());
+
+    if (start == null) {
+      return null;
+    }
+
+    return oldestAssetDatapointChunkStart.compareAndSet(null, start)
+        ? start
+        : oldestAssetDatapointChunkStart.get();
   }
 
   public boolean isUserAsset(String assetId) {
@@ -1121,7 +1579,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
           try {
             return entityManager
                     .createQuery(
-                        "select count(a) from Asset a where a.realm = :realm and a.id in :assetIds",
+                        "select count(a) from Asset a where a.realm = :realm and a.id in :assetIds and a.deletePending is false",
                         Long.class)
                     .setParameter("realm", realm)
                     .setParameter("assetIds", assetIds)
@@ -1171,7 +1629,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                       public Boolean execute(Connection connection) throws SQLException {
                         try (PreparedStatement st =
                             connection.prepareStatement(
-                                "select count(*) from Asset a where a.path ~ lquery(?) AND a.id = ANY(?)")) {
+                                "select count(*) from Asset a where a.path ~ lquery(?) AND a.id = ANY(?) AND a.delete_pending is false")) {
                           st.setString(1, "*." + parentAssetId + ".*");
                           st.setArray(
                               2, st.getConnection().createArrayOf("text", assetIds.toArray()));
@@ -1188,7 +1646,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
   /**
    * Returns a map of asset IDs with the respective hasChildren flag.
    *
-   * <p>It check whether any of the assetIds is set as a parentId in the Asset table.
+   * <p>It checks whether any of the assetIds is set as a parentId in the Asset table.
    *
    * @param assetIds The list of asset IDs to check.
    * @return A map of asset IDs with the respective hasChildren flag.
@@ -1200,7 +1658,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
           List<String> parentsWithChildren =
               entityManager
                   .createQuery(
-                      "select distinct a.parentId from Asset a where a.parentId in :assetIds",
+                      "select distinct a.parentId from Asset a where a.parentId in :assetIds and a.deletePending is false",
                       String.class)
                   .setParameter("assetIds", assetIds)
                   .getResultList();
@@ -1646,7 +2104,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
       // https://stackoverflow.com/questions/53847917/postgresql-throws-column-is-of-type-jsonb-but-expression-is-of-type-bytea-with)
       Query query =
           em.createNativeQuery(
-                  "UPDATE asset SET attributes[?] = attributes[?] || ?\\:\\:jsonb where id = ?")
+                  "UPDATE asset SET attributes[?] = attributes[?] || ?\\:\\:jsonb where id = ? and delete_pending is false")
               .setParameter(1, event.getName())
               .setParameter(2, event.getName())
               .setParameter(
@@ -1701,11 +2159,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (loadedAsset == null) {
           return;
         }
-        if (LOG.isLoggable(Level.FINEST)) {
-          LOG.finest("Asset created: " + loadedAsset.toStringAll());
-        } else {
-          LOG.fine("Asset created: " + loadedAsset);
-        }
         clientEventService.publishEvent(new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null));
 
         // Raise attribute event for each created attribute
@@ -1729,7 +2182,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             persistenceEvent.getPropertyNames().size() > 1
                 || !persistenceEvent.hasPropertyChanged("attributes");
         boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
-        LOG.finest(() -> "Asset updated: " + persistenceEvent);
 
         clientEventService.publishEvent(
             new AssetEvent(
@@ -1801,11 +2253,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             });
       }
       case DELETE -> {
-        if (LOG.isLoggable(Level.FINEST)) {
-          LOG.finest("Asset deleted: " + asset.toStringAll());
-        } else {
-          LOG.fine("Asset deleted: " + asset);
-        }
         clientEventService.publishEvent(new AssetEvent(AssetEvent.Cause.DELETE, asset, null));
 
         // Raise attribute event with deleted flag for each attribute
@@ -1882,7 +2329,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     StringBuilder sb = new StringBuilder();
     AssetQuery.Select select = query.select;
 
-    sb.append("select A.ID as ID, A.NAME as NAME, A.ACCESS_PUBLIC_READ as ACCESS_PUBLIC_READ");
+    sb.append(
+        "select A.ID as ID, A.NAME as NAME, A.ACCESS_PUBLIC_READ as ACCESS_PUBLIC_READ, A.DELETE_PENDING as DELETE_PENDING");
     sb.append(", A.CREATED_ON AS CREATED_ON, A.TYPE AS TYPE, A.PARENT_ID AS PARENT_ID");
     sb.append(", A.REALM AS REALM, A.VERSION as VERSION");
 
@@ -2104,6 +2552,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
       if (query.access == Access.PUBLIC) {
         sb.append(" and A.ACCESS_PUBLIC_READ is true");
+      }
+
+      if (!query.isIncludeDeletePending()) {
+        sb.append(" and A.DELETE_PENDING is false");
       }
 
       if (query.types != null) {

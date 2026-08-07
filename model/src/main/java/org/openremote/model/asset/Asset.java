@@ -20,6 +20,7 @@ package org.openremote.model.asset;
 
 import static jakarta.persistence.DiscriminatorType.STRING;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -262,6 +263,7 @@ import org.openremote.model.value.ValueType;
         "Polymorphic OpenRemote asset. The type discriminator selects a registered asset subtype; attributes are keyed by attribute name.")
 public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>, AssetInfo {
 
+  public static final String DELETE_PENDING_PROPERTY_NAME = "deletePending";
   private static final java.util.regex.Pattern ASSET_ID_PATTERN =
       java.util.regex.Pattern.compile(Constants.ASSET_ID_REGEXP);
 
@@ -364,6 +366,9 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
       example = "false")
   protected boolean accessPublicRead;
 
+  @Column(name = "DELETE_PENDING", nullable = false)
+  protected boolean deletePending;
+
   @Column(name = "PARENT_ID", length = 22, columnDefinition = "char(22)")
   @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.parentId.Pattern}") @Schema(
       description = "Parent asset identifier. Omit for a root asset.",
@@ -457,6 +462,16 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
 
   public T setAccessPublicRead(boolean accessPublicRead) {
     this.accessPublicRead = accessPublicRead;
+    return (T) this;
+  }
+
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  public boolean isDeletePending() {
+    return deletePending;
+  }
+
+  public T setDeletePending(boolean deletePending) {
+    this.deletePending = deletePending;
     return (T) this;
   }
 
@@ -736,6 +751,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     Asset<?> asset = (Asset<?>) o;
     return version == asset.version
         && accessPublicRead == asset.accessPublicRead
+        && deletePending == asset.deletePending
         && Objects.equals(id, asset.id)
         && Objects.equals(createdOn, asset.createdOn)
         && Objects.equals(name, asset.name)
@@ -754,6 +770,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         createdOn,
         name,
         accessPublicRead,
+        deletePending,
         parentId,
         realm,
         type,
