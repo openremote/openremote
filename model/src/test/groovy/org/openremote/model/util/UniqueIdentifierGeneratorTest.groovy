@@ -16,19 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-package org.openremote.model.util;
+package org.openremote.model.util
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import spock.lang.Specification
 
-import org.junit.jupiter.api.Test;
+class UniqueIdentifierGeneratorTest extends Specification {
 
-public class UniqueIdentifierGeneratorTest {
-
-  @Test
-  public void generatedAssetIdHasExpectedLength() {
-    assertEquals(
-        22,
-        UniqueIdentifierGenerator.generateId("masterlight-1-1").length(),
-        "Asset ids must be 22 characters long");
-  }
+    def "generated asset ID has expected length"() {
+        expect: "Asset IDs must be 22 characters long"
+        UniqueIdentifierGenerator.generateId("masterlight-1-1").length() == 22
+    }
 }

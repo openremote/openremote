@@ -54,9 +54,9 @@ dependencies {
 
   compileOnly libs.javaxAnnotationApi
 
-  testImplementation libs.junitJupiterApi
-  testImplementation libs.mockitoCore
-  testRuntimeOnly libs.junitJupiterEngine
+  testImplementation libs.groovy
+  testImplementation platform(libs.spockBom)
+  testImplementation libs.spockCore
   testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 
   implementation libs.bouncycastleBcprovJdk18on
