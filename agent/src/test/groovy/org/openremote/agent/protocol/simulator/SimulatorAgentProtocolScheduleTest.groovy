@@ -41,7 +41,7 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
             instant("1999-01-01T00:00:00.000Z"),
             start,
             instant("9999-12-31T23:59:59.999Z")
-        ].every { schedule.tryAdvanceActive(it, 0) == start }
+        ].each { assert schedule.tryAdvanceActive(it, 0) == start }
     }
 
     def "a non-recurring schedule with an end keeps returning its start"() {
@@ -52,7 +52,7 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
 
         expect:
         ([instant("1999-01-01T00:00:00.000Z")] + (0..9).collect { start + DAY * it })
-            .every { schedule.tryAdvanceActive(it, 0) == start }
+            .each { assert schedule.tryAdvanceActive(it, 0) == start }
 
         and: "the end is checked separately"
         schedule.isAfterScheduleEnd(end + 1)
@@ -66,10 +66,10 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
 
         expect:
         schedule.tryAdvanceActive(instant("1999-01-01T00:00:00.000Z") + DAY - 1, 0) == start
-        (0..3).every { day ->
+        (0..3).each { day ->
             def occurrence = start + DAY * day
-            schedule.tryAdvanceActive(occurrence, 0) == occurrence &&
-                schedule.tryAdvanceActive(occurrence + DAY - 1, 0) == occurrence
+            assert schedule.tryAdvanceActive(occurrence, 0) == occurrence
+            assert schedule.tryAdvanceActive(occurrence + DAY - 1, 0) == occurrence
         }
 
         and:
@@ -85,10 +85,10 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
 
         expect:
         schedule.tryAdvanceActive(instant("1999-01-01T00:00:00.000Z") + DAY - 1, 0) == start
-        (0..2).every { day ->
+        (0..2).each { day ->
             def occurrence = start + DAY * day
-            schedule.tryAdvanceActive(occurrence, 0) == occurrence &&
-                schedule.tryAdvanceActive(occurrence + DAY - 1, 0) == occurrence
+            assert schedule.tryAdvanceActive(occurrence, 0) == occurrence
+            assert schedule.tryAdvanceActive(occurrence + DAY - 1, 0) == occurrence
         }
 
         and:
@@ -118,10 +118,10 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
 
         expect:
         schedule.tryAdvanceActive(instant("1999-01-01T00:00:00.000Z") + MINUTE - 1, 0) == start
-        (0..3).every { minute ->
+        (0..3).each { minute ->
             def occurrence = start + MINUTE * minute
-            schedule.tryAdvanceActive(occurrence, 0) == occurrence &&
-                schedule.tryAdvanceActive(occurrence + MINUTE - 1, 0) == occurrence
+            assert schedule.tryAdvanceActive(occurrence, 0) == occurrence
+            assert schedule.tryAdvanceActive(occurrence + MINUTE - 1, 0) == occurrence
         }
 
         and:
@@ -197,13 +197,13 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
         delays(schedule, recurringDelayExpectations())
     }
 
-    private static boolean delays(
+    private static void delays(
         SimulatorProtocol.Schedule schedule,
         Map<Long, Long> expectedDelays
     ) {
-        expectedDelays.every { now, expected ->
+        expectedDelays.each { now, expected ->
             long timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0)
-            schedule.getDelay(100, timeSinceOccurrenceStarted).asLong == expected
+            assert schedule.getDelay(100, timeSinceOccurrenceStarted).asLong == expected
         }
     }
 

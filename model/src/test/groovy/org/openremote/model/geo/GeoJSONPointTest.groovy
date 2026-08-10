@@ -19,11 +19,9 @@
 package org.openremote.model.geo
 
 import spock.lang.Specification
-import spock.lang.Unroll
 
 class GeoJSONPointTest extends Specification {
 
-    @Unroll
     def "parseRawLocation returns null for invalid input '#input'"() {
         expect:
         GeoJSONPoint.parseRawLocation(input) == null

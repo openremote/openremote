@@ -22,7 +22,6 @@ import jakarta.validation.ConstraintValidatorContext
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.util.ValueUtil
 import spock.lang.Specification
-import spock.lang.Unroll
 
 import java.time.Instant
 
@@ -48,7 +47,6 @@ class ValueUtilTest extends Specification {
         iterableNode.atKey(_) >> keyNode
     }
 
-    @Unroll
     def "validating #description returns #expected"() {
         given:
         def descriptor = new AttributeDescriptor(attributeName, valueType)
