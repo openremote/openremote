@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues } from "lit";
+import { css, html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-icon";
 import { style } from "./style";
@@ -51,7 +52,7 @@ const treeStyling = css`
 `;
 
 @customElement("or-dashboard-tree")
-export class OrDashboardTree extends translate(i18next)(LitElement) {
+export class OrDashboardTree extends translate(i18next)(OrElement) {
   static get styles() {
     return [style, treeStyling, OrAssetTreeStyle];
   }

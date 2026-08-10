@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement, type PropertyValues } from "lit";
+import { html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import type { RuleActionNotification, AssetQuery } from "@openremote/model";
 
@@ -82,7 +83,7 @@ export class OrRulesNotificationModalOkEvent extends CustomEvent<void> {
 }
 
 @customElement("or-rule-notification-modal")
-export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
+export class OrRuleNotificationModal extends translate(i18next)(OrElement) {
   @property({ type: Object })
   public action!: RuleActionNotification;
 

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, nothing, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { countBadgeStyle } from "./styles";
 import { customElement, property, state } from "lit/decorators.js";
 import manager, { OREvent, Util } from "@openremote/core";
@@ -62,7 +63,7 @@ manager.addListener((event) => {
 });
 
 @customElement("or-map-preset-filter")
-export class OrMapPresetFilter extends LitElement {
+export class OrMapPresetFilter extends OrElement {
   static get styles() {
     return [
       countBadgeStyle,

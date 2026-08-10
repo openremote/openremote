@@ -120,6 +120,172 @@ test("should drop a resolved alarm from the default active filter", async ({ man
  * The assertions below count table rows, so they run against "smartcity", which holds only the alarms seeded here
  * rather than the master realm's demo data.
  */
+test.describe("Filter alarms", () => {
+  // Keycloak sessions are per realm, so the stored admin state (master) cannot view "smartcity". Start clean and
+  // log in as a user of that realm instead.
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  /**
+   * One alarm per status, each with a distinct severity so the same set also exercises the severity filter.
+   * OPEN, ACKNOWLEDGED and IN_PROGRESS make up the "All active" set; RESOLVED and CLOSED fall outside it.
+   */
+  async function seedOnePerStatus(manager: Manager) {
+    return {
+      open: await seedAlarm(manager, { realm: "smartcity", status: AlarmStatus.OPEN, severity: AlarmSeverity.LOW }),
+      acknowledged: await seedAlarm(manager, {
+        realm: "smartcity",
+        status: AlarmStatus.ACKNOWLEDGED,
+        severity: AlarmSeverity.MEDIUM,
+      }),
+      inProgress: await seedAlarm(manager, {
+        realm: "smartcity",
+        status: AlarmStatus.IN_PROGRESS,
+        severity: AlarmSeverity.HIGH,
+      }),
+      resolved: await seedAlarm(manager, {
+        realm: "smartcity",
+        status: AlarmStatus.RESOLVED,
+        severity: AlarmSeverity.MEDIUM,
+      }),
+      closed: await seedAlarm(manager, {
+        realm: "smartcity",
+        status: AlarmStatus.CLOSED,
+        severity: AlarmSeverity.HIGH,
+      }),
+    };
+  }
+
+  async function loginAsAlarmUser(manager: Manager, username: string) {
+    await manager.provisionUserAndLogin("smartcity", {
+      username,
+      roles: ["read:alarms", "write:alarms"],
+    });
+  }
+
+  /**
+   * @given One alarm of every status in "smartcity"
+   * @when Each of the status filter's options is picked in turn
+   * @then Only the alarms carrying that status are listed
+   */
+  test("should list only the alarms with the selected status", async ({ manager, alarmsPage }) => {
+    const alarms = await seedOnePerStatus(manager);
+    await loginAsAlarmUser(manager, "e2e-alarm-status-filterer");
+    await alarmsPage.goto();
+
+    // the overview opens on "All active", which leaves out the resolved and closed alarms
+    await expect(alarmsPage.getRows()).toHaveCount(3);
+
+    // picking a concrete status used to leave the filter unset, listing every alarm instead
+    for (const [label, alarm] of [
+      ["Open", alarms.open],
+      ["Acknowledged", alarms.acknowledged],
+      ["In Progress", alarms.inProgress],
+      ["Resolved", alarms.resolved],
+      ["Closed", alarms.closed],
+    ] as const) {
+      await alarmsPage.setStatusFilter(label);
+      await expect(alarmsPage.getRows()).toHaveCount(1);
+      await expect(alarmsPage.getRowByText(alarm.title)).toBeVisible();
+    }
+
+    await alarmsPage.setStatusFilter("All");
+    await expect(alarmsPage.getRows()).toHaveCount(5);
+
+    // and the default is reachable again from a concrete status
+    await alarmsPage.setStatusFilter("All active");
+    await expect(alarmsPage.getRows()).toHaveCount(3);
+  });
+
+  /**
+   * @given One alarm of every status in "smartcity", spread across the three severities
+   * @when Each of the severity filter's options is picked in turn, with the status filter widened to "All"
+   * @then Only the alarms carrying that severity are listed
+   */
+  test("should list only the alarms with the selected severity", async ({ manager, alarmsPage }) => {
+    const alarms = await seedOnePerStatus(manager);
+    await loginAsAlarmUser(manager, "e2e-alarm-severity-filterer");
+    await alarmsPage.goto();
+
+    // widen the status first, so the counts below reflect the severity filter alone
+    await alarmsPage.setStatusFilter("All");
+    await expect(alarmsPage.getRows()).toHaveCount(5);
+
+    await alarmsPage.setSeverityFilter("Low");
+    await expect(alarmsPage.getRows()).toHaveCount(1);
+    await expect(alarmsPage.getRowByText(alarms.open.title)).toBeVisible();
+
+    await alarmsPage.setSeverityFilter("Medium");
+    await expect(alarmsPage.getRows()).toHaveCount(2);
+    await expect(alarmsPage.getRowByText(alarms.acknowledged.title)).toBeVisible();
+    await expect(alarmsPage.getRowByText(alarms.resolved.title)).toBeVisible();
+
+    await alarmsPage.setSeverityFilter("High");
+    await expect(alarmsPage.getRows()).toHaveCount(2);
+    await expect(alarmsPage.getRowByText(alarms.inProgress.title)).toBeVisible();
+    await expect(alarmsPage.getRowByText(alarms.closed.title)).toBeVisible();
+
+    await alarmsPage.setSeverityFilter("All");
+    await expect(alarmsPage.getRows()).toHaveCount(5);
+  });
+
+  /**
+   * @given One alarm of every status in "smartcity", spread across the three severities
+   * @when Both the severity and the status filter are narrowed
+   * @then Each filter is applied on top of the other rather than replacing it
+   */
+  test("should apply the severity and status filters together", async ({ manager, alarmsPage }) => {
+    const alarms = await seedOnePerStatus(manager);
+    await loginAsAlarmUser(manager, "e2e-alarm-combined-filterer");
+    await alarmsPage.goto();
+
+    // "All active" hides the closed alarm, leaving only the in-progress one at high severity
+    await alarmsPage.setSeverityFilter("High");
+    await expect(alarmsPage.getRows()).toHaveCount(1);
+    await expect(alarmsPage.getRowByText(alarms.inProgress.title)).toBeVisible();
+
+    // narrowing the status on top of it must keep the severity filter rather than replace it
+    await alarmsPage.setStatusFilter("Closed");
+    await expect(alarmsPage.getRows()).toHaveCount(1);
+    await expect(alarmsPage.getRowByText(alarms.closed.title)).toBeVisible();
+
+    // and widening the severity back out leaves the status filter in place
+    await alarmsPage.setSeverityFilter("All");
+    await expect(alarmsPage.getRows()).toHaveCount(1);
+    await expect(alarmsPage.getRowByText(alarms.closed.title)).toBeVisible();
+  });
+
+  /**
+   * @given Alarms in "smartcity", none of them assigned to the logged-in user
+   * @when The "assigned to me" checkbox is ticked and unticked again
+   * @then The list empties and is restored, on top of whichever status filter is set
+   */
+  test("should list only the alarms assigned to the current user", async ({ manager, alarmsPage }) => {
+    await seedOnePerStatus(manager);
+    await loginAsAlarmUser(manager, "e2e-alarm-assignee-filterer");
+    await alarmsPage.goto();
+    await expect(alarmsPage.getRows()).toHaveCount(3);
+
+    // the seeded alarms have no assignee, so none of them belong to this user
+    await alarmsPage.getAssignedToMeCheckbox().check();
+    await expect(alarmsPage.getRows()).toHaveCount(0);
+
+    // unticking reloads rather than leaving the list emptied
+    await alarmsPage.getAssignedToMeCheckbox().uncheck();
+    await expect(alarmsPage.getRows()).toHaveCount(3);
+
+    // and it composes with the status filter instead of resetting it
+    await alarmsPage.setStatusFilter("All");
+    await alarmsPage.getAssignedToMeCheckbox().check();
+    await expect(alarmsPage.getRows()).toHaveCount(0);
+    await alarmsPage.getAssignedToMeCheckbox().uncheck();
+    await expect(alarmsPage.getRows()).toHaveCount(5);
+  });
+});
+
+/**
+ * The assertions below count table rows, so they run against "smartcity", which holds only the alarms seeded here
+ * rather than the master realm's demo data.
+ */
 test.describe("Delete alarms", () => {
   // Keycloak sessions are per realm, so the stored admin state (master) cannot view "smartcity". Start clean and
   // log in as a user of that realm instead.

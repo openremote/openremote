@@ -18,7 +18,8 @@
  */
 import { translate } from "./translate-mixin";
 import i18next, { type InitOptions, type TOptions } from "i18next";
-import { LitElement, html, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 
 export { i18next };
@@ -26,7 +27,7 @@ export { i18next };
 export { translate };
 
 @customElement("or-translate")
-export class OrTranslate extends translate(i18next)(LitElement) {
+export class OrTranslate extends translate(i18next)(OrElement) {
   public static styles = css`
     :host {
       display: inline-block;

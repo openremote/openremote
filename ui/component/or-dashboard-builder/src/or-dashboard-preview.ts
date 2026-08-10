@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import manager, { DefaultColor4, DefaultColor5 } from "@openremote/core";
-import { css, html, LitElement, unsafeCSS } from "lit";
+import { css, html, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { style } from "./style";
 import "./or-dashboard-widgetcontainer";
@@ -154,7 +155,7 @@ export interface DashboardPreviewSize {
 /* ------------------------------------------------------------ */
 
 @customElement("or-dashboard-preview")
-export class OrDashboardPreview extends translate(i18next)(LitElement) {
+export class OrDashboardPreview extends translate(i18next)(OrElement) {
   // Monitoring the changes in the template, save the changes to this.latestChanges,
   // so we can check afterwards which changes are made. Used for
   @property({

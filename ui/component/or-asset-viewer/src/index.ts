@@ -18,7 +18,8 @@
  */
 import type { OrVaadinButton } from "@openremote/or-vaadin-components/or-vaadin-button";
 
-import { html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { html, type LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -1279,7 +1280,7 @@ export const DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
 };
 
 @customElement("or-asset-viewer")
-export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
+export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrElement)) {
   static get styles() {
     return [unsafeCSS(tableStyle), progressCircular, panelStyles, style];
   }
