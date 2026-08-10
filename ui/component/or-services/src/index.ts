@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { manager } from "@openremote/core";
 import type { ExternalService } from "@openremote/model";
@@ -148,7 +149,7 @@ const serviceStyles = css`
 `;
 
 @customElement("or-services")
-export class OrServices extends LitElement {
+export class OrServices extends OrElement {
   static get styles() {
     return [serviceStyles];
   }

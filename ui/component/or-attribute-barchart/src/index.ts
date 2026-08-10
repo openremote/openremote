@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state, query } from "lit/decorators.js";
 import { i18next } from "@openremote/or-translate";
 import {
@@ -296,7 +297,7 @@ const style = css`
 `;
 
 @customElement("or-attribute-barchart")
-export class OrAttributeBarChart extends LitElement {
+export class OrAttributeBarChart extends OrElement {
   public static readonly DEFAULT_COLORS = [
     "#3869B1",
     "#DA7E30",

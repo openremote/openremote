@@ -16,13 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 @customElement("confirmation-dialog")
-export class ConfirmationDialog extends translate(i18next)(LitElement) {
+export class ConfirmationDialog extends translate(i18next)(OrElement) {
   @property({ type: String }) public agreeText = i18next.t("ok");
   @property({ type: String }) public disagreeText = i18next.t("cancel");
   @property({ type: String }) public question = i18next.t("areYouSure", "Are you sure?");

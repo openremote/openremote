@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement } from "lit";
 import { property } from "lit/decorators.js";
+import { OrElement } from "@openremote/or-element";
 import { input } from "./flow-editor";
 import { i18next, translate } from "@openremote/or-translate";
 
-export class SelectableElement extends translate(i18next)(LitElement) {
+export class SelectableElement extends translate(i18next)(OrElement) {
   public get selected() {
     return this.isSelected;
   }

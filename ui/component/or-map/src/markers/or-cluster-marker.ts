@@ -16,12 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {
-  svg as html /** Aliased for syntax highlighting */,
-  LitElement,
-  type TemplateResult,
-  type SVGTemplateResult,
-} from "lit";
+import { svg as html /** Aliased for syntax highlighting */, type TemplateResult, type SVGTemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { formatCount } from "../util";
 import { customElement } from "lit/decorators.js";
 import type { GeoJSONSource, Map } from "maplibre-gl";
@@ -34,7 +30,7 @@ export type Slice = [type: string, color: string, count: number];
 type SliceWithOffset = [...Slice, offset: number];
 
 @customElement("or-cluster-marker")
-export class OrClusterMarker extends LitElement {
+export class OrClusterMarker extends OrElement {
   public lng?: number;
   public lat?: number;
 

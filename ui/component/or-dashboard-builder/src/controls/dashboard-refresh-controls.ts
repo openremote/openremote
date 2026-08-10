@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { DashboardRefreshInterval } from "@openremote/model";
@@ -52,7 +53,7 @@ export class IntervalSelectEvent extends CustomEvent<DashboardRefreshInterval> {
 }
 
 @customElement("dashboard-refresh-controls")
-export class DashboardRefreshControls extends LitElement {
+export class DashboardRefreshControls extends OrElement {
   @property()
   protected interval: DashboardRefreshInterval = DashboardRefreshInterval.OFF;
 

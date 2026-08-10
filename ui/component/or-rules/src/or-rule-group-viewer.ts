@@ -17,14 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { i18next, translate } from "@openremote/or-translate";
-import { html, LitElement, type PropertyValues } from "lit";
+import { html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { style } from "./or-rule-viewer";
 import { OrRulesGroupNameChangeEvent } from "./index";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 @customElement("or-rule-group-viewer")
-export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
+export class OrRuleGroupViewer extends translate(i18next)(OrElement) {
   /**
    * Name of the group
    */

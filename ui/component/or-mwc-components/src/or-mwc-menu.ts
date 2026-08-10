@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { MDCMenu } from "@material/menu";
@@ -176,7 +177,7 @@ const style = css`
 `;
 
 @customElement("or-mwc-menu")
-export class OrMwcMenu extends LitElement {
+export class OrMwcMenu extends OrElement {
   static get styles() {
     return [
       css`

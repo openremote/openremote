@@ -18,7 +18,8 @@
  */
 import { type GeoJSONPoint, type RuleCondition, SunPositionTriggerPosition } from "@openremote/model";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { css, html, LitElement, type PropertyValues } from "lit";
+import { css, html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import moment from "moment";
 import { buttonStyle } from "../style";
@@ -70,7 +71,7 @@ interface TimeTrigger {
 }
 
 @customElement("or-rule-trigger-query")
-export class OrRuleTriggerQuery extends LitElement {
+export class OrRuleTriggerQuery extends OrElement {
   static get styles() {
     return style;
   }

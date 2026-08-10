@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import type { JsonRule, RuleActionWebhook } from "@openremote/model";
-import { css, html, LitElement } from "lit";
+import { css, html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import "./modals/or-rule-webhook-modal";
 import "./forms/or-rule-form-webhook";
@@ -39,7 +40,7 @@ const style = css`
 `;
 
 @customElement("or-rule-action-webhook")
-export class OrRuleActionWebhook extends LitElement {
+export class OrRuleActionWebhook extends OrElement {
   static get styles() {
     return style;
   }

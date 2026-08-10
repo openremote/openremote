@@ -16,14 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 
 /**
  * A simple loading wrapper around some other content that will hide the content whilst loading property is true
  */
 @customElement("or-loading-wrapper")
-export class OrLoadingWrapper extends LitElement {
+export class OrLoadingWrapper extends OrElement {
   @property({ type: Number })
   public loadingHeight?: number;
 

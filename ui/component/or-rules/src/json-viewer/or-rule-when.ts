@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import {
   type JsonRule,
@@ -124,7 +125,7 @@ const style = css`
 `;
 
 @customElement("or-rule-when")
-class OrRuleWhen extends translate(i18next)(LitElement) {
+class OrRuleWhen extends translate(i18next)(OrElement) {
   static get styles() {
     return style;
   }

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import {
   type AgentDescriptor,
@@ -62,7 +63,7 @@ declare global {
 }
 
 @customElement("or-add-asset-dialog")
-export class OrAddAssetDialog extends LitElement {
+export class OrAddAssetDialog extends OrElement {
   @property({ attribute: false })
   public config!: AssetTreeConfig;
 

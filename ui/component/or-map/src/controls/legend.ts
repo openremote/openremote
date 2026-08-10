@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, type CSSResultGroup, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { css, type CSSResultGroup, html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { countBadgeStyle } from "./styles";
 import { customElement, property, state } from "lit/decorators.js";
 import { AssetModelUtil } from "@openremote/model";
@@ -49,7 +50,7 @@ declare global {
 }
 
 @customElement("or-map-legend")
-export class OrMapLegend extends LitElement {
+export class OrMapLegend extends OrElement {
   static get styles(): CSSResultGroup {
     return [
       countBadgeStyle,

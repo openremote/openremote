@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement, css, type TemplateResult } from "lit";
+import { html, css, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import { i18next, translate } from "@openremote/or-translate";
@@ -27,7 +28,7 @@ import { until } from "lit/directives/until.js";
 import { when } from "lit/directives/when.js";
 
 @customElement("or-rule-form-push-notification")
-export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
+export class OrRuleFormPushNotification extends translate(i18next)(OrElement) {
   @property({ type: Object })
   public message?: PushNotificationMessage;
 

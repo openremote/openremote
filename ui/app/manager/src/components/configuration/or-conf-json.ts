@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement } from "lit";
+import { html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-components/or-ace-editor";
 import type { DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -26,7 +27,7 @@ import type { OrAceEditor, OrAceEditorChangedEvent } from "@openremote/or-compon
 import type { ManagerAppConfig, MapConfig } from "@openremote/model";
 
 @customElement("or-conf-json")
-export class OrConfJson extends LitElement {
+export class OrConfJson extends OrElement {
   @property({ attribute: false })
   public config: ManagerAppConfig | MapConfig = {};
 

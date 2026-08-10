@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { type Node, NodeType } from "@openremote/model";
 import type { EditorWorkspace } from "./editor-workspace";
@@ -26,7 +27,7 @@ import { newIds, project } from "./flow-editor";
 import { CopyMachine } from "../node-structure";
 
 @customElement("node-menu-item")
-export class NodeMenuItem extends translate(i18next)(LitElement) {
+export class NodeMenuItem extends translate(i18next)(OrElement) {
   @property({ attribute: false }) public node!: Node;
   @property({ attribute: false }) private isDragging = false;
 
