@@ -48,8 +48,8 @@ class GeoJSONPointTest extends Specification {
         def offset = origin.offsetByMeters(1000d, 1000d)
 
         then:
-        def expectedLat = 0.0090436947d;
-        def expectedLon = 0.0089831528d;
+        def expectedLat = 0.0090436947d
+        def expectedLon = 0.0089831528d
         Math.abs(offset.y - expectedLat) < 1e-9
         Math.abs(offset.x - expectedLon) < 1e-9
     }

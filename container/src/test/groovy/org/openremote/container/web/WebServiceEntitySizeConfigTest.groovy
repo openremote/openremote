@@ -34,7 +34,7 @@ class WebServiceEntitySizeConfigTest extends Specification {
             getConfig() >> config
             getService(IdentityService) >> null
             getService(_) >> { Class type ->
-                throw new IllegalStateException("Service not available in test container: " + type.name)
+                throw new IllegalStateException("Service not available in test container: ${type.name}")
             }
         }
         def service = new TrackingWebService()

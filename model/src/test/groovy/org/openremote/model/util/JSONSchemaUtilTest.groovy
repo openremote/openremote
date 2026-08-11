@@ -21,7 +21,6 @@ package org.openremote.model.util
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals
 
 import com.fasterxml.jackson.annotation.*
-import com.fasterxml.jackson.databind.JsonNode
 import org.openremote.model.util.JSONSchemaUtil.*
 import org.openremote.model.value.ValueType
 import org.reflections.Reflections
@@ -38,7 +37,7 @@ class JSONSchemaUtilTest extends Specification {
   }
 
   private static InputStream loadResourceAsStream(String resourcePath) {
-    return JSONSchemaUtilTest.class.getResourceAsStream(
+    JSONSchemaUtilTest.getResourceAsStream(
         "/org/openremote/model/util/" + resourcePath + ".json")
   }
 
@@ -46,7 +45,7 @@ class JSONSchemaUtilTest extends Specification {
 
   def "schema has a generated title"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -54,23 +53,23 @@ class JSONSchemaUtilTest extends Specification {
                 "type": "object",
                 "title": "Title",
                 "additionalProperties": true
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(Title.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(Title)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonSchemaTitle(value = "Test Title", i18n = false)
   static class ItemType {}
 
   static class MembersShouldNotHaveTitle {
-    public Map<String, String> test;
-    public ItemType[] test1;
+    public Map<String, String> test
+    public ItemType[] test1
   }
 
   def "schema members do not have generated titles"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
                 {
@@ -90,25 +89,25 @@ class JSONSchemaUtilTest extends Specification {
                   "title": "Members Should Not Have Title",
                   "additionalProperties": true
                 }
-            ''');
+            ''')
 
-    JsonNode actual = ValueUtil.getSchema(MembersShouldNotHaveTitle.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(MembersShouldNotHaveTitle)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   def "schema remaps Byte"() {
     expect:
-    JsonNode expected =
-        ValueUtil.JSON.readTree(loadResourceAsStream(java.lang.Byte.class.getName()));
-    JsonNode actual = ValueUtil.getSchema(java.lang.Byte.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def expected =
+        ValueUtil.JSON.readTree(loadResourceAsStream(Byte.name))
+    def actual = ValueUtil.getSchema(Byte)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   static class AdditionalProperties {}
 
   def "schema allows additional properties"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -116,30 +115,30 @@ class JSONSchemaUtilTest extends Specification {
                 "type": "object",
                 "title": "Additional Properties",
                 "additionalProperties": true
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(AdditionalProperties.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(AdditionalProperties)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   static class RemapTypes {
-    @JsonSchemaTypeRemap(type = String.class)
-    public boolean test1;
+    @JsonSchemaTypeRemap(type = String)
+    public boolean test1
 
-    @JsonSchemaTypeRemap(type = boolean.class)
-    public String test2;
+    @JsonSchemaTypeRemap(type = boolean)
+    public String test2
 
-    @JsonSchemaTypeRemap(type = Date.class)
-    public boolean test3;
+    @JsonSchemaTypeRemap(type = Date)
+    public boolean test3
 
     @JsonSchemaSupplier(
         supplier = SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
-    public Boolean test4;
+    public Boolean test4
   }
 
   def "schema remaps annotated types"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -154,17 +153,17 @@ class JSONSchemaUtilTest extends Specification {
                 "required":["test1","test3"],
                 "title":"Remap Types",
                 "additionalProperties":true
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(RemapTypes.class);
-    assertEquals(expected.toString(), actual.toString(), false);
+    def actual = ValueUtil.getSchema(RemapTypes)
+    assertEquals(expected.toString(), actual.toString(), false)
   }
 
   def "schema handles map type #mapType.simpleName"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(loadResourceAsStream(mapType.name))
-    JsonNode actual = ValueUtil.getSchema(mapType)
+    def actual = ValueUtil.getSchema(mapType)
     assertEquals(expected.toString(), actual.toString(), true)
 
     where:
@@ -180,18 +179,18 @@ class JSONSchemaUtilTest extends Specification {
 
   static class JacksonAnnotations {
     @JsonPropertyDescription("This property should have a description.")
-    public Boolean test1;
+    public Boolean test1
 
     @JsonProperty("renamed")
-    public Boolean test2;
+    public Boolean test2
 
     @JsonProperty(value = "renamed1", required = true)
-    public Boolean test3;
+    public Boolean test3
   }
 
   def "schema handles Jackson annotations"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -214,25 +213,25 @@ class JSONSchemaUtilTest extends Specification {
                 "required": [ "renamed1" ],
                 "title": "Jackson Annotations",
                 "additionalProperties": true
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(JacksonAnnotations.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(JacksonAnnotations)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   static class Primitives {
-    public boolean test1;
-    public int test2;
-    public long test3;
-    public float test4;
-    public double test5;
-    public byte test6;
-    public char test7;
+    public boolean test1
+    public int test2
+    public long test3
+    public float test4
+    public double test5
+    public byte test6
+    public char test7
   }
 
   def "schema requires primitive fields"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -258,10 +257,10 @@ class JSONSchemaUtilTest extends Specification {
                 ],
                 "title": "Primitives",
                 "additionalProperties": true
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(Primitives.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(Primitives)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   static class AnnotationsForFields {
@@ -270,12 +269,12 @@ class JSONSchemaUtilTest extends Specification {
     @JsonSchemaFormat("test")
     @JsonSchemaDefault("false")
     @JsonSchemaExamples(["test"])
-    public Boolean all;
+    public Boolean all
   }
 
   def "schema applies custom annotations to fields"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -293,10 +292,10 @@ class JSONSchemaUtilTest extends Specification {
                 },
                 "title": "Annotations For Fields",
                 "additionalProperties": true
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(AnnotationsForFields.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(AnnotationsForFields)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonSchemaTitle(value = "test", i18n = false)
@@ -308,7 +307,7 @@ class JSONSchemaUtilTest extends Specification {
 
   def "schema applies custom annotations to types"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -322,10 +321,10 @@ class JSONSchemaUtilTest extends Specification {
                 "examples": [
                     "test"
                 ]
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(AnnotationsForTypes.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(AnnotationsForTypes)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonSchemaTitle("test")
@@ -334,7 +333,7 @@ class JSONSchemaUtilTest extends Specification {
 
   def "schema applies i18n annotations"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -342,10 +341,10 @@ class JSONSchemaUtilTest extends Specification {
                 "type": "object",
                 "i18n": "org.openremote.model.util.JSONSchemaUtilTest.I18nAnnotations",
                 "additionalProperties": true
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(I18nAnnotations.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(I18nAnnotations)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonSchemaTitle(value = "test", i18n = false)
@@ -354,7 +353,7 @@ class JSONSchemaUtilTest extends Specification {
 
   def "schema applies partially disabled i18n annotations"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -363,16 +362,16 @@ class JSONSchemaUtilTest extends Specification {
                 "title": "test",
                 "i18n": "org.openremote.model.util.JSONSchemaUtilTest.I18nAnnotationsPartiallyDisabled",
                 "additionalProperties": true
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(I18nAnnotationsPartiallyDisabled.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(I18nAnnotationsPartiallyDisabled)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME)
   @JsonSubTypes([
-    @JsonSubTypes.Type(SubType.class),
-    @JsonSubTypes.Type(SubTypeSuperclass.class),
+    @JsonSubTypes.Type(SubType),
+    @JsonSubTypes.Type(SubTypeSuperclass),
   ])
   abstract static class PolymorphicType<T extends PolymorphicType<?>> implements Serializable {}
 
@@ -384,7 +383,7 @@ class JSONSchemaUtilTest extends Specification {
 
   def "schema includes subtypes with a type property"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -427,16 +426,16 @@ class JSONSchemaUtilTest extends Specification {
                 "type": "object",
                 "additionalProperties": true,
                 "title": "Polymorphic Type"
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(PolymorphicType.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(PolymorphicType)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonTypeInfo(property = "customType", use = JsonTypeInfo.Id.NAME)
   @JsonSubTypes([
-    @JsonSubTypes.Type(SubTypeWithCustomProperty.class),
-    @JsonSubTypes.Type(SubTypeSuperClassWithCustomProperty.class),
+    @JsonSubTypes.Type(SubTypeWithCustomProperty),
+    @JsonSubTypes.Type(SubTypeSuperClassWithCustomProperty),
   ])
   abstract static class PolymorphicTypeWithCustomProperty<
           T extends PolymorphicTypeWithCustomProperty<?>>
@@ -451,7 +450,7 @@ class JSONSchemaUtilTest extends Specification {
 
   def "schema includes subtypes with a custom type property"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -494,10 +493,10 @@ class JSONSchemaUtilTest extends Specification {
                 "type": "object",
                 "additionalProperties": true,
                 "title": "Polymorphic Type With Custom Property"
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(PolymorphicTypeWithCustomProperty.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(PolymorphicTypeWithCustomProperty)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   // Note: JsonTypeInfo.As.EXISTING_PROPERTY doesn't necessarily change the behavior mainly the
@@ -509,39 +508,39 @@ class JSONSchemaUtilTest extends Specification {
   @JsonSubTypes([
     @JsonSubTypes.Type(
         name = SubTypeWithCustomExistingProperty.SUB_CUSTOM_TYPE,
-        value = SubTypeWithCustomExistingProperty.class),
+        value = SubTypeWithCustomExistingProperty),
     @JsonSubTypes.Type(
         name = SubTypeSuperClassWithCustomExistingProperty.SUPER_CUSTOM_TYPE,
-        value = SubTypeSuperClassWithCustomExistingProperty.class),
+        value = SubTypeSuperClassWithCustomExistingProperty),
   ])
   abstract static class PolymorphicTypeWithCustomExistingProperty<
           T extends PolymorphicTypeWithCustomExistingProperty<?>>
       implements Serializable {
-    public static final String VALUE_KEY_CUSTOM_TYPE = "customType";
+    public static final String VALUE_KEY_CUSTOM_TYPE = "customType"
 
     @JsonProperty(VALUE_KEY_CUSTOM_TYPE)
-    protected String customType;
+    protected String customType
 
-    public String getCustomType() {
-      return customType;
+    String getCustomType() {
+      customType
     }
   }
 
   @JsonTypeName(SubTypeWithCustomExistingProperty.SUB_CUSTOM_TYPE)
   static class SubTypeWithCustomExistingProperty
       extends PolymorphicTypeWithCustomExistingProperty<SubTypeWithCustomExistingProperty> {
-    public static final String SUB_CUSTOM_TYPE = "sub";
+    public static final String SUB_CUSTOM_TYPE = "sub"
   }
 
   @JsonTypeName(SubTypeSuperClassWithCustomExistingProperty.SUPER_CUSTOM_TYPE)
   static class SubTypeSuperClassWithCustomExistingProperty
       extends SubTypeWithCustomExistingProperty {
-    public static final String SUPER_CUSTOM_TYPE = "super";
+    public static final String SUPER_CUSTOM_TYPE = "super"
   }
 
   def "schema includes subtypes with an existing custom type property"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -584,10 +583,10 @@ class JSONSchemaUtilTest extends Specification {
                 "type": "object",
                 "additionalProperties": true,
                 "title": "Polymorphic Type With Custom Existing Property"
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(PolymorphicTypeWithCustomExistingProperty.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(PolymorphicTypeWithCustomExistingProperty)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonTypeInfo(
@@ -595,8 +594,8 @@ class JSONSchemaUtilTest extends Specification {
       use = JsonTypeInfo.Id.NAME,
       include = JsonTypeInfo.As.EXTERNAL_PROPERTY)
   @JsonSubTypes([
-    @JsonSubTypes.Type(ExternalSubType.class),
-    @JsonSubTypes.Type(ExternalSubTypeSuperclass.class),
+    @JsonSubTypes.Type(ExternalSubType),
+    @JsonSubTypes.Type(ExternalSubTypeSuperclass),
   ])
   abstract static class ExternalPolymorphicType<T extends ExternalPolymorphicType<?>>
       implements Serializable {}
@@ -607,7 +606,7 @@ class JSONSchemaUtilTest extends Specification {
 
   def "schema sets the enum type for an external property"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -650,10 +649,10 @@ class JSONSchemaUtilTest extends Specification {
                 "type": "object",
                 "additionalProperties": true,
                 "title": "External Polymorphic Type"
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(ExternalPolymorphicType.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(ExternalPolymorphicType)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonTypeName("ReflectedPolymorphicType")
@@ -666,7 +665,7 @@ class JSONSchemaUtilTest extends Specification {
 
   def "schema resolves subtypes through reflections"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -703,40 +702,40 @@ class JSONSchemaUtilTest extends Specification {
                 "required": [
                     "type"
                 ]
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(ReflectedPolymorphicType.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(ReflectedPolymorphicType)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   def "schemas do not use allOf"() {
     expect:
-    for (Class<?> clazz : reflections.getTypesAnnotatedWith(JsonTypeInfo.class)) {
+    reflections.getTypesAnnotatedWith(JsonTypeInfo).each { clazz ->
       assert !ValueUtil.getSchema(clazz).toString().contains("allOf")
     }
   }
 
   static class JavaTimeJacksonModule {
-    public Duration duration;
-    public LocalDateTime localDateTime;
-    public LocalDate localDate;
-    public LocalTime localTime;
-    public MonthDay monthDay;
-    public OffsetTime offsetTime;
-    public Period period;
-    public Year year;
-    public YearMonth yearMonth;
-    public ZoneId zoneId;
-    public ZoneOffset zoneOffset;
+    public Duration duration
+    public LocalDateTime localDateTime
+    public LocalDate localDate
+    public LocalTime localTime
+    public MonthDay monthDay
+    public OffsetTime offsetTime
+    public Period period
+    public Year year
+    public YearMonth yearMonth
+    public ZoneId zoneId
+    public ZoneOffset zoneOffset
     // Instant variants
-    public Instant instant;
-    public OffsetDateTime offsetDateTime;
-    public ZonedDateTime zonedDateTime;
+    public Instant instant
+    public OffsetDateTime offsetDateTime
+    public ZonedDateTime zonedDateTime
   }
 
   def "schema applies Jackson serializers"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -800,24 +799,24 @@ class JSONSchemaUtilTest extends Specification {
                 },
                 "title": "Java Time Jackson Module",
                 "additionalProperties": true
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(JavaTimeJacksonModule.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(JavaTimeJacksonModule)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   enum TypeOption {
-    INTEGER(int.class),
-    STRING(String.class),
-    LONG(long.class),
-    FLOAT(Float.class);
+    INTEGER(int),
+    STRING(String),
+    LONG(long),
+    FLOAT(Float)
 
     TypeOption(Class<?> javaType) {}
   }
 
   def "schema generates enum values"() {
     expect:
-    JsonNode expected =
+    def expected =
         ValueUtil.JSON.readTree(
             '''
             {
@@ -830,9 +829,9 @@ class JSONSchemaUtilTest extends Specification {
                     "FLOAT"
                 ],
                 "title": "Type Option"
-            }''');
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(TypeOption.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(TypeOption)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 }

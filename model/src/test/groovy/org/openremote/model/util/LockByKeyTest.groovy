@@ -38,7 +38,7 @@ class LockByKeyTest extends Specification {
             new LockWrapper() {
                 @Override
                 int removeThreadFromQueue() {
-                    int result = super.removeThreadFromQueue()
+                    def result = super.removeThreadFromQueue()
                     if (result == 0) {
                         // Signal that we are at the critical point
                         pauseLatch.countDown()

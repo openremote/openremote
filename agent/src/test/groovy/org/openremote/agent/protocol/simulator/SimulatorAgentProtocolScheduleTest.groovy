@@ -202,7 +202,7 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
         Map<Long, Long> expectedDelays
     ) {
         expectedDelays.each { now, expected ->
-            long timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0)
+            def timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0)
             assert schedule.getDelay(100, timeSinceOccurrenceStarted).asLong == expected
         }
     }
