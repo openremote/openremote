@@ -48,3 +48,15 @@ updates:
       time: "03:00"
       timezone: "Europe/Amsterdam"
     rebase-strategy: disabled # Prevent unnecessary pipeline runs
+
+  # Maintain Docker base images
+  - package-ecosystem: "docker"
+    directories:
+      - "/balena"
+      - "/manager"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Europe/Amsterdam"
+    rebase-strategy: disabled # Prevent unnecessary pipeline runs
