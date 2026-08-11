@@ -56,9 +56,8 @@ dependencies {
 }
 
 dependencies {
-  testImplementation libs.junitJupiterParams
-  testImplementation libs.junitJupiterApi
-  testRuntimeOnly libs.junitJupiterEngine
+  testImplementation platform(libs.spockBom)
+  testImplementation libs.spockCore
   testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 

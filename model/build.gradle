@@ -1,5 +1,6 @@
 plugins {
   id 'java-library'
+  id 'groovy'
   id 'maven-publish'
   id 'signing'
 }
@@ -43,12 +44,11 @@ dependencies {
   api libs.exp4j
 
   dependencies {
+    testImplementation libs.groovy
     testImplementation libs.jsonassert
-    testImplementation libs.junitJupiterParams
-    testImplementation libs.junitJupiterApi
-    testImplementation libs.mockitoCore
+    testImplementation platform(libs.spockBom)
+    testImplementation libs.spockCore
     testRuntimeOnly libs.jakartaEl
-    testRuntimeOnly libs.junitJupiterEngine
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
   }
 }

@@ -16,73 +16,62 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-package org.openremote.model.util;
+package org.openremote.model.util
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
+import static org.skyscreamer.jsonassert.JSONAssert.assertEquals
 
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Serializable;
-import java.time.*;
-import java.util.Date;
-import java.util.Map;
-import org.json.JSONException;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.openremote.model.util.JSONSchemaUtil.*;
-import org.reflections.Reflections;
+import com.fasterxml.jackson.annotation.*
+import org.openremote.model.util.JSONSchemaUtil.*
+import org.openremote.model.value.ValueType
+import org.reflections.Reflections
+import spock.lang.Specification
 
-public class JSONSchemaUtilTest {
+import java.time.*
 
-  private static final Reflections reflections = new Reflections("org.openremote");
+class JSONSchemaUtilTest extends Specification {
 
-  @BeforeAll
-  static void setup() {
-    ValueUtil.doInitialise();
+  private static final Reflections reflections = new Reflections("org.openremote")
+
+  def setupSpec() {
+    ValueUtil.doInitialise()
   }
 
   private static InputStream loadResourceAsStream(String resourcePath) {
-    return JSONSchemaUtilTest.class.getResourceAsStream(
-        "/org/openremote/model/util/" + resourcePath + ".json");
+    JSONSchemaUtilTest.getResourceAsStream(
+        "/org/openremote/model/util/" + resourcePath + ".json")
   }
 
   static class Title {}
 
-  @Test
-  public void shouldHaveTitle() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema has a generated title"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
                 "title": "Title",
                 "additionalProperties": true
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(Title.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(Title)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonSchemaTitle(value = "Test Title", i18n = false)
   static class ItemType {}
 
   static class MembersShouldNotHaveTitle {
-    public Map<String, String> test;
-    public ItemType[] test1;
+    public Map<String, String> test
+    public ItemType[] test1
   }
 
-  @Test
-  public void shouldNotHaveTitle() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema members do not have generated titles"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
                 {
                   "$schema": "http://json-schema.org/draft-07/schema#",
                   "type": "object",
@@ -100,58 +89,58 @@ public class JSONSchemaUtilTest {
                   "title": "Members Should Not Have Title",
                   "additionalProperties": true
                 }
-            """);
+            ''')
 
-    JsonNode actual = ValueUtil.getSchema(MembersShouldNotHaveTitle.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(MembersShouldNotHaveTitle)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
-  @Test
-  public void shouldRemapByte() throws IOException, JSONException {
-    JsonNode expected =
-        ValueUtil.JSON.readTree(loadResourceAsStream(java.lang.Byte.class.getName()));
-    JsonNode actual = ValueUtil.getSchema(java.lang.Byte.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+  def "schema remaps Byte"() {
+    expect:
+    def expected =
+        ValueUtil.JSON.readTree(loadResourceAsStream(Byte.name))
+    def actual = ValueUtil.getSchema(Byte)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   static class AdditionalProperties {}
 
-  @Test
-  public void shouldHaveAdditionalPropertiesTrue() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema allows additional properties"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
                 "title": "Additional Properties",
                 "additionalProperties": true
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(AdditionalProperties.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(AdditionalProperties)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   static class RemapTypes {
-    @JsonSchemaTypeRemap(type = String.class)
-    public boolean test1;
+    @JsonSchemaTypeRemap(type = String)
+    public boolean test1
 
-    @JsonSchemaTypeRemap(type = boolean.class)
-    public String test2;
+    @JsonSchemaTypeRemap(type = boolean)
+    public String test2
 
-    @JsonSchemaTypeRemap(type = Date.class)
-    public boolean test3;
+    @JsonSchemaTypeRemap(type = Date)
+    public boolean test3
 
     @JsonSchemaSupplier(
         supplier = SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
-    public Boolean test4;
+    public Boolean test4
   }
 
-  @Test
-  public void shouldRemapTypes() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema remaps annotated types"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema":"http://json-schema.org/draft-07/schema#",
                 "type":"object",
@@ -164,45 +153,46 @@ public class JSONSchemaUtilTest {
                 "required":["test1","test3"],
                 "title":"Remap Types",
                 "additionalProperties":true
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(RemapTypes.class);
-    assertEquals(expected.toString(), actual.toString(), false);
+    def actual = ValueUtil.getSchema(RemapTypes)
+    assertEquals(expected.toString(), actual.toString(), false)
   }
 
-  @ParameterizedTest
-  @ValueSource(
-      classes = {
-        org.openremote.model.value.ValueType.BooleanMap.class,
-        org.openremote.model.value.ValueType.DoubleMap.class,
-        org.openremote.model.value.ValueType.IntegerMap.class,
-        org.openremote.model.value.ValueType.ObjectMap.class,
-        org.openremote.model.value.ValueType.StringMap.class,
-        org.openremote.model.value.ValueType.MultivaluedStringMap.class,
-      })
-  public void shouldHandleMapTypes() throws IOException, JSONException {
-    JsonNode expected =
-        ValueUtil.JSON.readTree(loadResourceAsStream(java.lang.Byte.class.getName()));
-    JsonNode actual = ValueUtil.getSchema(java.lang.Byte.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+  def "schema handles map type #mapType.simpleName"() {
+    expect:
+    def expected =
+        ValueUtil.JSON.readTree(loadResourceAsStream(mapType.name))
+    def actual = ValueUtil.getSchema(mapType)
+    assertEquals(expected.toString(), actual.toString(), true)
+
+    where:
+    mapType << [
+        ValueType.BooleanMap,
+        ValueType.DoubleMap,
+        ValueType.IntegerMap,
+        ValueType.ObjectMap,
+        ValueType.StringMap,
+        ValueType.MultivaluedStringMap
+    ]
   }
 
   static class JacksonAnnotations {
     @JsonPropertyDescription("This property should have a description.")
-    public Boolean test1;
+    public Boolean test1
 
     @JsonProperty("renamed")
-    public Boolean test2;
+    public Boolean test2
 
     @JsonProperty(value = "renamed1", required = true)
-    public Boolean test3;
+    public Boolean test3
   }
 
-  @Test
-  public void shouldHandleJacksonAnnotations() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema handles Jackson annotations"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
@@ -223,27 +213,27 @@ public class JSONSchemaUtilTest {
                 "required": [ "renamed1" ],
                 "title": "Jackson Annotations",
                 "additionalProperties": true
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(JacksonAnnotations.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(JacksonAnnotations)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   static class Primitives {
-    public boolean test1;
-    public int test2;
-    public long test3;
-    public float test4;
-    public double test5;
-    public byte test6;
-    public char test7;
+    public boolean test1
+    public int test2
+    public long test3
+    public float test4
+    public double test5
+    public byte test6
+    public char test7
   }
 
-  @Test
-  public void shouldHaveRequiredPrimitives() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema requires primitive fields"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
@@ -267,10 +257,10 @@ public class JSONSchemaUtilTest {
                 ],
                 "title": "Primitives",
                 "additionalProperties": true
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(Primitives.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(Primitives)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   static class AnnotationsForFields {
@@ -278,16 +268,15 @@ public class JSONSchemaUtilTest {
     @JsonSchemaDescription(value = "test", i18n = false)
     @JsonSchemaFormat("test")
     @JsonSchemaDefault("false")
-    @JsonSchemaExamples({"test"})
-    public Boolean all;
+    @JsonSchemaExamples(["test"])
+    public Boolean all
   }
 
-  @Test
-  public void shouldApplyCustomAnnotationsForFields()
-      throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema applies custom annotations to fields"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
@@ -303,24 +292,24 @@ public class JSONSchemaUtilTest {
                 },
                 "title": "Annotations For Fields",
                 "additionalProperties": true
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(AnnotationsForFields.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(AnnotationsForFields)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonSchemaTitle(value = "test", i18n = false)
   @JsonSchemaDescription(value = "test", i18n = false)
   @JsonSchemaFormat("test")
   @JsonSchemaDefault("{}")
-  @JsonSchemaExamples({"test"})
+  @JsonSchemaExamples(["test"])
   static class AnnotationsForTypes {}
 
-  @Test
-  public void shouldApplyCustomAnnotationsForTypes() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema applies custom annotations to types"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
@@ -332,59 +321,58 @@ public class JSONSchemaUtilTest {
                 "examples": [
                     "test"
                 ]
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(AnnotationsForTypes.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(AnnotationsForTypes)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonSchemaTitle("test")
   @JsonSchemaDescription("test")
   static class I18nAnnotations {}
 
-  @Test
-  public void shouldApplyI18nAnnotations() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema applies i18n annotations"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
                 "i18n": "org.openremote.model.util.JSONSchemaUtilTest.I18nAnnotations",
                 "additionalProperties": true
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(I18nAnnotations.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(I18nAnnotations)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonSchemaTitle(value = "test", i18n = false)
   @JsonSchemaDescription("Translated description")
   static class I18nAnnotationsPartiallyDisabled {}
 
-  @Test
-  public void shouldApplyI18nAnnotationsPartiallyDisabled()
-      throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema applies partially disabled i18n annotations"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
                 "title": "test",
                 "i18n": "org.openremote.model.util.JSONSchemaUtilTest.I18nAnnotationsPartiallyDisabled",
                 "additionalProperties": true
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(I18nAnnotationsPartiallyDisabled.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(I18nAnnotationsPartiallyDisabled)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME)
-  @JsonSubTypes({
-    @JsonSubTypes.Type(SubType.class),
-    @JsonSubTypes.Type(SubTypeSuperclass.class),
-  })
+  @JsonSubTypes([
+    @JsonSubTypes.Type(SubType),
+    @JsonSubTypes.Type(SubTypeSuperclass),
+  ])
   abstract static class PolymorphicType<T extends PolymorphicType<?>> implements Serializable {}
 
   @JsonTypeName("SubType")
@@ -393,11 +381,11 @@ public class JSONSchemaUtilTest {
   @JsonTypeName("SubTypeSuperclass")
   static class SubTypeSuperclass extends SubType {}
 
-  @Test
-  public void shouldHaveSubtypesWithTypeProperty() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema includes subtypes with a type property"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "definitions": {
@@ -438,17 +426,17 @@ public class JSONSchemaUtilTest {
                 "type": "object",
                 "additionalProperties": true,
                 "title": "Polymorphic Type"
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(PolymorphicType.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(PolymorphicType)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonTypeInfo(property = "customType", use = JsonTypeInfo.Id.NAME)
-  @JsonSubTypes({
-    @JsonSubTypes.Type(SubTypeWithCustomProperty.class),
-    @JsonSubTypes.Type(SubTypeSuperClassWithCustomProperty.class),
-  })
+  @JsonSubTypes([
+    @JsonSubTypes.Type(SubTypeWithCustomProperty),
+    @JsonSubTypes.Type(SubTypeSuperClassWithCustomProperty),
+  ])
   abstract static class PolymorphicTypeWithCustomProperty<
           T extends PolymorphicTypeWithCustomProperty<?>>
       implements Serializable {}
@@ -460,12 +448,11 @@ public class JSONSchemaUtilTest {
   @JsonTypeName("SubTypeSuperClassWithCustomProperty")
   static class SubTypeSuperClassWithCustomProperty extends SubTypeWithCustomProperty {}
 
-  @Test
-  public void shouldHaveSubtypesWithCustomTypeProperty()
-      throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema includes subtypes with a custom type property"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "definitions": {
@@ -506,10 +493,10 @@ public class JSONSchemaUtilTest {
                 "type": "object",
                 "additionalProperties": true,
                 "title": "Polymorphic Type With Custom Property"
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(PolymorphicTypeWithCustomProperty.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(PolymorphicTypeWithCustomProperty)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   // Note: JsonTypeInfo.As.EXISTING_PROPERTY doesn't necessarily change the behavior mainly the
@@ -518,45 +505,44 @@ public class JSONSchemaUtilTest {
       property = PolymorphicTypeWithCustomExistingProperty.VALUE_KEY_CUSTOM_TYPE,
       use = JsonTypeInfo.Id.NAME,
       include = JsonTypeInfo.As.EXISTING_PROPERTY)
-  @JsonSubTypes({
+  @JsonSubTypes([
     @JsonSubTypes.Type(
         name = SubTypeWithCustomExistingProperty.SUB_CUSTOM_TYPE,
-        value = SubTypeWithCustomExistingProperty.class),
+        value = SubTypeWithCustomExistingProperty),
     @JsonSubTypes.Type(
         name = SubTypeSuperClassWithCustomExistingProperty.SUPER_CUSTOM_TYPE,
-        value = SubTypeSuperClassWithCustomExistingProperty.class),
-  })
+        value = SubTypeSuperClassWithCustomExistingProperty),
+  ])
   abstract static class PolymorphicTypeWithCustomExistingProperty<
           T extends PolymorphicTypeWithCustomExistingProperty<?>>
       implements Serializable {
-    public static final String VALUE_KEY_CUSTOM_TYPE = "customType";
+    public static final String VALUE_KEY_CUSTOM_TYPE = "customType"
 
     @JsonProperty(VALUE_KEY_CUSTOM_TYPE)
-    protected String customType;
+    protected String customType
 
-    public String getCustomType() {
-      return customType;
+    String getCustomType() {
+      customType
     }
   }
 
   @JsonTypeName(SubTypeWithCustomExistingProperty.SUB_CUSTOM_TYPE)
   static class SubTypeWithCustomExistingProperty
       extends PolymorphicTypeWithCustomExistingProperty<SubTypeWithCustomExistingProperty> {
-    public static final String SUB_CUSTOM_TYPE = "sub";
+    public static final String SUB_CUSTOM_TYPE = "sub"
   }
 
   @JsonTypeName(SubTypeSuperClassWithCustomExistingProperty.SUPER_CUSTOM_TYPE)
   static class SubTypeSuperClassWithCustomExistingProperty
       extends SubTypeWithCustomExistingProperty {
-    public static final String SUPER_CUSTOM_TYPE = "super";
+    public static final String SUPER_CUSTOM_TYPE = "super"
   }
 
-  @Test
-  public void shouldHaveSubtypesWithExistingCustomTypeProperty()
-      throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema includes subtypes with an existing custom type property"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "definitions": {
@@ -597,20 +583,20 @@ public class JSONSchemaUtilTest {
                 "type": "object",
                 "additionalProperties": true,
                 "title": "Polymorphic Type With Custom Existing Property"
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(PolymorphicTypeWithCustomExistingProperty.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(PolymorphicTypeWithCustomExistingProperty)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonTypeInfo(
       property = "type",
       use = JsonTypeInfo.Id.NAME,
       include = JsonTypeInfo.As.EXTERNAL_PROPERTY)
-  @JsonSubTypes({
-    @JsonSubTypes.Type(ExternalSubType.class),
-    @JsonSubTypes.Type(ExternalSubTypeSuperclass.class),
-  })
+  @JsonSubTypes([
+    @JsonSubTypes.Type(ExternalSubType),
+    @JsonSubTypes.Type(ExternalSubTypeSuperclass),
+  ])
   abstract static class ExternalPolymorphicType<T extends ExternalPolymorphicType<?>>
       implements Serializable {}
 
@@ -618,11 +604,11 @@ public class JSONSchemaUtilTest {
 
   static class ExternalSubTypeSuperclass extends ExternalSubType {}
 
-  @Test
-  public void shouldSetEnumTypeForExternalProperty() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema sets the enum type for an external property"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "definitions": {
@@ -663,10 +649,10 @@ public class JSONSchemaUtilTest {
                 "type": "object",
                 "additionalProperties": true,
                 "title": "External Polymorphic Type"
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(ExternalPolymorphicType.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(ExternalPolymorphicType)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   @JsonTypeName("ReflectedPolymorphicType")
@@ -677,12 +663,11 @@ public class JSONSchemaUtilTest {
   @JsonTypeName("ResolvedSubType")
   static class ResolvedSubType extends ReflectedPolymorphicType<ResolvedSubType> {}
 
-  @Test
-  public void shouldResolveSubtypesThroughReflections()
-      throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema resolves subtypes through reflections"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "definitions": {
@@ -717,42 +702,42 @@ public class JSONSchemaUtilTest {
                 "required": [
                     "type"
                 ]
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(ReflectedPolymorphicType.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(ReflectedPolymorphicType)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
-  @Test
-  public void shouldNotHaveAllOf() {
-    for (Class<?> clazz : reflections.getTypesAnnotatedWith(JsonTypeInfo.class)) {
-      assertFalse(ValueUtil.getSchema(clazz).toString().contains("allOf"));
+  def "schemas do not use allOf"() {
+    expect:
+    reflections.getTypesAnnotatedWith(JsonTypeInfo).each { clazz ->
+      assert !ValueUtil.getSchema(clazz).toString().contains("allOf")
     }
   }
 
   static class JavaTimeJacksonModule {
-    public Duration duration;
-    public LocalDateTime localDateTime;
-    public LocalDate localDate;
-    public LocalTime localTime;
-    public MonthDay monthDay;
-    public OffsetTime offsetTime;
-    public Period period;
-    public Year year;
-    public YearMonth yearMonth;
-    public ZoneId zoneId;
-    public ZoneOffset zoneOffset;
+    public Duration duration
+    public LocalDateTime localDateTime
+    public LocalDate localDate
+    public LocalTime localTime
+    public MonthDay monthDay
+    public OffsetTime offsetTime
+    public Period period
+    public Year year
+    public YearMonth yearMonth
+    public ZoneId zoneId
+    public ZoneOffset zoneOffset
     // Instant variants
-    public Instant instant;
-    public OffsetDateTime offsetDateTime;
-    public ZonedDateTime zonedDateTime;
+    public Instant instant
+    public OffsetDateTime offsetDateTime
+    public ZonedDateTime zonedDateTime
   }
 
-  @Test
-  public void shouldApplyJacksonSerializers() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema applies Jackson serializers"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
@@ -814,26 +799,26 @@ public class JSONSchemaUtilTest {
                 },
                 "title": "Java Time Jackson Module",
                 "additionalProperties": true
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(JavaTimeJacksonModule.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(JavaTimeJacksonModule)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 
   enum TypeOption {
-    INTEGER(int.class),
-    STRING(String.class),
-    LONG(long.class),
-    FLOAT(Float.class);
+    INTEGER(int),
+    STRING(String),
+    LONG(long),
+    FLOAT(Float)
 
     TypeOption(Class<?> javaType) {}
   }
 
-  @Test
-  public void shouldGenerateEnum() throws JsonProcessingException, JSONException {
-    JsonNode expected =
+  def "schema generates enum values"() {
+    expect:
+    def expected =
         ValueUtil.JSON.readTree(
-            """
+            '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "string",
@@ -844,9 +829,9 @@ public class JSONSchemaUtilTest {
                     "FLOAT"
                 ],
                 "title": "Type Option"
-            }""");
+            }''')
 
-    JsonNode actual = ValueUtil.getSchema(TypeOption.class);
-    assertEquals(expected.toString(), actual.toString(), true);
+    def actual = ValueUtil.getSchema(TypeOption)
+    assertEquals(expected.toString(), actual.toString(), true)
   }
 }
