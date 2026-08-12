@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,447 +12,540 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
-import {Asset, AssetDescriptor, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model";
-import {style} from "../style";
-import {when} from "lit/directives/when.js";
-import {map} from "lit/directives/map.js";
-import {guard} from "lit/directives/guard.js";
-import {styleMap} from "lit/directives/style-map.js";
-import {i18next} from "@openremote/or-translate";
+import { css, type CSSResult, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
+import { customElement, property, state } from "lit/decorators.js";
+import { type Asset, type AssetDescriptor, AssetModelUtil, type Attribute, type AttributeRef } from "@openremote/model";
+import { style } from "../style";
+import { when } from "lit/directives/when.js";
+import { map } from "lit/directives/map.js";
+import { guard } from "lit/directives/guard.js";
+import { styleMap } from "lit/directives/style-map.js";
+import { i18next } from "@openremote/or-translate";
 import "@openremote/or-translate";
-import manager, {DefaultColor5, Util} from "@openremote/core";
-import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
-import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import manager, { DefaultColor5, Util } from "@openremote/core";
+import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
+import { OrAssetAttributePicker, OrAssetAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
+import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface AttributeAction {
-    icon: string,
-    tooltip: string,
-    active: boolean,
-    disabled: boolean,
-    color?: string
+  icon: string;
+  tooltip: string;
+  active: boolean;
+  disabled: boolean;
+  color?: string;
 }
 
-export class AttributeActionEvent extends CustomEvent<{ asset: Asset, attributeRef: AttributeRef, action: AttributeAction }> {
+export class AttributeActionEvent extends CustomEvent<{
+  asset: Asset;
+  attributeRef: AttributeRef;
+  action: AttributeAction;
+}> {
+  public static readonly NAME = "attribute-action";
 
-    public static readonly NAME = "attribute-action";
-
-    constructor(asset: Asset, attributeRef: AttributeRef, action: AttributeAction) {
-        super(AttributeActionEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: {
-                asset: asset,
-                attributeRef: attributeRef,
-                action: action
-            }
-        });
-    }
+  constructor(asset: Asset, attributeRef: AttributeRef, action: AttributeAction) {
+    super(AttributeActionEvent.NAME, {
+      bubbles: true,
+      composed: true,
+      detail: {
+        asset,
+        attributeRef,
+        action,
+      },
+    });
+  }
 }
 
-export class AttributesSelectEvent extends CustomEvent<{ assets: Asset[], attributeRefs: AttributeRef[] }> {
+export class AttributesSelectEvent extends CustomEvent<{ assets: Asset[]; attributeRefs: AttributeRef[] }> {
+  public static readonly NAME = "attribute-select";
 
-    public static readonly NAME = "attribute-select";
-
-    constructor(assets: Asset[], attributeRefs: AttributeRef[]) {
-        super(AttributesSelectEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: {
-                assets: assets,
-                attributeRefs: attributeRefs
-            }
-        });
-    }
+  constructor(assets: Asset[], attributeRefs: AttributeRef[]) {
+    super(AttributesSelectEvent.NAME, {
+      bubbles: true,
+      composed: true,
+      detail: {
+        assets,
+        attributeRefs,
+      },
+    });
+  }
 }
 
-export class AttributeReplaceEvent extends CustomEvent<{ oldRef: AttributeRef, newRef: AttributeRef }> {
+export class AttributeReplaceEvent extends CustomEvent<{ oldRef: AttributeRef; newRef: AttributeRef }> {
+  public static readonly NAME = "attribute-replace";
 
-    public static readonly NAME = "attribute-replace";
-
-    constructor(oldRef: AttributeRef, newRef: AttributeRef) {
-        super(AttributeReplaceEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: {
-                oldRef: oldRef,
-                newRef: newRef
-            }
-        });
-    }
+  constructor(oldRef: AttributeRef, newRef: AttributeRef) {
+    super(AttributeReplaceEvent.NAME, {
+      bubbles: true,
+      composed: true,
+      detail: {
+        oldRef,
+        newRef,
+      },
+    });
+  }
 }
 
 const styling = css`
-    #attribute-list {
-        overflow: auto;
-        flex: 1 1 0;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-    }
+  #attribute-list {
+    overflow: auto;
+    flex: 1 1 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
 
-    .attribute-list-item {
-        position: relative;
-        cursor: pointer;
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: stretch;
-        gap: 0 10px;
-        padding: 0;
-        min-height: 50px;
-    }
+  .attribute-list-item {
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0 10px;
+    padding: 0;
+    min-height: 50px;
+  }
 
-    .attribute-list-item-icon {
-        display: flex;
-        align-items: center;
-        --or-icon-width: 20px;
-        min-height: 50px;
-    }
+  .attribute-list-item-icon {
+    display: flex;
+    align-items: center;
+    --or-icon-width: 20px;
+    min-height: 50px;
+  }
 
-    .attribute-list-item-label {
-        display: flex;
-        justify-content: center;
-        flex: 1 1 0;
-        line-height: 16px;
-        flex-direction: column;
-        overflow: hidden;
-        white-space: nowrap;
-    }
-    
-    .attribute-list-item-label > * {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+  .attribute-list-item-label {
+    display: flex;
+    justify-content: center;
+    flex: 1 1 0;
+    line-height: 16px;
+    flex-direction: column;
+    overflow: hidden;
+    white-space: nowrap;
+  }
 
-    .attribute-list-item-actions {
-        justify-content: end;
-        align-items: center;
-        display: flex;
-        position: absolute;
-        visibility: hidden;
-        gap: 8px;
-    }
+  .attribute-list-item-label > * {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-    .attribute-list-item-bullet {
-        width: 14px;
-        height: 14px;
-        border-radius: 7px;
-        margin-right: 10px;
-    }
+  .attribute-list-item-actions {
+    justify-content: end;
+    align-items: center;
+    display: flex;
+    position: absolute;
+    visibility: hidden;
+    gap: 8px;
+  }
 
-    .attribute-list-item .button.delete {
-        display: none;
-    }
+  .attribute-list-item-bullet {
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    margin-right: 10px;
+  }
 
-    .attribute-list-item:hover .button.delete {
-        display: block;
-    }
+  .attribute-list-item .button.delete {
+    display: none;
+  }
 
-    .button-action {
-        background: none;
-        visibility: hidden;
-        color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-        --or-icon-fill: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-        display: inline-block;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-    }
+  .attribute-list-item:hover .button.delete {
+    display: block;
+  }
 
-    .attribute-list-item:hover .attribute-list-item-actions {
-        visibility: visible;
-        position: unset;
-        background: white;
-        z-index: 1;
-    }
+  .button-action {
+    background: none;
+    visibility: hidden;
+    color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+    --or-icon-fill: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+    display: inline-block;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
 
-    .attribute-list-item:hover .button-action {
-        visibility: visible;
-    }
+  .attribute-list-item:hover .attribute-list-item-actions {
+    visibility: visible;
+    position: unset;
+    background: white;
+    z-index: 1;
+  }
 
-    .button-action[disabled] {
-        opacity: 0.5;
-        cursor: initial;
-    }
+  .attribute-list-item:hover .button-action {
+    visibility: visible;
+  }
 
-    .button-action:hover {
-        --or-icon-fill: var(--or-icon-fill--hover, var(--or-app-color4));
-    }
+  .button-action[disabled] {
+    opacity: 0.5;
+    cursor: initial;
+  }
 
-    .attribute-list-item.broken {
-        opacity: 0.7;
-    }
+  .button-action:hover {
+    --or-icon-fill: var(--or-icon-fill--hover, var(--or-app-color4));
+  }
 
-    .attribute-list-item.broken .attribute-list-item-label > .broken-label {
-        color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-        font-style: italic;
-    }
-    
-    .attribute-list-item.broken .attribute-list-item-actions,
-    .attribute-list-item.broken .button-action {
-        visibility: visible;
-        position: unset;
-    }
+  .attribute-list-item.broken {
+    opacity: 0.7;
+  }
+
+  .attribute-list-item.broken .attribute-list-item-label > .broken-label {
+    color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+    font-style: italic;
+  }
+
+  .attribute-list-item.broken .attribute-list-item-actions,
+  .attribute-list-item.broken .button-action {
+    visibility: visible;
+    position: unset;
+  }
 `;
 
 @customElement("attributes-panel")
-export class AttributesPanel extends LitElement {
+export class AttributesPanel extends OrElement {
+  @property({ type: Array })
+  public attributeRefs: AttributeRef[] = [];
 
-    @property({type: Array})
-    public attributeRefs: AttributeRef[] = [];
+  @property({ type: Boolean })
+  public multi = false;
 
-    @property({type: Boolean})
-    public multi = false;
+  @property({ type: Boolean })
+  public onlyDataAttrs = false;
 
-    @property({type: Boolean})
-    public onlyDataAttrs = false;
+  @property({ type: Boolean })
+  public includePredictedDataAttrs = false;
 
-    @property({type: Boolean})
-    public includePredictedDataAttrs = false;
+  @property()
+  protected attributeFilter?: (attribute: Attribute<any>) => boolean;
 
-    @property()
-    protected attributeFilter?: (attribute: Attribute<any>) => boolean;
+  @property()
+  protected attributeIconCallback?: (
+    asset: Asset,
+    attribute: Attribute<any>,
+    descriptor?: AssetDescriptor
+  ) => TemplateResult;
 
-    @property()
-    protected attributeIconCallback?: (asset: Asset, attribute: Attribute<any>, descriptor?: AssetDescriptor) => TemplateResult;
+  @property()
+  protected attributeLabelCallback?: (
+    asset: Asset,
+    attribute: Attribute<any>,
+    attributeLabel: string
+  ) => TemplateResult;
 
-    @property()
-    protected attributeLabelCallback?: (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => TemplateResult;
+  @property()
+  protected attributeActionCallback?: (attribute: AttributeRef) => AttributeAction[];
 
-    @property()
-    protected attributeActionCallback?: (attribute: AttributeRef) => AttributeAction[];
+  @state()
+  protected loadedAssets: Asset[] = [];
 
-    @state()
-    protected loadedAssets: Asset[] = [];
+  @state()
+  protected _assetsLoading = false;
 
-    @state()
-    protected _assetsLoading = false;
+  static get styles(): CSSResult[] {
+    return [styling, style];
+  }
 
-    static get styles(): CSSResult[] {
-        return [styling, style];
+  // Lit lifecycle method to compute values during update
+  protected willUpdate(changedProps: PropertyValues) {
+    super.willUpdate(changedProps);
+
+    if (!this.attributeRefs) {
+      this.attributeRefs = [];
     }
-
-    // Lit lifecycle method to compute values during update
-    protected willUpdate(changedProps: PropertyValues) {
-        super.willUpdate(changedProps);
-
-        if (!this.attributeRefs) {
-            this.attributeRefs = [];
-        }
-        if (changedProps.has("attributeRefs") && this.attributeRefs) {
-            this._assetsLoading = true;
-            this.loadAssets().then(assets => {
-
-                // Only dispatch event when it CHANGED, so not from 'undefined' to [];
-                if(changedProps.get("attributeRefs")) {
-                    this.dispatchEvent(new AttributesSelectEvent(assets, this.attributeRefs));
-                }
-
-            }).finally(() => {
-                this._assetsLoading = false;
-            });
-        }
-    }
-
-    protected getLoadedAsset(attrRef: AttributeRef): Asset | undefined {
-        return this.loadedAssets?.find(asset => asset.id === attrRef.id && attrRef.name && asset.attributes?.[attrRef.name] !== undefined);
-    }
-
-    protected removeWidgetAttribute(attributeRef: AttributeRef) {
-        if (this.attributeRefs != null) {
-            this.attributeRefs = this.attributeRefs.filter(ar => ar !== attributeRef);
-        }
-    }
-
-    protected replaceWidgetAttribute(oldRef: AttributeRef) {
-        const dialog = showDialog(new OrAssetAttributePicker()
-            .setMultiSelect(false)
-            .setShowOnlyDatapointAttrs(this.onlyDataAttrs)
-            .setShowPredictedDataAttrs(this.includePredictedDataAttrs)
-            .setAttributeFilter(this.attributeFilter));
-        dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
-            const newRef: AttributeRef | undefined = (event.detail as AttributeRef[])?.[0];
-            if (!newRef) {
-                return;
-            }
-            const index = this.attributeRefs.findIndex(ar => ar.id === oldRef.id && ar.name === oldRef.name);
-            if (index < 0) {
-                return;
-            }
-            // Guard against creating a duplicate reference.
-            if (this.attributeRefs.some(ar => ar.id === newRef.id && ar.name === newRef.name)) {
-                showSnackbar(undefined, "dashboard.attributeAlreadyAdded");
-                return;
-            }
-            // Notify listeners first so they can migrate per-attribute config (colors, axis, ...) before
-            // the list change propagates as a regular attribute-select event.
-            this.dispatchEvent(new AttributeReplaceEvent(oldRef, newRef));
-            const updated = [...this.attributeRefs];
-            updated[index] = newRef;
-            this.attributeRefs = updated;
+    if (changedProps.has("attributeRefs") && this.attributeRefs) {
+      this._assetsLoading = true;
+      this.loadAssets()
+        .then((assets) => {
+          // Only dispatch event when it CHANGED, so not from 'undefined' to [];
+          if (changedProps.get("attributeRefs")) {
+            this.dispatchEvent(new AttributesSelectEvent(assets, this.attributeRefs));
+          }
+        })
+        .finally(() => {
+          this._assetsLoading = false;
         });
     }
+  }
 
-    protected async loadAssets(): Promise<Asset[]> {
-        if(this.attributeRefs.filter(ar => !this.getLoadedAsset(ar)).length > 0) {
-            const assets = await this.fetchAssets(this.attributeRefs);
-            this.loadedAssets = assets;
-            return assets;
-        } else {
-            return this.loadedAssets;
-        }
+  protected getLoadedAsset(attrRef: AttributeRef): Asset | undefined {
+    return this.loadedAssets?.find(
+      (asset) => asset.id === attrRef.id && attrRef.name && asset.attributes?.[attrRef.name] !== undefined
+    );
+  }
+
+  protected removeWidgetAttribute(attributeRef: AttributeRef) {
+    if (this.attributeRefs != null) {
+      this.attributeRefs = this.attributeRefs.filter((ar) => ar !== attributeRef);
     }
+  }
 
-    // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required.
-    // TODO: Move this to more generic spot?
-    async fetchAssets(attributeRefs: AttributeRef[] = []): Promise<Asset[]> {
-        let assets: Asset[] = [];
-        await manager.rest.api.AssetResource.queryAssets({
-            ids: attributeRefs.map((x: AttributeRef) => x.id) as string[],
-            realm: { name: manager.displayRealm },
-            select: {
-                attributes: attributeRefs.map((x: AttributeRef) => x.name) as string[]
-            }
-        }).then(response => {
-            assets = response.data;
-        }).catch(reason => {
-            console.error(reason);
-            showSnackbar(undefined, "errorOccurred");
-        });
-        return assets;
+  protected replaceWidgetAttribute(oldRef: AttributeRef) {
+    const dialog = showDialog(
+      new OrAssetAttributePicker()
+        .setMultiSelect(false)
+        .setShowOnlyDatapointAttrs(this.onlyDataAttrs)
+        .setShowPredictedDataAttrs(this.includePredictedDataAttrs)
+        .setAttributeFilter(this.attributeFilter)
+    );
+    dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
+      const newRef: AttributeRef | undefined = (event.detail as AttributeRef[])?.[0];
+      if (!newRef) {
+        return;
+      }
+      const index = this.attributeRefs.findIndex((ar) => ar.id === oldRef.id && ar.name === oldRef.name);
+      if (index < 0) {
+        return;
+      }
+      // Guard against creating a duplicate reference.
+      if (this.attributeRefs.some((ar) => ar.id === newRef.id && ar.name === newRef.name)) {
+        showSnackbar(undefined, "dashboard.attributeAlreadyAdded");
+        return;
+      }
+      // Notify listeners first so they can migrate per-attribute config (colors, axis, ...) before
+      // the list change propagates as a regular attribute-select event.
+      this.dispatchEvent(new AttributeReplaceEvent(oldRef, newRef));
+      const updated = [...this.attributeRefs];
+      updated[index] = newRef;
+      this.attributeRefs = updated;
+    });
+  }
+
+  protected async loadAssets(): Promise<Asset[]> {
+    if (this.attributeRefs.filter((ar) => !this.getLoadedAsset(ar)).length > 0) {
+      const assets = await this.fetchAssets(this.attributeRefs);
+      this.loadedAssets = assets;
+      return assets;
+    } else {
+      return this.loadedAssets;
     }
+  }
 
-    protected onAttributeActionClick(asset: Asset, attributeRef: AttributeRef, action: AttributeAction) {
-        this.dispatchEvent(new AttributeActionEvent(asset, attributeRef, action));
+  // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required.
+  // TODO: Move this to more generic spot?
+  async fetchAssets(attributeRefs: AttributeRef[] = []): Promise<Asset[]> {
+    let assets: Asset[] = [];
+    await manager.rest.api.AssetResource.queryAssets({
+      ids: attributeRefs.map((x: AttributeRef) => x.id) as string[],
+      realm: { name: manager.displayRealm },
+      select: {
+        attributes: attributeRefs.map((x: AttributeRef) => x.name) as string[],
+      },
+    })
+      .then((response) => {
+        assets = response.data;
+      })
+      .catch((reason) => {
+        console.error(reason);
+        showSnackbar(undefined, "errorOccurred");
+      });
+    return assets;
+  }
+
+  protected onAttributeActionClick(asset: Asset, attributeRef: AttributeRef, action: AttributeAction) {
+    this.dispatchEvent(new AttributeActionEvent(asset, attributeRef, action));
+  }
+
+  protected openAttributeSelector(
+    attributeRefs: AttributeRef[],
+    multi: boolean,
+    onlyDataAttrs = true,
+    attributeFilter?: (attribute: Attribute<any>) => boolean
+  ) {
+    let dialog: OrAssetAttributePicker;
+    if (attributeRefs != null) {
+      dialog = showDialog(
+        new OrAssetAttributePicker()
+          .setMultiSelect(multi)
+          .setSelectedAttributes(attributeRefs)
+          .setShowOnlyDatapointAttrs(onlyDataAttrs)
+          .setShowPredictedDataAttrs(this.includePredictedDataAttrs)
+          .setAttributeFilter(attributeFilter)
+      );
+    } else {
+      dialog = showDialog(
+        new OrAssetAttributePicker()
+          .setMultiSelect(multi)
+          .setShowOnlyDatapointAttrs(onlyDataAttrs)
+          .setShowPredictedDataAttrs(this.includePredictedDataAttrs)
+      );
     }
+    dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
+      this.attributeRefs = event.detail;
+    });
+  }
 
-    protected openAttributeSelector(attributeRefs: AttributeRef[], multi: boolean, onlyDataAttrs = true, attributeFilter?: (attribute: Attribute<any>) => boolean) {
-        let dialog: OrAssetAttributePicker;
-        if (attributeRefs != null) {
-            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(onlyDataAttrs).setShowPredictedDataAttrs(this.includePredictedDataAttrs).setAttributeFilter(attributeFilter));
-        } else {
-            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(onlyDataAttrs).setShowPredictedDataAttrs(this.includePredictedDataAttrs));
-        }
-        dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
-            this.attributeRefs = event.detail;
-        });
-    }
-
-    protected render(): TemplateResult {
-        return html`
-            <div>
-                ${when(this.attributeRefs.length > 0, () => html`
-
-                    <div id="attribute-list">
-                        ${guard([this.attributeRefs, this.loadedAssets, this.attributeActionCallback, this.attributeLabelCallback, this._assetsLoading], () => html`
-                            ${map(this.attributeRefs.map(attributeRef => {
-                                const asset = this.getLoadedAsset(attributeRef);
-                                const attribute = asset?.attributes?.[attributeRef.name!];
-                                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset?.type, attributeRef.name, attribute);
-                                const label = Util.getAttributeLabel(attribute, descriptors[0], asset?.type, true);
-                                return { asset, attribute, attributeRef, label };
-
-                            }).sort(Util.sortByString(x => x.label || x.attributeRef.name || "")), ({asset, attribute, attributeRef, label}) => {
-                                if (asset && attribute && attributeRef && label) {
-                                    return html`
-                                        <div class="attribute-list-item">
-                                            <div class="attribute-list-item-icon">
-                                                ${when(!!this.attributeIconCallback,
-                                                        () => this.attributeIconCallback!(asset, attribute, AssetModelUtil.getAssetDescriptor(asset.type)),
-                                                        () => html`<span>${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>`
-                                                )}
-                                            </div>
-                                            <div class="attribute-list-item-label">
-                                                ${when(!!this.attributeLabelCallback,
-                                                        () => this.attributeLabelCallback!(asset, attribute, label),
-                                                        () => html`
-                                                            <span>${asset.name}</span>
-                                                            <span style="color:grey;">${label}</span>
-                                                        `
-                                                )}
-                                            </div>
-                                            ${this._getAttributeActionsTemplate(asset, attributeRef)}
-                                        </div>
-                                    `;
-                                }
-                                // Reference points to an attribute that no longer resolves.
-                                if (!this._assetsLoading && attributeRef) {
-                                    return html`
-                                        <div class="attribute-list-item broken">
-                                            <div class="attribute-list-item-icon">
-                                                <or-icon icon="link-variant-off"></or-icon>
-                                            </div>
-                                            <div class="attribute-list-item-label">
-                                                <or-translate class="broken-label" value="brokenReference"></or-translate>
-                                                <span style="color:grey;">${Util.camelCaseToSentenceCase(attributeRef.name) ?? ""}</span>
-                                            </div>
-                                            ${this._getBrokenAttributeActionsTemplate(attributeRef)}
-                                        </div>
-                                    `;
-                                }
-                                return undefined;
-                            })}
-                        `)}
-                    </div>
-
-                `, () => html`
-                    <span style="padding: 14px 0; display: block;"><or-translate value="noAttributesConnected"></or-translate></span>
-                `)}
-
-                <!-- Button that opens attribute selection -->
-                <or-vaadin-button style="margin-top: 8px;" @click=${() => this.openAttributeSelector(this.attributeRefs, this.multi, this.onlyDataAttrs, this.attributeFilter)}>
-                    <or-icon slot="prefix" icon="${(this.multi || this.attributeRefs.length === 0) ? "plus" : "swap-horizontal"}"></or-icon>
-                    <or-translate value="attribute"></or-translate>
-                </or-vaadin-button>
+  protected render(): TemplateResult {
+    return html`
+      <div>
+        ${when(
+          this.attributeRefs.length > 0,
+          () => html`
+            <div id="attribute-list">
+              ${guard(
+                [
+                  this.attributeRefs,
+                  this.loadedAssets,
+                  this.attributeActionCallback,
+                  this.attributeLabelCallback,
+                  this._assetsLoading,
+                ],
+                () => html`
+                  ${map(
+                    this.attributeRefs
+                      .map((attributeRef) => {
+                        const asset = this.getLoadedAsset(attributeRef);
+                        const attribute = asset?.attributes?.[attributeRef.name!];
+                        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(
+                          asset?.type,
+                          attributeRef.name,
+                          attribute
+                        );
+                        const label = Util.getAttributeLabel(attribute, descriptors[0], asset?.type, true);
+                        return { asset, attribute, attributeRef, label };
+                      })
+                      .sort(Util.sortByString((x) => x.label || x.attributeRef.name || "")),
+                    ({ asset, attribute, attributeRef, label }) => {
+                      if (asset && attribute && attributeRef && label) {
+                        return html`
+                          <div class="attribute-list-item">
+                            <div class="attribute-list-item-icon">
+                              ${when(
+                                !!this.attributeIconCallback,
+                                () =>
+                                  this.attributeIconCallback!(
+                                    asset,
+                                    attribute,
+                                    AssetModelUtil.getAssetDescriptor(asset.type)
+                                  ),
+                                () =>
+                                  html`<span
+                                    >${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span
+                                  >`
+                              )}
+                            </div>
+                            <div class="attribute-list-item-label">
+                              ${when(
+                                !!this.attributeLabelCallback,
+                                () => this.attributeLabelCallback!(asset, attribute, label),
+                                () => html`
+                                  <span>${asset.name}</span>
+                                  <span style="color:grey;">${label}</span>
+                                `
+                              )}
+                            </div>
+                            ${this._getAttributeActionsTemplate(asset, attributeRef)}
+                          </div>
+                        `;
+                      }
+                      // Reference points to an attribute that no longer resolves.
+                      if (!this._assetsLoading && attributeRef) {
+                        return html`
+                          <div class="attribute-list-item broken">
+                            <div class="attribute-list-item-icon">
+                              <or-icon icon="link-variant-off"></or-icon>
+                            </div>
+                            <div class="attribute-list-item-label">
+                              <or-translate class="broken-label" value="brokenReference"></or-translate>
+                              <span style="color:grey;">${Util.camelCaseToSentenceCase(attributeRef.name) ?? ""}</span>
+                            </div>
+                            ${this._getBrokenAttributeActionsTemplate(attributeRef)}
+                          </div>
+                        `;
+                      }
+                      return undefined;
+                    }
+                  )}
+                `
+              )}
             </div>
-        `;
-    }
+          `,
+          () => html`
+            <span style="padding: 14px 0; display: block;"
+              ><or-translate value="noAttributesConnected"></or-translate
+            ></span>
+          `
+        )}
 
-    protected _getAttributeActionsTemplate(asset: Asset, attributeRef: AttributeRef): TemplateResult {
-        return html`
-            <div class="attribute-list-item-actions">
-                <!-- Custom actions defined by callback -->
-                ${when(!!this.attributeActionCallback, () => this.attributeActionCallback!(attributeRef).map(
-                        action => this._getAttributeActionTemplate(action, asset, attributeRef)
-                ))}
-                <!-- Remove attribute button -->
-                <button class="button-action" title="${i18next.t("delete")}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
-                    <or-icon icon="close-circle"></or-icon>
-                </button>
-            </div>
-        `;
-    }
+        <!-- Button that opens attribute selection -->
+        <or-vaadin-button
+          style="margin-top: 8px;"
+          @click=${() => this.openAttributeSelector(this.attributeRefs, this.multi, this.onlyDataAttrs, this.attributeFilter)}
+        >
+          <or-icon
+            slot="prefix"
+            icon="${this.multi || this.attributeRefs.length === 0 ? "plus" : "swap-horizontal"}"
+          ></or-icon>
+          <or-translate value="attribute"></or-translate>
+        </or-vaadin-button>
+      </div>
+    `;
+  }
 
-    protected _getBrokenAttributeActionsTemplate(attributeRef: AttributeRef): TemplateResult {
-        return html`
-            <div class="attribute-list-item-actions">
-                <button class="button-action" title="${i18next.t("dashboard.replaceAttribute")}" @click="${() => this.replaceWidgetAttribute(attributeRef)}">
-                    <or-icon icon="swap-horizontal"></or-icon>
-                </button>
-                <button class="button-action" title="${i18next.t("delete")}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
-                    <or-icon icon="close-circle"></or-icon>
-                </button>
-            </div>
-        `;
-    }
+  protected _getAttributeActionsTemplate(asset: Asset, attributeRef: AttributeRef): TemplateResult {
+    return html`
+      <div class="attribute-list-item-actions">
+        <!-- Custom actions defined by callback -->
+        ${when(!!this.attributeActionCallback, () =>
+          this.attributeActionCallback!(attributeRef).map((action) =>
+            this._getAttributeActionTemplate(action, asset, attributeRef)
+          )
+        )}
+        <!-- Remove attribute button -->
+        <button
+          class="button-action"
+          title="${i18next.t("delete")}"
+          @click="${() => this.removeWidgetAttribute(attributeRef)}"
+        >
+          <or-icon icon="close-circle"></or-icon>
+        </button>
+      </div>
+    `;
+  }
 
-    protected _getAttributeActionTemplate(action: AttributeAction, asset: Asset, attributeRef: AttributeRef): TemplateResult {
-        const styles = styleMap({
-            "--or-icon-fill": action.active ? action?.color ?? "inherit" : "inherit",
-            "--or-icon-fill--hover": action?.color ?? "unset"
-        });
-        return html`
-            <button class="button-action" .disabled="${action.disabled}" title="${action.tooltip}" style=${styles}
-                    @click="${() => this.onAttributeActionClick(asset, attributeRef, action)}">
-                <or-icon icon="${action.icon}"></or-icon>
-            </button>
-        `;
-    }
+  protected _getBrokenAttributeActionsTemplate(attributeRef: AttributeRef): TemplateResult {
+    return html`
+      <div class="attribute-list-item-actions">
+        <button
+          class="button-action"
+          title="${i18next.t("dashboard.replaceAttribute")}"
+          @click="${() => this.replaceWidgetAttribute(attributeRef)}"
+        >
+          <or-icon icon="swap-horizontal"></or-icon>
+        </button>
+        <button
+          class="button-action"
+          title="${i18next.t("delete")}"
+          @click="${() => this.removeWidgetAttribute(attributeRef)}"
+        >
+          <or-icon icon="close-circle"></or-icon>
+        </button>
+      </div>
+    `;
+  }
 
+  protected _getAttributeActionTemplate(
+    action: AttributeAction,
+    asset: Asset,
+    attributeRef: AttributeRef
+  ): TemplateResult {
+    const styles = styleMap({
+      "--or-icon-fill": action.active ? (action?.color ?? "inherit") : "inherit",
+      "--or-icon-fill--hover": action?.color ?? "unset",
+    });
+    return html`
+      <button
+        class="button-action"
+        .disabled="${action.disabled}"
+        title="${action.tooltip}"
+        style=${styles}
+        @click="${() => this.onAttributeActionClick(asset, attributeRef, action)}"
+      >
+        <or-icon icon="${action.icon}"></or-icon>
+      </button>
+    `;
+  }
 }

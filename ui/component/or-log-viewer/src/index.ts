@@ -1,28 +1,45 @@
-import {
-    css,
-    html,
-    LitElement,
-    PropertyValues,
-    TemplateResult,
-    unsafeCSS
-} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {i18next, translate} from "@openremote/or-translate"
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
+import { customElement, property, query } from "lit/decorators.js";
+import { i18next, translate } from "@openremote/or-translate";
 import * as Model from "@openremote/model";
-import manager, {DefaultColor2, DefaultColor3, Util} from "@openremote/core";
+import manager, { DefaultColor2, DefaultColor3, Util } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {MDCDataTable} from "@material/data-table";
+import "@openremote/or-vaadin-components/or-vaadin-button";
+import "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
+import "@openremote/or-vaadin-components/or-vaadin-select";
+import "@openremote/or-vaadin-components/or-vaadin-text-field";
+import type { MDCDataTable } from "@material/data-table";
 import moment from "moment";
 import type { GenericAxiosResponse } from "axios";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
-import {OrVaadinMultiSelectComboBox} from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
-import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
-import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import type { OrVaadinSelect } from "@openremote/or-vaadin-components/or-vaadin-select";
+import type { OrVaadinMultiSelectComboBox } from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
+import { OrVaadinDateTimePicker } from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
+import type { OrVaadinCheckbox } from "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import { when } from "lit/directives/when.js";
-import {DatapointInterval, SyslogLevel} from "@openremote/model";
+import type { DatapointInterval, SyslogLevel } from "@openremote/model";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { parse } from "http-link-header";
 
@@ -30,640 +47,751 @@ import { parse } from "http-link-header";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export interface ViewerConfig {
-    allowedCategories?: Model.SyslogCategory[];
-    initialCategories?: Model.SyslogCategory[];
-    initialFilter?: string;
-    initialLevel?: Model.SyslogLevel;
-    hideCategories?: boolean;
-    hideFilter?: boolean;
-    hideLevel?: boolean;
+  allowedCategories?: Model.SyslogCategory[];
+  initialCategories?: Model.SyslogCategory[];
+  initialFilter?: string;
+  initialLevel?: Model.SyslogLevel;
+  hideCategories?: boolean;
+  hideFilter?: boolean;
+  hideLevel?: boolean;
 }
 
 // language=CSS
 const style = css`
-    :host {
-        --internal-or-log-viewer-background-color: var(--or-log-viewer-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
-        --internal-or-log-viewer-text-color: var(--or-log-viewer-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-        --internal-or-log-viewer-controls-margin: var(--or-log-viewer-controls-margin, 0);
-        
-        display: block;                
-    }
-    
-    :host([hidden]) {
-        display: none;
-    }
-    
-    #container {
-        display: flex;
-        min-width: 0;
-        width: 100%;
-        height: 100%;
-        flex-direction: column;
-    }
-       
-    #msg {
-        height: 100%;
-        width: 100%;
-        justify-content: center;
-        align-items: baseline;
-        text-align: center;
-    }
-    
-    #msg:not([hidden]) {
-        display: flex;    
-    }
-    
-    #controls {
-        flex: 0;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: baseline;
-        margin: var(--internal-or-log-viewer-controls-margin);
-        padding: 0 20px 20px 20px;
-    }
-    
-    #controls > * {
-        margin-top: 20px;
-    }
-    
-    #time-controls {
-        display: flex;
-        align-items: baseline;
-    }
-    
-    #live-button {
-        margin-right: 40px;
-    }
-    
-    #log-controls, #ending-controls, #page-controls {
-        display: flex;
-        max-width: 100%;
-        align-items: baseline;
-    }
-    
-    #ending-controls {
-        margin: 0 10px;
-    }
-    
-    #log-controls > *, #ending-controls > *, #page-controls > * {
-        padding: 0 5px;
-    }
-        
-    #page-controls[hidden] {
-        visibility: hidden;
-    }
-    
-    #ending-date {
-        min-width: 0;
-    }
-    
-    #table-container {
-        height: 100%;
-        overflow: auto;
-    }
-    
-    #table {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-    
-    #table > table {
-        width: 100%;
-        table-layout: fixed;
-    }
-    
-    #table th:not(.icon-cell), #table td:not(.icon-cell) {
-        word-wrap: break-word;
-        white-space: pre-wrap;
-    }
+  :host {
+    --internal-or-log-viewer-background-color: var(
+      --or-log-viewer-background-color,
+      var(--or-app-color2, ${unsafeCSS(DefaultColor2)})
+    );
+    --internal-or-log-viewer-text-color: var(
+      --or-log-viewer-text-color,
+      var(--or-app-color3, ${unsafeCSS(DefaultColor3)})
+    );
+    --internal-or-log-viewer-controls-margin: var(--or-log-viewer-controls-margin, 0);
+
+    display: block;
+  }
+
+  :host([hidden]) {
+    display: none;
+  }
+
+  #container {
+    display: flex;
+    min-width: 0;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+  }
+
+  #msg {
+    height: 100%;
+    width: 100%;
+    justify-content: center;
+    align-items: baseline;
+    text-align: center;
+  }
+
+  #msg:not([hidden]) {
+    display: flex;
+  }
+
+  #controls {
+    flex: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: var(--internal-or-log-viewer-controls-margin);
+    padding: 0 20px 20px 20px;
+  }
+
+  #controls > * {
+    margin-top: 20px;
+  }
+
+  #time-controls {
+    display: flex;
+    align-items: baseline;
+  }
+
+  #live-button {
+    margin-right: 40px;
+  }
+
+  #log-controls,
+  #ending-controls,
+  #page-controls {
+    display: flex;
+    max-width: 100%;
+    align-items: baseline;
+  }
+
+  #ending-controls {
+    margin: 0 10px;
+  }
+
+  #log-controls > *,
+  #ending-controls > *,
+  #page-controls > * {
+    padding: 0 5px;
+  }
+
+  #page-controls[hidden] {
+    visibility: hidden;
+  }
+
+  #ending-date {
+    min-width: 0;
+  }
+
+  #table-container {
+    height: 100%;
+    overflow: auto;
+  }
+
+  #table {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  #table > table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  #table th:not(.icon-cell),
+  #table td:not(.icon-cell) {
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+
+  #table th:not(.icon-cell) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 @customElement("or-log-viewer")
-export class OrLogViewer extends translate(i18next)(LitElement) {
+export class OrLogViewer extends translate(i18next)(OrElement) {
+  public static DEFAULT_TIMESTAMP_FORMAT = "L HH:mm:ss";
+  public static DEFAULT_LIMIT = 50;
+  public static DEFAULT_LEVEL = Model.SyslogLevel.INFO;
+  public static DEFAULT_INTERVAL = Model.DatapointInterval.HOUR;
 
-    public static DEFAULT_TIMESTAMP_FORMAT = "L HH:mm:ss";
-    public static DEFAULT_LIMIT = 50;
-    public static DEFAULT_LEVEL = Model.SyslogLevel.INFO;
-    public static DEFAULT_INTERVAL = Model.DatapointInterval.HOUR;
+  static get styles() {
+    return [
+      css`
+        ${unsafeCSS(tableStyle)}
+      `,
+      style,
+    ];
+  }
 
-    static get styles() {
-        return [
-            css`${unsafeCSS(tableStyle)}`,
-            style
-        ];
+  @property({ type: String })
+  public interval?: Model.DatapointInterval;
+
+  @property({ type: Number })
+  public timestamp?: Date;
+
+  @property({ type: Number })
+  public limit?: number;
+
+  @property({ type: Array })
+  public categories?: Model.SyslogCategory[];
+
+  @property({ type: String })
+  public filter?: string;
+
+  @property({ type: String })
+  public level?: Model.SyslogLevel;
+
+  @property({ type: Boolean })
+  public live: boolean = false;
+
+  @property({ type: Object })
+  public config?: ViewerConfig;
+
+  @property()
+  protected _loading: boolean = false;
+
+  @property()
+  protected _data?: Model.SyslogEvent[];
+
+  @query("#table")
+  protected _tableElem!: HTMLDivElement;
+
+  protected _table?: MDCDataTable;
+  protected _eventSubscriptionId?: string;
+  protected _refresh?: number;
+  protected _pageCount?: number;
+  protected _currentPage: number = 1;
+
+  connectedCallback() {
+    super.connectedCallback();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._cleanup();
+    this._unsubscribeEvents();
+  }
+
+  shouldUpdate(_changedProperties: PropertyValues): boolean {
+    if (
+      _changedProperties.has("level") ||
+      _changedProperties.has("interval") ||
+      _changedProperties.has("timestamp") ||
+      _changedProperties.has("limit") ||
+      _changedProperties.has("categories") ||
+      _changedProperties.has("filter") ||
+      _changedProperties.has("live")
+    ) {
+      if (!this.live) {
+        this._pageCount = undefined;
+        this._currentPage = 1;
+        this._data = undefined;
+      }
     }
 
-    @property({type: String})
-    public interval?: Model.DatapointInterval;
-
-    @property({type: Number})
-    public timestamp?: Date;
-
-    @property({type: Number})
-    public limit?: number;
-
-    @property({type: Array})
-    public categories?: Model.SyslogCategory[];
-
-    @property({type: String})
-    public filter?: string;
-
-    @property({type: String})
-    public level?: Model.SyslogLevel;
-
-    @property({type: Boolean})
-    public live: boolean = false;
-
-    @property({type: Object})
-    public config?: ViewerConfig;
-
-    @property()
-    protected _loading: boolean = false;
-
-    @property()
-    protected _data?: Model.SyslogEvent[];
-
-    @query("#table")
-    protected _tableElem!: HTMLDivElement;
-    protected _table?: MDCDataTable;
-    protected _eventSubscriptionId?: string;
-    protected _refresh?: number;
-    protected _pageCount?: number;
-    protected _currentPage: number = 1;
-
-    connectedCallback() {
-        super.connectedCallback();
+    if (!this.interval) {
+      this.interval = OrLogViewer.DEFAULT_INTERVAL;
     }
 
-    disconnectedCallback(): void {
-        super.disconnectedCallback();
-        this._cleanup();
+    if (!this.categories) {
+      if (this.config && this.config.initialCategories) {
+        this.categories = [...this.config.initialCategories];
+      }
+    }
+
+    if (this.filter === undefined && this.config && this.config.initialFilter) {
+      this.filter = this.config.initialFilter;
+    }
+
+    if (!this.level) {
+      if (this.config && this.config.initialLevel) {
+        this.level = this.config.initialLevel;
+      } else {
+        this.level = OrLogViewer.DEFAULT_LEVEL;
+      }
+    }
+
+    if (!this.live && !this.timestamp) {
+      this.timestamp = new Date();
+    }
+
+    if (!this._data && !this.live) {
+      this._loadData();
+    }
+
+    if (_changedProperties.has("live")) {
+      if (this.live) {
+        this._subscribeEvents();
+      } else {
         this._unsubscribeEvents();
+      }
     }
 
-    shouldUpdate(_changedProperties: PropertyValues): boolean {
+    return super.shouldUpdate(_changedProperties);
+  }
 
-        if (_changedProperties.has("level")
-            || _changedProperties.has("interval")
-            || _changedProperties.has("timestamp")
-            || _changedProperties.has("limit")
-            || _changedProperties.has("categories")
-            || _changedProperties.has("filter")
-            || _changedProperties.has("live")) {
-            if (!this.live) {
-                this._pageCount = undefined;
-                this._currentPage = 1;
-                this._data = undefined;
-            }
-        }
+  render() {
+    const disabled = this._loading;
+    const isLive = this.live;
 
-        if (!this.interval) {
-            this.interval = OrLogViewer.DEFAULT_INTERVAL;
-        }
+    const hideCategories = this.config && this.config.hideCategories;
+    const hideFilter = this.config && this.config.hideFilter;
+    const hideLevel = this.config && this.config.hideLevel;
 
-        if (!this.categories) {
-            if (this.config && this.config.initialCategories) {
-                this.categories = [...this.config.initialCategories];
-            }
-        }
+    const categoryItems = this._getCategoryMenuItems();
+    const selectedItems = categoryItems.filter((i) => this.categories?.includes(i.value));
 
-        if (this.filter === undefined && this.config && this.config.initialFilter) {
-            this.filter = this.config.initialFilter;
-        }
+    return html`
+      <div id="container">
+        <div id="controls">
+          <div id="log-controls">
+            ${when(
+              !hideCategories,
+              () => html`
+                <or-vaadin-multi-select-combo-box
+                  .items=${categoryItems}
+                  .selectedItems=${selectedItems}
+                  style="width: 240px;"
+                  @change=${(ev: Event) => {
+                    const elem = ev.currentTarget as OrVaadinMultiSelectComboBox;
+                    this._onCategoriesChanged(elem.selectedItems.map((i) => i.value));
+                  }}
+                >
+                  <or-translate slot="label" value="categories"></or-translate>
+                </or-vaadin-multi-select-combo-box>
+              `
+            )}
+            <!-- Filter by subcategory string -->
+            <or-vaadin-text-field
+              id="subcategory-field"
+              ?hidden=${hideFilter}
+              ?disabled=${disabled}
+              value=${this.filter}
+              style="width: 200px;"
+              @change=${(ev: Event) => this._onFilterChanged(ev)}
+            >
+              <or-translate slot="label" value="subCategoryFilters"></or-translate>
+              <or-icon slot="suffix" icon="magnify"></or-icon>
+            </or-vaadin-text-field>
 
-        if (!this.level) {
-            if (this.config && this.config.initialLevel) {
-                this.level = this.config.initialLevel;
-            } else {
-                this.level = OrLogViewer.DEFAULT_LEVEL;
-            }
-        }
+            <!-- Filter by log level -->
+            <or-vaadin-select
+              id="level-select"
+              ?hidden=${hideLevel}
+              ?disabled=${disabled}
+              value=${this.level}
+              .items=${this._getLevelOptions()}
+              style="width: 120px;"
+              @change=${(ev: Event) => this._onLevelChanged((ev.currentTarget as OrVaadinSelect).value as SyslogLevel)}
+            >
+              <or-translate slot="label" value="level"></or-translate>
+            </or-vaadin-select>
 
-        if (!this.live && !this.timestamp) {
-            this.timestamp = new Date();
-        }
+            <!-- Limit select -->
+            <or-vaadin-select
+              id="limit-select"
+              ?disabled=${disabled}
+              value=${this.getLimit().toString()}
+              .items=${this._getLimitOptions()}
+              style="width: 80px;"
+              @change=${(ev: Event) => this._onLimitChanged((ev.currentTarget as OrVaadinSelect).value)}
+            >
+              <or-translate slot="label" value="limit"></or-translate>
+            </or-vaadin-select>
+          </div>
 
-        if (!this._data && !this.live) {
-            this._loadData();
-        }
+          <div id="page-controls" ?hidden="${isLive || !this._pageCount || !this._data || this._data.length === 0}">
+            <or-vaadin-button
+              theme="icon"
+              ?disabled=${disabled || isLive || this._currentPage === 1}
+              @click=${() => this._updatePage(false)}
+            >
+              <or-icon icon="chevron-left"></or-icon>
+            </or-vaadin-button>
+            <span>${this._currentPage}</span><or-translate value="of"></or-translate><span>${this._pageCount}</span>
+            <or-vaadin-button
+              theme="icon"
+              ?disabled=${disabled || isLive || this._currentPage === this._pageCount || (this._data && this._data.length < this.getLimit())}
+              @click=${() => this._updatePage(true)}
+            >
+              <or-icon icon="chevron-right"></or-icon>
+            </or-vaadin-button>
+          </div>
 
-        if (_changedProperties.has("live")) {
-            if (this.live) {
-                this._subscribeEvents();
-            } else {
-                this._unsubscribeEvents();
-            }
-        }
+          <div id="time-controls">
+            <!-- Live logging on/off toggle -->
+            <or-vaadin-checkbox
+              id="live-button"
+              ?disabled=${disabled}
+              ?checked=${this.live}
+              @change=${(ev: Event) => this._onLiveChanged((ev.currentTarget as OrVaadinCheckbox).checked)}
+            >
+              <label slot="label"><or-translate value="live"></or-translate></label>
+            </or-vaadin-checkbox>
+            <!-- Period select -->
+            <or-vaadin-select
+              id="period-select"
+              ?disabled=${disabled || isLive}
+              value=${this.interval}
+              .items=${this._getIntervalOptions()}
+              style="min-width: 120px;"
+              @change=${(ev: Event) => (this.interval = (ev.currentTarget as OrVaadinSelect).value as DatapointInterval)}
+            >
+              <or-translate slot="label" value="period"></or-translate>
+            </or-vaadin-select>
 
-        return super.shouldUpdate(_changedProperties);
-    }
-
-    render() {
-
-        const disabled = this._loading;
-        const isLive = this.live;
-
-        const hideCategories = this.config && this.config.hideCategories;
-        const hideFilter = this.config && this.config.hideFilter;
-        const hideLevel = this.config && this.config.hideLevel;
-
-        const categoryItems = this._getCategoryMenuItems();
-        const selectedItems = categoryItems.filter(i => this.categories?.includes(i.value));
-
-        return html`
-            <div id="container">
-                <div id="controls">
-                    <div id="log-controls">
-                        ${when(!hideCategories, () => html`
-                            <or-vaadin-multi-select-combo-box .items=${categoryItems} .selectedItems=${selectedItems} style="width: 240px;"
-                                                              @change=${(ev: Event) => {
-                                                                  const elem = ev.currentTarget as OrVaadinMultiSelectComboBox;
-                                                                  this._onCategoriesChanged(elem.selectedItems.map(i => i.value));
-                                                              }}>
-                                <or-translate slot="label" value="categories"></or-translate>
-                            </or-vaadin-multi-select-combo-box>
-                        `)}
-                        <!-- Filter by subcategory string -->
-                        <or-vaadin-text-field id="subcategory-field" ?hidden=${hideFilter} ?disabled=${disabled} value=${this.filter} style="width: 200px;"
-                                              @change=${(ev: Event) => this._onFilterChanged(ev)}>
-                            <or-translate slot="label" value="subCategoryFilters"></or-translate>
-                            <or-icon slot="suffix" icon="magnify"></or-icon>
-                        </or-vaadin-text-field>
-                        
-                        <!-- Filter by log level -->
-                        <or-vaadin-select id="level-select" ?hidden=${hideLevel} ?disabled=${disabled} value=${this.level} .items=${this._getLevelOptions()} style="width: 120px;"
-                                          @change=${(ev: Event) => this._onLevelChanged((ev.currentTarget as OrVaadinSelect).value as SyslogLevel)}>
-                            <or-translate slot="label" value="level"></or-translate>
-                        </or-vaadin-select>
-                        
-                        <!-- Limit select -->
-                        <or-vaadin-select id="limit-select" ?disabled=${disabled} value=${this.getLimit().toString()} .items=${this._getLimitOptions()} style="width: 80px;"
-                                          @change=${(ev: Event) => this._onLimitChanged((ev.currentTarget as OrVaadinSelect).value)}>
-                            <or-translate slot="label" value="limit"></or-translate>
-                        </or-vaadin-select>
-                    </div>
-                    
-                    <div id="page-controls" ?hidden="${isLive || !this._pageCount || !this._data || this._data.length === 0}">
-                        <or-vaadin-button theme="icon" ?disabled=${disabled || isLive || this._currentPage === 1}
-                                          @click=${() => this._updatePage(false)}>
-                            <or-icon icon="chevron-left"></or-icon>
-                        </or-vaadin-button>
-                        <span>${this._currentPage}</span><or-translate value="of"></or-translate><span>${this._pageCount}</span>
-                        <or-vaadin-button theme="icon" ?disabled=${disabled || isLive || this._currentPage === this._pageCount  || (this._data && this._data.length < this.getLimit())}
-                                          @click=${() => this._updatePage(true)}>
-                            <or-icon icon="chevron-right"></or-icon>
-                        </or-vaadin-button>
-                    </div>
-                    
-                    <div id="time-controls">
-                        <!-- Live logging on/off toggle -->
-                        <or-vaadin-checkbox id="live-button" ?disabled=${disabled} ?checked=${this.live}
-                                            @change=${(ev: Event) => this._onLiveChanged((ev.currentTarget as OrVaadinCheckbox).checked)}>
-                            <label slot="label"><or-translate value="live"></or-translate></label>
-                        </or-vaadin-checkbox>
-                        <!-- Period select -->
-                        <or-vaadin-select id="period-select" ?disabled=${disabled || isLive} value=${this.interval} .items=${this._getIntervalOptions()} style="min-width: 120px;"
-                                          @change=${(ev: Event) => this.interval = (ev.currentTarget as OrVaadinSelect).value as DatapointInterval}>
-                            <or-translate slot="label" value="period"></or-translate>
-                        </or-vaadin-select>
-                        
-                        <div id="ending-controls">
-                            <or-vaadin-button theme="icon" ?disabled=${disabled || isLive} @click=${() => this.timestamp = this._calculateTimestamp(this.timestamp!, false)}>
-                                <or-icon icon="chevron-left"></or-icon>
-                            </or-vaadin-button>
-                            <or-vaadin-date-time-picker id="ending-date" ?disabled=${disabled || isLive} style="width: 280px; align-items: end;"
-                                                        value=${ifDefined(OrVaadinDateTimePicker.getLocalizedISOString(this.timestamp))}
-                                                        @change=${(ev: CustomEvent) => this.timestamp = this._calculateTimestamp(moment((ev.currentTarget as OrVaadinDateTimePicker).value).toDate())}>
-                                <or-translate slot="label" value="ending"></or-translate>
-                            </or-vaadin-date-time-picker>
-                            <or-vaadin-button theme="icon" ?disabled=${disabled || isLive}@click=${() => this.timestamp = this._calculateTimestamp(this.timestamp!, true)}>
-                                <or-icon icon="chevron-right"></or-icon>
-                            </or-vaadin-button>
-                            <or-vaadin-button theme="icon" ?disabled=${disabled || isLive} @click=${() => this.timestamp = this._calculateTimestamp(new Date())}>
-                                <or-icon icon="chevron-double-right"></or-icon>
-                            </or-vaadin-button>
-                        </div>
-                    </div>
-                </div>
-                
-                ${disabled ? html`<div id="msg">${i18next.t("loading")}</div>` :
-                    html`<div id="table-container">
-                        ${this._data ? this._getTable() : ``}
-                    </div>`}
+            <div id="ending-controls">
+              <or-vaadin-button
+                theme="icon"
+                ?disabled=${disabled || isLive}
+                @click=${() => (this.timestamp = this._calculateTimestamp(this.timestamp!, false))}
+              >
+                <or-icon icon="chevron-left"></or-icon>
+              </or-vaadin-button>
+              <or-vaadin-date-time-picker
+                id="ending-date"
+                ?disabled=${disabled || isLive}
+                style="width: 280px; align-items: end;"
+                value=${ifDefined(OrVaadinDateTimePicker.getLocalizedISOString(this.timestamp))}
+                @change=${(ev: CustomEvent) => (this.timestamp = this._calculateTimestamp(moment((ev.currentTarget as OrVaadinDateTimePicker).value).toDate()))}
+              >
+                <or-translate slot="label" value="ending"></or-translate>
+              </or-vaadin-date-time-picker>
+              <or-vaadin-button
+                theme="icon"
+                ?disabled=${disabled || isLive}
+                @click=${() => (this.timestamp = this._calculateTimestamp(this.timestamp!, true))}
+              >
+                <or-icon icon="chevron-right"></or-icon>
+              </or-vaadin-button>
+              <or-vaadin-button
+                theme="icon"
+                ?disabled=${disabled || isLive}
+                @click=${() => (this.timestamp = this._calculateTimestamp(new Date()))}
+              >
+                <or-icon icon="chevron-double-right"></or-icon>
+              </or-vaadin-button>
             </div>
-        `;
+          </div>
+        </div>
+
+        ${
+          disabled
+            ? html`<div id="msg">${i18next.t("loading")}</div>`
+            : html`<div id="table-container">${this._data ? this._getTable() : ``}</div>`
+        }
+      </div>
+    `;
+  }
+
+  protected _getLimitOptions(): { value: any; label: string }[] {
+    return ["25", "50", "100", "200"].map((o) => ({ value: o, label: o }));
+  }
+
+  protected _getLevelOptions(): { value: any; label: string }[] {
+    return Object.keys((Model as any).SyslogLevel).map((key) => ({
+      value: key,
+      label: i18next.t(key.toLocaleLowerCase()),
+    }));
+  }
+
+  protected _getCategoryMenuItems(): { value: any; label: string }[] {
+    const categories =
+      this.config && this.config.allowedCategories
+        ? this.config.allowedCategories
+        : (Object.keys((Model as any).SyslogCategory) as Model.SyslogCategory[]);
+    return categories.map((cat) => ({
+      value: cat,
+      label: i18next.t("logCategory." + cat, {
+        defaultValue: Util.capitaliseFirstLetter(cat.toLowerCase().replace(/_/g, " ")),
+      }),
+    }));
+  }
+
+  protected getLimit() {
+    return this.limit || OrLogViewer.DEFAULT_LIMIT;
+  }
+
+  protected _onCategoriesChanged(values: Model.SyslogCategory[]) {
+    this.categories = values;
+    if (this.categories && this.live) {
+      this._data = this._data!.filter((e) => this.categories!.find((c) => c === e.category));
+    }
+  }
+
+  protected _onLiveChanged(live: boolean) {
+    this.live = live;
+    if (live) {
+      this._data = [];
+      this._pageCount = undefined;
+      this._currentPage = 1;
+    }
+  }
+
+  protected _onLimitChanged(limit: string) {
+    if (!limit) {
+      this.limit = undefined;
+      return;
     }
 
-    protected _getLimitOptions(): {value: any, label: string}[] {
-        return ["25", "50", "100", "200"].map(o => ({value: o, label: o}));
+    this.limit = parseInt(limit);
+    const newLimit = this.getLimit();
+
+    if (this.live && this._data!.length > newLimit) {
+      this._data!.splice(newLimit - 1);
+    }
+  }
+
+  protected _onFilterChanged(ev: Event) {
+    const elem = ev.currentTarget as HTMLInputElement;
+    if (!elem.checkValidity()) {
+      return;
+    }
+    this.filter = elem.value;
+
+    if (!this.filter) {
+      return;
     }
 
-    protected _getLevelOptions(): {value: any, label: string}[] {
-        return Object.keys((Model as any)["SyslogLevel"]).map(key => ({value: key, label: i18next.t(key.toLocaleLowerCase())}));
+    if (this.live) {
+      const filters = this.filter.split(";");
+      this._data = this._data!.filter((e) => filters.find((f) => f === e.subCategory));
+    }
+  }
+
+  protected _onLevelChanged(level: Model.SyslogLevel) {
+    this.level = level;
+
+    if (!this.level) {
+      return;
     }
 
-    protected _getCategoryMenuItems(): {value: any, label: string}[] {
-        const categories = this.config && this.config.allowedCategories ? this.config.allowedCategories : Object.keys((Model as any)["SyslogCategory"]) as Model.SyslogCategory[];
-        return categories.map(cat => ({
-            value: cat,
-            label: i18next.t("logCategory." + cat, {defaultValue: Util.capitaliseFirstLetter(cat.toLowerCase().replace(/_/g, " "))})
-        }));
+    if (this.live) {
+      this._data = this._data!.filter((e) => this._eventMatchesLevel(e));
+    }
+  }
+
+  protected _getTable(): TemplateResult {
+    return html`
+      <div id="table" class="mdc-data-table">
+        <table class="mdc-data-table__table" aria-label="logs list">
+          <thead>
+            <tr class="mdc-data-table__header-row">
+              <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">
+                ${i18next.t("timestamp")}
+              </th>
+              <th style="width: 80px" class="mdc-data-table__header-cell" role="columnheader" scope="col">
+                ${i18next.t("level")}
+              </th>
+              <th style="width: 130px" class="mdc-data-table__header-cell" role="columnheader" scope="col">
+                ${i18next.t("category")}
+              </th>
+              <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">
+                ${i18next.t("subCategory")}
+              </th>
+              <th
+                style="width: 100%; min-width: 300px;"
+                class="mdc-data-table__header-cell"
+                role="columnheader"
+                scope="col"
+              >
+                ${i18next.t("message")}
+              </th>
+              <th style="width: 80px;" class="mdc-data-table__header-cell" role="columnheader" scope="col"></th>
+            </tr>
+          </thead>
+          <tbody class="mdc-data-table__content">
+            ${this._data!.map((ev) => {
+              return html`
+                <tr class="mdc-data-table__row">
+                  <td class="mdc-data-table__cell">
+                    ${moment(ev.timestamp).format(OrLogViewer.DEFAULT_TIMESTAMP_FORMAT)}
+                  </td>
+                  <td class="mdc-data-table__cell">${i18next.t(ev.level!)}</td>
+                  <td class="mdc-data-table__cell">${i18next.t(ev.category!)}</td>
+                  <td class="mdc-data-table__cell">${i18next.t(ev.subCategory!)}</td>
+                  <td class="mdc-data-table__cell">${ev.message}</td>
+                  <td class="mdc-data-table__cell icon-cell">
+                    ${when(
+                      window.isSecureContext,
+                      () => html`
+                        <or-vaadin-button class="copy-button" theme="icon" @click=${() => this._copyRow(ev)}>
+                          <or-icon icon="content-copy"></or-icon>
+                        </or-vaadin-button>
+                      `
+                    )}
+                  </td>
+                </tr>
+              `;
+            })}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  /** Copy a single log event to the clipboard as JSON */
+  protected async _copyRow(row: Model.SyslogEvent) {
+    try {
+      const text = row.message || "";
+      await navigator.clipboard.writeText(text);
+      showSnackbar(undefined, i18next.t("copiedToClipboard"));
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  }
+
+  protected _getIntervalOptions(): { value: string; label: string }[] {
+    return [
+      Model.DatapointInterval.HOUR,
+      Model.DatapointInterval.DAY,
+      Model.DatapointInterval.WEEK,
+      Model.DatapointInterval.MONTH,
+      Model.DatapointInterval.YEAR,
+    ].map((interval) => {
+      return { value: interval, label: i18next.t(interval.toLowerCase()) };
+    });
+  }
+
+  protected async _loadData() {
+    if (this._loading) {
+      return;
     }
 
-    protected getLimit() {
-        return this.limit || OrLogViewer.DEFAULT_LIMIT;
+    this._loading = true;
+
+    const response = await manager.rest.api.SyslogResource.getEvents({
+      level: this.level,
+      per_page: this.getLimit(),
+      page: this._currentPage,
+      from: this._getFrom(),
+      to: this.timestamp ? this.timestamp.getTime() : undefined,
+      category: this.categories as Model.SyslogCategory[],
+      subCategory: this.filter ? this.filter.split(";") : undefined,
+    });
+
+    this._loading = false;
+
+    if (response.status === 200) {
+      this._data = response.data;
+      // Get page count
+      this._pageCount = this._getPageCount(response);
+    }
+  }
+
+  protected _getPageCount(response: GenericAxiosResponse<any>): number | undefined {
+    const linkHeaders = response.headers.link as any;
+    if (linkHeaders) {
+      const links = parse(linkHeaders);
+      let lastLink: any = links.rel("last");
+      if (Array.isArray(lastLink) && lastLink.length > 0) {
+        lastLink = lastLink[0];
+      }
+      if (lastLink && lastLink.uri) {
+        const url = new URL(lastLink.uri);
+        return parseInt(Util.getQueryParameters(url.search).page);
+      }
+    }
+  }
+
+  protected _updatePage(forward: boolean) {
+    if (!this._pageCount) {
+      return;
     }
 
-    protected _onCategoriesChanged(values: Model.SyslogCategory[]) {
-        this.categories = values;
-        if (this.categories && this.live) {
-            this._data = this._data!.filter((e) => this.categories!.find((c) => c === e.category));
-        }
+    if (forward) {
+      if (this._currentPage < this._pageCount) {
+        this._data = undefined;
+        this._currentPage++;
+      }
+    } else {
+      if (this._currentPage > 1) {
+        this._data = undefined;
+        this._currentPage--;
+      }
+    }
+  }
+
+  protected async _subscribeEvents() {
+    if (manager.events) {
+      this._eventSubscriptionId = await manager.events.subscribe<Model.SyslogEvent>(
+        {
+          eventType: "syslog",
+        },
+        (ev) => this._onEvent(ev)
+      );
+    }
+  }
+
+  protected _unsubscribeEvents() {
+    if (this._eventSubscriptionId) {
+      manager.events!.unsubscribe(this._eventSubscriptionId);
+      this._eventSubscriptionId = undefined;
+    }
+  }
+
+  protected _getFrom(): number | undefined {
+    if (!this.timestamp || !this.interval) {
+      return;
     }
 
-    protected _onLiveChanged(live: boolean) {
-        this.live = live;
-        if (live) {
-            this._data = [];
-            this._pageCount = undefined;
-            this._currentPage = 1;
-        }
+    return this._calculateTimestamp(this.timestamp, false)!.getTime();
+  }
+
+  protected _calculateTimestamp(timestamp: Date, forward?: boolean): Date | undefined {
+    if (!this.interval) {
+      return;
     }
 
-    protected _onLimitChanged(limit: string) {
-        if (!limit) {
-            this.limit = undefined;
-            return;
-        }
+    const newMoment = moment(timestamp);
 
-        this.limit = parseInt(limit);
-        const newLimit = this.getLimit();
-
-        if (this.live && this._data!.length > newLimit) {
-            this._data!.splice(newLimit - 1);
-        }
+    if (forward !== undefined) {
+      switch (this.interval) {
+        case Model.DatapointInterval.HOUR:
+          newMoment.add(forward ? 1 : -1, "hour");
+          break;
+        case Model.DatapointInterval.DAY:
+          newMoment.add(forward ? 1 : -1, "day");
+          break;
+        case Model.DatapointInterval.WEEK:
+          newMoment.add(forward ? 1 : -1, "week");
+          break;
+        case Model.DatapointInterval.MONTH:
+          newMoment.add(forward ? 1 : -1, "month");
+          break;
+        case Model.DatapointInterval.YEAR:
+          newMoment.add(forward ? 1 : -1, "year");
+          break;
+      }
     }
 
-    protected _onFilterChanged(ev: Event) {
-        const elem = ev.currentTarget as HTMLInputElement;
-        if(!elem.checkValidity()) {
-            return;
-        }
-        this.filter = elem.value;
+    return newMoment.toDate();
+  }
 
-        if (!this.filter) {
-            return;
-        }
-
-        if (this.live) {
-            const filters = this.filter.split(";");
-            this._data = this._data!.filter((e) => filters.find((f) => f === e.subCategory));
-        }
+  protected _onEvent(event: Model.SyslogEvent) {
+    // TODO: Move filtering to server side
+    if (this.categories && !this.categories.find((c) => c === event.category)) {
+      return;
     }
 
-    protected _onLevelChanged(level: Model.SyslogLevel) {
-        this.level = level;
-
-        if (!this.level) {
-            return;
-        }
-
-        if (this.live) {
-            this._data = this._data!.filter((e) => this._eventMatchesLevel(e));
-        }
+    if (this.filter) {
+      const filters = this.filter.split(";");
+      if (!filters.find((f) => f === event.subCategory)) {
+        return;
+      }
     }
 
-    protected _getTable(): TemplateResult {
-        return html`
-            <div id="table" class="mdc-data-table">
-                <table class="mdc-data-table__table" aria-label="logs list">
-                    <thead>
-                        <tr class="mdc-data-table__header-row">
-                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("timestamp")}</th>
-                            <th style="width: 80px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("level")}</th>
-                            <th style="width: 130px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("category")}</th>
-                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("subCategory")}</th>
-                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("message")}</th>
-                            <th style="width: 80px;" class="mdc-data-table__header-cell" role="columnheader" scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="mdc-data-table__content">
-                        ${this._data!.map((ev) => {
-                            return html`
-                                <tr class="mdc-data-table__row">
-                                    <td class="mdc-data-table__cell">${moment(ev.timestamp).format(OrLogViewer.DEFAULT_TIMESTAMP_FORMAT)}</td>
-                                    <td class="mdc-data-table__cell">${i18next.t(ev.level!)}</td>
-                                    <td class="mdc-data-table__cell">${i18next.t(ev.category!)}</td>                                    
-                                    <td class="mdc-data-table__cell">${i18next.t(ev.subCategory!)}</td>
-                                    <td class="mdc-data-table__cell">${ev.message}</td>
-                                    <td class="mdc-data-table__cell icon-cell">
-                                        ${when(window.isSecureContext, () => html`
-                                            <or-vaadin-button class="copy-button" theme="icon" @click=${() => this._copyRow(ev)}>
-                                                <or-icon icon="content-copy"></or-icon>
-                                            </or-vaadin-button>
-                                        `)}
-                                    </td>
-                                </tr>
-                            `;            
-                        })}
-                    </tbody>
-                </table>
-            </div>
-            `;
-    }
-    
-    /** Copy a single log event to the clipboard as JSON */
-    protected async _copyRow(row: Model.SyslogEvent) {
-        try {
-            const text = row.message || "";
-            await navigator.clipboard.writeText(text);
-            showSnackbar(undefined, i18next.t("copiedToClipboard"));
-        } catch (err){
-            console.error("Failed to copy:", err);
-        }
+    if (!this._eventMatchesLevel(event)) {
+      return;
     }
 
-    protected _getIntervalOptions(): {value: string, label: string}[] {
-        return [
-            Model.DatapointInterval.HOUR,
-            Model.DatapointInterval.DAY,
-            Model.DatapointInterval.WEEK,
-            Model.DatapointInterval.MONTH,
-            Model.DatapointInterval.YEAR
-        ].map((interval) => {
-            return ({value: interval, label: i18next.t(interval.toLowerCase())});
-        });
+    const limit = this.getLimit();
+    if (this._data!.length === limit - 1) {
+      this._data!.pop();
+    }
+    this._data!.splice(0, 0, event);
+
+    if (this._refresh) {
+      window.clearTimeout(this._refresh);
     }
 
-    protected async _loadData() {
-        if (this._loading) {
-            return;
-        }
+    // Buffer updates to prevent excessive re-renders
+    this._refresh = window.setTimeout(() => this.requestUpdate("_data"), 2000);
+  }
 
-        this._loading = true;
-
-        const response = await manager.rest.api.SyslogResource.getEvents({
-            level: this.level,
-            per_page: this.getLimit(),
-            page: this._currentPage,
-            from: this._getFrom(),
-            to: this.timestamp ? this.timestamp.getTime() : undefined,
-            category: this.categories as Model.SyslogCategory[],
-            subCategory: this.filter ? this.filter.split(";") : undefined
-        });
-
-        this._loading = false;
-
-        if (response.status === 200) {
-            this._data = response.data;
-             // Get page count
-            this._pageCount = this._getPageCount(response);
-        }
+  protected _eventMatchesLevel(event: Model.SyslogEvent): boolean {
+    if (!this.level || this.level === Model.SyslogLevel.INFO) {
+      return true;
     }
 
-    protected _getPageCount(response: GenericAxiosResponse<any>): number | undefined {
-        const linkHeaders = response.headers["link"] as any;
-        if (linkHeaders) {
-            const links = parse(linkHeaders);
-            let lastLink: any = links.rel("last");
-            if (Array.isArray(lastLink) && lastLink.length > 0) {
-                lastLink = lastLink[0];
-            }
-            if (lastLink && lastLink.uri) {
-                const url = new URL(lastLink.uri);
-                return parseInt(Util.getQueryParameters(url.search)['page']);
-            }
-        }
+    if (
+      this.level === Model.SyslogLevel.WARN &&
+      (event.level === Model.SyslogLevel.WARN || event.level === Model.SyslogLevel.ERROR)
+    ) {
+      return true;
     }
 
-    protected _updatePage(forward: boolean) {
-        if (!this._pageCount) {
-            return;
-        }
-
-        if (forward) {
-            if (this._currentPage < this._pageCount) {
-                this._data = undefined;
-                this._currentPage++;
-            }
-        } else {
-            if (this._currentPage > 1) {
-                this._data = undefined;
-                this._currentPage--;
-            }
-        }
+    if (this.level === Model.SyslogLevel.ERROR && event.level === Model.SyslogLevel.ERROR) {
+      return true;
     }
 
-    protected async _subscribeEvents() {
-        if (manager.events) {
-            this._eventSubscriptionId = await manager.events.subscribe<Model.SyslogEvent>({
-                eventType: "syslog"
-            }, (ev) => this._onEvent(ev));
-        }
+    return false;
+  }
+
+  protected _cleanup() {
+    if (this._table) {
+      this._table.destroy();
+      this._table = undefined;
     }
 
-    protected _unsubscribeEvents() {
-        if (this._eventSubscriptionId) {
-            manager.events!.unsubscribe(this._eventSubscriptionId);
-            this._eventSubscriptionId = undefined;
-        }
+    if (this._refresh) {
+      window.clearTimeout(this._refresh);
     }
-
-    protected _getFrom(): number | undefined {
-        if (!this.timestamp || !this.interval) {
-            return;
-        }
-
-        return this._calculateTimestamp(this.timestamp, false)!.getTime();
-    }
-
-    protected _calculateTimestamp(timestamp: Date, forward?: boolean): Date | undefined {
-        if (!this.interval) {
-            return;
-        }
-
-        const newMoment = moment(timestamp);
-
-        if (forward !== undefined) {
-            switch (this.interval) {
-                case Model.DatapointInterval.HOUR:
-                    newMoment.add(forward ? 1 : -1, "hour");
-                    break;
-                case Model.DatapointInterval.DAY:
-                    newMoment.add(forward ? 1 : -1, "day");
-                    break;
-                case Model.DatapointInterval.WEEK:
-                    newMoment.add(forward ? 1 : -1, "week");
-                    break;
-                case Model.DatapointInterval.MONTH:
-                    newMoment.add(forward ? 1 : -1, "month");
-                    break;
-                case Model.DatapointInterval.YEAR:
-                    newMoment.add(forward ? 1 : -1, "year");
-                    break;
-            }
-        }
-
-        return newMoment.toDate();
-    }
-
-    protected _onEvent(event: Model.SyslogEvent) {
-
-        // TODO: Move filtering to server side
-        if (this.categories && !this.categories.find((c) => c === event.category)) {
-            return;
-        }
-
-        if (this.filter) {
-            const filters = this.filter.split(";");
-            if (!filters.find((f) => f === event.subCategory)) {
-                return;
-            }
-        }
-
-        if (!this._eventMatchesLevel(event)) {
-            return;
-        }
-
-        const limit = this.getLimit();
-        if (this._data!.length === limit - 1) {
-            this._data!.pop();
-        }
-        this._data!.splice(0, 0, event);
-
-        if (this._refresh) {
-            window.clearTimeout(this._refresh);
-        }
-
-        // Buffer updates to prevent excessive re-renders
-        this._refresh = window.setTimeout(() => this.requestUpdate("_data"), 2000);
-    }
-
-    protected _eventMatchesLevel(event: Model.SyslogEvent): boolean {
-        if (!this.level || this.level === Model.SyslogLevel.INFO) {
-            return true;
-        }
-
-        if (this.level === Model.SyslogLevel.WARN && (event.level === Model.SyslogLevel.WARN || event.level === Model.SyslogLevel.ERROR)) {
-            return true;
-        }
-
-        if (this.level === Model.SyslogLevel.ERROR && event.level === Model.SyslogLevel.ERROR) {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected _cleanup() {
-        if (this._table) {
-            this._table.destroy();
-            this._table = undefined;
-        }
-
-        if (this._refresh) {
-            window.clearTimeout(this._refresh);
-        }
-    }
+  }
 }

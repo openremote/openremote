@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,14 +12,16 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {ConfirmDialog} from "@vaadin/confirm-dialog";
-import {OrVaadinComponent} from "./util";
-import {css, type TemplateResult, type LitElement, render, html} from "lit";
-import {customElement} from "lit/decorators.js";
-import {when} from "lit/directives/when.js";
-import {Util} from "@openremote/core";
+import { ConfirmDialog } from "@vaadin/confirm-dialog";
+import type { OrVaadinComponent } from "./util";
+import { css, type TemplateResult, type LitElement, render, html } from "lit";
+import { customElement } from "lit/decorators.js";
+import { when } from "lit/directives/when.js";
+import { Util } from "@openremote/core";
 
 type WithLit<T> = T & typeof LitElement;
 
@@ -36,32 +35,32 @@ type WithLit<T> = T & typeof LitElement;
  * @param dialog - A {@link TemplateResult} to render. It is required to contain a `<or-vaadin-confirm-dialog>` tag.
  */
 export function showConfirmDialog(host: Node, dialog: TemplateResult) {
-    const container = document.createElement("div");
-    container.id = `dialog-${Util.generateUniqueUUID()}`;
-    render(dialog, container); // Render Lit template inside the container
+  const container = document.createElement("div");
+  container.id = `dialog-${Util.generateUniqueUUID()}`;
+  render(dialog, container); // Render Lit template inside the container
 
-    const dialogElem = container.querySelector("or-vaadin-confirm-dialog") as OrVaadinConfirmDialog | null;
-    if(dialogElem) {
-        dialogElem.opened = true;
-        dialogElem.addEventListener("closed", () => container.remove());
-        if(dialogElem.querySelector("[slot='cancel-button']")) {
-            dialogElem.cancelButtonVisible = true;
-        }
-        if(dialogElem.querySelector("[slot='reject-button']")) {
-            dialogElem.rejectButtonVisible = true;
-        }
-    } else {
-        // As no or-vaadin-confirm-dialog is present, we can remove the HTMLElement
-        container.remove();
-        return;
+  const dialogElem = container.querySelector("or-vaadin-confirm-dialog") as OrVaadinConfirmDialog | null;
+  if (dialogElem) {
+    dialogElem.opened = true;
+    dialogElem.addEventListener("closed", () => container.remove());
+    if (dialogElem.querySelector("[slot='cancel-button']")) {
+      dialogElem.cancelButtonVisible = true;
     }
-    host.appendChild(container);
+    if (dialogElem.querySelector("[slot='reject-button']")) {
+      dialogElem.rejectButtonVisible = true;
+    }
+  } else {
+    // As no or-vaadin-confirm-dialog is present, we can remove the HTMLElement
+    container.remove();
+    return;
+  }
+  host.appendChild(container);
 }
 
 /**
  * Helper function for simplifying the generation of `<or-vaadin-confirm-dialog>` content.
  * Instead of using declarative HTML, this function provides an easy alternative with automatically translated keys.
- * Example: `getOkCancelDialogContent("areYouSure", "deleteWarning", "remove", "cancel")`
+ * Example: `getConfirmDialogContent("areYouSure", "deleteWarning", "remove", "cancel")`
  *
  * @param theme - Optional theme to use for the dialog and its buttons (for example 'error').
  * @param header - Dialog header that is either a translation key, or a {@link TemplateResult}
@@ -70,32 +69,46 @@ export function showConfirmDialog(host: Node, dialog: TemplateResult) {
  * @param cancelKey - Translation key to display inside the "cancel" button. If `undefined` the button will not be visible.
  * @param rejectKey - Translation key to display inside the "reject" button. If `undefined` the button will not be visible.
  */
-export function getConfirmDialogContent(theme: string | undefined, header: TemplateResult | string, content: TemplateResult | string, confirmKey?: string, cancelKey?: string, rejectKey?: string): TemplateResult {
-    return html`
-        ${typeof header === "string"
-                ? html`<or-translate slot="header" value=${header}></or-translate>`
-                : html`<div slot="header">${header}</div>`
-        }
-        ${typeof content === "string"
-                ? html`<or-translate value=${content}></or-translate>`
-                : content
-        }
-        ${when(confirmKey, () => html`
-            <or-vaadin-button theme="${theme && theme.includes(' ') ? theme : (theme + " primary")}" slot="confirm-button">
-                <or-translate value=${confirmKey}></or-translate>
-            </or-vaadin-button>
-        `)}
-        ${when(cancelKey, () => html`
-            <or-vaadin-button theme="tertiary ${theme}" slot="cancel-button">
-                <or-translate value=${cancelKey}></or-translate>
-            </or-vaadin-button>
-        `)}
-        ${when(rejectKey, () => html`
-            <or-vaadin-button theme="tertiary ${theme}" slot="reject-button">
-                <or-translate value=${rejectKey}></or-translate>
-            </or-vaadin-button>
-        `)}
-    `;
+export function getConfirmDialogContent(
+  theme: string | undefined,
+  header: TemplateResult | string,
+  content: TemplateResult | string,
+  confirmKey?: string,
+  cancelKey?: string,
+  rejectKey?: string
+): TemplateResult {
+  return html`
+    ${
+      typeof header === "string"
+        ? html`<or-translate slot="header" value=${header}></or-translate>`
+        : html`<div slot="header">${header}</div>`
+    }
+    ${typeof content === "string" ? html`<or-translate value=${content}></or-translate>` : content}
+    ${when(
+      confirmKey,
+      () => html`
+        <or-vaadin-button theme=${theme && theme.includes(" ") ? theme : theme + " primary"} slot="confirm-button">
+          <or-translate value=${confirmKey}></or-translate>
+        </or-vaadin-button>
+      `
+    )}
+    ${when(
+      cancelKey,
+      () => html`
+        <or-vaadin-button theme=${theme ? `tertiary ${theme}` : "tertiary"} slot="cancel-button">
+          <or-translate value=${cancelKey}></or-translate>
+        </or-vaadin-button>
+      `
+    )}
+    ${when(
+      rejectKey,
+      () => html`
+        <or-vaadin-button theme=${theme ? `tertiary ${theme}` : "tertiary"} slot="reject-button">
+          <or-translate value=${rejectKey}></or-translate>
+        </or-vaadin-button>
+      `
+    )}
+  `;
 }
 
 /**
@@ -106,42 +119,51 @@ export function getConfirmDialogContent(theme: string | undefined, header: Templ
  * @param message - The translation key or {@link TemplateResult} to render as dialog message.
  * @param title - Optional translation key or {@link TemplateResult} to render as dialog title.
  */
-export function showErrorDialog(host: Node, message: string | TemplateResult, title: string | TemplateResult = "errorOccurred") {
-    return showConfirmDialog(host, html`
-        <or-vaadin-confirm-dialog>
-            ${getConfirmDialogContent("error tertiary", title, message, "close")}
-        </or-vaadin-confirm-dialog>
-    `)
+export function showErrorDialog(
+  host: Node,
+  message: string | TemplateResult,
+  title: string | TemplateResult = "errorOccurred"
+) {
+  return showConfirmDialog(
+    host,
+    html`
+      <or-vaadin-confirm-dialog>
+        ${getConfirmDialogContent("error tertiary", title, message, "close")}
+      </or-vaadin-confirm-dialog>
+    `
+  );
 }
 
 @customElement("or-vaadin-confirm-dialog")
-export class OrVaadinConfirmDialog extends (ConfirmDialog as new () => ConfirmDialog & LitElement) implements OrVaadinComponent {
+export class OrVaadinConfirmDialog
+  extends (ConfirmDialog as new () => ConfirmDialog & LitElement)
+  implements OrVaadinComponent
+{
+  static get styles() {
+    return [
+      (ConfirmDialog as WithLit<typeof ConfirmDialog>).styles,
+      css`
+        ::part(header),
+        ::part(content) {
+          background-color: var(--lumo-contrast-5pct);
+          margin-inline-start: 0;
+        }
+        ::part(header),
+        ::part(footer) {
+          padding: var(--lumo-space-l);
+        }
+        ::part(content) {
+          padding: 0 var(--lumo-space-l);
+        }
+      `,
+    ];
+  }
 
-    static get styles() {
-        return [
-            (ConfirmDialog as WithLit<typeof ConfirmDialog>).styles,
-            css`
-                ::part(header),
-                ::part(content) {
-                    background-color: var(--lumo-contrast-5pct);
-                    margin-inline-start: 0;
-                }
-                ::part(header),
-                ::part(footer) {
-                    padding: var(--lumo-space-l);
-                }
-                ::part(content) {
-                    padding: 0 var(--lumo-space-l);
-                }
-            `
-        ];
-    }
+  public open() {
+    this.setAttribute("opened", "true");
+  }
 
-    public open() {
-        this.setAttribute("opened", "true");
-    }
-
-    public close() {
-        this.toggleAttribute("opened", false);
-    }
+  public close() {
+    this.toggleAttribute("opened", false);
+  }
 }

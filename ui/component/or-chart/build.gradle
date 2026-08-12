@@ -1,22 +1,22 @@
 tasks.register('clean', Delete) {
-    delete layout.projectDirectory.dir('dist')
-    delete layout.projectDirectory.dir('lib')
+  delete layout.projectDirectory.dir('dist')
+  delete layout.projectDirectory.dir('lib')
 }
 
 tasks.register('npmAnalyze', Exec) {
-    mustRunAfter npmClean
-    dependsOn getYarnInstallTask()
-    commandLine npmCommand("yarn"), "run", "analyze"
+  mustRunAfter npmClean
+  dependsOn getYarnInstallTask()
+  commandLine npmCommand("yarn"), "run", "analyze"
 }
 
 tasks.register('installDist') {
-    dependsOn npmAnalyze
+  dependsOn npmAnalyze
 }
 
 tasks.register('prepareUi') {
-    dependsOn clean, npmAnalyze, npmPrepare
+  dependsOn clean, npmAnalyze, npmPrepare
 }
 
 tasks.register('publishUi') {
-    dependsOn clean, npmPublish
+  dependsOn clean, npmPublish
 }

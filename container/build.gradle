@@ -1,132 +1,131 @@
 plugins {
-    id 'java-library'
-    id 'groovy'
-    id 'maven-publish'
-    id 'signing'
+  id 'java-library'
+  id 'groovy'
+  id 'maven-publish'
+  id 'signing'
 }
 
 dependencies {
 
-    api project(":model")
+  api project(":model")
 
-    api libs.groovy
-    api libs.groovyJson
-    api libs.groovyXml
-    api libs.groovyYaml
-    api libs.groovySandbox
+  api libs.groovy
+  api libs.groovyJson
+  api libs.groovyXml
+  api libs.groovyYaml
+  api libs.groovySandbox
 
-    // SLF4J JUL provider
-    api libs.slf4jJdk14
+  // SLF4J JUL provider
+  api libs.slf4jJdk14
 
-    api libs.undertowCore
-    api libs.undertowWebsocketsJsr
-    api(libs.resteasyUndertow) {
-        exclude group: "jakarta.servlet",  module: "undertow-servlet-jakarta"
-    }
-    api libs.resteasyClient
-    api libs.resteasyJackson2Provider
-    api libs.resteasyMultipartProvider
-    api libs.resteasyValidatorProvider
+  api libs.undertowCore
+  api libs.undertowWebsocketsJsr
+  api(libs.resteasyUndertow) {
+    exclude group: "jakarta.servlet", module: "undertow-servlet-jakarta"
+  }
+  api libs.resteasyClient
+  api libs.resteasyJackson2Provider
+  api libs.resteasyMultipartProvider
+  api libs.resteasyValidatorProvider
 
-    api libs.jakartaSecurityEnterpriseApi
-    api libs.glassfishSoteria
-    api libs.nimbusJoseJwt
+  api libs.jakartaSecurityEnterpriseApi
+  api libs.glassfishSoteria
+  api libs.nimbusJoseJwt
 
 
-    api libs.keycloakAdminClient
+  api libs.keycloakAdminClient
 
-    api libs.postgresql
-    api libs.flywayCore
-    implementation libs.flywayDatabasePostgresql
-    api libs.hibernateCore
-    api libs.hibernateHikaricp
-    api libs.hibernateValidator
-    api libs.hikaricp
+  api libs.postgresql
+  api libs.flywayCore
+  implementation libs.flywayDatabasePostgresql
+  api libs.hibernateCore
+  api libs.hibernateHikaricp
+  api libs.hibernateValidator
+  api libs.hikaricp
 
-    api libs.jakartaElApi
-    api libs.jakartaEl
+  api libs.jakartaElApi
+  api libs.jakartaEl
 
-    api libs.camelCore
-    api libs.camelJackson
-    api libs.camelSnmp
-    api libs.camelHealth
-    api libs.camelManagement
-    api libs.micrometerRegistryPrometheus
-    api libs.corsFilter
+  api libs.camelCore
+  api libs.camelJackson
+  api libs.camelSnmp
+  api libs.camelHealth
+  api libs.camelManagement
+  api libs.micrometerRegistryPrometheus
+  api libs.corsFilter
 }
 
 dependencies {
-    testImplementation libs.junitJupiterParams
-    testImplementation libs.junitJupiterApi
-    testRuntimeOnly libs.junitJupiterEngine
-    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+  testImplementation platform(libs.spockBom)
+  testImplementation libs.spockCore
+  testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 base {
-    archivesName = "openremote-${project.name}"
+  archivesName = "openremote-${project.name}"
 }
 
 javadoc {
-    failOnError = false
+  failOnError = false
 }
 
 java {
-    withJavadocJar()
-    withSourcesJar()
+  withJavadocJar()
+  withSourcesJar()
 }
 
 publishing {
-    publications {
-        maven(MavenPublication) {
-            group = "io.openremote"
-            artifactId = "openremote-${project.name}"
-            from components.java
-            pom {
-                name = 'OpenRemote Container'
-                description = 'Application container for running; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
-                url = 'https://github.com/openremote/openremote'
-                licenses {
-                    license {
-                        name = 'GNU Affero General Public License v3.0'
-                        url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'developers'
-                        name = 'Developers'
-                        email = 'developers@openremote.io'
-                        organization = 'OpenRemote'
-                        organizationUrl = 'https://openremote.io'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:git://github.com/openremote/openremote.git'
-                    developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
-                    url = 'https://github.com/openremote/openremote/tree/master'
-                }
-            }
+  publications {
+    maven(MavenPublication) {
+      group = "io.openremote"
+      artifactId = "openremote-${project.name}"
+      from components.java
+      pom {
+        name = 'OpenRemote Container'
+        description = 'Application container for running; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
+        url = 'https://github.com/openremote/openremote'
+        licenses {
+          license {
+            name = 'GNU Affero General Public License v3.0'
+            url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
+          }
         }
+        developers {
+          developer {
+            id = 'developers'
+            name = 'Developers'
+            email = 'developers@openremote.io'
+            organization = 'OpenRemote'
+            organizationUrl = 'https://openremote.io'
+          }
+        }
+        scm {
+          connection = 'scm:git:git://github.com/openremote/openremote.git'
+          developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
+          url = 'https://github.com/openremote/openremote/tree/master'
+        }
+      }
     }
+  }
 
-    repositories {
-        maven {
-            if (!version.endsWith('-LOCAL')) {
-                credentials {
-                    username = findProperty("publishUsername")
-                    password = findProperty("publishPassword")
-                }
-            }
-            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
+  repositories {
+    maven {
+      if (!version.endsWith('-LOCAL')) {
+        credentials {
+          username = findProperty("publishUsername")
+          password = findProperty("publishPassword")
         }
+      }
+      url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
     }
+  }
 }
 
 signing {
-    def signingKey = findProperty("signingKey")
-    def signingPassword = findProperty("signingPassword")
-    if (signingKey && signingPassword) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign publishing.publications.maven
-    }
+  def signingKey = findProperty("signingKey")
+  def signingPassword = findProperty("signingPassword")
+  if (signingKey && signingPassword) {
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.maven
+  }
 }

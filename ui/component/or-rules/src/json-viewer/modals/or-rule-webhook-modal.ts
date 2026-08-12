@@ -1,78 +1,98 @@
-import {RuleActionWebhook} from "@openremote/model";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {i18next} from "@openremote/or-translate";
-import {html, LitElement, PropertyValues} from "lit";
-import {customElement, property} from "lit/decorators.js";
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import type { RuleActionWebhook } from "@openremote/model";
+import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import type { DialogAction, OrMwcDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { i18next } from "@openremote/or-translate";
+import { html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
+import { customElement, property } from "lit/decorators.js";
 
 @customElement("or-rule-webhook-modal")
-export class OrRuleWebhookModal extends LitElement {
+export class OrRuleWebhookModal extends OrElement {
+  @property({ type: Object })
+  protected action!: RuleActionWebhook;
 
-    @property({type: Object})
-    protected action!: RuleActionWebhook;
+  @property({ type: String })
+  public title: string = i18next.t("message");
 
-    @property({type: String})
-    public title: string = i18next.t('message');
+  constructor() {
+    super();
+  }
 
-    constructor() {
-        super();
+  /* ----------------------- */
+
+  firstUpdated(changedProperties: PropertyValues) {
+    if (changedProperties.has("action")) {
+      this.renderDialogHTML(this.action);
     }
+  }
 
-    /* ----------------------- */
+  renderDialogHTML(action: RuleActionWebhook) {
+    const dialog: OrMwcDialog = this.shadowRoot!.getElementById("webhook-modal") as OrMwcDialog;
+    if (!this.shadowRoot) return;
 
-    firstUpdated(changedProperties: PropertyValues) {
-        if (changedProperties.has("action")) {
-            this.renderDialogHTML(this.action);
+    const slot: HTMLSlotElement | null = this.shadowRoot.querySelector(".webhook-form-slot");
+    if (dialog && slot) {
+      const container = document.createElement("div");
+      slot.assignedNodes({ flatten: true }).forEach((child) => {
+        if (child instanceof HTMLElement) {
+          container.appendChild(child);
         }
+      });
+      dialog.content = html`${container}`;
+      dialog.dismissAction = null;
+      this.requestUpdate();
     }
+  }
 
-    renderDialogHTML(action: RuleActionWebhook) {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("webhook-modal") as OrMwcDialog;
-        if (!this.shadowRoot) return
+  closeForm(event: OrInputChangedEvent) {
+    const dialog: OrMwcDialog = this.shadowRoot!.host as OrMwcDialog;
+    dialog.close();
+  }
 
-        const slot: HTMLSlotElement | null = this.shadowRoot.querySelector('.webhook-form-slot');
-        if (dialog && slot) {
-            let container = document.createElement("div");
-            slot.assignedNodes({flatten: true}).forEach((child) => {
-                if (child instanceof HTMLElement) {
-                    container.appendChild(child);
-                }
-            });
-            dialog.content = html`${container}`;
-            dialog.dismissAction = null;
-            this.requestUpdate();
-        }
+  render() {
+    if (!this.action) {
+      return html`${i18next.t("errorOccurred")}`;
     }
-
-    closeForm(event: OrInputChangedEvent) {
-        const dialog: OrMwcDialog = this.shadowRoot!.host as OrMwcDialog;
-        dialog.close();
-    }
-
-    render() {
-        if (!this.action) {
-            return html`${i18next.t('errorOccurred')}`;
-        }
-        const webhookModalActions: DialogAction[] = [
-            {
-                actionName: "", content: html`
-                    <or-mwc-input .type="${InputType.BUTTON}" label="ok"
-                                  @or-mwc-input-changed="${this.closeForm}"></or-mwc-input>`
-            }
-        ];
-        const webhookModalOpen = () => {
-            const dialog: OrMwcDialog = this.shadowRoot!.getElementById("webhook-modal") as OrMwcDialog;
-            if (dialog) {
-                dialog.open();
-            }
-        };
-        return html`
-            <or-vaadin-button @click=${() => webhookModalOpen()}>
-                <or-translate value="message"></or-translate>
-            </or-vaadin-button>
-            <or-mwc-dialog id="webhook-modal" heading="${this.title}" .actions="${webhookModalActions}"></or-mwc-dialog>
-            <slot class="webhook-form-slot"></slot>
-        `
-    }
-
+    const webhookModalActions: DialogAction[] = [
+      {
+        actionName: "",
+        content: html` <or-mwc-input
+          .type="${InputType.BUTTON}"
+          label="ok"
+          @or-mwc-input-changed="${this.closeForm}"
+        ></or-mwc-input>`,
+      },
+    ];
+    const webhookModalOpen = () => {
+      const dialog: OrMwcDialog = this.shadowRoot!.getElementById("webhook-modal") as OrMwcDialog;
+      if (dialog) {
+        dialog.open();
+      }
+    };
+    return html`
+      <or-vaadin-button @click=${() => webhookModalOpen()}>
+        <or-translate value="message"></or-translate>
+      </or-vaadin-button>
+      <or-mwc-dialog id="webhook-modal" heading="${this.title}" .actions="${webhookModalActions}"></or-mwc-dialog>
+      <slot class="webhook-form-slot"></slot>
+    `;
+  }
 }

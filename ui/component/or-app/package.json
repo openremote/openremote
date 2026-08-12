@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-app",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "OpenRemote app template",
   "customElements": "custom-elements.json",
   "author": "OpenRemote",
@@ -27,6 +27,7 @@
   "dependencies": {
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",

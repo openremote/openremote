@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.test.protocol
 
@@ -108,7 +107,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         when: "a mock thing asset is created that links to the mock agents"
         def mockThing = new ThingAsset("Mock Thing Asset")
             .setRealm(MASTER_REALM)
-        
+
         mockThing.addOrReplaceAttributes(
             new Attribute<>("lightToggle1", BOOLEAN)
                 .addOrReplaceMeta(
@@ -347,7 +346,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             assert mockProtocol2.protocolMethodCalls.get(1).startsWith("UNLINK_ATTRIBUTE")
             assert mockProtocol2.protocolMethodCalls.get(2) == "STOP"
         }
-        
+
         and: "the protocol instance and agent should be removed"
         conditions.eventually {
             assert agentService.getProtocolInstance(mockAgent2.id) == null

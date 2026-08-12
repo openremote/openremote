@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,11 +12,14 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {InputType} from "./util";
+import { css, html, type LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
+import { customElement, property, query } from "lit/decorators.js";
+import { InputType } from "./util";
 import "./or-vaadin-checkbox";
 import "./or-vaadin-email-field";
 import "./or-vaadin-number-field";
@@ -36,13 +36,14 @@ import "./or-vaadin-toggle";
  * @param constructors - List of CustomElements to scan for available properties
  */
 function registerProperties(constructors: (CustomElementConstructor | undefined)[]) {
-    constructors
-        .filter(constr => !!constr)
-        .map(contr => contr as typeof LitElement)
-        .forEach(constr => constr.observedAttributes
-            .filter(attr => !OrVaadinInput.elementProperties.has(attr))
-            .forEach(attr => OrVaadinInput.createProperty(attr, constr.getPropertyOptions(attr)))
-        );
+  constructors
+    .filter((constr) => !!constr)
+    .map((contr) => contr as typeof LitElement)
+    .forEach((constr) =>
+      constr.observedAttributes
+        .filter((attr) => !OrVaadinInput.elementProperties.has(attr))
+        .forEach((attr) => OrVaadinInput.createProperty(attr, constr.getPropertyOptions(attr)))
+    );
 }
 
 /**
@@ -51,243 +52,242 @@ function registerProperties(constructors: (CustomElementConstructor | undefined)
  * @customElement "or-vaadin-input"
  */
 @customElement("or-vaadin-input")
-export class OrVaadinInput extends LitElement {
+export class OrVaadinInput extends OrElement {
+  /**
+   * Static list of Vaadin component classes to scan through during attribute changes.
+   * It's important that the complete list of CustomElements is defined here.
+   * Be aware: all CustomElements defined here need to be imported during initialization; dynamic imports are not expected to work.
+   */
+  public static readonly VAADIN_CLASSES: (CustomElementConstructor | undefined)[] = [
+    customElements.get("or-vaadin-number-field"),
+    customElements.get("or-vaadin-password-field"),
+    customElements.get("or-vaadin-select"),
+    customElements.get("or-vaadin-slider"),
+    customElements.get("or-vaadin-text-area"),
+    customElements.get("or-vaadin-text-field"),
+  ];
 
-    /**
-     * Static list of Vaadin component classes to scan through during attribute changes.
-     * It's important that the complete list of CustomElements is defined here.
-     * Be aware: all CustomElements defined here need to be imported during initialization; dynamic imports are not expected to work.
-     */
-    public static readonly VAADIN_CLASSES: (CustomElementConstructor | undefined)[] = [
-        customElements.get("or-vaadin-number-field"),
-        customElements.get("or-vaadin-password-field"),
-        customElements.get("or-vaadin-select"),
-        customElements.get("or-vaadin-slider"),
-        customElements.get("or-vaadin-text-area"),
-        customElements.get("or-vaadin-text-field")
-    ];
+  /**
+   * Static map of template functions that are used to render the Vaadin components.
+   * For example, {@link InputType.CHECKBOX} generates a `<or-vaadin-checkbox>` element.
+   * The map value contains a function, with an {@link onChange} callback parameter for handling events.
+   */
+  public static readonly TEMPLATES = new Map<InputType, (onChange: (ev: Event) => void) => TemplateResult>([
+    [InputType.BIG_INT, OrVaadinInput.getNumberFieldTemplate],
+    [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
+    [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
+    [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
+    [InputType.RANGE, OrVaadinInput.getSliderTemplate],
+    [InputType.SELECT, OrVaadinInput.getSelectTemplate],
+    [InputType.SWITCH, OrVaadinInput.getSwitchTemplate],
+    [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
+    [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
+  ]);
 
-    /**
-     * Static map of template functions that are used to render the Vaadin components.
-     * For example, {@link InputType.CHECKBOX} generates a `<or-vaadin-checkbox>` element.
-     * The map value contains a function, with an {@link onChange} callback parameter for handling events.
-     */
-    public static readonly TEMPLATES = new Map<InputType, (onChange: (ev: Event) => void) => TemplateResult>([
-        [InputType.BIG_INT, OrVaadinInput.getNumberFieldTemplate],
-        [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
-        [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
-        [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
-        [InputType.RANGE, OrVaadinInput.getSliderTemplate],
-        [InputType.SELECT, OrVaadinInput.getSelectTemplate],
-        [InputType.SWITCH, OrVaadinInput.getSwitchTemplate],
-        [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
-        [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate]
-    ]);
+  /**
+   * Static map of what HTML event to listen for when a value changes. By default, or when undefined, the "change" event is used.
+   * Sometimes you'd like to override this, such as a text field, where it should only be updated "on submit".
+   */
+  public static readonly CHANGE_EVENTS = new Map<InputType, string>([
+    [InputType.BIG_INT, "submit"],
+    [InputType.NUMBER, "submit"],
+    [InputType.TEXTAREA, "submit"],
+    [InputType.TEXT, "submit"],
+    [InputType.PASSWORD, "submit"],
+  ]);
 
-    /**
-     * Static map of what HTML event to listen for when a value changes. By default, or when undefined, the "change" event is used.
-     * Sometimes you'd like to override this, such as a text field, where it should only be updated "on submit".
-     */
-    public static readonly CHANGE_EVENTS = new Map<InputType, string>([
-        [InputType.BIG_INT, "submit"],
-        [InputType.NUMBER, "submit"],
-        [InputType.TEXTAREA, "submit"],
-        [InputType.TEXT, "submit"],
-        [InputType.PASSWORD, "submit"]
-    ]);
+  /**
+   * List of forbidden attributes that are not processed nor "bubbled down" to the child Vaadin component.
+   * So `<or-vaadin-input id="myId" type="text">`, wouldn't render `<or-vaadin-text-field id="myId">`, but `<or-vaadin-text-field>`.
+   */
+  public static readonly FORBIDDEN_ATTRIBUTES = ["id"];
 
-    /**
-     * List of forbidden attributes that are not processed nor "bubbled down" to the child Vaadin component.
-     * So `<or-vaadin-input id="myId" type="text">`, wouldn't render `<or-vaadin-text-field id="myId">`, but `<or-vaadin-text-field>`.
-     */
-    public static readonly FORBIDDEN_ATTRIBUTES = ["id"];
+  /**
+   * The input type that determines which Vaadin component to render.
+   * Refer to {@link InputType} and {@link OrVaadinInput.TEMPLATES} for the supported types.
+   */
+  @property({ type: String })
+  public type: InputType = InputType.TEXT;
 
-    /**
-     * The input type that determines which Vaadin component to render.
-     * Refer to {@link InputType} and {@link OrVaadinInput.TEMPLATES} for the supported types.
-     */
-    @property({type: String})
-    public type: InputType = InputType.TEXT;
+  @query("#elem")
+  protected _elem?: HTMLInputElement;
 
-    @query("#elem")
-    protected _elem?: HTMLInputElement;
+  /**
+   * Internal observer for tracking attribute updates on the root element.
+   * @protected
+   */
+  protected _observer = new MutationObserver((mutations, observer) => this._onAttributeChange(mutations, observer));
 
-    /**
-     * Internal observer for tracking attribute updates on the root element.
-     * @protected
-     */
-    protected _observer = new MutationObserver((mutations, observer) => this._onAttributeChange(mutations, observer));
+  static get styles() {
+    return css`
+      #elem {
+        width: 100%;
+      }
+      or-vaadin-textarea {
+        max-height: 200px;
+      }
+    `;
+  }
 
-    static get styles() {
-        return css`
-            #elem {
-                width: 100%;
-            }
-            or-vaadin-textarea {
-                max-height: 200px;
-            }
-        `;
+  connectedCallback() {
+    this._observer.observe(this, { attributes: true });
+    return super.connectedCallback();
+  }
+
+  disconnectedCallback() {
+    this._observer.disconnect();
+    return super.disconnectedCallback();
+  }
+
+  updated(changedProps: PropertyValues) {
+    changedProps.forEach((_, key) => this._onPropertyChange(String(key), this[String(key) as keyof OrVaadinInput]));
+    return super.updated(changedProps);
+  }
+
+  firstUpdated(_changedProps: PropertyValues) {
+    for (const name of this.getAttributeNames()) {
+      // console.debug(this._getLoggingPrefix() + `firstUpdated for ${name} (${typeof this.getAttribute(name)}) to`, this.getAttribute(name));
+      this._applyAttribute(name, this.getAttribute(name), this._elem);
     }
+    return super.firstUpdated(_changedProps);
+  }
 
-    connectedCallback() {
-        this._observer.observe(this, { attributes: true });
-        return super.connectedCallback();
+  /**
+   * Returns the native Vaadin input element.
+   */
+  public get native(): HTMLInputElement | undefined {
+    return this._elem;
+  }
+
+  /**
+   * Returns the value of the native Vaadin input element.
+   */
+  public get nativeValue(): any {
+    switch (this.type) {
+      case InputType.CHECKBOX:
+      case InputType.SWITCH: {
+        return (this._elem as HTMLInputElement | undefined)?.checked;
+      }
+      default: {
+        return this._elem?.value;
+      }
     }
+  }
 
-    disconnectedCallback() {
-        this._observer.disconnect();
-        return super.disconnectedCallback();
-    }
+  /**
+   * Function that returns a boolean which indicates if the element meets any constraint validation rules applied to it.
+   * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/checkValidity|HTMLInputElement/checkValidity}
+   */
+  public checkValidity(): boolean {
+    return this._elem?.checkValidity() ?? false;
+  }
 
-    updated(changedProps: PropertyValues) {
-        changedProps.forEach((_, key) => this._onPropertyChange(String(key), this[String(key) as keyof OrVaadinInput]));
-        return super.updated(changedProps);
-    }
+  render() {
+    return OrVaadinInput.TEMPLATES.get(this.type)?.(this._onValueChange) ?? html`Not supported yet.`;
+  }
 
-    firstUpdated(_changedProps: PropertyValues) {
-        for (const name of this.getAttributeNames()) {
-            // console.debug(this._getLoggingPrefix() + `firstUpdated for ${name} (${typeof this.getAttribute(name)}) to`, this.getAttribute(name));
-            this._applyAttribute(name, this.getAttribute(name), this._elem);
-        }
-        return super.firstUpdated(_changedProps);
-    }
-
-    /**
-     * Returns the native Vaadin input element.
-     */
-    public get native(): HTMLInputElement | undefined {
-        return this._elem;
-    }
-
-    /**
-     * Returns the value of the native Vaadin input element.
-     */
-    public get nativeValue(): any {
-        switch (this.type) {
-            case InputType.CHECKBOX:
-            case InputType.SWITCH: {
-                return (this._elem as HTMLInputElement | undefined)?.checked;
-            }
-            default: {
-                return this._elem?.value;
-            }
-        }
-    }
-
-    /**
-     * Function that returns a boolean which indicates if the element meets any constraint validation rules applied to it.
-     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/checkValidity|HTMLInputElement/checkValidity}
-     */
-    public checkValidity(): boolean {
-        return this._elem?.checkValidity() ?? false;
-    }
-
-    render() {
-        return OrVaadinInput.TEMPLATES.get(this.type)?.(this._onValueChange) ?? html`Not supported yet.`;
-    }
-
-    /**
-     * Internal {@link MutationCallback} function for handling attribute changes from an {@link MutationObserver}.
-     * @param mutations - Array of mutations occurring in a single event
-     * @param _observer - The observer causing the {@link MutationCallback}
-     * @protected
-     */
-    protected _onAttributeChange(mutations: MutationRecord[], _observer: MutationObserver) {
-        this.getUpdateComplete().then(() => {
-            mutations
-                .filter(mutation => mutation.type === "attributes" && mutation.attributeName)
-                .forEach(mutation => {
-                    // console.debug(this._getLoggingPrefix() + `_onAttributeChange for ${mutation.attributeName} (${typeof this.getAttribute(mutation.attributeName!)})`, this.getAttribute(mutation.attributeName!));
-                    this._applyAttribute(mutation.attributeName!, this.getAttribute(mutation.attributeName!), this._elem);
-                });
+  /**
+   * Internal {@link MutationCallback} function for handling attribute changes from an {@link MutationObserver}.
+   * @param mutations - Array of mutations occurring in a single event
+   * @param _observer - The observer causing the {@link MutationCallback}
+   * @protected
+   */
+  protected _onAttributeChange(mutations: MutationRecord[], _observer: MutationObserver) {
+    this.getUpdateComplete().then(() => {
+      mutations
+        .filter((mutation) => mutation.type === "attributes" && mutation.attributeName)
+        .forEach((mutation) => {
+          // console.debug(this._getLoggingPrefix() + `_onAttributeChange for ${mutation.attributeName} (${typeof this.getAttribute(mutation.attributeName!)})`, this.getAttribute(mutation.attributeName!));
+          this._applyAttribute(mutation.attributeName!, this.getAttribute(mutation.attributeName!), this._elem);
         });
-    }
+    });
+  }
 
-    /**
-     * Internal function for handling property changes during the Lit lifecycle.
-     * @param name - Property key that was changed
-     * @param newValue - (optional) the new value to apply
-     * @protected
-     */
-    protected _onPropertyChange(name: string, newValue?: any) {
-        // console.debug(this._getLoggingPrefix() + `_onPropertyChange for ${name} (${typeof newValue}) to`, newValue);
-        newValue ??= (this as Record<string, unknown>)[String(name)];
-        this._applyAttribute(name, JSON.stringify(newValue), this._elem);
-    }
+  /**
+   * Internal function for handling property changes during the Lit lifecycle.
+   * @param name - Property key that was changed
+   * @param newValue - (optional) the new value to apply
+   * @protected
+   */
+  protected _onPropertyChange(name: string, newValue?: any) {
+    // console.debug(this._getLoggingPrefix() + `_onPropertyChange for ${name} (${typeof newValue}) to`, newValue);
+    newValue ??= (this as Record<string, unknown>)[String(name)];
+    this._applyAttribute(name, JSON.stringify(newValue), this._elem);
+  }
 
-    /**
-     * Internal callback function when a user changes the value inside the Vaadin element.
-     * Normally this is caused by an `@change` event.
-     * @param ev Event that occurred
-     * @protected
-     */
-    protected _onValueChange(ev: Event) {
-        ev.stopPropagation();
-        if (ev.defaultPrevented) return;
-        this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
-    }
+  /**
+   * Internal callback function when a user changes the value inside the Vaadin element.
+   * Normally this is caused by an `@change` event.
+   * @param ev Event that occurred
+   * @protected
+   */
+  protected _onValueChange(ev: Event) {
+    ev.stopPropagation();
+    if (ev.defaultPrevented) return;
+    this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
+  }
 
-    /**
-     * Internal function to apply an attribute to the child Vaadin element.
-     * @param name - Attribute name
-     * @param value - Value to apply
-     * @param elem - Optional {@link HTMLInputElement} to apply the change to
-     * @protected
-     */
-    protected _applyAttribute(name: string, value?: any, elem = this._elem) {
-        if (elem && !OrVaadinInput.FORBIDDEN_ATTRIBUTES.includes(name)) {
-            switch (typeof value) {
-                case "boolean": {
-                    elem?.toggleAttribute(name, value);
-                    break;
-                }
-                default: {
-                    if (value !== null) {
-                        elem?.setAttribute(name, value);
-                    } else {
-                        elem?.removeAttribute(name);
-                    }
-                    break;
-                }
-            }
+  /**
+   * Internal function to apply an attribute to the child Vaadin element.
+   * @param name - Attribute name
+   * @param value - Value to apply
+   * @param elem - Optional {@link HTMLInputElement} to apply the change to
+   * @protected
+   */
+  protected _applyAttribute(name: string, value?: any, elem = this._elem) {
+    if (elem && !OrVaadinInput.FORBIDDEN_ATTRIBUTES.includes(name)) {
+      switch (typeof value) {
+        case "boolean": {
+          elem?.toggleAttribute(name, value);
+          break;
         }
+        default: {
+          if (value !== null) {
+            elem?.setAttribute(name, value);
+          } else {
+            elem?.removeAttribute(name);
+          }
+          break;
+        }
+      }
     }
+  }
 
-    public static getCheckboxTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-checkbox id="elem" @change=${onChange}></or-vaadin-checkbox>`;
-    }
+  public static getCheckboxTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-checkbox id="elem" @change=${onChange}></or-vaadin-checkbox>`;
+  }
 
-    public static getNumberFieldTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-number-field id="elem" @change=${onChange}></or-vaadin-number-field>`;
-    }
+  public static getNumberFieldTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-number-field id="elem" @change=${onChange}></or-vaadin-number-field>`;
+  }
 
-    public static getPasswordFieldTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-password-field id="elem" @change=${onChange}></or-vaadin-password-field>`;
-    }
+  public static getPasswordFieldTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-password-field id="elem" @change=${onChange}></or-vaadin-password-field>`;
+  }
 
-    public static getSelectTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-select id="elem" @change=${onChange}></or-vaadin-select>`;
-    }
+  public static getSelectTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-select id="elem" @change=${onChange}></or-vaadin-select>`;
+  }
 
-    public static getSliderTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-slider id="elem" @change=${onChange}></or-vaadin-slider>`
-    }
+  public static getSliderTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-slider id="elem" @change=${onChange}></or-vaadin-slider>`;
+  }
 
-    public static getSwitchTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-toggle id="elem" @change=${onChange}></or-vaadin-toggle>`;
-    }
+  public static getSwitchTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-toggle id="elem" @change=${onChange}></or-vaadin-toggle>`;
+  }
 
-    public static getTextAreaTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-text-area id="elem" @change=${onChange}></or-vaadin-text-area>`;
-    }
+  public static getTextAreaTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-text-area id="elem" @change=${onChange}></or-vaadin-text-area>`;
+  }
 
-    public static getTextFieldTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-text-field id="elem" @change=${onChange}></or-vaadin-text-field>`;
-    }
+  public static getTextFieldTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-text-field id="elem" @change=${onChange}></or-vaadin-text-field>`;
+  }
 
-    protected _getLoggingPrefix(): string {
-        return `[${this.getAttribute("label")} ${this.type}] `;
-    }
+  protected _getLoggingPrefix(): string {
+    return `[${this.getAttribute("label")} ${this.type}] `;
+  }
 }
 
 // Before the class is initialized, register the property fields of the underlying Vaadin classes

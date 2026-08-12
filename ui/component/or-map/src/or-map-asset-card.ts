@@ -1,205 +1,236 @@
-import {CSSResultGroup, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import { classMap } from 'lit-html/directives/class-map.js';
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { type CSSResultGroup, html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
+import { customElement, property } from "lit/decorators.js";
+import { classMap } from "lit-html/directives/class-map.js";
 import {
-    Asset,
-    AssetEvent,
-    AssetEventCause,
-    AttributeEvent,
-    SharedEvent,
-    WellknownAttributes,
-    WellknownMetaItems,
-    AssetModelUtil
+  type Asset,
+  type AssetEvent,
+  AssetEventCause,
+  type AttributeEvent,
+  type SharedEvent,
+  WellknownAttributes,
+  WellknownMetaItems,
+  AssetModelUtil,
 } from "@openremote/model";
-import manager, {subscribe, Util} from "@openremote/core";
+import manager, { subscribe, Util } from "@openremote/core";
 import "@openremote/or-icon";
-import {mapAssetCardStyle} from "./style";
+import { mapAssetCardStyle } from "./style";
 import { getMarkerIconAndColorFromAssetType } from "./util";
-import {getMarkerConfigAttributeName, MapMarkerAssetConfig} from "./markers/or-map-marker-asset";
+import { getMarkerConfigAttributeName, type MapMarkerAssetConfig } from "./markers/or-map-marker-asset";
 
 export interface MapAssetCardTypeConfig {
-    include?: string[];
-    exclude?: string[];
-    hideViewAsset?: boolean;
+  include?: string[];
+  exclude?: string[];
+  hideViewAsset?: boolean;
 }
 
 export interface MapAssetCardConfig {
-    default?: MapAssetCardTypeConfig;
-    assetTypes?: { [assetType: string]: MapAssetCardTypeConfig };
+  default?: MapAssetCardTypeConfig;
+  assetTypes?: { [assetType: string]: MapAssetCardTypeConfig };
 }
 
 export class OrMapAssetCardLoadAssetEvent extends CustomEvent<string> {
+  public static readonly NAME = "or-map-asset-card-load-asset";
 
-    public static readonly NAME = "or-map-asset-card-load-asset";
-
-    constructor(assetId: string) {
-        super(OrMapAssetCardLoadAssetEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: assetId
-        });
-    }
+  constructor(assetId: string) {
+    super(OrMapAssetCardLoadAssetEvent.NAME, {
+      bubbles: true,
+      composed: true,
+      detail: assetId,
+    });
+  }
 }
 
 declare global {
-    export interface HTMLElementEventMap {
-        [OrMapAssetCardLoadAssetEvent.NAME]: OrMapAssetCardLoadAssetEvent;
-    }
+  export interface HTMLElementEventMap {
+    [OrMapAssetCardLoadAssetEvent.NAME]: OrMapAssetCardLoadAssetEvent;
+  }
 }
 
-
 export const DefaultConfig: MapAssetCardConfig = {
-    default: {
-        exclude: ["notes"]
-    },
-    assetTypes: {
-    }
+  default: {
+    exclude: ["notes"],
+  },
+  assetTypes: {},
 };
 
 @customElement("or-map-asset-card")
-export class OrMapAssetCard extends subscribe(manager)(LitElement) {
+export class OrMapAssetCard extends subscribe(manager)(OrElement) {
+  @property({ type: String, reflect: true, attribute: true })
+  public assetId?: string;
 
-    @property({type: String, reflect: true, attribute: true})
-    public assetId?: string;
+  @property({ type: Object, attribute: true })
+  public asset?: Asset;
 
-    @property({type: Object, attribute: true})
-    public asset?: Asset;
+  @property({ type: Object })
+  public config?: MapAssetCardConfig;
 
-    @property({type: Object})
-    public config?: MapAssetCardConfig;
+  @property({ type: Object })
+  public markerconfig?: MapMarkerAssetConfig;
 
-    @property({type: Object})
-    public markerconfig?: MapMarkerAssetConfig;
+  @property({ type: Boolean, attribute: true })
+  public useAssetColor: boolean = true;
 
-    @property({type: Boolean, attribute: true})
-    public useAssetColor: boolean = true;
+  static get styles(): CSSResultGroup {
+    return mapAssetCardStyle;
+  }
 
-    static get styles(): CSSResultGroup {
-        return mapAssetCardStyle;
+  protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+    if (_changedProperties.has("assetId")) {
+      this.title = "";
+      this.assetIds = this.assetId && this.assetId.length > 0 ? [this.assetId] : undefined;
+
+      if (_changedProperties.size === 1) {
+        return false;
+      }
     }
 
-    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+    return super.shouldUpdate(_changedProperties);
+  }
 
-        if (_changedProperties.has("assetId")) {
-            this.title = "";
-            this.assetIds = this.assetId && this.assetId.length > 0 ? [this.assetId] : undefined;
+  public _onEvent(event: SharedEvent) {
+    if (event.eventType === "asset") {
+      const assetEvent = event as AssetEvent;
 
-            if (_changedProperties.size === 1) {
-                return false;
-            }
-        }
-
-        return super.shouldUpdate(_changedProperties);
+      switch (assetEvent.cause) {
+        case AssetEventCause.READ:
+        case AssetEventCause.CREATE:
+        case AssetEventCause.UPDATE:
+          this.asset = assetEvent.asset;
+          break;
+        case AssetEventCause.DELETE:
+          this.asset = undefined;
+          break;
+      }
     }
 
-    public _onEvent(event: SharedEvent) {
-
-        if (event.eventType === "asset") {
-            const assetEvent = event as AssetEvent;
-            
-            switch (assetEvent.cause) {
-                case AssetEventCause.READ:
-                case AssetEventCause.CREATE:
-                case AssetEventCause.UPDATE:
-                    this.asset = assetEvent.asset;
-                    break;
-                case AssetEventCause.DELETE:
-                    this.asset = undefined;
-                    break;
-            }
-        }
-        
-        if (event.eventType === "attribute") {
-            if (this.asset) {
-                this.asset = Util.updateAsset(this.asset, event as AttributeEvent);
-                this.requestUpdate();
-            }
-        }
+    if (event.eventType === "attribute") {
+      if (this.asset) {
+        this.asset = Util.updateAsset(this.asset, event as AttributeEvent);
+        this.requestUpdate();
+      }
     }
-    
-    protected _getCardConfig(): MapAssetCardTypeConfig | undefined {
-        let cardConfig = this.config || DefaultConfig;
+  }
 
-        if (!this.asset) {
-            return cardConfig.default;
-        }
+  protected _getCardConfig(): MapAssetCardTypeConfig | undefined {
+    const cardConfig = this.config || DefaultConfig;
 
-        return cardConfig.assetTypes && cardConfig.assetTypes.hasOwnProperty(this.asset.type!) ? cardConfig.assetTypes[this.asset.type!] : cardConfig.default;
+    if (!this.asset) {
+      return cardConfig.default;
     }
 
-    protected render(): TemplateResult | undefined {
+    return cardConfig.assetTypes && cardConfig.assetTypes.hasOwnProperty(this.asset.type!)
+      ? cardConfig.assetTypes[this.asset.type!]
+      : cardConfig.default;
+  }
 
-        if (!this.asset) {
-            return html``;
-        }
+  protected render(): TemplateResult | undefined {
+    if (!this.asset) {
+      return html``;
+    }
 
-        const icon = this._getIcon();
-        const color = this._getColor();
-        const styleStr = color ? "--internal-or-map-asset-card-header-color: #" + color + ";" : "";
-        const cardConfig = this._getCardConfig();
-        const attributes = Object.values(this.asset.attributes!).filter((attr) => attr.name !== WellknownAttributes.LOCATION);
-        const includedAttributes = cardConfig && cardConfig.include ? cardConfig.include : undefined;
-        const excludedAttributes = cardConfig && cardConfig.exclude ? cardConfig.exclude : [];
-        const attrs = attributes.filter((attr) =>
-            (!includedAttributes || includedAttributes.indexOf(attr.name!) >= 0)
-            && (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0)
-            && (!attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr)))
-            .sort(Util.sortByString((listItem) => listItem.name!));
+    const icon = this._getIcon();
+    const color = this._getColor();
+    const styleStr = color ? "--internal-or-map-asset-card-header-color: #" + color + ";" : "";
+    const cardConfig = this._getCardConfig();
+    const attributes = Object.values(this.asset.attributes!).filter(
+      (attr) => attr.name !== WellknownAttributes.LOCATION
+    );
+    const includedAttributes = cardConfig && cardConfig.include ? cardConfig.include : undefined;
+    const excludedAttributes = cardConfig && cardConfig.exclude ? cardConfig.exclude : [];
+    const attrs = attributes
+      .filter(
+        (attr) =>
+          (!includedAttributes || includedAttributes.indexOf(attr.name!) >= 0) &&
+          (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0) &&
+          (!attr.meta ||
+            !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) ||
+            !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr))
+      )
+      .sort(Util.sortByString((listItem) => listItem.name!));
 
-        const highlightedAttr = getMarkerConfigAttributeName(this.markerconfig, this.asset.type);
+    const highlightedAttr = getMarkerConfigAttributeName(this.markerconfig, this.asset.type);
 
-        return html`
-            <div id="card-container" style="${styleStr}">
-                <div id="header">
-                    ${icon ? html`<or-icon icon="${icon}"></or-icon>` : ``}
-                    <span id="title">${this.asset.name}</span>
+    return html`
+      <div id="card-container" style="${styleStr}">
+        <div id="header">
+          ${icon ? html`<or-icon icon="${icon}"></or-icon>` : ``}
+          <span id="title">${this.asset.name}</span>
+        </div>
+        <div id="attribute-list">
+          <ul>
+            ${attrs.map((attr) => {
+              if (!this.asset || !this.asset.type) {
+                return;
+              }
+              const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset.type, attr.name, attr);
+              if (descriptors && descriptors.length) {
+                const label = Util.getAttributeLabel(attr, descriptors[0], this.asset.type, true);
+                const value = Util.getAttributeValueAsString(attr, descriptors[0], this.asset.type, false, "-");
+                const classes = { highlighted: highlightedAttr === attr.name };
+                return html`<li class="${classMap(classes)}">
+                  <span class="attribute-name">${label}</span><span class="attribute-value">${value}</span>
+                </li>`;
+              }
+            })}
+          </ul>
+        </div>
+        ${
+          cardConfig && cardConfig.hideViewAsset
+            ? html``
+            : html`
+                <div id="footer">
+                  <or-vaadin-button
+                    style="--lumo-primary-text-color: var(--internal-or-map-asset-card-header-color);"
+                    @click=${() => this._loadAsset(this.asset!.id!)}
+                  >
+                    <or-translate value="viewAsset"></or-translate>
+                  </or-vaadin-button>
                 </div>
-                <div id="attribute-list">
-                    <ul>
-                        ${attrs.map((attr) => {
-                            if (!this.asset || !this.asset.type) { return }
-                            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset.type, attr.name, attr);
-                            if (descriptors && descriptors.length) { 
-                                const label = Util.getAttributeLabel(attr, descriptors[0], this.asset.type, true);
-                                const value = Util.getAttributeValueAsString(attr, descriptors[0], this.asset.type, false, "-");
-                                const classes = {highlighted: highlightedAttr === attr.name};
-                                return html`<li class="${classMap(classes)}"><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`;
-                            }
-                        })}
-                    </ul>
-                </div>
-                ${cardConfig && cardConfig.hideViewAsset ? html`` : html`
-                    <div id="footer">
-                        <or-vaadin-button style="--lumo-primary-text-color: var(--internal-or-map-asset-card-header-color);"
-                                          @click=${() => this._loadAsset(this.asset!.id!)}>
-                            <or-translate value="viewAsset"></or-translate>
-                        </or-vaadin-button>
-                    </div>
-                `}
-            </div>
-        `;
-    }
-
-    protected _loadAsset(assetId: string) {
-        this.dispatchEvent(new OrMapAssetCardLoadAssetEvent(assetId));
-    }
-
-    protected _getIcon(): string | undefined {
-        if (this.asset) {
-            const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
-            const icon = getMarkerIconAndColorFromAssetType(descriptor)?.icon;
-            return icon ? icon : undefined;
+              `
         }
-    }
+      </div>
+    `;
+  }
 
-    protected _getColor(): string | undefined {
-        if (this.asset) {
-            const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
-            const color = getMarkerIconAndColorFromAssetType(descriptor)?.color;
-            if (color) {
-                // check if range
-                return (typeof color === 'string') ? color : color![0].colour;
-            }
-        }
+  protected _loadAsset(assetId: string) {
+    this.dispatchEvent(new OrMapAssetCardLoadAssetEvent(assetId));
+  }
+
+  protected _getIcon(): string | undefined {
+    if (this.asset) {
+      const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
+      const icon = getMarkerIconAndColorFromAssetType(descriptor)?.icon;
+      return icon || undefined;
     }
+  }
+
+  protected _getColor(): string | undefined {
+    if (this.asset) {
+      const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
+      const color = getMarkerIconAndColorFromAssetType(descriptor)?.color;
+      if (color) {
+        // check if range
+        return typeof color === "string" ? color : color![0].colour;
+      }
+    }
+  }
 }

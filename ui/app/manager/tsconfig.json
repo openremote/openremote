@@ -5,10 +5,6 @@
     "rootDir": "src",
     "strict": false
   },
-  "include": [
-    "./src"
-  ],
-  "references": [
-    { "path": "../../component/or-app" }
-  ]
+  "include": ["./src"],
+  "references": [{ "path": "../../component/or-element" }, { "path": "../../component/or-app" }]
 }

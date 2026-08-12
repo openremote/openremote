@@ -4,12 +4,6 @@
     "outDir": "./lib",
     "rootDir": "src"
   },
-  "include": [
-    "./src"
-  ],
-  "references": [
-    { "path": "../model" },
-    { "path": "../rest" },
-    { "path": "../or-icon" }
-  ]
+  "include": ["./src"],
+  "references": [{ "path": "../model" }, { "path": "../rest" }, { "path": "../or-icon" }]
 }

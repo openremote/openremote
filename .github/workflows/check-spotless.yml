@@ -1,0 +1,25 @@
+name: Backend Check Spotless
+on:
+  workflow_call:
+    inputs:
+      skip:
+        type: boolean
+        description: Skip condition to allow branch protection checks to pass
+        default: false
+
+jobs:
+  backend-check-spotless:
+    name: Backend Check Spotless
+    if: ${{ !inputs.skip }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up JDK 21 and gradle cache
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
+      - name: Check Spotless
+        timeout-minutes: 20
+        run: ./gradlew spotlessBackendCheck

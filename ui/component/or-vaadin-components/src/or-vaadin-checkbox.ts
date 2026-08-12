@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,14 +12,14 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {customElement} from "lit/decorators.js";
-import {Checkbox} from "@vaadin/checkbox";
-import {OrVaadinComponent} from "./util";
-import {type LitElement} from "lit";
+import { customElement } from "lit/decorators.js";
+import { Checkbox } from "@vaadin/checkbox";
+import type { OrVaadinComponent } from "./util";
+import type { LitElement } from "lit";
 
 @customElement("or-vaadin-checkbox")
-export class OrVaadinCheckbox extends (Checkbox as new () => Checkbox & LitElement) implements OrVaadinComponent {
-
-}
+export class OrVaadinCheckbox extends (Checkbox as new () => Checkbox & LitElement) implements OrVaadinComponent {}

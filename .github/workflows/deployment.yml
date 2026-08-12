@@ -6,28 +6,28 @@ on:
         type: string
       COMMIT:
         type: string
-        description: 'Repo branch or commit SHA to checkout'
+        description: "Repo branch or commit SHA to checkout"
 
 jobs:
   deployment:
     name: Deployment
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.COMMIT }}
           lfs: true # Enable Git LFS plugin to fetch *.mbtiles
 
       - name: Get version details
         id: get-version-details
-        uses: openremote/openremote/.github/actions/get-version-details@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
+        uses: openremote/openremote/.github/actions/get-version-details@9c7e40a10d98927dc433ef18738bbaae7af8c093
 
       - name: Check if main repo
         id: is_main_repo
         uses: openremote/openremote/.github/actions/check-if-main-repo@5beec5454f28eda1dd25331c9ce1d5b430266f7e
 
       - name: Checkout main repo
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ steps.is_main_repo.outputs.value == 'false' }}
         with:
           repository: ${{ steps.is_main_repo.outputs.repository }}
@@ -40,7 +40,7 @@ jobs:
 
       - name: Process ci_cd.json file
         id: ci-cd-output
-        uses: openremote/openremote/.github/actions/process-cicd-json@f667c603a447af79dda980f1dd1d734fd4679b2e
+        uses: openremote/openremote/.github/actions/process-cicd-json@9ea22e19db6711afd711f39517fe25509b018803
         with:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}

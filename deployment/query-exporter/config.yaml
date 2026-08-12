@@ -190,7 +190,6 @@ metrics:
   pg_index_bloat_count:
     type: gauge
     description: Number of indexes that are larger than 150% of table size
-    
 
 queries:
   collation_mismatch:
@@ -285,7 +284,14 @@ queries:
   datapoint_table_size:
     interval: 3600 # Hourly
     databases: [openremote]
-    metrics: [pg_datapoint_raw_data_size, pg_datapoint_indexes_size, pg_datapoint_toast_size, pg_datapoint_disk_size, pg_datapoint_data_index_ratio]
+    metrics:
+      [
+        pg_datapoint_raw_data_size,
+        pg_datapoint_indexes_size,
+        pg_datapoint_toast_size,
+        pg_datapoint_disk_size,
+        pg_datapoint_data_index_ratio,
+      ]
     sql: |
       SELECT 
         ROUND(table_bytes / 1048576.0, 0) AS pg_datapoint_raw_data_size,
@@ -298,7 +304,14 @@ queries:
   datapoint_chunks:
     interval: 86400 # Daily
     databases: [openremote]
-    metrics: [pg_datapoint_chunk_count, pg_datapoint_uncompressed_chunk_count, pg_datapoint_chunks_needing_compression, pg_datapoint_chunk_start_weeks, pg_datapoint_chunk_end_weeks]
+    metrics:
+      [
+        pg_datapoint_chunk_count,
+        pg_datapoint_uncompressed_chunk_count,
+        pg_datapoint_chunks_needing_compression,
+        pg_datapoint_chunk_start_weeks,
+        pg_datapoint_chunk_end_weeks,
+      ]
     sql: |
       SELECT
         count(*) AS pg_datapoint_chunk_count,
@@ -372,7 +385,7 @@ queries:
             0) * 100, 
           0), 
         2) AS pg_datapoint_uncompressed_cache_hit_ratio,
-      
+
         -- Track the raw number of times Postgres had to go to the physical disk
         COALESCE(sum(s.heap_blks_read) + sum(s.idx_blks_read) + sum(s.toast_blks_read), 0) AS pg_datapoint_uncompressed_blks_read_total
       FROM pg_statio_user_tables s
@@ -380,7 +393,7 @@ queries:
 
   compression_stats:
     interval: 86400 # Daily
-    databases: [ openremote ]
+    databases: [openremote]
     metrics: [pg_datapoint_compression_ratio]
     sql: |
       SELECT 
@@ -408,7 +421,7 @@ queries:
         pg_timescale_job_total_failures,
         pg_timescale_job_last_run_duration_seconds,
         pg_timescale_job_next_start_seconds,
-        pg_timescale_job_last_run_status
+        pg_timescale_job_last_run_status,
       ]
     sql: |
       SELECT
@@ -433,7 +446,7 @@ queries:
         pg_bgwriter_checkpoints_timed_total,
         pg_bgwriter_checkpoints_req_total,
         pg_bgwriter_checkpoint_write_time_seconds_total,
-        pg_bgwriter_checkpoint_sync_time_seconds_total
+        pg_bgwriter_checkpoint_sync_time_seconds_total,
       ]
     sql: |
       SELECT
@@ -444,7 +457,7 @@ queries:
         ROUND((c.sync_time / 1000.0)::numeric, 0) AS pg_bgwriter_checkpoint_sync_time_seconds_total
       FROM pg_stat_wal w
       CROSS JOIN pg_stat_checkpointer c;
-      
+
   table_and_index_bloat:
     interval: 300 # 5 minutes
     databases: [openremote]

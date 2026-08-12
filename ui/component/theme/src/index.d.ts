@@ -1,8 +1,5 @@
 /*
- * Copyright 2025, OpenRemote Inc.
- *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
+ * Copyright 2026, OpenRemote Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,23 +12,24 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-// CSS modules
 type CSSModuleClasses = { readonly [key: string]: string };
 
 declare module "*.module.css" {
-    const classes: CSSModuleClasses;
-    export default classes;
+  const classes: CSSModuleClasses;
+  export default classes;
 }
 
 // CSS
 declare module "*.css" {
-    /**
-     * @deprecated Use `import style from './style.css?inline'` instead.
-     */
-    const css: string;
-    export default css;
+  /**
+   * @deprecated Use `import style from './style.css?inline'` instead.
+   */
+  const css: string;
+  export default css;
 }
 
 declare const theme: string;

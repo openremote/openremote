@@ -52,7 +52,6 @@
 # - OR_ADMIN_PASSWORD     - The admin password to set for clean installs
 # ---------------------------------------------------------------------------------------------------------------------
 
-
 name: CI/CD
 
 on:
@@ -70,29 +69,29 @@ on:
   workflow_dispatch:
     inputs:
       ENVIRONMENT:
-        description: 'Environment to use (if any)'
+        description: "Environment to use (if any)"
       MANAGER_TAG:
-        description: 'Manager docker tag to pull'
+        description: "Manager docker tag to pull"
       CLEAN_INSTALL:
-        description: 'Delete data before starting'
+        description: "Delete data before starting"
         type: boolean
       PUSH_SNAPSHOT:
-        description: 'Push SNAPSHOT docker image to ECR'
+        description: "Push SNAPSHOT docker image to ECR"
         type: boolean
       COMMIT:
-        description: 'Repo branch or commit SHA to checkout'
+        description: "Repo branch or commit SHA to checkout"
       OR_HOSTNAME:
-        description: 'Host to deploy to (e.g. demo.openremote.app)'
+        description: "Host to deploy to (e.g. demo.openremote.app)"
       OR_ADMIN_PASSWORD:
-        description: 'Admin password override'
+        description: "Admin password override"
 
   workflow_call:
-      inputs:
-        INPUTS:
-          type: string
-      secrets:
-        SECRETS:
-          required: false
+    inputs:
+      INPUTS:
+        type: string
+    secrets:
+      SECRETS:
+        required: false
 
 permissions:
   id-token: write
@@ -104,7 +103,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   build:
     name: CI/CD
     runs-on: ubuntu-latest
@@ -152,30 +150,30 @@ jobs:
         shell: bash
         run: |
           OPTS="-sf -m 5"
-          
+
           # Try Primary v4 -> Fallback v4 -> Default to empty
           PUBLIC_IPV4=$(curl $OPTS v4.ident.me || curl $OPTS 4.tnedi.me || true)
-          
+
           # Try Primary v6 -> Fallback v6 -> Default to empty
           PUBLIC_IPV6=$(curl $OPTS v6.ident.me || curl $OPTS 6.tnedi.me || true)
-          
+
           # Validation: Ensure at least one IP was found
           if [[ -z "$PUBLIC_IPV4" && -z "$PUBLIC_IPV6" ]]; then
           echo "::error::Could not determine Public IP (both v4 and v6 failed)."
           exit 1
           fi
-          
+
           echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT
           echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT
 
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # This will only be available when run by workflow_dispatch otherwise will checkout branch/commit that triggered the workflow
           ref: ${{ steps.process-inputs.outputs.COMMIT }}
           submodules: recursive
           fetch-depth: 200
-          lfs: 'true'
+          lfs: "true"
 
       # Check which files have changed to only run appropriate tests and checks
       - name: Backend files changed
@@ -248,7 +246,7 @@ jobs:
           fi
 
       - name: Checkout main repo
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ steps.is_main_repo.outputs.value == 'false' }}
         with:
           repository: ${{ steps.is_main_repo.outputs.repository }}
@@ -287,11 +285,11 @@ jobs:
 
       - name: Set up JDK 21 and gradle cache
         id: java
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
 
       - name: Get version details
         id: get-version-details
@@ -581,14 +579,14 @@ jobs:
 
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.pushToDockerHub == 'true' }}
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: ${{ secrets._TEMP_DOCKERHUB_USER }}
           password: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
 
       - name: Configure AWS Credentials
         if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
-        uses: aws-actions/configure-aws-credentials@517a711dbcd0e402f90c77e7e2f81e849156e31d # v6.2.2
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}"
@@ -613,7 +611,7 @@ jobs:
         run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
 
       - name: Yarn cache
-        uses: actions/cache@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.0.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: steps.skip-cicd.outputs.value != 'true'
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
@@ -691,6 +689,16 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
         env:
           VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
+
+      - name: Run Spotless backend check
+        id: run-spotless-backend-check
+        if: steps.backend-files-changed.outputs.any_modified  == 'true'
+        run: ./gradlew spotlessBackendCheck
+
+      - name: Run Spotless UI check
+        id: run-spotless-frontend-check
+        if: steps.ui-files-changed.outputs.any_modified == 'true'
+        run: ./gradlew spotlessUiCheck
 
       - name: Check for outdated translations
         if: steps.is_main_repo.outputs.value == 'true'
@@ -855,9 +863,10 @@ jobs:
         if: |
           !cancelled() &&
           steps.manager-docker-command.outputs.pushToDockerHub == 'true'
-        uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
+          category: grype-manager
 
       - name: Inspect Anchore scan SARIF report
         if: |

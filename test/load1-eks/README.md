@@ -12,6 +12,7 @@ see `load1` folder for the tools, scripts and documentation.
 ## Creating load test manager image
 
 There seems to be a problem in the setup gradle build file, and you need to comment out the
+
 ```groovy
 tasks.register('demoJar', Jar) {
     base {
@@ -20,9 +21,11 @@ tasks.register('demoJar', Jar) {
     from sourceSets.demo.output
 }
 ```
+
 section from `setup/build.gradle` to properly build the load test image.
 
 After that, run
+
 ```
 ./gradlew -PSETUP_JAR=load1 clean installDist
 

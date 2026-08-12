@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,63 +12,61 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {LitElement, PropertyValues, TemplateResult } from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { property } from "lit/decorators.js";
-import {WidgetConfig} from "./widget-config";
-import {style} from "../style";
+import type { WidgetConfig } from "./widget-config";
+import { style } from "../style";
 
 export class WidgetSettingsChangedEvent extends CustomEvent<WidgetConfig> {
+  public static readonly NAME = "settings-changed";
 
-    public static readonly NAME = "settings-changed";
-
-    constructor(widgetConfig: WidgetConfig) {
-        super(WidgetSettingsChangedEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: widgetConfig
-        });
-    }
-
+  constructor(widgetConfig: WidgetConfig) {
+    super(WidgetSettingsChangedEvent.NAME, {
+      bubbles: true,
+      composed: true,
+      detail: widgetConfig,
+    });
+  }
 }
 
-export abstract class WidgetSettings extends LitElement {
+export abstract class WidgetSettings extends OrElement {
+  @property()
+  protected readonly widgetConfig: WidgetConfig;
 
-    @property()
-    protected readonly widgetConfig: WidgetConfig;
+  static get styles() {
+    return [style];
+  }
 
-    static get styles() {
-        return [style];
+  protected abstract render(): TemplateResult;
+
+  constructor(config: WidgetConfig) {
+    super();
+    this.widgetConfig = config;
+  }
+
+  // Lit lifecycle for "on every update" which triggers on every property/state change
+  protected willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has("widgetConfig") && this.widgetConfig) {
+      this.dispatchEvent(new WidgetSettingsChangedEvent(this.widgetConfig));
     }
+  }
 
-    protected abstract render(): TemplateResult
+  protected notifyConfigUpdate() {
+    this.requestUpdate("widgetConfig");
+  }
 
-    constructor(config: WidgetConfig) {
-        super();
-        this.widgetConfig = config;
-    }
+  /* ----------------------------- */
 
+  public getDisplayName?: () => string | undefined;
 
-    // Lit lifecycle for "on every update" which triggers on every property/state change
-    protected willUpdate(changedProps: PropertyValues) {
-        if(changedProps.has('widgetConfig') && this.widgetConfig) {
-            this.dispatchEvent(new WidgetSettingsChangedEvent(this.widgetConfig));
-        }
-    }
+  public setDisplayName?: (name?: string) => void;
 
-    protected notifyConfigUpdate() {
-        this.requestUpdate('widgetConfig');
-    }
+  public getEditMode?: () => boolean;
 
-
-    /* ----------------------------- */
-
-    public getDisplayName?: () => string | undefined;
-
-    public setDisplayName?: (name?: string) => void;
-
-    public getEditMode?: () => boolean;
-
-    public getWidgetLocation?: () => { x?: number, y?: number, h?: number, w?: number }
+  public getWidgetLocation?: () => { x?: number; y?: number; h?: number; w?: number };
 }
