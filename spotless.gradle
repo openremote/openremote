@@ -16,10 +16,10 @@ Map<String, String> devDependencies =
         }
 Map<String, String> eslintDependencies = devDependencies.findAll { String name, String ignored ->
   name == 'eslint' ||
-          name == 'typescript' ||
-          name.startsWith('@typescript-eslint/') ||
-          name.startsWith('eslint-config-') ||
-          name.startsWith('eslint-plugin-')
+  name == 'typescript' ||
+  name.startsWith('@typescript-eslint/') ||
+  name.startsWith('eslint-config-') ||
+  name.startsWith('eslint-plugin-')
 }
 ['eslint', 'prettier', 'typescript'].each { String dependency ->
   if (!devDependencies.containsKey(dependency)) {
@@ -32,9 +32,9 @@ String prettierVersion = devDependencies.prettier
 
 def readIgnorePatterns = { File ignoreFile ->
   List<String> patterns = ignoreFile
-          .readLines('UTF-8')
-          .collect { it.trim() }
-          .findAll { it && !it.startsWith('#') }
+  .readLines('UTF-8')
+  .collect { it.trim() }
+  .findAll { it && !it.startsWith('#') }
   List<String> unsupported = patterns.findAll {
     it.startsWith('!') || it.startsWith('/') || it.contains('\\')
   }
@@ -238,7 +238,7 @@ spotless {
     ])
     toggleOffOn()
     prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
-    licenseHeaderFile(rootProject.file('tools/spotless/openremote-license-header.txt'),'(import|export|declare|const|let|var|type|interface|class|enum|function) ')
+    licenseHeaderFile(rootProject.file('tools/spotless/openremote-license-header.txt'), '(import|export|declare|const|let|var|type|interface|class|enum|function) ')
     endWithNewline()
   }
 
@@ -269,7 +269,7 @@ def spotlessFormatGroups = [
     'Xml',
     'Yaml'
   ],
-  Ui: [
+  Ui : [
     'Css',
     'GradleRoot',
     'GradleUi',

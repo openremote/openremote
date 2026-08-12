@@ -58,32 +58,16 @@ tasks.register('test') {
 //     -> 4. UI app tests
 gradle.projectsEvaluated {
   def unitTests = subprojects.findAll { it.path != ':test' }
-  .collect {
-    it.tasks.matching { t ->
-      t.name == 'test'
-    }
-  }
+  .collect { it.tasks.matching { t -> t.name == 'test' } }
 
   def integrationTests = subprojects.findAll { it.path == ':test' }
-  .collect {
-    it.tasks.matching { t ->
-      t.name == 'test'
-    }
-  }
+  .collect { it.tasks.matching { t -> t.name == 'test' } }
 
   def uiComponentTests = subprojects.findAll { it.path.startsWith(':ui:component') }
-  .collect {
-    it.tasks.matching { t ->
-      t.name == 'npmTest'
-    }
-  }
+  .collect { it.tasks.matching { t -> t.name == 'npmTest' } }
 
   def uiAppTests = subprojects.findAll { it.path.startsWith(':ui:app') }
-  .collect {
-    it.tasks.matching { t ->
-      t.name == 'npmTest'
-    }
-  }
+  .collect { it.tasks.matching { t -> t.name == 'npmTest' } }
 
   tasks.named('npmTest').configure {
     dependsOn(uiComponentTests, uiAppTests)
@@ -219,10 +203,10 @@ scmVersion {
   tag {
     prefix.set('')
     // This deserializer prevents errors when tags exist that cannot be deserialized
-    deserializer({config, position, tagName ->
+    deserializer({ config, position, tagName ->
       tagName ==~ /^[0-9]+\.[0-9]+\.[0-9]+$/ ? tagName : "1.1.0"
     })
-    initialVersion({config, position -> '1.2.0'})
+    initialVersion({ config, position -> '1.2.0' })
   }
 }
 
