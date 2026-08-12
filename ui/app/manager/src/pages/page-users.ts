@@ -509,6 +509,18 @@ export class PageUsers extends Page<AppStateKeyed> {
     );
   }
 
+  private doDelete(user) {
+    manager.rest.api.UserResource.delete(manager.displayRealm, user.id).then((response) => {
+      if (user.serviceAccount) {
+        this._serviceUsers = [...this._serviceUsers.filter((u) => u.id !== user.id)];
+        this.reset();
+      } else {
+        this._users = [...this._users.filter((u) => u.id !== user.id)];
+        this.reset();
+      }
+    });
+  }
+
   protected render(): TemplateResult | void {
     if (!manager.authenticated) {
       return html` <or-translate value="notAuthenticated"></or-translate> `;
@@ -1049,7 +1061,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <or-translate slot="label" value="username"></or-translate>
                     </or-vaadin-text-field>
                     <!-- if identity provider is set to use email as username, make it required -->
-                    <or-vaadin-email-field id="new-email" class=${isServiceUser ? "hidden" : "validate"} 
+                    <or-vaadin-email-field id="new-email" class=${isServiceUser ? "hidden" : "validate"}
                                            ?readonly=${(!!user.id && this._registrationEmailAsUsername) || readonly}
                                            ?required=${!isServiceUser && this._registrationEmailAsUsername}
                                            value=${user.email} autocomplete="false"

@@ -37,7 +37,6 @@ import { type GenericAxiosResponse, isAxiosError } from "@openremote/rest";
 import { getAlarmsRoute } from "../routes";
 import { when } from "lit/directives/when.js";
 import { until } from "lit/directives/until.js";
-import { guard } from "lit/directives/guard.js";
 import { showDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import type { OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent } from "@openremote/or-asset-tree";
 import type {
@@ -745,7 +744,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                                   value=${this._getSourceText()}>
                                 <or-translate slot="label" value="alarm.source"></or-translate>
                             </or-vaadin-text-field>
-                            
+
                             <or-vaadin-select class="alarm-input" ?readonly=${!write}
                                               .items=${this._getAddSeverityOptions()} value=${alarm.severity}
                                               @change=${(ev: Event) => {
@@ -755,7 +754,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                               }}>
                                 <or-translate slot="label" value="alarm.severity"></or-translate>
                             </or-vaadin-select>
-                            
+
                             <or-vaadin-select class="alarm-input" ?readonly=${!write}
                                               .items=${this._getAddStatusOptions()} value=${alarm.status}
                                               @change=${(ev: Event) => {
