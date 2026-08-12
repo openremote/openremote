@@ -238,7 +238,7 @@ spotless {
     ])
     toggleOffOn()
     prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
-    licenseHeaderFile(rootProject.file('tools/spotless/openremote-license-header.txt'), '(import|export|declare|const|let|var|type|interface|class|enum|function) ')
+    licenseHeaderFile(rootProject.file('tools/spotless/openremote-license-header.txt'),'(import|export|declare|const|let|var|type|interface|class|enum|function) ')
     endWithNewline()
   }
 
@@ -269,7 +269,7 @@ def spotlessFormatGroups = [
     'Xml',
     'Yaml'
   ],
-  Ui : [
+  Ui: [
     'Css',
     'GradleRoot',
     'GradleUi',
