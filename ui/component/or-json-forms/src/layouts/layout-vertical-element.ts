@@ -7,8 +7,6 @@ import {
     isControl,
     JsonSchema,
     mapStateToControlProps,
-    mapStateToControlWithDetailProps,
-    mapStateToJsonFormsRendererProps,
     OwnPropsOfControl,
     OwnPropsOfRenderer,
     Paths,
@@ -16,7 +14,7 @@ import {
     StatePropsOfControl,
     VerticalLayout
 } from "@jsonforms/core";
-import {css, html, TemplateResult, unsafeCSS} from "lit";
+import {css, html, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {LayoutBaseElement} from "./layout-base-element";
 import {
@@ -28,13 +26,15 @@ import {
     showJsonEditor
 } from "../util";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import "@openremote/or-vaadin-components/or-vaadin-text-field";
+import "@openremote/or-vaadin-components/or-vaadin-button";
 import {i18next} from "@openremote/or-translate";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-components/or-collapsible-panel";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
-import {DefaultColor5} from "@openremote/core";
 import {AdditionalProps} from "../base-element";
 
 // language=CSS
@@ -86,6 +86,22 @@ const style = css`
         margin: 0;
         flex: 1;
     }
+
+    #content-wrapper {
+        overflow: auto;
+    }
+
+    [slot="header"] {
+        display: flex;
+        min-width: 0; /* Allows slotted element to shrink */
+        & span {
+            align-content: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            word-break: break-all;
+        }
+    }
 `;
 
 function isDynamic(schema: JsonSchema): boolean {
@@ -133,13 +149,18 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         const header = this.minimal ? `` : html`
             <div slot="header">
                 <span>${this.label ? computeLabel(this.label, this.required, false) : ""}</span>
-                ${this.type ? html`<span id="type-label">${this.type}</span>` : ``}
+                ${this.type ? html`<span id="type-label" title="${this.type}">${this.type}</span>` : ``}
             </div>
             <div id="header-description" slot="header-description">
                 <div id="errors">
                     ${!this.errors ? `` : html`<or-icon icon="alert"></or-icon><span>${this.errors}</span>`}
                 </div>
-                <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined label="json" icon="pencil" @or-mwc-input-changed="${(ev: Event) => this._showJson(ev)}"></or-mwc-input></div>
+                <div id="header-buttons">
+                    <or-vaadin-button @click=${(ev: Event) => this._showJson(ev)}>
+                        <or-icon slot="prefix" icon="pencil"></or-icon>
+                        <or-translate value="JSON"></or-translate>
+                    </or-vaadin-button>
+                </div>
             </div>
         `;
 
@@ -178,9 +199,13 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                 </div>
 
                 ${this.errors || (optionalProps.length === 0 && !dynamic) ? `` : html`
-                        <div id="footer">
-                            <or-mwc-input .type="${InputType.BUTTON}" label="addParameter" icon="plus" @or-mwc-input-changed="${() => this._addParameter(rootSchema, optionalProps, dynamicPropertyRegex, dynamicValueSchema)}"></or-mwc-input>
-                        </div>`}
+                    <div id="footer">
+                        <or-vaadin-button @click=${() => this._addParameter(rootSchema, optionalProps, dynamicPropertyRegex, dynamicValueSchema)}>
+                            <or-icon slot="prefix" icon="plus"></or-icon>
+                            <or-translate value="addParameter"></or-translate>
+                        </or-vaadin-button>
+                    </div>
+                `}
             </div>
         `;
 
@@ -198,17 +223,17 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
             this.handleChange(this.path, data);
         };
 
-        const keyChangeHandler = (orInput: OrMwcInput, oldKey: string, newKey: string) => {
+        const keyChangeHandler = (orInput: OrVaadinTextField, oldKey: string, newKey: string) => {
 
-            if (!orInput.valid) {
+            if (!orInput.checkValidity()) {
                 return;
             }
 
             if (this.data[newKey] !== undefined) {
-                orInput.setCustomValidity(i18next.t("validation.keyAlreadyExists"));
+                orInput.errorMessage = i18next.t("validation.keyAlreadyExists");
                 return;
             } else {
-                orInput.setCustomValidity(undefined);
+                orInput.errorMessage = undefined;
             }
             const data = {...this.data};
             const value = data[oldKey];
@@ -240,7 +265,12 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                     return html`
                         <div class="row">
                             <div class="key-container">
-                                <or-mwc-input .type="${InputType.TEXT}" @or-mwc-input-changed="${(ev:OrInputChangedEvent) => keyChangeHandler(ev.currentTarget as OrMwcInput, key, ev.detail.value)}" required .pattern="${dynamicPropertyRegex}" .value="${key}"></or-mwc-input>
+                                <or-vaadin-text-field value=${key} required pattern="${dynamicPropertyRegex}" 
+                                                      @change=${(ev: Event) => {
+                                                          const elem = ev.currentTarget as OrVaadinTextField;
+                                                          keyChangeHandler(elem, key, elem.value)
+                                                      }}>
+                                </or-vaadin-text-field>
                             </div>
                             <div class="value-container">
                                 ${getDynamicValueTemplate(key, value)}
@@ -316,7 +346,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                     (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = !selectedOneOf;
                     (dialog.shadowRoot!.getElementById("schema-description") as HTMLParagraphElement).innerHTML = (selectedOneOf ? selectedOneOf.description : i18next.t("schema.selectTypeMessage")) || i18next.t("schema.noDescriptionAvailable");
                 };
-                schemaPicker = getSchemaPicker(rootSchema, selectedParameter.schema, selectedParameter.path, "oneOf", selectedParameter.label, handleChange);
+                schemaPicker = getSchemaPicker(rootSchema, selectedParameter.schema.oneOf, selectedParameter.label, handleChange);
             }
 
             return html`

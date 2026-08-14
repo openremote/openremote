@@ -1,3 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {DashboardWidget} from "@openremote/model";
 import {widgetTypes} from "../index";
 import {WidgetConfig} from "../util/widget-config";
@@ -9,15 +28,15 @@ export class WidgetService {
     public static getManifest(widgetTypeId: string) {
         const manifest = widgetTypes.get(widgetTypeId);
         if(!manifest) {
-            throw new Error("Widget manifest could not be found during widget creation.");
+            throw new Error(`Widget manifest could not be found during widget creation. [ID=${widgetTypeId}]`);
         }
         return manifest;
     }
 
     public static async placeNew(widgetTypeId: string, x: number, y: number): Promise<DashboardWidget> {
-        const randomId = (Math.random() + 1).toString(36).substring(2);
+        const randomId = Util.generateUniqueUUID();
         const manifest = this.getManifest(widgetTypeId);
-        const widget = {
+        return {
             id: randomId,
             displayName: manifest.displayName,
             gridItem: {
@@ -37,7 +56,6 @@ export class WidgetService {
             widgetConfig: manifest.getDefaultConfig(),
             widgetTypeId: widgetTypeId
         } as DashboardWidget;
-        return widget;
     }
 
     // Method used to correct the OrWidgetConfig specification

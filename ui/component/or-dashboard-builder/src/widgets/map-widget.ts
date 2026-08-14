@@ -1,3 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {html, PropertyValues, TemplateResult} from "lit";
 import {customElement, query, state} from "lit/decorators.js";
 import {OrAssetWidget} from "../util/or-asset-widget";
@@ -6,7 +25,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import {MapSettings} from "../settings/map-settings";
 import {AssetWidgetConfig} from "../util/widget-config";
 import {Asset, AssetDescriptor} from "@openremote/model";
-import {LngLatLike, MapMarkerColours, MapMarkerAssetConfig, Util as MapUtil, OrMap, AssetWithLocation, OrMapMarkersChangedEvent, MapMarkerConfig} from "@openremote/or-map";
+import {LngLatLike, MapMarkerColours, MapMarkerAssetConfig, Util as MapUtil, OrMap, AssetWithLocation, OrMapMarkersChangedEvent, MapMarkerConfig, OrMapLoadedEvent} from "@openremote/or-map";
 import {map} from "lit/directives/map.js";
 import manager from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -45,7 +64,7 @@ function getDefaultWidgetConfig(): MapWidgetConfig {
         showUnits: false,
         showGeoJson: true,
         boolColors: {type: 'boolean', 'false': '#ef5350', 'true': '#4caf50'},
-        textColors: [['example', '4caf50'], ['example2', 'ef5350']],
+        textColors: [['example1', '#4caf50'], ['example2', '#ef5350']],
         thresholds: [[0, "#4caf50"], [75, "#ff9800"], [90, "#ef5350"]],
         assetTypes: [],
         assetType: undefined,
@@ -87,11 +106,13 @@ export class MapWidget extends OrAssetWidget {
     }
 
     connectedCallback() {
+        this.addEventListener(OrMapLoadedEvent.NAME, this._onMapLoaded);
         this.addEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
         return super.connectedCallback();
     }
 
     disconnectedCallback() {
+        this.removeEventListener(OrMapLoadedEvent.NAME, this._onMapLoaded);
         this.removeEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
         return super.disconnectedCallback();
     }
@@ -153,6 +174,12 @@ export class MapWidget extends OrAssetWidget {
         `;
     }
 
+    protected _onMapLoaded(e: OrMapLoadedEvent) {
+        const assetType = this.widgetConfig.allOfType ? undefined : this.widgetConfig.assetType;
+        const assets = this.loadedAssets.filter(asset => !assetType || asset.type === assetType).filter(MapUtil.isAssetWithLocation);
+        this._map?.addAssets(assets);
+    }
+
     protected _onMapMarkersChanged(e: OrMapMarkersChangedEvent) {
         this._assetsOnScreen = e.detail;
     }
@@ -195,16 +222,6 @@ export class MapWidget extends OrAssetWidget {
                 }
             }
             this.markers[assetType!] = marker;
-        }
-        // Load the markers onto the map
-        if (this._map) {
-            this._map.cleanUpAssetMarkers();
-            const assetType = this.widgetConfig.allOfType ? undefined : this.widgetConfig.assetType;
-            this.loadedAssets
-                .filter(asset => MapUtil.isAssetWithLocation(asset) && (!assetType || asset.type === assetType))
-                .forEach((asset: Asset) => this._map!.addAssetMarker(asset as AssetWithLocation));
-
-            this._map?.reload();
         }
     }
 }

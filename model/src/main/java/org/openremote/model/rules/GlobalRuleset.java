@@ -23,7 +23,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import org.openremote.model.calendar.CalendarEvent;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -55,13 +55,13 @@ public class GlobalRuleset extends Ruleset {
     }
 
     @Override
-    public GlobalRuleset setCreatedOn(Date createdOn) {
+    public GlobalRuleset setCreatedOn(Instant createdOn) {
         super.setCreatedOn(createdOn);
         return this;
     }
 
     @Override
-    public GlobalRuleset setLastModified(Date lastModified) {
+    public GlobalRuleset setLastModified(Instant lastModified) {
         super.setLastModified(lastModified);
         return this;
     }

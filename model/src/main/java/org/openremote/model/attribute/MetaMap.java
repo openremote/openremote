@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.function.Function;
 
 @JsonDeserialize(using = MetaMap.MetaObjectDeserializer.class)
-public class MetaMap extends NamedMap<MetaItem<?>> {
+public class MetaMap extends NamedMap<String, MetaItem<?>> {
     /**
      * Deserialise a {@link MetaMap} that is represented as a JSON object where each key is the name of a
      * {@link MetaItemDescriptor}

@@ -11,8 +11,12 @@ IFS=$'\n'
 while [ "$STATUSES_OK" != 'true' ] && [ $COUNT -le 60 ]; do
 
    echo "Checking service health...attempt $COUNT"
-   STATUSES=$(docker ps --format "{{.Names}} {{.Status}}" | grep ${1:-""})
+   STATUSES=$(docker ps --format "{{.Names}} {{.Status}}" | grep ${1:-""} || true)
    STATUSES_OK=true
+
+   if [ "$STATUSES" == "" ]; then
+       STATUSES_OK=false
+   fi
 
    for STATUS in $STATUSES; do
      if [[ "$STATUS" != *"healthy"* ]]; then

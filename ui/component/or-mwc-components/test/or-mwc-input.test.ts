@@ -28,7 +28,7 @@ ct("Switch should switch", async ({ mount }) => {
   });
   const locator = component.getByRole("switch", { name: "switch" });
   await expect(locator).not.toBeChecked();
-  await component.click();
+  await component.getByText("switch").click();
   await expect(locator).toBeChecked();
 });
 

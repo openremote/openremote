@@ -9,7 +9,6 @@ import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-m
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {Util} from "@openremote/core";
 import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
@@ -115,6 +114,7 @@ const style = css`
     :host {
         display: flex;
         flex-direction: row;
+        align-items: baseline;
     }
     
     or-rule-asset-query {
@@ -124,7 +124,6 @@ const style = css`
     #type {
         white-space: nowrap;
         text-transform: capitalize;
-        margin: 14px 3px auto 0;
     }
 `;
 
@@ -184,15 +183,17 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
             }
             if(this.readonly) {
                 typeTemplate = html`
-                <div id="type" style="--or-mwc-input-color: #${buttonColor}">
-                    <or-mwc-input readonly type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>
+                <div id="type" style="--or-icon-fill: #${buttonColor}">
+                    <or-vaadin-button disabled theme="icon tertiary">
+                        <or-icon icon=${buttonIcon ?? ""}></or-icon>
+                    </or-vaadin-button>
                 </div>
                 `;
             } else {
                 typeTemplate = html`
-                <div id="type" style="--or-mwc-input-color: #${buttonColor}">
+                <div id="type" style="--or-icon-fill: #${buttonColor}">
                     ${getContentWithMenuTemplate(
-                        html`<or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>`,
+                        html`<or-vaadin-button theme="icon tertiary"><or-icon icon=${buttonIcon ?? ""}></or-icon></or-vaadin-button>`,
                         getWhenTypesMenu(this.config, this.assetInfos),
                         type,
                         (value) => this.type = value as ConditionType)}

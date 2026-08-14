@@ -39,6 +39,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -287,8 +288,10 @@ public class RulesetStorageService implements ContainerService {
         ruleset.setVersion(rs.getLong("VERSION"));
         ruleset.setLang(Ruleset.Lang.valueOf(rs.getString("RULES_LANG")));
         ruleset.setEnabled(rs.getBoolean("ENABLED"));
-        ruleset.setLastModified(rs.getTimestamp("LAST_MODIFIED"));
-        ruleset.setCreatedOn(rs.getTimestamp("CREATED_ON"));
+        Timestamp lastModified = rs.getTimestamp("LAST_MODIFIED");
+        Timestamp createdOn = rs.getTimestamp("CREATED_ON");
+        ruleset.setLastModified(lastModified != null ? lastModified.toInstant() : null);
+        ruleset.setCreatedOn(createdOn != null ? createdOn.toInstant() : null);
         if (rs.getString("META") != null) {
             ruleset.setMeta(ValueUtil.parse(rs.getString("META"), Map.class).orElse(null));
         }

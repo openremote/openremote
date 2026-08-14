@@ -20,6 +20,8 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
@@ -97,6 +99,51 @@ class RulesEngineFiringTest extends Specification implements ManagerContainerTra
             assert receivedEvents.size() == 4
         }
         assert !parallelExecutionOccurred.get(): "Rules engine triggered while rules are still executing"
+    }
+
+    @SuppressWarnings("GroovyAccessibility")
+    def "Check schedule fire tolerates concurrent timer clearing"() {
+        given: "the container is started"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        RulesEngine engine = null
+
+        and: "a simple realm ruleset is deployed"
+        Ruleset ruleset = new RealmRuleset(
+                Constants.MASTER_REALM,
+                "Concurrent timer clearing",
+                GROOVY,
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
+        rulesetStorageService.merge(ruleset)
+
+        expect: "the rules engine to become available and running"
+        conditions.eventually {
+            engine = rulesService.realmEngines.get(Constants.MASTER_REALM)
+            assert engine != null
+            assert engine.isRunning()
+        }
+
+        when: "the timer reference is cleared after the running check but before the delay lookup"
+        engine.stop()
+        engine.@running = true
+
+        ScheduledFuture<?> timer = Mock(ScheduledFuture)
+        timer.isDone() >> {
+            engine.@fireTimer = null
+            false
+        }
+        timer.getDelay(TimeUnit.MILLISECONDS) >> 0L
+        engine.@fireTimer = timer
+
+        engine.scheduleFire(true)
+
+        then: "the quick fire check does not dereference a null timer"
+        noExceptionThrown()
+
+        cleanup:
+        stopContainer()
     }
 
     /*

@@ -19,7 +19,7 @@
  */
 package org.openremote.model.asset;
 
-import java.util.Date;
+import java.time.Instant;
 
 /**
  * Minimal representation of asset data for usage in contexts where faster
@@ -35,9 +35,9 @@ public class AssetTreeAsset {
     String[] path;
 
     boolean hasChildren;
-    Date createdOn;
+    Instant createdOn;
 
-    public AssetTreeAsset(String id, String name, String type, String parentId, String[] path, boolean hasChildren, Date createdOn) {
+    public AssetTreeAsset(String id, String name, String type, String parentId, String[] path, boolean hasChildren, Instant createdOn) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -95,11 +95,11 @@ public class AssetTreeAsset {
         this.hasChildren = hasChildren;
     }
 
-    public Date getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
-    public void setCreatedOn(Date createdOn) {
+    public void setCreatedOn(Instant createdOn) {
         this.createdOn = createdOn;
     }
 

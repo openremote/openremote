@@ -23,14 +23,10 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.rules.RulesClock;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.temporal.Temporal;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
@@ -92,23 +88,27 @@ public class TimerService implements ContainerService, RulesClock {
         PSEUDO {
             protected AtomicLong offset = new AtomicLong();
             protected volatile Long stopTime;
+            // Explicitly define a UTC Clock
+            protected java.time.Clock utcClock = java.time.Clock.systemUTC();
 
             @Override
             public void init() {
+                // Force JVM timezone to UTC for legacy date conversions to avoid DST issues in tests
+                TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
                 long current = getCurrentTimeMillis();
-                LOG.info("Initialized pseudo clock to: " + (current) + "/" + new Date(current));
+                LOG.info("Initialized pseudo clock to: " + current + " / " + Instant.ofEpochMilli(current));
             }
 
             @Override
             public synchronized long getCurrentTimeMillis() {
-                return (stopTime != null ? stopTime : System.currentTimeMillis()) + offset.get();
+                return (stopTime != null ? stopTime : utcClock.millis()) + offset.get();
             }
 
             @Override
             public synchronized long advanceTime(long amount, TimeUnit unit) {
                 offset.addAndGet(unit.toMillis(amount));
                 long currentMillis = getCurrentTimeMillis();
-                LOG.info("Clock advanced to: " + (currentMillis) + "/" + new Date(currentMillis));
+                LOG.info("Clock advanced to: " + currentMillis + " / " + Instant.ofEpochMilli(currentMillis));
                 return currentMillis;
             }
 
@@ -117,7 +117,6 @@ public class TimerService implements ContainerService, RulesClock {
                 ZonedDateTime current = Instant.ofEpochMilli(getCurrentTimeMillis()).atZone(zoneId);
                 ZonedDateTime target = date.atTime(time).atZone(zoneId);
                 return advanceTime(Duration.between(current, target).toMillis(), TimeUnit.MILLISECONDS);
-                // Above will log current time, no need to log again here
             }
 
             @Override
@@ -125,21 +124,21 @@ public class TimerService implements ContainerService, RulesClock {
                 Temporal current = Instant.ofEpochMilli(getCurrentTimeMillis());
                 Temporal target = Instant.parse(iso8601Timestamp);
                 return advanceTime(Duration.between(current, target).toMillis() , TimeUnit.MILLISECONDS);
-                // Above will log current time, no need to log again here
             }
 
             @Override
             public synchronized void stop() {
                 if (stopTime == null) {
-                    stopTime = System.currentTimeMillis();
-                    LOG.info("Clock stopped at: " + (stopTime) + "/" + new Date(stopTime));
+                    stopTime = utcClock.millis();
+                    LOG.info("Clock stopped at: " + stopTime + " / " + Instant.ofEpochMilli(stopTime));
                 }
             }
 
             @Override
             public synchronized void start() {
                 stopTime = null;
-                LOG.info("Clock started at: " + (System.currentTimeMillis()) + "/" + new Date(System.currentTimeMillis()));
+                long now = utcClock.millis();
+                LOG.info("Clock started at: " + now + " / " + Instant.ofEpochMilli(now));
             }
 
             @Override

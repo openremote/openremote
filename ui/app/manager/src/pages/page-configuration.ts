@@ -33,7 +33,6 @@ import {ManagerAppConfig, MapConfig, Realm} from "@openremote/model";
 import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig} from "../index";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
@@ -112,7 +111,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 margin-left: 14px;
             }
 
-            #header-actions or-mwc-input {
+            #header-actions #save-btn {
                 margin-left: 12px;
             }
 
@@ -272,9 +271,10 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 <or-translate value="appearance"></or-translate>
                             </div>
                             <div id="header-actions">
-                                <or-mwc-input id="save-btn" .disabled="${saveDisabled}" raised type="button" label="save"
-                                    @or-mwc-input-changed="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
-                                ></or-mwc-input>
+                                <or-vaadin-button id="save-btn" theme="primary" ?disabled=${saveDisabled}
+                                                  @click=${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}>
+                                    <or-translate value="save"></or-translate>
+                                </or-vaadin-button>
                             </div>
                         </div>
                         <or-panel .heading="${realmHeading}">
@@ -285,11 +285,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             `, () => html`
                                 <div class="notFound-container">
                                     <span><or-translate value="configuration.managerConfigNotFound"></or-translate></span>
-                                    <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
-                                        @or-mwc-input-changed="${() => this.getManagerConfig().then(val => {
-                                            this.managerConfiguration = val;
-                                        }).catch(e => console.error(e))}"
-                                    ></or-mwc-input>
+                                    <or-vaadin-button style="width: fit-content;" @click=${() => this.getManagerConfig()
+                                            .then(val => { this.managerConfiguration = val; })
+                                            .catch(e => console.error(e))}>
+                                        <or-translate value="configuration.tryAgain"></or-translate>
+                                    </or-vaadin-button>
                                 </div>
                             `)}
                         </or-panel>
@@ -315,11 +315,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             `, () => html`
                                 <div class="notFound-container">
                                     <span><or-translate value="configuration.mapSettingsNotFound"></or-translate></span>
-                                    <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
-                                        @or-mwc-input-changed="${() => this.getMapConfig().then(val => {
-                                            this.mapConfig = val;
-                                        }).catch(e => console.error(e))}"
-                                    ></or-mwc-input>
+                                    <or-vaadin-button style="width: fit-content;" @click=${() => this.getMapConfig()
+                                            .then(val => { this.mapConfig = val; })
+                                            .catch(e => console.error(e))}>
+                                        <or-translate value="configuration.tryAgain"></or-translate>
+                                    </or-vaadin-button>
                                 </div>
                             `)}
                         </or-panel>

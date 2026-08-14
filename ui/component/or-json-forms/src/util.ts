@@ -2,7 +2,6 @@ import {
     CombinatorKeyword,
     composeWithUi,
     ControlElement,
-    ControlProps,
     createDefaultValue,
     deriveTypes,
     getAjv,
@@ -22,16 +21,18 @@ import {
     StatePropsOfCombinator,
 } from "@jsonforms/core";
 import {DefaultColor5, Util} from "@openremote/core";
-import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-ace-editor";
 import {OrAceEditor, OrAceEditorChangedEvent} from "@openremote/or-components/or-ace-editor";
 import {html, TemplateResult, unsafeCSS} from "lit";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
-import {ErrorObject} from "./index";
 import {unknownTemplate} from "./standard-renderers";
 import {OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import {AdditionalProps} from "./base-element";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import "@openremote/or-vaadin-components/or-vaadin-select";
+import "@openremote/or-vaadin-components/or-vaadin-button";
+
 
 export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult | undefined {
     if (!state || !props) {
@@ -133,16 +134,18 @@ export function getSchemaConst(schema: JsonSchema): any {
     }
 }
 
-export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchema: JsonSchema, path: string, keyword: "anyOf" | "oneOf", label: string, selectedCallback: (selectedSchema: CombinatorInfo) => void): TemplateResult {
-    const combinatorInfos = getCombinatorInfos(resolvedSchema[keyword]!, rootSchema);
-    const options: [string, string][] = combinatorInfos.map((combinatorInfo, index) => [index+"", combinatorInfo.title || i18next.t("schema.title.indexedItem", {index: index})]);
+export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchemas: JsonSchema[], label: string, selectedCallback: (selectedSchema: CombinatorInfo) => void): TemplateResult {
+    const combinatorInfos = getCombinatorInfos(resolvedSchemas, rootSchema);
+    const options: SelectItem[] = combinatorInfos.map((combinatorInfo, index) => ({value: index+"", label: combinatorInfo.title || i18next.t("schema.title.indexedItem", {index: index})}));
     const pickerUpdater = (index: number) => {
         const matchedInfo = combinatorInfos[index];
         selectedCallback(matchedInfo);
     };
     const pickerLabel = label ? i18next.t("schema.anyOfPickerLabel", {label: label}) : i18next.t("type");
-    return html`                
-        <or-mwc-input class="any-of-picker" .label="${pickerLabel}" .type="${InputType.SELECT}" .options="${options}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => pickerUpdater(Number(ev.detail.value))}"></or-mwc-input>
+    return html`
+        <or-vaadin-select class="any-of-picker" .items=${options} @change=${(ev: Event) => pickerUpdater(Number((ev.currentTarget as OrVaadinSelect).value))}>
+            <span slot="label">${pickerLabel}</span>
+        </or-vaadin-select>
     `;
 }
 
@@ -196,7 +199,7 @@ const COMBINATOR_IDENTIFICATION_PROPERTY = "type";
 export function getCombinatorIndexOfFittingSchema(
     data: any,
     keyword: CombinatorKeyword,
-    schema: JsonSchema,
+    schema: JsonSchema & { discriminator?: { propertyName?: string } },
     rootSchema: JsonSchema
 ): number {
     if (typeof data !== 'object' || data === null) {
@@ -216,8 +219,8 @@ export function getCombinatorIndexOfFittingSchema(
 
     // Check if the data matches the identification property of one of the resolved schemas
     for (let i = 0; i < resolvedCombinatorSchemas.length; i++) {
-        const resolvedSchema = resolvedCombinatorSchemas[i] as JsonSchema & { discriminator?: { propertyName?: string } };
-        const combinatorIdentificationProperty = resolvedSchema?.discriminator?.propertyName || COMBINATOR_IDENTIFICATION_PROPERTY;
+        const resolvedSchema = resolvedCombinatorSchemas[i];
+        const combinatorIdentificationProperty = schema?.discriminator?.propertyName || COMBINATOR_IDENTIFICATION_PROPERTY;
 
         // Match the identification property against a constant value in resolvedSchema
         const maybeConstIdValue = resolvedSchema.properties?.[combinatorIdentificationProperty]?.const;
@@ -273,9 +276,7 @@ export function mapStateToCombinatorRendererProps(
         rootSchema,
         visible,
         id,
-        // Fall back to the first schema if none fits
-        indexOfFittingSchema:
-          indexOfFittingSchema !== -1 ? indexOfFittingSchema : 0,
+        indexOfFittingSchema,
         uischemas: state.jsonforms.uischemas!,
         uischema: uischema!,
     };
@@ -346,7 +347,7 @@ export const controlWithoutLabel = (scope: string): ControlElement => ({
 export const showJsonEditor = (title: string, value: any, updateCallback: (newValue: string) => void): void => {
 
     const editorRef: Ref<OrAceEditor> = createRef();
-    const updateBtnRef: Ref<OrMwcInput> = createRef();
+    const updateBtnRef: Ref<OrVaadinButton> = createRef();
     const onEditorEdit = () => {
         // Disable update button whilst edit in progress
         updateBtnRef.value!.disabled = true;
@@ -375,7 +376,11 @@ export const showJsonEditor = (title: string, value: any, updateCallback: (newVa
                             updateCallback(data);
                         }
                     },
-                    content: html`<or-mwc-input ${ref(updateBtnRef)} disabled .type="${InputType.BUTTON}" label="update"></or-mwc-input>`
+                    content: html`
+                        <or-vaadin-button ${ref(updateBtnRef)} disabled>
+                            <or-translate value="update"></or-translate>
+                        </or-vaadin-button>
+                    `
                 }
             ])
         .setHeading(title)

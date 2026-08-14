@@ -1,4 +1,4 @@
-buildDir = "dist"
+layout.buildDirectory.set(layout.projectDirectory.dir("dist"))
 
 tasks.register('copyMdiFont', Exec) {
     dependsOn getYarnInstallTask()
@@ -8,7 +8,7 @@ tasks.register('copyMdiFont', Exec) {
 
 tasks.register('clean') {
     doLast {
-        delete "dist"
+        delete layout.buildDirectory
         delete "lib"
     }
 }
@@ -30,7 +30,7 @@ tasks.register('publishUi') {
 tasks.register('installDist', Copy) {
     dependsOn getYarnInstallTask(), copyMdiFont, npmAnalyze
     resolveTask(":ui:app:shared:generateSources").dependsOn it
-    from "${buildDir}/Material Design Icons"
+    from "${layout.buildDirectory.get()}/Material Design Icons"
     into "${project(':ui:app:shared').projectDir}/fonts/Material Design Icons"
 }
 

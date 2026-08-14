@@ -24,7 +24,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import org.openremote.model.calendar.CalendarEvent;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -81,13 +81,13 @@ public class RealmRuleset extends Ruleset {
     }
 
     @Override
-    public RealmRuleset setCreatedOn(Date createdOn) {
+    public RealmRuleset setCreatedOn(Instant createdOn) {
         super.setCreatedOn(createdOn);
         return this;
     }
 
     @Override
-    public RealmRuleset setLastModified(Date lastModified) {
+    public RealmRuleset setLastModified(Instant lastModified) {
         super.setLastModified(lastModified);
         return this;
     }

@@ -2,7 +2,7 @@ package org.openremote.test.protocol;
 
 import org.openremote.agent.protocol.tcp.TCPIOClient;
 
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 public class TestTCPClient extends TCPIOClient<String> {
 
@@ -13,7 +13,7 @@ public class TestTCPClient extends TCPIOClient<String> {
     }
 
     @Override
-    protected Future<Void> doConnect() {
+    protected CompletableFuture<Void> doConnect() {
         connectAttempts++;
         return super.doConnect();
     }

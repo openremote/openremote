@@ -37,11 +37,15 @@ import io.grpc.stub.StreamObserver
 import io.grpc.Status
 import io.moquette.broker.Server
 import io.moquette.broker.config.MemoryConfig
+import io.moquette.interception.AbstractInterceptHandler
+import io.moquette.interception.messages.InterceptSubscribeMessage
+import io.moquette.interception.messages.InterceptUnsubscribeMessage
 import org.openremote.agent.protocol.lorawan.chirpstack.ChirpStackAgent
 import org.openremote.agent.protocol.lorawan.chirpstack.ChirpStackProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetTreeNode
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.AgentResource
@@ -49,13 +53,17 @@ import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.file.FileInfo
 import org.openremote.model.query.AssetQuery
+import org.openremote.model.value.AttributeDescriptor
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.TimeUnit
+import java.util.logging.Level
+import java.util.logging.Logger
 
 import static org.openremote.agent.protocol.lorawan.LoRaWANConstants.ATTRIBUTE_NAME_DEV_EUI
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
@@ -90,6 +98,9 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
     Server mqttBroker
 
     @Shared
+    SubscriptionTracker subTracker
+
+    @Shared
     int grpcPort
 
     @Shared
@@ -104,8 +115,9 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
         props.setProperty('port', mqttBrokerPort.toString())
         props.setProperty('persistence_enabled', 'false')
         def config = new MemoryConfig(props)
+        subTracker = new SubscriptionTracker()
         mqttBroker = new Server()
-        mqttBroker.startServer(config)
+        mqttBroker.startServer(config, [subTracker])
 
         grpcPort = findEphemeralPort()
         grpcServer = new ChirpStackGrpcServer(grpcPort)
@@ -124,6 +136,10 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
         mqttClient?.disconnect()
         mqttBroker?.stopServer()
         grpcServer?.stop()
+    }
+
+    def setup() {
+        subTracker?.subscriptions.clear()
     }
 
     def "ChirpStack CSV Import Test"() {
@@ -164,7 +180,7 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the agent resource"
         def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
@@ -191,12 +207,18 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
             assert asset2 != null
         }
 
+        and: "MQTT wildcard subscription should have been registered"
+        conditions.eventually {
+            assert subTracker.containsTopic("application/${APPLICATION_ID}/device/+/event/up")
+        }
+
         when: "the device sends a LoRaWAN uplink message"
         def json = [
             fPort: UPLINK_PORT,
             object: [
                 Temperature: TEMPERATURE_VALUE,
-                Humidity: HUMIDITY_VALUE
+                Humidity: HUMIDITY_VALUE,
+                Errors: ["error1", "error2"]
             ]
         ]
         mqttClient.publishWith()
@@ -207,8 +229,12 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
         then: "asset attribute values should be updated"
         conditions.eventually {
             def asset = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
-            assert asset.getAttribute(TEMPERATURE).flatMap {it.value}.map {it == TEMPERATURE_VALUE}.orElse(false)
-            assert asset.getAttribute(RELATIVE_HUMIDITY).flatMap {it.value}.map {it == HUMIDITY_VALUE}.orElse(false)
+            assertAttribute(asset, TEMPERATURE, TEMPERATURE_VALUE)
+            assertAttribute(asset, RELATIVE_HUMIDITY, HUMIDITY_VALUE)
+            assertAttribute(asset, ERRORS) { value ->
+                assert value.startsWith("[") && value.endsWith("]")
+                assert value.contains("error1") && value.contains("error2")
+            }
         }
 
         when: "an asset attribute value is written"
@@ -218,7 +244,9 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
             .topicFilter("application/${APPLICATION_ID}/device/${DEV_EUI_1}/command/down")
             .callback { Mqtt3Publish publish ->
                 downlinkMessages.add(new String(publish.payloadAsBytes))
-            }.send()
+            }
+            .send()
+            .get(5, TimeUnit.SECONDS)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, SWITCH, true))
 
         then: "a LoRaWAN downlink message should have been published"
@@ -273,7 +301,7 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the agent resource"
         def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
@@ -294,12 +322,18 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
             assert asset2 != null
         }
 
+        and: "MQTT wildcard subscription should have been registered"
+        conditions.eventually {
+            assert subTracker.containsTopic("application/${APPLICATION_ID}/device/+/event/up")
+        }
+
         when: "the device sends a LoRaWAN uplink message"
         def json = [
             fPort: UPLINK_PORT,
             object: [
                 Temperature: TEMPERATURE_VALUE,
-                Humidity: HUMIDITY_VALUE
+                Humidity: HUMIDITY_VALUE,
+                Errors: ["error1", "error2"]
             ]
         ]
         mqttClient.publishWith()
@@ -310,8 +344,12 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
         then: "asset attribute values should be updated"
         conditions.eventually {
             def asset = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
-            assert asset.getAttribute(TEMPERATURE).flatMap {it.value}.map {it == TEMPERATURE_VALUE}.orElse(false)
-            assert asset.getAttribute(RELATIVE_HUMIDITY).flatMap {it.value}.map {it == HUMIDITY_VALUE}.orElse(false)
+            assertAttribute(asset, TEMPERATURE, TEMPERATURE_VALUE)
+            assertAttribute(asset, RELATIVE_HUMIDITY, HUMIDITY_VALUE)
+            assertAttribute(asset, ERRORS) { value ->
+                assert value.startsWith("[") && value.endsWith("]")
+                assert value.contains("error1") && value.contains("error2")
+            }
         }
 
         when: "an asset attribute value is written"
@@ -321,7 +359,9 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
             .topicFilter("application/${APPLICATION_ID}/device/${DEV_EUI_1}/command/down")
             .callback { Mqtt3Publish publish ->
                 downlinkMessages.add(new String(publish.payloadAsBytes))
-            }.send()
+            }
+            .send()
+            .get(5, TimeUnit.SECONDS)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, SWITCH, true))
 
         then: "a LoRaWAN downlink message should have been published"
@@ -333,6 +373,26 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
             assert downlinkMessage.fPort == DOWNLINK_PORT
             assert downlinkMessage.data == "DAE="
         }
+    }
+
+    <T> void assertAttribute(Asset asset, AttributeDescriptor<T> descriptor, T expectedValue) {
+        def attrOpt = asset.getAttribute(descriptor)
+        assert attrOpt.isPresent() : "Attribute ${descriptor} is missing"
+
+        def valueOpt = attrOpt.get().value
+        assert valueOpt.isPresent() : "Value for attribute ${descriptor} is missing (it's empty)"
+
+        assert valueOpt.get() == expectedValue : "Expected ${expectedValue} but found ${valueOpt.get()}"
+    }
+
+    <T> void assertAttribute(Asset asset, AttributeDescriptor<T> descriptor, Closure validation) {
+        def attrOpt = asset.getAttribute(descriptor)
+        assert attrOpt.isPresent() : "Attribute ${descriptor} is missing"
+
+        def valueOpt = attrOpt.get().value
+        assert valueOpt.isPresent() : "Value for attribute ${descriptor} is missing (it's empty)"
+
+        validation(valueOpt.get())
     }
 
     static class ChirpStackGrpcServer {
@@ -406,6 +466,33 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
                 responseObserver.onNext(response)
                 responseObserver.onCompleted()
             }
+        }
+    }
+
+    static class SubscriptionTracker extends AbstractInterceptHandler {
+        static final Logger LOG = Logger.getLogger(SubscriptionTracker.class.getName())
+        final Set<String> subscriptions = new CopyOnWriteArraySet<>()
+
+        @Override
+        String getID() { "SubscriptionTracker" }
+
+        @Override
+        void onSubscribe(InterceptSubscribeMessage msg) {
+            subscriptions.add(msg.getTopicFilter())
+        }
+
+        @Override
+        void onUnsubscribe(InterceptUnsubscribeMessage msg) {
+            subscriptions.remove(msg.getTopicFilter())
+        }
+
+        @Override
+        void onSessionLoopError(Throwable throwable) {
+            LOG.log(Level.SEVERE, "MQTT session loop error in SubscriptionTracker", throwable)
+        }
+
+        boolean containsTopic(String topic) {
+            return subscriptions.contains(topic)
         }
     }
 }

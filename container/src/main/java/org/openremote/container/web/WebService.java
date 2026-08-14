@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import com.thetransactioncompany.cors.CORSFilter;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
+import io.undertow.UndertowOptions;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpHandler;
@@ -38,11 +39,11 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.*;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.util.ImmediateInstanceFactory;
-import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
 import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.core.ResteasyDeploymentImpl;
@@ -52,6 +53,7 @@ import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.IdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.util.Config;
 import org.openremote.model.util.TextUtil;
@@ -61,11 +63,15 @@ import java.net.Inet4Address;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
 import static org.openremote.container.web.CORSConfig.DEFAULT_CORS_ALLOW_ALL;
-import static org.openremote.model.Constants.*;
+import static org.openremote.container.web.WebTargetBuilder.getClient;
+import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
+import static org.openremote.model.Constants.OR_HOSTNAME;
 import static org.openremote.model.util.MapAccess.*;
 
 public abstract class WebService implements ContainerService {
@@ -86,16 +92,23 @@ public abstract class WebService implements ContainerService {
     public static final int OR_WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
     public static final String OR_WEBSERVER_WORKER_THREADS_MAX = "OR_WEBSERVER_WORKER_THREADS_MAX";
     public static final int OR_WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 10);
+    public static final String OR_WEBSERVER_MAX_ENTITY_SIZE = "OR_WEBSERVER_MAX_ENTITY_SIZE";
+    public static final long OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT = 30_000_000L;
+    public static final String OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE = "OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE";
+    public static final long OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT = 30_000_000L;
     private static final System.Logger LOG = System.getLogger(WebService.class.getName());
     protected boolean devMode;
     protected String host;
     protected IdentityService identityService;
+    protected ExecutorService executorService;
     protected int port;
     protected Undertow undertow;
+    protected long maxEntitySize = OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT;
+    protected long multipartMaxEntitySize = OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT;
     protected URI containerHostUri;
     protected PathHandler pathHandler = Handlers.path();
 
-   public static final Map<String, String> MIME_TYPES = Map.of(
+    public static final Map<String, String> MIME_TYPES = Map.of(
          "pbf", "application/x-protobuf",
          "wsdl", "application/xml",
          "xsl", "text/xsl");
@@ -117,9 +130,12 @@ public abstract class WebService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         identityService = container.getService(IdentityService.class);
+        executorService = container.getExecutor();
         devMode = container.isDevMode();
-        host = getString(container.getConfig(), OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);
-        port = getInteger(container.getConfig(), OR_WEBSERVER_LISTEN_PORT, OR_WEBSERVER_LISTEN_PORT_DEFAULT);
+        Map<String, String> config = container.getConfig();
+
+        host = getString(config, OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);
+        port = getInteger(config, OR_WEBSERVER_LISTEN_PORT, OR_WEBSERVER_LISTEN_PORT_DEFAULT);
         String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0 || host.indexOf("0.0.0.0") == 0
                 ? getLocalIpAddress()
                 : host;
@@ -130,14 +146,19 @@ public abstract class WebService implements ContainerService {
                         .host(containerHost)
                         .port(port).build();
 
+        maxEntitySize = getLong(config, OR_WEBSERVER_MAX_ENTITY_SIZE, OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT);
+        multipartMaxEntitySize = getLong(config, OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE, OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT);
+
         undertow = build(
                 container,
-                Undertow.builder()
+                        Undertow.builder()
                         .addHttpListener(port, host)
-                        .setIoThreads(getInteger(container.getConfig(), OR_WEBSERVER_IO_THREADS_MAX, OR_WEBSERVER_IO_THREADS_MAX_DEFAULT))
-                        .setWorkerThreads(getInteger(container.getConfig(), OR_WEBSERVER_WORKER_THREADS_MAX, OR_WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
+                        .setIoThreads(getInteger(config, OR_WEBSERVER_IO_THREADS_MAX, OR_WEBSERVER_IO_THREADS_MAX_DEFAULT))
+                        .setWorkerThreads(getInteger(config, OR_WEBSERVER_WORKER_THREADS_MAX, OR_WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
                         .setWorkerOption(Options.WORKER_NAME, "WebService")
                         .setWorkerOption(Options.THREAD_DAEMON, true)
+                        .setServerOption(UndertowOptions.MULTIPART_MAX_ENTITY_SIZE, multipartMaxEntitySize)
+                        .setServerOption(UndertowOptions.MAX_ENTITY_SIZE, maxEntitySize)
         ).build();
 
         // We have to set system properties for websocket timeouts
@@ -177,6 +198,9 @@ public abstract class WebService implements ContainerService {
        }
 
        LOG.log(INFO, "Deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + pathPrefix + ", secure=" + !deploymentInfo.isSecurityDisabled());
+
+       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
+       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletExceptionHandler(devMode));
 
        try {
            DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
@@ -234,21 +258,12 @@ public abstract class WebService implements ContainerService {
      * Get standard JAX-RS providers that are used in the deployment with optional realm extraction from the request
      * path
      */
-    public static List<Object> getStandardProviders(boolean devMode, Integer realmIndex) {
-        List<Object> providers = Lists.newArrayList(
-           new RequestLogger(),
-           new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode),
-           new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode),
-           new WebServiceExceptions.ServletUndertowExceptionHandler(devMode),
-           new JacksonConfig(),
-           new ClientErrorExceptionHandler()
+    public static List<Object> getStandardProviders(boolean devMode) {
+        return Lists.newArrayList(
+            new WebServiceExceptions.JAXRSExceptionMapper(devMode),
+            new JacksonConfig(),
+            new ClientErrorExceptionHandler()
         );
-
-        if (realmIndex != null) {
-           providers.addFirst(new RealmPathExtractorFilter(realmIndex));
-        }
-
-        return providers;
     }
 
     /**
@@ -261,7 +276,6 @@ public abstract class WebService implements ContainerService {
     }
 
     protected Undertow.Builder build(Container container, Undertow.Builder builder) {
-
         HttpHandler handler = new WebServiceExceptions.RootUndertowExceptionHandler(devMode, pathHandler);
 
         if (getBoolean(container.getConfig(), OR_WEBSERVER_DUMP_REQUESTS, OR_WEBSERVER_DUMP_REQUESTS_DEFAULT)) {
@@ -296,7 +310,14 @@ public abstract class WebService implements ContainerService {
                .addServletContainerInitializer(new ServletContainerInitializerInfo(servletContainerInitializerClass, null))
                .setClassLoader(this.getClass().getClassLoader());
 
-       configureDeploymentInfo(deploymentInfo, realmIndex, secure, corsOverride);
+       ServletContainerInitializer containerInitializer = (c, ctx) ->
+          configureServlet(ctx, secure, realmIndex, corsOverride);
+
+       InstanceFactory<ServletContainerInitializer> factory = new ImmediateInstanceFactory<>(containerInitializer);
+       deploymentInfo.addServletContainerInitializer(
+               new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
+       );
+
        deploy(deploymentInfo, false);
    }
 
@@ -322,7 +343,6 @@ public abstract class WebService implements ContainerService {
 
                if (secure) {
                    deployment.setSecurityEnabled(true);
-                   //servlet.setInitParameter(ResteasyContextParameters.RESTEASY_ROLE_BASED_SECURITY, "true");
                }
            }
        };
@@ -335,7 +355,14 @@ public abstract class WebService implements ContainerService {
                .addListeners(Servlets.listener(listenerClass, factory))
                .setClassLoader(this.getClass().getClassLoader());
 
-       configureDeploymentInfo(deploymentInfo, realmIndex, secure, corsOverride);
+       ServletContainerInitializer containerInitializer = (c, ctx) ->
+          configureServlet(ctx, secure, realmIndex, corsOverride);
+
+       InstanceFactory<ServletContainerInitializer> initFactory = new ImmediateInstanceFactory<>(containerInitializer);
+       deploymentInfo.addServletContainerInitializer(
+               new ServletContainerInitializerInfo(containerInitializer.getClass(), initFactory, Collections.emptySet())
+       );
+
        deploy(deploymentInfo, false);
    }
 
@@ -347,7 +374,8 @@ public abstract class WebService implements ContainerService {
            String deploymentPath,
            String deploymentName,
            ResourceSource[] resourceSources,
-           String[] requiredRoles,
+           String[] allowedRoles,
+           Integer realmIndex,
            CORSConfig corsOverride) {
 
         if (resourceSources == null || resourceSources.length == 0) {
@@ -375,27 +403,28 @@ public abstract class WebService implements ContainerService {
 
        MIME_TYPES.forEach((ext, mimeType) -> deploymentInfo.addMimeMapping(new MimeMapping(ext, mimeType)));
 
-       Filter alreadyGzippedFilter = new AlreadyGZippedFilter(MIME_TYPES_ALREADY_GZIPPED);
-       FilterInfo alreadyGzippedFilterInfo = Servlets.filter(
-               "Already GZipped Filter",
-               AlreadyGZippedFilter.class,
-               () -> new ImmediateInstanceHandle<>(alreadyGzippedFilter)).setAsyncSupported(true);
-       deploymentInfo.addFilter(alreadyGzippedFilterInfo);
-       deploymentInfo.addFilterUrlMapping(     "Already GZipped Filter","/*", DispatcherType.REQUEST);
+       ServletContainerInitializer containerInitializer = (c, ctx) -> {
+           configureServlet(ctx, allowedRoles != null && allowedRoles.length > 0, realmIndex, corsOverride);
 
-       if (requiredRoles != null && requiredRoles.length > 0) {
-           Filter securityFilter = new SecurityFilter(requiredRoles);
-           FilterInfo securityFilterInfo = Servlets.filter("Security Filter", SecurityFilter.class, () -> new ImmediateInstanceHandle<>(securityFilter))
-                   .setAsyncSupported(true);
-           deploymentInfo.addFilter(securityFilterInfo);
-           deploymentInfo.addFilterUrlMapping(     "Security Filter","/*", DispatcherType.REQUEST);
-       }
+           // Add a security filter to mimic JAX-RS @RolesAllowed annotation for file serving
+           if (allowedRoles != null && allowedRoles.length > 0) {
+               Filter securityFilter = new SecurityServletFilter(allowedRoles);
+               FilterRegistration.Dynamic securityRegistration = ctx.addFilter(SecurityServletFilter.class.getSimpleName(), securityFilter);
+               securityRegistration.setAsyncSupported(true);
+               securityRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
+           }
 
-       configureDeploymentInfo(
-               deploymentInfo,
-               null,
-               requiredRoles != null && requiredRoles.length > 0,
-               corsOverride);
+           Filter alreadyGzippedFilter = new AlreadyGZippedFilter(MIME_TYPES_ALREADY_GZIPPED);
+           FilterRegistration.Dynamic alreadyGzippedRegistration = ctx.addFilter(AlreadyGZippedFilter.class.getSimpleName(), alreadyGzippedFilter);
+           alreadyGzippedRegistration.setAsyncSupported(true);
+           alreadyGzippedRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
+       };
+
+       InstanceFactory<ServletContainerInitializer> factory = new ImmediateInstanceFactory<>(containerInitializer);
+       deploymentInfo.addServletContainerInitializer(
+           new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
+       );
+
        deploy(deploymentInfo, true);
    }
 
@@ -409,62 +438,15 @@ public abstract class WebService implements ContainerService {
       throw new UnsupportedOperationException("ResourceSource not currently supported");
    }
 
-    public void configureDeploymentInfo(
-            DeploymentInfo deploymentInfo,
-            Integer realmIndex,
+    public void configureServlet(
+            ServletContext ctx,
             boolean secure,
+            Integer realmIndex,
             CORSConfig corsOverride) {
-
 
         if (corsOverride == null) {
             // Just use default CORS config
             corsOverride = new CORSConfig();
-        }
-
-        // TODO: Remove this handler wrapper once JAX-RS RealmPathExtractorFilter can be utilised before security is applied
-        if (realmIndex != null) {
-            deploymentInfo.addInitialHandlerChainWrapper(handler -> {
-
-                return exchange -> {
-                    // Do nothing if the realm header is already set
-                    if (exchange.getRequestHeaders().contains(REALM_PARAM_NAME)) {
-                        handler.handleRequest(exchange);
-                        return;
-                    }
-
-                    String relativePath = exchange.getRelativePath();
-                    StringBuilder newRelativePathBuilder = new StringBuilder();
-                    String realm = null;
-                    int segmentIndex = 0;
-                    int start = 1; // Path starts with '/'
-
-                    for (int i = 1; i <= relativePath.length(); i++) {
-                        if (i == relativePath.length() || relativePath.charAt(i) == '/') {
-                            if (i > start) { // Found a segment
-                                if (segmentIndex == realmIndex) {
-                                    realm = relativePath.substring(start, i);
-                                } else {
-                                    newRelativePathBuilder.append('/').append(relativePath, start, i);
-                                }
-                                segmentIndex++;
-                            }
-                            start = i + 1;
-                        }
-                    }
-
-                    if (realm != null) {
-                        exchange.getRequestHeaders().put(HttpString.tryFromString(REALM_PARAM_NAME), realm);
-
-                        String newRelativePath = !newRelativePathBuilder.isEmpty() ? newRelativePathBuilder.toString() : "/";
-                        String newRequestPath = deploymentInfo.getContextPath() + newRelativePath;
-                        exchange.setRequestURI(newRequestPath);
-                        exchange.setRelativePath(newRelativePath);
-                        exchange.setRequestPath(newRequestPath);
-                    }
-
-                    handler.handleRequest(exchange);
-                };
-            });
         }
 
         if (secure) {
@@ -472,22 +454,37 @@ public abstract class WebService implements ContainerService {
                 throw new IllegalStateException(
                         "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
                 );
-            identityService.secureDeployment(deploymentInfo);
         }
 
+        // Do all filter registration using the ServletContext for sane predictable ordering
+
+        // CORS filter 1st
         // Cannot set config on constructor as init method will overwrite it
         CORSFilter corsFilter = new CORSFilter();
+        FilterRegistration.Dynamic corsRegistration = ctx.addFilter(CORSFilter.class.getSimpleName(), corsFilter);
+        corsRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),false,"/*");
+        corsRegistration.setAsyncSupported(true);
+        getCORSConfiguration(corsOverride).forEach((k, v) -> corsRegistration.setInitParameter(k.toString(), v.toString()));
 
-        FilterInfo corsFilterInfo = Servlets.filter(
-                "CORS Filter",
-                CORSFilter.class,
-                () -> new ImmediateInstanceHandle<>(corsFilter)).setAsyncSupported(true);
-        getCORSConfiguration(corsOverride).forEach((k,v) -> corsFilterInfo.addInitParam(k.toString(), v.toString()));
-        deploymentInfo.addFilter(corsFilterInfo);
-        deploymentInfo.addFilterUrlMapping(     "CORS Filter","/*", DispatcherType.REQUEST);
+        if (realmIndex != null) {
+            // The realm extraction from path
+            RealmPathExtractorFilter realmPathExtractorFilter = new RealmPathExtractorFilter(realmIndex);
+            FilterRegistration.Dynamic realmExtractorRegistration = ctx.addFilter(RealmPathExtractorFilter.class.getSimpleName(), realmPathExtractorFilter);
+            realmExtractorRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
+            realmExtractorRegistration.setAsyncSupported(true);
+        }
 
-        // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-        deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
+        // Then logging
+        FilterRegistration.Dynamic loggingRegistration = ctx.addFilter(LoggingFilter.class.getSimpleName(), new LoggingFilter(devMode));
+        loggingRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),true,"/*");
+        loggingRegistration.setAsyncSupported(true);
+
+        // Then security
+        if (secure) {
+            FilterRegistration.Dynamic securityRegistration = identityService.secureDeployment(ctx);
+            securityRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),true,"/*");
+            securityRegistration.setAsyncSupported(true);
+        }
     }
 
     public Undertow getUndertow() {
@@ -536,5 +533,37 @@ public abstract class WebService implements ContainerService {
         }
 
         return props;
+    }
+
+    public CompletableFuture<String> getBearerToken(@NotNull OAuthGrant oAuthGrant) {
+       return getBearerToken(executorService, WebTargetBuilder.getClient(), oAuthGrant);
+    }
+
+    /**
+     * Retrieve bearer tokens for the provided {@link OAuthGrant}.
+     */
+    public static CompletableFuture<String> getBearerToken(ExecutorService executorService, Client client, @NotNull OAuthGrant oAuthGrant) {
+        if (oAuthGrant == null) {
+            return CompletableFuture.failedFuture(new NullPointerException(OAuthGrant.class.getSimpleName() + " cannot be null"));
+        }
+        CompletableFuture<String> future = new CompletableFuture<>();
+
+        executorService.submit(() -> {
+            LOG.log(DEBUG, "Retrieving OAuth access token: " + oAuthGrant);
+
+            try {
+                OAuthFilter oAuthFilter = new OAuthFilter(client, oAuthGrant);
+                String authHeaderValue = oAuthFilter.getAccessToken();
+                if (TextUtil.isNullOrEmpty(authHeaderValue)) {
+                    throw new RuntimeException("Returned access token is null");
+                }
+                LOG.log(DEBUG,"Retrieved access token via OAuth: " + oAuthGrant);
+                future.complete(authHeaderValue);
+            } catch (Exception e) {
+                future.completeExceptionally(new Exception("Error retrieving OAuth access token for '" + oAuthGrant + "': " + e.getMessage()));
+            }
+        });
+
+        return future;
     }
 }

@@ -1,0 +1,825 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/contact_info.proto";
+import "ttn/lorawan/v3/enums.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/metadata.proto";
+import "ttn/lorawan/v3/rights.proto";
+import "ttn/lorawan/v3/secrets.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message GatewayBrand {
+  string id = 1;
+  string name = 2;
+  string url = 3;
+  // Logos contains file names of brand logos.
+  repeated string logos = 4;
+}
+
+message GatewayModel {
+  string brand_id = 1 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36,
+    ignore_empty: true
+  }];
+  string id = 2 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36,
+    ignore_empty: true
+  }];
+  string name = 3;
+}
+
+// Identifies an end device model with version information.
+message GatewayVersionIdentifiers {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  string brand_id = 1 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36,
+    ignore_empty: true
+  }];
+  string model_id = 2 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36,
+    ignore_empty: true
+  }];
+  string hardware_version = 3 [(validate.rules).string.max_len = 32];
+  string firmware_version = 4 [(validate.rules).string.max_len = 32];
+  string runtime_version = 5 [(validate.rules).string.max_len = 32];
+}
+
+message GatewayRadio {
+  bool enable = 1;
+  string chip_type = 2;
+  uint64 frequency = 3;
+  float rssi_offset = 4;
+
+  message TxConfiguration {
+    uint64 min_frequency = 1;
+    uint64 max_frequency = 2;
+    uint64 notch_frequency = 3;
+  }
+  TxConfiguration tx_configuration = 5;
+}
+
+// Authentication code for claiming gateways.
+message GatewayClaimAuthenticationCode {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  Secret secret = 1;
+  google.protobuf.Timestamp valid_from = 2;
+  google.protobuf.Timestamp valid_to = 3;
+}
+
+// Gateway is the message that defines a gateway on the network.
+message Gateway {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // The identifiers of the gateway. These are public and can be seen by any authenticated user in the network.
+  GatewayIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false,
+      hidden: true
+    }
+  ];
+  // When the gateway was created. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp created_at = 2 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  // When the gateway was last updated. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp updated_at = 3 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  // When the gateway was deleted. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp deleted_at = 26 [(thethings.flags.field) = {
+    select: true,
+    set: false
+  }];
+
+  // The name of the gateway. This information is public and can be seen by any authenticated user in the network.
+  string name = 4 [(validate.rules).string.max_len = 50];
+  // A description for the gateway. This information is public and can be seen by any authenticated user in the network.
+  string description = 5 [(validate.rules).string.max_len = 2000];
+
+  // Key-value attributes for this gateway. Typically used for organizing gateways or for storing integration-specific data.
+  map<string, string> attributes = 6 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // Contact information for this gateway. Typically used to indicate who to contact with technical/security questions about the gateway.
+  // This field is deprecated. Use administrative_contact and technical_contact instead.
+  repeated ContactInfo contact_info = 7 [
+    deprecated = true,
+    (validate.rules).repeated.max_items = 10
+  ];
+
+  OrganizationOrUserIdentifiers administrative_contact = 30;
+  OrganizationOrUserIdentifiers technical_contact = 31;
+
+  GatewayVersionIdentifiers version_ids = 8;
+
+  // The address of the Gateway Server to connect to.
+  // This information is public and can be seen by any authenticated user in the network if status_public is true.
+  // The typical format of the address is "scheme://host:port". The scheme is optional. If the port is omitted,
+  // the normal port inference (with DNS lookup, otherwise defaults) is used.
+  // The connection shall be established with transport layer security (TLS).
+  // Custom certificate authorities may be configured out-of-band.
+  string gateway_server_address = 9 [(validate.rules).string.pattern = "^([a-z]{2,5}://)?(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$"];
+  bool auto_update = 10;
+  string update_channel = 11 [(validate.rules).string.max_len = 128];
+
+  // Frequency plan ID of the gateway.
+  // This information is public and can be seen by any authenticated user in the network.
+  // DEPRECATED: use frequency_plan_ids.
+  // This equals the first element of the frequency_plan_ids field.
+  string frequency_plan_id = 12 [(validate.rules).string.max_len = 64];
+
+  // Frequency plan IDs of the gateway.
+  // This information is public and can be seen by any authenticated user in the network.
+  // The first element equals the frequency_plan_id field.
+  repeated string frequency_plan_ids = 20 [(validate.rules).repeated = {
+    max_items: 8,
+    items: {
+      string: {max_len: 64}
+    }
+  }];
+
+  // Antennas of the gateway. Location information of the antennas is public and can be seen by any authenticated user in the network if location_public=true.
+  repeated GatewayAntenna antennas = 13 [(validate.rules).repeated.max_items = 8];
+  // The status of this gateway may be publicly displayed.
+  bool status_public = 14;
+  // The location of this gateway may be publicly displayed.
+  bool location_public = 15;
+  // Enable server-side buffering of downlink messages. This is recommended for gateways using the Semtech UDP Packet
+  // Forwarder v2.x or older, as it does not feature a just-in-time queue. If enabled, the Gateway Server schedules the
+  // downlink message late to the gateway so that it does not overwrite previously scheduled downlink messages that have
+  // not been transmitted yet.
+  bool schedule_downlink_late = 16;
+  // Enforcing gateway duty cycle is recommended for all gateways to respect spectrum regulations. Disable enforcing the
+  // duty cycle only in controlled research and development environments.
+  bool enforce_duty_cycle = 17;
+  DownlinkPathConstraint downlink_path_constraint = 18 [(validate.rules).enum.defined_only = true];
+  // Adjust the time that GS schedules class C messages in advance. This is useful for gateways that have a known high latency backhaul, like 3G and satellite.
+  google.protobuf.Duration schedule_anytime_delay = 19;
+  // Update the location of this gateway from status messages. This only works for gateways connecting with authentication; gateways connected over UDP are not supported.
+  bool update_location_from_status = 21;
+  // The LoRa Basics Station LNS secret.
+  // This is either an auth token (such as an API Key) or a TLS private certificate.
+  // Requires the RIGHT_GATEWAY_READ_SECRETS for reading and RIGHT_GATEWAY_WRITE_SECRETS for updating this value.
+  Secret lbs_lns_secret = 22;
+  // The authentication code for gateway claiming.
+  // Requires the RIGHT_GATEWAY_READ_SECRETS for reading and RIGHT_GATEWAY_WRITE_SECRETS for updating this value.
+  // The entire field must be used in RPCs since sub-fields are validated wrt to each other. Direct selection/update of sub-fields only are not allowed.
+  // Use the top level field mask `claim_authentication_code` even when updating single fields.
+  GatewayClaimAuthenticationCode claim_authentication_code = 23;
+  // CUPS URI for LoRa Basics Station CUPS redirection.
+  // The CUPS Trust field will be automatically fetched from the cert chain presented by the target server.
+  string target_cups_uri = 24 [(validate.rules).string = {
+    uri: true,
+    ignore_empty: true
+  }];
+  // CUPS Key for LoRa Basics Station CUPS redirection.
+  // If redirecting to another instance of TTS, use the CUPS API Key for the gateway on the target instance.
+  // Requires the RIGHT_GATEWAY_READ_SECRETS for reading and RIGHT_GATEWAY_WRITE_SECRETS for updating this value.
+  Secret target_cups_key = 25;
+  // Require an authenticated gateway connection. This prevents the gateway from using the UDP protocol and requires authentication when using other protocols.
+  bool require_authenticated_connection = 27;
+
+  // LR-FHSS gateway capabilities.
+  message LRFHSS {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    // The gateway supports the LR-FHSS uplink channels.
+    bool supported = 1;
+  }
+
+  LRFHSS lrfhss = 28;
+
+  bool disable_packet_broker_forwarding = 29;
+
+  reserved 33;
+  reserved "label_ids";
+
+  // next: 34
+}
+
+message Gateways {
+  repeated Gateway gateways = 1;
+}
+
+message ManagedGateway {
+  option (thethings.flags.message) = {
+    select: true
+    set: true
+  };
+  GatewayIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false
+      hidden: true
+    }
+  ];
+  GatewayVersionIdentifiers version_ids = 2;
+
+  string cellular_imei = 3 [(validate.rules).string = {
+    pattern: "^[0-9]{15}$"
+    ignore_empty: true
+  }];
+  string cellular_imsi = 4 [(validate.rules).string = {
+    pattern: "^[0-9]{15}$"
+    ignore_empty: true
+  }];
+  bytes wifi_mac_address = 5 [
+    (validate.rules).bytes = {
+      len: 6
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal6Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"EC656E000100\""
+    }
+  ];
+  bytes ethernet_mac_address = 6 [
+    (validate.rules).bytes = {
+      len: 6
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal6Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"EC656E000100\""
+    }
+  ];
+
+  string wifi_profile_id = 7 [(validate.rules).string = {
+    uuid: true,
+    ignore_empty: true
+  }];
+  string ethernet_profile_id = 8 [(validate.rules).string = {
+    uuid: true,
+    ignore_empty: true
+  }];
+}
+
+message ManagedGatewayWiFiAccessPoint {
+  string ssid = 1 [(validate.rules).string = {max_len: 32}];
+  bytes bssid = 2 [
+    (validate.rules).bytes = {len: 6},
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal6Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"EC656E000100\""
+    }
+  ];
+  uint32 channel = 3 [(validate.rules).uint32 = {gte: 1}];
+  string authentication_mode = 4;
+  float rssi = 5;
+}
+
+message ManagedGatewayWiFiAccessPoints {
+  repeated ManagedGatewayWiFiAccessPoint access_points = 1;
+}
+
+enum ManagedGatewayNetworkInterfaceType {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "MANAGED_GATEWAY_NETWORK_INTERFACE_TYPE"
+  };
+
+  MANAGED_GATEWAY_NETWORK_INTERFACE_TYPE_UNSPECIFIED = 0;
+  MANAGED_GATEWAY_NETWORK_INTERFACE_TYPE_CELLULAR = 1;
+  MANAGED_GATEWAY_NETWORK_INTERFACE_TYPE_WIFI = 2;
+  MANAGED_GATEWAY_NETWORK_INTERFACE_TYPE_ETHERNET = 3;
+}
+
+enum ManagedGatewayNetworkInterfaceStatus {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "MANAGED_GATEWAY_NETWORK_INTERFACE_STATUS"
+  };
+
+  MANAGED_GATEWAY_NETWORK_INTERFACE_STATUS_UNSPECIFIED = 0;
+  MANAGED_GATEWAY_NETWORK_INTERFACE_STATUS_DOWN = 1;
+  MANAGED_GATEWAY_NETWORK_INTERFACE_STATUS_UP = 2;
+  MANAGED_GATEWAY_NETWORK_INTERFACE_STATUS_FAILED = 3;
+}
+
+message ManagedGatewayNetworkInterfaceAddresses {
+  repeated string ip_addresses = 1 [
+    (validate.rules).repeated = {
+      max_items: 2,
+      items: {
+        string: {ip: true}
+      }
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "[\"192.0.2.0\",\"2001:db8::1\"]"
+    }
+  ];
+  string subnet_mask = 2 [
+    (validate.rules).string = {
+      ipv4: true
+      ignore_empty: true
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"192.0.2.0\""
+    }
+  ];
+  string gateway = 3 [
+    (validate.rules).string = {
+      ipv4: true
+      ignore_empty: true
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"192.0.2.0\""
+    }
+  ];
+  repeated string dns_servers = 4 [
+    (validate.rules).repeated = {
+      max_items: 2,
+      items: {
+        string: {ipv4: true}
+      }
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "[\"192.0.2.0\",\"192.0.2.1\"]"
+    }
+  ];
+}
+
+message ManagedGatewaySystemStatus {
+  // CPU temperature (Celsius).
+  google.protobuf.FloatValue cpu_temperature = 1;
+}
+
+message ManagedGatewayControllerConnection {
+  ManagedGatewayNetworkInterfaceType network_interface_type = 1 [(validate.rules).enum.defined_only = true];
+}
+
+message ManagedGatewayGatewayServerConnection {
+  ManagedGatewayNetworkInterfaceType network_interface_type = 1 [(validate.rules).enum.defined_only = true];
+  string address = 2;
+}
+
+message ManagedGatewayNetworkInterfaceInfo {
+  ManagedGatewayNetworkInterfaceStatus status = 1 [(validate.rules).enum.defined_only = true];
+  bool dhcp_enabled = 2;
+  ManagedGatewayNetworkInterfaceAddresses addresses = 3;
+}
+
+message ManagedGatewayCellularBackhaul {
+  ManagedGatewayNetworkInterfaceInfo network_interface = 1;
+  string operator = 2 [(validate.rules).string.max_len = 32];
+  google.protobuf.FloatValue rssi = 3;
+}
+
+message ManagedGatewayWiFiBackhaul {
+  ManagedGatewayNetworkInterfaceInfo network_interface = 1;
+  string ssid = 2 [(validate.rules).string.max_len = 32];
+  bytes bssid = 3 [
+    (validate.rules).bytes = {len: 6},
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal6Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"EC656E000100\""
+    }
+  ];
+  uint32 channel = 4 [(validate.rules).uint32 = {gte: 1}];
+  string authentication_mode = 5;
+  google.protobuf.FloatValue rssi = 6;
+}
+
+message ManagedGatewayEthernetBackhaul {
+  ManagedGatewayNetworkInterfaceInfo network_interface = 1;
+}
+
+message ManagedGatewayEventData {
+  oneof data {
+    ManagedGateway entity = 1;
+    Location location = 2;
+    ManagedGatewaySystemStatus system_status = 3;
+    ManagedGatewayControllerConnection controller_connection = 4;
+    ManagedGatewayGatewayServerConnection gateway_server_connection = 5;
+    ManagedGatewayCellularBackhaul cellular_backhaul = 6;
+    ManagedGatewayWiFiBackhaul wifi_backhaul = 7;
+    ManagedGatewayEthernetBackhaul ethernet_backhaul = 8;
+  }
+}
+
+message ManagedGatewayWiFiProfile {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  string profile_id = 1 [(validate.rules).string = {
+    uuid: true
+    ignore_empty: true
+  }];
+  string profile_name = 2 [(validate.rules).string = {max_len: 32}];
+  bool shared = 6;
+  string ssid = 3 [(validate.rules).string = {max_len: 32}];
+  string password = 4 [(validate.rules).string.max_len = 64];
+  ManagedGatewayNetworkInterfaceAddresses network_interface_addresses = 5;
+}
+
+message ManagedGatewayWiFiProfiles {
+  repeated ManagedGatewayWiFiProfile profiles = 1;
+}
+
+message ManagedGatewayEthernetProfile {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  string profile_id = 1 [(validate.rules).string = {
+    uuid: true
+    ignore_empty: true
+  }];
+  string profile_name = 2 [(validate.rules).string = {max_len: 32}];
+  bool shared = 4;
+  ManagedGatewayNetworkInterfaceAddresses network_interface_addresses = 3;
+}
+
+message ManagedGatewayEthernetProfiles {
+  repeated ManagedGatewayEthernetProfile profiles = 1;
+}
+
+message GetGatewayRequest {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  // The names of the gateway fields that should be returned.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message GetGatewayIdentifiersForEUIRequest {
+  bytes eui = 1 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+}
+
+message ListGatewaysRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // By default we list all gateways the caller has rights on.
+  // Set the user or the organization (not both) to instead list the gateways
+  // where the user or organization is collaborator on.
+  OrganizationOrUserIdentifiers collaborator = 1 [(thethings.flags.field) = {hidden: true}];
+  // The names of the gateway fields that should be returned.
+  google.protobuf.FieldMask field_mask = 2;
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 3 [(validate.rules).string = {
+    in: [
+      "",
+      "gateway_id",
+      "-gateway_id",
+      "gateway_eui",
+      "-gateway_eui",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 4 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 5;
+  // Only return recently deleted gateways.
+  bool deleted = 6;
+  // Filter gateways by fields.
+  message Filter {
+    oneof field {
+      google.protobuf.Timestamp updated_since = 1 [(validate.rules).timestamp.lt_now = true];
+    }
+  }
+  repeated Filter filters = 7;
+}
+
+message CreateGatewayRequest {
+  Gateway gateway = 1 [(validate.rules).message.required = true];
+  // Collaborator to grant all rights on the newly created gateway.
+  OrganizationOrUserIdentifiers collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message UpdateGatewayRequest {
+  Gateway gateway = 1 [(validate.rules).message.required = true];
+  // The names of the gateway fields that should be updated.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListGatewayAPIKeysRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  // Order the results by this field path.
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 4 [(validate.rules).string = {
+    in: [
+      "",
+      "api_key_id",
+      "-api_key_id",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at",
+      "expires_at",
+      "-expires_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+}
+
+message GetGatewayAPIKeyRequest {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  // Unique public identifier for the API key.
+  string key_id = 2;
+}
+
+message CreateGatewayAPIKeyRequest {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  string name = 2 [(validate.rules).string.max_len = 50];
+  repeated Right rights = 3 [(validate.rules).repeated = {
+    min_items: 1,
+    unique: true,
+    items: {
+      enum: {defined_only: true}
+    }
+  }];
+  google.protobuf.Timestamp expires_at = 4 [(validate.rules).timestamp.gt_now = true];
+}
+
+message UpdateGatewayAPIKeyRequest {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  APIKey api_key = 2 [(validate.rules).message.required = true];
+  // The names of the api key fields that should be updated.
+  google.protobuf.FieldMask field_mask = 3;
+}
+
+message DeleteGatewayAPIKeyRequest {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  string key_id = 2;
+}
+
+message ListGatewayCollaboratorsRequest {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  // Limit the number of results per page.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 4 [(validate.rules).string = {
+    in: [
+      "",
+      "id",
+      "-id",
+      "-rights",
+      "rights"
+    ]
+  }];
+}
+
+message GetGatewayCollaboratorRequest {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  OrganizationOrUserIdentifiers collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message SetGatewayCollaboratorRequest {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  Collaborator collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message DeleteGatewayCollaboratorRequest {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  OrganizationOrUserIdentifiers collaborator_ids = 2 [(validate.rules).message.required = true];
+}
+
+enum GatewayAntennaPlacement {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "PLACEMENT"
+  };
+  PLACEMENT_UNKNOWN = 0;
+  INDOOR = 1;
+  OUTDOOR = 2;
+}
+
+// GatewayAntenna is the message that defines a gateway antenna.
+message GatewayAntenna {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Antenna gain relative to the gateway, in dBi.
+  float gain = 1;
+  // location is the antenna's location.
+  Location location = 2;
+  map<string, string> attributes = 3 [
+    deprecated = true,
+    (validate.rules).map = {
+      max_pairs: 10,
+      keys: {
+        string: {
+          pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+          max_len: 36
+        }
+      },
+      values: {
+        string: {max_len: 200}
+      }
+    }
+  ];
+  GatewayAntennaPlacement placement = 4;
+}
+
+message GatewayStatus {
+  // Current time of the gateway
+  google.protobuf.Timestamp time = 1;
+  // Boot time of the gateway
+  // - can be left out to save bandwidth; old value will be kept
+  google.protobuf.Timestamp boot_time = 2;
+  // Versions of gateway subsystems
+  // - each field can be left out to save bandwidth; old value will be kept
+  // - map keys are written in snake_case
+  // - for example:
+  //     firmware: "2.0.4"
+  //     forwarder: "v2-3.3.1"
+  //     fpga: "48"
+  //     dsp: "27"
+  //     hal: "v2-3.5.0"
+  map<string, string> versions = 3 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[_-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 128}
+    }
+  }];
+  // Location of each gateway's antenna
+  // - if left out, server uses registry-set location as fallback
+  repeated Location antenna_locations = 4 [(validate.rules).repeated.max_items = 8];
+  // IP addresses of this gateway.
+  // Repeated addresses can be used to communicate addresses of multiple interfaces (LAN, Public IP, ...).
+  repeated string ip = 5 [(validate.rules).repeated = {
+    max_items: 10,
+    items: {
+      string: {ip: true}
+    }
+  }];
+  // Metrics
+  // - can be used for forwarding gateway metrics such as temperatures or performance metrics
+  // - map keys are written in snake_case
+  map<string, float> metrics = 6 [(validate.rules).map = {
+    max_pairs: 32,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[_-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+  }];
+  // Advanced metadata fields
+  // - can be used for advanced information or experimental features that are not yet formally defined in the API
+  // - field names are written in snake_case
+  google.protobuf.Struct advanced = 99;
+}
+
+// Remote Address of the Gateway, as seen by the Gateway Server.
+message GatewayRemoteAddress {
+  string ip = 1; // IPv4 or IPv6 address.
+}
+
+// Connection stats as monitored by the Gateway Server.
+message GatewayConnectionStats {
+  google.protobuf.Timestamp connected_at = 1;
+  google.protobuf.Timestamp disconnected_at = 11;
+  string protocol = 2; // Protocol used to connect (for example, udp, mqtt, grpc)
+  google.protobuf.Timestamp last_status_received_at = 3;
+  GatewayStatus last_status = 4;
+  google.protobuf.Timestamp last_uplink_received_at = 5;
+  uint64 uplink_count = 6;
+  google.protobuf.Timestamp last_downlink_received_at = 7;
+  uint64 downlink_count = 8;
+  google.protobuf.Timestamp last_tx_acknowledgment_received_at = 13;
+  uint64 tx_acknowledgment_count = 14;
+
+  message RoundTripTimes {
+    google.protobuf.Duration min = 1 [(validate.rules).duration.required = true];
+    google.protobuf.Duration max = 2 [(validate.rules).duration.required = true];
+    google.protobuf.Duration median = 3 [(validate.rules).duration.required = true];
+    uint32 count = 4;
+  }
+  RoundTripTimes round_trip_times = 9;
+
+  message SubBand {
+    uint64 min_frequency = 1;
+    uint64 max_frequency = 2;
+    // Duty-cycle limit of the sub-band as a fraction of time.
+    float downlink_utilization_limit = 3;
+    // Utilization rate of the available duty-cycle. This value should not exceed downlink_utilization_limit.
+    float downlink_utilization = 4;
+  }
+  // Statistics for each sub band.
+  repeated SubBand sub_bands = 10;
+
+  // Gateway Remote Address.
+  GatewayRemoteAddress gateway_remote_address = 12;
+
+  // next: 13
+}

@@ -160,18 +160,20 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     // TODO; Add an ConsoleProvider that listens to background/foreground changes, and dispatch the respective OREvent. This will improve responsiveness of logic attached to it.
     // For example used for triggering reconnecting logic once the UI becomes visible again.
     protected _handleVisibilityChange(ev: Event) {
+        console.debug("App visibility changed to", document.visibilityState);
 
         if(document.visibilityState === "visible") {
             this._store.dispatch((setVisibility(true)));
-
-            // When the manager appears on Mobile devices, but the connection is OFFLINE,
-            // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
-            // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
-            if(manager.console?.isMobile && this._offline) {
-                this._startOfflineFallbackTimer(true);
-            }
-            // Always try reconnecting (just in case we are disconnected)
-            manager.reconnect();
+            setTimeout(() => {
+                // When the manager appears on Mobile devices, but the connection is OFFLINE,
+                // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
+                // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
+                if(manager.console?.isMobile && this._offline) {
+                    this._startOfflineFallbackTimer(true);
+                }
+                // Always try reconnecting the event provider (just in case we are disconnected)
+                manager.reconnect();
+            }, 500);
         } else {
             this._store.dispatch((setVisibility(false)));
         }
@@ -181,12 +183,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         super.connectedCallback();
         this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this.getState()));
         document.addEventListener("visibilitychange", this._onVisibilityChanged);
+        this.addEventListener("realms-changed", this._onRealmsChanged);
         this.stateChanged(this.getState());
     }
 
     disconnectedCallback() {
         this._storeUnsubscribe();
-        document.removeEventListener("visibilityChange", this._onVisibilityChanged);
+        document.removeEventListener("visibilitychange", this._onVisibilityChanged);
+        this.removeEventListener("realms-changed", this._onRealmsChanged);
         manager.removeListener(this._onEvent);
         super.disconnectedCallback();
     }
@@ -244,8 +248,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 }
 
                 // Load available realm info
-                const response = await manager.rest.api.RealmResource.getAccessible();
-                this._realms = response.data;
+                await this._refreshRealms();
 
                 let realm: string | null | undefined = undefined;
 
@@ -412,6 +415,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         return html`
             ${this._config.styles ? typeof(this._config.styles) === "string" ? html`<style>${this._config.styles}</style>` : this._config.styles.strings : ``}
             ${consoleStyles}
+            <style>
+                :host > * {
+                    /* Vaadin + OR theme styles that are 'user configurable' need to be re-applied inside or-app. */
+                    --or-color-primary: var(--or-app-color4);
+                    --or-color-primary-50pct: hsl(from var(--or-color-primary) h s l / 0.76);
+                    --or-color-primary-10pct: hsl(from var(--or-color-primary) h s l / 0.13);
+                    --or-color-text-primary: var(--or-app-color4);
+                    --lumo-primary-color: var(--or-color-primary);
+                    --lumo-primary-color-50pct: var(--or-color-primary-50pct);
+                    --lumo-primary-color-10pct: var(--or-color-primary-10pct);
+                    --lumo-primary-text-color: var(--or-color-text-primary);
+                }
+            </style>
             ${this._config.header ? html`
                 <or-header .activeMenu="${this._activeMenu}" .store="${this._store}" .realm="${this._realm}" .realms="${this._realms}" .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             ` : ``}
@@ -427,6 +443,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         this._realm = state.app.realm;
         this._page = state.app!.page;
         this._offline = state.app!.offline;
+    }
+
+    protected _onRealmsChanged = () => this._refreshRealms();
+
+    protected async _refreshRealms() {
+        try {
+            const response = await manager.rest.api.RealmResource.getAccessible();
+            this._realms = response.data;
+            this.requestUpdate();
+        } catch (e) {
+            console.error(e);
+            showErrorDialog("errorOccurred", document.body);
+        }
     }
 
     protected _handleEvent(event: OREvent) {
@@ -545,8 +574,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             .setHeading(html`<img id="login-logo" src="${this._config.logoMobile || this._config.logo}" /></or-icon><or-translate value="login"></or-translate>`)
             .setContent(html`
                 <div id="login_wrapper">
-                    <or-mwc-input .label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${username}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => u = e.detail.value}"></or-mwc-input>            
-                    <or-mwc-input .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" required .value="${password}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => p = e.detail.value}"></or-mwc-input>           
+                    <or-mwc-input label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${username}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => u = e.detail.value}"></or-mwc-input>            
+                    <or-mwc-input label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" required .value="${password}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => p = e.detail.value}"></or-mwc-input>           
                 </div>
             `)
             .setActions([
@@ -560,7 +589,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                             password: p!
                         });
                     },
-                    content: html`<or-mwc-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-mwc-input>`
+                    content: html`<or-mwc-input .type=${InputType.BUTTON} label="${i18next.t("submit")}" raised></or-mwc-input>`
                 }
             ]), document.body); // Attach to document as or-app isn't visible until initialised
 

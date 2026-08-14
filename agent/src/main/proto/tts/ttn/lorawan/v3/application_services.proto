@@ -1,0 +1,175 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "ttn/lorawan/v3/application.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/rights.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// The ApplicationRegistry service, exposed by the Identity Server, is used to manage
+// application registrations.
+service ApplicationRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage applications."};
+  // Create a new application. This also sets the given organization or user as
+  // first collaborator with all possible rights.
+  rpc Create(CreateApplicationRequest) returns (Application) {
+    option (google.api.http) = {
+      post: "/users/{collaborator.user_ids.user_id}/applications"
+      body: "*"
+      additional_bindings {
+        post: "/organizations/{collaborator.organization_ids.organization_id}/applications"
+        body: "*"
+      }
+    };
+  }
+
+  // Get the application with the given identifiers, selecting the fields specified
+  // in the field mask.
+  // More or less fields may be returned, depending on the rights of the caller.
+  rpc Get(GetApplicationRequest) returns (Application) {
+    option (google.api.http) = {get: "/applications/{application_ids.application_id}"};
+  }
+
+  // List applications where the given user or organization is a direct collaborator.
+  // If no user or organization is given, this returns the applications the caller
+  // has access to.
+  // Similar to Get, this selects the fields given by the field mask.
+  // More or less fields may be returned, depending on the rights of the caller.
+  rpc List(ListApplicationsRequest) returns (Applications) {
+    option (google.api.http) = {
+      get: "/applications"
+      additional_bindings {get: "/users/{collaborator.user_ids.user_id}/applications"}
+      additional_bindings {get: "/organizations/{collaborator.organization_ids.organization_id}/applications"}
+    };
+  }
+
+  // Update the application, changing the fields specified by the field mask to the provided values.
+  rpc Update(UpdateApplicationRequest) returns (Application) {
+    option (google.api.http) = {
+      put: "/applications/{application.ids.application_id}"
+      body: "*"
+    };
+  }
+
+  // Delete the application. This may not release the application ID for reuse.
+  // All end devices must be deleted from the application before it can be deleted.
+  rpc Delete(ApplicationIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/applications/{application_id}"};
+  }
+
+  // Restore a recently deleted application.
+  //
+  // Deployment configuration may specify if, and for how long after deletion,
+  // entities can be restored.
+  rpc Restore(ApplicationIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {post: "/applications/{application_id}/restore"};
+  }
+
+  // Purge the application. This will release the application ID for reuse.
+  // All end devices must be deleted from the application before it can be deleted.
+  // The application owner is responsible for clearing data from any (external) integrations
+  // that may store and expose data by application ID
+  rpc Purge(ApplicationIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/applications/{application_id}/purge"};
+  }
+
+  // Request DevEUI from the configured address block for a device inside the application.
+  // The maximum number of DevEUI's issued per application can be configured.
+  rpc IssueDevEUI(ApplicationIdentifiers) returns (IssueDevEUIResponse) {
+    option (google.api.http) = {post: "/applications/{application_id}/dev-eui"};
+  }
+}
+
+// The ApplicationAccess service, exposed by the Identity Server, is used to manage
+// API keys and collaborators of applications.
+service ApplicationAccess {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage access to applications."};
+  // List the rights the caller has on this application.
+  rpc ListRights(ApplicationIdentifiers) returns (Rights) {
+    option (google.api.http) = {get: "/applications/{application_id}/rights"};
+  }
+
+  // Create an API key scoped to this application.
+  rpc CreateAPIKey(CreateApplicationAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {
+      post: "/applications/{application_ids.application_id}/api-keys"
+      body: "*"
+    };
+  }
+
+  // List the API keys for this application.
+  rpc ListAPIKeys(ListApplicationAPIKeysRequest) returns (APIKeys) {
+    option (google.api.http) = {get: "/applications/{application_ids.application_id}/api-keys"};
+  }
+
+  // Get a single API key of this application.
+  rpc GetAPIKey(GetApplicationAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {get: "/applications/{application_ids.application_id}/api-keys/{key_id}"};
+  }
+
+  // Update the rights of an API key of the application.
+  // This method can also be used to delete the API key, by giving it no rights.
+  // The caller is required to have all assigned or/and removed rights.
+  rpc UpdateAPIKey(UpdateApplicationAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {
+      put: "/applications/{application_ids.application_id}/api-keys/{api_key.id}"
+      body: "*"
+    };
+  }
+
+  // Delete a single API key of this application.
+  rpc DeleteAPIKey(DeleteApplicationAPIKeyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/applications/{application_ids.application_id}/api-keys/{key_id}"};
+  }
+
+  // Get the rights of a collaborator (member) of the application.
+  // Pseudo-rights in the response (such as the "_ALL" right) are not expanded.
+  rpc GetCollaborator(GetApplicationCollaboratorRequest) returns (GetCollaboratorResponse) {
+    option (google.api.http) = {
+      additional_bindings {get: "/applications/{application_ids.application_id}/collaborator/user/{collaborator.user_ids.user_id}"}
+      additional_bindings {get: "/applications/{application_ids.application_id}/collaborator/organization/{collaborator.organization_ids.organization_id}"}
+    };
+  }
+
+  // Set the rights of a collaborator (member) on the application.
+  // This method can also be used to delete the collaborator, by giving them no rights.
+  // The caller is required to have all assigned or/and removed rights.
+  rpc SetCollaborator(SetApplicationCollaboratorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/applications/{application_ids.application_id}/collaborators"
+      body: "*"
+    };
+  }
+
+  // List the collaborators on this application.
+  rpc ListCollaborators(ListApplicationCollaboratorsRequest) returns (Collaborators) {
+    option (google.api.http) = {get: "/applications/{application_ids.application_id}/collaborators"};
+  }
+
+  // DeleteCollaborator removes a collaborator from an application.
+  rpc DeleteCollaborator(DeleteApplicationCollaboratorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      additional_bindings {delete: "/applications/{application_ids.application_id}/collaborator/user/{collaborator_ids.user_ids.user_id}"}
+      additional_bindings {delete: "/applications/{application_ids.application_id}/collaborator/organization/{collaborator_ids.organization_ids.organization_id}"}
+    };
+  }
+}

@@ -1,0 +1,11 @@
+resources:
+  limits:
+    cpu: 2000m
+    memory: 6Gi
+  requests:
+    cpu: 2000m
+    memory: 6Gi
+podSecurityContext:
+  sysctls:
+    - name: net.ipv4.ip_local_port_range
+      value: "10240 65535"

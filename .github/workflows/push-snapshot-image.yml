@@ -1,0 +1,23 @@
+name: Push Snapshot Image
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install-dist:
+    name: Build
+    uses: "./.github/workflows/install-dist.yml"
+
+  build-snapshot-image:
+    name: Build
+    needs: [install-dist]
+    uses: "./.github/workflows/build-snapshot-image.yml"
+    with:
+      PUSH: true
+    secrets:
+      AWS_DEVELOPERS_ACCOUNT_ID: ${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}
+      AWS_ECR_PUSH_ROLE: ${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}

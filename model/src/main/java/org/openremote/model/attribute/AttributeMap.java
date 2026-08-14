@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
-public class AttributeMap extends NamedMap<Attribute<?>> {
+public class AttributeMap extends NamedMap<String, Attribute<?>> {
 
     public AttributeMap() {
     }

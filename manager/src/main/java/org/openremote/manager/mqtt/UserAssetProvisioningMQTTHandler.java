@@ -23,13 +23,13 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import io.undertow.security.idm.X509CertificateCredential;
 import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
+import org.apache.activemq.artemis.utils.CertificateUtil;
 import org.apache.camel.builder.RouteBuilder;
-import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.provisioning.ProvisioningService;
@@ -49,7 +49,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 
-import javax.security.auth.x500.X500Principal;
+import javax.security.auth.Subject;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
@@ -169,9 +169,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean checkCanSubscribe(RemotingConnection connection, AuthContext authContext, Topic topic) {
         // Skip standard checks
-        if (!canSubscribe(connection, securityContext, topic)) {
+        if (!canSubscribe(connection, authContext, topic)) {
             getLogger().fine("Cannot subscribe to this topic, topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
@@ -179,9 +179,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean checkCanPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean checkCanPublish(RemotingConnection connection, AuthContext authContext, Topic topic) {
         // Skip standard checks
-        if (!canPublish(connection, securityContext, topic)) {
+        if (!canPublish(connection, authContext, topic)) {
             getLogger().fine("Cannot publish to this topic, topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
@@ -201,7 +201,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canSubscribe(RemotingConnection connection, AuthContext authContext, Topic topic) {
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
@@ -245,7 +245,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canPublish(RemotingConnection connection, AuthContext authContext, Topic topic) {
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
@@ -310,7 +310,11 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             return;
         }
 
-        processX509ProvisioningMessage(connection, topic, provisioningMessage);
+        if (provisioningMessage instanceof X509ProvisioningMessage) {
+            processX509ProvisioningMessage(connection, topic, (X509ProvisioningMessage)provisioningMessage);
+        } else if (provisioningMessage instanceof MTLSProvisioningMessage) {
+            processMTLSProvisioningMessage(connection, topic);
+        }
     }
 
     protected static boolean isProvisioningTopic(Topic topic) {
@@ -337,7 +341,6 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         String certUniqueId;
         String uniqueId;
-        boolean isMTLS = provisioningMessage instanceof MTLSProvisioningMessage;
 
         if (provisioningMessage instanceof X509ProvisioningMessage) {
             try {
@@ -350,25 +353,6 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
             certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
             uniqueId = topicClientID(topic);
-        } else if (provisioningMessage instanceof MTLSProvisioningMessage) {
-            clientCertificate = connection.getSubject().getPrivateCredentials(X509CertificateCredential.class).stream()
-                .findFirst()
-                .map(X509CertificateCredential::getCertificate)
-                .orElse(null);
-            if (clientCertificate == null) {
-                LOG.info("No client certificate found in MTLS provisioning message: " + MQTTBrokerService.connectionToString(connection));
-                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
-                return;
-            }
-
-            certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
-            uniqueId = topicClientID(topic);
-
-            if (!Objects.equals(uniqueId, certUniqueId)) {
-                LOG.info("Client ID does not match certificate CN: " + MQTTBrokerService.connectionToString(connection));
-                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
-                return;
-            }
         } else {
             LOG.warning("Unsupported provisioning message type: " + provisioningMessage.getClass().getName() + ", " + MQTTBrokerService.connectionToString(connection));
             publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
@@ -404,34 +388,12 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         String realm = matchingConfig.getRealm();
 
-        if (isMTLS) {
-            X500Principal principal = clientCertificate.getSubjectX500Principal();
-
-            // Extract OU from the certificate DN and compare to configured realm
-            String ou = null;
-            try {
-                ou = ProvisioningUtil.getSubjectOU(clientCertificate.getSubjectX500Principal());
-            } catch (Exception e) {
-                // Couldn't parse subject to then parse out the realm and service user name
-                LOG.log(Level.INFO, "Failed to parse DN for client certificate subject: " + MQTTBrokerService.connectionToString(connection), e);
-                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
-                return;
-            }
-
-            if (ou == null) {
-                // OU RDN not found in subject, meaning that no realm was supplied in the DN
-                LOG.info(() -> "mTLS Subject DN missing OU (realm): " + MQTTBrokerService.connectionToString(connection));
-                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
-                return;
-            }
-        }
-
         // Get/create service user
         User serviceUser;
 
         try {
             LOG.finest("Checking service user: " + uniqueId);
-            serviceUser = getCreateClientServiceUser(realm, identityProvider, uniqueId, isMTLS ? "" : PROVISIONING_USER_PREFIX, matchingConfig);
+            serviceUser = getCreateClientServiceUser(realm, identityProvider, uniqueId, PROVISIONING_USER_PREFIX, matchingConfig);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to retrieve/create service user: " + MQTTBrokerService.connectionToString(connection), e);
             publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
@@ -476,6 +438,155 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         });
 
         LOG.fine("Client successfully provisioned: " + uniqueId);
+        publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
+    }
+
+    protected void processMTLSProvisioningMessage(RemotingConnection connection, Topic topic) {
+        LOG.fine(() -> "Processing mTLS provisioning message: " + MQTTBrokerService.connectionToString(connection));
+
+        Subject subject = connection.getSubject();
+        if (subject == null) {
+            LOG.info("No subject found for mTLS connection: " + MQTTBrokerService.connectionToString(connection));
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
+        X509Certificate[] certs = CertificateUtil.getCertsFromConnection(connection);
+        if (certs == null || certs.length == 0) {
+            LOG.info("No client certificate found on connection: " + MQTTBrokerService.connectionToString(connection));
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
+        X509Certificate clientCertificate = certs[0];
+        X509ProvisioningConfig matchingConfig = getMatchingX509ProvisioningConfig(connection, clientCertificate);
+
+        if (matchingConfig == null) {
+            LOG.fine("No matching provisioning config found for mTLS certificate: " + MQTTBrokerService.connectionToString(connection));
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
+        if (matchingConfig.isDisabled()) {
+            LOG.fine("Matching provisioning config is disabled: " + MQTTBrokerService.connectionToString(connection));
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CONFIG_DISABLED), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
+        String certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
+        String uniqueId = topicTokenIndexToString(topic, 1);
+
+        if (TextUtil.isNullOrEmpty(certUniqueId)) {
+            LOG.info(() -> "Client certificate missing CN in subject: " + MQTTBrokerService.connectionToString(connection));
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
+        if (TextUtil.isNullOrEmpty(uniqueId) || !certUniqueId.equals(uniqueId)) {
+            LOG.info(() -> "Certificate CN doesn't match topic client ID: " + MQTTBrokerService.connectionToString(connection));
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
+        String realm = matchingConfig.getRealm();
+        String ou = ProvisioningUtil.getSubjectOU(clientCertificate.getSubjectX500Principal());
+        if (!TextUtil.isNullOrEmpty(ou) && !realm.equals(ou)) {
+            LOG.info(() -> "Certificate OU doesn't match provisioning config realm: OU=" + ou + ", realm=" + realm + ", " + MQTTBrokerService.connectionToString(connection));
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
+        User serviceUser;
+        try {
+            LOG.finest("Checking service user for mTLS: " + certUniqueId);
+            String username = certUniqueId;
+            serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + username);
+
+            if (serviceUser != null) {
+                LOG.fine("Service user found: realm=" + realm + ", username=" + username);
+            } else {
+                LOG.finest("Creating service user for mTLS: realm=" + realm + ", username=" + username);
+                serviceUser = new User()
+                    .setServiceAccount(true)
+                    .setEnabled(true)
+                    .setUsername(username);
+
+                String secret = UniqueIdentifierGenerator.generateId();
+                serviceUser = identityProvider.createUpdateUser(realm, serviceUser, secret, true);
+
+                if (matchingConfig.getUserRoles() != null && matchingConfig.getUserRoles().length > 0) {
+                    identityProvider.updateUserClientRoles(
+                        realm,
+                        serviceUser.getId(),
+                        Constants.KEYCLOAK_CLIENT_ID,
+                        Arrays.stream(matchingConfig.getUserRoles()).map(ClientRole::getValue).toArray(String[]::new)
+                    );
+                }
+
+                if (matchingConfig.isRestrictedUser()) {
+                    identityProvider.updateUserRealmRoles(realm, serviceUser.getId(),
+                        identityProvider.addUserRealmRoles(realm, serviceUser.getId(), RESTRICTED_USER_REALM_ROLE));
+                }
+
+                serviceUser.setSecret(secret);
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to retrieve/create service user for mTLS: " + MQTTBrokerService.connectionToString(connection), e);
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
+        if (!serviceUser.getEnabled()) {
+            LOG.info(() -> "Service user is disabled: " + MQTTBrokerService.connectionToString(connection));
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
+        Asset<?> asset;
+        try {
+            LOG.finest(() -> "Checking provisioned asset for mTLS: " + uniqueId);
+            String assetId = UniqueIdentifierGenerator.generateId(realm + uniqueId);
+            asset = assetStorageService.find(assetId);
+
+            if (asset == null && !TextUtil.isNullOrEmpty(matchingConfig.getAssetTemplate())) {
+                String assetTemplate = matchingConfig.getAssetTemplate();
+                assetTemplate = assetTemplate.replaceAll(UNIQUE_ID_PLACEHOLDER, uniqueId);
+
+                asset = ValueUtil.parse(assetTemplate, Asset.class).orElseThrow(() ->
+                    new RuntimeException("Failed to parse asset template: " + matchingConfig));
+
+                asset.setId(assetId);
+                asset.setRealm(realm);
+                asset = assetStorageService.merge(asset);
+
+                if (matchingConfig.isRestrictedUser()) {
+                    assetStorageService.storeUserAssetLinks(
+                        Collections.singletonList(new UserAssetLink(realm, serviceUser.getId(), assetId)));
+                }
+            }
+
+            if (asset != null && !matchingConfig.getRealm().equals(asset.getRealm())) {
+                LOG.warning("Asset realm mismatch: " + MQTTBrokerService.connectionToString(connection));
+                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.ASSET_ERROR), MqttQoS.AT_MOST_ONCE);
+                return;
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to retrieve/create asset for mTLS: " + MQTTBrokerService.connectionToString(connection), e);
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
+        mqttBrokerService.authenticateConnection(connection, realm, serviceUser.getUsername(), serviceUser.getSecret());
+
+        provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
+            if (connections == null) {
+                connections = ConcurrentHashMap.newKeySet();
+            }
+            connections.add(connection);
+            return connections;
+        });
+
+        LOG.fine("mTLS client successfully provisioned: " + uniqueId);
         publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
     }
 

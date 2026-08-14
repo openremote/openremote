@@ -6,4 +6,4 @@ type: application
 
 version: 0.1.0
 
-appVersion: "15.6.0.4"
+appVersion: "17.6.0.2-slim"

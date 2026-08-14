@@ -66,6 +66,13 @@ public final class ProtocolUtil {
 
         Pair<Boolean, Object> ignoreAndConvertedValue;
 
+        // value filters
+        Object valueBeforeFilters = value;
+        value = agentLink.getWriteValueFilters().<Object>map(filters -> {
+            LOG.finest("Applying attribute write value filters to attribute: " + attributeRef);
+            return applyValueFilters(valueBeforeFilters, filters);
+        }).orElse(valueBeforeFilters);
+
         // value conversion
         Object finalValue = value;
         ignoreAndConvertedValue = agentLink.getWriteValueConverter().map(converter -> {

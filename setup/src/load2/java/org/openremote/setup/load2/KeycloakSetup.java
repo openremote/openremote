@@ -89,9 +89,10 @@ public class KeycloakSetup extends AbstractKeycloakSetup {
 
         // Wait until all users created
         int waitCounter = 0;
+        int waitCounterLimit = Math.max(300, accounts / 2);
         while (createdUsers.get() < 2 * accounts) {
-            if (waitCounter > 1000) {
-                throw new IllegalStateException("Failed to add all requested user in the specified time");
+            if (waitCounter > waitCounterLimit) {
+                throw new IllegalStateException("Failed to add all requested user in the specified time (" + waitCounterLimit + " seconds).");
             }
             waitCounter++;
             Thread.sleep(1000);

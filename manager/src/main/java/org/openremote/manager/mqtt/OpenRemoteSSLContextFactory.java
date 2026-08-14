@@ -75,12 +75,27 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
 
     private volatile SSLContext cachedSSLContext;
     private final Map<String, Long> fileModificationTimes = new ConcurrentHashMap<>();
-    private ScheduledFuture<?> reloadFuture;
+    private static ScheduledFuture<?> reloadFuture;
+    private static OpenRemoteSSLContextFactory instance;
 
     public OpenRemoteSSLContextFactory() {
-        // Schedule periodic certificate reloading
-        reloadFuture = container.getScheduledExecutor().schedule(this::reloadCertificatesIfNeeded, CERT_RELOAD_INTERVAL_MS, TimeUnit.MILLISECONDS);
-        LOG.log(Level.INFO, "Initialized OpenRemote SSLContextFactory with certificate auto-reload");
+        instance = this;
+    }
+
+    /**
+     * Initialize the SSL context factory. Must be called after {@link #setContainer(Container)}
+     * to schedule periodic certificate reloading.
+     */
+    public static void init() {
+        if (instance == null) {
+            LOG.log(Level.WARNING, "OpenRemoteSSLContextFactory not instantiated; skipping certificate auto-reload scheduling");
+            return;
+        }
+        if (container != null && reloadFuture == null) {
+            reloadFuture = container.getScheduledExecutor().scheduleWithFixedDelay(
+                instance::reloadCertificatesIfNeeded, CERT_RELOAD_INTERVAL_MS, CERT_RELOAD_INTERVAL_MS, TimeUnit.MILLISECONDS);
+            LOG.log(Level.INFO, "Initialized OpenRemote SSLContextFactory with certificate auto-reload");
+        }
     }
 
     /**
@@ -446,7 +461,10 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
      */
     public void shutdown() {
         LOG.log(Level.INFO, "Shutting down OpenRemoteSSLContextFactory");
-        reloadFuture.cancel(true);
+        if (reloadFuture != null) {
+            reloadFuture.cancel(true);
+            reloadFuture = null;
+        }
         clearSSLContexts();
     }
 

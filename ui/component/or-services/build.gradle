@@ -1,6 +1,4 @@
-buildDir = "dist"
-
-task clean() {
+tasks.register("clean") {
     doLast {
         delete "dist"
         delete "lib"
@@ -13,14 +11,14 @@ tasks.register('npmAnalyze', Exec) {
     commandLine npmCommand("yarn"), "run", "analyze"
 }
 
-task installDist() {
+tasks.register("installDist") {
     dependsOn npmAnalyze
 }
 
-task prepareUi() {
+tasks.register("prepareUi") {
     dependsOn clean, npmAnalyze, npmPrepare
 }
 
-task publishUi() {
+tasks.register("publishUi") {
     dependsOn clean, npmPublish
 }

@@ -1,0 +1,251 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "thethings/flags/annotations.proto";
+import "ttn/lorawan/v3/contact_info.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/rights.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message Organization {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // The identifiers of the organization. These are public and can be seen by any authenticated user in the network.
+  OrganizationIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false,
+      hidden: true
+    }
+  ];
+  // When the organization was created. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp created_at = 2 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  // When the organization was last updated. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp updated_at = 3 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  // When the organization was deleted. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp deleted_at = 8 [(thethings.flags.field) = {
+    select: true,
+    set: false
+  }];
+
+  // The name of the organization. This information is public and can be seen by any authenticated user in the network.
+  string name = 4 [(validate.rules).string.max_len = 50];
+  // A description for the organization.
+  string description = 5 [(validate.rules).string.max_len = 2000];
+
+  // Key-value attributes for this organization. Typically used for organizing organizations or for storing integration-specific data.
+  map<string, string> attributes = 6 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // Contact information for this organization. Typically used to indicate who to contact with security/billing questions about the organization.
+  // This field is deprecated. Use administrative_contact and technical_contact instead.
+  repeated ContactInfo contact_info = 7 [
+    deprecated = true,
+    (validate.rules).repeated.max_items = 10
+  ];
+
+  OrganizationOrUserIdentifiers administrative_contact = 9;
+  OrganizationOrUserIdentifiers technical_contact = 10;
+
+  reserved 11;
+  reserved "application_limit";
+  reserved 12;
+  reserved "client_limit";
+  reserved 13;
+  reserved "gateway_limit";
+
+  // Determines if a notification will be sent to the collaborators. If false it, notifications will be sent only to the
+  // administrative or technical contact.
+  bool fanout_notifications = 14;
+
+  // next: 15
+}
+
+message Organizations {
+  repeated Organization organizations = 1;
+}
+
+message GetOrganizationRequest {
+  OrganizationIdentifiers organization_ids = 1 [(validate.rules).message.required = true];
+  // The names of the organization fields that should be returned.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListOrganizationsRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // By default we list all organizations the caller has rights on.
+  // Set the user to instead list the organizations
+  // where the user or organization is collaborator on.
+  // NOTE: It is currently not possible to have organizations collaborating on
+  // other organizations.
+  OrganizationOrUserIdentifiers collaborator = 1 [(thethings.flags.field) = {hidden: true}];
+  // The names of the organization fields that should be returned.
+  google.protobuf.FieldMask field_mask = 2;
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 3 [(validate.rules).string = {
+    in: [
+      "",
+      "organization_id",
+      "-organization_id",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 4 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 5;
+  // Only return recently deleted organizations.
+  bool deleted = 6;
+}
+
+message CreateOrganizationRequest {
+  Organization organization = 1 [(validate.rules).message.required = true];
+  // Collaborator to grant all rights on the newly created application.
+  // NOTE: It is currently not possible to have organizations collaborating on
+  // other organizations.
+  OrganizationOrUserIdentifiers collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message UpdateOrganizationRequest {
+  Organization organization = 1 [(validate.rules).message.required = true];
+  // The names of the organization fields that should be updated.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListOrganizationAPIKeysRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+
+  OrganizationIdentifiers organization_ids = 1 [(validate.rules).message.required = true];
+  // Order the results by this field path.
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 4 [(validate.rules).string = {
+    in: [
+      "",
+      "api_key_id",
+      "-api_key_id",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at",
+      "expires_at",
+      "-expires_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+}
+
+message GetOrganizationAPIKeyRequest {
+  OrganizationIdentifiers organization_ids = 1 [(validate.rules).message.required = true];
+  // Unique public identifier for the API key.
+  string key_id = 2;
+}
+
+message CreateOrganizationAPIKeyRequest {
+  OrganizationIdentifiers organization_ids = 1 [(validate.rules).message.required = true];
+  string name = 2 [(validate.rules).string.max_len = 50];
+  repeated Right rights = 3 [(validate.rules).repeated = {
+    min_items: 1,
+    unique: true,
+    items: {
+      enum: {defined_only: true}
+    }
+  }];
+  google.protobuf.Timestamp expires_at = 4 [(validate.rules).timestamp.gt_now = true];
+}
+
+message UpdateOrganizationAPIKeyRequest {
+  OrganizationIdentifiers organization_ids = 1 [(validate.rules).message.required = true];
+  APIKey api_key = 2 [(validate.rules).message.required = true];
+  // The names of the api key fields that should be updated.
+  google.protobuf.FieldMask field_mask = 3;
+}
+
+message DeleteOrganizationAPIKeyRequest {
+  OrganizationIdentifiers organization_ids = 1 [(validate.rules).message.required = true];
+  string key_id = 2;
+}
+
+message ListOrganizationCollaboratorsRequest {
+  OrganizationIdentifiers organization_ids = 1 [(validate.rules).message.required = true];
+  // Limit the number of results per page.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 4 [(validate.rules).string = {
+    in: [
+      "",
+      "id",
+      "-id",
+      "-rights",
+      "rights"
+    ]
+  }];
+}
+
+message GetOrganizationCollaboratorRequest {
+  OrganizationIdentifiers organization_ids = 1 [(validate.rules).message.required = true];
+  // NOTE: It is currently not possible to have organizations collaborating on other organizations.
+  OrganizationOrUserIdentifiers collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message SetOrganizationCollaboratorRequest {
+  OrganizationIdentifiers organization_ids = 1 [(validate.rules).message.required = true];
+  Collaborator collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message DeleteOrganizationCollaboratorRequest {
+  OrganizationIdentifiers organization_ids = 1 [(validate.rules).message.required = true];
+  OrganizationOrUserIdentifiers collaborator_ids = 2 [(validate.rules).message.required = true];
+}

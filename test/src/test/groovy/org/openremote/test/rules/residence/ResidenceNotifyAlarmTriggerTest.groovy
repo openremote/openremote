@@ -40,6 +40,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1
@@ -63,10 +64,10 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
     def "Trigger notification when presence is detected and alarm enabled"() {
 
-        def notificationIds = []
-        def targetTypes = []
-        def targetIds = []
-        def messages = []
+        def notificationIds = new CopyOnWriteArrayList<>()
+        def targetTypes = new CopyOnWriteArrayList<>()
+        def targetIds = new CopyOnWriteArrayList<>()
+        def messages = new CopyOnWriteArrayList<>()
 
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
@@ -128,7 +129,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         and: "the notification and console resources"
         def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), realm, accessToken).proxy(ConsoleResource.class)

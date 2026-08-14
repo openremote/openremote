@@ -3,7 +3,8 @@ import {customElement, property} from "lit/decorators.js";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {until} from "lit/directives/until.js";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
-import {i18next, translate} from "@openremote/or-translate";
+import {when} from 'lit/directives/when.js';
+import { i18next, translate } from "@openremote/or-translate";
 import {
     Attribute,
     AttributeDescriptor,
@@ -18,26 +19,25 @@ import {
     ValueConstraintAllowedValues
 } from "@openremote/model";
 import manager, {subscribe, Util} from "@openremote/core";
+import "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-vaadin-components/or-vaadin-button";
+import "@openremote/or-vaadin-components/or-vaadin-input";
 import {progressCircular} from "@openremote/or-mwc-components/style";
 import "@openremote/or-components/or-loading-wrapper";
 import {OrLoadingWrapper} from "@openremote/or-components/or-loading-wrapper";
 import {
-    getValueHolderInputTemplateProvider,
-    InputType,
-    OrInputChangedEvent,
-    OrInputChangedEventDetail,
-    ValueInputProvider,
-    ValueInputProviderGenerator,
-    ValueInputProviderOptions,
-    ValueInputTemplateFunction
-} from "@openremote/or-mwc-components/or-mwc-input";
+    getValueHolderInputTemplateProvider, type ValueInputProvider,
+    ValueInputProviderGenerator, type ValueInputProviderOptions, type ValueInputTemplateFunction
+} from "@openremote/or-vaadin-components/value-input-provider";
+import {InputType, SUPPORTED_WELLKNOWN_VALUE_TYPES, SupportedWellknownValueTypes} from "@openremote/or-vaadin-components/util";
 import "@openremote/or-map";
 import {geoJsonPointInputTemplateProvider} from "@openremote/or-map";
 import "@openremote/or-json-forms";
 import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
-import {agentIdRendererRegistryEntry} from "./agent-link-json-forms-renderer";
-import {schedulerRendererRegistryEntry} from "./scheduler-renderer";
+import {type OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
+import {agentIdRendererRegistryEntry} from "./renderers/agent-link";
+import {schedulerRendererRegistryEntry} from "./renderers/scheduler";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
 
@@ -80,18 +80,15 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
 
     if (buttonIcon) {
         content = html`
-                ${content}
-                <or-mwc-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${disabled || loading}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-            e.stopPropagation();
-            if (sendValue) {
-                sendValue();
-            }
-        }}"></or-mwc-input>
-            `;
+            ${content}
+            <or-vaadin-button id="send-btn" theme="icon" ?disabled=${disabled || loading} @click=${(ev: Event) => { ev.stopPropagation(); sendValue?.(); }}>
+                <or-icon icon=${buttonIcon}></or-icon>
+            </or-vaadin-button>
+        `;
     }
 
     return html`
-            <div id="wrapper" class="${buttonIcon || fullWidth ? "no-padding" : "right-padding"}">
+            <div id="wrapper" style="width: 100%" class="${buttonIcon || fullWidth ? "no-padding" : "right-padding"}">
                 ${content}
                 <div id="scrim" class="${ifDefined(loading ? undefined : "hidden")}"><progress class="pure-material-progress-circular"></progress></div>
             </div>
@@ -116,11 +113,38 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
 
 const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry, schedulerRendererRegistryEntry];
 
-let valueDescriptorSchemaHashes: Record<string, string>
-const schemas = new Map<string, any>()
+const schemas = new Map<string, unknown>();
+const inflightRequests = new Map<string, Promise<unknown>>();
 
-export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => ValueInputProviderGenerator = (fallback) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
-    if (Util.isComplexMetaItem(valueDescriptor)) {
+async function getSchema(valueDescriptor: ValueDescriptor) {
+    const descriptor = valueDescriptor.name + "[]".repeat(valueDescriptor.arrayDimensions ?? 0);
+
+    if (schemas.has(descriptor)) {
+        return schemas.get(descriptor);
+    }
+
+    // Coalesce inflight requests
+    // Firefox won't guarantee subsequent requests provide the
+    // "If-None-Match" request header.
+    if (inflightRequests.has(descriptor)) {
+        return inflightRequests.get(descriptor);
+    }
+
+    const promise = manager.rest.api.AssetModelResource
+        .getValueDescriptorSchema({ name: descriptor })
+        .then(response => {
+            const schema = response.data;
+            schemas.set(descriptor, schema);
+            return schema;
+        })
+        .finally(() => inflightRequests.delete(descriptor));
+
+    inflightRequests.set(descriptor, promise);
+    return promise;
+}
+
+export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, clear?: boolean) => ValueInputProviderGenerator = (fallback, clear) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
+    if (Util.isComplexValueDescriptor(valueDescriptor) && !SUPPORTED_WELLKNOWN_VALUE_TYPES.includes(valueDescriptor.name as SupportedWellknownValueTypes)) {
         const disabled = !!(options && options.disabled);
         const readonly = !!(options && options.readonly);
         const label = options.label;
@@ -137,13 +161,12 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
         const onChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
             if (!initialised) { 
                 return
-            };
-  
+            }
+
             if (!Util.objectsEqual(dataAndErrors.data, prevValue)) {
                 prevValue = dataAndErrors.data;
-                valueChangeNotifier({
-                    value: dataAndErrors.data
-                });
+                const errors = !!dataAndErrors.errors?.length;
+                valueChangeNotifier({ value: dataAndErrors.data, errors });
             }
         };
 
@@ -153,25 +176,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             }
             initialised = true;
 
-            if (!valueDescriptorSchemaHashes) {
-                const response = await manager.rest.api.StatusResource.getInfo();
-                valueDescriptorSchemaHashes = response.data.valueDescriptorSchemaHashes;
-            }
-
-            const descriptor = valueDescriptor.name + "[]".repeat(valueDescriptor.arrayDimensions ?? 0);
-            const hash = valueDescriptorSchemaHashes[descriptor];
-
-            if (!schema && !schemas.has(descriptor)) {
-                const response = await manager.rest.api.AssetModelResource.getValueDescriptorSchema({
-                    name: descriptor,
-                    hash,
-                }, { headers: !hash ? { "Cache-Control": "no-cache" } : {} });
-                schema = response.data;
-                schemas.set(descriptor, schema);
-                // label ||= schema.title
-            } else {
-                schema = schemas.get(descriptor);
-            }
+            schema = await getSchema(valueDescriptor);
 
             if (jsonForms.value && loadingWrapper.value) {
                 const forms = jsonForms.value;
@@ -181,7 +186,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             }
         };
 
-        const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
+        const templateFunction: ValueInputTemplateFunction = (value, _focused, _loading, _sending, _error, _helperText) => {
             // Schedule loading
             window.setTimeout(() => doLoad(value), 0);
 
@@ -194,11 +199,26 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
                     or-loading-wrapper {
                         width: 100%;
                     }
+                    or-json-forms {
+                        max-width: 100%;
+                        min-width: 0; /* Allows the element to shrink */
+                    }
+                    #clear {
+                        width: unset !important;
+                    }
                 </style>
                 <or-loading-wrapper ${ref(loadingWrapper)} .loading="${true}">
+                    <div style="display: flex; width: 100%">
                     <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
                                    .disabled="${disabled}" .readonly="${readonly}" .label="${label}"
-                                   .schema="${schema}" .uischema="${uiSchema}" .onChange="${onChanged}"></or-json-forms>
+                                   .schema="${schema}" .uischema="${uiSchema}" .onChange="${onChanged}">
+                    </or-json-forms>
+                    ${when(clear, () => html`
+                        <or-vaadin-button id="clear" theme="icon" @click="${() => valueChangeNotifier({ value: null })}">
+                            <or-icon icon="backspace"></or-icon>
+                        </or-vaadin-button>
+                    `)}
+                    </div>
                 </or-loading-wrapper>
             `;
         };
@@ -239,7 +259,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 /*padding-right: 52px;*/
             }   
             
-            #wrapper or-mwc-input, #wrapper or-map {
+            #wrapper or-mwc-input, #wrapper or-vaadin-input, #wrapper or-map {
                 width: 100%;
             }
             
@@ -254,6 +274,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             #wrapper {
                 display: flex;
                 position: relative;
+                align-items: center;
             }
             
             #wrapper.right-padding {
@@ -264,6 +285,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 display: flex;
                 flex: 1;
                 flex-direction: column;
+                max-width: 100%;
             }
             
             #wrapper-input {
@@ -306,7 +328,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             #send-btn { 
                 flex: 0;
                 margin-left: 4px;
-                margin-top: 4px;
+                --or-icon-width: 20px;
             }
         `];
     }
@@ -546,7 +568,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
 
         // Use json forms with fallback to simple input provider
-        const valueChangeHandler = (detail: OrInputChangedEventDetail | undefined) => {
+        const valueChangeHandler = (detail: OrInputChangedEventDetail & { errors?: boolean } | undefined) => {
+            if (detail?.errors) return;
             const value = detail ? detail.value : undefined;
             const updateImmediately = (detail && detail.enterPressed) || !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton;
             this._onInputValueChanged(value, updateImmediately);
@@ -563,8 +586,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             return;
         }
 
-        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
-        this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider)(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
+        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (value, updateImmediately) => valueChangeHandler({value, enterPressed: !!updateImmediately}), options);
+        this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider, true)(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
 
         if (!this._templateProvider) {
             this._templateProvider = standardInputProvider;

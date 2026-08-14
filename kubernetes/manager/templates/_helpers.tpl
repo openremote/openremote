@@ -89,3 +89,58 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
+
+{{/*
+Validate logging values.
+*/}}
+{{- define "manager.logging.validate" -}}
+{{- if and .Values.logging.config .Values.logging.existingConfigMap -}}
+{{- fail "manager chart values logging.config and logging.existingConfigMap are mutually exclusive" -}}
+{{- end -}}
+{{- if and (not .Values.logging.existingConfigMap) (ne (default "logging.properties" .Values.logging.existingConfigMapKey) "logging.properties") -}}
+{{- fail "manager chart value logging.existingConfigMapKey requires logging.existingConfigMap" -}}
+{{- end -}}
+{{- if or .Values.logging.config .Values.logging.existingConfigMap -}}
+  {{- range .Values.or.env -}}
+    {{- if eq .name "OR_LOGGING_CONFIG_FILE" -}}
+{{- fail "manager chart values logging.* manage OR_LOGGING_CONFIG_FILE; remove OR_LOGGING_CONFIG_FILE from or.env" -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the chart-managed logging ConfigMap name.
+*/}}
+{{- define "manager.logging.configMapName" -}}
+{{- printf "%s-%s" (include "manager.fullname" .) "logging" | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/*
+Return the referenced logging ConfigMap name.
+*/}}
+{{- define "manager.logging.configMapRefName" -}}
+{{- if .Values.logging.existingConfigMap -}}
+{{- .Values.logging.existingConfigMap -}}
+{{- else -}}
+{{- include "manager.logging.configMapName" . -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the referenced logging ConfigMap key.
+*/}}
+{{- define "manager.logging.configMapKey" -}}
+{{- if .Values.logging.existingConfigMap -}}
+{{- default "logging.properties" .Values.logging.existingConfigMapKey -}}
+{{- else -}}
+logging.properties
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the mounted logging config path.
+*/}}
+{{- define "manager.logging.configFilePath" -}}
+/etc/openremote/logging/logging.properties
+{{- end }}

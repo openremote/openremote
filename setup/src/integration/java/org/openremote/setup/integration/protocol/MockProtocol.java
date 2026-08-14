@@ -45,6 +45,7 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
 
     public static final String PROTOCOl_NAME = "Mock protocol";
     public List<AttributeEvent> protocolWriteAttributeEvents = new ArrayList<>();
+    public List<Object> protocolWriteProcessedValues = new ArrayList<>();
     public List<String> protocolMethodCalls = new ArrayList<>();
     public boolean updateSensor = true;
     protected Container container;
@@ -89,6 +90,7 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
     protected void doLinkedAttributeWrite(MockAgentLink agentLink, AttributeEvent event, Object processedValue) {
         protocolMethodCalls.add("WRITE_ATTRIBUTE:" + event.getId() + ":" + event.getName());
         protocolWriteAttributeEvents.add(event);
+        protocolWriteProcessedValues.add(processedValue);
         if (updateSensor) {
             updateReceived(event.getRef(), event.getValue(), event.getTimestamp());
         }

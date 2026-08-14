@@ -7,6 +7,7 @@ base {
 }
 
 sourceSets {
+    clustering
     integration
     load1
     load2
@@ -14,6 +15,7 @@ sourceSets {
 
 // dependencies declaration
 configurations {
+    clusteringImplementation.extendsFrom(implementation)
     integrationImplementation.extendsFrom(implementation)
     load1Implementation.extendsFrom(implementation)
     load2Implementation.extendsFrom(implementation)
@@ -21,6 +23,11 @@ configurations {
 
 dependencies {
     implementation project(":manager")
+}
+
+tasks.register('clusteringJar', Jar) {
+    archiveBaseName.set("openremote-clustering-${project.name}")
+    from sourceSets.clustering.output
 }
 
 tasks.register('load1Jar', Jar) {

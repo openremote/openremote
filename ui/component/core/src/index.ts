@@ -12,8 +12,6 @@ import {
     ConsoleAppConfig,
     EventProviderType,
     ManagerConfig,
-    MapType,
-    Role,
     User,
     UsernamePassword
 } from "@openremote/model";
@@ -82,10 +80,17 @@ export const DEFAULT_LANGUAGES: Languages = {
     fr: "french",
     de: "german",
     it: "italian",
+    pl: "polish",
     pt: "portuguese",
     ro: "romanian",
     es: "spanish",
     uk: "ukrainian"
+};
+
+// Maps i18next language codes to Moment locale codes where they differ.
+// Add a new entry here when adding a language whose i18next code != Moment locale code.
+export const I18NEXT_TO_MOMENT_LOCALE: Record<string, string> = {
+    cn: "zh-cn",
 };
 
 export function normaliseConfig(config: ManagerConfig): ManagerConfig {
@@ -269,10 +274,6 @@ export class Manager implements EventProviderFactory {
 
     getEventProvider(): EventProvider | undefined {
         return this.events;
-    }
-
-    get mapType() {
-        return this._config.mapType || MapType.VECTOR;
     }
 
     protected static MAX_RECONNECT_DELAY = 45000;
@@ -476,7 +477,7 @@ export class Manager implements EventProviderFactory {
         });
 
         i18next.on("languageChanged", (lng) => {
-            moment.locale(lng);
+            moment.locale(I18NEXT_TO_MOMENT_LOCALE[lng] ?? lng);
             this._emitEvent(OREvent.TRANSLATE_LANGUAGE_CHANGED);
         });
 
@@ -890,8 +891,33 @@ export class Manager implements EventProviderFactory {
         }
     }
 
+    /**
+     * This function revalidates the cache by checking if the token in the authorization header is still valid, and retrieves a new token if necessary.
+     * It is useful if you want to guarantee the token inside the header is valid before making a request to the Manager APIs.
+     */
+    public async retrieveAuthorizationHeader(): Promise<string | undefined> {
+        const keycloakToken = await this.retrieveKeycloakToken();
+        if(keycloakToken) {
+            return "Bearer " + keycloakToken;
+        } else {
+            return "Basic " + this.getBasicToken();
+        }
+    }
+
     public getKeycloakToken(): string | undefined {
         if (this.isKeycloak()) {
+            return this._keycloak!.token;
+        }
+        return undefined;
+    }
+
+    /**
+     * This function revalidates the cached access token by checking if it is still valid, and retrieves a new token if necessary.
+     * It is useful if you want to guarantee the token is valid before making a request to the Manager APIs.
+     */
+    public async retrieveKeycloakToken(): Promise<string | undefined> {
+        if (this.isKeycloak()) {
+            await this._updateKeycloakAccessToken();
             return this._keycloak!.token;
         }
         return undefined;
@@ -953,14 +979,14 @@ export class Manager implements EventProviderFactory {
                 this._name = this._keycloak.tokenParsed?.name;
                 this._username = this._keycloak.tokenParsed?.preferred_username;
 
-                this._createTokenUpdateInterval();
-
                 // If native shell is enabled store offline token
                 if (this.isMobile() && this._keycloak?.refreshTokenParsed?.typ === "Offline") {
                     console.debug("Storing offline refresh token");
                     this.console.storeData("REFRESH_TOKEN", this._keycloak!.refreshToken);
                 }
                 this._onAuthenticated();
+                this._createTokenUpdateInterval();
+
             } else if (this.config.autoLogin) {
                 this.login();
                 return false;
@@ -975,6 +1001,10 @@ export class Manager implements EventProviderFactory {
     }
 
     protected _createTokenUpdateInterval() {
+        if (!this._authenticated) {
+            console.warn("User is not authenticated; skipping token update interval creation.")
+            return;
+        }
         if (!this._keycloakUpdateTokenInterval) {
             this._keycloakUpdateTokenInterval = window.setInterval(async () => {
                 await this._updateKeycloakAccessToken().catch(() => {
@@ -1044,7 +1074,7 @@ export class Manager implements EventProviderFactory {
     }
 
     protected _onReconnected() {
-        console.debug("Reconnected");
+        console.debug("Reconnected to the Manager.");
         this._disconnected = false;
 
         // Reinstate token update interval
@@ -1057,10 +1087,13 @@ export class Manager implements EventProviderFactory {
      * online.
      */
     public async reconnect(reattemptDelayMillis: number = 3000) {
+        console.debug("Checking connection to the Manager...");
 
         if (!this._disconnected) {
+            console.debug("Manager is still connected. No action necessary.");
             return;
         }
+        console.debug("Manager is disconnected!");
 
         if (this._reconnectTimer) {
             window.clearTimeout(this._reconnectTimer);
@@ -1068,40 +1101,53 @@ export class Manager implements EventProviderFactory {
         }
 
         const tryReconnect = async () => {
-            console.debug("Attempting reconnect");
-            let keycloakOffline = !await this.isKeycloakReachable();
+            console.debug("Reconnecting to the Manager...");
+
+            // If the user was never authenticated (public access), skip token refresh and just reconnect the event provider.
+            if (!this._authenticated) {
+                console.debug("User is not authenticated, skipping token refresh");
+                const isEventsOnline = () => this.events?.status === EventProviderStatus.CONNECTED;
+                if (!isEventsOnline()) {
+                    await this.events?.connect();
+                }
+                return isEventsOnline();
+            }
+
+            const keycloakOffline = !await this.isKeycloakReachable();
 
             if (keycloakOffline) {
-                console.debug("Keycloak is unreachable");
+                console.error("Keycloak is not reachable. Reconnect attempt failed.");
                 return false;
             }
-            console.debug("Keycloak is reachable");
 
             // Check if access token can be refreshed
-            console.debug("Checking keycloak access token");
             try {
                 await this._updateKeycloakAccessToken();
             } catch (e) {
+                console.error("Could not update Keycloak access token, attempting again using offline token...", e);
                 // Try and use offline token if it is available
                 const offlineToken = await this._getNativeOfflineRefreshToken();
                 this._keycloak!.refreshToken = offlineToken;
+                if(!offlineToken) {
+                    console.warn("No offline token was found on this device.");
+                }
 
                 try {
                     await this._updateKeycloakAccessToken();
                 } catch (e) {
-                    console.debug("Cannot update access token so sending to login");
                     this.login();
-                    return;
+                    throw new Error("Cannot update access token so sending to login");
                 }
                 console.debug("Keycloak access token is valid");
-                return true;
             }
 
             // Check events
-            const eventsOffline = this.events && this.events.status === EventProviderStatus.CONNECTING;
-            console.debug("If event provider offline then attempting reconnect: offline=" + eventsOffline);
-            // Force reconnect attempt now if needed
-            return !eventsOffline || await this.events?.connect();
+            const isEventsOnline = () => this.events?.status === EventProviderStatus.CONNECTED;
+            if(!isEventsOnline()) {
+                console.debug("Event provider offline, attempting to reconnect using latest auth token.");
+                await this.events?.connect();
+            }
+            return isEventsOnline();
         };
 
         const connected = await tryReconnect();
@@ -1111,10 +1157,10 @@ export class Manager implements EventProviderFactory {
             return;
         }
 
+        // If failed to connect, schedule another reconnect attempt
         if (!connected) {
-            // Schedule reconnect again
             reattemptDelayMillis = Math.min(Manager.MAX_RECONNECT_DELAY, reattemptDelayMillis + 3000);
-            console.debug("Scheduling another reconnect attempt in (ms): " + reattemptDelayMillis);
+            console.error(`Failed to reconnect to the Manager. Attempting again in ${reattemptDelayMillis}...`);
             this._reconnectTimer = window.setTimeout(() => this.reconnect(reattemptDelayMillis), reattemptDelayMillis);
             return;
         }
@@ -1122,9 +1168,13 @@ export class Manager implements EventProviderFactory {
         this._onReconnected();
     }
 
-    // Checks whether keycloak is reachable using a simple HTTP HEAD request since the keycloak JS adapter doesn't give
-    // us details of the HTTP responses they get, we test it manually using this.
-    protected async isKeycloakReachable(timeoutMillis: number = 2000) {
+    /**
+     * Checks whether keycloak is reachable using a simple HTTP HEAD request since the keycloak JS adapter doesn't give
+     * us details of the HTTP responses they get, we test it manually using this.
+     * @param timeoutMillis - Custom timeout of the HTTP HEAD request in milliseconds
+     * @protected
+     */
+    protected async isKeycloakReachable(timeoutMillis = 2000): Promise<boolean> {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), timeoutMillis);
         try {
@@ -1134,7 +1184,7 @@ export class Manager implements EventProviderFactory {
             // but this is handled by the catch block
             // @ts-ignore
             const tokenUrl = this._keycloak.endpoints.token();
-            const result = await fetch(tokenUrl, {method: 'OPTIONS', signal: controller.signal});
+            const result = await fetch(tokenUrl, {method: "OPTIONS", signal: controller.signal});
             return result.status === 200;
         } catch (e) {
             return false;

@@ -29,7 +29,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.openremote.model.security.ClientRole;
 
-import java.util.Date;
+import java.time.Instant;
 
 import static jakarta.persistence.DiscriminatorType.STRING;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
@@ -55,14 +55,12 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
     protected Long id;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
-    protected Date createdOn = new Date();
+    protected Instant createdOn = Instant.now();
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
-    protected Date lastModified;
+    protected Instant lastModified;
 
     @NotNull
     @Column(name = "NAME", nullable = false)
@@ -100,18 +98,18 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
         return id;
     }
 
-    public Date getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
-    public Date getLastModified() {
+    public Instant getLastModified() {
         return lastModified;
     }
 
     @PreUpdate
     @PrePersist
     protected void updateLastModified() {
-        lastModified = new Date();
+        lastModified = Instant.now();
     }
 
     public String getName() {

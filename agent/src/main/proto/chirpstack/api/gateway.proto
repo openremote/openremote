@@ -1,0 +1,437 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/api";
+option java_package = "io.chirpstack.api";
+option java_multiple_files = true;
+option java_outer_classname = "GatewayProto";
+option csharp_namespace = "Chirpstack.Api";
+option php_namespace = "Chirpstack\\Api";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Api";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "common/common.proto";
+
+// GatewayService is the service providing API methods for managing gateways.
+service GatewayService {
+    // Create creates the given gateway.
+    rpc Create(CreateGatewayRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            post: "/api/gateways"
+            body: "*"
+        };
+    }
+
+    // Get returns the gateway for the given Gateway ID.
+    rpc Get(GetGatewayRequest) returns (GetGatewayResponse) {
+        option(google.api.http) = {
+            get: "/api/gateways/{gateway_id}"
+        };
+    }
+
+    // Update updates the given gateway.
+    rpc Update(UpdateGatewayRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            put: "/api/gateways/{gateway.gateway_id}"
+            body: "*"
+        };
+    }
+
+    // Delete deletes the gateway matching the given Gateway ID.
+    rpc Delete(DeleteGatewayRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            delete: "/api/gateways/{gateway_id}"
+        };
+    }
+
+    // Get the list of gateways.
+    rpc List(ListGatewaysRequest) returns (ListGatewaysResponse) {
+        option(google.api.http) = {
+            get: "/api/gateways"
+        };
+    }
+
+    // Generate client-certificate for the gateway.
+    rpc GenerateClientCertificate(GenerateGatewayClientCertificateRequest) returns (GenerateGatewayClientCertificateResponse) {
+        option(google.api.http) = {
+            post: "/api/gateways/{gateway_id}/generate-certificate"
+        };
+    }
+
+    // GetMetrics returns the gateway metrics.
+    rpc GetMetrics(GetGatewayMetricsRequest) returns (GetGatewayMetricsResponse) {
+        option(google.api.http) = {
+            get: "/api/gateways/{gateway_id}/metrics"
+        };
+    }
+
+    // GetDutyCycleMetrics returns the duty-cycle metrics.
+    // Note that only the last 2 hours of data are stored. Currently only per minute aggregation is available.
+    rpc GetDutyCycleMetrics(GetGatewayDutyCycleMetricsRequest) returns (GetGatewayDutyCycleMetricsResponse) {
+        option(google.api.http) = {
+            get: "/api/gateways/{gateway_id}/duty-cycle-metrics"
+        };
+    }
+
+    // Get the given Relay Gateway.
+    rpc GetRelayGateway(GetRelayGatewayRequest) returns (GetRelayGatewayResponse) {
+        option(google.api.http) = {
+            get: "/api/gateways/relay-gateways/{tenant_id}/{relay_id}"
+        };
+    }
+
+    // List the detected Relay Gateways.
+    rpc ListRelayGateways(ListRelayGatewaysRequest) returns (ListRelayGatewaysResponse) {
+        option(google.api.http) = {
+            get: "/api/gateways/relay-gateways"
+        };
+    }
+
+    // Update the given Relay Gateway.
+    rpc UpdateRelayGateway(UpdateRelayGatewayRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            put: "/api/gateways/relay-gateways/{relay_gateway.tenant_id}/{relay_gateway.relay_id}"
+            body: "*"
+        };
+    }
+
+    // Delete the given Relay Gateway.
+    rpc DeleteRelayGateway(DeleteRelayGatewayRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            delete: "/api/gateways/relay-gateways/{tenant_id}/{relay_id}"
+        };
+    }
+}
+
+enum GatewayState {
+    // The gateway has never sent any stats.
+    NEVER_SEEN = 0;
+
+    // Online.
+    ONLINE = 1;
+
+    // Offline.
+    OFFLINE = 2;
+}
+
+message Gateway {
+    // Gateway ID (EUI64).
+    string gateway_id = 1;
+
+    // Name.
+    string name = 2;
+
+    // Description.
+    string description = 3;
+
+    // Gateway location.
+    common.Location location = 4;
+
+    // Tenant ID (UUID).
+    string tenant_id = 5;
+
+    // Tags.
+    map<string, string> tags = 6;
+
+    // Metadata (provided by the gateway).
+    map<string, string> metadata = 7;
+
+    // Stats interval (seconds).
+    // This defines the expected interval in which the gateway sends its
+    // statistics.
+    uint32 stats_interval = 8;
+}
+
+message GatewayListItem {
+    // Tenant ID.
+    string tenant_id = 1;
+
+    // Gateway ID (EUI64).
+    string gateway_id = 2;
+
+    // Name.
+    string name = 3;
+
+    // Description.
+    string description = 4;
+
+    // Location.
+    common.Location location = 5;
+
+    // Gateway properties.
+    map<string, string> properties = 6;
+
+	  // Created at timestamp.
+	  google.protobuf.Timestamp created_at = 7;
+
+	  // Last update timestamp.
+	  google.protobuf.Timestamp updated_at = 8;
+
+    // Last seen at timestamp.
+    google.protobuf.Timestamp last_seen_at = 9;
+
+    // Gateway state.
+    // Please note that the state of the gateway is driven by the stats
+    // packages that are sent by the gateway.
+    GatewayState state = 10;
+}
+
+message CreateGatewayRequest {
+    // Gateway object.
+    Gateway gateway = 1;
+}
+
+message GetGatewayRequest {
+    // Gateway ID (EUI64).
+    string gateway_id = 1;
+}
+
+message GetGatewayResponse {
+    // Gateway object.
+    Gateway gateway = 1;
+
+	// Created at timestamp.
+	google.protobuf.Timestamp created_at = 2;
+
+	// Last update timestamp.
+	google.protobuf.Timestamp updated_at = 3;
+
+    // Last seen at timestamp.
+    google.protobuf.Timestamp last_seen_at = 4;
+}
+
+message UpdateGatewayRequest {
+    // Gateway object.
+    Gateway gateway = 1;
+}
+
+message DeleteGatewayRequest {
+    // Gateway ID (EUI64).
+    string gateway_id = 1;
+}
+
+message ListGatewaysRequest {
+    // Max number of gateways to return in the result-set.
+    // If not set, it will be treated as 0, and the response will only return the total_count.
+    uint32 limit = 1;
+
+    // Offset in the result-set (for pagination).
+    uint32 offset = 2;
+
+    // If set, the given string will be used to search on name (optional).
+    string search = 3;
+
+    // Tenant ID (UUID) to filter gateways on.
+    // To list all gateways as a global admin user, this field can be left blank.
+    string tenant_id = 4;
+
+    // Multicast-group ID (UUID) to filter gateways on.
+    string multicast_group_id = 5;
+
+    enum OrderBy {
+      NAME = 0;
+      GATEWAY_ID = 1;
+      LAST_SEEN_AT = 2;
+    }
+
+    // If set, the given value will be used to sort by (optional).
+    OrderBy order_by = 6;
+
+    // If set, the sorting direction will be decending (default = ascending) (optional).
+    bool order_by_desc = 7;
+}
+
+message ListGatewaysResponse {
+    // Total number of gateways.
+    uint32 total_count = 1;
+
+    // Result-set.
+    repeated GatewayListItem result = 2;
+}
+
+message GenerateGatewayClientCertificateRequest {
+    // Gateway ID (EUI64).
+    string gateway_id = 1;
+}
+
+message GenerateGatewayClientCertificateResponse {
+    // TLS certificate.
+    string tls_cert = 1;
+
+    // TLS key.
+    string tls_key = 2;
+
+    // CA certificate.
+    string ca_cert = 3;
+
+    // Expires at defines the expiration date of the certificate.
+    google.protobuf.Timestamp expires_at = 4;
+}
+
+message GetGatewayMetricsRequest {
+    // Gateway ID (EUI64).
+    string gateway_id = 1;
+
+    // Interval start timestamp.
+    google.protobuf.Timestamp start = 2;
+
+    // Interval end timestamp.
+    google.protobuf.Timestamp end = 3;
+
+    // Aggregation.
+    common.Aggregation aggregation = 4;
+}
+
+message GetGatewayMetricsResponse {
+    // RX packets.
+    common.Metric rx_packets = 1;
+
+    // TX packets.
+    common.Metric tx_packets = 2;
+
+    // TX packets / frequency.
+    common.Metric tx_packets_per_freq = 3;
+
+    // RX packets / frequency.
+    common.Metric rx_packets_per_freq = 4;
+
+    // TX packets / DR.
+    common.Metric tx_packets_per_dr = 5;
+
+    // RX packets / DR.
+    common.Metric rx_packets_per_dr = 6;
+
+    // TX packets per status.
+    common.Metric tx_packets_per_status = 7;
+}
+
+message GetGatewayDutyCycleMetricsRequest {
+    // Gateway ID (EUI64).
+    string gateway_id = 1;
+
+    // Interval start timestamp.
+    google.protobuf.Timestamp start = 2;
+
+    // Interval end timestamp.
+    google.protobuf.Timestamp end = 3;
+}
+
+message GetGatewayDutyCycleMetricsResponse {
+    // Percentage relative to max load.
+    common.Metric max_load_percentage = 1;
+
+    // Percentage relative to tracking window.
+    common.Metric window_percentage = 2;
+}
+
+message GetRelayGatewayRequest {
+    // Tenant ID (UUID).
+    string tenant_id = 1;
+
+    // Relay ID (4 byte HEX).
+    string relay_id = 2;
+}
+
+message GetRelayGatewayResponse {
+    // Relay Gateway object.
+    RelayGateway relay_gateway = 1;
+
+	  // Created at timestamp.
+	  google.protobuf.Timestamp created_at = 2;
+
+	  // Last update timestamp.
+	  google.protobuf.Timestamp updated_at = 3;
+
+    // Last seen at timestamp.
+    google.protobuf.Timestamp last_seen_at = 4;
+}
+
+message ListRelayGatewaysRequest {
+    // Max number of relay-gateways to return in the result-set.
+    // If not set, it will be treated as 0, and the response will only return the total_count.
+    uint32 limit = 1;
+
+    // Offset in the result-set (for pagination).
+    uint32 offset = 2;
+
+    // Tenant ID (UUID) to filter relay-gateways on.
+    // To list all relay-gateways as a global admin user, this field can be left blank.
+    string tenant_id = 3;
+}
+
+message ListRelayGatewaysResponse {
+    // Total number of relay-gateways.
+    uint32 total_count = 1;
+
+    // Result-set.
+    repeated RelayGatewayListItem result = 2;
+}
+
+message RelayGatewayListItem {
+    // Tenant ID.
+    string tenant_id = 1;
+
+    // Relay ID (4 byte HEX).
+    string relay_id = 2;
+
+    // Name.
+    string name = 3;
+
+    // Description.
+    string description = 4;
+
+	  // Created at timestamp.
+	  google.protobuf.Timestamp created_at = 5;
+
+	  // Last update timestamp.
+	  google.protobuf.Timestamp updated_at = 6;
+
+    // Last seen at timestamp.
+    google.protobuf.Timestamp last_seen_at = 7;
+
+    // Gateway state.
+    // Please note that the state of the relay is driven by the last
+    // received stats packet sent by the relay-gateway.
+    GatewayState state = 10;
+
+    // Region configuration ID.
+    string region_config_id = 11;
+}
+
+message UpdateRelayGatewayRequest {
+    // Relay Gateway object.
+    RelayGateway relay_gateway = 1;
+}
+
+message DeleteRelayGatewayRequest {
+    // Tenant ID.
+    string tenant_id = 1;
+
+    // Relay ID (4 byte HEX).
+    string relay_id = 2;
+}
+
+message RelayGateway {
+    // Tenant ID.
+    string tenant_id = 1;
+
+    // Relay ID (4 byte HEX).
+    string relay_id = 2;
+
+    // Name.
+    string name = 3;
+
+    // Description.
+    string description = 4;
+
+    // Stats interval (seconds).
+    // This defines the expected interval in which the gateway sends its
+    // statistics.
+    uint32 stats_interval = 5;
+
+    // Region configuration ID.
+    string region_config_id = 6;
+}

@@ -121,6 +121,8 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
         }
 
         if (!this.data) {
+            // AJV will not modify the root instance, only properties, thus we initialize with a default
+            // see https://ajv.js.org/guide/modifying-data.html#general-considerations
             this.data = createDefaultValue(this.schema, this.schema);
         }
 
@@ -129,13 +131,12 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
         }
 
         if (!this.core) {
-            this.core = {
-                ajv: createAjv({useDefaults: true, validateFormats: false}),
-                data: {},
-                schema: this.schema!,
-                uischema: this.uischema!
-            };
-            this.updateCore(Actions.init(this.data, this.schema, this.uischema));
+            const ajv = createAjv({
+                discriminator: true,   // This is required for polymorphic types that contain defaults in their subtypes
+                useDefaults: true,     // AJV will mutate the data adding missing properties that have a "default"
+                validateFormats: false
+            });
+            this.updateCore(Actions.init(this.data, this.schema, this.uischema, ajv));
             this.config = configReducer(undefined, setConfig(this.config));
         }
 
@@ -144,7 +145,6 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
                 Actions.updateCore(this.data, this.schema, this.uischema)
             );
         }
-
 
         if (!this.contextValue
             || _changedProperties.has("core")

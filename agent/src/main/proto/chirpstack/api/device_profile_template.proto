@@ -1,0 +1,251 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/api";
+option java_package = "io.chirpstack.api";
+option java_multiple_files = true;
+option java_outer_classname = "DeviceProfileTemplateProto";
+option csharp_namespace = "Chirpstack.Api";
+option php_namespace = "Chirpstack\\Api";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Api";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "common/common.proto";
+import "api/device_profile.proto";
+
+// DeviceProfileTemplateService is the service providing API methods for managing device-profile templates.
+service DeviceProfileTemplateService {
+    // Create the given device-profile template.
+    rpc Create(CreateDeviceProfileTemplateRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            post: "/api/device-profile-templates"
+            body: "*"
+        };
+    }
+
+    // Get the device-profile template for the given ID.
+    rpc Get(GetDeviceProfileTemplateRequest) returns (GetDeviceProfileTemplateResponse) {
+        option(google.api.http) = {
+            get: "/api/device-profile-templates/{id}"
+        };
+    }
+
+    // Update the given device-profile template.
+    rpc Update(UpdateDeviceProfileTemplateRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            put: "/api/device-profile-templates/{device_profile_template.id}"
+            body: "*"
+        };
+    }
+
+    // Delete the device-profile template with the given ID.
+    rpc Delete(DeleteDeviceProfileTemplateRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            delete: "/api/device-profile-templates/{id}"
+        };
+    }
+
+    // List the available device-profile templates.
+    rpc List(ListDeviceProfileTemplatesRequest) returns (ListDeviceProfileTemplatesResponse) {
+        option(google.api.http) = {
+            get: "/api/device-profile-templates"
+        };
+    }
+}
+
+message DeviceProfileTemplate {
+    // Device-profile template ID.
+    string id = 1;
+
+    // Name.
+    string name = 2;
+
+    // Description.
+    string description = 3;
+
+    // Vendor.
+    string vendor = 4;
+
+    // Firmware.
+    string firmware = 5;
+
+    // Region.
+    common.Region region = 6; 
+
+    // LoRaWAN mac-version.
+    common.MacVersion mac_version = 7;
+
+    // Regional parameters revision.
+    common.RegParamsRevision reg_params_revision = 8;
+
+    // ADR algorithm ID.
+    string adr_algorithm_id = 9;
+
+    // Payload codec runtime.
+    CodecRuntime payload_codec_runtime = 10;
+
+    // Payload codec script.
+    string payload_codec_script = 11;
+
+    // Flush queue on device activation.
+    bool flush_queue_on_activate = 12;
+
+    // Uplink interval (seconds).
+    // This defines the expected uplink interval which the device uses for
+    // communication. When the uplink interval has expired and no uplink has
+    // been received, the device is considered inactive.
+    uint32 uplink_interval = 13;
+
+    // Device-status request interval (times / day).
+    // This defines the times per day that ChirpStack will request the device-status
+    // from the device.
+    uint32 device_status_req_interval = 14;
+
+    // Supports OTAA.
+    bool supports_otaa = 15;
+
+    // Supports Class B.
+    bool supports_class_b = 16;
+
+    // Supports Class-C.
+    bool supports_class_c = 17;
+
+    // Class-B timeout (seconds).
+    // This is the maximum time ChirpStack will wait to receive an acknowledgement from the device (if requested).
+    uint32 class_b_timeout = 18;
+
+    // Class-B ping-slot periodicity (only for Class-B).
+    // Valid options are: 0 - 7.
+    //
+    // Number of ping-slots per beacon-period:
+    // pingNb = 2^(7-periodicity)
+    //
+    // Periodicity: 0 = 128 ping-slots per beacon period = ~ every 1 sec
+    // Periodicity: 7 = 1 ping-slot per beacon period = ~ every 128 sec
+    uint32 class_b_ping_slot_periodicity = 19;
+
+    // Class-B ping-slot DR.
+    uint32 class_b_ping_slot_dr = 20;
+
+    // Class-B ping-slot freq (Hz).
+    uint32 class_b_ping_slot_freq = 21;
+
+    // Class-C timeout (seconds).
+    // This is the maximum time ChirpStack will wait to receive an acknowledgement from the device (if requested).
+    uint32 class_c_timeout = 22;
+
+    // RX1 delay (for ABP).
+    uint32 abp_rx1_delay = 23;
+
+    // RX1 DR offset (for ABP).
+    uint32 abp_rx1_dr_offset = 24;
+
+    // RX2 DR (for ABP).
+    uint32 abp_rx2_dr = 25;
+
+    // RX2 frequency (for ABP, Hz).
+    uint32 abp_rx2_freq = 26;
+
+    // User defined tags.
+    map<string, string> tags = 27;
+
+    // Measurements.
+    // If defined, ChirpStack will visualize these metrics in the web-interface.
+    map<string, Measurement> measurements = 28;
+
+    // Auto-detect measurements.
+    // If set to true, measurements will be automatically added based on the
+    // keys of the decoded payload. In cases where the decoded payload contains
+    // random keys in the data, you want to set this to false.
+    bool auto_detect_measurements = 29;
+}
+
+message DeviceProfileTemplateListItem {
+    // Device-profile template ID.
+    string id = 1;
+
+    // Created at timestamp.
+    google.protobuf.Timestamp created_at = 2;
+
+    // Last update timestamp.
+    google.protobuf.Timestamp updated_at = 3;
+
+    // Name.
+    string name = 4;
+
+    // Vendor.
+    string vendor = 5;
+
+    // Firmware.
+    string firmware = 6;
+
+    // Region.
+    common.Region region = 7; 
+
+    // LoRaWAN mac-version.
+    common.MacVersion mac_version = 8;
+
+    // Regional parameters revision.
+    common.RegParamsRevision reg_params_revision = 9;
+
+    // Supports OTAA.
+    bool supports_otaa = 10;
+
+    // Supports Class-B.
+    bool supports_class_b = 11;
+
+    // Supports Class-C.
+    bool supports_class_c = 12;
+
+}
+
+message CreateDeviceProfileTemplateRequest {
+    // Object to create.
+    DeviceProfileTemplate device_profile_template = 1;
+}
+
+message GetDeviceProfileTemplateRequest {
+    // ID.
+    string id = 1;
+}
+
+message GetDeviceProfileTemplateResponse {
+    // Device-profile template object.
+    DeviceProfileTemplate device_profile_template = 1;
+
+    // Created at timestamp.
+    google.protobuf.Timestamp created_at = 2;
+
+    // Last update timestamp.
+    google.protobuf.Timestamp updated_at = 3;
+}
+
+message UpdateDeviceProfileTemplateRequest {
+    // Object to update.
+    DeviceProfileTemplate device_profile_template = 1;
+}
+
+message DeleteDeviceProfileTemplateRequest {
+    // ID.
+    string id = 1;
+}
+
+message ListDeviceProfileTemplatesRequest {
+    // Max number of device-profile templates to return in the result-set.
+    // If not set, it will be treated as 0, and the response will only return the total_count.
+    uint32 limit = 1;
+
+    // Offset in the result-set (for pagination).
+    uint32 offset = 2;
+}
+
+message ListDeviceProfileTemplatesResponse {
+    // Total number of device-profile templates.
+    uint32 total_count = 1;
+
+    // Result-set.
+    repeated DeviceProfileTemplateListItem result = 2;
+}

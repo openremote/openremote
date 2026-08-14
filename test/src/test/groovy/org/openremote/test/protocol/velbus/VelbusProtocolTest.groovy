@@ -5,14 +5,17 @@ import org.openremote.agent.protocol.velbus.VelbusAgentLink
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetTreeNode
 import org.openremote.model.asset.agent.AgentResource
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.file.FileInfo
+import org.openremote.model.security.ClientRole
 import org.openremote.model.util.TextUtil
 import org.openremote.model.util.ValueUtil
+import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -132,7 +135,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the agent resource"
         def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
@@ -203,6 +206,135 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
             ids.addAll(Arrays.stream(assets).map{it.asset.id}.collect(Collectors.toList()))
             ids.add(agent.id)
             assetStorageService.delete(ids)
+        }
+    }
+
+    def "Check VELBUS import does not resolve external entities from local files"() {
+
+        given: "the server container is started"
+        def conditions = new PollingConditions(timeout: 60, delay: 0.5)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+        def leakedContent = "velbus-xxe-${UUID.randomUUID()}"
+        def secretFile = File.createTempFile("velbus-xxe-", ".txt")
+        secretFile.text = leakedContent
+
+        and: "an authenticated admin user"
+        def accessToken = authenticate(
+            container,
+            MASTER_REALM,
+            KEYCLOAK_CLIENT_ID,
+            MASTER_REALM_ADMIN_USER,
+            getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        )
+
+        and: "the agent resource"
+        def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
+
+        and: "a VELBUS project file with an external entity in the imported caption"
+        def velbusProjectFile = """<!DOCTYPE Project [
+<!ENTITY xxe SYSTEM "${secretFile.toURI()}">
+]>
+<Project>
+  <Modules>
+    <Module build="1537" address="01" type="VMB7IN" serial="8FDE" locked="0" layer="0" terminator="0">
+      <Caption>&xxe;</Caption>
+      <Remark></Remark>
+    </Module>
+  </Modules>
+</Project>
+"""
+
+        when: "a VELBUS agent is created"
+        def agent = new MockVelbusAgent("VELBUS")
+            .setRealm(MASTER_REALM)
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol instance for the agent should be created"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            assert ((MockVelbusProtocol)agentService.getProtocolInstance(agent.id)).messageProcessor != null
+        }
+
+        when: "the crafted project file is imported"
+        def fileInfo = new FileInfo("VelbusProject.vlp", velbusProjectFile, false)
+        AssetTreeNode[] assets = agentResource.doProtocolAssetImport(null, agent.getId(), MASTER_REALM, fileInfo)
+
+        then: "the external entity is not expanded into the imported asset name or persisted"
+        assert leakedContent.length() < 1023
+        assert assets != null
+        assert assets.length == 0
+
+        cleanup: "remove the agent, imported asset and temp file"
+        secretFile?.delete()
+        if (agent != null) {
+            assetStorageService.delete([agent.id])
+        }
+    }
+
+    def "Protocol asset import requires asset write permission"() {
+
+        given: "the server container is started"
+        def conditions = new PollingConditions(timeout: 60, delay: 0.5)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "a VELBUS project file"
+        def velbusProjectFileResource = getClass().getResourceAsStream(
+                "/org/openremote/test/protocol/velbus/VelbusProject.vlp"
+        )
+        def velbusProjectFile = IOUtils.toString(velbusProjectFileResource, "UTF-8")
+
+        and: "a master realm user with read-only asset permission"
+        keycloakTestSetup.createUser(
+                MASTER_REALM,
+                "agentimportreadonly",
+                "agentimportreadonly",
+                "Agent Import",
+                "Read Only",
+                "agentimportreadonly@openremote.local",
+                true,
+                [ClientRole.READ_ASSETS] as ClientRole[]
+        )
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                "agentimportreadonly",
+                "agentimportreadonly"
+        )
+
+        and: "the agent resource"
+        def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
+
+        when: "a VELBUS agent is created"
+        def agent = new MockVelbusAgent("VELBUS")
+                .setRealm(MASTER_REALM)
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol instance for the agent should be created"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            assert ((MockVelbusProtocol)agentService.getProtocolInstance(agent.id)).messageProcessor != null
+        }
+
+        when: "the read-only user imports assets through the agent endpoint"
+        def fileInfo = new FileInfo("VelbusProject.vlp", velbusProjectFile, false)
+        agentResource.doProtocolAssetImport(null, agent.getId(), MASTER_REALM, fileInfo)
+
+        then: "asset import should require write permission"
+        jakarta.ws.rs.ForbiddenException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+
+        cleanup: "remove the agent"
+        if (agent != null) {
+            assetStorageService.delete([agent.id])
         }
     }
 }

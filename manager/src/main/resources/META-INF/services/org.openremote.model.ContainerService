@@ -22,6 +22,7 @@ org.openremote.manager.notification.PushNotificationHandler
 org.openremote.manager.notification.EmailNotificationHandler
 org.openremote.manager.notification.LocalizedNotificationHandler
 org.openremote.manager.datapoint.AssetPredictedDatapointService
+org.openremote.manager.datapoint.ApplyPredictedDataPointsService
 org.openremote.manager.gateway.GatewayService
 org.openremote.manager.gateway.GatewayClientService
 org.openremote.manager.mqtt.MQTTBrokerService

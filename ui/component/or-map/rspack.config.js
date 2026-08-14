@@ -4,7 +4,6 @@ bundles = {
     "index": {
         vendor: {
             "maplibre-gl": "maplibre",
-            "mapbox.js": "L.mapbox",
             "moment": "moment"
         },
         excludeOr: true

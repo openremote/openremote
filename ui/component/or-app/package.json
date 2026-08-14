@@ -30,6 +30,7 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
+    "@openremote/or-vaadin-components": "workspace:*",
     "@reduxjs/toolkit": "^1.8.1",
     "@webcomponents/webcomponentsjs": "^2.6.0",
     "lit": "^3.3.1",

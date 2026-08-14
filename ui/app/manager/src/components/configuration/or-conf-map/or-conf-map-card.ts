@@ -164,7 +164,7 @@ export class OrConfMapCard extends LitElement {
                     padding: 10px 0;
                 }
 
-                .input or-mwc-input:not([icon]) {
+                .input or-vaadin-number-field {
                     width: 80%;
                 }
 
@@ -212,29 +212,29 @@ export class OrConfMapCard extends LitElement {
                     <div class="boundary-container">
                         <div class="subheader">${i18next.t("configuration.mapBounds")}</div>
                         <span>${i18next.t("configuration.mapBoundsDescription")}</span>
-                        <or-mwc-input .value="${map?.bounds[3]}" .type="${InputType.NUMBER}" .label="${i18next.t("north")}"
-                                        class="boundary-item"
-                                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(3, e.detail.value)}"
-                                        .step="${.01}"></or-mwc-input>
-                        <or-mwc-input .value="${map?.bounds[2]}" .type="${InputType.NUMBER}" .label="${i18next.t("east")}"
-                                        class="boundary-item"
-                                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(2, e.detail.value)}"
-                                        .step="${.01}"></or-mwc-input>
-                        <or-mwc-input .value="${map?.bounds[1]}" .type="${InputType.NUMBER}" .label="${i18next.t("south")}"
-                                        class="boundary-item"
-                                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(1, e.detail.value)}"
-                                        .step="${.01}"></or-mwc-input>
-                        <or-mwc-input .value="${map?.bounds[0]}" .type="${InputType.NUMBER}" .label="${i18next.t("west")}"
-                                        class="boundary-item"
-                                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(0, e.detail.value)}"
-                                        .step="${.01}"></or-mwc-input>
+                        <or-vaadin-number-field class="boundary-item" value=${map?.bounds[3]} step="0.01"
+                                                @change=${(ev: Event) => this.setBoundary(3, (ev.currentTarget as HTMLInputElement).value)}>
+                            <or-translate slot="label" value="north"></or-translate>
+                        </or-vaadin-number-field>
+                        <or-vaadin-number-field class="boundary-item" value=${map?.bounds[2]} step="0.01"
+                                                @change=${(ev: Event) => this.setBoundary(2, (ev.currentTarget as HTMLInputElement).value)}>
+                            <or-translate slot="label" value="east"></or-translate>
+                        </or-vaadin-number-field>
+                        <or-vaadin-number-field class="boundary-item" value=${map?.bounds[1]} step="0.01"
+                                                @change=${(ev: Event) => this.setBoundary(1, (ev.currentTarget as HTMLInputElement).value)}>
+                            <or-translate slot="label" value="south"></or-translate>
+                        </or-vaadin-number-field>
+                        <or-vaadin-number-field class="boundary-item" value=${map?.bounds[0]} step="0.01"
+                                                @change=${(ev: Event) => this.setBoundary(0, (ev.currentTarget as HTMLInputElement).value)}>
+                            <or-translate slot="label" value="west"></or-translate>
+                        </or-vaadin-number-field>
+                        
                         <div class="subheader">${i18next.t("configuration.center")}</div>
                         <span>${i18next.t("configuration.centerDescription")}</span>
-                        <or-mwc-input .value="${Array.isArray(map.center) ? map.center.join() : undefined}"
-                                        .type="${InputType.TEXT}" label="${i18next.t("configuration.center")}"
-                                        class="boundary-item"
-                                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCenter(e.detail.value)}"
-                                        .step="${.01}"></or-mwc-input>
+                        <or-vaadin-text-field class="boundary-item"
+                                              value=${Array.isArray(map.center) ? map.center.join() : undefined}
+                                              @change=${(ev: Event) => this.setCenter((ev.currentTarget as HTMLInputElement).value)}>
+                        </or-vaadin-text-field>
                         <div class="subheader">${i18next.t("configuration.geoJson")}</div>
                         <span>${i18next.t("configuration.geoJsonDescription")}</span>
                         <div class="input" style="height: 56px; display: flex; align-items: center;">
@@ -250,43 +250,42 @@ export class OrConfMapCard extends LitElement {
                         <div class="subheader">${i18next.t("configuration.mapZoom")}</div>
                         <span>${i18next.t("configuration.mapZoomDescription")}</span>
                         <div class="input">
-                            <or-mwc-input .value="${map.zoom}" .type="${InputType.NUMBER}" .label="${i18next.t('default')}"
-                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                map.zoom = e.detail.value;
-                                                this.notifyConfigChange(map);
-                                            }}"
-                                            .step="${1}"></or-mwc-input>
-                            <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
-                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(map.zoom)}"
-                                            .step="${1}"></or-mwc-input>
+                            <or-vaadin-number-field value=${map.zoom} step="1" min="1" max="100" step-buttons-visible
+                                                    @change=${(ev: Event) => {
+                                                        map.zoom = Number((ev.currentTarget as HTMLInputElement).value);
+                                                        this.notifyConfigChange(map);
+                                                    }}>
+                                <or-translate slot="label" value="default"></or-translate>
+                            </or-vaadin-number-field>
+                            <or-vaadin-button theme="icon" @click=${() => this.setZoom(map.zoom)}>
+                                <or-icon icon="eye" style="margin: 0;"></or-icon>
+                            </or-vaadin-button>
                         </div>
                         <div class="input">
-                            <or-mwc-input .value="${map.minZoom}" .type="${InputType.NUMBER}"
-                                            .label="${i18next.t("configuration.minZoom")}"
-                                            max="${map.maxZoom}"
-                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                map.minZoom = e.detail.value;
-                                                this.requestUpdate();
-                                                this.notifyConfigChange(map);
-                                            }}"
-                                            .step="${1}"></or-mwc-input>
-                            <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
-                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(map.minZoom)}"
-                                            .step="${1}"></or-mwc-input>
+                            <or-vaadin-number-field value=${map.minZoom} min="0" max=${map.maxZoom} step="1" step-buttons-visible
+                                                    @change=${(ev: Event) => {
+                                                        map.minZoom = Number((ev.currentTarget as HTMLInputElement).value);
+                                                        this.requestUpdate();
+                                                        this.notifyConfigChange(map);
+                                                    }}>
+                                <or-translate slot="label" value="configuration.minZoom"></or-translate>
+                            </or-vaadin-number-field>
+                            <or-vaadin-button theme="icon" @click=${() => this.setZoom(map.minZoom)}>
+                                <or-icon icon="eye" style="margin: 0;"></or-icon>
+                            </or-vaadin-button>
                         </div>
                         <div class="input">
-                            <or-mwc-input .value="${map.maxZoom}" .type="${InputType.NUMBER}"
-                                            .label="${i18next.t("configuration.maxZoom")}"
-                                            min="${map.minZoom}"
-                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                map.maxZoom = e.detail.value;
-                                                this.requestUpdate("map");
-                                                this.notifyConfigChange(map);
-                                            }}"
-                                            .step="${1}"></or-mwc-input>
-                            <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
-                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(map.maxZoom)}"
-                                            .step="${1}"></or-mwc-input>
+                            <or-vaadin-number-field value=${map.maxZoom} min=${map.minZoom} max="100" step="1" step-buttons-visible
+                                                    @change=${(ev: Event) => {
+                                                        map.maxZoom = Number((ev.currentTarget as HTMLInputElement).value);
+                                                        this.requestUpdate("map");
+                                                        this.notifyConfigChange(map);
+                                                    }}>
+                                <or-translate slot="label" value="configuration.maxZoom"></or-translate>
+                            </or-vaadin-number-field>
+                            <or-vaadin-button theme="icon" @click=${() => this.setZoom(map.maxZoom)}>
+                                <or-icon icon="eye" style="margin: 0;"></or-icon>
+                            </or-vaadin-button>
                         </div>
 
                         <div class="input" style="height: 56px;">
@@ -301,10 +300,9 @@ export class OrConfMapCard extends LitElement {
                 </div>
 
                 ${when(this.canRemove, () => html`
-                    <or-mwc-input outlined .type="${InputType.BUTTON}" id="remove-map"
-                                    label="configuration.deleteMapCustomization"
-                                    @or-mwc-input-changed="${() => { this._showRemoveMapDialog(); }}"
-                    ></or-mwc-input>
+                    <or-vaadin-button id="remove-map" @click=${() => this._showRemoveMapDialog()}>
+                        <or-translate value="configuration.deleteMapCustomization"></or-translate>
+                    </or-vaadin-button>
                 `)}
         </div>`
     }

@@ -1,0 +1,227 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/enums.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/lorawan.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// Contains metadata for a received message. Each antenna that receives
+// a message corresponds to one RxMetadata.
+message RxMetadata {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  PacketBrokerMetadata packet_broker = 18;
+  RelayMetadata relay = 23;
+
+  uint32 antenna_index = 2;
+  // Timestamp at the end of the transmission, provided by the gateway. The accuracy is undefined.
+  google.protobuf.Timestamp time = 3;
+  // Gateway concentrator timestamp when the Rx finished (microseconds).
+  uint32 timestamp = 4;
+  // Gateway's internal fine timestamp when the Rx finished (nanoseconds).
+  uint64 fine_timestamp = 5;
+  // Encrypted gateway's internal fine timestamp when the Rx finished (nanoseconds).
+  bytes encrypted_fine_timestamp = 6;
+  string encrypted_fine_timestamp_key_id = 7;
+  // Received signal strength indicator (dBm).
+  // This value equals `channel_rssi`.
+  float rssi = 8;
+  // Received signal strength indicator of the signal (dBm).
+  google.protobuf.FloatValue signal_rssi = 16;
+  // Received signal strength indicator of the channel (dBm).
+  float channel_rssi = 9;
+  // Standard deviation of the RSSI during preamble.
+  float rssi_standard_deviation = 10;
+  // Signal-to-noise ratio (dB).
+  float snr = 11;
+  // Frequency offset (Hz).
+  int64 frequency_offset = 12;
+  // Antenna location; injected by the Gateway Server.
+  Location location = 13;
+  // Gateway downlink path constraint; injected by the Gateway Server.
+  DownlinkPathConstraint downlink_path_constraint = 14 [(validate.rules).enum.defined_only = true];
+  // Uplink token to be included in the Tx request in class A downlink; injected by gateway, Gateway Server or fNS.
+  bytes uplink_token = 15;
+  // Index of the gateway channel that received the message.
+  uint32 channel_index = 17 [(validate.rules).uint32 = {lte: 255}];
+  // Hopping width; a number describing the number of steps of the LR-FHSS grid.
+  uint32 hopping_width = 19;
+  // Frequency drift in Hz between start and end of an LR-FHSS packet (signed).
+  int32 frequency_drift = 20;
+  // Timestamp at the end of the transmission, provided by the gateway.
+  // Guaranteed to be based on a GPS PPS signal, with an accuracy of 1 millisecond.
+  google.protobuf.Timestamp gps_time = 21;
+  // Timestamp at which the Gateway Server has received the message.
+  google.protobuf.Timestamp received_at = 22;
+  // Advanced metadata fields
+  // - can be used for advanced information or experimental features that are not yet formally defined in the API
+  // - field names are written in snake_case
+  google.protobuf.Struct advanced = 99;
+
+  // next: 24
+}
+
+message Location {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // The North–South position (degrees; -90 to +90), where 0 is the equator, North pole is positive, South pole is negative.
+  double latitude = 1 [(validate.rules).double = {
+    gte: -90,
+    lte: 90
+  }];
+  // The East-West position (degrees; -180 to +180), where 0 is the Prime Meridian (Greenwich), East is positive , West is negative.
+  double longitude = 2 [(validate.rules).double = {
+    gte: -180,
+    lte: 180
+  }];
+  // The altitude (meters), where 0 is the mean sea level.
+  int32 altitude = 3;
+  // The accuracy of the location (meters).
+  int32 accuracy = 4;
+  // Source of the location information.
+  LocationSource source = 5 [
+    (validate.rules).enum.defined_only = true,
+    (thethings.flags.field) = {set: false}
+  ];
+}
+
+enum LocationSource {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "SOURCE"
+  };
+
+  // The source of the location is not known or not set.
+  SOURCE_UNKNOWN = 0;
+  // The location is determined by GPS.
+  SOURCE_GPS = 1;
+  // The location is set in and updated from a registry.
+  SOURCE_REGISTRY = 3;
+  // The location is estimated with IP geolocation.
+  SOURCE_IP_GEOLOCATION = 4;
+  // The location is estimated with WiFi RSSI geolocation.
+  SOURCE_WIFI_RSSI_GEOLOCATION = 5;
+  // The location is estimated with BT/BLE RSSI geolocation.
+  SOURCE_BT_RSSI_GEOLOCATION = 6;
+  // The location is estimated with LoRa RSSI geolocation.
+  SOURCE_LORA_RSSI_GEOLOCATION = 7;
+  // The location is estimated with LoRa TDOA geolocation.
+  SOURCE_LORA_TDOA_GEOLOCATION = 8;
+  // The location is estimated by a combination of geolocation sources.
+  SOURCE_COMBINED_GEOLOCATION = 9;
+  // More estimation methods can be added.
+}
+
+message PacketBrokerMetadata {
+  // Message identifier generated by Packet Broker Router.
+  string message_id = 1;
+  // LoRa Alliance NetID of the Packet Broker Forwarder Member.
+  bytes forwarder_net_id = 2 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"000013\""
+    }
+  ];
+  // Tenant ID managed by the Packet Broker Forwarder Member.
+  string forwarder_tenant_id = 3;
+  // Forwarder Cluster ID of the Packet Broker Forwarder.
+  string forwarder_cluster_id = 4;
+  // Forwarder gateway EUI.
+  bytes forwarder_gateway_eui = 9 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+  // Forwarder gateway ID.
+  google.protobuf.StringValue forwarder_gateway_id = 10;
+  // LoRa Alliance NetID of the Packet Broker Home Network Member.
+  bytes home_network_net_id = 5 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"000013\""
+    }
+  ];
+  // Tenant ID managed by the Packet Broker Home Network Member.
+  // This value is empty if it cannot be determined by the Packet Broker Router.
+  string home_network_tenant_id = 6;
+  // Home Network Cluster ID of the Packet Broker Home Network.
+  string home_network_cluster_id = 8;
+  // Hops that the message passed. Each Packet Broker Router service appends an entry.
+  repeated PacketBrokerRouteHop hops = 7;
+}
+
+message PacketBrokerRouteHop {
+  // Time when the service received the message.
+  google.protobuf.Timestamp received_at = 1;
+  // Sender of the message, typically the authorized client identifier.
+  string sender_name = 2;
+  // Sender IP address or host name.
+  string sender_address = 3;
+  // Receiver of the message.
+  string receiver_name = 4;
+  // Receiver agent.
+  string receiver_agent = 5;
+}
+
+message RelayMetadata {
+  // End device identifiers of the relay.
+  string device_id = 1 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+  // Wake on radio channel.
+  RelayWORChannel wor_channel = 2 [(validate.rules).enum.defined_only = true];
+}

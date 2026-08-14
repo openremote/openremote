@@ -1,7 +1,7 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS,} from "lit";
 import {createSelector} from "reselect";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import manager, {DefaultColor3} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
@@ -10,10 +10,11 @@ import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {ClientRole, Realm} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
-import {Util} from "@openremote/core"
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -63,25 +64,31 @@ export class PageRealms extends Page<AppStateKeyed> {
 
         .panel {
           width: calc(100% - 90px);
-          padding: 0 20px;
           max-width: 1310px;
           background-color: white;
           border: 1px solid #e5e5e5;
           border-radius: 5px;
           position: relative;
           margin: 0 auto;
-          padding: 24px;
+          padding: 12px 24px 24px;
         }
 
         .panel-title {
+            display: flex;
+            align-items: center;
             text-transform: uppercase;
             font-weight: bolder;
             line-height: 1em;
             color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             margin-top: 0;
             flex: 0 0 auto;
             letter-spacing: 0.025em;
+            min-height: 36px;
+        }
+
+        .panel-title p {
+            margin: 0;
         }
 
 
@@ -109,12 +116,7 @@ export class PageRealms extends Page<AppStateKeyed> {
           overflow: hidden;
           max-height: 0;
           transition: max-height 0.25s ease-out;
-          padding-left: 16px;
-        }
-
-        or-mwc-input {
-            margin-bottom: 20px;
-            margin-right: 16px;
+          padding: 0 16px;
         }
 
         or-icon {
@@ -130,6 +132,7 @@ export class PageRealms extends Page<AppStateKeyed> {
             flex-direction: row;
             margin: 10px 0;
             flex: 1 1 0;
+            gap: 16px;
         }
 
         .column {
@@ -137,7 +140,7 @@ export class PageRealms extends Page<AppStateKeyed> {
             flex-direction: column;
             margin: 0px;
             flex: 1 1 0;
-            
+            gap: 16px;
         }
 
         .mdc-data-table__header-cell {
@@ -219,11 +222,33 @@ export class PageRealms extends Page<AppStateKeyed> {
 
   @property()
   protected _realms: Realm[] = [];
+  @state()
+  protected _realmFilter: (realms: Realm[]) => Realm[] = (realms) => realms;
 
   protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
 
   get name(): string {
     return "realm_plural";
+  }
+
+  protected _onRealmNameChanged(e: Event, realm: Realm): void {
+      const elem = e.currentTarget as OrVaadinTextField;
+      if(!elem.checkValidity()) {
+          console.debug("The realm name was invalid.");
+          elem.errorMessage = i18next.t("invalidRealm");
+          elem.invalid = true;
+          return;
+      }
+      const isDuplicate = this._realms.some(r => r !== realm && r.name === elem.value);
+      if(isDuplicate) {
+          console.debug("The realm name was a duplicate.");
+          elem.errorMessage = i18next.t("realmAlreadyExists");
+          elem.invalid = true;
+          return;
+      }
+      elem.invalid = false;
+      realm.name = elem.value;
+      this.requestUpdate();
   }
 
     protected getRealmState = createSelector(
@@ -269,7 +294,13 @@ export class PageRealms extends Page<AppStateKeyed> {
                 )}
                 </div>
                 <div class="panel">
-                <p class="panel-title">${i18next.t("realm_plural")}</p>
+                <div class="panel-title" style="justify-content: space-between;">
+                    <p><or-translate value="realm_plural"></or-translate></p>
+                    <or-vaadin-text-field placeholder=${i18next.t('search')} style="width: 240px;"
+                                          @input=${(ev: InputEvent) => this.onRealmSearch(ev)}>
+                        <or-icon slot="suffix" icon="magnify"></or-icon>
+                    </or-vaadin-text-field>
+                </div>
                   <div id="table-roles" class="mdc-data-table">
                   <table class="mdc-data-table__table" aria-label="realm list" >
                       <thead>
@@ -280,7 +311,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                           </tr>
                       </thead>
                       <tbody class="mdc-data-table__content">
-                      ${this._realms.map(
+                      ${this._realmFilter(this._realms).map(
                         (realm, index) => {
                        
                           return html`
@@ -304,27 +335,49 @@ export class PageRealms extends Page<AppStateKeyed> {
                                  
                                   <div class="row">
                                     <div class="column">
-                                      <or-mwc-input ?readonly="${realm.id}" .label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${realm.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.name = e.detail.value}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("loginTheme", Util.camelCaseToSentenceCase("loginTheme"))}" .type="${InputType.TEXT}" .value="${realm.loginTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.loginTheme = e.detail.value}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("resetPasswordAllowed")}" .type="${InputType.SWITCH}" min="1" .value="${realm.resetPasswordAllowed}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.resetPasswordAllowed = e.detail.value}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.enabled = e.detail.value}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("rememberMe")}" .type="${InputType.SWITCH}" min="1" .value="${realm.rememberMe}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.rememberMe = e.detail.value}"></or-mwc-input>
+                                        <or-vaadin-text-field ?readonly=${realm.id} minlength="2" maxlength="255" required manual-validation value=${realm.name}
+                                                              @change=${(ev: Event) => this._onRealmNameChanged(ev, realm)}>
+                                            <or-translate slot="label" value="realm"></or-translate>
+                                        </or-vaadin-text-field>
+                                        <or-vaadin-text-field ?readonly=${readonly} maxlength="255" value=${realm.loginTheme}
+                                                              @change=${(ev: Event) => realm.loginTheme = (ev.currentTarget as HTMLInputElement).value}>
+                                            <or-translate slot="label" value="loginTheme"></or-translate>
+                                        </or-vaadin-text-field>
+                                        <or-mwc-input ?readonly="${readonly}" label="${i18next.t("resetPasswordAllowed")}" .type="${InputType.SWITCH}" min="1" .value="${realm.resetPasswordAllowed}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.resetPasswordAllowed = e.detail.value}"></or-mwc-input>
+                                        <or-mwc-input ?readonly="${readonly}" label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.enabled = e.detail.value}"></or-mwc-input>
+                                        <or-mwc-input ?readonly="${readonly}" label="${i18next.t("rememberMe")}" .type="${InputType.SWITCH}" min="1" .value="${realm.rememberMe}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.rememberMe = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
-                                      <or-mwc-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${realm.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.displayName = e.detail.value}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("emailTheme", Util.camelCaseToSentenceCase("emailTheme"))}" .type="${InputType.TEXT}" .value="${realm.emailTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.emailTheme = e.detail.value}"></or-mwc-input>
+                                        <or-vaadin-text-field ?readonly=${readonly} minlength="1" maxlength="255" required value=${realm.displayName} error-message=${i18next.t("invalidRealm")}
+                                                              @change=${(ev: Event) => { realm.displayName = (ev.currentTarget as HTMLInputElement).value; this.requestUpdate(); }}>
+                                            <or-translate slot="label" value="displayName"></or-translate>
+                                        </or-vaadin-text-field>
+                                        <or-vaadin-text-field ?readonly=${readonly} maxlength="255" value=${realm.emailTheme}
+                                                              @change=${(ev: Event) => realm.emailTheme = (ev.currentTarget as HTMLInputElement).value}>
+                                            <or-translate slot="label" value="emailTheme"></or-translate>
+                                        </or-vaadin-text-field>
                                     </div>
                                   </div>
 
-                                  <div class="row" style="margin-bottom: 0;">
+                                  <div class="row" style="justify-content: space-between; margin-bottom: 8px;">
                                   ${realm.id && !readonly ? html`
                                       ${realm.name !== "master" && manager.isSuperUser() ? html`
-                                        <or-mwc-input label="delete" .type="${InputType.BUTTON}" .disabled="${manager.displayRealm === realm.name}" @or-mwc-input-changed="${() => this._deleteRealm(realm)}"></or-mwc-input>  
+                                          <or-vaadin-button ?disabled=${manager.displayRealm === realm.name}
+                                                            @click=${() => this._deleteRealm(realm)}>
+                                              <or-translate value="delete"></or-translate>
+                                          </or-vaadin-button>
                                       ` : ``}
-                                      <or-mwc-input style="margin-left: auto;" label="save" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRealm(realm)}"></or-mwc-input>   
+                                      <or-vaadin-button theme="primary" style="margin-left: auto;" @click=${() => this._updateRealm(realm)}>
+                                          <or-translate value="save"></or-translate>
+                                      </or-vaadin-button>
                                   ` : !readonly ? html`
-                                    <or-mwc-input label="cancel" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => {this._realms.splice(-1,1); this._realms = [...this._realms]}}"></or-mwc-input>            
-                                    <or-mwc-input style="margin-left: auto;" label="create" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._createRealm(realm)}"></or-mwc-input>   
+                                      <or-vaadin-button @click=${() => {this._realms.splice(-1,1); this._realms = [...this._realms]}}>
+                                          <or-translate value="cancel"></or-translate>
+                                      </or-vaadin-button>
+                                      <or-vaadin-button theme="primary" ?disabled=${!realm.name || !realm.displayName || this._realms.some(r => r !== realm && r.name === realm.name)}
+                                                        @click=${() => this._createRealm(realm)}>
+                                          <or-translate value="create"></or-translate>
+                                      </or-vaadin-button>
                                   `: ``}    
                                   </div>
                               </div>
@@ -335,7 +388,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                         ${this._realms.length > 0 && !!this._realms[this._realms.length -1].id && !readonly ? html`
                         <tr class="mdc-data-table__row">
                           <td colspan="100%">
-                            <a class="button" @click="${() => this._realms = [...this._realms, {displayName:"", enabled: true}]}"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("realm")}</a>
+                            <a class="button" @click="${() => this._realms = [...this._realms, {enabled: true}]}"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("realm")}</a>
                           </td>
                         </tr>
                       ` : ``}
@@ -363,35 +416,34 @@ export class PageRealms extends Page<AppStateKeyed> {
         const response = await manager.rest.api.RealmResource.update(realm.name, realm);
         if (response.status === 204) {
             showSnackbar(undefined, "saveRealmSucceeded");
+            this.dispatchEvent(new CustomEvent("realms-changed", { bubbles: true, composed: true }));
         } else {
             showSnackbar(undefined, "saveRealmFailed");
         }
-        //TODO improve this so that header realm picker is updated
-        window.location.reload();
     }
 
     private async _createRealm(realm) {
-        await manager.rest.api.RealmResource.create(realm).then(response => {
-            if (response.status === 204) {
-                showSnackbar(undefined, "saveRealmSucceeded");
-            } else {
-                showSnackbar(undefined, "saveRealmFailed");
-            }
-            //TODO improve this so that header realm picker is updated
-            window.location.reload();
-        });
+        const response = await manager.rest.api.RealmResource.create(realm);
+        if (response.status === 204) {
+            showSnackbar(undefined, "saveRealmSucceeded");
+            await this._getRealms();
+            this.dispatchEvent(new CustomEvent("realms-changed", { bubbles: true, composed: true }));
+        } else {
+            showSnackbar(undefined, "saveRealmFailed");
+        }
     }
 
     private _deleteRealm(realm: Realm) {
 
       let confirmedName = "";
-      let okBtnRef: Ref<OrMwcInput> = createRef();
+      let okBtnRef: Ref<OrVaadinButton> = createRef();
 
       const doDelete = async (dialog: OrMwcDialog) => {
         if (okBtnRef.value.disabled) return;
         try {
             await manager.rest.api.RealmResource.delete(realm.name);
             this._realms = this._realms.filter(r => r !== realm);
+            this.dispatchEvent(new CustomEvent("realms-changed", { bubbles: true, composed: true }));
         } catch (e) {
             showSnackbar(undefined, "realmDeleteFailed", "dismiss");
         }
@@ -406,7 +458,9 @@ export class PageRealms extends Page<AppStateKeyed> {
 
       const dialogContent = html`<div>
           <p style="text-align: justify; font-weight: bold;">${i18next.t("realmDeleteConfirm", {realmName: realm.name})}</p>
-          <or-mwc-input .type="${InputType.TEXT}" @input=${(ev: Event) => inputChanged((ev.target as OrMwcInput).nativeValue)} .label="${i18next.t("realm")}"></or-mwc-input>
+          <or-vaadin-text-field @input=${(ev: Event) => inputChanged((ev.currentTarget as HTMLInputElement).value)}>
+              <or-translate slot="label" value="realm"></or-translate>
+          </or-vaadin-text-field>
       </div>`;
 
       const dialogActions: DialogAction[] = [
@@ -449,9 +503,16 @@ export class PageRealms extends Page<AppStateKeyed> {
           .setDismissAction(null));
     }
 
-    private async _doDelete(realm) {
-        await manager.rest.api.RealmResource.delete(realm.realm);
-        this._realms = [...this._realms.filter(u => u.id != realm.id)];
+    protected onRealmSearch(ev: InputEvent) {
+        const value = (ev.target as HTMLInputElement).value?.toLowerCase();
+        if (!value) {
+            this._realmFilter = (realms) => realms;
+        } else {
+            this._realmFilter = (realms) => realms.filter(r =>
+                (r.name as string)?.toLowerCase().includes(value) ||
+                (r.displayName as string)?.toLowerCase().includes(value)
+            );
+        }
     }
 
     private expanderToggle(ev: MouseEvent, index:number) {

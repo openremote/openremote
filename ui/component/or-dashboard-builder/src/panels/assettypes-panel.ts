@@ -1,15 +1,36 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {AssetDescriptor, AssetModelUtil, AssetTypeInfo} from "@openremote/model";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {i18next} from "@openremote/or-translate";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {Util} from "@openremote/core";
 import {when} from "lit/directives/when.js";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {AssetTreeConfig, OrAssetTree} from "@openremote/or-asset-tree";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {ComboBoxLitRenderer, comboBoxRenderer, OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import {OrVaadinMultiSelectComboBox} from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
+import {ListItem} from "@openremote/or-vaadin-components/or-vaadin-list-box";
+import { styleMap } from "lit/directives/style-map.js";
 
 export class AssetTypeSelectEvent extends CustomEvent<string> {
 
@@ -55,7 +76,7 @@ export class AttributeNamesSelectEvent extends CustomEvent<string | string[]> {
 
     public static readonly NAME = "attributenames-select";
 
-    constructor(attributeNames: string | string[]) {
+    constructor(attributeNames: string[]) {
         super(AttributeNamesSelectEvent.NAME, {
             bubbles: true,
             composed: true,
@@ -105,7 +126,7 @@ export class AssettypesPanel extends LitElement {
     protected assetIds: undefined | string | string[];
 
     @property() // names of selected attributes; either undefined, a single entry, or multi select
-    protected attributeNames: undefined | string | string[];
+    protected attributeNames: undefined | string[];
 
     /* ----------- */
 
@@ -138,29 +159,24 @@ export class AssettypesPanel extends LitElement {
     }
 
     protected render(): TemplateResult {
+        const assetTypeItems = this.mapDescriptors(this._loadedAssetTypes) as ListItem[];
+        const selected = this.assetType ? assetTypeItems.find(i => i.value === this.assetType) : undefined;
+        const itemRenderer: ComboBoxLitRenderer<ListItem> = (listItem: ListItem) => html`
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <or-icon icon=${listItem.icon} style=${listItem.styleMap ? styleMap(listItem.styleMap) : undefined}></or-icon>
+                <span>${listItem.text}</span>
+            </div>
+        `;
         return html`
             <div style="display: flex; flex-direction: column; gap: 8px;">
 
                 <!-- Select asset type -->
-                <div>
-                    ${this._loadedAssetTypes.length > 0 ? getContentWithMenuTemplate(
-                            this.getAssetTypeTemplate(),
-                            this.mapDescriptors(this._loadedAssetTypes, {
-                                text: i18next.t("filter.assetTypeMenuNone"),
-                                value: "",
-                                icon: "selection-ellipse"
-                            }) as ListItem[],
-                            undefined,
-                            (v: string[] | string) => {
-                                this.assetType = v as string;
-                            },
-                            undefined,
-                            false,
-                            true,
-                            true,
-                            true) : html``
-                    }
-                </div>
+                <or-vaadin-combo-box .items=${assetTypeItems} .selectedItem=${selected} required item-value-path="value" item-label-path="text"
+                                     ${comboBoxRenderer(itemRenderer, [])} 
+                                     @change=${(ev: CustomEvent) => {this.assetType = (ev.currentTarget as OrVaadinComboBox).value}}>
+                    <or-icon slot="prefix" icon=${selected?.icon ?? "selection-ellipse"} style=${selected?.styleMap ? styleMap(selected.styleMap) : undefined}></or-icon>
+                    <or-translate slot="label" value="filter.assetTypeLabel"></or-translate>
+                </or-vaadin-combo-box>
 
                 <!-- Switch to include all assets of this type  -->
                 ${when(this.config.assets?.allOfTypeOption, () => {
@@ -181,31 +197,35 @@ export class AssettypesPanel extends LitElement {
                     const assetIds = (typeof this.assetIds === 'string') ? [this.assetIds] : this.assetIds;
                     const label = this.allOfType ? i18next.t("allAssets") : ((this.assetIds?.length || 0) + ' ' + i18next.t('assets'));
                     return html`
-                        <div>
-                            <or-mwc-input .type="${InputType.BUTTON}" label="${label}" .disabled="${!this.assetType || this.allOfType}" fullWidth outlined comfortable style="width: 100%;"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._openAssetSelector(this.assetType!, assetIds, this.config.assets?.multi)}"
-                            ></or-mwc-input>
-                        </div>
+                        <or-vaadin-button ?disabled=${!this.assetType || this.allOfType} @click=${() => this._openAssetSelector(this.assetType!, assetIds, this.config.assets?.multi)}>
+                            <span>${label}</span>
+                        </or-vaadin-button>
                     `;
                 })}
 
                 <!-- Select one or more attributes -->
                 ${when(this.config.attributes?.enabled, () => {
-                    const options: [string, string][] = this._attributeSelectList.map(al => [al[0], al[1]]);
-                    const searchProvider: (search?: string) => Promise<[any, string][]> = async (search) => {
-                        return search ? options.filter(o => o[1].toLowerCase().includes(search.toLowerCase())) : options;
-                    };
-                    return html`
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t("filter.attributeLabel")}" .disabled="${!this.assetType}" style="width: 100%;"
-                                          .options="${options}" .searchProvider="${searchProvider}" .multiple="${this.config.attributes?.multi}" .value="${this.attributeNames as string}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                              this.attributeNames = ev.detail.value;
-                                          }}"
-                            ></or-mwc-input>
-                        </div>
-                    `
-
+                    const options = this._attributeSelectList?.map(al => ({key: al[0], value: al[1]})) ?? [];
+                    const selectedItems = this.attributeNames?.map(n => options.find(o => o.key === n)) ?? [];
+                    if(this.config.attributes?.multi) {
+                        return html`
+                            <or-vaadin-multi-select-combo-box .items=${options} .selectedItems=${selectedItems} item-value-path="key" item-label-path="value"
+                                                              ?disabled=${!this.assetType} @change=${(ev: CustomEvent) => {
+                                                                  this.attributeNames = (ev.currentTarget as OrVaadinMultiSelectComboBox).selectedItems.map(i => i.key);
+                                                              }}>
+                                <or-translate slot="label" value="filter.attributeLabel"></or-translate>
+                            </or-vaadin-multi-select-combo-box>
+                        `;
+                    } else {
+                       return html`
+                           <or-vaadin-combo-box .items=${options} .selectedItem=${selectedItems[0]} item-value-path="key" item-label-path="value"
+                                                ?disabled=${!this.assetType} @change=${(ev: CustomEvent) => {
+                                                    this.attributeNames = [(ev.currentTarget as OrVaadinComboBox).value];
+                                                }}>
+                               <or-translate slot="label" value="filter.attributeLabel"></or-translate>
+                           </or-vaadin-combo-box>
+                       `;
+                    }
                 })}
             </div>
         `;
@@ -214,42 +234,11 @@ export class AssettypesPanel extends LitElement {
 
     /* ----------- */
 
-    protected getAssetTypeTemplate(): TemplateResult {
-        if (this.assetType) {
-            const descriptor: AssetDescriptor | undefined = this._loadedAssetTypes.find((at: AssetDescriptor) => at.name === this.assetType);
-            if (descriptor) {
-                return this.getSelectedHeader(descriptor);
-            } else {
-                return this.getSelectHeader();
-            }
-        } else {
-            return this.getSelectHeader();
-        }
-    }
-
-    protected getSelectHeader(): TemplateResult {
-        return html`
-            <or-mwc-input style="width:100%;" type="${InputType.TEXT}" readonly .label="${i18next.t("filter.assetTypeLabel")}"
-                          iconTrailing="menu-down" iconColor="rgba(0, 0, 0, 0.87)" icon="selection-ellipse"
-                          value="${i18next.t("filter.assetTypeNone")}">
-            </or-mwc-input>
-        `;
-    }
-
-    protected getSelectedHeader(descriptor: AssetDescriptor): TemplateResult {
-        return html`
-            <or-mwc-input style="width:100%;" type="${InputType.TEXT}" readonly .label="${i18next.t("filter.assetTypeLabel")}"
-                          .iconColor="${descriptor.colour}" iconTrailing="menu-down" icon="${descriptor.icon}"
-                          value="${Util.getAssetTypeLabel(descriptor)}">
-            </or-mwc-input>
-        `;
-    }
-
     protected mapDescriptors(descriptors: AssetDescriptor[], withNoneValue?: ListItem): ListItem[] {
         const items: ListItem[] = descriptors.map((descriptor) => {
             return {
                 styleMap: {
-                    "--or-icon-fill": descriptor.colour ? "#" + descriptor.colour : "unset"
+                    "color": descriptor.colour ? "#" + descriptor.colour : "unset"
                 },
                 icon: descriptor.icon,
                 text: Util.getAssetTypeLabel(descriptor),

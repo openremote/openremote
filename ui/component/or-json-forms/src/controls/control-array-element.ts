@@ -11,12 +11,13 @@ import {
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFromProps, showJsonEditor} from "../util";
-import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
+import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import "@openremote/or-vaadin-components/or-vaadin-button";
 import {DefaultColor4, DefaultColor5} from "@openremote/core";
 import {ControlBaseElement} from "./control-base-element";
 import {getTemplateWrapper} from "../index";
@@ -76,6 +77,22 @@ const style = css`
     
     .drag-container > button {
         cursor: grab;
+    }
+
+    #content-wrapper {
+        overflow: auto;
+    }
+
+    [slot="header"] {
+        display: flex;
+        min-width: 0; /* Allows slotted element to shrink */
+        & span {
+            align-content: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            word-break: break-all;
+        }
     }
 `;
 
@@ -142,12 +159,19 @@ export class ControlArrayElement extends ControlBaseElement {
         const itemCount = Array.isArray(this.data) ? (this.data as []).length : 0;
 
         const header = this.minimal ? `` : html`
-            <span slot="header">${this.label ? computeLabel(this.label, this.required, false) : ""}</span>
+            <div slot="header">
+                <span>${this.label ? computeLabel(this.label, this.required, false) : ""}</span>
+            </div>
             <div id="header-description" slot="header-description">
                 <div id="errors">
                     ${!this.errors ? `` : html`<or-icon icon="alert"></or-icon><span>${this.errors}</span>`}
                 </div>
-                <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined label="json" icon="pencil" @or-mwc-input-changed="${(ev: Event) => this._showJson(ev)}"></or-mwc-input></div>
+                <div id="header-buttons">
+                    <or-vaadin-button @click=${(ev: Event) => this._showJson(ev)}>
+                        <or-icon slot="prefix" icon="pencil"></or-icon>
+                        <or-translate value="JSON"></or-translate>
+                    </or-vaadin-button>
+                </div>
             </div>
         `;
 
@@ -173,7 +197,10 @@ export class ControlArrayElement extends ControlBaseElement {
                 </div>
                 ${this.errors ? `` : html`
                     <div id="footer">
-                        <or-mwc-input .disabled="${itemCount && itemCount >= maxItems}" .type="${InputType.BUTTON}" label="addItem" icon="plus" @or-mwc-input-changed="${() => this.doAddItem()}"></or-mwc-input>
+                        <or-vaadin-button ?disabled=${itemCount && itemCount >= maxItems} @click=${() => this.doAddItem()}>
+                            <or-icon slot="prefix" icon="plus"></or-icon>
+                            <or-translate value="addItem"></or-translate>
+                        </or-vaadin-button>
                     </div>
                 `}
             </div>
@@ -293,7 +320,7 @@ export class ControlArrayElement extends ControlBaseElement {
             selectedItemInfo = itemInfo;
             const descElem = dialog.shadowRoot!.getElementById("parameter-desc") as HTMLDivElement;
             descElem.innerHTML = itemInfo.description || "";
-            (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = false;
+            (dialog.shadowRoot!.getElementById("add-btn") as OrVaadinButton).disabled = false;
         };
 
         const dialog = showDialog(new OrMwcDialog()
@@ -323,7 +350,11 @@ export class ControlArrayElement extends ControlBaseElement {
                             this.addItem(value);
                         }
                     },
-                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"></or-mwc-input>`
+                    content: html`
+                        <or-vaadin-button id="add-btn" disabled>
+                            <or-translate value="add"></or-translate>
+                        </or-vaadin-button>
+                    `
                 }
             ])
             .setDismissAction(null));

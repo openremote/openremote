@@ -1,0 +1,9 @@
+volumeSize: "16Gi"
+
+resources:
+  limits:
+    cpu: 2500m
+    memory: 6Gi
+  requests:
+    cpu: 2500m
+    memory: 6Gi

@@ -1,18 +1,18 @@
-import {css, html, LitElement, unsafeCSS} from "lit";
+import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor, AssetModelUtil} from "@openremote/model";
-import "@openremote/or-mwc-components/or-mwc-input";
 import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";
-import {
-    createListGroup,
-    ListGroupItem,
-    ListItem,
-    OrMwcList,
-    OrMwcListChangedEvent
-} from "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
-import {DefaultColor3, DefaultColor5, Util} from "@openremote/core";
-import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {ifDefined} from "lit/directives/if-defined.js";
+import {styleMap} from "lit/directives/style-map.js";
+import "@openremote/or-vaadin-components/or-vaadin-list-box";
+import "@openremote/or-vaadin-components/or-vaadin-item";
+import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import {OrVaadinListBox, ListItem} from "@openremote/or-vaadin-components/or-vaadin-list-box";
+import { when } from "lit/directives/when.js";
+import {DefaultColor2, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
+import debounce from "lodash.debounce";
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -65,19 +65,22 @@ export class OrAddAssetDialog extends LitElement {
     @property({attribute: false})
     selectedChildAssetType: string = "";
 
+    @property({type: String})
+    private typeFilter: string = "";
+
     public name: string = "New Asset";
 
     @query("#name-input")
-    protected nameInput!: OrMwcInput;
+    protected nameInput!: OrVaadinTextField;
 
     @query("#agent-list")
-    protected agentList?: OrMwcList;
+    protected agentList?: OrVaadinListBox;
 
     @query("#asset-list")
-    protected assetList?: OrMwcList;
+    protected assetList?: OrVaadinListBox;
 
-    @query("#parent-asset-list")
-    protected parentAssetList?: OrMwcList;
+    @query("#filterInput")
+    private _filterInput!: OrVaadinTextField;
 
     public static get styles() {
         // language=CSS
@@ -96,7 +99,6 @@ export class OrAddAssetDialog extends LitElement {
 
             #toggle-parent-selector,
             #remove-parent {
-                flex: 0 0 50px;
                 margin: 4px 0 0 5px;
             }
 
@@ -107,6 +109,7 @@ export class OrAddAssetDialog extends LitElement {
 
             #parent-wrapper {
                 display: flex;
+                align-items: end;
             }
 
             #parent {
@@ -120,7 +123,7 @@ export class OrAddAssetDialog extends LitElement {
             
             #mdc-dialog-form-add {
                 display: flex;
-                height: 100%;
+                height: 600px;
                 max-height: 600px;
                 width: 1000px;
             }
@@ -143,10 +146,24 @@ export class OrAddAssetDialog extends LitElement {
                 font-size: 16px;
             }
 
+            #type-list-filter {
+                padding: 7px;
+                background-color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)}))
+            }
+            
+            #filterInput{
+                width: 100%;
+            }
+
             #type-list {
-                width: 260px;
                 overflow: auto;
                 text-transform: capitalize;
+            }
+
+            #type-list-container {
+                display: flex;
+                flex-direction: column;
+                width: 300px;
                 border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
             }
 
@@ -208,32 +225,46 @@ export class OrAddAssetDialog extends LitElement {
 
         const agentItems = mapDescriptors(this.agentTypes);
         const assetItems = mapDescriptors(this.assetTypes);
-        const lists: ListGroupItem[] = [];
-        if (agentItems.length > 0) {
-            lists.push(
-                {
-                    heading: i18next.t("agents"),
-                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(true, evt.detail[0] as ListItem); }}" .listItems="${agentItems}" id="agent-list"></or-mwc-list>`
-                }
-            );
-        }
-        if (assetItems.length > 0) {
-            lists.push(
-                {
-                    heading: i18next.t("assets"),
-                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}" .listItems="${assetItems}" id="asset-list"></or-mwc-list>`
-                }
-            );
-        }
+        const searchProvider = (item: ListItem) => (item.text ?? "").toLowerCase().includes(this.typeFilter.toLowerCase());
+        const filteredAgentItems = agentItems.filter(searchProvider);
+        const filteredAssetItems = assetItems.filter(searchProvider);
+        
+        const getListTemplate = (items: ListItem[], isAgent = false): TemplateResult => html`
+            <or-vaadin-list-box id="${isAgent ? "agent-list" : "asset-list"}" style="padding: var(--lumo-space-s) 0;"
+                                @selected-changed=${(ev: CustomEvent) => this.onTypeChanged(isAgent, items[ev.detail.value])}>
+                <b style="padding: 0 var(--lumo-space-s);"><or-translate value=${isAgent ? "agents" : "assets"}></or-translate></b>
+                ${items.map(item => html`
+                    <or-vaadin-item style=${styleMap(item.styleMap ?? {})}>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <or-icon icon=${ifDefined(item.icon)}></or-icon>
+                            <span style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                                ${item.text ?? item.value ?? html`<or-translate value="unknown"></or-translate>`}
+                            </span>
+                        </div>
+                    </or-vaadin-item>
+                `)}
+            </or-vaadin-list-box>
+        `;
 
         const parentStr = this.parent ? this.parent.name + " (" + this.parent.id + ")" : i18next.t("none");
 
         return html`
             <div class="col" style="height: 100%;">
                 <form id="mdc-dialog-form-add" class="row">
-                    <div id="type-list" class="col">
-                        ${createListGroup(lists)}
+                    <div id="type-list-container" class="col">
+                        <div id="type-list-filter">
+                            <or-vaadin-text-field id="filterInput" placeholder=${i18next.t("search")}
+                                                  @input=${debounce(() => this.typeFilter = this._filterInput.value ?? "", 200)}>
+                                <or-icon slot="suffix" icon="magnify"></or-icon>
+                            </or-vaadin-text-field>
+                        </div>
+                        <div id="type-list">
+                            ${when(agentItems.length > 0, () => getListTemplate(filteredAgentItems, true))}
+                            <hr style="color: white;" />
+                            ${when(assetItems.length > 0, () => getListTemplate(filteredAssetItems, false))}
+                        </div>
                     </div>
+
                     <div id="asset-type-option-container" class="col">
                         ${!this.selectedType 
                         ? html`<div class="msg"><or-translate value="noAssetTypeSelected"></or-translate></div>`
@@ -264,11 +295,23 @@ export class OrAddAssetDialog extends LitElement {
                 <or-translate id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
             </div>
             <div id="name-wrapper">
-                <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" required .label="${i18next.t("name")}" .value="${this.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-mwc-input>
+                <or-vaadin-text-field id="name-input" minlength="1" maxlength="1023" required value=${this.name}
+                                     @change=${(ev: Event) => {
+                                         const elem = ev.currentTarget as OrVaadinTextField;
+                                         if(elem.checkValidity()) this.onNameChanged(elem.value);
+                                     }}>
+                    <or-translate slot="label" value="name"></or-translate>
+                </or-vaadin-text-field>
                 <div id="parent-wrapper">
-                    <or-mwc-input id="parent" .type="${InputType.TEXT}" readonly .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
-                    <or-mwc-input id="remove-parent" ?disabled="${!this.parent}" type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => this._onDeselectClicked()}"></or-mwc-input>
-                    <or-mwc-input id="toggle-parent-selector" icon="${this.showParentAssetSelector ? "pencil-off" : "pencil"}" type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
+                    <or-vaadin-text-field id="parent" readonly value=${parentStr}>
+                        <or-translate slot="label" value="parent"></or-translate>
+                    </or-vaadin-text-field>
+                    <or-vaadin-button id="remove-parent" theme="icon" ?disabled=${!this.parent} @click=${() => this._onDeselectClicked()}>
+                        <or-icon icon="close"></or-icon>
+                    </or-vaadin-button>
+                    <or-vaadin-button id="toggle-parent-selector" theme="icon" @click=${() => this._onToggleParentAssetSelector()}>
+                        <or-icon icon=${this.showParentAssetSelector ? "pencil-off" : "pencil"}></or-icon>
+                    </or-vaadin-button>
                 </div>
             </div>
             
@@ -276,12 +319,11 @@ export class OrAddAssetDialog extends LitElement {
                 ? html``
                 : html`
                     <div>
-                        <div class="heading">${i18next.t("attribute_plural")}</div>
+                        <div class="heading"><or-translate value="attribute_plural"></or-translate></div>
                         <div style="display: grid">
                             ${attributes.sort(Util.sortByString((attribute) => attribute.name!))
                                 .map(attribute => html`
-                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
-                                                  .disabled="${true}" .value="${true}"></or-mwc-input>
+                                    <or-vaadin-checkbox readonly checked label=${Util.getAttributeLabel(undefined, attribute, undefined, true)}></or-vaadin-checkbox>
                             `)}
                         </div>
                     `}
@@ -291,14 +333,19 @@ export class OrAddAssetDialog extends LitElement {
                 : html`
                     <div>
                         <div class="heading">${i18next.t("optional_attributes")}</div>
-                        <div style="display: grid">
+                        <or-vaadin-checkbox-group theme="vertical" .value=${this.selectedAttributes.map(attr => attr.name)}>
                             ${optionalAttributes.sort(Util.sortByString((attribute) => attribute.name!))
-                                .map(attribute => html`
-                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
-                                                  .value="${this.selectedAttributes.find((selected) => selected === attribute)}"
-                                                  @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
-                            `)}
-                        </div>
+                                .map(attribute => {
+                                    return html`
+                                    <or-vaadin-checkbox value=${attribute.name} label=${Util.getAttributeLabel(undefined, attribute, undefined, true)}
+                                                        @change=${(ev: Event) => (ev.currentTarget as OrVaadinCheckbox).checked
+                                            ? this.selectedAttributes.push(attribute)
+                                            : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s.name === attribute.name), 1)
+                                    }>
+                                    </or-vaadin-checkbox>
+                                `
+                                })}
+                        </or-vaadin-checkbox-group>
                     </div>
                 `} 
         `;
@@ -318,7 +365,7 @@ export class OrAddAssetDialog extends LitElement {
         // Deselect other list selection
         const otherList = isAgent ? this.assetList : this.agentList;
         if (otherList) {
-            otherList.values = undefined;
+            otherList.selected = undefined;
         }
         this.onModified();
     };

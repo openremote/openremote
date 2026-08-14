@@ -79,7 +79,7 @@ public class RulesFacts extends Facts implements RuleListener {
         this.loggingContext = loggingContext;
         this.LOG = logger;
 
-        super.put(ASSET_STATES, new ArrayDeque<AttributeInfo>(INITIAL_CAPACITY));
+        super.put(ASSET_STATES, new HashSet<>(INITIAL_CAPACITY));
         super.put(EXECUTION_VARS, new HashMap<>());
         super.put(ANONYMOUS_FACTS, new ArrayDeque<>(INITIAL_CAPACITY));
     }
@@ -500,7 +500,7 @@ public class RulesFacts extends Facts implements RuleListener {
         boolean reverse = orderBy.descending;
 
         keyExtractor = switch (orderBy.property) {
-            case CREATED_ON -> assetState -> Long.toString(assetState.getCreatedOn().getTime());
+            case CREATED_ON -> assetState -> Long.toString(assetState.getCreatedOn().toEpochMilli());
             case ASSET_TYPE -> AttributeInfo::getAssetType;
             case PARENT_ID -> AttributeInfo::getParentId;
             case REALM -> AttributeInfo::getRealm;

@@ -28,7 +28,7 @@ import i18next from "i18next";
 import Qs from "qs";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
-import {transform} from "lodash";
+import transform from "lodash.transform";
 
 export class Deferred<T> {
 
@@ -537,20 +537,20 @@ export function hasMetaItem(name: string | NameHolder, attribute: Attribute<any>
     return false;
 }
 
-export function isPrimitiveMetaItem(descriptor: ValueDescriptor | undefined): boolean {
-    return !isComplexMetaItem(descriptor);
+export function isPrimitiveValueDescriptor(descriptor: ValueDescriptor | undefined): boolean {
+    return !isComplexValueDescriptor(descriptor);
 }
 
-export function isComplexMetaItem(descriptor: ValueDescriptor | undefined): boolean {
+export function isComplexValueDescriptor(descriptor: ValueDescriptor | undefined): boolean {
     return Boolean(descriptor?.jsonType === "object" || descriptor?.arrayDimensions && descriptor.arrayDimensions > 0);
 }
 
 export function getPrimitiveMetaItems(): MetaItemDescriptor[] {
-    return AssetModelUtil.getMetaItemDescriptors().filter(m => isPrimitiveMetaItem(AssetModelUtil.getValueDescriptor(m.type)));
+    return AssetModelUtil.getMetaItemDescriptors().filter(m => isPrimitiveValueDescriptor(AssetModelUtil.getValueDescriptor(m.type)));
 }
 
 export function getComplexMetaItems(): MetaItemDescriptor[] {
-    return AssetModelUtil.getMetaItemDescriptors().filter(m => isComplexMetaItem(AssetModelUtil.getValueDescriptor(m.type)));
+    return AssetModelUtil.getMetaItemDescriptors().filter(m => isComplexValueDescriptor(AssetModelUtil.getValueDescriptor(m.type)));
 }
 
 export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): string {
@@ -969,7 +969,7 @@ function doStandardTranslationLookup(lookup: WellknownMetaItems.LABEL | Wellknow
 /**
  * Immutable update of an asset using the supplied attribute event
  */
-export function updateAsset(asset: Asset, event: AttributeEvent): Asset {
+export function updateAsset<T extends Asset>(asset: T, event: AttributeEvent): T {
 
     const attributeName = event.ref!.name!;
 
@@ -1063,4 +1063,18 @@ export function blobToBase64(blob:Blob) {
             reject(error);
         };
     });
+}
+
+/**
+ * Generates a 36 character UUID using the crypto API. https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID
+ * As a fallback, in case an insecure browser context is used, we use `getRandomValues` and change it into UUIDv4.
+ */
+export function generateUniqueUUID(): string {
+    if (typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+    }
+    // Fallback for insecure contexts
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+      (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16)
+    );
 }

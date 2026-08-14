@@ -1,0 +1,110 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/timestamp.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/rights.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message OAuthClientAuthorizationIdentifiers {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  ClientIdentifiers client_ids = 2 [(validate.rules).message.required = true];
+}
+
+message OAuthClientAuthorization {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  ClientIdentifiers client_ids = 2 [(validate.rules).message.required = true];
+  repeated Right rights = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message OAuthClientAuthorizations {
+  repeated OAuthClientAuthorization authorizations = 1;
+}
+
+message ListOAuthClientAuthorizationsRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 2 [(validate.rules).string = {
+    in: [
+      "",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 3 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 4;
+}
+
+message OAuthAuthorizationCode {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  string user_session_id = 9 [(validate.rules).string.max_len = 64];
+  ClientIdentifiers client_ids = 2 [(validate.rules).message.required = true];
+  repeated Right rights = 3;
+  string code = 4;
+  string redirect_uri = 5 [(validate.rules).string.uri_ref = true];
+  string state = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp expires_at = 8;
+}
+
+message OAuthAccessTokenIdentifiers {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  ClientIdentifiers client_ids = 2 [(validate.rules).message.required = true];
+  string id = 3;
+}
+
+message OAuthAccessToken {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  string user_session_id = 9 [(validate.rules).string.max_len = 64];
+  ClientIdentifiers client_ids = 2 [(validate.rules).message.required = true];
+  string id = 3;
+  string access_token = 4;
+  string refresh_token = 5;
+  repeated Right rights = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp expires_at = 8;
+}
+
+message OAuthAccessTokens {
+  repeated OAuthAccessToken tokens = 1;
+}
+
+message ListOAuthAccessTokensRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  ClientIdentifiers client_ids = 2 [(validate.rules).message.required = true];
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 3 [(validate.rules).string = {
+    in: [
+      "",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 4 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 5;
+}

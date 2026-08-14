@@ -21,7 +21,7 @@ yarn add @openremote/theme
 ### Using JavaScript / TypeScript:
 Note: using the `<style>` tag is an example here. Please check the documentation of your JavaScript bundler for proper installation of CSS files.
 ```typescript
-import themeCss from "@openremote/theme/default.css";
+import themeCss from "@openremote/theme";
 
 // Apply theme to the app
 const style = document.createElement("style");

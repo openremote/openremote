@@ -34,9 +34,10 @@ export class OrMapLegend extends LitElement {
     @property({ type: Array })
     public assetTypes: string[] = [];
 
-    protected _assetTypesInfo: any;
+    @property({ type: Array })
+    public excludedTypes: string[] = [];
 
-    protected _excludedTypes: string[] = [];
+    protected _assetTypesInfo: any;
 
     @query("#legend-content")
     protected _showLegend?: HTMLDivElement;
@@ -77,7 +78,7 @@ export class OrMapLegend extends LitElement {
                 <div id="legend-content" hidden>
                     <ul>
                         ${this.assetTypes.map(
-                            (assetType) => html` <li id="asset-legend" data-asset-type="${assetType}" style="display: flex;">
+                            (assetType) => html`<li id="asset-legend" data-asset-type="${assetType}" style="display: flex;">
                                 <or-icon
                                     icon="${this._assetTypesInfo[assetType].icon}"
                                     style="color: #${this._assetTypesInfo[assetType].color}"
@@ -85,14 +86,15 @@ export class OrMapLegend extends LitElement {
                                 <span id="asset-label" style="flex: 1">${this._assetTypesInfo[assetType].label}</span>
                                 <or-mwc-input
                                     .type="${InputType.CHECKBOX}"
-                                    .value="${!this._excludedTypes.includes(assetType)}"
+                                    .value="${!this.excludedTypes.includes(assetType)}"
                                     @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                         if (ev.detail.value) {
-                                            this._excludedTypes.splice(this._excludedTypes.indexOf(assetType), 1);
+                                            this.excludedTypes.splice(this.excludedTypes.indexOf(assetType), 1);
                                         } else {
-                                            this._excludedTypes.push(assetType);
+                                            this.excludedTypes.push(assetType);
                                         }
-                                        this.dispatchEvent(new OrMapLegendEvent(this._excludedTypes));
+                                        this.requestUpdate();
+                                        this.dispatchEvent(new OrMapLegendEvent(this.excludedTypes));
                                     }}"
                                 ></or-mwc-input>
                             </li>`

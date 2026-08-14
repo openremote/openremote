@@ -54,6 +54,8 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
         " you want to connect this to a Boolean attribute")
     @JsonSchemaSupplier(supplier = SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     protected Map<String, Object> valueConverter;
+    @JsonSchemaDescription("Similar to valueFilter but will be applied to outgoing values allowing for inverse filtering.")
+    protected ValueFilter[] writeValueFilters;
     @JsonSchemaDescription("Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion")
     @JsonSchemaSupplier(supplier = SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     protected Map<String, Object> writeValueConverter;
@@ -113,6 +115,16 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     @SuppressWarnings("unchecked")
     public T setValueConverter(Map<String, Object> valueConverter) {
         this.valueConverter = valueConverter;
+        return (T) this;
+    }
+
+    public Optional<ValueFilter[]> getWriteValueFilters() {
+        return Optional.ofNullable(writeValueFilters);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setWriteValueFilters(ValueFilter[] writeValueFilters) {
+        this.writeValueFilters = writeValueFilters;
         return (T) this;
     }
 

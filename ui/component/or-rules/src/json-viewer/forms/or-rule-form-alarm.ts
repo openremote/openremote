@@ -20,7 +20,6 @@
 import {html, LitElement, css} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {
     RuleActionAlarm,
     Alarm,
@@ -28,6 +27,7 @@ import {
 } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import {i18next} from "@openremote/or-translate";
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
 
 @customElement("or-rule-form-alarm")
 export class OrRuleFormAlarm extends LitElement {
@@ -40,7 +40,10 @@ export class OrRuleFormAlarm extends LitElement {
 
     static get styles() {
         return css`
-            or-mwc-input {
+            #form-container {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
                 margin-bottom: 20px;
                 min-width: 420px;
                 width: 100%;
@@ -56,19 +59,24 @@ export class OrRuleFormAlarm extends LitElement {
         options.unshift({value: undefined, label: i18next.t("none")})
         
         return html`
-            <form style="display:grid">
-                <or-mwc-input value="${alarm && alarm.title ?  alarm.title : ""}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAlarmName(e.detail.value, "title")}" .label="title" type="${InputType.TEXT}" required placeholder=" "></or-mwc-input>
-                <or-mwc-input value="${alarm && alarm.content ? alarm.content : ""}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAlarmName(e.detail.value, "content")}" .label=content" type="${InputType.TEXTAREA}" required placeholder=" " ></or-mwc-input>
-                <or-mwc-input .label="${i18next.t("alarm.assignee")}"
-                              .type="${InputType.SELECT}"
-                              .options="${options.map((obj) => obj.label)}"
-                              .value="${this.action.assigneeId ? options.filter((obj) => obj.value === this.action.assigneeId).map((obj) => obj.label)[0] : ""}"
-                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                    this.action.assigneeId = options.filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0];
-                                    this.setActionAlarmName(e.detail.value, undefined);
-                                }}"
-                ></or-mwc-input> 
-            </form>
+            <div id="form-container">
+                <or-vaadin-text-field value=${alarm?.title} required
+                                      @change=${(ev: Event) => this.setActionAlarmName((ev.currentTarget as HTMLInputElement).value, "title")}>
+                    <or-translate slot="label" value="alarm.title"></or-translate>
+                </or-vaadin-text-field>
+                <or-vaadin-text-area value=${alarm?.content} required style="min-height: 200px;"
+                                     @change=${(ev: Event) => this.setActionAlarmName((ev.currentTarget as HTMLInputElement).value, "content")}>
+                    <or-translate slot="label" value="alarm.content"></or-translate>
+                </or-vaadin-text-area>
+                <or-vaadin-select value=${this.action.assigneeId} required .items=${options}
+                                  @change=${(ev: Event) => {
+                                      const value = (ev.currentTarget as OrVaadinSelect).value;
+                                      this.action.assigneeId = value;
+                                      this.setActionAlarmName(value, undefined);
+                                  }}>
+                    <or-translate slot="label" value="alarm.assignee"></or-translate>
+                </or-vaadin-select>
+            </div>
         `
     }
 

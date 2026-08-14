@@ -19,7 +19,7 @@
  */
 package org.openremote.model.asset;
 
-import java.util.Date;
+import java.time.Instant;
 
 public interface AssetInfo {
 
@@ -39,5 +39,5 @@ public interface AssetInfo {
 
     Class<? extends Asset> getAssetClass();
 
-    Date getCreatedOn();
+    Instant getCreatedOn();
 }

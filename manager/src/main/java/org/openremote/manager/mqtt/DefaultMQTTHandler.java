@@ -26,10 +26,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
-import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.PersistenceEvent;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.asset.UserAssetLink;
@@ -41,19 +41,20 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
 import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
-import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
@@ -74,13 +75,13 @@ public class DefaultMQTTHandler extends MQTTHandler {
     // TODO: Switch to caffeine library once ActiveMQ has migrated
     protected final Cache<String, ConcurrentHashSet<String>> authorizationCache = CacheBuilder.newBuilder()
         .maximumSize(100000)
-        .expireAfterWrite(300000, TimeUnit.MILLISECONDS)
+        .expireAfterWrite(Duration.ofMillis(300000))
         .build();
 
 
     // Intermediary cache for authorized event subscriptions created during the canSubscribe method to be used later in the onSubscribe method
     protected final Cache<String, EventSubscription<?>> eventSubscriptionCache = CacheBuilder.newBuilder()
-        .expireAfterWrite(30000, TimeUnit.MILLISECONDS)
+        .expireAfterWrite(Duration.ofMillis(30000))
         .build();
 
     @Override
@@ -130,17 +131,15 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canSubscribe(RemotingConnection connection, AuthContext authContext, Topic topic) {
 
         if (!isKeycloak) {
             LOG.finest("Identity provider is not keycloak");
             return false;
         }
 
-        AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
-
         if (authContext == null) {
-            LOG.finest("Anonymous connection not supported: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+            LOG.finest("Anonymous connection not supported: topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
 
@@ -154,18 +153,18 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
         if (isAssetTopic) {
             if (topic.getTokens().length < 4 || topic.getTokens().length > 5) {
-                LOG.finest("Asset subscribe token count should be 4 or 5: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                LOG.finest("Asset subscribe token count should be 4 or 5: topic=" + topic + ", " + connectionToString(connection));
                 return false;
             }
             if (topic.getTokens().length == 4) {
-                if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))
+                if (!Asset.matchesAssetIdPattern(topicTokenIndexToString(topic, 3))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))) {
                     LOG.fine("Asset subscribe forth token must be an asset ID or wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().length == 5) {
-                if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))) {
+                if (!Asset.matchesAssetIdPattern(topicTokenIndexToString(topic, 3))) {
                     LOG.fine("Asset subscribe forth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
@@ -186,14 +185,14 @@ public class DefaultMQTTHandler extends MQTTHandler {
                     LOG.fine("Attribute subscribe multi level wildcard must be last token: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
-                if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))
+                if (!Asset.matchesAssetIdPattern(topicTokenIndexToString(topic, 4))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))) {
                     LOG.fine("Attribute subscribe fifth token must be an asset ID or a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().length == 6) {
-                if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
+                if (!Asset.matchesAssetIdPattern(topicTokenIndexToString(topic, 4))) {
                     LOG.fine("Attribute subscribe fifth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
@@ -232,14 +231,12 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     // We make heavy use of authorisation caching as clients can hit this a lot and it is currently quite slow with DB calls
     @Override
-    public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canPublish(RemotingConnection connection, AuthContext authContext, Topic topic) {
 
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
         }
-
-        AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
 
         if (authContext == null) {
             LOG.finer("Anonymous publish not supported: topic=" + topic + ", connection=" + connectionToString(connection));
@@ -247,7 +244,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         }
 
         if (isAttributeValueWriteTopic(topic) || isAttributeWriteTopic(topic)) {
-            if (topic.getTokens().length != 5 || !Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
+            if (topic.getTokens().length != 5 || !Asset.matchesAssetIdPattern(topicTokenIndexToString(topic, 4))) {
                 LOG.finer("Invalid publish topic: topic=" + topic + ", connection=" + connectionToString(connection));
                 return false;
             }

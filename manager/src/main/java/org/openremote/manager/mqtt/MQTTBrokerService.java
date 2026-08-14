@@ -38,7 +38,6 @@ import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.core.config.MetricsConfiguration;
 import org.apache.activemq.artemis.core.config.WildcardConfiguration;
 import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl;
-import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTStateManager;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.remoting.FailureListener;
@@ -52,13 +51,13 @@ import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
-import org.apache.activemq.artemis.spi.core.security.jaas.*;
+import org.apache.activemq.artemis.spi.core.security.ActiveMQSecurityManager5;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
-import org.keycloak.KeycloakPrincipal;
-import org.keycloak.adapters.jaas.AbstractKeycloakLoginModule;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.security.IdentityProvider;
+import org.openremote.container.security.TokenPrincipal;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -79,17 +78,16 @@ import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.security.auth.Subject;
-import javax.security.auth.login.AppConfigurationEntry;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
 import java.security.Security;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
@@ -109,7 +107,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public static final int PRIORITY = MED_PRIORITY;
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
-    public static final String ANONYMOUS_USERNAME = "anonymous";
     // Allow 5 min durable session but this will not enable retained topics etc. as we delete queues aggressively for now
     public static final int DEFAULT_SESSION_EXPIRY_MILLIS = 300000;
     protected final WildcardConfiguration wildcardConfiguration = new WildcardConfiguration();
@@ -117,6 +114,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     protected AssetStorageService assetStorageService;
     protected AuthorisationService authorisationService;
+    protected ManagerIdentityService identityService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ClientEventService clientEventService;
     protected MessageBrokerService messageBrokerService;
@@ -136,7 +134,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected int port;
     protected Configuration serverConfiguration;
     protected EmbeddedActiveMQ server;
-    protected ActiveMQORSecurityManager securityManager;
+    protected ActiveMQSecurityManager5 securityManager;
     protected ServerLocator serverLocator;
     protected ClientSessionFactory sessionFactory;
 
@@ -166,7 +164,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         assetStorageService = container.getService(AssetStorageService.class);
         authorisationService = container.getService(AuthorisationService.class);
         clientEventService = container.getService(ClientEventService.class);
-        ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
+        identityService = container.getService(ManagerIdentityService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         executorService = container.getExecutor();
         timerService = container.getService(TimerService.class);
@@ -186,7 +184,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // This allows last will messages to be processed
         disconnectedConnectionCache = CacheBuilder.newBuilder()
                 .maximumSize(10000)
-                .expireAfterWrite(3000, TimeUnit.MILLISECONDS)
+                .expireAfterWrite(Duration.ofMillis(3000))
                 .build();
 
         if (!identityService.isKeycloakEnabled()) {
@@ -274,10 +272,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         serverConfiguration.setPersistenceEnabled(false);
 
-        // TODO: Make auto provisioning clients disconnect and reconnect with credentials or pass through X.509 certificates for auth
-        // Cannot use authentication or authorisation cache as auto provisioning MQTT clients will authenticate as anonymous and this is then baked into the created ServerSession and cannot be modified
-        // so all anonymous sessions will use the same username/password for key lookups in the caches - Can possibly use caching if ActiveMQ makes changes and/or we move to using X.509 TLS with ActiveMQ
-        //config.setSecurityInvalidationInterval(600000); // Long cache as we force clear it when needed
         serverConfiguration.setAuthenticationCacheSize(0);
         serverConfiguration.setAuthorizationCacheSize(0);
 
@@ -308,28 +302,17 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         server = new EmbeddedActiveMQ();
         server.setConfiguration(serverConfiguration);
 
-        securityManager = new ActiveMQORSecurityManager(identityProvider, this, realm -> identityProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), "", new SecurityConfiguration() {
-            @Override
-            public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-                return new AppConfigurationEntry[]{
-                    new AppConfigurationEntry(MultiTenantClientCredentialsGrantsLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(
-                        MultiTenantClientCredentialsGrantsLoginModule.INCLUDE_REALM_ROLES_OPTION, "true",
-                        AbstractKeycloakLoginModule.ROLE_PRINCIPAL_CLASS_OPTION, RolePrincipal.class.getName()
-                    )),
-                    new AppConfigurationEntry(PrincipalConversionLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(PrincipalConversionLoginModule.PRINCIPAL_CLASS_LIST, KeycloakPrincipal.class.getName())),
-                    new AppConfigurationEntry(GuestLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT, Map.of("debug", "true", "credentialsInvalidate", "true", "org.apache.activemq.jaas.guest.user", ANONYMOUS_USERNAME, "org.apache.activemq.jaas.guest.role", ANONYMOUS_USERNAME)),
-                };
-            }
-        });
+        securityManager = new ActiveMQORSecurityManager(this, executorService, identityService, identityProvider);
 
         // Set container reference in OpenRemoteSSLContextFactory for mTLS
         OpenRemoteSSLContextFactory.setContainer(container);
+        OpenRemoteSSLContextFactory.init();
 
         server.setSecurityManager(securityManager);
         server.start();
         LOG.log(DEBUG, "Started MQTT broker");
 
-        // Add notification handler for subscribe/unsubscribe and publish events
+        // Add a notification handler for subscribe/unsubscribe and publish events
         server.getActiveMQServer().getManagementService().addNotificationListener(notification -> {
             if (notification.getType() == CoreNotificationType.CONSUMER_CREATED || notification.getType() == CoreNotificationType.CONSUMER_CLOSED) {
                 boolean isSubscribe = notification.getType() == CoreNotificationType.CONSUMER_CREATED;
@@ -533,7 +516,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         Subject subject = userConnections.stream().filter(connection -> connection.getSubject() != null).findFirst().map(RemotingConnection::getSubject).orElse(null);
 
         // Only notify handlers if subject is a restricted user
-        if (subject != null && KeycloakIdentityProvider.getSecurityContext(subject).getToken().getRealmAccess().isUserInRole(Constants.RESTRICTED_USER_REALM_ROLE)) {
+        if (Optional.ofNullable(IdentityProvider.getTokenPrincipal(subject)).map(TokenPrincipal::isRestrictedUser).orElse(false)) {
             LOG.log(TRACE, "User asset links modified for connected restricted user so passing to handlers to decide what to do: user=" + subject);
             // Pass to handlers to decide what to do
             userConnections.forEach(connection -> {
@@ -558,7 +541,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 return false;
             }
             Subject subject = connection.getSubject();
-            String subjectID = KeycloakIdentityProvider.getSubjectId(subject);
+            String subjectID = IdentityProvider.getSubjectId(subject);
             return userID.equals(subjectID);
         }).collect(Collectors.toSet());
     }
@@ -688,8 +671,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public void authenticateConnection(RemotingConnection connection, String realm, String username, String password) {
         if (connection != null) {
             connection.setSubject(null); // Clear existing subject
-            securityManager.authenticate(realm + ":" + username, password, connection, null);
-            notifyConnectionAuthenticated(connection);
+            try {
+                securityManager.authenticate(realm + ":" + username, password, connection, null);
+                notifyConnectionAuthenticated(connection);
+            } catch (NoCacheLoginException e) {
+                LOG.log(INFO, "Failed to authenticate MQTT connection: " + connectionToString(connection));
+                throw new RuntimeException(e);
+            }
         }
     }
 

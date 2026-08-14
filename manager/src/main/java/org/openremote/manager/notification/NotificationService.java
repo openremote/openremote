@@ -217,7 +217,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                     .setTarget(target.getType())
                                     .setTargetId(target.getId())
                                     .setMessage(notification.getMessage())
-                                    .setSentOn(Date.from(timerService.getNow()));
+                                    .setSentOn(timerService.getNow());
 
                                 sentNotification = em.merge(sentNotification);
                                 long id = sentNotification.getId();
@@ -298,7 +298,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery("UPDATE SentNotification SET deliveredOn=:timestamp WHERE id =:id");
             query.setParameter("id", id);
-            query.setParameter("timestamp", new Date(timestamp));
+            query.setParameter("timestamp", Instant.ofEpochMilli(timestamp));
             query.executeUpdate();
         });
     }
@@ -311,7 +311,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery("UPDATE SentNotification SET acknowledgedOn=:timestamp, acknowledgement=:acknowledgement WHERE id =:id");
             query.setParameter("id", id);
-            query.setParameter("timestamp", new Date(timestamp));
+            query.setParameter("timestamp", Instant.ofEpochMilli(timestamp));
             query.setParameter("acknowledgement", acknowledgement);
             query.executeUpdate();
         });
@@ -405,14 +405,14 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             builder.append(" AND n.sentOn >= ?")
                     .append(parameters.size() + 1);
 
-            parameters.add(new Date(fromTimestamp));
+            parameters.add(Instant.ofEpochMilli(fromTimestamp));
         }
 
         if (toTimestamp != null) {
             builder.append(" AND n.sentOn <= ?")
                     .append(parameters.size() + 1);
 
-            parameters.add(new Date(toTimestamp));
+            parameters.add(Instant.ofEpochMilli(toTimestamp));
         }
 
         if (hasAssets) {
@@ -540,8 +540,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             return true;
         }
 
-        Date lastSend = persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
-                "SELECT n.sentOn FROM SentNotification n WHERE n.source =:source AND n.sourceId =:sourceId AND n.target =:target AND n.targetId =:targetId AND n.name =:name ORDER BY n.sentOn DESC", Date.class)
+        Instant lastSend = persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
+                "SELECT n.sentOn FROM SentNotification n WHERE n.source =:source AND n.sourceId =:sourceId AND n.target =:target AND n.targetId =:targetId AND n.name =:name ORDER BY n.sentOn DESC", Instant.class)
                 .setParameter("source", source)
                 .setParameter("sourceId", sourceId)
                 .setParameter("target", target.getType())
@@ -552,6 +552,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
         return lastSend == null ||
                 (notification.getRepeatFrequency() != RepeatFrequency.ONCE &&
-                        timerService.getNow().plusSeconds(1).isAfter(getRepeatAfterTimestamp(notification, lastSend.toInstant())));
+                        timerService.getNow().plusSeconds(1).isAfter(getRepeatAfterTimestamp(notification, lastSend)));
     }
 }

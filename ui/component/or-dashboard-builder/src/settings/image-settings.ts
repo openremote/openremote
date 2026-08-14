@@ -1,14 +1,33 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, html, PropertyValues, TemplateResult } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement} from "lit/decorators.js";
 import {ImageWidgetConfig} from "../widgets/image-widget";
-import {i18next} from "@openremote/or-translate";
 import {AttributesSelectEvent} from "../panels/attributes-panel";
-import {Asset, AssetModelUtil, AttributeRef} from "@openremote/model";
+import {AssetModelUtil} from "@openremote/model";
 import { map } from "lit/directives/map.js";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {Util} from "@openremote/core";
 import { when } from "lit/directives/when.js";
 import {AssetWidgetSettings} from "../util/or-asset-widget";
+import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 
 const styling = css`
   #marker-container {
@@ -68,11 +87,9 @@ export class ImageSettings extends AssetWidgetSettings {
                 
                 <!-- Image settings -->
                 <settings-panel displayName="dashboard.imageSettings" expanded="${true}">
-                    <div>
-                        <or-mwc-input style="width: 100%;" type="${InputType.TEXT}" label="${i18next.t('dashboard.imageUrl')}" .value="${this.widgetConfig.imagePath}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onImageUrlUpdate(ev)}"
-                        ></or-mwc-input>
-                    </div>
+                    <or-vaadin-text-field value=${this.widgetConfig.imagePath} @change=${(ev: Event) => this.onImageUrlUpdate(ev)}>
+                        <or-translate slot="label" value="dashboard.imageUrl"></or-translate>
+                    </or-vaadin-text-field>
                 </settings-panel>
             </div>
         `;
@@ -83,9 +100,12 @@ export class ImageSettings extends AssetWidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onImageUrlUpdate(ev: OrInputChangedEvent) {
-        this.widgetConfig.imagePath = ev.detail.value;
-        this.notifyConfigUpdate();
+    protected onImageUrlUpdate(ev: Event) {
+        const elem = ev.currentTarget as OrVaadinTextField;
+        if(elem.checkValidity()) {
+            this.widgetConfig.imagePath = elem.value;
+            this.notifyConfigUpdate();
+        }
     }
 
 
@@ -138,15 +158,14 @@ export class ImageSettings extends AssetWidgetSettings {
                             `)}
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <or-mwc-input .disableSliderNumberInput="${true}" compact style="max-width: 64px;"
-                                          .type="${InputType.NUMBER}" .min="${min}" .max="${max}" .value="${coordinates[0]}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCoordinateUpdate(index, 'x', ev.detail.value)}"
-                            ></or-mwc-input>
-
-                            <or-mwc-input .disableSliderNumberInput="${true}" compact style="max-width: 64px;"
-                                          .type="${InputType.NUMBER}" .min="${min}" .max="${max}" .value="${coordinates[1]}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCoordinateUpdate(index, 'y', ev.detail.value)}"
-                            ></or-mwc-input>
+                            <or-vaadin-number-field value=${coordinates[0]} min=${min} max=${max} style="max-width: 64px;"
+                                                    @change=${(ev: Event) => this.onCoordinateUpdate(index, "x", ev)}>
+                                <span slot="suffix">%</span>
+                            </or-vaadin-number-field>
+                            <or-vaadin-number-field value=${coordinates[1]} min=${min} max=${max} style="max-width: 64px;"
+                                                    @change=${(ev: Event) => this.onCoordinateUpdate(index, "y", ev)}>
+                                <span slot="suffix">%</span>
+                            </or-vaadin-number-field>
                         </div>
                     </div>
                 `;
@@ -158,15 +177,19 @@ export class ImageSettings extends AssetWidgetSettings {
         }
     }
 
-    protected onCoordinateUpdate(index: number, coordinate: 'x' | 'y', value: number) {
+    protected onCoordinateUpdate(index: number, coordinate: 'x' | 'y', ev: Event) {
+        const elem = ev.currentTarget as OrVaadinNumberField;
+        if(!elem.checkValidity()) {
+            return;
+        }
         let coords = this.widgetConfig.markers[index].coordinates;
         if(!coords) {
             coords = [0, 0];
         }
         if(coordinate === 'x') {
-            coords[0] = value;
+            coords[0] = Number(elem.value);
         } else if(coordinate === 'y') {
-            coords[1] = value;
+            coords[1] = Number(elem.value);
         }
         this.widgetConfig.markers[index].coordinates = coords;
         this.notifyConfigUpdate();

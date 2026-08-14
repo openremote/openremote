@@ -46,26 +46,16 @@ public interface MapResource {
     ObjectNode saveSettings(@BeanParam RequestParams requestParams, MapConfig mapConfig);
 
     /**
-     * Returns style used to initialise Mapbox GL
+     * Returns style used to initialise MapLibre GL
      * @return
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(operationId = "getSettings", summary = "Retrieve the style used for Mapbox GL")
+    @Operation(operationId = "getSettings", summary = "Retrieve the style used for MapLibre GL")
     ObjectNode getSettings(@BeanParam RequestParams requestParams);
 
     /**
-     * Returns tileJSON object used to initialise Mapbox JS
-     * @return
-     */
-    @GET
-    @Path("js")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(operationId = "getSettingsJs", summary = "Retrieve the tileJSON object used for Mapbox GL")
-    ObjectNode getSettingsJs(@BeanParam RequestParams requestParams);
-
-    /**
-     * Gets vector tile data for Mapbox GL
+     * Gets vector tile data for MapLibre GL
      */
     @GET
     @Produces("application/vnd.mapbox-vector-tile")

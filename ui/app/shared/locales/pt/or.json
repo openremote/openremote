@@ -7,6 +7,10 @@
   "asset": "Ativo",
   "asset_plural": "Ativos",
   "assets": "Ativos",
+  "users": "Usuários",
+  "realms": "Reinos",
+  "provisioning": "Provisionamento automático",
+  "provisioningConfig": "Configuração de provisionamento",
   "attribute": "Atributo",
   "attributes": "Atributos",
   "attribute_plural": "Atributos",
@@ -106,6 +110,7 @@
   "month": "Mês",
   "year": "Ano",
   "period": "Período",
+  "beginning": "Início",
   "ending": "Término",
   "timeframe": "Prazo",
   "addAttribute": "Adicionar atributo",
@@ -171,6 +176,7 @@
   "french": "Francês",
   "german": "Alemão",
   "italian": "Italiano",
+  "polish": "Polaco",
   "portuguese": "Portugues",
   "romanian": "Romeno",
   "spanish": "Espanhol",
@@ -311,6 +317,8 @@
     "cubed": "³",
     "peak": "p",
     "mega": "M",
+    "giga": "G",
+    "tera": "T",
     "kilo": "k",
     "centi": "c",
     "milli": "m",
@@ -404,7 +412,7 @@
   "planPeriod": "Planeje uma ocorrência",
   "planRecurrence": "Planeje uma ocorrência repetida",
   "activeFromTo": "Ativo de {{start}} a {{end}}",
-  "fromTo": "De {{start}} a {{end}}",
+  "fromTo": "de {{start}} a {{end}}",
   "fromToDays": "De {{start}} a {{days}} dias depois{{end}}",
   "forDays": "por {{days}} dias",
   "scheduleRuleActivity": "Agendar Atividade de Regra",
@@ -453,7 +461,7 @@
   "yes": "Sim",
   "no": "Não",
   "filter": {
-    "action": "FILTER",
+    "action": "Filter",
     "assetTypeLabel": "Asset type",
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",
@@ -588,6 +596,9 @@
               },
               "updateOnWrite": {
                 "description": ""
+              },
+              "writeValueFilters": {
+                "description": ""
               }
             }
           }
@@ -619,5 +630,6 @@
         }
       }
     }
-  }
+  },
+  "realmAlreadyExists": "O nome do domínio já existe"
 }

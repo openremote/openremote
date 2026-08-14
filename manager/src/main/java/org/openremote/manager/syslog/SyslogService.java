@@ -134,7 +134,7 @@ public class SyslogService extends Handler implements ContainerService {
                 "delete from SyslogEvent e " +
                     "where e.timestamp <= :date")
                     .setParameter("date",
-                            Date.from(Instant.now().minus(config.getStoredMaxAgeMinutes(), ChronoUnit.MINUTES)))
+                            Instant.now().minus(config.getStoredMaxAgeMinutes(), ChronoUnit.MINUTES))
                     .executeUpdate());
         } catch (Throwable e) {
             LOG.log(Level.WARNING, "Failed to purge syslog events", e);
@@ -211,9 +211,9 @@ public class SyslogService extends Handler implements ContainerService {
             from = to.minus(1, ChronoUnit.HOURS);
         }
 
-        Date fromDate = Date.from(from);
-        Date toDate = Date.from(to);
         AtomicLong count = new AtomicLong();
+        final Instant fromInstant = from;
+        final Instant toInstant = to;
 
         List<SyslogEvent> events = persistenceService.doReturningTransaction(em -> {
             StringBuilder sb = new StringBuilder("from SyslogEvent e where e.timestamp >= :from and e.timestamp <= :to");
@@ -228,8 +228,8 @@ public class SyslogService extends Handler implements ContainerService {
             }
 
             TypedQuery<Long> countQuery = em.createQuery("select count(e.id) " + sb.toString(), Long.class);
-            countQuery.setParameter("from", fromDate);
-            countQuery.setParameter("to", toDate);
+            countQuery.setParameter("from", fromInstant);
+            countQuery.setParameter("to", toInstant);
             if (level != null) {
                 countQuery.setParameter("level", level);
             }
@@ -248,8 +248,8 @@ public class SyslogService extends Handler implements ContainerService {
             sb.append(" order by e.timestamp desc");
             TypedQuery<SyslogEvent> query = em.createQuery("select e " + sb.toString(), SyslogEvent.class);
 
-            query.setParameter("from", fromDate);
-            query.setParameter("to", toDate);
+            query.setParameter("from", fromInstant);
+            query.setParameter("to", toInstant);
             if (level != null) {
                 query.setParameter("level", level);
             }

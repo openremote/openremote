@@ -67,8 +67,9 @@ export class OrRuleWebhookModal extends LitElement {
             }
         };
         return html`
-            <or-mwc-input type="${InputType.BUTTON}" label="message"
-                          @or-mwc-input-changed="${webhookModalOpen}"></or-mwc-input>
+            <or-vaadin-button @click=${() => webhookModalOpen()}>
+                <or-translate value="message"></or-translate>
+            </or-vaadin-button>
             <or-mwc-dialog id="webhook-modal" heading="${this.title}" .actions="${webhookModalActions}"></or-mwc-dialog>
             <slot class="webhook-form-slot"></slot>
         `

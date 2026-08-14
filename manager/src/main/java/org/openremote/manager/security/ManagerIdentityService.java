@@ -33,7 +33,6 @@ import static org.openremote.model.util.MapAccess.getString;
 public class ManagerIdentityService extends IdentityService {
 
     private static final Logger LOG = Logger.getLogger(ManagerIdentityService.class.getName());
-
     protected ManagerIdentityProvider identityProvider;
 
     @Override
