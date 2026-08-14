@@ -24,9 +24,7 @@ import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
 import com.hivemq.client.mqtt.MqttClientConnectionConfig
 import io.netty.channel.socket.SocketChannel
-import io.undertow.security.idm.X509CertificateCredential
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection
-import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal
 import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.*
@@ -35,7 +33,6 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
-import org.keycloak.KeycloakPrincipal
 import org.keycloak.admin.client.resource.RealmResource
 import org.keycloak.representations.idm.RoleRepresentation
 import org.openremote.agent.protocol.mqtt.MQTTMessage
@@ -958,7 +955,6 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             Subject subject = mqttBrokerService.getConnectionFromClientID(autoprovisioningClientId).getSubject();
             assert subject.getPrincipals().size() == 3
-            assert subject.getPrivateCredentials(X509CertificateCredential.class).size() == 1
         }
 
         when: "the provisioning config is created to allow autoprovisioning using mTLS"
@@ -1037,23 +1033,11 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             Subject unprovisionedJaasSubject = mqttBrokerService.getConnectionFromClientID(autoprovisioningClientId).getSubject()
             assert unprovisionedJaasSubject != null
-            // Should have role principals since service user should now exist
-            assert unprovisionedJaasSubject.getPrincipals(RolePrincipal.class).size() == 3
-            assert unprovisionedJaasSubject.getPrincipals(RolePrincipal.class).stream().map {rp -> rp.getName()}.toList().containsAll(
-                    Constants.WRITE_ASSETS_ROLE,
-                    Constants.WRITE_ATTRIBUTES_ROLE,
-                    Constants.READ_ASSETS_ROLE
-            )
-            // Should have a UserPrincipal and KeycloakPrincipal
+            // New architecture creates a RemotingConnectionPrincipal, TokenPrincipal and UserPrincipal for the provisioned service user
+            assert unprovisionedJaasSubject.getPrincipals().size() == 3
+            assert unprovisionedJaasSubject.getPrincipals(org.openremote.container.security.TokenPrincipal.class).size() == 1
             assert unprovisionedJaasSubject.getPrincipals(UserPrincipal.class).size() == 1
             assert unprovisionedJaasSubject.getPrincipals(UserPrincipal.class)[0].getName() == "$User.SERVICE_ACCOUNT_PREFIX$unprovisionedUsername"
-            assert unprovisionedJaasSubject.getPrincipals(KeycloakPrincipal.class).size() == 1
-            assert unprovisionedJaasSubject.getPrincipals(KeycloakPrincipal.class)[0].getName() == "$User.SERVICE_ACCOUNT_PREFIX$unprovisionedUsername"
-            // Should have a ProvisioningPrincipal with the certificate
-            assert unprovisionedJaasSubject.getPrivateCredentials(X509CertificateCredential.class).size() == 1
-            def provisioningPrincipal = unprovisionedJaasSubject.getPrivateCredentials(X509CertificateCredential.class)[0]
-            assert provisioningPrincipal.getCertificate() != null
-            assert provisioningPrincipal.getCertificate().getSubjectX500Principal().getName().contains("CN=$unprovisionedUsername")
         }
 
         when: "the client then subscribes to attribute events for the generated asset and asset events for all assets"

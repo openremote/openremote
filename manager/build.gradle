@@ -55,6 +55,10 @@ dependencies {
 
     implementation libs.sshdNetty
 
+    // Used by OpenRemoteSSLContextFactory for parsing PEM certificates (mTLS)
+    implementation libs.bouncycastleBcpkixJdk18on
+    implementation libs.bouncycastleBcprovJdk18on
+
     testImplementation libs.groovyAll
     testImplementation platform(libs.spockBom)
     testImplementation libs.spockCore

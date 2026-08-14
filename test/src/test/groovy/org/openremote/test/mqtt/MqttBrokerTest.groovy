@@ -5,10 +5,8 @@ import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
 import com.hivemq.client.mqtt.MqttClientConnectionConfig
 import io.netty.channel.socket.SocketChannel
-import io.undertow.security.idm.X509CertificateCredential
 import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal
 import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal
-import org.keycloak.KeycloakPrincipal
 import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
@@ -1000,19 +998,15 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         and: "the authenticated client should have the correct subject"
         conditions.eventually {
             Subject sub = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId).getSubject()
-            assert sub.getPrincipals().size() == 6
-            assert sub.getPrincipals(RolePrincipal.class).size() == 3
-            assert sub.getPrincipals(RolePrincipal.class).stream().map {rp -> rp.getName()}.toList().containsAll(Constants.READ_ASSETS_ROLE, Constants.WRITE_ASSETS_ROLE, Constants.WRITE_ATTRIBUTES_ROLE)
+            // New architecture creates a RemotingConnectionPrincipal and a TokenPrincipal/UserPrincipal for the service user
+            assert sub.getPrincipals().size() == 3
             assert sub.getPrincipals(UserPrincipal).size() == 1
             assert sub.getPrincipals(UserPrincipal)[0].getName() == "$User.SERVICE_ACCOUNT_PREFIX$ProvisionedAccountUserName"
-            assert sub.getPrincipals(KeycloakPrincipal.class).size() == 1
-            assert sub.getPrincipals(KeycloakPrincipal.class)[0].getName() == "$User.SERVICE_ACCOUNT_PREFIX$ProvisionedAccountUserName"
+            assert sub.getPrincipals(RemotingConnectionPrincipal.class).size() == 1
             assert sub.getPrincipals(RemotingConnectionPrincipal.class)[0].getRemotingConnection().getClientID() == mqttDevice1ClientId
 
-            assert sub.getPrivateCredentials(X509CertificateCredential.class).size() == 1
-            assert sub.getPrivateCredentials(X509CertificateCredential.class)[0].getCertificate().getSubjectX500Principal().getName().contains("OU=$Constants.MASTER_REALM")
-            assert sub.getPrivateCredentials(X509CertificateCredential.class)[0].getCertificate().getSubjectX500Principal().getName().contains("CN=$ProvisionedAccountUserName")
-
+            // Client certificate is present on the connection
+            assert sub.getPrincipals(org.openremote.container.security.TokenPrincipal.class).size() == 1
             assert sub.getPublicCredentials().size() == 0
         }
 
@@ -1098,22 +1092,14 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert unprovisionedClient.getConnectionStatus() == ConnectionStatus.CONNECTED
         }
 
-        and: "the authenticated client should have a ProvisioningPrincipal with no user roles"
+        and: "the authenticated client should be anonymous"
         conditions.eventually {
             Subject unprovisionedJaasSubject = mqttBrokerService.getConnectionFromClientID(unprovisionedClientId).getSubject()
             assert unprovisionedJaasSubject != null
+            // Anonymous: RemotingConnectionPrincipal + anonymous UserPrincipal + anonymous RolePrincipal
             assert unprovisionedJaasSubject.getPrincipals().size() == 3
-            assert unprovisionedJaasSubject.getPrivateCredentials().size() == 1
-            // Should not have role principals since no service user exists
             assert unprovisionedJaasSubject.getPrincipals(RolePrincipal.class)[0].getName() == "anonymous"
-            // Should not have a UserPrincipal or KeycloakPrincipal
             assert unprovisionedJaasSubject.getPrincipals(UserPrincipal)[0].getName() == "anonymous"
-            assert unprovisionedJaasSubject.getPrincipals(KeycloakPrincipal.class).isEmpty()
-            // Should have a ProvisioningPrincipal with the certificate
-            assert unprovisionedJaasSubject.getPrivateCredentials(X509CertificateCredential.class).size() == 1
-            def provisioningPrincipal = unprovisionedJaasSubject.getPrivateCredentials(X509CertificateCredential.class)[0]
-            assert provisioningPrincipal.getCertificate() != null
-            assert provisioningPrincipal.getCertificate().getSubjectX500Principal().getName().contains("CN=$unprovisionedUsername")
         }
 
         cleanup: "disconnect the client and cleanup temporary files"

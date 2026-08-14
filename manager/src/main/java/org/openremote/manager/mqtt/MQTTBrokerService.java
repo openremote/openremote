@@ -52,6 +52,8 @@ import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.ActiveMQSecurityManager5;
+import org.apache.activemq.artemis.spi.core.security.jaas.NoCacheLoginException;
+import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.container.message.MessageBrokerService;
@@ -174,7 +176,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // mTLS values
         final Path keystoreDirPath = Paths.get("keystores");
         this.mtlsPort = getInteger(container.getConfig(), OR_MQTT_MTLS_SERVER_LISTEN_PORT, OR_MQTT_MTLS_PORT_DEFAULT);
-        this.mtlsDisabled = getBoolean(container.getConfig(), OR_MQTT_MTLS_DISABLED, true);
+        this.mtlsDisabled = getBoolean(container.getConfig(), OR_MQTT_MTLS_DISABLED, OR_MQTT_MTLS_DISABLED_DEFAULT);
         this.keystorePath = getString(container.getConfig(), OR_MQTT_MTLS_KEYSTORE_PATH, persistenceService.resolvePath(keystoreDirPath.resolve("server_keystore.p12")).toString());
         this.keystorePassword = getString(container.getConfig(), OR_MQTT_MTLS_KEYSTORE_PASSWORD, "secret");
         this.truststorePath = getString(container.getConfig(), OR_MQTT_MTLS_TRUSTSTORE_PATH, persistenceService.resolvePath(keystoreDirPath.resolve("server_truststore.p12")).toString());
@@ -401,6 +403,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         server.stop();
         LOG.log(DEBUG, "Stopped MQTT broker");
+
+        // Clean up the OpenRemoteSSLContextFactory (stops the certificate reload scheduler)
+        OpenRemoteSSLContextFactory.shutdown();
+        OpenRemoteSSLContextFactory.clearContainer();
 
         stream(ServiceLoader.load(MQTTHandler.class).spliterator(), false)
                 .sorted(Comparator.comparingInt(MQTTHandler::getPriority).reversed())

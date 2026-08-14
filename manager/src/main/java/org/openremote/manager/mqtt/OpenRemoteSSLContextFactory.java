@@ -76,7 +76,7 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
     private volatile SSLContext cachedSSLContext;
     private final Map<String, Long> fileModificationTimes = new ConcurrentHashMap<>();
     private static ScheduledFuture<?> reloadFuture;
-    private static OpenRemoteSSLContextFactory instance;
+    private static volatile OpenRemoteSSLContextFactory instance;
 
     public OpenRemoteSSLContextFactory() {
         instance = this;
@@ -459,13 +459,17 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
      * Shuts down the certificate reload scheduler and clears all cached state.
      * Should be called when the MQTT broker is stopping.
      */
-    public void shutdown() {
-        LOG.log(Level.INFO, "Shutting down OpenRemoteSSLContextFactory");
-        if (reloadFuture != null) {
-            reloadFuture.cancel(true);
-            reloadFuture = null;
+    public static void shutdown() {
+        OpenRemoteSSLContextFactory factory = instance;
+        if (factory == null) {
+            return;
         }
-        clearSSLContexts();
+        LOG.log(Level.INFO, "Shutting down OpenRemoteSSLContextFactory");
+        if (factory.reloadFuture != null) {
+            factory.reloadFuture.cancel(true);
+            factory.reloadFuture = null;
+        }
+        factory.clearSSLContexts();
     }
 
     /**

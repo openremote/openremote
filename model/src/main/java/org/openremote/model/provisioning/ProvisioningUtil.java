@@ -72,6 +72,12 @@ public class ProvisioningUtil {
             return null;
         }
     }
+    /**
+     * Extract the Organizational Unit (OU) RDN from the given X.500 principal.
+     *
+     * @param principal the X.500 principal to extract the OU from (typically a certificate subject)
+     * @return the OU value or {@code null} if not present in the principal, or if the name could not be parsed
+     */
     public static String getSubjectOU(X500Principal principal) {
         // Use LDAP RFC 2253 which is same spec as X500 principal to get OU
         try {
