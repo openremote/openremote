@@ -2,21 +2,22 @@
 <!-- Calimero 2 server settings -->
 <knxServer name="knx-server" appData="./test/build" friendlyName="Calimero KNXnet/IP Test Server">
 
-	<!-- KNXnet/IP search & discovery -->
-	<discovery listenNetIf="LOOPBACK_ADDRESS" outgoingNetIf="LOOPBACK_ADDRESS" activate="false" />
+  <!-- KNXnet/IP search & discovery -->
+  <discovery listenNetIf="LOOPBACK_ADDRESS" outgoingNetIf="LOOPBACK_ADDRESS" activate="false" />
 
-	<!-- Provides the KNXnet/IP-side configuration for access to one KNX subnet -->
-	<serviceContainer activate="true" routing="false" networkMonitoring="false" udpPort="3671" listenNetIf="LOOPBACK_ADDRESS" reuseCtrlEP="false">
-		<knxAddress type="individual">1.1.1</knxAddress>
-		<knxSubnet type="user-supplied" class="org.openremote.test.protocol.KNXTestingNetworkLink">1.1.1</knxSubnet>
+  <!-- Provides the KNXnet/IP-side configuration for access to one KNX subnet -->
+  <serviceContainer activate="true" routing="false" networkMonitoring="false" udpPort="3671"
+    listenNetIf="LOOPBACK_ADDRESS" reuseCtrlEP="false">
+    <knxAddress type="individual">1.1.1</knxAddress>
+    <knxSubnet type="user-supplied" class="org.openremote.test.protocol.KNXTestingNetworkLink">1.1.1</knxSubnet>
 
-		<!-- Additional KNX individual addresses assigned to KNXnet/IP connections (optional) -->
-		<additionalAddresses>
-			<knxAddress type="individual">1.1.10</knxAddress>
-			<knxAddress type="individual">1.1.11</knxAddress>
-			<knxAddress type="individual">1.1.12</knxAddress>
-			<knxAddress type="individual">1.1.13</knxAddress>
-		</additionalAddresses>
-	</serviceContainer>
-	
+    <!-- Additional KNX individual addresses assigned to KNXnet/IP connections (optional) -->
+    <additionalAddresses>
+      <knxAddress type="individual">1.1.10</knxAddress>
+      <knxAddress type="individual">1.1.11</knxAddress>
+      <knxAddress type="individual">1.1.12</knxAddress>
+      <knxAddress type="individual">1.1.13</knxAddress>
+    </additionalAddresses>
+  </serviceContainer>
+
 </knxServer>

@@ -19,7 +19,7 @@ jobs:
     name: Snapshot image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -27,16 +27,16 @@ jobs:
           path: manager/build
 
       - name: Install QEMU
-        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
         with:
           platforms: linux/amd64,linux/aarch64
 
       - name: Install Buildx
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
       - name: Configure AWS Credentials
         if: ${{ inputs.PUSH }}
-        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::${{ secrets.AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.AWS_ECR_PUSH_ROLE }}"
@@ -54,7 +54,7 @@ jobs:
 
       - name: Build snapshot image
         timeout-minutes: 20
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: manager/build/install/manager
           platforms: linux/amd64,linux/aarch64

@@ -10,7 +10,7 @@ You must get proper credentials and set the AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS
 The `eks-setup-haproxy.sh` script creates a new EKS cluster from scratch and deploys an OR stack in it.  
 The `eks-cleanup-haproxy.sh` script deletes all the components that have been created by the above script.
 
-The hostname is defined as an environment variable in the script, by default, it is testmanager.openremote.app  
+The hostname is defined as an environment variable in the script, by default, it is testmanager.openremote.app
 
 See comments within the script for more information.
 
@@ -30,8 +30,9 @@ This means that pods must be deployed to specific nodes using node affinity.
 
 #### PosgreSQL data directory
 
-PostgreSQL wants the data folder to be empty (on first startup), but an empty ext4 EBS volume contains a lost+found folder.    
+PostgreSQL wants the data folder to be empty (on first startup), but an empty ext4 EBS volume contains a lost+found folder.  
 This causes the following error to be reported
+
 ```
 initdb: error: directory "/var/lib/postgresql/data" exists but is not empty
 initdb: detail: It contains a lost+found directory, perhaps due to it being a mount point.
@@ -40,26 +41,30 @@ Create a subdirectory under the mount point.
 ```
 
 For this reason, the volume mount section of the PostgreSQL statefulset has been updated to use subPath
+
 ```yaml
-          volumeMounts:
-            - mountPath: /var/lib/postgresql/data
-              subPath: psql-data
-              name: postgresql-data
+volumeMounts:
+  - mountPath: /var/lib/postgresql/data
+    subPath: psql-data
+    name: postgresql-data
 ```
+
 Make sure the `useSubPath` value is set to true.  
 Pods within EKS running linux, `requiresPermissionsFix` must also be set to true to enable the init container (running as root) used to reset ownership and file permissions.
+
 ```yaml
-      initContainers:
-        - name: psql-data-ownership
-          image: alpine:latest
-          command: ['sh', '-c', 'chown -R 70:70 /var/lib/postgresql/data && chmod -R 0750 /var/lib/postgresql/data']
-          securityContext:
-            runAsUser: 0
-          volumeMounts:
-            - mountPath: /var/lib/postgresql/data
-              subPath: psql-data
-              name: postgresql-data
+initContainers:
+  - name: psql-data-ownership
+    image: alpine:latest
+    command: ["sh", "-c", "chown -R 70:70 /var/lib/postgresql/data && chmod -R 0750 /var/lib/postgresql/data"]
+    securityContext:
+      runAsUser: 0
+    volumeMounts:
+      - mountPath: /var/lib/postgresql/data
+        subPath: psql-data
+        name: postgresql-data
 ```
+
 ### Networking
 
 #### Using HAProxy
@@ -80,17 +85,17 @@ In this configuration, only MQTTS connectivity is available, not MQTT.
 TL;DR: Use scripts `eks-setup.sh` and `eks-cleanup.sh` for this configuration.
 
 In this configuration, standard kubernetes Ingress and Load Balancer services are used
-by each pod to expose their APIs to the outside world. 
+by each pod to expose their APIs to the outside world.
 
-We're using [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.7/) to automatically create an Application Load Balancer based on the Ingress manifests.    
-An Application Load Balancer (ALB) is automatically created when an Ingress object exists in the cluster and destroyed when there are none.  
+We're using [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.7/) to automatically create an Application Load Balancer based on the Ingress manifests.  
+An Application Load Balancer (ALB) is automatically created when an Ingress object exists in the cluster and destroyed when there are none.
 
 By default, each ingress creates its own ALB, using the [IngressGroup](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/#ingressgroup) feature
 and the corresponding `alb.ingress.kubernetes.io/group.name` annotation on the Ingress allows to use a single ALB for multiple ingresses.
 
 The ALB will automatically assign a public "Amazon" DNS name for access.  
 We want to use our own DNS names (for ease of use, consistency but also to associate a TLS certificate with it).  
-For that, we use [Route 53](https://aws.amazon.com/route53/) and an alias record to directly route traffic to the load balancer, see [Routing traffic to an ELB load balancer - Amazon Route 53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-to-elb-load-balancer.html).  
+For that, we use [Route 53](https://aws.amazon.com/route53/) and an alias record to directly route traffic to the load balancer, see [Routing traffic to an ELB load balancer - Amazon Route 53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-to-elb-load-balancer.html).
 
 To create the certificate, we use [AWS Certificate Manager](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html).  
 Domain ownership validation is performed via DNS record.
@@ -120,23 +125,24 @@ The script contains several variables that can be changed.
 
 The cluster creation call uses a configuration file.  
 This configuration file defines how the cluster is created.  
-See [Creating and managing clusters - eksctl](https://eksctl.io/usage/creating-and-managing-clusters/),   
-[Config File Schema - eksctl](https://eksctl.io/usage/schema/) and 
-[eksctl/examples at main · eksctl-io/eksctl](https://github.com/eksctl-io/eksctl/tree/main/examples) 
+See [Creating and managing clusters - eksctl](https://eksctl.io/usage/creating-and-managing-clusters/),  
+[Config File Schema - eksctl](https://eksctl.io/usage/schema/) and
+[eksctl/examples at main · eksctl-io/eksctl](https://github.com/eksctl-io/eksctl/tree/main/examples)
 for more information.
 
 ### values files
 
-In addition to the default values, values-eks.yaml files are used for the chart deployments.   
+In addition to the default values, values-eks.yaml files are used for the chart deployments.  
 These contain EKS specific configuration that can be adapted or complemented if required.
 
 ## Running demo under EKS
 
 ### Building the OR demo image
 
-Use ```./gradlew -PSETUP_JAR=demo clean installDist``` to build the controller with the demo setup code.
+Use `./gradlew -PSETUP_JAR=demo clean installDist` to build the controller with the demo setup code.
 
-You can then push the image to the private ECR repository in our developer account with (credentials are for developer account): 
+You can then push the image to the private ECR repository in our developer account with (credentials are for developer account):
+
 ```bash
 export AWS_ACCESS_KEY_ID="…"
 export AWS_SECRET_ACCESS_KEY="…"
@@ -150,23 +156,27 @@ docker buildx build --no-cache --push --platform linux/amd64,linux/arm64 -t <or-
 ### Starting a cluster with the OR demo image
 
 Modify the eks-setup-haproxy.sh script to start the manager with the appropriate configuration by replacing lines
+
 ```bash
 helm install manager manager -f manager/values-haproxy-eks.yaml \
   --set-string or.hostname=$FQDN
 ```
+
 with
+
 ```bash
 helm install manager manager -f manager/values-haproxy-eks.yaml -f manager/values-demo.yaml \
   --set-string or.hostname=$FQDN --set-string image.repository=$AWS_DEVELOPERS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager
 ```
 
 This values file does two things:
+
 - get the demo image from the private ECR
 - enable the demo setup
 
 ## Current limitations / explorations to do
 
-Although the eksctl command reports a successful delete of the cluster, the delete operation is still in progress.    
+Although the eksctl command reports a successful delete of the cluster, the delete operation is still in progress.  
 Most of the time, it fails, not being able to delete the VPC.  
 It is best to always check the CloudFormation stacks using the AWS Console and manually delete any leftovers.
 

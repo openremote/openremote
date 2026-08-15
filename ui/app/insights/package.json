@@ -1,6 +1,6 @@
 {
   "name": "@openremote/insights",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "OpenRemote Insights App",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -29,10 +29,11 @@
     "@openremote/model": "workspace:*",
     "@openremote/or-app": "workspace:*",
     "@openremote/or-dashboard-builder": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/rest": "workspace:*",
-    "@reduxjs/toolkit": "^1.8.1",
+    "@reduxjs/toolkit": "^2.12.0",
     "lit": "^3.3.1"
   },
   "devDependencies": {

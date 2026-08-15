@@ -216,6 +216,7 @@
   "romanian": "Română",
   "spanish": "Spaniolă",
   "ukrainian": "Ucraineană",
+  "czech": "Cehă",
   "noRuleSelected": "Selectează o regulă din stanga",
   "anyOfThisType": "Oricare din acest tip",
   "notification": "Inștiințare",
@@ -579,6 +580,7 @@
   "rulesetStatus": {
     "DEPLOYED": "Instalat cu succes",
     "NOSTATUS": "Dezactivat",
+    "DISABLED": "Dezactivat",
     "LOOP_ERROR": "Eroare de buclă",
     "COMPILATION_ERROR": "Eroare de compilare",
     "EXECUTION_ERROR": "Eroare de execuție",

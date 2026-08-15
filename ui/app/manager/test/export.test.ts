@@ -1,16 +1,34 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager";
 import { preparedAssetsForRules } from "./fixtures/data/assets";
-import { AttributeEvent } from "@openremote/model";
+import type { AttributeEvent } from "@openremote/model";
 
 test.use({ storageState: userStatePath });
 
 test.beforeEach(async ({ manager }) => {
-    await manager.setup("smartcity", { assets: exportAssets });
+  await manager.setup("smartcity", { assets: exportAssets });
 });
 
 test.afterEach(async ({ manager }) => {
-    await manager.cleanUp();
+  await manager.cleanUp();
 });
 
 // Reuse assets from rules test which have storeDataPoints: true
@@ -24,7 +42,12 @@ const exportAttributeName = "energyLevel";
  * @param count Number of datapoints to create
  * @param intervalMinutes Interval between datapoints in minutes
  */
-function generateDatapointEvents(assetId: string, attributeName: string, count: number = 5, intervalMinutes: number = 5): AttributeEvent[] {
+function generateDatapointEvents(
+  assetId: string,
+  attributeName: string,
+  count: number = 5,
+  intervalMinutes: number = 5
+): AttributeEvent[] {
   const now = Date.now();
   const events: AttributeEvent[] = [];
 
@@ -33,10 +56,10 @@ function generateDatapointEvents(assetId: string, attributeName: string, count: 
       eventType: "attribute",
       ref: {
         id: assetId,
-        name: attributeName
+        name: attributeName,
       },
       value: 20 + i * 2,
-      timestamp: now - (count - 1 - i) * intervalMinutes * 60 * 1000
+      timestamp: now - (count - 1 - i) * intervalMinutes * 60 * 1000,
     });
   }
 
@@ -60,7 +83,7 @@ async function addAttributeViaPicker(page: import("@playwright/test").Page, asse
 
   const attributeList = dialog.locator("#attribute-selector");
   await attributeList.waitFor();
-  const displayName = attributeName.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, c => c.toUpperCase());
+  const displayName = attributeName.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
   const attributeCheckbox = attributeList.getByRole("option", { name: displayName });
   await attributeCheckbox.click();
 
@@ -93,23 +116,37 @@ test("Export datapoints successfully triggers download", async ({ page, manager 
   const latestDatapoint = await page.locator("table tbody tr").first().locator("td").nth(3).textContent();
   const toDatetimeLocal = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleString('en-US', {hour12: false}).replaceAll(' ', '').split(',') as [string, string];
+    return date.toLocaleString("en-US", { hour12: false }).replaceAll(" ", "").split(",") as [string, string];
   };
-  await page.getByLabel("Export from").locator("vaadin-date-picker").getByRole("combobox").fill(toDatetimeLocal(oldestDatapoint!)[0]);
+  await page
+    .getByLabel("Export from")
+    .locator("vaadin-date-picker")
+    .getByRole("combobox")
+    .fill(toDatetimeLocal(oldestDatapoint!)[0]);
   await page.getByLabel("Export from").locator("vaadin-date-picker").getByRole("combobox").press("Enter");
-  await page.getByLabel("Export from").locator("vaadin-time-picker").getByRole("combobox").fill(toDatetimeLocal(oldestDatapoint!)[1]);
+  await page
+    .getByLabel("Export from")
+    .locator("vaadin-time-picker")
+    .getByRole("combobox")
+    .fill(toDatetimeLocal(oldestDatapoint!)[1]);
   await page.getByLabel("Export from").locator("vaadin-time-picker").getByRole("combobox").press("Enter");
-  await page.getByLabel("to").locator("vaadin-date-picker").getByRole("combobox").fill(toDatetimeLocal(latestDatapoint!)[0]);
+  await page
+    .getByLabel("to")
+    .locator("vaadin-date-picker")
+    .getByRole("combobox")
+    .fill(toDatetimeLocal(latestDatapoint!)[0]);
   await page.getByLabel("to").locator("vaadin-date-picker").getByRole("combobox").press("Enter");
-  await page.getByLabel("to").locator("vaadin-time-picker").getByRole("combobox").fill(toDatetimeLocal(latestDatapoint!)[1]);
+  await page
+    .getByLabel("to")
+    .locator("vaadin-time-picker")
+    .getByRole("combobox")
+    .fill(toDatetimeLocal(latestDatapoint!)[1]);
   await page.getByLabel("to").locator("vaadin-time-picker").getByRole("combobox").press("Enter");
 
   await page.getByLabel("Export format").click();
-  await page.getByRole("option", {name: "CSV", exact: true}).first().click();
+  await page.getByRole("option", { name: "CSV", exact: true }).first().click();
 
-  const exportResponsePromise = page.waitForResponse(
-    response => response.url().includes("/asset/datapoint/export")
-  );
+  const exportResponsePromise = page.waitForResponse((response) => response.url().includes("/asset/datapoint/export"));
   await page.getByRole("button", { name: "Export", exact: true }).click();
 
   const response = await exportResponsePromise;

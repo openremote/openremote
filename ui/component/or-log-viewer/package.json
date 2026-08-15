@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-log-viewer",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "OpenRemote syslog viewer",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -16,7 +16,7 @@
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
-    "test": "echo \"No tests\" && exit 0",
+    "test": "npx tsc -b && npx playwright test",
     "prepack": "npx rspack"
   },
   "author": "OpenRemote",
@@ -26,10 +26,11 @@
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/or-components": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-vaadin-components": "workspace:*",
-    "axios": "1.16.1",
+    "axios": "1.18.1",
     "http-link-header": "^1.1.3",
     "lit": "^3.3.1",
     "moment": "^2.29.4"

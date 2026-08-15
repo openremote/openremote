@@ -2,7 +2,9 @@ version: 2
 updates:
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/*/"
     schedule:
       interval: "daily"
     ignore:
@@ -12,14 +14,49 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Europe/Amsterdam"
+    groups:
+      vaadin:
+        patterns:
+          - "@vaadin/*"
+      playwright:
+        patterns:
+          - "@playwright/*"
+          - "@sand4rt/experimental-ct-web"
+          - "playwright-core"
+          - "playwright"
     cooldown: # Align with .yarnrc.yml npmMinimalAgeGate (1w) and npmPreapprovedPackages
       default-days: 7
       exclude:
         - "@openremote/*"
+    rebase-strategy: disabled # Prevent unnecessary pipeline runs
+    ignore:
+      - dependency-name: "@material/*" # Material components are deprecated and no longer maintained
+      - dependency-name: "@rsbuild/*"
+      - dependency-name: "@rsdoctor/*"
+      - dependency-name: "@rspack/*"
 
   # Maintain Java dependencies for the Gradle multi-project build.
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Europe/Amsterdam"
+    rebase-strategy: disabled # Prevent unnecessary pipeline runs
+
+  # Maintain Docker base images
+  - package-ecosystem: "docker"
+    directories:
+      - "/balena"
+      - "/manager"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Europe/Amsterdam"
+    rebase-strategy: disabled # Prevent unnecessary pipeline runs

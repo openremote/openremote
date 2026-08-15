@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.test.protocol.openweathermap
 
@@ -65,12 +64,12 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
                 case "api.openweathermap.org":
                     if (requestUri.path.startsWith("/data/3.0/onecall")) {
                     def now = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
-                    
+
                     // Extract location from query parameters
                     def queryParams = requestUri.query.split("&")
                     def lat = queryParams.find { it.startsWith("lat=") }?.split("=")[1]
                     def lon = queryParams.find { it.startsWith("lon=") }?.split("=")[1]
-                    
+
                     def content
                     if (lat == "52.3676" && lon == "4.9041") {
                         // Amsterdam weather data
@@ -145,7 +144,7 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
                             }
                         ]
                     }"""
-                    
+
                     } else if (lat == "51.5072" && lon == "-0.1276") {
                         // London weather data (different values)
                         content = """{
@@ -220,7 +219,7 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
                         ]
                     }"""
                     }
-                    
+
                     def responseBody = ValueUtil.JSON.readValue(content, OpenWeatherMapResponse.class)
                     requestContext.abortWith(
                         Response.ok(responseBody, MediaType.APPLICATION_JSON_TYPE).build()
@@ -263,6 +262,9 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
 
         when: "a weather asset is provisioned"
         def protocol = (OpenWeatherMapProtocol) agentService.getProtocolInstance(agent.id)
+        // Attributes are linked asynchronously and only linked attributes are updated, so linking must be awaited
+        // before each update is triggered
+        def linkedAttributeCount = { assetId -> protocol.getLinkedAttributes().keySet().count { it.id == assetId } }
         def weatherAsset = protocol.provisionWeatherAsset()
 
         then: "the weather asset should be provisioned"
@@ -287,6 +289,7 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             assert weatherAsset.getAttribute(WeatherAsset.PROBABILITY_OF_PRECIPITATION).get().hasMeta(AGENT_LINK)
             assert weatherAsset.getAttribute(WeatherAsset.RAINFALL).get().hasMeta(AGENT_LINK)
             assert weatherAsset.getAttribute(WeatherAsset.UV_INDEX).get().hasMeta(AGENT_LINK)
+            assert linkedAttributeCount(weatherAsset.id) == 10
         }
 
 
@@ -320,7 +323,10 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             assert weatherAsset.getLocation().map{it.y}.orElse(null) == 52.3676d
         }
 
-        when: "a weather update is triggered"
+        when: "a weather update is triggered once the attributes are linked again after the merge"
+        conditions.eventually {
+            assert linkedAttributeCount(weatherAsset.id) == 10
+        }
         protocol.updateAllLinkedAttributes()
 
         then: "the weather data should be updated with current values according to the asset's location"
@@ -368,6 +374,7 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             assert weatherAsset2.parentId == agent.id
             assert weatherAsset2.getLocation().map{it.x}.orElse(null) == -0.1276d
             assert weatherAsset2.getLocation().map{it.y}.orElse(null) == 51.5072d
+            assert linkedAttributeCount(weatherAsset2.id) == 10
         }
 
         when: "a weather update is triggered"

@@ -1,21 +1,20 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY without even the implied warranty of
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.test
 
@@ -307,13 +306,11 @@ trait ContainerTrait {
                 } catch (IllegalStateException e) {
                     LOG.info("Failed to clean the existing container so creating a new one", e)
                     stopContainer()
-                    TestFixture.container = null
                 }
             } else {
                 LOG.info("Request to start container with different config and/or services as already running container so restarting")
                 LOG.info("Current config = ${currentConfig}, new config = ${config}")
                 stopContainer()
-                TestFixture.container = null
             }
         }
 
@@ -374,7 +371,7 @@ trait ContainerTrait {
             if (i >= 100) {
                 LOG.info("Agents didn't load correctly so stopping and starting the container")
                 stopContainer()
-                startContainer(config, services)
+                return startContainer(config, services)
             } else {
                 LOG.info("Agents are deployed")
             }
@@ -519,14 +516,27 @@ trait ContainerTrait {
         try {
             if (container != null) {
                 container.stop()
-                // Clear out the Built in JAX-RS client as the executor service it uses will be aggressively shutdown by Camel
-                WebTargetBuilder.BUILT_IN_CLIENT.getAndUpdate {if (it != null) {
-                    it.close()
-                    return null
-                }}
             }
         } catch (Exception e) {
             LOG.warn("Failed to stop container", e)
+        } finally {
+            TestFixture.container = null
+            closeTestClient(testClient, "test JAX-RS client")
+            // Clear out the Built in JAX-RS client as the executor service it uses will be aggressively shutdown by Camel
+            closeTestClient(WebTargetBuilder.BUILT_IN_CLIENT, "built in JAX-RS client")
+        }
+    }
+
+    void closeTestClient(AtomicReference<ResteasyClient> clientReference, String clientName) {
+        try {
+            clientReference.getAndUpdate {
+                if (it != null) {
+                    it.close()
+                }
+                return null
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to close ${clientName}", e)
         }
     }
 

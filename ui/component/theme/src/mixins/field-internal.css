@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,20 +12,22 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 /* We intentionally remove paddings around fields so we only need to deal with
  * our own paddings, margins and gaps.
  */
 @media lumo_mixins_field-internal {
-    :host {
-        padding: 0;
-        width: 100%;
-    }
-    :host([has-label]) {
-        padding-top: 0;
-    }
-    [class$="container"] {
-        width: 100%; /* Lumo sets default field container width as 12em */
-    }
+  :host {
+    padding: 0;
+    width: 100%;
+  }
+  :host([has-label]) {
+    padding-top: 0;
+  }
+  [class$="container"] {
+    width: 100%; /* Lumo sets default field container width as 12em */
+  }
 }

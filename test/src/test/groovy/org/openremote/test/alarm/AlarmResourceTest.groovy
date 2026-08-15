@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.test.alarm
 
@@ -62,6 +61,9 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
     @Shared
     static AlarmResource regularUserResource
+
+    @Shared
+    static AlarmResource buildingUserResource
 
     @Shared
     static KeycloakTestSetup keycloakTestSetup
@@ -116,6 +118,16 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         superAdminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, superAdminAccessToken).proxy(AlarmResource.class)
 
+        def buildingUserAccessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
+        )
+
+        buildingUserResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, buildingUserAccessToken).proxy(AlarmResource.class)
+
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
         def throwPushHandlerException = false
         EmailNotificationHandler mockPushNotificationHandler = Spy(emailNotificationHandler)
@@ -137,9 +149,11 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
     def cleanup() {
         // Remove all alarms
-        def alarms = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
-        if (alarms.length > 0) {
-            adminResource.removeAlarms(null, (List<Long>) alarms.collect { it.id })
+        [MASTER_REALM, keycloakTestSetup.realmBuilding.name].each { realm ->
+            def alarms = superAdminResource.getAlarms(null, realm, null, null, null)
+            if (alarms.length > 0) {
+                superAdminResource.removeAlarms(null, (List<Long>) alarms.collect { it.id })
+            }
         }
 
         // Clear notifications
@@ -417,6 +431,67 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         }
     }
 
+    // Delete alarms from another realm as non-super-user
+    def "should not bulk delete alarms from another realm"() {
+        given:
+        def masterAlarm = adminResource.createAlarm(null, new Alarm("Master alarm", "Master content", Severity.MEDIUM, null, MASTER_REALM), null)
+
+        when:
+        buildingUserResource.removeAlarms(null, [masterAlarm.id])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+
+        and:
+        adminResource.getAlarm(null, masterAlarm.id) != null
+
+        when:
+        buildingUserResource.getAlarm(null, masterAlarm.id)
+
+        then:
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+
+        when:
+        buildingUserResource.removeAlarm(null, masterAlarm.id)
+
+        then:
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+    }
+
+    // Delete alarms in a mixed-realm bulk request as non-super-user
+    def "should not bulk delete any alarms when one alarm belongs to another realm"() {
+        given:
+        def buildingRealm = keycloakTestSetup.realmBuilding.name
+        def buildingAlarm = buildingUserResource.createAlarm(null, new Alarm("Building alarm", "Building content", Severity.MEDIUM, null, buildingRealm), null)
+        def masterAlarm = adminResource.createAlarm(null, new Alarm("Master alarm", "Master content", Severity.MEDIUM, null, MASTER_REALM), null)
+
+        when:
+        buildingUserResource.removeAlarms(null, [buildingAlarm.id, masterAlarm.id])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+
+        and:
+        buildingUserResource.getAlarm(null, buildingAlarm.id) != null
+        adminResource.getAlarm(null, masterAlarm.id) != null
+    }
+
     // Delete empty or null alarms
     def "should not delete null or empty alarms"() {
         when:
@@ -571,10 +646,8 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         def alarm2 = adminResource.createAlarm(null, new Alarm().setTitle('alarm 2').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM), null)
 
         then: "both can be linked to an asset"
-        adminResource.setAssetLinks(null, [
-                new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.smartOfficeId),
-                new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.smartOfficeId)
-        ])
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.smartOfficeId)])
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.smartOfficeId)])
 
         when: "the alarm asset links are retrieved"
         def alarm1Links = adminResource.getAssetLinks(null, alarm1.id, MASTER_REALM)
@@ -591,10 +664,8 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         alarm2Links.get(0).id.realm == MASTER_REALM
 
         when: "more alarm asset links are added"
-        adminResource.setAssetLinks(null, [
-                new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.lobbyId),
-                new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.lobbyId)
-        ])
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.lobbyId)])
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.lobbyId)])
         alarm1Links = adminResource.getAssetLinks(null, alarm1.id, MASTER_REALM)
         alarm2Links = adminResource.getAssetLinks(null, alarm2.id, MASTER_REALM)
 
@@ -613,6 +684,107 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         alarm2Links.get(1).id.alarmId == alarm2.id
         alarm2Links.get(1).id.assetId == managerTestSetup.smartOfficeId
         alarm2Links.get(1).id.realm == MASTER_REALM
+    }
+
+    def "should reject asset links for multiple alarms in one request"() {
+        given:
+        def alarm1 = adminResource.createAlarm(null, new Alarm().setTitle('alarm 1').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM), null)
+        def alarm2 = adminResource.createAlarm(null, new Alarm().setTitle('alarm 2').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM), null)
+
+        when:
+        adminResource.setAssetLinks(null, [
+                new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.smartOfficeId),
+                new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.smartOfficeId)
+        ])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
+
+        and:
+        adminResource.getAssetLinks(null, alarm1.id, MASTER_REALM).isEmpty()
+        adminResource.getAssetLinks(null, alarm2.id, MASTER_REALM).isEmpty()
+    }
+
+    // Linking alarms across realms
+    def "should reject asset links for multiple realms in one request"() {
+        given:
+        def buildingRealm = keycloakTestSetup.realmBuilding.name
+        def alarm = buildingUserResource.createAlarm(null, new Alarm("Building alarm", "Building content", Severity.MEDIUM, null, buildingRealm), null)
+        def links = [
+                new AlarmAssetLink(buildingRealm, alarm.id, managerTestSetup.apartment1Id),
+                new AlarmAssetLink(MASTER_REALM, alarm.id, managerTestSetup.smartOfficeId)
+        ]
+
+        when:
+        buildingUserResource.setAssetLinks(null, links)
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
+
+        and:
+        buildingUserResource.getAssetLinks(null, alarm.id, buildingRealm).isEmpty()
+        superAdminResource.getAssetLinks(null, alarm.id, MASTER_REALM).isEmpty()
+    }
+
+    def "should reject asset links pointing to assets from another realm"() {
+        given:
+        def buildingRealm = keycloakTestSetup.realmBuilding.name
+        def alarm = buildingUserResource.createAlarm(null, new Alarm("Building alarm", "Building content", Severity.MEDIUM, null, buildingRealm), null)
+
+        when:
+        buildingUserResource.setAssetLinks(null, [new AlarmAssetLink(buildingRealm, alarm.id, managerTestSetup.smartOfficeId)])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
+
+        and:
+        buildingUserResource.getAssetLinks(null, alarm.id, buildingRealm).isEmpty()
+    }
+
+    def "should reject asset links pointing to alarms from another realm"() {
+        given:
+        def buildingRealm = keycloakTestSetup.realmBuilding.name
+        def masterAlarm = adminResource.createAlarm(null, new Alarm("Master alarm", "Master content", Severity.MEDIUM, null, MASTER_REALM), null)
+
+        when:
+        buildingUserResource.setAssetLinks(null, [new AlarmAssetLink(buildingRealm, masterAlarm.id, managerTestSetup.apartment1Id)])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
+
+        and:
+        buildingUserResource.getAssetLinks(null, masterAlarm.id, buildingRealm).isEmpty()
+    }
+
+    def "should reject creating alarms with linked assets from another realm"() {
+        given:
+        def buildingRealm = keycloakTestSetup.realmBuilding.name
+
+        when:
+        buildingUserResource.createAlarm(null, new Alarm("Building alarm", "Building content", Severity.MEDIUM, null, buildingRealm), [managerTestSetup.smartOfficeId])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
     }
 
     // Linking alarms without permissions
@@ -703,4 +875,5 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
             return true
         }
     }
+
 }

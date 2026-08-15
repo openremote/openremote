@@ -11,7 +11,6 @@ volumes:
   postgresql-data:
 
 services:
-
   proxy:
     image: openremote/proxy:${PROXY_VERSION:-latest}
     restart: always
@@ -24,7 +23,7 @@ services:
       - "8883:8883"
       - "127.0.0.1:8404:8404" # Localhost metrics access
       - "${PRIVATE_IP:-127.0.0.1}:8404:8404" # Allows to also expose metrics on a given IP address,
-                                             # intended to be IP of the interface of the private subnet of the EC2 VM
+        # intended to be IP of the interface of the private subnet of the EC2 VM
     volumes:
       - proxy-data:/deployment
     environment:
@@ -55,9 +54,8 @@ services:
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
 
-
   manager:
-#    privileged: true
+    #    privileged: true
     restart: always
     image: openremote/manager:${MANAGER_VERSION:-latest}
     depends_on:
@@ -66,7 +64,7 @@ services:
     ports:
       - "127.0.0.1:8405:8405" # Localhost metrics access
       - "${PRIVATE_IP:-127.0.0.1}:8405:8405" # Allows to also expose metrics on a given IP address,
-                                             # intended to be IP of the interface of the private subnet of the EC2 VM
+        # intended to be IP of the interface of the private subnet of the EC2 VM
     environment:
       OR_SETUP_TYPE:
       OR_ADMIN_PASSWORD:

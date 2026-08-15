@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-map",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "Displays s vector or raster map",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -16,16 +16,16 @@
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
-    "test": "echo \"No tests\" && exit 0",
+    "test": "npx tsc -b && npx playwright test",
     "prepack": "npx rspack"
   },
   "author": "OpenRemote",
   "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@maplibre/maplibre-gl-geocoder": "^1.5.0",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
@@ -33,7 +33,7 @@
     "lit": "^3.3.1",
     "lit-html": "^3.3.1",
     "lodash.debounce": "^4.0.8",
-    "maplibre-gl": "^5.19.0"
+    "maplibre-gl": "~5.19.0"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",

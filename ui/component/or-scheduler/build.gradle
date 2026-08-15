@@ -1,40 +1,38 @@
-tasks.register('clean') {
-    doLast {
-        delete "dist"
-        delete "lib"
-    }
+tasks.register('clean', Delete) {
+  delete layout.projectDirectory.dir('dist')
+  delete layout.projectDirectory.dir('lib')
 }
 
 tasks.register('npmAnalyze', Exec) {
-    mustRunAfter npmClean
-    dependsOn getYarnInstallTask()
-    commandLine npmCommand("yarn"), "run", "analyze"
+  mustRunAfter npmClean
+  dependsOn getYarnInstallTask()
+  commandLine npmCommand("yarn"), "run", "analyze"
 }
 
 tasks.register('installDist') {
-    dependsOn npmAnalyze
+  dependsOn npmAnalyze
 }
 
 tasks.register('prepareUi') {
-    dependsOn clean, npmPublish, npmPrepare
+  dependsOn clean, npmPublish, npmPrepare
 }
 
 tasks.register('publishUi') {
-    dependsOn clean, npmPublish
+  dependsOn clean, npmPublish
 }
 
 tasks.register('npmBuild', Exec) {
-    mustRunAfter npmClean
-    dependsOn getYarnInstallTask()
-    commandLine npmCommand("yarn"), "run", "build"
+  mustRunAfter npmClean
+  dependsOn getYarnInstallTask()
+  commandLine npmCommand("yarn"), "run", "build"
 }
 
 tasks.register('npmTest', Exec) {
-    dependsOn getYarnInstallTask()
-    commandLine npmCommand("yarn"), "run", "test"
+  dependsOn getYarnInstallTask()
+  commandLine npmCommand("yarn"), "run", "test"
 }
 
 tasks.register('npmTestUI', Exec) {
-    dependsOn getYarnInstallTask()
-    commandLine npmCommand("yarn"), "run", "test", "--ui"
+  dependsOn getYarnInstallTask()
+  commandLine npmCommand("yarn"), "run", "test", "--ui"
 }

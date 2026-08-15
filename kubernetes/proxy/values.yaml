@@ -62,7 +62,7 @@ service:
     # Service type, typically use ClusterIP for local deployment and LoadBalancer for cloud deployments
     type: ClusterIP
     port: 8404
-    annotations: { }
+    annotations: {}
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -152,14 +152,14 @@ or:
   # MQTT broker port of OpenRemote Manager (default `1883`)
   managerMqttPort: 1883
   # The path prefix used for OpenRemote Manager HTTP requests (default not set, example: `/openremote`)
-#  managerPathPrefix:
+  #  managerPathPrefix:
 
   # FQDN of Keycloak server
   keycloakHost: "keycloak.default.svc.cluster.local"
   # Web server port of Keycloak server (default `8080`)
   keycloakPort: 8080
   # The path prefix used for Keycloak HTTP requests (default not set, example: `/keycloak`)
-#  keycloakPathPrefix:
+  #  keycloakPathPrefix:
 
   # The container binds to this port for handling MQTT(S) requests, must be a non-privileged port (>= 1024) when running inside the cluster
   mqttPort: 8883

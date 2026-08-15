@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.test.protocol
 
@@ -73,7 +72,7 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
         )
-        
+
         and: "the agent resource"
         def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
 
@@ -82,7 +81,7 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
             assert agentService.getAgents().containsKey(knxAgent.id)
             assert noEventProcessedIn(assetProcessingService, 500)
         }
-        
+
         when: "discovery is requested with a ETS project file"
         def knxProjectFileResource = getClass().getResourceAsStream(
             "/org/openremote/test/protocol/knx/knx-import-testproject.knxproj"
@@ -90,7 +89,7 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
         String base64Content = Base64.getEncoder().encodeToString(knxProjectFileResource.bytes)
         def fileInfo = new FileInfo("knx-import-testproject.knxproj", base64Content, true)
         def assets = agentResource.doProtocolAssetImport(null, knxAgent.getId(), null, fileInfo)
-        
+
         then: "the new things and attributes should be created"
         conditions.eventually {
             assert assets != null
@@ -103,10 +102,10 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
                         attr.getMetaValue(AGENT_LINK).map({agentLink -> agentLink.id == knxAgent.id})
                             .orElse(false)
                     })
-    
+
             }
         }
-        
+
         and: "a given asset should have the correct attributes (Target Temperature)"
         def asset = assets.find {it.asset.name == "Target Temperature"}
         assert asset != null

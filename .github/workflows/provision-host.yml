@@ -9,14 +9,14 @@ on:
   workflow_dispatch:
     inputs:
       ACCOUNT_NAME:
-        description: 'Account to provision host within'
+        description: "Account to provision host within"
         type: string
         required: true
       HOST:
-        description: 'Host to provision'
+        description: "Host to provision"
         required: true
       INSTANCE_TYPE:
-        description: 'EC2 instance type (only change if you know what you are doing)'
+        description: "EC2 instance type (only change if you know what you are doing)"
         default: t4g.medium
         type: choice
         options:
@@ -28,43 +28,41 @@ on:
           - m6g.xlarge
         required: true
       ROOT_DISK_SIZE:
-        description: 'Override EC2 root EBS volume size (GB)'
+        description: "Override EC2 root EBS volume size (GB)"
         type: string
-        default: '16'
+        default: "16"
         required: false
       DATA_DISK_SIZE:
-        description: 'Override EC2 data EBS volume size (GB)'
+        description: "Override EC2 data EBS volume size (GB)"
         type: string
-        default: '16'
+        default: "16"
         required: false
       SNAPSHOT_ID:
-        description: 'Snapshot ID to create volume based off an existing snapshot'
+        description: "Snapshot ID to create volume based off an existing snapshot"
         type: string
         required: false
       ENABLE_METRICS:
-        description: 'Enable metrics'
+        description: "Enable metrics"
         type: boolean
         default: true
         required: false
       ELASTIC_IP:
-        description: 'Create elastic public IP'
+        description: "Create elastic public IP"
         type: boolean
         default: false
         required: false
       PROVISION_S3_BUCKET:
-        description: 'Create S3 bucket for backups'
+        description: "Create S3 bucket for backups"
         type: boolean
         default: true
         required: false
 
 jobs:
-
   provision:
     name: Provision
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Check CI/CD team membership
         uses: tspascoal/get-user-teams-membership@b2546c5affc730fd8e3d8483ae9ad3621938c2f9 # v4.0.2
         id: checkUserMember
@@ -75,7 +73,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets._TEMP_ACCESS_TOKEN_FOR_READING_ORG_TEAMS }} # Personal access token used to query github (Requires scope: `read:org`)
 
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Provision Host
         if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}

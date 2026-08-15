@@ -5,17 +5,16 @@
     "rootDir": "src",
     "strict": true
   },
-  "include": [
-    "./src"
-  ],
+  "include": ["./src"],
   "references": [
+    { "path": "../or-element" },
     { "path": "../../component/core" },
     { "path": "../../component/or-mwc-components" },
-  	{ "path": "../../component/or-icon" },
-  	{ "path": "../../component/or-map" },
+    { "path": "../../component/or-icon" },
+    { "path": "../../component/or-map" },
     { "path": "../../component/or-attribute-card" },
-  	{ "path": "../../component/or-attribute-input" },
-  	{ "path": "../../component/or-attribute-picker" },
+    { "path": "../../component/or-attribute-input" },
+    { "path": "../../component/or-attribute-picker" },
     { "path": "../../component/or-attribute-barchart" },
     { "path": "../../component/or-asset-tree" },
     { "path": "../../component/or-asset-viewer" },

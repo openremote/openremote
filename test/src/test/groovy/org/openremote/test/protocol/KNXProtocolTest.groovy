@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.test.protocol
 
@@ -84,7 +83,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        
+
 
         when: "KNX agents are created"
 
@@ -135,11 +134,11 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert ((KNXProtocol) agentService.getProtocolInstance(knxAgent1.id)).attributeStatusMap.get(new AttributeRef(knxThing.id, "light1ToggleOnOff")) != null
         }
-        
+
         when: "change light1ToggleOnOff value to 'true'"
         def switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", true)
         assetProcessingService.sendAttributeEvent(switchChange)
-                
+
         then: "the correct data should arrive on KNX bus"
         conditions.eventually {
            assert knxTestingNetwork.getLastDataReceived() == "0081"
@@ -148,12 +147,12 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         when: "change light1ToggleOnOff value to 'false'"
         switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", false)
         assetProcessingService.sendAttributeEvent(switchChange)
-                
+
         then: "the correct data should arrive on KNX bus"
         conditions.eventually {
             assert knxTestingNetwork.getLastDataReceived() == "0080"
         }
-        
+
         cleanup: "the server should be stopped"
         if (knxThing != null) {
             assetStorageService.delete([knxThing.id])

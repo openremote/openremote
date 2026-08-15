@@ -1,1 +1,1 @@
-# @openremote/or-tree-menu  \<or-tree-menu\>
+# @openremote/or-tree-menu \<or-tree-menu\>

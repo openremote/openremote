@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,127 +12,135 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {OrRulesRuleChangedEvent, RulesConfig, RuleView} from "./index";
-import {css, html, LitElement, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {RulesetLang, RulesetUnion} from "@openremote/model";
+import { OrRulesRuleChangedEvent, type RulesConfig, type RuleView } from "./index";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
+import { customElement, property } from "lit/decorators.js";
+import { RulesetLang, type RulesetUnion } from "@openremote/model";
 import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/mode-groovy";
 import "@openremote/or-components/or-ace-editor";
-import {OrAceEditor, OrAceEditorChangedEvent} from "@openremote/or-components/or-ace-editor";
-import {createRef, ref, Ref} from "lit/directives/ref.js";
+import type { OrAceEditor, OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
+import { createRef, ref, type Ref } from "lit/directives/ref.js";
 
 // language=CSS
 const style = css`
+  :host {
+    display: flex;
+    width: 100%;
+    height: 100%;
+  }
+
+  #ace-editor {
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+
+  @media screen and (max-width: 1400px) {
+    :host > * {
+      flex-grow: 0;
+    }
+
     :host {
-        display: flex;
-        width: 100%;
-        height: 100%;
+      flex-direction: column;
     }
-
-    #ace-editor {
-        position: relative;
-        height: 100%;
-        width: 100%;
-    }
-
-    @media screen and (max-width: 1400px) {
-        :host > * {
-            flex-grow: 0;
-        }
-
-        :host {
-            flex-direction: column;
-        }
-    }
+  }
 `;
 
 @customElement("or-rule-text-viewer")
-export class OrRuleTextViewer extends LitElement implements RuleView {
+export class OrRuleTextViewer extends OrElement implements RuleView {
+  static get styles() {
+    return style;
+  }
 
-    static get styles() {
-        return style;
+  @property({ attribute: false })
+  public readonly?: boolean;
+
+  @property({ attribute: false })
+  public config?: RulesConfig;
+
+  @property({ attribute: false })
+  protected _ruleset!: RulesetUnion;
+
+  protected _rules?: string;
+  protected _aceEditor: Ref<OrAceEditor> = createRef();
+
+  public set ruleset(ruleset: RulesetUnion) {
+    if (this._ruleset === ruleset) {
+      return;
     }
 
-    @property({attribute: false})
-    public readonly?: boolean;
+    this._ruleset = ruleset;
 
-    @property({attribute: false})
-    public config?: RulesConfig;
+    if (!ruleset.rules) {
+      // New ruleset so start a new rule
+      this._rules = this._createRules();
+    } else {
+      this._rules = ruleset.rules;
+    }
+  }
 
-    @property({attribute: false})
-    protected _ruleset!: RulesetUnion;
+  protected _createRules(): string {
+    return "";
+  }
 
-    protected _rules?: string;
-    protected _aceEditor: Ref<OrAceEditor> = createRef();
+  protected render(): TemplateResult | void {
+    return html`
+      <or-ace-editor
+        ${ref(this._aceEditor)}
+        @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => this._onEditorChanged(ev)}"
+        .mode="${this._getMode()}"
+        .readonly="${this.readonly}"
+        .value="${this._getRulesString()}"
+      ></or-ace-editor>
+    `;
+  }
 
-    public set ruleset(ruleset: RulesetUnion) {
-        if (this._ruleset === ruleset) {
-            return;
-        }
+  protected _getMode() {
+    switch (this._ruleset.lang) {
+      case RulesetLang.JAVASCRIPT:
+        return "ace/mode/javascript";
+      case RulesetLang.GROOVY:
+        return "ace/mode/groovy";
+      case RulesetLang.JSON:
+        return "ace/mode/json";
+    }
+  }
 
-        this._ruleset = ruleset;
-
-        if (!ruleset.rules) {
-            // New ruleset so start a new rule
-            this._rules = this._createRules();
-        } else {
-            this._rules = ruleset.rules;
-        }
+  protected _getRulesString() {
+    if (!this._rules) {
+      return "";
     }
 
-    protected _createRules(): string {
-        return "";
+    switch (this._ruleset.lang) {
+      case RulesetLang.JAVASCRIPT:
+      case RulesetLang.GROOVY:
+        return this._rules;
+      case RulesetLang.JSON:
+        return JSON.stringify(JSON.parse(this._rules), null, 2);
+    }
+  }
+
+  protected _onEditorChanged(ev: OrAceEditorChangedEvent) {
+    const valid = ev.detail.valid;
+    this.dispatchEvent(new OrRulesRuleChangedEvent(valid));
+  }
+
+  public beforeSave() {
+    if (this.readonly || !this._aceEditor.value) {
+      return;
     }
 
-    protected render(): TemplateResult | void {
-        return html`
-            <or-ace-editor ${ref(this._aceEditor)} @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => this._onEditorChanged(ev)}" .mode="${this._getMode()}" .readonly="${this.readonly}" .value="${this._getRulesString()}"></or-ace-editor>
-        `;
-    }
+    this._ruleset.rules = this._aceEditor.value.getValue();
+  }
 
-    protected _getMode() {
-        switch (this._ruleset.lang) {
-            case RulesetLang.JAVASCRIPT:
-                return "ace/mode/javascript";
-            case RulesetLang.GROOVY:
-                return "ace/mode/groovy";
-            case RulesetLang.JSON:
-                return "ace/mode/json";
-        }
-    }
-
-    protected _getRulesString() {
-        if (!this._rules) {
-            return "";
-        }
-
-        switch (this._ruleset.lang) {
-            case RulesetLang.JAVASCRIPT:
-            case RulesetLang.GROOVY:
-                return this._rules;
-            case RulesetLang.JSON:
-                return JSON.stringify(JSON.parse(this._rules), null, 2);
-        }
-    }
-
-    protected _onEditorChanged(ev: OrAceEditorChangedEvent) {
-        const valid = ev.detail.valid;
-        this.dispatchEvent(new OrRulesRuleChangedEvent(valid));
-    }
-
-    public beforeSave() {
-        if (this.readonly || !this._aceEditor.value) {
-            return;
-        }
-
-        this._ruleset.rules = this._aceEditor.value.getValue();
-    }
-
-    public validate(): boolean {
-        return this._aceEditor.value ? this._aceEditor.value.validate() : false;
-    }
+  public validate(): boolean {
+    return this._aceEditor.value ? this._aceEditor.value.validate() : false;
+  }
 }

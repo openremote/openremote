@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-chart",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "OpenRemote chart",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -29,12 +29,13 @@
     "@openremote/or-asset-tree": "workspace:*",
     "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-components": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-vaadin-components": "workspace:*",
     "@openremote/rest": "workspace:*",
-    "echarts": "~6.0.0",
+    "echarts": "~6.1.0",
     "lit": "^3.3.1",
     "lodash.debounce": "^4.0.8",
     "moment": "^2.29.4"

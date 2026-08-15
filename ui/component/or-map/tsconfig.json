@@ -4,11 +4,9 @@
     "outDir": "./lib",
     "rootDir": "src"
   },
-  "include": [
-    "./src", 
-    "../or-map/@types"
-  ],
+  "include": ["./src"],
   "references": [
+    { "path": "../or-element" },
     { "path": "../core" },
     { "path": "../rest" },
     { "path": "../model" },

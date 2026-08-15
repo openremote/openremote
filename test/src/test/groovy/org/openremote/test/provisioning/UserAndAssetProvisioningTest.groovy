@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.test.provisioning
 
@@ -110,6 +109,13 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def userAssetProvisioningMQTTHandler = mqttBrokerService.customHandlers.find {it instanceof UserAssetProvisioningMQTTHandler} as UserAssetProvisioningMQTTHandler
         def mqttHost = mqttBrokerService.host
         def mqttPort = mqttBrokerService.port
+
+        // A consumer in the client topic map only means the client asked for the subscription; the broker registers it
+        // asynchronously and a response published before then is lost, so requests must await the broker side
+        def responseSubscribed = { String clientId, String responseTopic ->
+            def brokerConnection = mqttBrokerService.getConnectionFromClientID(clientId)
+            brokerConnection != null && userAssetProvisioningMQTTHandler.responseSubscribedConnections.get(responseTopic) === brokerConnection
+        }
 
         and: "a realm is created with some custom realm roles"
         def realm = new Realm()
@@ -211,6 +217,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
             assert device1Client.topicConsumerMap.get(device1ResponseTopic).consumers.size() == 1
+            assert responseSubscribed(mqttDevice1ClientId, device1ResponseTopic)
         }
 
         when: "an eavesdropping client connects"
@@ -238,6 +245,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert device1Client.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
             assert device1Client.topicConsumerMap.get(device1ResponseTopic).consumers.size() == 1
+            assert responseSubscribed(mqttDevice1ClientId, device1ResponseTopic)
         }
 
         when: "the client publishes a valid x509 certificate that has been signed by the CA stored in the provisioning config"
@@ -284,6 +292,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
             assert device1Client.topicConsumerMap.get(device1ResponseTopic).consumers.size() == 1
+            assert responseSubscribed(mqttDevice1ClientId, device1ResponseTopic)
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
         }
 
@@ -440,6 +449,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
+            assert responseSubscribed(mqttDevice1ClientId, device1ResponseTopic)
             assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
             assert subscribeFailures.size() == 2
             assert subscribeFailures.contains(assetSubscriptionTopic)
@@ -513,6 +523,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).consumers.size() == 1
+            assert responseSubscribed(mqttDeviceNClientId, deviceNResponseTopic)
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -562,6 +573,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).consumers.size() == 1
+            assert responseSubscribed(mqttDeviceNClientId, deviceNResponseTopic)
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -611,6 +623,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).consumers.size() == 1
+            assert responseSubscribed(mqttDeviceNClientId, deviceNResponseTopic)
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -659,6 +672,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
             subscribeFailures.size() == 2
+            assert responseSubscribed(mqttDevice1ClientId, device1ResponseTopic)
         }
 
         when: "the re-connected client re-authenticates"
@@ -668,7 +682,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
                         new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
                 ).orElse(null))
         )
-        
+
         then: "the broker should have published to the response topic an error message"
         conditions.eventually {
             assert device1Responses.size() == 1
@@ -695,6 +709,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).consumers.size() == 1
+            assert responseSubscribed(mqttDeviceNClientId, deviceNResponseTopic)
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -728,6 +743,9 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         and: "the already connected device publishes its' valid client certificate"
         device1Responses.clear()
+        conditions.eventually {
+            assert responseSubscribed(mqttDevice1ClientId, device1ResponseTopic)
+        }
         device1Client.sendMessage(
                 new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                         new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
@@ -759,6 +777,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != existingConnection
             assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(existingConnection))
+            assert responseSubscribed(mqttDevice1ClientId, device1ResponseTopic)
         }
 
         when: "the re-connected client re-authenticates"
@@ -795,6 +814,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).consumers.size() == 1
+            assert responseSubscribed(mqttDeviceNClientId, deviceNResponseTopic)
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 

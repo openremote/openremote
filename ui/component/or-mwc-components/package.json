@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-mwc-components",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "Material Design Components packaged as web components (The official components are hardcoded to use Material Design font which has limited icons)",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -56,6 +56,7 @@
     "@material/textfield": "^9.0.0",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "lit": "^3.3.1",

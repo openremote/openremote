@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import themeCss from "@openremote/theme";
 import manager from "@openremote/core";
 import { thingAssetInfo, metaItemDescriptors, valueDescriptors } from "@openremote/test/data";
@@ -7,6 +25,21 @@ import HttpBackend from "i18next-http-backend";
 
 import { IconSets, OrIconSet, createMdiIconSet, createSvgIconSet } from "@openremote/or-icon";
 import { AssetEventCause, AssetModelUtil, ClientRole } from "@openremote/model";
+
+import { beforeMount } from "@sand4rt/experimental-ct-web/hooks";
+
+// Playwright CT imports a component's module only when it is `mount()`ed, so a custom element that
+// only appears as a slotted/appended child inside the mounted component would never be defined. A
+// test declares such components via `hooksConfig.components` (see `ComponentHooksConfig`); their
+// import refs are resolved here, which runs their modules and registers them before the mount.
+beforeMount(async ({ hooksConfig }) => {
+  const components = Array.isArray(hooksConfig?.components) ? hooksConfig.components : [];
+  for (const component of components) {
+    if (component?.__pw_type === "importRef") {
+      await window.__pwRegistry?.resolveImportRef(component);
+    }
+  }
+});
 
 const style = document.createElement("style");
 style.textContent = themeCss;
@@ -25,46 +58,45 @@ window._i18next = i18next.use(HttpBackend);
  * @returns {string} The subscriptionId
  */
 function subscribeAssetEvents(ids, requestCurrentValues, callback) {
-    if (window._assets && window._assets.length) {
-        const assetEvent = {
-            eventType: "asset",
-            asset: window._assets.find(({ id }) => id === ids[0]),
-            cause: AssetEventCause.READ,
-        };
-        callback(assetEvent);
-    } else {
-        console.warn("No assets to subscribe to");
-    }
-    return "test"; // Currently not handling multiple subscriptions
+  if (window._assets && window._assets.length) {
+    const assetEvent = {
+      eventType: "asset",
+      asset: window._assets.find(({ id }) => id === ids[0]),
+      cause: AssetEventCause.READ,
+    };
+    callback(assetEvent);
+  } else {
+    console.warn("No assets to subscribe to");
+  }
+  return "test"; // Currently not handling multiple subscriptions
 }
 
 // TODO: consider rewriting this to use a mock `WebSocketEventProvider` so we can test @openremote/core and other components
 manager.init = async () => {
-    manager._basicIdentity = {
-        // token: string | undefined,
-        // user: User | undefined,
-        roles: [ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES],
-    };
-    manager._config = {
-        clientId: "openremote",
-        autoLogin: false,
-        consoleAutoEnable: false,
-    };
-    manager._events = {
-        subscribeAssetEvents,
-        subscribeAttributeEvents: async () => "",
-        subscribeStatusChange: () => null,
-        unsubscribe: async () => "",
-        unsubscribeStatusChange: () => null,
-    };
-    // Similar to `manager.doDescriptorsInit`, but without requesting the API
-    AssetModelUtil._assetTypeInfos = [thingAssetInfo];
-    AssetModelUtil._metaItemDescriptors = Object.values(metaItemDescriptors);
-    AssetModelUtil._valueDescriptors = Object.values(valueDescriptors);
+  // Shadow the prototype getter so `manager.hasRole` sees these roles without authenticating
+  Object.defineProperty(manager, "roles", {
+    get: () => new Map([["openremote", [ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES]]]),
+  });
+  manager._config = {
+    clientId: "openremote",
+    autoLogin: false,
+    consoleAutoEnable: false,
+  };
+  manager._events = {
+    subscribeAssetEvents,
+    subscribeAttributeEvents: async () => "",
+    subscribeStatusChange: () => null,
+    unsubscribe: async () => "",
+    unsubscribeStatusChange: () => null,
+  };
+  // Similar to `manager.doDescriptorsInit`, but without requesting the API
+  AssetModelUtil._assetTypeInfos = [thingAssetInfo];
+  AssetModelUtil._metaItemDescriptors = Object.values(metaItemDescriptors);
+  AssetModelUtil._valueDescriptors = Object.values(valueDescriptors);
 
-    return true;
+  return true;
 };
 
 manager.init({}).then((success) => {
-    window._initialized = success;
+  window._initialized = success;
 });

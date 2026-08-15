@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,60 +12,69 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {html, LitElement, css} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {i18next, translate} from "@openremote/or-translate"
-import {EmailNotificationMessage} from "@openremote/model";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
+import { customElement, property } from "lit/decorators.js";
+import { i18next, translate } from "@openremote/or-translate";
+import type { EmailNotificationMessage } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
 
 @customElement("or-rule-form-email-message")
-export class OrRuleFormEmailMessage extends translate(i18next)(LitElement) {
+export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) {
+  @property({ type: Object })
+  public message?: EmailNotificationMessage;
 
-    @property({type: Object})
-    public message?: EmailNotificationMessage;
+  static get styles() {
+    return css`
+      #form-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 20px;
+        min-width: 420px;
+        width: 100%;
+      }
+    `;
+  }
 
-    static get styles() {
-        return css`
-            #form-container {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                margin-bottom: 20px;
-                min-width: 420px;
-                width: 100%;
-            }
-        `;
+  protected render() {
+    if (!this.message) {
+      return html`<or-translate .value="${"errorOccurred"}"></or-translate>`;
     }
 
-    protected render() {
-        if(!this.message) {
-            return html`<or-translate .value="${"errorOccurred"}"></or-translate>`;
-        }
-        
-        return html`
-            <div id="form-container">
-                <or-vaadin-text-field value=${this.message?.subject} required
-                                      @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "subject")}>
-                    <or-translate slot="label" value="subject"></or-translate>
-                </or-vaadin-text-field>
-                <or-vaadin-text-area value=${this.message?.html} required style="min-height: 200px;" 
-                                     @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "html")}>
-                    <or-translate slot="label" value="message"></or-translate>
-                </or-vaadin-text-area>
-            </div>
-        `
+    return html`
+      <div id="form-container">
+        <or-vaadin-text-field
+          value=${this.message?.subject}
+          required
+          @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "subject")}
+        >
+          <or-translate slot="label" value="subject"></or-translate>
+        </or-vaadin-text-field>
+        <or-vaadin-text-area
+          value=${this.message?.html}
+          required
+          style="min-height: 200px;"
+          @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "html")}
+        >
+          <or-translate slot="label" value="body"></or-translate>
+        </or-vaadin-text-area>
+      </div>
+    `;
+  }
+
+  protected setActionNotificationName(value: string | undefined, key?: string) {
+    if (key && this.message) {
+      (this.message as any)[key] = value;
     }
 
-    protected setActionNotificationName(value: string | undefined, key?: string) {
-        if(key && this.message){
-            (this.message as any)[key] = value;
-        }
-
-        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
-    }
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
+  }
 }
