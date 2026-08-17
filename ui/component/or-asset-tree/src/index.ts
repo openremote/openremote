@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import type { OrVaadinButton } from "@openremote/or-vaadin-components/or-vaadin-button";
@@ -266,7 +267,7 @@ declare global {
 }
 
 @customElement("or-asset-tree")
-export class OrAssetTree extends subscribe(manager)(LitElement) {
+export class OrAssetTree extends subscribe(manager)(OrElement) {
   static get styles() {
     return [style];
   }

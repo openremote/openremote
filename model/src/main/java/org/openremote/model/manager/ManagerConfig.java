@@ -18,8 +18,6 @@
  */
 package org.openremote.model.manager;
 
-import org.openremote.model.auth.UsernamePassword;
-
 public class ManagerConfig {
   protected String managerUrl;
   protected String keycloakUrl;
@@ -33,12 +31,9 @@ public class ManagerConfig {
   protected String[] loadTranslations;
   protected boolean loadDescriptors;
   protected String translationsLoadPath;
-  protected boolean skipFallbackToBasicAuth;
   protected boolean applyConfigToAdmin;
   protected Auth auth;
-  protected UsernamePassword credentials;
   protected EventProviderType eventProviderType;
   protected Object configureTranslationsOptions;
-  protected Object basicLoginProvider;
   protected String defaultLanguage;
 }

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { until } from "lit/directives/until.js";
@@ -241,7 +242,7 @@ export class OrMwcTableRowSelectEvent extends CustomEvent<OrMwcTableRowSelectDet
 }
 
 @customElement("or-mwc-table")
-export class OrMwcTable extends LitElement {
+export class OrMwcTable extends OrElement {
   static get styles() {
     return [
       css`

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { MDCDrawer } from "@material/drawer";
 import { classMap } from "lit/directives/class-map.js";
@@ -36,7 +37,7 @@ export class OrMwcDrawerChangedEvent extends CustomEvent<boolean> {
 }
 
 @customElement("or-mwc-drawer")
-export class OrMwcDrawer extends LitElement {
+export class OrMwcDrawer extends OrElement {
   public static get styles() {
     return [
       css`

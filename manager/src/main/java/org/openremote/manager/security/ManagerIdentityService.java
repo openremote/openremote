@@ -60,10 +60,6 @@ public class ManagerIdentityService extends IdentityService {
           LOG.info("Enabling Keycloak identity provider");
           this.identityProvider = new ManagerKeycloakIdentityProvider();
         }
-        case "basic" -> {
-          LOG.info("Enabling basic identity provider");
-          this.identityProvider = new ManagerBasicIdentityProvider();
-        }
         default ->
             throw new UnsupportedOperationException(
                 "Unknown identity provider: " + identityProviderType);

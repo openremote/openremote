@@ -16,14 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { Utilities } from "../utils";
 import type { EditorWorkspace } from "./editor-workspace";
 import { input } from "./flow-editor";
 
 @customElement("selection-box")
-export class SelectionBox extends LitElement {
+export class SelectionBox extends OrElement {
   public static get styles() {
     return css`
       svg {

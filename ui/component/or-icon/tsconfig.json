@@ -6,5 +6,5 @@
     "typeRoots": ["./@types"]
   },
   "include": ["./src", "./@types"],
-  "references": [{ "path": "../model" }]
+  "references": [{ "path": "../or-element" }, { "path": "../model" }]
 }

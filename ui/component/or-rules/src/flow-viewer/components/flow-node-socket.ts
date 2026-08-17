@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import type { NodeSocket } from "@openremote/model";
 import { IdentityDomLink } from "../node-structure";
@@ -26,7 +27,7 @@ import { project } from "./flow-editor";
 import type { FlowNode } from "./flow-node";
 
 @customElement("flow-node-socket")
-export class FlowNodeSocket extends translate(i18next)(LitElement) {
+export class FlowNodeSocket extends translate(i18next)(OrElement) {
   public get connectionPosition() {
     return Utilities.getCenter(this.circleElem.getBoundingClientRect());
   }

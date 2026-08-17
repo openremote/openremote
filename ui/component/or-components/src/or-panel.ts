@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { DefaultColor2, DefaultColor3 } from "@openremote/core";
 import { when } from "lit/directives/when.js";
@@ -69,7 +70,7 @@ const style = css`
 `;
 
 @customElement("or-panel")
-export class OrPanel extends LitElement {
+export class OrPanel extends OrElement {
   static get styles() {
     return [style];
   }

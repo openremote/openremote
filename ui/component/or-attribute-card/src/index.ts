@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state, query } from "lit/decorators.js";
 import { i18next } from "@openremote/or-translate";
 import {
@@ -194,7 +195,7 @@ const style = css`
 `;
 
 @customElement("or-attribute-card")
-export class OrAttributeCard extends LitElement {
+export class OrAttributeCard extends OrElement {
   @property()
   public panelName?: string;
 

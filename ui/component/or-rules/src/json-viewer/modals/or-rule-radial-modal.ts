@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement } from "lit";
+import { html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import type { AssetDescriptor, AttributePredicate, AssetQuery, RadialGeofencePredicate } from "@openremote/model";
 import { getAssetTypeFromQuery } from "../../index";
@@ -34,7 +35,7 @@ import { type OrMap, OrMapClickedEvent, type LngLatLike } from "@openremote/or-m
 import "@openremote/or-map";
 
 @customElement("or-rule-radial-modal")
-export class OrRuleRadialModal extends translate(i18next)(LitElement) {
+export class OrRuleRadialModal extends translate(i18next)(OrElement) {
   @property({ type: Object })
   public assetDescriptor?: AssetDescriptor;
 

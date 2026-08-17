@@ -2,7 +2,9 @@ version: 2
 updates:
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/*/"
     schedule:
       interval: "daily"
     ignore:
@@ -40,6 +42,18 @@ updates:
   # Maintain Java dependencies for the Gradle multi-project build.
   - package-ecosystem: "gradle"
     directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Europe/Amsterdam"
+    rebase-strategy: disabled # Prevent unnecessary pipeline runs
+
+  # Maintain Docker base images
+  - package-ecosystem: "docker"
+    directories:
+      - "/balena"
+      - "/manager"
     schedule:
       interval: "weekly"
       day: "monday"

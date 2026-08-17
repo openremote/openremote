@@ -22,10 +22,10 @@ import type { Manager } from "../manager.js";
 /**
  * Page object for the alarms page (page-alarms).
  *
- * The overview is an `or-alarms-table`; clicking a row opens the single-alarm view, whose properties column
- * (`#prop-panel`) holds the severity, status and assignee `or-vaadin-select`s. Those carry no id, so they are
- * located by the translation key of their slotted label. Opening one shows its items in a
- * `vaadin-select-list-box`.
+ * The overview is an `or-alarms-table` with its own severity and status filters above it, which do carry ids.
+ * Clicking a row opens the single-alarm view, whose properties column (`#prop-panel`) holds the severity,
+ * status and assignee `or-vaadin-select`s. Those carry no id, so they are located by the translation key of
+ * their slotted label. Opening any of them shows its items in a `vaadin-select-list-box`.
  */
 export class AlarmsPage implements BasePage {
   constructor(
@@ -57,6 +57,33 @@ export class AlarmsPage implements BasePage {
 
   getAddButton(): Locator {
     return this.page.getByRole("button", { name: "Add Alarm" });
+  }
+
+  // --- Overview filters ---------------------------------------------------
+
+  getStatusFilter(): Locator {
+    return this.page.locator("#status-select");
+  }
+
+  getSeverityFilter(): Locator {
+    return this.page.locator("#severity-select");
+  }
+
+  /** Pick a status in the overview filter (e.g. "Open", "All active", "All"). */
+  async setStatusFilter(label: string) {
+    await this.getStatusFilter().click();
+    await this.pickOverlayOption(label);
+  }
+
+  /** Pick a severity in the overview filter (e.g. "High", "All"). */
+  async setSeverityFilter(label: string) {
+    await this.getSeverityFilter().click();
+    await this.pickOverlayOption(label);
+  }
+
+  /** The "assigned to me" checkbox above the overview table. */
+  getAssignedToMeCheckbox(): Locator {
+    return this.page.locator("#assign-check").getByRole("checkbox");
   }
 
   // --- Selection and deletion --------------------------------------------

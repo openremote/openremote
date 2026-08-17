@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import type { DashboardWidget } from "@openremote/model";
-import { html, LitElement, type TemplateResult, unsafeCSS } from "lit";
+import { html, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { style } from "./style";
 import { until } from "lit/directives/until.js";
@@ -33,7 +34,7 @@ const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 /* ------------------------------------ */
 
 @customElement("or-dashboard-widgetsettings")
-export class OrDashboardWidgetsettings extends translate(i18next)(LitElement) {
+export class OrDashboardWidgetsettings extends translate(i18next)(OrElement) {
   static get styles() {
     return [unsafeCSS(tableStyle), style];
   }

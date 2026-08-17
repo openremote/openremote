@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, type LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { InputType } from "./util";
 import "./or-vaadin-checkbox";
@@ -51,7 +52,7 @@ function registerProperties(constructors: (CustomElementConstructor | undefined)
  * @customElement "or-vaadin-input"
  */
 @customElement("or-vaadin-input")
-export class OrVaadinInput extends LitElement {
+export class OrVaadinInput extends OrElement {
   /**
    * Static list of Vaadin component classes to scan through during attribute changes.
    * It's important that the complete list of CustomElements is defined here.
