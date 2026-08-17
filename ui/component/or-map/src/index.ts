@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import manager, { type EventCallback } from "@openremote/core";
-import { html, LitElement, type PropertyValues } from "lit";
+import { html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { type IControl, LngLat, LngLatLike } from "maplibre-gl";
 import { style } from "./style";
@@ -312,7 +313,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (
 };
 
 @customElement("or-map")
-export class OrMap extends LitElement {
+export class OrMap extends OrElement {
   public static styles = style;
 
   @property({ type: Object })

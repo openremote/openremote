@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { type CSSResultGroup, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { type CSSResultGroup, html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { classMap } from "lit-html/directives/class-map.js";
 import {
@@ -72,7 +73,7 @@ export const DefaultConfig: MapAssetCardConfig = {
 };
 
 @customElement("or-map-asset-card")
-export class OrMapAssetCard extends subscribe(manager)(LitElement) {
+export class OrMapAssetCard extends subscribe(manager)(OrElement) {
   @property({ type: String, reflect: true, attribute: true })
   public assetId?: string;
 

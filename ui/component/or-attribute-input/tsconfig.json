@@ -6,6 +6,7 @@
   },
   "include": ["./src"],
   "references": [
+    { "path": "../or-element" },
     { "path": "../core" },
     { "path": "../or-translate" },
     { "path": "../or-map" },

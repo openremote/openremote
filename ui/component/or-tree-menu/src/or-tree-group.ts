@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, queryAssignedElements } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import type { OrTreeNode } from "./or-tree-node";
@@ -67,7 +68,7 @@ const getStyles = () => css`
  * @csspart chevron - The chevron icon element for expanding/collapsing the group.
  */
 @customElement("or-tree-group")
-export class OrTreeGroup extends LitElement {
+export class OrTreeGroup extends OrElement {
   /**
    * Determines the visibility of child nodes.
    * Setting this to `false` hides them, and acts as a 'collapsed' state.

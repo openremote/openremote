@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, css, html } from "lit";
+import { css, html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import type { GlobalRuleset } from "@openremote/model";
 import rest from "@openremote/rest";
@@ -26,7 +27,7 @@ import { Status } from "../models/status";
 import { exporter, project, modal } from "./flow-editor";
 
 @customElement("rule-browser")
-export class RuleBrowser extends translate(i18next)(LitElement) {
+export class RuleBrowser extends translate(i18next)(OrElement) {
   @property({ type: Number }) private status = Status.Idle;
   private retrievedRules: GlobalRuleset[] = [];
 

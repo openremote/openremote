@@ -16,19 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-package org.openremote.model.util;
+import { defineCtConfig } from "@openremote/test/component.config";
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import org.junit.jupiter.api.Test;
-
-public class UniqueIdentifierGeneratorTest {
-
-  @Test
-  public void generatedAssetIdHasExpectedLength() {
-    assertEquals(
-        22,
-        UniqueIdentifierGenerator.generateId("masterlight-1-1").length(),
-        "Asset ids must be 22 characters long");
-  }
-}
+export default defineCtConfig(__dirname);

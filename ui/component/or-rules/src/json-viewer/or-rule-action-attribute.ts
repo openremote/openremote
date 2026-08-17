@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { getAssetIdsFromQuery, getAssetTypeFromQuery, type RulesConfig } from "../index";
 import {
@@ -63,7 +64,7 @@ const style = css`
 `;
 
 @customElement("or-rule-action-attribute")
-export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
+export class OrRuleActionAttribute extends translate(i18next)(OrElement) {
   static get styles() {
     return style;
   }

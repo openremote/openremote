@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
 import type { EmailNotificationMessage } from "@openremote/model";
@@ -25,7 +26,7 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
 
 @customElement("or-rule-form-email-message")
-export class OrRuleFormEmailMessage extends translate(i18next)(LitElement) {
+export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) {
   @property({ type: Object })
   public message?: EmailNotificationMessage;
 

@@ -16,14 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html } from "lit";
+import { html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import type { EditorWorkspace } from "./editor-workspace";
 import { project } from "./flow-editor";
 
 @customElement("connection-container")
-export class ConnectionContainer extends LitElement {
+export class ConnectionContainer extends OrElement {
   @property({ attribute: false }) private workspace!: EditorWorkspace;
 
   constructor() {

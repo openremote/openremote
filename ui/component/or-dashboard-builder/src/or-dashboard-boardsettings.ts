@@ -23,7 +23,8 @@ import {
   DashboardScalingPreset,
   type DashboardScreenPreset,
 } from "@openremote/model";
-import { css, html, LitElement } from "lit";
+import { css, html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { style } from "./style";
 import { i18next, translate } from "@openremote/or-translate";
@@ -41,7 +42,7 @@ const boardSettingsStyling = css`
 `;
 
 @customElement("or-dashboard-boardsettings")
-export class OrDashboardBoardsettings extends translate(i18next)(LitElement) {
+export class OrDashboardBoardsettings extends translate(i18next)(OrElement) {
   @property({ type: Object })
   public readonly dashboard!: Dashboard;
 
