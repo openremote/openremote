@@ -134,7 +134,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
         <!-- Open in browser switch -->
         <or-vaadin-toggle
           ?checked="${message.action?.openInBrowser ?? false}"
-          @change="${(ev: Event) => onchange(ev, message).then(msg => this._onOpenInBrowserChange(this._pushBrowserToggleElem!, msg))}"
+          @change="${(ev: Event) => onchange(ev, message).then((msg) => this._onOpenInBrowserChange(this._pushBrowserToggleElem!, msg))}"
         >
           <or-translate slot="label" value="openInBrowser"></or-translate>
         </or-vaadin-toggle>
