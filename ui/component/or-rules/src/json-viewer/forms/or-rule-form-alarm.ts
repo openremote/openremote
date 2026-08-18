@@ -18,20 +18,24 @@
  */
 import { html, css } from "lit";
 import { OrElement } from "@openremote/or-element";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import type { RuleActionAlarm, Alarm, User } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { i18next } from "@openremote/or-translate";
 import type { OrVaadinSelect } from "@openremote/or-vaadin-components/or-vaadin-select";
+import type { OrRuleForm } from "./or-rule-form";
 
 @customElement("or-rule-form-alarm")
-export class OrRuleFormAlarm extends OrElement {
+export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
   @property({ type: Object, attribute: false })
   public action!: RuleActionAlarm;
 
   @property()
   public users: User[] = [];
+
+  @query("#form-container")
+  protected _formContainerElem?: HTMLElement;
 
   static get styles() {
     return css`
@@ -44,6 +48,14 @@ export class OrRuleFormAlarm extends OrElement {
         width: 100%;
       }
     `;
+  }
+
+  checkValidity() {
+    if (this._formContainerElem) {
+      const elems = Array.from(this._formContainerElem!.children) as HTMLInputElement[];
+      return elems.filter((e) => !e.checkValidity()).length > 0;
+    }
+    return false;
   }
 
   protected render() {

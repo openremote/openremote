@@ -27,11 +27,12 @@ import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-componen
 import { i18next } from "@openremote/or-translate";
 import { css, html, type TemplateResult } from "lit";
 import { OrElement } from "@openremote/or-element";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, queryAll, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import type { OrVaadinSelect, SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
 import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {OrRuleForm} from "./or-rule-form";
 
 // language=css
 const styling = css`
@@ -41,12 +42,15 @@ const styling = css`
 `;
 
 @customElement("or-rule-form-webhook")
-export class OrRuleFormWebhook extends OrElement {
+export class OrRuleFormWebhook extends OrElement implements OrRuleForm {
   @property({ type: Object })
   protected webhook!: Webhook;
 
   @state()
   protected loading: boolean = false;
+
+  @queryAll(".input")
+  protected _inputElems?: NodeListOf<HTMLInputElement>
 
   private httpMethodOptions: HTTPMethod[] = [HTTPMethod.GET, HTTPMethod.POST, HTTPMethod.PUT, HTTPMethod.DELETE];
   private authMethodOptions: Map<string, string> = new Map<string, string>([
@@ -57,6 +61,15 @@ export class OrRuleFormWebhook extends OrElement {
 
   static get styles() {
     return [styling];
+  }
+
+  checkValidity(): boolean {
+    this._inputElems?.forEach(elem => {
+      if(!elem.checkValidity()) {
+        return false;
+      }
+    });
+    return true;
   }
 
   /* --------------------------- */
@@ -109,6 +122,7 @@ export class OrRuleFormWebhook extends OrElement {
           <!-- HTTP Method & URL -->
           <div style="display: flex; flex-direction: row; align-items: baseline; gap: 5px; margin-bottom: 28px;">
             <or-vaadin-select
+              class="input"
               value=${this.webhook.httpMethod}
               .items=${this.httpMethodOptions.map((o) => ({ value: o, label: o }))}
               required
@@ -121,6 +135,7 @@ export class OrRuleFormWebhook extends OrElement {
               <or-translate slot="label" value="method"></or-translate>
             </or-vaadin-select>
             <or-vaadin-text-field
+              class="input"
               type="url"
               value=${this.webhook.url}
               required
@@ -160,6 +175,7 @@ export class OrRuleFormWebhook extends OrElement {
             style="display: flex; flex-direction: column; gap: 10px; margin-bottom: ${this.webhook.oAuthGrant || this.webhook.usernamePassword ? "28px" : "0"};"
           >
             <or-mwc-input
+              class="input"
               type="${InputType.SWITCH}"
               fullwidth
               label="${i18next.t("requiresAuthorization")}"
@@ -181,6 +197,7 @@ export class OrRuleFormWebhook extends OrElement {
               }));
               return html`
                 <or-vaadin-select
+                  class="input"
                   value=${this.webhook.oAuthGrant?.grant_type ?? values[0].value}
                   .items=${values}
                   @change=${(ev: Event) => {
@@ -200,6 +217,7 @@ export class OrRuleFormWebhook extends OrElement {
               this.webhook.httpMethod != HTTPMethod.GET && this.webhook.httpMethod != HTTPMethod.DELETE,
               () => html`
                 <or-mwc-input
+                  class="input"
                   type="${InputType.SWITCH}"
                   fullwidth
                   label="${i18next.t("includeBodyInRequest")}"
@@ -221,6 +239,7 @@ export class OrRuleFormWebhook extends OrElement {
                 ${when(this.webhook.payload != undefined, () => {
                   return html`
                     <or-vaadin-text-area
+                      class="input"
                       value=${this.webhook.payload}
                       style="min-height: 200px;"
                       @change=${(ev: Event) => {
@@ -248,6 +267,7 @@ export class OrRuleFormWebhook extends OrElement {
           (value, valueIndex) => html`
             <div style="display: flex; align-items: baseline; gap: 5px;">
               <or-vaadin-text-field
+                class="input"
                 value=${key}
                 ?disabled=${loading}
                 style="flex: 1;"
@@ -266,6 +286,7 @@ export class OrRuleFormWebhook extends OrElement {
                 <or-translate slot="label" value="header"></or-translate>
               </or-vaadin-text-field>
               <or-vaadin-text-field
+                class="input"
                 value=${value}
                 ?disabled=${loading}
                 style="flex: 1;"
@@ -298,6 +319,7 @@ export class OrRuleFormWebhook extends OrElement {
       return html`
         <div style="display: flex; flex-direction: column; gap: 10px;">
           <or-vaadin-text-field
+            class="input"
             value=${webhook.usernamePassword?.username}
             @change=${(ev: Event) => {
               this.webhook.usernamePassword ??= {};
@@ -308,6 +330,7 @@ export class OrRuleFormWebhook extends OrElement {
             <or-translate slot="label" value="username"></or-translate>
           </or-vaadin-text-field>
           <or-vaadin-password-field
+            class="input"
             value=${webhook.usernamePassword?.password}
             @change=${(ev: Event) => {
               this.webhook.usernamePassword ??= {};
@@ -324,6 +347,7 @@ export class OrRuleFormWebhook extends OrElement {
         <div style="display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; flex-direction: row; align-items: center; gap: 5px;">
             <or-vaadin-text-field
+              class="input"
               type="url"
               value=${authGrant.tokenEndpointUri}
               required
@@ -342,6 +366,7 @@ export class OrRuleFormWebhook extends OrElement {
                 const grant = authGrant as OAuthClientCredentialsGrant;
                 return html`
                   <or-vaadin-text-field
+                    class="input"
                     value=${grant.client_id}
                     @change=${(ev: Event) => {
                       grant.client_id = (ev.currentTarget as HTMLInputElement).value;
@@ -351,6 +376,7 @@ export class OrRuleFormWebhook extends OrElement {
                     <or-translate slot="label" value="clientId"></or-translate>
                   </or-vaadin-text-field>
                   <or-vaadin-password-field
+                    class="input"
                     value=${grant.client_secret}
                     @change=${(ev: Event) => {
                       grant.client_secret = (ev.currentTarget as HTMLInputElement).value;
@@ -365,6 +391,7 @@ export class OrRuleFormWebhook extends OrElement {
                 const grant = authGrant as OAuthPasswordGrant;
                 return html`
                   <or-vaadin-text-field
+                    class="input"
                     value=${grant.username}
                     @change=${(ev: Event) => {
                       grant.username = (ev.currentTarget as HTMLInputElement).value;
@@ -374,6 +401,7 @@ export class OrRuleFormWebhook extends OrElement {
                     <or-translate slot="label" value="username"></or-translate>
                   </or-vaadin-text-field>
                   <or-vaadin-password-field
+                    class="input"
                     value=${grant.password}
                     @change=${(ev: Event) => {
                       grant.password = (ev.currentTarget as HTMLInputElement).value;

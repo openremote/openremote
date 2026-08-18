@@ -19,7 +19,7 @@
 import { i18next, translate } from "@openremote/or-translate";
 import { type TemplateResult, css, html } from "lit";
 import { OrElement } from "@openremote/or-element";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import type { AbstractNotificationMessageUnion, LocalizedNotificationMessage } from "@openremote/model";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
@@ -31,9 +31,10 @@ import "./or-rule-form-push-notification";
 import ISO6391 from "iso-639-1";
 import { DefaultColor6 } from "@openremote/core";
 import type { SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrRuleForm} from "./or-rule-form";
 
 @customElement("or-rule-form-localized")
-export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
+export class OrRuleFormLocalized extends translate(i18next)(OrElement) implements OrRuleForm {
   @property({ type: Object })
   public message?: LocalizedNotificationMessage;
 
@@ -54,6 +55,9 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
 
   @state()
   protected _validLanguages?: string[];
+
+  @query(".form")
+  protected _formElement?: OrRuleForm;
 
   static get styles() {
     return css`
@@ -76,6 +80,10 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
       this.defaultLang = this.languages[0];
     }
     this._selectedLanguage = this.defaultLang;
+  }
+
+  checkValidity(): boolean {
+    return this._formElement?.checkValidity() ?? false;
   }
 
   protected render() {
@@ -174,9 +182,9 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
     const msg = message.languages[lang];
 
     if (msg.type === "push") {
-      return html` <or-rule-form-push-notification .message="${msg}"></or-rule-form-push-notification> `;
+      return html` <or-rule-form-push-notification class="form" .message="${msg}"></or-rule-form-push-notification> `;
     } else if (msg.type === "email") {
-      return html` <or-rule-form-email-message .message="${msg}"></or-rule-form-email-message> `;
+      return html` <or-rule-form-email-message class="form" .message="${msg}"></or-rule-form-email-message> `;
     } else {
       return html` <or-translate .value="${"errorOccurred"}"></or-translate> `;
     }
