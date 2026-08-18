@@ -31,7 +31,7 @@ import "./or-rule-form-push-notification";
 import ISO6391 from "iso-639-1";
 import { DefaultColor6 } from "@openremote/core";
 import type { SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
-import {OrRuleForm} from "./or-rule-form";
+import type { OrRuleForm } from "./or-rule-form";
 
 @customElement("or-rule-form-localized")
 export class OrRuleFormLocalized extends translate(i18next)(OrElement) implements OrRuleForm {

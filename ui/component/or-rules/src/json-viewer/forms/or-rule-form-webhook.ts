@@ -32,7 +32,7 @@ import { when } from "lit/directives/when.js";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import type { OrVaadinSelect, SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
 import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
-import {OrRuleForm} from "./or-rule-form";
+import type { OrRuleForm } from "./or-rule-form";
 
 // language=css
 const styling = css`
@@ -50,7 +50,7 @@ export class OrRuleFormWebhook extends OrElement implements OrRuleForm {
   protected loading: boolean = false;
 
   @queryAll(".input")
-  protected _inputElems?: NodeListOf<HTMLInputElement>
+  protected _inputElems?: NodeListOf<HTMLInputElement>;
 
   private httpMethodOptions: HTTPMethod[] = [HTTPMethod.GET, HTTPMethod.POST, HTTPMethod.PUT, HTTPMethod.DELETE];
   private authMethodOptions: Map<string, string> = new Map<string, string>([
@@ -64,8 +64,8 @@ export class OrRuleFormWebhook extends OrElement implements OrRuleForm {
   }
 
   checkValidity(): boolean {
-    this._inputElems?.forEach(elem => {
-      if(!elem.checkValidity()) {
+    this._inputElems?.forEach((elem) => {
+      if (!elem.checkValidity()) {
         return false;
       }
     });

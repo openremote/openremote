@@ -43,7 +43,7 @@ import "./forms/or-rule-form-localized";
 import "./or-rule-action-attribute";
 import { i18next } from "@openremote/or-translate";
 import manager, { Util } from "@openremote/core";
-import {OrRulesActionDialogCancelEvent, OrRulesActionDialogOkEvent} from "./or-rule-action-dialog";
+import type { OrRulesActionDialogCancelEvent, OrRulesActionDialogOkEvent } from "./or-rule-action-dialog";
 import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 
 // language=CSS
