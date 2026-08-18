@@ -45,6 +45,9 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
   @query("#push-url")
   protected _pushUrlElem?: HTMLInputElement;
 
+  @query("#push-browser-toggle")
+  protected _pushBrowserToggleElem?: HTMLInputElement;
+
   @query("#push-button1")
   protected _pushButton1Elem?: HTMLInputElement;
 
@@ -58,7 +61,8 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
       }
 
       or-vaadin-text-field,
-      or-vaadin-text-area {
+      or-vaadin-text-area,
+      or-vaadin-toggle {
         margin-bottom: 20px;
         min-width: 420px;
         width: 100%;
@@ -128,14 +132,12 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
         </or-vaadin-text-field>
 
         <!-- Open in browser switch -->
-        <or-mwc-input
-          .value="${message.action?.openInBrowser}"
-          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onchange(ev, message).then((msg) => this._onOpenInBrowserChange(ev, msg))}"
-          .label="${i18next.t("openInBrowser")}"
-          type="${InputType.SWITCH}"
-          fullWidth
-          placeholder=" "
-        ></or-mwc-input>
+        <or-vaadin-toggle
+          ?checked="${message.action?.openInBrowser ?? false}"
+          @change="${(ev: Event) => onchange(ev, message).then(msg => this._onOpenInBrowserChange(this._pushBrowserToggleElem!, msg))}"
+        >
+          <or-translate slot="label" value="openInBrowser"></or-translate>
+        </or-vaadin-toggle>
 
         <!-- Button controls -->
         <div style="display: flex; gap: 20px;">
@@ -194,10 +196,12 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
   /**
    * HTML callback function when the "open in browser switch" of a notification has changed.
    */
-  protected _onOpenInBrowserChange(ev: OrInputChangedEvent, message: PushNotificationMessage) {
-    message.action = message.action || {};
-    message.action.openInBrowser = ev.detail.value;
-    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+  protected _onOpenInBrowserChange(elem: HTMLInputElement, message: PushNotificationMessage) {
+    if (elem.checkValidity()) {
+      message.action = message.action || {};
+      message.action.openInBrowser = elem.checked;
+      this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    }
   }
 
   /**
