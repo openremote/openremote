@@ -22,7 +22,6 @@ import { customElement, property, query } from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
 import type { EmailNotificationMessage } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
-import "@openremote/or-mwc-components/or-mwc-input";
 import type { OrRuleForm } from "./or-rule-form";
 
 @customElement("or-rule-form-email-message")
