@@ -87,12 +87,13 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
         <or-vaadin-combo-box
           required
           .items=${options}
-          .selectedItem=${options.find(o => o.value === this.action.assigneeId)}
+          .selectedItem=${options.find((o) => o.value === this.action.assigneeId)}
           @change=${(ev: CustomEvent) => {
             const value = (ev.currentTarget as OrVaadinComboBox).selectedItem.label; // Because username is set as the label
             this.action.assigneeId = value;
             this.setActionAlarmName(value, undefined);
-          }}>
+          }}
+        >
           <or-translate slot="label" value="alarm.assignee"></or-translate>
         </or-vaadin-combo-box>
       </div>
@@ -107,7 +108,7 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
     }
     if (!key) {
       const user = this.users.filter((obj) => obj.username === value).map((obj) => obj.id)[0];
-      if(!user) {
+      if (!user) {
         console.warn(`Could not select user ${value}, as we can't find the user in cache.`);
       }
       this.action.assigneeId = user;

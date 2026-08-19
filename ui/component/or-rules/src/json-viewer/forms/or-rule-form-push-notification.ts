@@ -132,6 +132,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
 
         <!-- Open in browser switch -->
         <or-vaadin-toggle
+          id="push-browser-toggle"
           ?checked="${message.action?.openInBrowser ?? false}"
           @change="${(ev: Event) => onchange(ev, message).then((msg) => this._onOpenInBrowserChange(this._pushBrowserToggleElem!, msg))}"
         >
@@ -206,7 +207,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
         action: key === 0 ? message.action : undefined,
       } as PushNotificationButton;
     } else {
-      message.buttons[key] = {}
+      message.buttons[key] = {};
     }
     this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
   }

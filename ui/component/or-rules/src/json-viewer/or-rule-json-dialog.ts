@@ -21,7 +21,7 @@ import { customElement, property, query, queryAssignedElements, state } from "li
 import { html } from "lit";
 import type { OrVaadinDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import type { OrRuleForm } from "./forms/or-rule-form";
-import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
+import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
 
 export class OrRulesActionDialogCancelEvent extends CustomEvent<void> {
   public static readonly NAME = "cancel";

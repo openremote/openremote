@@ -20,12 +20,14 @@ import { html, type TemplateResult } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import type { ActionType, RulesConfig } from "../index";
-import type { JsonRule, RuleActionAlarm, User, UserQuery } from "@openremote/model";
+import { AlarmSeverity, type JsonRule, type RuleActionAlarm, type User, type UserQuery } from "@openremote/model";
 import "./or-rule-json-dialog";
 import "./forms/or-rule-form-alarm";
 import manager from "@openremote/core";
-import type {OrRulesActionDialogCancelEvent, OrRulesActionDialogOkEvent} from "./or-rule-json-dialog";
-import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
+import type { OrRulesActionDialogCancelEvent, OrRulesActionDialogOkEvent } from "./or-rule-json-dialog";
+import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
+import type { OrVaadinSelect, SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
+import { i18next } from "@openremote/or-translate";
 
 @customElement("or-rule-action-alarm")
 export class OrRuleActionAlarm extends OrElement {
@@ -72,7 +74,7 @@ export class OrRuleActionAlarm extends OrElement {
 
     const alarm = this.action.alarm;
 
-    let modalTemplate: TemplateResult | string = ``;
+    const modalTemplate: TemplateResult | string = ``;
 
     // When 'cancel' is pressed, reset ACTION to the initial state (all changes get removed)
     const onModalCancel = (_ev: OrRulesActionDialogCancelEvent) => {
@@ -97,15 +99,36 @@ export class OrRuleActionAlarm extends OrElement {
       this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
     };
 
-    if (alarm) {
-      modalTemplate = html`
-        <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
-          <or-translate slot="title" value="alarm."></or-translate>
-          <or-rule-form-alarm .users="${this._loadedUsers}" .action="${this.action}"></or-rule-form-alarm>
-        </or-rule-json-dialog>
-      `;
+    const severityOptions: SelectItem[] = [
+      { value: AlarmSeverity.LOW, label: i18next.t("alarm.severity_LOW") },
+      { value: AlarmSeverity.MEDIUM, label: i18next.t("alarm.severity_MEDIUM") },
+      { value: AlarmSeverity.HIGH, label: i18next.t("alarm.severity_HIGH") },
+    ];
+
+    return html`
+      <or-vaadin-select
+        value=${this.action.alarm?.severity}
+        .items=${severityOptions}
+        style="width: 240px;"
+        @change=${(ev: Event) => this.setActionAlarmSeverity((ev.currentTarget as OrVaadinSelect).value)}
+      >
+        <or-translate slot="label" value="alarm.severity"></or-translate>
+      </or-vaadin-select>
+      <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
+        <or-translate slot="title" value="alarm."></or-translate>
+        <or-rule-form-alarm .users="${this._loadedUsers}" .action="${this.action}"></or-rule-form-alarm>
+      </or-rule-json-dialog>
+    `;
+  }
+
+  protected setActionAlarmSeverity(value: string | undefined) {
+    if (value && this.action.alarm) {
+      const alarm: any = this.action.alarm;
+      alarm.severity = value;
+      this.action.alarm = { ...alarm };
     }
 
-    return html`${modalTemplate}`;
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
   }
 }
