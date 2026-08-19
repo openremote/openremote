@@ -23,7 +23,7 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import type { RuleActionAlarm, Alarm, User } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { i18next } from "@openremote/or-translate";
-import type { OrVaadinSelect } from "@openremote/or-vaadin-components/or-vaadin-select";
+import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import type { OrRuleForm } from "./or-rule-form";
 
 @customElement("or-rule-form-alarm")
@@ -53,7 +53,7 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
   checkValidity() {
     if (this._formContainerElem) {
       const elems = Array.from(this._formContainerElem!.children) as HTMLInputElement[];
-      return elems.filter((e) => !e.checkValidity()).length > 0;
+      return elems.filter((e) => !e.checkValidity()).length === 0;
     }
     return false;
   }
@@ -84,18 +84,17 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
         >
           <or-translate slot="label" value="alarm.content"></or-translate>
         </or-vaadin-text-area>
-        <or-vaadin-select
-          value=${this.action.assigneeId}
+        <or-vaadin-combo-box
           required
           .items=${options}
-          @change=${(ev: Event) => {
-            const value = (ev.currentTarget as OrVaadinSelect).value;
+          .selectedItem=${options.find(o => o.value === this.action.assigneeId)}
+          @change=${(ev: CustomEvent) => {
+            const value = (ev.currentTarget as OrVaadinComboBox).selectedItem.label; // Because username is set as the label
             this.action.assigneeId = value;
             this.setActionAlarmName(value, undefined);
-          }}
-        >
+          }}>
           <or-translate slot="label" value="alarm.assignee"></or-translate>
-        </or-vaadin-select>
+        </or-vaadin-combo-box>
       </div>
     `;
   }
@@ -107,7 +106,11 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
       this.action.alarm = { ...alarm };
     }
     if (!key) {
-      this.action.assigneeId = this.users.filter((obj) => obj.username === value).map((obj) => obj.id)[0];
+      const user = this.users.filter((obj) => obj.username === value).map((obj) => obj.id)[0];
+      if(!user) {
+        console.warn(`Could not select user ${value}, as we can't find the user in cache.`);
+      }
+      this.action.assigneeId = user;
     }
 
     this.dispatchEvent(new OrRulesJsonRuleChangedEvent());

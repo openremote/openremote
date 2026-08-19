@@ -21,9 +21,11 @@ import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import type { ActionType, RulesConfig } from "../index";
 import type { JsonRule, RuleActionAlarm, User, UserQuery } from "@openremote/model";
-import "./modals/or-rule-alarm-modal";
+import "./or-rule-json-dialog";
 import "./forms/or-rule-form-alarm";
 import manager from "@openremote/core";
+import type {OrRulesActionDialogCancelEvent, OrRulesActionDialogOkEvent} from "./or-rule-json-dialog";
+import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 
 @customElement("or-rule-action-alarm")
 export class OrRuleActionAlarm extends OrElement {
@@ -36,14 +38,17 @@ export class OrRuleActionAlarm extends OrElement {
   @property({ type: String, attribute: false })
   public actionType!: ActionType;
 
+  @property({ type: Boolean })
   public readonly?: boolean;
 
   @property({ type: Object })
   public config?: RulesConfig;
 
+  protected _initialAction?: RuleActionAlarm;
   protected _loadedUsers: User[] = [];
 
   async connectedCallback(): Promise<void> {
+    this._initialAction = this.action;
     await this.loadUsers();
     super.connectedCallback();
   }
@@ -69,11 +74,35 @@ export class OrRuleActionAlarm extends OrElement {
 
     let modalTemplate: TemplateResult | string = ``;
 
+    // When 'cancel' is pressed, reset ACTION to the initial state (all changes get removed)
+    const onModalCancel = (_ev: OrRulesActionDialogCancelEvent) => {
+      if (this._initialAction && this.action) {
+        const newAction = structuredClone(this._initialAction);
+
+        // Check if anything in the message has changed
+        if (JSON.stringify(this.action) !== JSON.stringify(newAction)) {
+          console.debug("Rolling back the alarm to former state...");
+          this.action = newAction;
+          this.requestUpdate("action");
+        } else {
+          console.debug("Rolling back was not necessary, as no changes have been done.");
+        }
+      } else {
+        console.warn("Could not rollback alarm form.");
+      }
+    };
+
+    const onModalOk = (_ev: OrRulesActionDialogOkEvent) => {
+      this._initialAction = structuredClone(this.action); // update initial action for opening the modal in the future
+      this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    };
+
     if (alarm) {
       modalTemplate = html`
-        <or-rule-alarm-modal title="alarm." .action="${this.action}">
+        <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
+          <or-translate slot="title" value="alarm."></or-translate>
           <or-rule-form-alarm .users="${this._loadedUsers}" .action="${this.action}"></or-rule-form-alarm>
-        </or-rule-alarm-modal>
+        </or-rule-json-dialog>
       `;
     }
 

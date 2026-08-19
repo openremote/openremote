@@ -49,8 +49,8 @@ export class OrRulesActionDialogOkEvent extends CustomEvent<void> {
  * @fires {OrRulesActionDialogCancelEvent} cancel - Fires on pressing 'cancel' in the dialog
  * @fires {OrRulesActionDialogOkEvent} ok - Fires on pressing 'OK' in the dialog
  */
-@customElement("or-rule-action-dialog")
-export class OrRuleActionDialog extends OrElement {
+@customElement("or-rule-json-dialog")
+export class OrRuleJsonDialog extends OrElement {
   @property({ type: Boolean })
   public readonly = false;
 
@@ -90,20 +90,16 @@ export class OrRuleActionDialog extends OrElement {
     this._subscribeToValueChanges();
   }
 
-  protected _subscribeToValueChanges(elems = this._childNodes ?? []) {
-    /*const elements = elems?.flatMap((c) => Array.from((c as HTMLElement).shadowRoot?.children ?? [])) ?? [];
-    elements.forEach((child) => {
-      (child as HTMLElement)?.addEventListener("change", (ev) => this._onFormValueChange(ev));
-    });*/
+  protected _subscribeToValueChanges() {
     this.addEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onFormValueChange);
+    this._onFormValueChange(); // Check validity once upon subscribing
   }
 
   protected _unsubscribeFromValueChanges() {
     this.removeEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onFormValueChange);
   }
 
-  protected _onFormValueChange(ev: Event) {
-    console.debug("_onFormValueChange", ev);
+  protected _onFormValueChange() {
     this._invalid =
       (this._childNodes
         ?.map((c) => c as unknown as OrRuleForm | HTMLInputElement)
