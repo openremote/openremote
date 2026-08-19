@@ -83,7 +83,7 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) implement
   }
 
   checkValidity(): boolean {
-    return this._formElement?.checkValidity() ?? false;
+    return (this._formElement?.checkValidity() ?? false) && this.isValid();
   }
 
   protected render() {

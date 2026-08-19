@@ -21,7 +21,6 @@ import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import { i18next, translate } from "@openremote/or-translate";
-import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import type { PushNotificationMessage, PushNotificationButton } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { until } from "lit/directives/until.js";
@@ -166,55 +165,49 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
    * HTML callback function when the subject of a notification message has changed.
    */
   protected _onTitleChange(elem: HTMLInputElement, message: PushNotificationMessage) {
-    if (elem.checkValidity()) {
-      message.title = elem.value;
-      this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-    }
+    message.title = elem.checkValidity() ? elem.value : undefined;
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
   }
 
   /**
    * HTML callback function when the body of a notification message has changed.
    */
   protected _onBodyChange(elem: HTMLInputElement, message: PushNotificationMessage) {
-    if (elem.checkValidity()) {
-      message.body = elem.value;
-      this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-    }
+    message.body = elem.checkValidity() ? elem.value : undefined;
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
   }
 
   /**
    * HTML callback function when the "click here to open URL" of a notification has changed.
    */
   protected _onActionUrlChange(elem: HTMLInputElement, message: PushNotificationMessage) {
-    if (elem.checkValidity()) {
-      message.action = message.action || {};
-      message.action.url = elem.value;
-      this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-    }
+    message.action ??= {};
+    message.action.url = elem.checkValidity() ? elem.value : undefined;
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
   }
 
   /**
    * HTML callback function when the "open in browser switch" of a notification has changed.
    */
   protected _onOpenInBrowserChange(elem: HTMLInputElement, message: PushNotificationMessage) {
-    if (elem.checkValidity()) {
-      message.action = message.action || {};
-      message.action.openInBrowser = elem.checked;
-      this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-    }
+    message.action ??= {};
+    message.action.openInBrowser = elem.checkValidity() ? elem.checked : undefined;
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
   }
 
   /**
    * HTML callback function when any button text of the notification has changed.
    */
   protected _onButtonTitleChange(elem: HTMLInputElement, key: number, message: PushNotificationMessage) {
+    message.buttons ??= [];
     if (elem.checkValidity()) {
-      message.buttons = message.buttons || [];
       message.buttons[key] = {
         title: elem.value,
         action: key === 0 ? message.action : undefined,
       } as PushNotificationButton;
-      this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    } else {
+      message.buttons[key] = {}
     }
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
   }
 }

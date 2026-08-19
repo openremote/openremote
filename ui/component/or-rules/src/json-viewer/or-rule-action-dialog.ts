@@ -21,6 +21,7 @@ import { customElement, property, query, queryAssignedElements, state } from "li
 import { html } from "lit";
 import type { OrVaadinDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import type { OrRuleForm } from "./forms/or-rule-form";
+import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 
 export class OrRulesActionDialogCancelEvent extends CustomEvent<void> {
   public static readonly NAME = "cancel";
@@ -67,7 +68,7 @@ export class OrRuleActionDialog extends OrElement {
       <or-vaadin-button @click=${() => this._openDialog()}>
         <or-translate value="message"></or-translate>
       </or-vaadin-button>
-      <or-vaadin-dialog width="768px" no-close-on-esc no-close-on-outside-click>
+      <or-vaadin-dialog width="768px" no-close-on-esc no-close-on-outside-click @closed=${() => this._onClose()}>
         <h2 slot="header-content">
           <slot name="title"></slot>
         </h2>
@@ -90,13 +91,19 @@ export class OrRuleActionDialog extends OrElement {
   }
 
   protected _subscribeToValueChanges(elems = this._childNodes ?? []) {
-    const elements = elems?.flatMap((c) => Array.from((c as HTMLElement).shadowRoot?.children ?? [])) ?? [];
+    /*const elements = elems?.flatMap((c) => Array.from((c as HTMLElement).shadowRoot?.children ?? [])) ?? [];
     elements.forEach((child) => {
       (child as HTMLElement)?.addEventListener("change", (ev) => this._onFormValueChange(ev));
-    });
+    });*/
+    this.addEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onFormValueChange);
+  }
+
+  protected _unsubscribeFromValueChanges() {
+    this.removeEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onFormValueChange);
   }
 
   protected _onFormValueChange(ev: Event) {
+    console.debug("_onFormValueChange", ev);
     this._invalid =
       (this._childNodes
         ?.map((c) => c as unknown as OrRuleForm | HTMLInputElement)
@@ -112,5 +119,9 @@ export class OrRuleActionDialog extends OrElement {
   protected _onOk() {
     this._dialog?.close();
     this.dispatchEvent(new OrRulesActionDialogOkEvent());
+  }
+
+  protected _onClose() {
+    this._unsubscribeFromValueChanges();
   }
 }
