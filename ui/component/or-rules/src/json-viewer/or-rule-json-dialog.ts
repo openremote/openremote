@@ -66,7 +66,7 @@ export class OrRuleJsonDialog extends OrElement {
   override render() {
     return html`
       <or-vaadin-button @click=${() => this._openDialog()}>
-        <or-translate value="message"></or-translate>
+        <slot name="button"></slot>
       </or-vaadin-button>
       <or-vaadin-dialog width="768px" no-close-on-esc no-close-on-outside-click @closed=${() => this._onClose()}>
         <h2 slot="header-content">

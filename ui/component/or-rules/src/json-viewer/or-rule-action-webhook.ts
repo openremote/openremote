@@ -63,7 +63,6 @@ export class OrRuleActionWebhook extends OrElement {
   /* ---------------------- */
 
   override render() {
-
     // When 'cancel' is pressed, reset ACTION to the initial state (all changes get removed)
     const onModalCancel = (_ev: OrRulesActionDialogCancelEvent) => {
       if (this._initialWebhook && this.action.webhook) {
@@ -89,6 +88,7 @@ export class OrRuleActionWebhook extends OrElement {
 
     return html`
       <or-rule-json-dialog @cancel="${onModalCancel}" @ok="${onModalOk}">
+        <or-translate slot="button" value="message"></or-translate>
         <or-translate slot="title" value="message"></or-translate>
         <or-rule-form-webhook .webhook="${this.action.webhook}"></or-rule-form-webhook>
       </or-rule-json-dialog>

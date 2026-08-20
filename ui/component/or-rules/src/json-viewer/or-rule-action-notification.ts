@@ -444,6 +444,7 @@ export class OrRuleActionNotification extends OrElement {
       if (messageType === "push") {
         modalTemplate = html`
           <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
+            <or-translate slot="button" value="message"></or-translate>
             <or-translate slot="title" value="push-notification"></or-translate>
             <or-rule-form-push-notification
               .message="${message as PushNotificationMessage}"
@@ -453,6 +454,7 @@ export class OrRuleActionNotification extends OrElement {
       } else if (messageType === "email") {
         modalTemplate = html`
           <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
+            <or-translate slot="button" value="message"></or-translate>
             <or-translate slot="title" value="email"></or-translate>
             <or-rule-form-email-message .message="${message as EmailNotificationMessage}"></or-rule-form-email-message>
           </or-rule-json-dialog>
@@ -475,6 +477,7 @@ export class OrRuleActionNotification extends OrElement {
         const title = this.actionType === ActionType.EMAIL_LOCALIZED ? "email" : "push-notification";
         modalTemplate = html`
           <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
+            <or-translate slot="button" value="message"></or-translate>
             <or-translate slot="title" value=${title}></or-translate>
             <or-rule-form-localized
               .message="${message}"

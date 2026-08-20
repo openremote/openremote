@@ -88,7 +88,8 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
           .items=${options}
           .selectedItem=${options.find((o) => o.value === this.action.assigneeId)}
           @change=${(ev: CustomEvent) => {
-            const value = (ev.currentTarget as OrVaadinComboBox).selectedItem.label; // Because username is set as the label
+            // In the combobox, the 'value' is the User ID, while 'label' holds the username we need for assigneeId
+            const value: string | undefined = (ev.currentTarget as OrVaadinComboBox).selectedItem?.label;
             this.action.assigneeId = value;
             this.setActionAlarmName(value, undefined);
           }}

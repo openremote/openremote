@@ -50,7 +50,7 @@ export class OrRuleActionAlarm extends OrElement {
   protected _loadedUsers: User[] = [];
 
   async connectedCallback(): Promise<void> {
-    this._initialAction = this.action;
+    this._initialAction = structuredClone(this.action);
     await this.loadUsers();
     super.connectedCallback();
   }
@@ -79,12 +79,12 @@ export class OrRuleActionAlarm extends OrElement {
     // When 'cancel' is pressed, reset ACTION to the initial state (all changes get removed)
     const onModalCancel = (_ev: OrRulesActionDialogCancelEvent) => {
       if (this._initialAction && this.action) {
-        const newAction = structuredClone(this._initialAction);
+        const initialAction = structuredClone(this._initialAction);
 
         // Check if anything in the message has changed
-        if (JSON.stringify(this.action) !== JSON.stringify(newAction)) {
+        if (JSON.stringify(this.action) !== JSON.stringify(initialAction)) {
           console.debug("Rolling back the alarm to former state...");
-          this.action = newAction;
+          this.action = initialAction;
           this.requestUpdate("action");
         } else {
           console.debug("Rolling back was not necessary, as no changes have been done.");
@@ -115,6 +115,7 @@ export class OrRuleActionAlarm extends OrElement {
         <or-translate slot="label" value="alarm.severity"></or-translate>
       </or-vaadin-select>
       <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
+        <or-translate slot="button" value="settings"></or-translate>
         <or-translate slot="title" value="alarm."></or-translate>
         <or-rule-form-alarm .users="${this._loadedUsers}" .action="${this.action}"></or-rule-form-alarm>
       </or-rule-json-dialog>
