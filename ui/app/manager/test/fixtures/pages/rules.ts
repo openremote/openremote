@@ -18,7 +18,7 @@
  */
 import type { BasePage, Page, Shared } from "@openremote/test";
 import type { Manager } from "../manager";
-import {energyRule} from "../data/rules";
+import { energyRule } from "../data/rules";
 
 export class RulesPage implements BasePage {
   constructor(
