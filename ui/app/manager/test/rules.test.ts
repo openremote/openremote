@@ -121,13 +121,12 @@ function generateALotOfAssets(multiplier = 5): Asset[] {
  * @and Saving the rule
  * @then The When-Then rule should appear in the rule list
  */
-test("Create a When-Then rule for an asset with a trigger and action", async ({ page, manager, shared }) => {
+test("Create a When-Then rule for an asset with a trigger and action", async ({ page, manager, rulesPage, shared }) => {
   await manager.setup("smartcity", { assets });
   await manager.goToRealmStartPage("smartcity");
-  await manager.navigateToTab("Rules");
-  await page.click(".mdi-plus >> nth=0");
-  await page.getByRole("menuitem", { name: "When-Then", exact: true }).click();
-  await page.getByRole("textbox", { name: "Rule name" }).fill(energyRule.name);
+  await rulesPage.goto();
+  await rulesPage.createRule("When-Then");
+  await rulesPage.setRuleName(energyRule.name);
 
   // When clause
   const when = page.locator("or-rule-when");
@@ -167,12 +166,12 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({ 
  * @and Saving the rule
  * @then The When-Then rule should appear in the rule list
  */
-test("Create a When-Then rule by searching for an asset", async ({ page, manager, shared }) => {
+test("Create a When-Then rule by searching for an asset", async ({ page, manager, rulesPage, shared }) => {
   const multiplier = 200; // Using a multiplier above 100, which is the default querying limit
   const aLotOfAssets = generateALotOfAssets(multiplier);
   await manager.setup("smartcity", { assets: aLotOfAssets });
   await manager.goToRealmStartPage("smartcity");
-  await manager.navigateToTab("Rules");
+  await rulesPage.goto();
 
   // Make sure the correct amount assets are set up, and the variables for this rule are adjusted
   expect(manager.assets.length).toBe(multiplier * assets.length);
@@ -181,9 +180,8 @@ test("Create a When-Then rule by searching for an asset", async ({ page, manager
   expect(firstAssetName).toContain(energyRule.asset);
   expect(lastAssetName).toContain(energyRule.asset);
 
-  await page.click(".mdi-plus >> nth=0");
-  await page.getByRole("menuitem", { name: "When-Then", exact: true }).click();
-  await page.getByRole("textbox", { name: "Rule name" }).fill(energyRule.name);
+  await rulesPage.createRule("When-Then");
+  await rulesPage.setRuleName(energyRule.name);
 
   // Select asset type of the When clause, search for the last asset in the list, and select the attribute
   const when = page.locator("or-rule-when");
@@ -216,6 +214,68 @@ test("Create a When-Then rule by searching for an asset", async ({ page, manager
 });
 
 /**
+ * @when Creating a When-Then rule
+ * @and Naming the rule
+ * @and Configuring a When condition on the asset
+ * @and Configuring a Then action with an email notification
+ * @and Saving the rule
+ * @then The When-Then rule should appear in the rule list
+ */
+test("Create a When-Then rule for an asset with a email notification action", async ({ page, manager, rulesPage, shared }) => {
+  await manager.setup("smartcity", { assets });
+  await manager.goToRealmStartPage("smartcity");
+  await rulesPage.goto();
+  await rulesPage.createRule("When-Then");
+  await rulesPage.setRuleName(energyRule.name);
+
+  // When clause
+  const when = page.locator("or-rule-when");
+  await when.getByRole("menuitem", { name: "Add condition" }).click();
+  await when.getByRole("menuitem", { name: energyRule.asset_type }).click();
+  await when.getByRole("combobox", { name: "Asset", exact: true }).click();
+  await when.getByRole("option", { name: energyRule.asset, exact: true }).click();
+  await when.getByRole("combobox", { name: "Attribute", exact: true }).click();
+  await when.getByRole("option", { name: energyRule.attribute_when, exact: true }).click();
+  await when.getByRole("combobox", { name: "Operator", exact: true }).click();
+  await when.getByRole("option", { name: "Less than or equal to", exact: true }).click();
+  await when.getByRole("spinbutton", { name: "Energy level" }).fill(energyRule.value.toString());
+
+  // Then clause
+  const then = page.locator("or-rule-then-otherwise");
+  await then.getByRole("menuitem", { name: "Add action" }).click();
+  await then.getByRole("menuitem", { name: "Email" }).click();
+  await then.getByRole("combobox", { name: "Recipients", exact: true }).click();
+  await then.getByRole("option", { name: "Users", exact: true }).click();
+  await then.getByRole("combobox", { name: "Users", exact: true }).click();
+  await then.getByRole("option", { name: "Linked", exact: true }).click();
+  await then.getByRole("button", { name: "Message", exact: true }).click();
+
+  // Set up notification message in dialog
+  const dialog = then.getByRole("dialog");
+  const overlay = dialog.locator("#overlay").first();
+  await expect(overlay).toBeVisible();
+  await then.getByRole("textbox", { name: "Subject" }).clear();
+  await overlay.click(); // Click outside the dialog to lose focus
+  await expect(then.getByRole("textbox", { name: "Subject"})).toHaveAttribute("invalid");
+  await expect(then.getByRole("button", { name: "OK"})).toBeDisabled();
+
+  await then.getByRole("textbox", { name: "Subject" }).fill("Email notification");
+  await overlay.click(); // Click outside the dialog to lose focus
+  await expect(then.getByRole("textbox", { name: "Subject"})).not.toHaveAttribute("invalid");
+  await expect(then.getByRole("button", { name: "OK"})).not.toBeDisabled();
+
+  await then.getByRole("textbox", { name: "Body" }).fill("Assets that have been impacted: %TRIGGER_ASSETS%");
+  await then.getByRole("button", { name: "OK"}).click();
+
+  await shared.interceptResponse<number>("**/rules/realm", (rule) => {
+    if (rule) manager.rules.push(rule);
+  });
+
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
+});
+
+/**
  * @when Creating a Flow rule
  * @and Naming the rule
  * @and Dragging elements onto the canvas
@@ -224,13 +284,12 @@ test("Create a When-Then rule by searching for an asset", async ({ page, manager
  * @and Saving the rule
  * @then The Flow rule should appear in the rule list
  */
-test("Create a Flow rule for an asset with logic connections", async ({ page, shared, manager }) => {
+test("Create a Flow rule for an asset with logic connections", async ({ page, shared, rulesPage, manager }) => {
   await manager.setup("smartcity", { assets });
   await manager.goToRealmStartPage("smartcity");
-  await manager.navigateToTab("Rules");
-  await page.click(".mdi-plus >> nth=0");
-  await page.getByRole("menuitem", { name: "Flow", exact: true }).click();
-  await page.getByRole("textbox", { name: "Rule name" }).fill("Solar panel");
+  await rulesPage.goto();
+  await rulesPage.createRule("Flow");
+  await rulesPage.setRuleName("Solar panel");
 
   await page.locator(".node-item.input-node", { hasText: "Attribute value" }).hover();
   await shared.drag(450, 250);

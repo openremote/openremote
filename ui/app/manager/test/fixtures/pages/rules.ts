@@ -18,6 +18,7 @@
  */
 import type { BasePage, Page, Shared } from "@openremote/test";
 import type { Manager } from "../manager";
+import {energyRule} from "../data/rules";
 
 export class RulesPage implements BasePage {
   constructor(
@@ -27,6 +28,15 @@ export class RulesPage implements BasePage {
   ) {}
 
   async goto() {
-    this.manager.navigateToTab("Rules");
+    return this.manager.navigateToTab("Rules");
+  }
+
+  async createRule(type: "When-Then" | "Flow" | "Groovy") {
+    await this.page.click(".mdi-plus >> nth=0");
+    await this.page.getByRole("menuitem", { name: type, exact: true }).click();
+  }
+
+  async setRuleName(name: string) {
+    return this.page.getByRole("textbox", { name: "Rule name" }).fill(name);
   }
 }
