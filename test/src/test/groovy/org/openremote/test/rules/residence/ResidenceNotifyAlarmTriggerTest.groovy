@@ -157,9 +157,8 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
                 "Test Console",
                 "1.0",
                 "Android 7.0",
-                new HashMap<String, ConsoleProvider>() {
-                    {
-                        put("geofence", new ConsoleProvider(
+                new HashMap<String, ConsoleProvider>(
+                        geofence: new ConsoleProvider(
                                 ORConsoleGeofenceAssetAdapter.NAME,
                                 true,
                                 false,
@@ -167,8 +166,8 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
                                 false,
                                 false,
                                 null
-                        ))
-                        put("push", new ConsoleProvider(
+                        ),
+                        push: new ConsoleProvider(
                                 "fcm",
                                 true,
                                 true,
@@ -176,9 +175,8 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
                                 true,
                                 false,
                                 ((Map) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
-                        )))
-                    }
-                },
+                        ))
+                ),
                 "",
                 ["manager"] as String[])
         def returnedConsoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)

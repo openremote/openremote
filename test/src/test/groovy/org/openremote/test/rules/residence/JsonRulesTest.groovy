@@ -243,9 +243,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 "Test Console",
                 "1.0",
                 "Android 7.0",
-                new HashMap<String, ConsoleProvider>() {
-                    {
-                        put("geofence", new ConsoleProvider(
+                new HashMap<String, ConsoleProvider>(
+                        geofence: new ConsoleProvider(
                                 ORConsoleGeofenceAssetAdapter.NAME,
                                 true,
                                 false,
@@ -253,8 +252,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                                 false,
                                 false,
                                 null
-                        ))
-                        put("push", new ConsoleProvider(
+                        ),
+                        push: new ConsoleProvider(
                                 "fcm",
                                 true,
                                 true,
@@ -262,9 +261,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 false,
                                 (Map<String, Object>)(parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
-                                )))
-                    }
-                },
+                                ))
+                ),
                 "",
                 ["manager"] as String[])
         consoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
@@ -275,9 +273,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 "Test Console",
                 "1.0",
                 "Android 7.0",
-                new HashMap<String, ConsoleProvider>() {
-                    {
-                        put("geofence", new ConsoleProvider(
+                new HashMap<String, ConsoleProvider>(
+                        geofence: new ConsoleProvider(
                                 ORConsoleGeofenceAssetAdapter.NAME,
                                 true,
                                 false,
@@ -285,8 +282,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                                 false,
                                 false,
                                 null
-                        ))
-                        put("push", new ConsoleProvider(
+                        ),
+                        push: new ConsoleProvider(
                                 "fcm",
                                 true,
                                 true,
@@ -294,9 +291,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 false,
                                 (Map<String, Object>)(parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
-                                )))
-                    }
-                },
+                                ))
+                ),
                 "",
                 ["manager"] as String[])
         consoleRegistration2 = authenticatedConsoleResource2.register(null, consoleRegistration2)
