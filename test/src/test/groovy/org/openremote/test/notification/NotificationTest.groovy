@@ -162,9 +162,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 "Test Console",
                 "1.0",
                 "Android 7.0",
-                new HashMap<String, ConsoleProvider>() {
-                    {
-                        put("geofence", new ConsoleProvider(
+                new HashMap<String, ConsoleProvider>(
+                        geofence: new ConsoleProvider(
                                 ORConsoleGeofenceAssetAdapter.NAME,
                                 true,
                                 false,
@@ -172,8 +171,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                 false,
                                 false,
                                 null
-                        ))
-                        put("push", new ConsoleProvider(
+                        ),
+                        push: new ConsoleProvider(
                                 "fcm",
                                 true,
                                 true,
@@ -181,9 +180,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 false,
                                 (Map) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
-                        ))
-                    }
-                },
+                        )
+                ),
                 "",
                 ["manager"] as String[])
         def testuser2Console = testuser2ConsoleResource.register(null, consoleRegistration)
@@ -809,10 +807,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 "MultiLanguageAction",
                 new LocalizedNotificationMessage(
                         "en",
-                        new HashMap<String, AbstractNotificationMessage>() {{
-                            put("nl", new PushNotificationMessage("Nederlandse titel", "Nederlandse body", null, null, null))
-                            put("en", new PushNotificationMessage("English title", "English body", null, null, null))
-                        }}
+                        new HashMap<String, AbstractNotificationMessage>(
+                            nl: new PushNotificationMessage("Nederlandse titel", "Nederlandse body", null, null, null),
+                            en: new PushNotificationMessage("English title", "English body", null, null, null)
+                        )
                 ),
                 null,
                 null,
@@ -827,9 +825,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 "Admin Console",
                 "1.0",
                 "Android 7.0",
-                new HashMap<String, ConsoleProvider>() {
-                    {
-                        put("geofence", new ConsoleProvider(
+                new HashMap<String, ConsoleProvider>(
+                        geofence: new ConsoleProvider(
                                 ORConsoleGeofenceAssetAdapter.NAME,
                                 true,
                                 false,
@@ -837,8 +834,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                 false,
                                 false,
                                 null
-                        ))
-                        put("push", new ConsoleProvider(
+                        ),
+                        push: new ConsoleProvider(
                                 "fcm",
                                 true,
                                 true,
@@ -846,9 +843,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 false,
                                 (Map) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
-                        ))
-                    }
-                },
+                        )
+                ),
                 "",
                 ["manager"] as String[])
         def adminConsole = adminConsoleResource.register(null, consoleRegistration)
@@ -913,9 +909,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 "Test user 1 Console",
                 "1.0",
                 "Android 7.0",
-                new HashMap<String, ConsoleProvider>() {
-                    {
-                        put("geofence", new ConsoleProvider(
+                new HashMap<String, ConsoleProvider>(
+                        geofence: new ConsoleProvider(
                                 ORConsoleGeofenceAssetAdapter.NAME,
                                 true,
                                 false,
@@ -923,8 +918,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                 false,
                                 false,
                                 null
-                        ))
-                        put("push", new ConsoleProvider(
+                        ),
+                        push: new ConsoleProvider(
                                 "fcm",
                                 true,
                                 true,
@@ -932,9 +927,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 false,
                                 (Map) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
-                        ))
-                    }
-                },
+                        )
+                ),
                 "",
                 ["manager"] as String[])
         def testuser1Console = testuser1ConsoleResource.register(null, testuser1ConsoleRegistration)
@@ -1003,10 +997,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 "MultiTypeAction",
                 new LocalizedNotificationMessage(
                         "en",
-                        new HashMap<String, AbstractNotificationMessage>() {{
-                            put("en", new PushNotificationMessage("English title", "English body", null, null, null))
-                            put("nl", new EmailNotificationMessage().setSubject("Nederlandse titel").setText("Nederlandse tekst"))
-                        }}
+                        new HashMap<String, AbstractNotificationMessage>(
+                            en: new PushNotificationMessage("English title", "English body", null, null, null),
+                            nl: new EmailNotificationMessage().setSubject("Nederlandse titel").setText("Nederlandse tekst")
+                        )
                 ),
                 null,
                 null,
@@ -1067,10 +1061,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 "InvalidNotification",
                 new LocalizedNotificationMessage(
                         "en",
-                        new HashMap<String, AbstractNotificationMessage>() {{
-                            put("nl", new PushNotificationMessage())
-                            put("en", new PushNotificationMessage("English title", "English body", null, null, null))
-                        }}
+                        new HashMap<String, AbstractNotificationMessage>(
+                            nl: new PushNotificationMessage(),
+                            en: new PushNotificationMessage("English title", "English body", null, null, null)
+                        )
                 ),
                 null,
                 null,

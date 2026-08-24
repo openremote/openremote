@@ -410,9 +410,8 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                 "Test Console",
                 "1.0",
                 "Android 7.0",
-                new HashMap<String, ConsoleProvider>() {
-                    {
-                        put("geofence", new ConsoleProvider(
+                new HashMap<String, ConsoleProvider>(
+                        geofence: new ConsoleProvider(
                                 ORConsoleGeofenceAssetAdapter.NAME,
                                 true,
                                 false,
@@ -420,8 +419,8 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                                 false,
                                 false,
                                 null
-                        ))
-                        put("push", new ConsoleProvider(
+                        ),
+                        push: new ConsoleProvider(
                                 "fcm",
                                 true,
                                 true,
@@ -429,9 +428,8 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 false,
                             (Map)parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
-                        ))
-                    }
-                },
+                        )
+                  ),
                 "",
                 ["manager"] as String[])
         def returnedConsoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
@@ -1030,9 +1028,8 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                 name,
                 "1.0",
                 "Android 7.0",
-                new HashMap<String, ConsoleProvider>() {
-                    {
-                        put("push", new ConsoleProvider(
+                new HashMap<String, ConsoleProvider>(
+                    push: new ConsoleProvider(
                                 "fcm",
                                 true,
                                 true,
@@ -1040,9 +1037,8 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 false,
                                 [token: pushToken]
-                        ))
-                    }
-                },
+                        )
+                ),
                 "",
                 ["manager"] as String[]
         )
