@@ -1,0 +1,519 @@
+{
+  "error": {
+    "meta": {
+      "readOnly": true,
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 59,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000
+      }
+    },
+    "name": "error",
+    "type": "boolean",
+    "value": null,
+    "timestamp": 1779293158639
+  },
+  "model": {
+    "meta": {},
+    "name": "model",
+    "type": "text",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "notes": {
+    "meta": {},
+    "name": "notes",
+    "type": "text",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "uNumber": {
+    "meta": {},
+    "name": "uNumber",
+    "type": "text",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "location": {
+    "meta": {},
+    "name": "location",
+    "type": "GEO_JSONPoint",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "pumpDown": {
+    "meta": {
+      "readOnly": true,
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 69,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000
+      }
+    },
+    "name": "pumpDown",
+    "type": "boolean",
+    "value": null,
+    "timestamp": 1779293472028
+  },
+  "defrosting": {
+    "meta": {
+      "readOnly": true,
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 69,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000
+      }
+    },
+    "name": "defrosting",
+    "type": "boolean",
+    "value": null,
+    "timestamp": 1781226229824
+  },
+  "airflowMode": {
+    "meta": {
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 57,
+        "writeAddress": 5,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000,
+        "writeMemoryArea": "HOLDING"
+      }
+    },
+    "name": "airflowMode",
+    "type": "airflowMode",
+    "value": null,
+    "timestamp": 1779293091325
+  },
+  "alarmStatus": {
+    "meta": {
+      "readOnly": true,
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 59,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "valueConverter": {
+          "0": "No errors",
+          "4353": "Serial communication error between indoor/outdoor units",
+          "4609": "Remote controller communication error",
+          "4865": "Communication error between outdoor units",
+          "5121": "Network communication error",
+          "5377": "Scan error",
+          "5633": "Peripheral unit communication error",
+          "5889": "Electricity charge apportionment error",
+          "8449": "Indoor unit initial setting error",
+          "8705": "Indoor unit capacity abnormal",
+          "8961": "Incompatible series connection error",
+          "9217": "Connection unit number error",
+          "9473": "Connection pipe length error",
+          "9729": "Indoor unit address setting error",
+          "9985": "Master/slave unit setting error",
+          "10241": "Other setting error",
+          "10497": "Connection unit number error in wired remote controller system",
+          "12545": "Indoor unit power supply abnormal",
+          "12801": "Indoor unit main PCB error",
+          "13057": "Indoor unit display PCB error",
+          "13313": "Power relay error",
+          "13569": "Indoor unit manual auto switch error",
+          "13825": "Heater relay error",
+          "14081": "Indoor unit transmission PCB error",
+          "14337": "Network convertor PCB error",
+          "14593": "Indoor unit power supply circuit error",
+          "14849": "Indoor unit communication circuit (wired remote controller) error",
+          "16641": "Indoor unit room temp. thermistor error",
+          "16897": "Indoor unit heat ex. temp. thermistor error",
+          "17153": "Humidity sensor error",
+          "17409": "Light sensor error",
+          "17665": "Gas sensor error",
+          "17921": "Float sensor error",
+          "18177": "Water temperature sensor error",
+          "18433": "Warm water flow rate sensor error",
+          "18689": "Heater sensor error",
+          "20737": "Indoor unit fan motor 1 error",
+          "20993": "Indoor unit coil (expansion valve) error",
+          "21249": "Indoor unit water drain abnormal",
+          "21505": "Air cleaning function error",
+          "21761": "Filter cleaning function error",
+          "22017": "Water circulation pump error",
+          "22273": "Indoor unit damper error",
+          "22529": "Indoor unit intake grille position error",
+          "22785": "Indoor unit fan motor 2 error",
+          "24833": "Outdoor unit power supply abnormal",
+          "25089": "Outdoor unit main PCB error",
+          "25345": "Outdoor unit inverter PCB error",
+          "25601": "Outdoor unit active filter/PFC circuit error",
+          "25857": "Outdoor unit IPM error",
+          "26113": "Convertor distinction error",
+          "26369": "Outdoor unit power short interruption error (protective operation)",
+          "26625": "Outdoor unit magnetic relay error",
+          "26881": "Outdoor unit transmission PCB error",
+          "27137": "Outdoor unit display PCB error",
+          "28929": "Outdoor unit discharge temp. thermistor error",
+          "29185": "Outdoor unit compressor temp. thermistor error",
+          "29441": "Outdoor unit heat ex. temp. thermistor error",
+          "29697": "Outside air temp. thermistor error",
+          "29953": "Outdoor unit suction gas temp. thermistor error",
+          "30209": "Outdoor unit operating valve thermistor error",
+          "30465": "Outdoor unit heat sink temp. thermistor error",
+          "30721": "Expansion valve temperature sensor error",
+          "33025": "Receiver liquid level detection sensor error",
+          "33281": "Outdoor unit sub-cool heat ex. gas temp. thermistor error",
+          "33537": "Outdoor unit liquid pipe temp. thermistor error",
+          "33793": "Outdoor unit current sensor error",
+          "34049": "Fan motor current sensor error",
+          "34305": "Outdoor unit pressure sensor error",
+          "34561": "Oil sensor error",
+          "37121": "Outdoor unit compressor 1 error",
+          "37377": "Outdoor unit compressor 2 error",
+          "37633": "Outdoor unit compressor start up error",
+          "37889": "Outdoor unit trip detection",
+          "38145": "Outdoor unit compressor motor control error",
+          "38401": "Open loop error (field-weakening relevant)",
+          "38657": "Outdoor unit fan motor 1 error",
+          "38913": "Outdoor unit fan motor 2 error",
+          "39169": "Outdoor unit 4-way valve error",
+          "39425": "Outdoor unit coil (expansion valve) error",
+          "41217": "Outdoor unit discharge temperature 1 error",
+          "41473": "Outdoor unit discharge temperature 2 error",
+          "41729": "Outdoor unit compressor temperature error",
+          "41985": "Outdoor unit pressure error 1",
+          "42241": "Outdoor unit pressure error 2",
+          "42497": "Outdoor unit heat exchanger temperature error",
+          "42753": "Suction temperature abnormal",
+          "43009": "Poor refrigerant circulation",
+          "43265": "Current overload error",
+          "43521": "Outdoor unit special operation error",
+          "44033": "Ambient temperature error",
+          "44801": "Out of the possible operation range",
+          "49409": "Peripheral unit main PCB error",
+          "49665": "Peripheral unit transmission PCB error",
+          "49921": "Peripheral unit PCB 1 error",
+          "50177": "PCB 2 error",
+          "50433": "PCB 3 error",
+          "50689": "PCB 4 error",
+          "50945": "PCB 5 error",
+          "51201": "Peripheral unit input device error",
+          "51457": "Display device error",
+          "51713": "EEPROM error",
+          "52225": "Peripheral unit sensor error",
+          "52993": "Peripheral unit external connector error (USB memory)",
+          "61697": "System tool software error",
+          "61953": "System tool adaptor error",
+          "62209": "System tool interface error",
+          "62465": "System tool environment erro"
+        },
+        "requestInterval": 3000
+      }
+    },
+    "name": "alarmStatus",
+    "type": "text",
+    "value": null,
+    "timestamp": 1779293158639
+  },
+  "demandLevel": {
+    "meta": {
+      "readOnly": true,
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 71,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000
+      }
+    },
+    "name": "demandLevel",
+    "type": "demandLevel",
+    "value": null,
+    "timestamp": 1779293194994
+  },
+  "oilRecovery": {
+    "meta": {
+      "readOnly": true,
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 69,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000
+      }
+    },
+    "name": "oilRecovery",
+    "type": "boolean",
+    "value": null,
+    "timestamp": 1779293472028
+  },
+  "filterStatus": {
+    "meta": {
+      "readOnly": true
+    },
+    "name": "filterStatus",
+    "type": "filterStatus",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "manufacturer": {
+    "meta": {},
+    "name": "manufacturer",
+    "type": "text",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "realSetpoint": {
+    "meta": {
+      "readOnly": true
+    },
+    "name": "realSetpoint",
+    "type": "number",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "vanePosition": {
+    "meta": {},
+    "name": "vanePosition",
+    "type": "vanePosition",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "operationTime": {
+    "meta": {
+      "readOnly": true
+    },
+    "name": "operationTime",
+    "type": "number",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "setTemperature": {
+    "meta": {
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 56,
+        "writeAddress": 4,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000,
+        "writeMemoryArea": "HOLDING"
+      }
+    },
+    "name": "setTemperature",
+    "type": "number",
+    "value": null,
+    "timestamp": 1781226229822
+  },
+  "filterSignReset": {
+    "meta": {
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 59,
+        "writeAddress": 13,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000,
+        "writeMemoryArea": "HOLDING"
+      }
+    },
+    "name": "filterSignReset",
+    "type": "boolean",
+    "value": null,
+    "timestamp": 1779293368731
+  },
+  "operationStatus": {
+    "meta": {
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 55,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000
+      }
+    },
+    "name": "operationStatus",
+    "type": "operationStatus",
+    "value": null,
+    "timestamp": 1781226229822
+  },
+  "errorCodeSection": {
+    "meta": {
+      "readOnly": true,
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 59,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000
+      }
+    },
+    "name": "errorCodeSection",
+    "type": "positiveInteger",
+    "value": null,
+    "timestamp": 1779293368731
+  },
+  "filterSignStatus": {
+    "meta": {
+      "readOnly": true,
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 59,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000
+      }
+    },
+    "name": "filterSignStatus",
+    "type": "boolean",
+    "value": null,
+    "timestamp": 1779293368732
+  },
+  "indoorTemperature": {
+    "meta": {
+      "readOnly": true,
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 58,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000
+      }
+    },
+    "name": "indoorTemperature",
+    "type": "number",
+    "value": null,
+    "timestamp": 1779293368731
+  },
+  "ambientTemperature": {
+    "meta": {
+      "readOnly": true
+    },
+    "name": "ambientTemperature",
+    "type": "positiveInteger",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "errorCodeSubsection": {
+    "meta": {
+      "readOnly": true,
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 59,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000
+      }
+    },
+    "name": "errorCodeSubsection",
+    "type": "positiveInteger",
+    "value": null,
+    "timestamp": 1779293368731
+  },
+  "referenceTemperature": {
+    "meta": {
+      "readOnly": true
+    },
+    "name": "referenceTemperature",
+    "type": "number",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "humanDetectionAutoOff": {
+    "meta": {
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 74,
+        "writeAddress": 21,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000,
+        "writeMemoryArea": "HOLDING"
+      }
+    },
+    "name": "humanDetectionAutoOff",
+    "type": "boolean",
+    "value": null,
+    "timestamp": 1779293368732
+  },
+  "returnPathTemperature": {
+    "meta": {
+      "readOnly": true
+    },
+    "name": "returnPathTemperature",
+    "type": "number",
+    "value": null,
+    "timestamp": 1779292812545
+  },
+  "humanDetectionAutoSave": {
+    "meta": {
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 74,
+        "writeAddress": 21,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000,
+        "writeMemoryArea": "HOLDING"
+      }
+    },
+    "name": "humanDetectionAutoSave",
+    "type": "boolean",
+    "value": null,
+    "timestamp": 1781226229822
+  },
+  "indoorUnitOperationMode": {
+    "meta": {
+      "agentLink": {
+        "id": "21KNUlVe9lgiMschgjE4b2",
+        "type": "ModbusAgentLink",
+        "unitId": 1,
+        "readAddress": 54,
+        "writeAddress": 2,
+        "readValueType": "UINT",
+        "readMemoryArea": "INPUT",
+        "requestInterval": 3000,
+        "writeMemoryArea": "HOLDING"
+      }
+    },
+    "name": "indoorUnitOperationMode",
+    "type": "indoorUnitOperationMode",
+    "value": null,
+    "timestamp": 1779293368731
+  }
+}
