@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { expect } from "@openremote/test";
+import { expect, Locator } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
 import { preparedAssetsForRules as assets } from "./fixtures/data/assets.js";
 import { energyRule } from "./fixtures/data/rules.js";
@@ -130,15 +130,13 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({ 
 
   // When clause
   const when = page.locator("or-rule-when");
-  await when.getByRole("menuitem", { name: "Add condition" }).click();
-  await when.getByRole("menuitem", { name: energyRule.asset_type }).click();
-  await when.getByRole("combobox", { name: "Asset", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.asset, exact: true }).click();
-  await when.getByRole("combobox", { name: "Attribute", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.attribute_when, exact: true }).click();
-  await when.getByRole("combobox", { name: "Operator", exact: true }).click();
-  await when.getByRole("option", { name: "Less than or equal to", exact: true }).click();
-  await when.getByRole("spinbutton", { name: "Energy level" }).fill(energyRule.value.toString());
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  })
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -185,15 +183,13 @@ test("Create a When-Then rule by searching for an asset", async ({ page, manager
 
   // Select asset type of the When clause, search for the last asset in the list, and select the attribute
   const when = page.locator("or-rule-when");
-  await when.getByRole("menuitem", { name: "Add condition" }).click();
-  await when.getByRole("menuitem", { name: energyRule.asset_type }).click();
-  await when.getByRole("combobox", { name: "Asset", exact: true }).fill(lastAssetName);
-  await when.getByRole("option", { name: lastAssetName, exact: true }).click();
-  await when.getByRole("combobox", { name: "Attribute", exact: true }).fill(energyRule.attribute_when);
-  await when.getByRole("option", { name: energyRule.attribute_when, exact: true }).click();
-  await when.getByRole("combobox", { name: "Operator", exact: true }).fill("Less than or");
-  await when.getByRole("option", { name: "Less than or equal to", exact: true }).click();
-  await when.getByRole("spinbutton", { name: "Energy level" }).fill(energyRule.value.toString());
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: lastAssetName,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  })
 
   // Configure Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -235,15 +231,13 @@ test("Create a When-Then rule for an asset with a email notification action", as
 
   // When clause
   const when = page.locator("or-rule-when");
-  await when.getByRole("menuitem", { name: "Add condition" }).click();
-  await when.getByRole("menuitem", { name: energyRule.asset_type }).click();
-  await when.getByRole("combobox", { name: "Asset", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.asset, exact: true }).click();
-  await when.getByRole("combobox", { name: "Attribute", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.attribute_when, exact: true }).click();
-  await when.getByRole("combobox", { name: "Operator", exact: true }).click();
-  await when.getByRole("option", { name: "Less than or equal to", exact: true }).click();
-  await when.getByRole("spinbutton", { name: "Energy level", exact: true }).fill(energyRule.value.toString());
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  })
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -304,15 +298,13 @@ test("Create a When-Then rule for an asset with a push notification action", asy
 
   // When clause
   const when = page.locator("or-rule-when");
-  await when.getByRole("menuitem", { name: "Add condition" }).click();
-  await when.getByRole("menuitem", { name: energyRule.asset_type }).click();
-  await when.getByRole("combobox", { name: "Asset", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.asset, exact: true }).click();
-  await when.getByRole("combobox", { name: "Attribute", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.attribute_when, exact: true }).click();
-  await when.getByRole("combobox", { name: "Operator", exact: true }).click();
-  await when.getByRole("option", { name: "Less than or equal to", exact: true }).click();
-  await when.getByRole("spinbutton", { name: "Energy level", exact: true }).fill(energyRule.value.toString());
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  })
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -372,15 +364,13 @@ test("Create a When-Then rule for an asset with a alarm action", async ({ page, 
 
   // When clause
   const when = page.locator("or-rule-when");
-  await when.getByRole("menuitem", { name: "Add condition" }).click();
-  await when.getByRole("menuitem", { name: energyRule.asset_type }).click();
-  await when.getByRole("combobox", { name: "Asset", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.asset, exact: true }).click();
-  await when.getByRole("combobox", { name: "Attribute", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.attribute_when, exact: true }).click();
-  await when.getByRole("combobox", { name: "Operator", exact: true }).click();
-  await when.getByRole("option", { name: "Less than or equal to", exact: true }).click();
-  await when.getByRole("spinbutton", { name: "Energy level", exact: true }).fill(energyRule.value.toString());
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  })
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -436,15 +426,13 @@ test("Create a When-Then rule for an asset with a webhook action", async ({ page
 
   // When clause
   const when = page.locator("or-rule-when");
-  await when.getByRole("menuitem", { name: "Add condition" }).click();
-  await when.getByRole("menuitem", { name: energyRule.asset_type }).click();
-  await when.getByRole("combobox", { name: "Asset", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.asset, exact: true }).click();
-  await when.getByRole("combobox", { name: "Attribute", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.attribute_when, exact: true }).click();
-  await when.getByRole("combobox", { name: "Operator", exact: true }).click();
-  await when.getByRole("option", { name: "Less than or equal to", exact: true }).click();
-  await when.getByRole("spinbutton", { name: "Energy level", exact: true }).fill(energyRule.value.toString());
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  })
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -639,7 +627,7 @@ test("Groups containing legacy JavaScript rules cannot be renamed", async ({ pag
   await expect(page.locator("or-rule-tree").getByText("Legacy JS group", { exact: true })).toHaveCount(1);
   await page.locator("or-rule-tree").getByText("Legacy JS group", { exact: true }).click();
   await page.getByRole("textbox", { name: "Group name" }).fill("Renamed JS group");
-  await page.getByRole("button", { name: "Save" }).isDisabled();
+  await page.getByRole("button", { name: "Save" }).click();
   expect(api.putRequests).toBe(0);
 });
 
