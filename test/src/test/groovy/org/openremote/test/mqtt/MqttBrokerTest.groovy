@@ -1,38 +1,27 @@
-/*
- * Copyright 2026, OpenRemote Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 package org.openremote.test.mqtt
 
-import com.google.common.cache.CacheBuilder
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
 import com.hivemq.client.mqtt.MqttClientConnectionConfig
 import io.netty.channel.socket.SocketChannel
+import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal
+import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal
 import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
+import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.mqtt.MQTTHandler
+import org.openremote.manager.provisioning.ProvisioningService
+import org.openremote.manager.security.KeyStoreServiceImpl
+import org.openremote.manager.security.ManagerIdentityService
+import org.openremote.manager.security.RemotingConnectionPrincipal
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.Constants
 import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -43,17 +32,21 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.event.shared.SharedEvent
+import org.openremote.model.security.ClientRole
+import org.openremote.model.security.User
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
+import org.openremote.test.provisioning.MTLSCertificateHelper
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.time.Duration
+import javax.security.auth.Subject
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
+import java.util.stream.Stream
 
 import static org.openremote.model.util.MapAccess.getInteger
 import static org.openremote.model.util.MapAccess.getString
@@ -147,9 +140,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            // A client re-subscribes its retained consumers whenever it reconnects, so failures can be reported more
-            // than once and the total count is not stable
-            assert subFailures.contains(topic)
+            assert subFailures.size() == 1
+            assert subFailures[0] == topic
             assert client.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
@@ -161,7 +153,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert subFailures.contains(topic)
+            assert subFailures.size() == 2
+            assert subFailures[1] == topic
             assert client.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
@@ -174,7 +167,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert subFailures.contains(topic)
+            assert subFailures.size() == 3
+            assert subFailures[2] == topic
             assert client.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
@@ -552,7 +546,6 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
 
         and: "the new client gets abruptly disconnected"
-        widenDisconnectedConnectionWindow(mqttBrokerService)
         def existingConnection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
 //        ((NioSocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).config().setOption(ChannelOption.SO_LINGER, 0I)
         ((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)newClient.client).clientConfig).delegate).connectionConfig.get()).channel).close()
@@ -564,9 +557,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "The last will message should have updated the value of the attribute and the first client should have received the event"
-        // The client reconnecting does not mean the broker has processed the closed session yet, and publishing the
-        // last will of that session is what triggers the update, so allow well beyond the reconnect for it
-        new PollingConditions(initialDelay: 1, timeout: 30, delay: 1).eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 1000d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
@@ -639,7 +630,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "the subscription should fail but the consumer should still exist (as setRemoveConsumersOnSubscriptionFailure=false)"
         conditions.eventually {
-            assert subFailures.contains(topic)
+            assert subFailures.size() == 4
+            assert subFailures[3] == topic
             assert newClient.topicConsumerMap.get(topic) != null
             assert newClient.topicConsumerMap.get(topic).consumers.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
@@ -704,7 +696,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "no subscription should exist"
         conditions.eventually {
-            assert subFailures.contains(topic)
+            assert subFailures.size() == 6
+            assert subFailures[5] == topic
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
             assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
@@ -887,14 +880,236 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
     }
 
-    /**
-     * A last will publish is only accepted while the broker can still resolve the closed connection, which it keeps for
-     * 3s, so a publish consumer that is held up for longer drops the will and no amount of polling recovers it.
-     */
-    private static void widenDisconnectedConnectionWindow(MQTTBrokerService mqttBrokerService) {
-        mqttBrokerService.@disconnectedConnectionCache = CacheBuilder.newBuilder()
-                .maximumSize(10000)
-                .expireAfterWrite(Duration.ofSeconds(60))
-                .build()
+    def "Mqtt broker mTLS test"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.1)
+        MQTT_IOClient device1Client
+
+        and: "temporary directories are created"
+        def tempDir = new File(System.getProperty("java.io.tmpdir"), "openremote-mtls-test-keystores-" + System.currentTimeMillis())
+        def tempManagerDir = new File(System.getProperty("java.io.tmpdir"), "openremote-tmp-" + System.currentTimeMillis())
+        tempDir.mkdirs()
+        tempManagerDir.mkdirs()
+        getLOG().info("KeyStore TempDir: $tempDir.absoluteFile")
+        getLOG().info("Manager TempDir: $tempManagerDir.absoluteFile")
+
+        and: "test configuration is set up"
+        def serverKeystorePath = new File(tempDir, "server-keystore.p12").absolutePath
+        def serverTruststorePath = new File(tempDir, "server-truststore.p12").absolutePath
+        def keystorePassword = "secret1"
+        def provisionedAccountAliasName = "mtlsclient"
+        def provisionedAccountKeyAlias = "$Constants.MASTER_REALM.$provisionedAccountAliasName"
+        def ProvisionedAccountUserName = "mtlstest2"
+
+        and: "mTLS certificate helper is initialized"
+        def mtlsHelper = new MTLSCertificateHelper()
+
+        and: "server and client certificates are generated"
+        def (serverKeyPair, serverCert) = mtlsHelper.generateServerCertificate()
+        def (clientKeyPair, clientCert) = mtlsHelper.generateClientCertificate(ProvisionedAccountUserName, Constants.MASTER_REALM)
+
+        and: "server keystores are created and saved to disk"
+        mtlsHelper.createAndSaveServerKeystores(
+                serverKeystorePath,
+                serverTruststorePath,
+                keystorePassword,
+                provisionedAccountKeyAlias,
+                serverKeyPair,
+                serverCert
+        )
+
+        and: "the container configuration is set up with MTLS environment variables"
+        def config = defaultConfig()
+        config.put(Constants.OR_MQTT_MTLS_SERVER_LISTEN_HOST, "localhost")
+        config.put(Constants.OR_MQTT_MTLS_SERVER_LISTEN_PORT, "8884")
+        config.put(Constants.OR_MQTT_MTLS_KEYSTORE_PATH, serverKeystorePath)
+        config.put(Constants.OR_MQTT_MTLS_KEYSTORE_PASSWORD, keystorePassword)
+        config.put(Constants.OR_MQTT_MTLS_TRUSTSTORE_PATH, serverTruststorePath)
+        config.put(Constants.OR_MQTT_MTLS_TRUSTSTORE_PASSWORD, keystorePassword)
+        config.put(Constants.OR_MQTT_MTLS_DISABLED, "false")
+        config.put(KeyStoreServiceImpl.OR_KEYSTORE_PASSWORD, keystorePassword)
+        config.put(PersistenceService.OR_STORAGE_DIR, tempManagerDir.getAbsolutePath())
+
+
+        and: "the container starts"
+        def container = startContainer(config, defaultServices())
+        def keystoreService = container.getService(KeyStoreServiceImpl.class)
+        def mqttBrokerService = container.getService(MQTTBrokerService.class)
+        def identityService = container.getService(ManagerIdentityService.class)
+        def provisioningService = container.getService(ProvisioningService.class)
+        def mqttHost = "localhost"
+        def mqttPort = 8884
+
+        and: "the client certificate is added to the KeyStoreService"
+        mtlsHelper.addClientCertificateToKeyStoreService(
+                keystoreService,
+                provisionedAccountKeyAlias,
+                keystorePassword,
+                clientKeyPair,
+                clientCert
+        )
+
+        expect: "the keystores should contain the certificates"
+        keystoreService.getKeyStore().containsAlias(provisionedAccountKeyAlias)
+        keystoreService.getTrustStore().containsAlias(provisionedAccountKeyAlias)
+
+        when: "A new service user with the corresponding certificate's fields is created"
+        User serviceUser = new User()
+                .setServiceAccount(true)
+                .setEnabled(true)
+                .setRealm("master")
+                .setUsername(ProvisionedAccountUserName);
+        serviceUser = identityService.getIdentityProvider().createUpdateUser("master", serviceUser, null, true);
+
+        identityService.getIdentityProvider().updateUserClientRoles(
+                Constants.MASTER_REALM,
+                serviceUser.getId(),
+                Constants.KEYCLOAK_CLIENT_ID,
+                Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES).map(ClientRole::getValue).toArray(String[]::new)
+        );
+
+        then: "the service user should exist"
+        def fetchedUser = identityService.getIdentityProvider().getUserByUsername("master", "$User.SERVICE_ACCOUNT_PREFIX$ProvisionedAccountUserName")
+        assert fetchedUser != null
+
+        when: "an MQTT client is created with mTLS configuration"
+        def device1UniqueId = "device1"
+        def mqttDevice1ClientId = device1UniqueId
+        device1Client = new MQTT_IOClient(
+                mqttDevice1ClientId,
+                mqttHost,
+                mqttPort,
+                true,
+                false,
+                null,
+                null,
+                null,
+                keystoreService.getKeyManagerFactory(provisionedAccountKeyAlias),
+                keystoreService.getTrustManagerFactory()
+        )
+
+        device1Client.connect()
+
+        then: "the client should connect successfully using mTLS"
+        conditions.eventually {
+            assert device1Client.getConnectionStatus() == ConnectionStatus.CONNECTED
+        }
+
+        and: "the authenticated client should have the correct subject"
+        conditions.eventually {
+            Subject sub = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId).getSubject()
+            // New architecture creates a RemotingConnectionPrincipal and a TokenPrincipal/UserPrincipal for the service user
+            assert sub.getPrincipals().size() == 3
+            assert sub.getPrincipals(UserPrincipal).size() == 1
+            assert sub.getPrincipals(UserPrincipal)[0].getName() == "$User.SERVICE_ACCOUNT_PREFIX$ProvisionedAccountUserName"
+            assert sub.getPrincipals(RemotingConnectionPrincipal.class).size() == 1
+            assert sub.getPrincipals(RemotingConnectionPrincipal.class)[0].getRemotingConnection().getClientID() == mqttDevice1ClientId
+
+            // Client certificate is present on the connection
+            assert sub.getPrincipals(org.openremote.container.security.TokenPrincipal.class).size() == 1
+            assert sub.getPublicCredentials().size() == 0
+        }
+
+        when: "A new keypair is created, without being signed by the issuer"
+        def (invalidKeyPair, invalidCert) = mtlsHelper.generateSelfSignedCertificate("invaliduser", "master")
+
+        and: "Added and saved to the KeyStoreService keystore"
+        def invalidKeyAlias = Constants.MASTER_REALM+".invalidclient"
+        mtlsHelper.addCertificateToKeyStoreService(
+                keystoreService,
+                invalidKeyAlias,
+                keystorePassword,
+                invalidKeyPair,
+                invalidCert,
+                false // Don't include root CA in chain for invalid cert
+        )
+
+        and: "A new MQTT client connects, using those new certificates"
+        def invalidClientId = UniqueIdentifierGenerator.generateId("invaliddevice")
+        MQTT_IOClient invalidClient = new MQTT_IOClient(
+                invalidClientId,
+                mqttHost,
+                mqttPort,
+                true,
+                false,
+                null,
+                null,
+                null,
+                keystoreService.getKeyManagerFactory(null),
+                keystoreService.getTrustManagerFactory()
+        )
+        invalidClient.connectTimeout = 100
+        invalidClient.connect();
+
+        then: "The connection should be rejected"
+
+        conditions.eventually {
+            assert invalidClient.getConnectionStatus() == ConnectionStatus.CONNECTING
+            assert invalidClient != null
+        }
+
+        and: "disconnect invalid client if connected"
+        invalidClient.disconnect()
+
+        when: "A new keypair, properly signed, is created, but the service user for it is not created"
+        def unprovisionedUsername = "unprovisioneduser"
+        def (unprovisionedKeyPair, unprovisionedCert) = mtlsHelper.generateClientCertificate(
+                unprovisionedUsername,
+                Constants.MASTER_REALM,
+                4 // serial offset
+        )
+
+        and: "It is added and saved to the KeyStoreService keystore"
+        def unprovisionedKeyAlias = Constants.MASTER_REALM + "unprovisionedclient"
+        mtlsHelper.addClientCertificateToKeyStoreService(
+                keystoreService,
+                unprovisionedKeyAlias,
+                keystorePassword,
+                unprovisionedKeyPair,
+                unprovisionedCert
+        )
+
+        and: "A new MQTT client connects, using those correct yet unprovisioned certificates"
+        def unprovisionedClientId = UniqueIdentifierGenerator.generateId("unprovisioneddevice")
+        unprovisionedClientId = unprovisionedUsername;
+        MQTT_IOClient unprovisionedClient = new MQTT_IOClient(
+                unprovisionedClientId,
+                mqttHost,
+                mqttPort,
+                true,
+                false,
+                null,
+                null,
+                null,
+                keystoreService.getKeyManagerFactory(unprovisionedKeyAlias),
+                keystoreService.getTrustManagerFactory()
+        )
+
+        unprovisionedClient.connect()
+
+        then: "the connection should be created, but there should be no roles, but there is a ProvisioningPrincipal, that contains the correct certificate"
+        conditions.eventually {
+            assert unprovisionedClient.getConnectionStatus() == ConnectionStatus.CONNECTED
+        }
+
+        and: "the authenticated client should be anonymous"
+        conditions.eventually {
+            Subject unprovisionedJaasSubject = mqttBrokerService.getConnectionFromClientID(unprovisionedClientId).getSubject()
+            assert unprovisionedJaasSubject != null
+            // Anonymous: RemotingConnectionPrincipal + anonymous UserPrincipal + anonymous RolePrincipal
+            assert unprovisionedJaasSubject.getPrincipals().size() == 3
+            assert unprovisionedJaasSubject.getPrincipals(RolePrincipal.class)[0].getName() == "anonymous"
+            assert unprovisionedJaasSubject.getPrincipals(UserPrincipal)[0].getName() == "anonymous"
+        }
+
+        cleanup: "disconnect the client and cleanup temporary files"
+        device1Client.disconnect()
+
+        and: "disconnect unprovisioned client"
+        unprovisionedClient.disconnect()
+
+        and: "delete the created temporary directories"
+        tempDir.deleteDir()
+        tempManagerDir.deleteDir()
     }
 }

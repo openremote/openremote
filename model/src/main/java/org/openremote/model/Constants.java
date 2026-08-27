@@ -1,5 +1,8 @@
 /*
- * Copyright 2026, OpenRemote Inc.
+ * Copyright 2016, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -12,9 +15,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.openremote.model;
 
@@ -68,6 +69,15 @@ public interface Constants {
   String OR_EMAIL_PASSWORD = "OR_EMAIL_PASSWORD";
   String OR_EMAIL_PORT = "OR_EMAIL_PORT";
   int OR_EMAIL_PORT_DEFAULT = 587;
+  String OR_MQTT_MTLS_SERVER_LISTEN_HOST = "OR_MQTT_MTLS_SERVER_LISTEN_HOST";
+  String OR_MQTT_MTLS_SERVER_LISTEN_PORT = "OR_MQTT_MTLS_SERVER_LISTEN_PORT";
+  String OR_MQTT_MTLS_KEYSTORE_PATH = "OR_MQTT_MTLS_KEYSTORE_PATH";
+  String OR_MQTT_MTLS_KEYSTORE_PASSWORD = "OR_MQTT_MTLS_KEYSTORE_PASSWORD";
+  String OR_MQTT_MTLS_TRUSTSTORE_PATH = "OR_MQTT_MTLS_TRUSTSTORE_PATH";
+  String OR_MQTT_MTLS_TRUSTSTORE_PASSWORD = "OR_MQTT_MTLS_TRUSTSTORE_PASSWORD";
+  String OR_MQTT_MTLS_DISABLED = "OR_MQTT_MTLS_DISABLED";
+  boolean OR_MQTT_MTLS_DISABLED_DEFAULT = true;
+  int OR_MQTT_MTLS_PORT_DEFAULT = 8884;
   String OR_EMAIL_TLS = "OR_EMAIL_TLS";
   String OR_EMAIL_PROTOCOL = "OR_EMAIL_PROTOCOL";
   String OR_EMAIL_PROTOCOL_DEFAULT = "smtp";

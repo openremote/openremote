@@ -62,6 +62,10 @@ dependencies {
 
   implementation libs.sshdNetty
 
+  // Used by OpenRemoteSSLContextFactory for parsing PEM certificates (mTLS)
+  implementation libs.bouncycastleBcpkixJdk18on
+  implementation libs.bouncycastleBcprovJdk18on
+
   // Select the newest published demo extension up to and including the
   // current project version, falling back to an earlier version when the
   // current version has not been published yet.
