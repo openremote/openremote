@@ -88,11 +88,6 @@ tasks.register('npmTest', Exec) {
   args((findProperty('args')?.toString()?.tokenize()) ?: [])
 }
 
-tasks.register('npmTestUI', Exec) {
-  dependsOn ":ui:test:installTestDeps", ":ui:test:clean"
-  commandLine npmCommand("yarn"), "run", "test", "--ui"
-}
-
 tasks.register('cleanDist') {
   dependsOn npmClean
 }
