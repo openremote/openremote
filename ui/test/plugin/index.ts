@@ -18,7 +18,7 @@
  */
 import fs from "node:fs";
 import path from "path";
-import rspack, { type Configuration } from "@rspack/core";
+import rspack, {DevServer, type Configuration } from "@rspack/core";
 import { RspackDevServer } from "@rspack/dev-server";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 
@@ -72,7 +72,7 @@ export function createPlugin() {
       const rspackConfig = await buildBundle(config, configDir);
       if (!rspackConfig) return;
 
-      devServer = new RspackDevServer(rspackConfig.devServer!, rspack(rspackConfig));
+      devServer = new RspackDevServer(rspackConfig.devServer as DevServer, rspack(rspackConfig));
       await devServer.start();
 
       if (!devServer.server) return;
