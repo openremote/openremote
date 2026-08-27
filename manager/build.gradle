@@ -16,6 +16,11 @@ application {
 
 configurations {
   demoExtension
+  otelJavaAgent {
+    canBeConsumed = false
+    canBeResolved = true
+    transitive = false
+  }
 }
 
 dependencies {
@@ -61,6 +66,8 @@ dependencies {
   implementation libs.prometheusMetricsExporterHttpserver
 
   implementation libs.sshdNetty
+
+  otelJavaAgent libs.opentelemetryJavaagent
 
   // Select the newest published demo extension up to and including the
   // current project version, falling back to an earlier version when the
@@ -146,6 +153,11 @@ distributions {
       }
       into("map") {
         from("${projectDir}/src/map")
+      }
+      into("opentelemetry") {
+        from(configurations.otelJavaAgent) {
+          rename { "opentelemetry-javaagent.jar" }
+        }
       }
     }
   }

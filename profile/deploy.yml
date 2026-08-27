@@ -334,6 +334,19 @@ services:
       # Set the number of concurrent attribute event processors (defaults to number of CPU cores)
       OR_ATTRIBUTE_EVENT_THREADS:
 
+      # Opt-in OpenTelemetry tracing. The Java agent is packaged in the manager image but is only attached when
+      # explicitly enabled. Set OTEL_EXPORTER_OTLP_ENDPOINT outside this file; for an Alloy service in this Compose
+      # project it will usually be http://alloy-otel:4318.
+      OTEL_JAVAAGENT_ENABLED: ${OTEL_JAVAAGENT_ENABLED:-false}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-openremote-manager}
+      OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-otlp}
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
+      # This integration is traces-only; existing Prometheus metrics and application logging remain unchanged.
+      OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
+      OTEL_LOGS_EXPORTER: ${OTEL_LOGS_EXPORTER:-none}
+      OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED: "true"
+
       # Set the persistence storage dir (must also be volume mapped)
       OR_STORAGE_DIR:
 

@@ -54,6 +54,7 @@ niftyModbus = "1.4.0"
 nimbusJoseJwt = "10.9.1"
 objenesis = "3.5"
 moquette = "0.18.0"
+opentelemetryJavaagent = "2.30.0"
 postgresJdbc = "42.7.13"
 prometheus = "1.6.1"
 protobuf = "3.25.5"
@@ -163,6 +164,7 @@ niftyModbusTcp = { module = "net.solarnetwork.common:nifty-modbus-tcp", version.
 nimbusJoseJwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusJoseJwt" }
 objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
 moquette = { module = "com.github.moquette-io:moquette", version.ref = "moquette" }
+opentelemetryJavaagent = { module = "io.opentelemetry.javaagent:opentelemetry-javaagent", version.ref = "opentelemetryJavaagent" }
 orZwave = { module = "org.openremote:or-zwave", version.ref = "zwave" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresJdbc" }
 prometheusMetricsExporterHttpserver = { module = "io.prometheus:prometheus-metrics-exporter-httpserver", version.ref = "prometheus" }
