@@ -18,7 +18,7 @@
  */
 import fs from "node:fs";
 import path from "path";
-import rspack, {DevServer, type Configuration } from "@rspack/core";
+import rspack, { type DevServer, type Configuration } from "@rspack/core";
 import { RspackDevServer } from "@rspack/dev-server";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 
