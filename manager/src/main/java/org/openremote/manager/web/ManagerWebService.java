@@ -19,26 +19,11 @@
  */
 package org.openremote.manager.web;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.core.util.Yaml;
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Contact;
-import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.info.License;
-import io.swagger.v3.oas.models.media.StringSchema;
-import io.swagger.v3.oas.models.security.*;
-import io.swagger.v3.oas.models.servers.Server;
-import io.swagger.v3.oas.models.servers.ServerVariable;
-import io.swagger.v3.oas.models.servers.ServerVariables;
 import io.undertow.server.handlers.RedirectHandler;
 import jakarta.ws.rs.core.Application;
 import org.openremote.container.web.*;
@@ -62,16 +47,6 @@ import java.util.stream.Stream;
 import static org.openremote.model.util.MapAccess.getString;
 
 public class ManagerWebService extends WebService {
-
-    private static abstract class ServerVariableMixin {
-        @JsonProperty("default")
-        List<String> _default;
-    }
-
-    private static abstract class StringSchemaMixin {
-        @JsonProperty("enum")
-        protected List<String> _enum;
-    }
 
     public static final int PRIORITY = LOW_PRIORITY + 100;
     public static final String OR_APP_DOCROOT = "OR_APP_DOCROOT";
@@ -151,7 +126,7 @@ public class ManagerWebService extends WebService {
     }
 
     protected Object getOpenApiResource() {
-        configureSwaggerObjectMapper(Json.mapper());
+        ManagerObjectMapperProcessor.configure(Json.mapper());
 
         SwaggerConfiguration oasConfig = new SwaggerConfiguration()
                 .resourcePackages(Set.of("org.openremote.model.*"))
@@ -161,18 +136,6 @@ public class ManagerWebService extends WebService {
         OpenApiResource openApiResource = new OpenApiResource();
         openApiResource.openApiConfiguration(oasConfig);
         return openApiResource;
-    }
-
-    protected void configureSwaggerObjectMapper(com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, false);
-        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true);
-        objectMapper.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, false);
-        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        objectMapper.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
     }
 
     private OpenAPI loadOpenApiBase() {

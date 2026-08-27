@@ -6,6 +6,7 @@ plugins {
 
 dependencies {
     api libs.jacksonDatabind
+    api libs.jacksonModuleParameterNames
     api libs.jackson3Databind
 
     api libs.hibernateCore
