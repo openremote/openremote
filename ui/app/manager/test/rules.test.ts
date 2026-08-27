@@ -21,6 +21,7 @@ import { test, userStatePath } from "./fixtures/manager.js";
 import { preparedAssetsForRules as assets } from "./fixtures/data/assets.js";
 import { energyRule } from "./fixtures/data/rules.js";
 import { type Asset, type RealmRuleset, RulesetLang } from "@openremote/model";
+import type { OrRuleTree } from "@openremote/or-rules/or-rule-tree";
 
 test.use({ storageState: userStatePath });
 
@@ -107,7 +108,7 @@ async function mockRealmRulesApi(page: any, initialRules: RealmRuleset[]) {
  * Simple function that generates assets based on {@link assets}
  * @param multiplier - Amount of assets to generate per asset type
  */
-function generateALotOfAssets(multiplier = 5): Asset[] {
+function generateALotOfAssets(multiplier = 5) {
   return Array.from({ length: multiplier }, (_, i) =>
     assets.map((a: Asset) => ({ ...a, name: `${a.name} ${i}` }))
   ).flat();
@@ -136,7 +137,7 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({ 
     attribute: energyRule.attribute_when,
     operator: "Less than or equal to",
     value: energyRule.value.toString(),
-  })
+  });
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -189,7 +190,7 @@ test("Create a When-Then rule by searching for an asset", async ({ page, manager
     attribute: energyRule.attribute_when,
     operator: "Less than or equal to",
     value: energyRule.value.toString(),
-  })
+  });
 
   // Configure Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -237,7 +238,7 @@ test("Create a When-Then rule for an asset with a email notification action", as
     attribute: energyRule.attribute_when,
     operator: "Less than or equal to",
     value: energyRule.value.toString(),
-  })
+  });
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -304,7 +305,7 @@ test("Create a When-Then rule for an asset with a push notification action", asy
     attribute: energyRule.attribute_when,
     operator: "Less than or equal to",
     value: energyRule.value.toString(),
-  })
+  });
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -370,7 +371,7 @@ test("Create a When-Then rule for an asset with a alarm action", async ({ page, 
     attribute: energyRule.attribute_when,
     operator: "Less than or equal to",
     value: energyRule.value.toString(),
-  })
+  });
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -432,7 +433,7 @@ test("Create a When-Then rule for an asset with a webhook action", async ({ page
     attribute: energyRule.attribute_when,
     operator: "Less than or equal to",
     value: energyRule.value.toString(),
-  })
+  });
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -647,7 +648,7 @@ test("Dragging a legacy JavaScript rule is blocked", async ({ page, manager }) =
   await expect(page.locator("or-rule-tree").getByText(legacyJavascriptRule.name!)).toHaveCount(1);
 
   const dispatchSucceeded = await page.locator("or-rules").evaluate((element, ruleName) => {
-    const tree = element.shadowRoot?.querySelector("or-rule-tree") as any;
+    const tree = element.shadowRoot?.querySelector("or-rule-tree") as OrRuleTree;
     const rule = tree?.rules?.find((candidate: any) => candidate.name === ruleName);
 
     if (!rule) {

@@ -16,15 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {BasePage, Locator, Page, Shared} from "@openremote/test";
+import type { BasePage, Locator, Page, Shared } from "@openremote/test";
 import type { Manager } from "../manager";
 
 export interface AttributeWhenClauseOptions {
-  assetType: string,
-  asset: string,
-  attribute: string,
-  value: string,
-  operator: string
+  assetType: string;
+  asset: string;
+  attribute: string;
+  value: string;
+  operator: string;
 }
 
 export class RulesPage implements BasePage {
@@ -47,7 +47,10 @@ export class RulesPage implements BasePage {
     return this.page.getByRole("textbox", { name: "Rule name" }).fill(name);
   }
 
-  async configureAttributeWhenClause(when: Locator, { assetType, asset, attribute, value, operator }: AttributeWhenClauseOptions) {
+  async configureAttributeWhenClause(
+    when: Locator,
+    { assetType, asset, attribute, value, operator }: AttributeWhenClauseOptions
+  ) {
     await when.getByRole("menuitem", { name: "Add condition" }).click();
     await when.getByRole("menuitem", { name: assetType }).click();
     await when.getByRole("combobox", { name: "Asset", exact: true }).fill(asset);
