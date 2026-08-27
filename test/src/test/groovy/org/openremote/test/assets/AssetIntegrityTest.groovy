@@ -505,6 +505,53 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         (assetStorageService.find(gatewayDescendant.id, true) as RoomAsset).parentId == gateway.id
     }
 
+    def "Asset deletion allows children that are already pending deletion"() {
+        given: "the server container is started"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def originalAssetStorageService = container.getService(AssetStorageService.class)
+        def assetStorageService = Spy(originalAssetStorageService)
+        container.@services.put(AssetStorageService.class, assetStorageService)
+
+        and: "physical deletion is held back for selected assets"
+        def failedDeleteAssetIds = Collections.synchronizedSet(new HashSet<String>())
+        assetStorageService.deletePendingAsset(_) >> { String assetId ->
+            if (failedDeleteAssetIds.contains(assetId)) {
+                assetStorageService.failedAssetDeleteIds.add(assetId)
+                return false
+            }
+            callRealMethod()
+        }
+
+        and: "there is a parent with a child"
+        def parentAsset = assetStorageService.merge(new RoomAsset("Pending delete parent")
+                .setRealm(keycloakTestSetup.realmMaster.name))
+        def childAsset = assetStorageService.merge(new RoomAsset("Pending delete child")
+                .setRealm(keycloakTestSetup.realmMaster.name)
+                .setParentId(parentAsset.id))
+
+        when: "the child is marked for deletion but physical deletion has not completed"
+        failedDeleteAssetIds.add(childAsset.id)
+        def childAccepted = assetStorageService.delete([childAsset.id])
+
+        then: "the child is pending deletion"
+        childAccepted
+        conditions.eventually {
+            assert assetStorageService.isDeletePending(childAsset.id)
+        }
+
+        when: "the parent is deleted while the child is still pending deletion"
+        failedDeleteAssetIds.add(parentAsset.id)
+        def parentAccepted = assetStorageService.delete([parentAsset.id])
+
+        then: "the parent is accepted for deletion"
+        parentAccepted
+        conditions.eventually {
+            assert assetStorageService.isDeletePending(parentAsset.id)
+        }
+    }
+
     def "Test writing attributes with timestamps"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())

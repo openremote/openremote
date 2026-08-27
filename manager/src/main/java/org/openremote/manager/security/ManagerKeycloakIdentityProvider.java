@@ -65,7 +65,6 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.gateway.GatewayConnection;
@@ -1167,7 +1166,17 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
       throw new NotFoundException("Realm does not exist: " + realmName);
     }
 
+    int assetCount =
+        assetStorageService.count(
+            new AssetQuery().realm(new RealmPredicate(realmName)).includeDeletePending(true));
+
+    if (assetCount > 0) {
+      throw new IllegalStateException(
+          "Cannot delete realm '" + realmName + "' because it still contains assets");
+    }
+
     realmCache.invalidate(realmName);
+
     persistenceService.doTransaction(
         entityManager -> {
 
@@ -1202,18 +1211,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
                       + "where rs.realm = ?1");
           query.setParameter(1, realmName);
           query.executeUpdate();
-
-          // Delete Assets
-          List<String> assetIds =
-              assetStorageService
-                  .findAll(
-                      new AssetQuery()
-                          .select(new AssetQuery.Select().excludeAttributes())
-                          .realm(new RealmPredicate(realmName)))
-                  .stream()
-                  .map(Asset::getId)
-                  .toList();
-          assetStorageService.delete(assetIds);
         });
 
     LOG.fine("Deleting realm: " + realmName);

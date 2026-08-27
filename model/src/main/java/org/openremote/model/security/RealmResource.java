@@ -151,6 +151,9 @@ public interface RealmResource {
   @OpenApiResponses.Authenticated
   @OpenApiResponses.NotFound
   @ApiResponse(responseCode = "405", description = "The master realm cannot be deleted")
+  @ApiResponse(
+      responseCode = "409",
+      description = "Realm cannot be deleted while it still contains assets")
   void delete(
       @BeanParam RequestParams requestParams,
       @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("name") String realm);

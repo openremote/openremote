@@ -18,15 +18,20 @@
  */
 package org.openremote.test.assets
 
+import org.apache.camel.builder.RouteBuilder
 import org.hibernate.cfg.AvailableSettings
+import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.PersistenceEvent
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.datapoint.ValueDatapoint
+import org.openremote.model.query.AssetQuery
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -35,8 +40,11 @@ import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType
 import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_WEEKS
 
 class AssetDatapointPurgeTest extends Specification implements ManagerContainerTrait {
@@ -51,10 +59,43 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
         config.put(OR_DATA_POINTS_MAX_AGE_WEEKS, "4")
         def container = startContainer(config, defaultServices())
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
+        def originalAssetStorageService = container.getService(AssetStorageService.class)
+        def assetStorageService = Spy(originalAssetStorageService)
+        container.@services.put(AssetStorageService.class, assetStorageService)
         def assetDatapointService = container.getService(AssetDatapointService.class)
+        def messageBrokerService = container.getService(MessageBrokerService.class)
         def persistenceService = container.getService(PersistenceService.class)
         def originalMaxTuplesDecompressedPerDmlTransaction = getMaxTuplesDecompressedPerDmlTransaction(persistenceService)
+        def originalAssetDeleteDatapointBatchThreshold = assetStorageService.assetDeleteDatapointBatchThreshold
+        def originalAssetDeleteDatapointBatchWeeks = assetStorageService.assetDeleteDatapointBatchWeeks
+        assetStorageService.assetDeleteDatapointBatchThreshold = 100
+        assetStorageService.assetDeleteDatapointBatchWeeks = 2
+
+        def failedDeleteAssetIds = new CopyOnWriteArrayList<String>()
+        assetStorageService.deletePendingAsset(_) >> { String assetId ->
+            if (failedDeleteAssetIds.contains(assetId)) {
+                assetStorageService.failedAssetDeleteIds.add(assetId)
+                return
+            }
+            callRealMethod()
+        }
+
+        List<PersistenceEvent<Asset<?>>> assetPersistenceEvents = new CopyOnWriteArrayList<>()
+        def assetPersistenceRouteId = "Test-AssetPersistenceEvents-${System.nanoTime()}"
+        messageBrokerService.context.addRoutes(new RouteBuilder() {
+            @Override
+            void configure() {
+                from(PERSISTENCE_TOPIC)
+                        .routeId(assetPersistenceRouteId)
+                        .filter(isPersistenceEventForEntityType(Asset.class))
+                        .process { exchange ->
+                            def event = exchange.in.getBody(PersistenceEvent.class) as PersistenceEvent<Asset<?>>
+                            if (event.cause in [PersistenceEvent.Cause.DELETE, PersistenceEvent.Cause.DELETE_FINISHED]) {
+                                assetPersistenceEvents.add(event)
+                            }
+                        }
+            }
+        })
 
         and: "the schema name is retrieved"
         def schemaName = persistenceService.persistenceUnitProperties.getProperty(AvailableSettings.DEFAULT_SCHEMA)
@@ -207,12 +248,51 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
 
         when: "the segment-delete assets are deleted from compressed chunks with a low decompression limit"
         setMaxTuplesDecompressedPerDmlTransaction(persistenceService, 100)
+        def failedSegmentDeleteAssetId = segmentDeleteAssetIds.first()
+        failedDeleteAssetIds.add(failedSegmentDeleteAssetId)
         def segmentDeleteSucceeded = assetStorageService.delete(segmentDeleteAssetIds)
-        def segmentDeleteDatapointsAfterDelete = countDatapoints(persistenceService, segmentDeleteAssetIds, attributeNames)
 
         then: "TimescaleDB should delete full segments without decompressing chunks"
         segmentDeleteSucceeded
-        segmentDeleteDatapointsAfterDelete == 0
+
+        and: "asset DELETE events should be published for all assets and DELETE_FINISHED for all but the failed asset"
+        conditions.eventually {
+            assert countDatapoints(persistenceService, segmentDeleteAssetIds, attributeNames) == 0
+
+            def deleteIds = assetPersistenceEvents
+                    .findAll { it.cause == PersistenceEvent.Cause.DELETE }
+                    .collect { it.entity.id }
+            def deleteFinishedIds = assetPersistenceEvents
+                    .findAll { it.cause == PersistenceEvent.Cause.DELETE_FINISHED }
+                    .collect { it.entity.id }
+
+            assert segmentDeleteAssetIds.every { deleteIds.contains(it) }
+            assert (segmentDeleteAssetIds - failedSegmentDeleteAssetId).every { deleteFinishedIds.contains(it) }
+            assert !deleteFinishedIds.contains(failedSegmentDeleteAssetId)
+        }
+
+        and: "the failed asset should be hidden from asset queries"
+        assetStorageService.find(new AssetQuery().ids(failedSegmentDeleteAssetId)) == null
+
+        when: "an asset is merged with the same ID as the failed pending delete asset"
+        assetStorageService.merge(new ThingAsset("Duplicate Pending Delete Asset")
+                .setId(failedSegmentDeleteAssetId)
+                .setRealm(keycloakTestSetup.realmMaster.name))
+
+        then: "the merge should be rejected while the asset is pending deletion"
+        thrown(IllegalStateException)
+
+        when: "the failed asset deletion is retried"
+        failedDeleteAssetIds.remove(failedSegmentDeleteAssetId)
+        assetStorageService.retryFailedAssetDeletes()
+
+        then: "the failed asset should be physically deleted"
+        conditions.eventually {
+            assert assetPersistenceEvents.any {
+                it.cause == PersistenceEvent.Cause.DELETE_FINISHED && it.entity.id == failedSegmentDeleteAssetId
+            }
+            assert countAssets(persistenceService, failedSegmentDeleteAssetId) == 0L
+        }
 
         when: "Purging will be called, count datapoints before purging"
         def countBeforePurge = 0
@@ -292,7 +372,28 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
         then: "No exception should have occurred"
         true
 
-        cleanup: "restore TimescaleDB decompression limit"
+        cleanup: "restore settings and remove the temporary route"
+        if (messageBrokerService != null && assetPersistenceRouteId != null) {
+            try {
+                messageBrokerService.context.routeController.stopRoute(assetPersistenceRouteId)
+            } catch (Exception ignored) {
+                // Route may not have been added if setup failed early.
+            }
+            try {
+                messageBrokerService.context.removeRoute(assetPersistenceRouteId)
+            } catch (Exception ignored) {
+                // Route may already be gone during container shutdown.
+            }
+        }
+        if (assetStorageService != null && originalAssetDeleteDatapointBatchThreshold != null) {
+            assetStorageService.assetDeleteDatapointBatchThreshold = originalAssetDeleteDatapointBatchThreshold
+        }
+        if (assetStorageService != null && originalAssetDeleteDatapointBatchWeeks != null) {
+            assetStorageService.assetDeleteDatapointBatchWeeks = originalAssetDeleteDatapointBatchWeeks
+        }
+        if (container != null && originalAssetStorageService != null) {
+            container.@services.put(AssetStorageService.class, originalAssetStorageService)
+        }
         if (persistenceService != null && originalMaxTuplesDecompressedPerDmlTransaction != null) {
             setMaxTuplesDecompressedPerDmlTransaction(persistenceService, originalMaxTuplesDecompressedPerDmlTransaction)
         }
@@ -312,6 +413,14 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
             """)
             query.setParameter("assetIds", assetIds.join(","))
             query.setParameter("attributeNames", attributeNames.join(","))
+            return (query.getSingleResult() as Number).longValue()
+        }
+    }
+
+    private static long countAssets(PersistenceService persistenceService, String assetId) {
+        return persistenceService.doReturningTransaction { em ->
+            def query = em.createNativeQuery("SELECT count(*) FROM asset WHERE id = :assetId")
+            query.setParameter("assetId", assetId)
             return (query.getSingleResult() as Number).longValue()
         }
     }
