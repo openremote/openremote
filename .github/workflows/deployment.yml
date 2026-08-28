@@ -171,6 +171,14 @@ jobs:
           inputEnv = os.getenv('INPUT_ENVIRONMENT')
           managerVersion = os.getenv('MANAGER_VERSION')
 
+          # The deployment target is either computed from ci_cd.json or taken from the dispatch
+          # inputs. Rewrite it from the inputs only for dispatch-driven deploys, so that:
+          #   - workflow_dispatch: overrides with the requested environment/tag. Covers manual
+          #     deploys and CI-triggered deploys (e.g. the extensions pipeline), which must pass
+          #     ENVIRONMENT and MANAGER_TAG explicitly to end up with a valid target.
+          #   - tag refs: skipped, releases keep the ci_cd.json computed target.
+          #   - openremote org only.
+          # Push events fall through and keep the ci_cd.json computed value unchanged.
           if eventName == 'workflow_dispatch' and refType != 'tag' and repoOwner == 'openremote':
             if isMainRepo:
               tag=inputTag
