@@ -4,6 +4,16 @@
 
 Requirements: you need to have kubectl, helm, [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and [eksctl](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html#eksctl-install-update) installed beforehand.
 
+Cluster-only lifecycle management is available through
+[`or-eks-cluster`](or-eks-cluster). It creates, inspects, reconciles shared
+add-ons, and destroys the shared EKS cluster without deploying or deleting an
+OpenRemote stack. See [`cluster/eks/README.md`](cluster/eks/README.md) for its
+configuration and safety model.
+
+The `eks-setup*.sh` and `eks-cleanup*.sh` scripts below are the legacy combined
+cluster-and-stack workflow. They will be split further as part of multi-stack
+support and must not be used to remove one stack from a shared cluster.
+
 The scripts have been tested within the openremote account.  
 You must get proper credentials and set the AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and AWS_SESSION_TOKEN variable before running them.
 

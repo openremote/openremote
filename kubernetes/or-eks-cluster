@@ -1,0 +1,473 @@
+#!/usr/bin/env bash
+
+# Cluster lifecycle only; OpenRemote stack lifecycle is managed separately.
+
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KUBERNETES_DIR="$SCRIPT_DIR"
+
+DEFAULT_CONFIG_FILE="$KUBERNETES_DIR/cluster.yaml"
+DEFAULT_AWS_REGION="eu-west-1"
+DEFAULT_AWS_PROFILE="or"
+DEFAULT_LOAD_BALANCER_CONTROLLER_CHART_VERSION="1.14.0"
+
+COMMAND=""
+CLUSTER_NAME="${OR_EKS_CLUSTER_NAME:-}"
+AWS_REGION_NAME="${OR_EKS_AWS_REGION:-${AWS_REGION:-$DEFAULT_AWS_REGION}}"
+AWS_PROFILE_NAME="${OR_EKS_AWS_PROFILE:-${AWS_PROFILE:-$DEFAULT_AWS_PROFILE}}"
+CONFIG_FILE="${OR_EKS_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
+KUBE_CONTEXT="${OR_EKS_KUBE_CONTEXT:-}"
+LOAD_BALANCER_CONTROLLER_CHART_VERSION="${OR_EKS_LOAD_BALANCER_CONTROLLER_CHART_VERSION:-$DEFAULT_LOAD_BALANCER_CONTROLLER_CHART_VERSION}"
+CONFIRM_CLUSTER_NAME=""
+MANAGE_LOAD_BALANCER_CONTROLLER=true
+RENDERED_CONFIG_FILE=""
+
+usage() {
+  cat <<'EOF'
+Manage the shared Amazon EKS cluster used to host OpenRemote stacks.
+
+Usage:
+  or-eks-cluster create [options]
+  or-eks-cluster apply [options]
+  or-eks-cluster status [options]
+  or-eks-cluster kubeconfig [options]
+  or-eks-cluster destroy --confirm <cluster-name> [options]
+
+Commands:
+  create             Create the EKS cluster and reconcile shared cluster add-ons.
+  apply              Reconcile shared cluster add-ons. Does not change the
+                     Kubernetes minor version or node-group infrastructure.
+  status             Show EKS, node, add-on, and controller status.
+  kubeconfig         Create or refresh the stable kubeconfig context.
+  destroy            Delete an empty cluster after an exact-name confirmation.
+
+Options:
+  --name <name>       EKS cluster name. Env: OR_EKS_CLUSTER_NAME.
+  --region <region>   AWS region. Env: OR_EKS_AWS_REGION. Default: eu-west-1.
+  --profile <name>    AWS CLI profile. Env: OR_EKS_AWS_PROFILE. Default: or.
+  --config <path>     eksctl ClusterConfig template. Env: OR_EKS_CONFIG_FILE.
+  --kube-context <c>  Stable kubeconfig context. Defaults to <name>@<region>.
+  --load-balancer-controller-version <version>
+                      Helm chart version to reconcile. Env:
+                      OR_EKS_LOAD_BALANCER_CONTROLLER_CHART_VERSION.
+  --skip-load-balancer-controller
+                      Do not install or reconcile the controller.
+  --confirm <name>    Required exact cluster name for destroy.
+  -h, --help          Show this help.
+
+The command manages only cluster-scoped infrastructure and add-ons. It never
+installs or removes an OpenRemote stack, stack namespace, certificate, DNS
+record, or stack data volume.
+EOF
+}
+
+log() {
+  printf '[or-eks-cluster] %s\n' "$*"
+}
+
+warn() {
+  printf '[or-eks-cluster] WARNING: %s\n' "$*" >&2
+}
+
+die() {
+  printf '[or-eks-cluster] ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+cleanup() {
+  if [ -n "$RENDERED_CONFIG_FILE" ] && [ -f "$RENDERED_CONFIG_FILE" ]; then
+    rm -f "$RENDERED_CONFIG_FILE"
+  fi
+}
+
+trap cleanup EXIT
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || die "Required command '$1' was not found in PATH."
+}
+
+aws_eks() {
+  if [ -n "$AWS_PROFILE_NAME" ]; then
+    aws eks "$@" --region "$AWS_REGION_NAME" --profile "$AWS_PROFILE_NAME"
+  else
+    aws eks "$@" --region "$AWS_REGION_NAME"
+  fi
+}
+
+eksctl_with_profile() {
+  if [ -n "$AWS_PROFILE_NAME" ]; then
+    eksctl "$@" --profile "$AWS_PROFILE_NAME"
+  else
+    eksctl "$@"
+  fi
+}
+
+parse_arguments() {
+  if [ "$#" -eq 0 ]; then
+    usage >&2
+    exit 1
+  fi
+
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    create|apply|status|kubeconfig|destroy)
+      COMMAND="$1"
+      shift
+      ;;
+    *)
+      die "Unknown command '$1'. Run with --help for usage."
+      ;;
+  esac
+
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --name)
+        [ "$#" -ge 2 ] || die "Option --name requires a value."
+        CLUSTER_NAME="$2"
+        shift 2
+        ;;
+      --region)
+        [ "$#" -ge 2 ] || die "Option --region requires a value."
+        AWS_REGION_NAME="$2"
+        shift 2
+        ;;
+      --profile)
+        [ "$#" -ge 2 ] || die "Option --profile requires a value."
+        AWS_PROFILE_NAME="$2"
+        shift 2
+        ;;
+      --config)
+        [ "$#" -ge 2 ] || die "Option --config requires a value."
+        CONFIG_FILE="$2"
+        shift 2
+        ;;
+      --kube-context)
+        [ "$#" -ge 2 ] || die "Option --kube-context requires a value."
+        KUBE_CONTEXT="$2"
+        shift 2
+        ;;
+      --load-balancer-controller-version)
+        [ "$#" -ge 2 ] || die "Option --load-balancer-controller-version requires a value."
+        LOAD_BALANCER_CONTROLLER_CHART_VERSION="$2"
+        shift 2
+        ;;
+      --skip-load-balancer-controller)
+        MANAGE_LOAD_BALANCER_CONTROLLER=false
+        shift
+        ;;
+      --confirm)
+        [ "$#" -ge 2 ] || die "Option --confirm requires a value."
+        CONFIRM_CLUSTER_NAME="$2"
+        shift 2
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        die "Unknown option '$1'. Run with --help for usage."
+        ;;
+    esac
+  done
+
+  [ -n "$CLUSTER_NAME" ] || die "Cluster name is required; use --name or OR_EKS_CLUSTER_NAME."
+
+  if [ -z "$KUBE_CONTEXT" ]; then
+    KUBE_CONTEXT="${CLUSTER_NAME}@${AWS_REGION_NAME}"
+  fi
+}
+
+cluster_exists() {
+  local output
+  local status
+
+  set +e
+  output="$(aws_eks describe-cluster --name "$CLUSTER_NAME" --output json 2>&1)"
+  status=$?
+  set -e
+
+  if [ "$status" -eq 0 ]; then
+    return 0
+  fi
+
+  case "$output" in
+    *ResourceNotFoundException*) return 1 ;;
+    *) die "Unable to query EKS cluster '$CLUSTER_NAME': $output" ;;
+  esac
+}
+
+require_existing_cluster() {
+  cluster_exists || die "EKS cluster '$CLUSTER_NAME' does not exist in region '$AWS_REGION_NAME'."
+}
+
+render_cluster_config() {
+  [ -f "$CONFIG_FILE" ] || die "Cluster configuration '$CONFIG_FILE' does not exist."
+  require_command envsubst
+
+  RENDERED_CONFIG_FILE="$(mktemp "${TMPDIR:-/tmp}/or-eks-cluster.XXXXXX")"
+  export CLUSTER_NAME
+  export AWS_REGION="$AWS_REGION_NAME"
+  envsubst '${CLUSTER_NAME} ${AWS_REGION}' < "$CONFIG_FILE" > "$RENDERED_CONFIG_FILE"
+
+  if grep -q '\${CLUSTER_NAME}\|\${AWS_REGION}' "$RENDERED_CONFIG_FILE"; then
+    die "Cluster configuration still contains an unexpanded cluster name or AWS region."
+  fi
+}
+
+configured_kubernetes_version() {
+  awk '/^[[:space:]]+version:[[:space:]]*/ { gsub(/"/, "", $2); print $2; exit }' "$RENDERED_CONFIG_FILE"
+}
+
+current_kubernetes_version() {
+  aws_eks describe-cluster \
+    --name "$CLUSTER_NAME" \
+    --query 'cluster.version' \
+    --output text
+}
+
+configure_kube_context() {
+  log "Writing kubeconfig context '$KUBE_CONTEXT'."
+  if [ -n "$AWS_PROFILE_NAME" ]; then
+    aws eks update-kubeconfig \
+      --name "$CLUSTER_NAME" \
+      --region "$AWS_REGION_NAME" \
+      --profile "$AWS_PROFILE_NAME" \
+      --alias "$KUBE_CONTEXT" >/dev/null
+  else
+    aws eks update-kubeconfig \
+      --name "$CLUSTER_NAME" \
+      --region "$AWS_REGION_NAME" \
+      --alias "$KUBE_CONTEXT" >/dev/null
+  fi
+}
+
+kube_context_exists() {
+  kubectl config get-contexts "$KUBE_CONTEXT" -o name 2>/dev/null | grep -Fx "$KUBE_CONTEXT" >/dev/null 2>&1
+}
+
+require_kube_context() {
+  local expected_endpoint
+  local context_endpoint
+
+  kube_context_exists || die "Kubeconfig context '$KUBE_CONTEXT' does not exist; run the kubeconfig command first."
+
+  expected_endpoint="$(aws_eks describe-cluster \
+    --name "$CLUSTER_NAME" \
+    --query 'cluster.endpoint' \
+    --output text)"
+  context_endpoint="$(kubectl --context "$KUBE_CONTEXT" config view \
+    --minify \
+    -o jsonpath='{.clusters[0].cluster.server}')"
+
+  [ "$context_endpoint" = "$expected_endpoint" ] || die \
+    "Kubeconfig context '$KUBE_CONTEXT' does not point to EKS cluster '$CLUSTER_NAME'."
+}
+
+reconcile_load_balancer_controller() {
+  if [ "$MANAGE_LOAD_BALANCER_CONTROLLER" != true ]; then
+    log "Skipping AWS Load Balancer Controller reconciliation."
+    return
+  fi
+
+  [ -n "$LOAD_BALANCER_CONTROLLER_CHART_VERSION" ] || die \
+    "A pinned AWS Load Balancer Controller chart version is required."
+
+  require_command helm
+  require_command kubectl
+  require_kube_context
+
+  kubectl --context "$KUBE_CONTEXT" \
+    --namespace kube-system \
+    get serviceaccount aws-load-balancer-controller >/dev/null 2>&1 || die \
+      "ServiceAccount kube-system/aws-load-balancer-controller is missing from the cluster configuration."
+
+  log "Refreshing the AWS EKS Helm repository."
+  helm repo add eks https://aws.github.io/eks-charts --force-update >/dev/null
+  helm repo update eks >/dev/null
+
+  log "Reconciling AWS Load Balancer Controller CRDs."
+  helm show crds eks/aws-load-balancer-controller \
+    --version "$LOAD_BALANCER_CONTROLLER_CHART_VERSION" | \
+    kubectl --context "$KUBE_CONTEXT" apply -f - >/dev/null
+
+  log "Reconciling AWS Load Balancer Controller chart $LOAD_BALANCER_CONTROLLER_CHART_VERSION."
+  helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
+    --kube-context "$KUBE_CONTEXT" \
+    --namespace kube-system \
+    --version "$LOAD_BALANCER_CONTROLLER_CHART_VERSION" \
+    --set "clusterName=$CLUSTER_NAME" \
+    --set serviceAccount.create=false \
+    --set serviceAccount.name=aws-load-balancer-controller \
+    --wait \
+    --timeout 10m
+}
+
+create_cluster() {
+  require_command aws
+  require_command eksctl
+  require_command kubectl
+  render_cluster_config
+
+  if cluster_exists; then
+    die "EKS cluster '$CLUSTER_NAME' already exists; use apply instead of create."
+  fi
+
+  log "Creating EKS cluster '$CLUSTER_NAME' in '$AWS_REGION_NAME'."
+  eksctl_with_profile create cluster --config-file "$RENDERED_CONFIG_FILE"
+  configure_kube_context
+  reconcile_load_balancer_controller
+  log "EKS cluster '$CLUSTER_NAME' is ready."
+}
+
+apply_cluster() {
+  local current_version
+  local desired_version
+
+  require_command aws
+  require_command kubectl
+  require_existing_cluster
+  render_cluster_config
+
+  current_version="$(current_kubernetes_version)"
+  desired_version="$(configured_kubernetes_version)"
+  if [ -n "$desired_version" ] && [ "$desired_version" != "$current_version" ]; then
+    die "Cluster configuration requests Kubernetes $desired_version but the cluster runs $current_version; Kubernetes version changes are outside the scope of this first-phase command."
+  fi
+
+  reconcile_load_balancer_controller
+  log "Cluster add-ons are reconciled. Node-group infrastructure updates remain outside apply until the cluster definition moves to CloudFormation."
+}
+
+show_cluster_status() {
+  require_command aws
+  require_command helm
+  require_command kubectl
+  require_existing_cluster
+
+  log "EKS control plane"
+  aws_eks describe-cluster \
+    --name "$CLUSTER_NAME" \
+    --query 'cluster.{Name:name,Status:status,KubernetesVersion:version,PlatformVersion:platformVersion,Endpoint:endpoint}' \
+    --output table
+
+  log "Managed node groups"
+  aws_eks list-nodegroups \
+    --cluster-name "$CLUSTER_NAME" \
+    --query 'nodegroups' \
+    --output table
+
+  log "EKS managed add-ons"
+  aws_eks list-addons \
+    --cluster-name "$CLUSTER_NAME" \
+    --query 'addons' \
+    --output table
+
+  if kube_context_exists; then
+    require_kube_context
+    log "Kubernetes nodes"
+    kubectl --context "$KUBE_CONTEXT" get nodes \
+      -o custom-columns='NAME:.metadata.name,STATUS:.status.conditions[-1].type,VERSION:.status.nodeInfo.kubeletVersion,NODEGROUP:.metadata.labels.eks\.amazonaws\.com/nodegroup'
+
+    if [ "$MANAGE_LOAD_BALANCER_CONTROLLER" = true ]; then
+      log "AWS Load Balancer Controller"
+      if ! helm status aws-load-balancer-controller \
+        --kube-context "$KUBE_CONTEXT" \
+        --namespace kube-system; then
+        warn "AWS Load Balancer Controller is not installed or is unhealthy."
+      fi
+    fi
+  else
+    warn "Kubeconfig context '$KUBE_CONTEXT' is unavailable; Kubernetes-side status was skipped."
+  fi
+}
+
+destroy_preflight() {
+  local ingress_count
+  local load_balancer_service_count
+  local pvc_count
+  local workload_pod_count
+
+  require_kube_context
+
+  ingress_count="$(kubectl --context "$KUBE_CONTEXT" get ingress --all-namespaces -o json | jq '.items | length')"
+  load_balancer_service_count="$(kubectl --context "$KUBE_CONTEXT" get services --all-namespaces -o json | jq \
+    '[.items[] | select(.spec.type == "LoadBalancer")] | length')"
+  pvc_count="$(kubectl --context "$KUBE_CONTEXT" get persistentvolumeclaims --all-namespaces -o json | jq '.items | length')"
+  workload_pod_count="$(kubectl --context "$KUBE_CONTEXT" get pods --all-namespaces -o json | jq \
+    '[.items[] | select(.metadata.namespace != "kube-system" and .metadata.namespace != "kube-public" and .metadata.namespace != "kube-node-lease")] | length')"
+
+  if [ "$ingress_count" -gt 0 ] || \
+     [ "$load_balancer_service_count" -gt 0 ] || \
+     [ "$pvc_count" -gt 0 ] || \
+     [ "$workload_pod_count" -gt 0 ]; then
+    warn "Cluster destruction is blocked while stack or user resources remain:"
+    printf '  Ingresses: %s\n' "$ingress_count" >&2
+    printf '  LoadBalancer Services: %s\n' "$load_balancer_service_count" >&2
+    printf '  PersistentVolumeClaims: %s\n' "$pvc_count" >&2
+    printf '  Non-system Pods: %s\n' "$workload_pod_count" >&2
+    die "Remove stacks and preserve or purge their data explicitly before destroying the cluster."
+  fi
+}
+
+destroy_cluster() {
+  require_command aws
+  require_command eksctl
+  require_command helm
+  require_command jq
+  require_command kubectl
+  require_existing_cluster
+
+  [ "$CONFIRM_CLUSTER_NAME" = "$CLUSTER_NAME" ] || die \
+    "Destroy requires --confirm '$CLUSTER_NAME'."
+
+  destroy_preflight
+
+  if [ "$MANAGE_LOAD_BALANCER_CONTROLLER" = true ] && \
+     helm status aws-load-balancer-controller \
+       --kube-context "$KUBE_CONTEXT" \
+       --namespace kube-system >/dev/null 2>&1; then
+    log "Uninstalling the AWS Load Balancer Controller."
+    helm uninstall aws-load-balancer-controller \
+      --kube-context "$KUBE_CONTEXT" \
+      --namespace kube-system \
+      --wait
+  fi
+
+  log "Deleting EKS cluster '$CLUSTER_NAME'."
+  eksctl_with_profile delete cluster \
+    --name "$CLUSTER_NAME" \
+    --region "$AWS_REGION_NAME" \
+    --wait
+}
+
+main() {
+  parse_arguments "$@"
+
+  case "$COMMAND" in
+    create)
+      create_cluster
+      ;;
+    apply)
+      apply_cluster
+      ;;
+    status)
+      show_cluster_status
+      ;;
+    kubeconfig)
+      require_command aws
+      require_existing_cluster
+      configure_kube_context
+      ;;
+    destroy)
+      destroy_cluster
+      ;;
+  esac
+}
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  main "$@"
+fi
