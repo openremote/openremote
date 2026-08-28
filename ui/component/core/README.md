@@ -95,7 +95,7 @@ class AssetComponent extends subscribe(openremote)(LitElement) {
     public onEventsConnect() {}
     public onEventsDisconnect() {}
 
-    // Write an attribute; the event must be for a subscribed asset
+    // Send an event on the event bus, such as writing an attribute value
     protected doSendEvent(event: AttributeEvent) {
         this._sendEvent(event);
     }
@@ -105,8 +105,8 @@ class AssetComponent extends subscribe(openremote)(LitElement) {
 ### Events (`@openremote/core/event`)
 Provides infrastructure for connecting to the OpenRemote Manager client event bus; by default an `EventProvider` is
 initialised by the `Manager` during the initialisation process and can be accessed from `openremote.events` but it is
-also possible to instantiate an `EventProvider` manually. `ManagerConfig.eventProviderType` selects between the
-WebSocket and polling implementations.
+also possible to instantiate an `EventProvider` manually. `WebSocketEventProvider` is the only implementation, and is
+what `ManagerConfig.eventProviderType` defaults to.
 
 ### Util (`@openremote/core/util`)
 Various utility methods for common tasks.

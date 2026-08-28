@@ -24,8 +24,8 @@ should aggregate the stored datapoints. The element has no intrinsic height, so 
 </or-chart>
 ```
 
-Set `attributeControls` to let the user pick attributes from an asset tree, and `timestampControls` to expose the
-time range controls.
+`attributeControls` lets the user pick attributes from an asset tree and `timestampControls` exposes the time range
+controls; both are on unless set to `false`.
 
 ### Time range
 The visible window is either an explicit `timeframe` of two dates, or a preset built from `timePrefixKey`

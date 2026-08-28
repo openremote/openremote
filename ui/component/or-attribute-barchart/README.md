@@ -32,7 +32,8 @@ so only the query `type` needs supplying.
 ### Intervals and time range
 `interval` selects a bucket size from `intervalOptions` (`auto`, `1Minute` through `year`); replace that map to offer
 a different set. The visible window is either an explicit `timeframe` of two dates, or a preset built from
-`timePrefixKey` (`this`, `last` or `next`) and `timeWindowKey`. Set `timestampControls` to let the user change it.
+`timePrefixKey` (`this`, `last` or `next`) and `timeWindowKey`. The controls for changing it are shown unless
+`timestampControls` is set to `false`.
 
 ### Appearance
 `colors` sets the palette and `attributeColors` overrides it per attribute. `attributeConfig` moves attributes to the

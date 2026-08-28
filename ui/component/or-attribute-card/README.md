@@ -27,8 +27,8 @@ loaded `assets` together with `assetAttributes`, which pairs the attribute with 
 
 ### Appearance
 `mainValueDecimals` sets the precision of the headline value and `deltaFormat` shows the change as either `absolute`
-or `percentage`. `showControls` exposes the period controls and `hideAttributePicker` removes the button that lets
-the user swap the attribute.
+or `percentage`. The period controls are shown unless `showControls` is set to `false`, and `hideAttributePicker`
+removes the button that lets the user swap the attribute.
 
 Setting `panelName` makes the card persist the user's attribute and period choice per realm in console storage,
 sharing that storage with `or-chart`.

@@ -29,7 +29,7 @@ A titled container; `heading` accepts a string or a template, and the content go
 
 ### \<or-collapsible-panel\>
 A panel that expands and collapses, with `header`, `header-description` and `content` slots. Set `expanded` for the
-initial state and `expandable` to `false` to lock it open.
+initial state, or `expandable` to `false` to drop the chevron and keep the content collapsed.
 
 ```html
 <or-collapsible-panel expanded>
@@ -42,7 +42,7 @@ initial state and `expandable` to `false` to lock it open.
 Pass `lazycontent` instead of the `content` slot to defer building the content until the panel is first expanded.
 
 ### \<or-loading-indicator\> and \<or-loading-wrapper\>
-The indicator is a standalone spinner; setting `overlay` centres it over the parent. The wrapper covers its slotted
+The indicator is a standalone spinner; setting `overlay` centres it over the parent. The wrapper hides its slotted
 content while `loading` is set. Set `fadeContent` to fade rather than hide, and `loadDom` to `false` to keep the
 content out of the DOM entirely until loading finishes.
 
@@ -65,7 +65,7 @@ A file input that previews the current file at `src` and fires a `change` event 
 `FileList`. `accept` restricts the file types and defaults to the image formats used for logos and favicons.
 
 ```html
-<or-file-uploader .src="${this.logoUrl}" accept="image/png,image/svg+xml"
+<or-file-uploader .src="${this.logoUrl}" .accept="${"image/png,image/svg+xml"}"
                   @change="${(e) => this._upload(e.detail.value[0])}">
 </or-file-uploader>
 ```
@@ -76,7 +76,7 @@ and `readonly` disables editing. Use `getValue()` and `validate()` to read and c
 `or-ace-editor-changed`, which reports the new value and whether it is valid.
 
 ```html
-<or-ace-editor .value="${this.rules}" mode="ace/mode/javascript"
+<or-ace-editor .value="${this.rules}" .mode="${"ace/mode/javascript"}"
                @or-ace-editor-changed="${(e) => this._onChanged(e.detail)}">
 </or-ace-editor>
 ```

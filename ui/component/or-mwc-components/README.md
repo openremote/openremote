@@ -2,8 +2,8 @@
 [![NPM Version][npm-image]][npm-url]
 
 Web components built on the Material Design Components (`@material/*`) packages. They exist because the official
-`@material/mwc-*` set is incomplete and depends on the Material icon font, whereas OpenRemote renders SVG icon sets
-through `or-icon`.
+`@material/mwc-*` set is incomplete and hardcodes its own icon font, whereas OpenRemote resolves icons through
+`or-icon` and its registered iconsets.
 
 ## Install
 ```bash

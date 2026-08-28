@@ -45,9 +45,9 @@ dialog.addEventListener(OrAssetTypeAttributePickerPickedEvent.NAME, (event) => {
 
 ### Filtering
 `setShowOnlyDatapointAttrs`, `setShowOnlyRuleStateAttrs` and `setShowPredictedDataAttrs` restrict the list to
-attributes carrying the corresponding meta item; the predicted flag composes additively with the other two.
-`setAttributeFilter` takes a predicate for anything else, and the asset type picker also accepts
-`setAssetTypeFilter`.
+attributes carrying the corresponding meta item. They compose additively, so an attribute is shown when it matches
+any of the flags that are set, as are agent linked attributes regardless. `setAttributeFilter` takes a predicate for
+anything else, and the asset type picker also accepts `setAssetTypeFilter`.
 
 ```typescript
 new OrAssetAttributePicker().setAttributeFilter((attribute) => attribute.name !== "location");
