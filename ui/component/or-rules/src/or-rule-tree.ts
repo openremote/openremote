@@ -28,7 +28,6 @@ import { css, html, type PropertyValues, type TemplateResult } from "lit";
 import manager, { Util } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import type { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
-import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {
   OrRules,
   OrRulesAddEvent,

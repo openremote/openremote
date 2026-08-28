@@ -28,7 +28,7 @@ import { type AppStateKeyed, Page, type PageProvider } from "@openremote/or-app"
 import { ClientRole, type Realm } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import type { OrIcon } from "@openremote/or-icon";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { type DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
