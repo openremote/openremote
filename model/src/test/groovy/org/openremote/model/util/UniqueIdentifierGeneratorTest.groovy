@@ -22,8 +22,8 @@ import spock.lang.Specification
 
 class UniqueIdentifierGeneratorTest extends Specification {
 
-    def "generated asset ID has expected length"() {
-        expect: "Asset IDs must be 22 characters long"
-        UniqueIdentifierGenerator.generateId("masterlight-1-1").length() == 22
-    }
+  def "generated asset ID has expected length"() {
+    expect: "Asset IDs must be 22 characters long"
+    UniqueIdentifierGenerator.generateId("masterlight-1-1").length() == 22
+  }
 }
