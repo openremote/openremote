@@ -564,12 +564,16 @@ export class OrAttributeBarChart extends OrElement {
       const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
       this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
       this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
+      const timeWindow = this.timeWindowOptions.get(this.timeWindowKey!);
+      if (!timeWindow) {
+        throw new Error(`Unsupported time window selected: ${this.timeWindowKey}`);
+      }
       this._navigationDuration = getNavigationDuration(
         this._startOfPeriod,
         this._endOfPeriod,
         !!this.timeframe,
-        this.timeWindowOptions.get(this.timeWindowKey!)![0],
-        this.timeWindowOptions.get(this.timeWindowKey!)![1]
+        timeWindow[0],
+        timeWindow[1]
       );
       this._intervalConfig = this._getInterval(this._startOfPeriod, this._endOfPeriod, this.interval!);
       this._loadData();
@@ -991,7 +995,7 @@ export class OrAttributeBarChart extends OrElement {
     const recommendedTicks = this._chartElem?.clientWidth ? this._chartElem.clientWidth / 50 : Number.MAX_SAFE_INTEGER;
     const maxTicks = Math.floor(recommendedTicks * 1.5);
     const splitNumber = Math.max(1, Math.min(xAxisTicks, maxTicks));
-    const [axisMin, axisMax] = getChartAxisBounds(this._startOfPeriod, this._endOfPeriod);
+    const [axisMin, axisMax] = getChartAxisBounds(this._startOfPeriod, this._endOfPeriod, this._data);
     this._chart?.setOption({
       xAxis: {
         show: splitNumber > 1,
