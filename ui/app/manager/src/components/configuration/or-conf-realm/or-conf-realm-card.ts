@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, unsafeCSS } from "lit";
+import { css, html, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-components/or-file-uploader";
@@ -40,7 +41,7 @@ import { DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu } from "../../../inde
 import type { OrVaadinMultiSelectComboBox } from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 
 @customElement("or-conf-realm-card")
-export class OrConfRealmCard extends translate(i18next)(LitElement) {
+export class OrConfRealmCard extends translate(i18next)(OrElement) {
   static styles = css`
     .language {
       width: 100%;

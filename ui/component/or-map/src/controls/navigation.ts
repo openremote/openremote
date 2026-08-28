@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement } from "lit";
+import { css, html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, state } from "lit/decorators.js";
 import type { Map as MapGL } from "maplibre-gl";
 import { OrMapBaseControl } from "./base";
@@ -25,7 +26,7 @@ import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-icon";
 
 @customElement("or-map-navigation")
-export class OrMapNavigation extends LitElement {
+export class OrMapNavigation extends OrElement {
   static get styles() {
     return css`
       :host {

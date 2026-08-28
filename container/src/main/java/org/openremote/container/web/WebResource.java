@@ -28,7 +28,6 @@ import jakarta.ws.rs.core.*;
 import java.security.Principal;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.TokenPrincipal;
-import org.openremote.container.security.basic.BasicAuthContext;
 
 public class WebResource implements AuthContext {
 
@@ -62,7 +61,6 @@ public class WebResource implements AuthContext {
     return switch (principal) {
       case null -> null;
       case TokenPrincipal tokenPrincipal -> tokenPrincipal;
-      case BasicAuthContext basicAuthContext -> basicAuthContext;
       default ->
           throw new WebApplicationException(
               "Unsupported user principal type: " + principal, INTERNAL_SERVER_ERROR);

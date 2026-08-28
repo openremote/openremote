@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { type AssetDescriptor, AssetModelUtil, type AssetTypeInfo } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
@@ -105,7 +106,7 @@ const styling = css`
 `;
 
 @customElement("assettypes-panel")
-export class AssettypesPanel extends LitElement {
+export class AssettypesPanel extends OrElement {
   @property() // selected asset type
   protected assetType?: string;
 

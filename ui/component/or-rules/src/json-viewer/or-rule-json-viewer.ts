@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import {
   getAssetInfos,
@@ -123,7 +124,7 @@ const style = css`
 `;
 
 @customElement("or-rule-json-viewer")
-export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements RuleView {
+export class OrRuleJsonViewer extends translate(i18next)(OrElement) implements RuleView {
   static get styles() {
     return style;
   }

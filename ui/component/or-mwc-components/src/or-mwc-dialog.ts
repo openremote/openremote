@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { MDCDialog } from "@material/dialog";
 import "@openremote/or-translate";
@@ -208,7 +209,7 @@ const style = css`
 `;
 
 @customElement("or-mwc-dialog")
-export class OrMwcDialog extends LitElement {
+export class OrMwcDialog extends OrElement {
   /**
    * Can be set by apps to control where in the DOM dialogs are added
    */

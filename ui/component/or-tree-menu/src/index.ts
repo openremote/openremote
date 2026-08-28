@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, queryAll } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { when } from "lit/directives/when.js";
@@ -101,7 +102,7 @@ const styles = css`
  * @event {OrTreeDragEvent} or-tree-drag - Triggers upon dragging a node to a new group, and dispatches a list of dragged nodes, the group node, and the updated list of all nodes.
  */
 @customElement("or-tree-menu")
-export class OrTreeMenu extends LitElement {
+export class OrTreeMenu extends OrElement {
   /**
    * List of node items in the menu.
    * Uses the TreeNode format for rendering the OrTreeNode elements.

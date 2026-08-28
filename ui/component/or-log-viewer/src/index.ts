@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
 import * as Model from "@openremote/model";
@@ -24,6 +25,11 @@ import manager, { DefaultColor2, DefaultColor3, Util } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
+import "@openremote/or-vaadin-components/or-vaadin-button";
+import "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
+import "@openremote/or-vaadin-components/or-vaadin-select";
+import "@openremote/or-vaadin-components/or-vaadin-text-field";
 import type { MDCDataTable } from "@material/data-table";
 import moment from "moment";
 import type { GenericAxiosResponse } from "axios";
@@ -159,10 +165,16 @@ const style = css`
     word-wrap: break-word;
     white-space: pre-wrap;
   }
+
+  #table th:not(.icon-cell) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 @customElement("or-log-viewer")
-export class OrLogViewer extends translate(i18next)(LitElement) {
+export class OrLogViewer extends translate(i18next)(OrElement) {
   public static DEFAULT_TIMESTAMP_FORMAT = "L HH:mm:ss";
   public static DEFAULT_LIMIT = 50;
   public static DEFAULT_LEVEL = Model.SyslogLevel.INFO;
@@ -413,8 +425,8 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
               </or-vaadin-date-time-picker>
               <or-vaadin-button
                 theme="icon"
-                ?disabled="${disabled || isLive}@click"
-                =${() => (this.timestamp = this._calculateTimestamp(this.timestamp!, true))}
+                ?disabled=${disabled || isLive}
+                @click=${() => (this.timestamp = this._calculateTimestamp(this.timestamp!, true))}
               >
                 <or-icon icon="chevron-right"></or-icon>
               </or-vaadin-button>

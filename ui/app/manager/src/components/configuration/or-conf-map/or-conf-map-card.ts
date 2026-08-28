@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, type TemplateResult, LitElement } from "lit";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import "@openremote/or-components/or-file-uploader";
@@ -29,7 +30,7 @@ import type { LngLat } from "maplibre-gl";
 import "./or-conf-map-geojson";
 
 @customElement("or-conf-map-card")
-export class OrConfMapCard extends LitElement {
+export class OrConfMapCard extends OrElement {
   static styles = css`
     or-collapsible-panel {
       margin-bottom: 10px;

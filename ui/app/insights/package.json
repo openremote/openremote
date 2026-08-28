@@ -29,6 +29,7 @@
     "@openremote/model": "workspace:*",
     "@openremote/or-app": "workspace:*",
     "@openremote/or-dashboard-builder": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/rest": "workspace:*",

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, css, LitElement, type TemplateResult, unsafeCSS } from "lit";
+import { html, css, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-drawer";
 import { when } from "lit/directives/when.js";
@@ -50,7 +51,7 @@ const styling = css`
 `;
 
 @customElement("dashboard-menu")
-export class DashboardMenu extends LitElement {
+export class DashboardMenu extends OrElement {
   @property() // list of dashboards: if set to 'undefined', it will pull new dashboards automatically.
   protected readonly dashboards?: Dashboard[];
 

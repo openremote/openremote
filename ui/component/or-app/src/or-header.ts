@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import manager, {
   DefaultBoxShadowBottom,
@@ -80,7 +81,7 @@ function getCurrentMenuItemRef(defaultRef?: string): string | undefined {
 }
 
 @customElement("or-header")
-export class OrHeader extends LitElement {
+export class OrHeader extends OrElement {
   // language=CSS
   static get styles() {
     return css`

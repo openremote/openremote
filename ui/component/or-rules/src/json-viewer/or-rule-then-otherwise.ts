@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { buttonStyle } from "../style";
@@ -275,7 +276,7 @@ const style = css`
 `;
 
 @customElement("or-rule-then-otherwise")
-class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
+class OrRuleThenOtherwise extends translate(i18next)(OrElement) {
   static get styles() {
     return style;
   }

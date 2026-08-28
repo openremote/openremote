@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { i18next, translate } from "@openremote/or-translate";
-import { LitElement, type TemplateResult, css, html } from "lit";
+import { type TemplateResult, css, html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   EmailNotificationMessage,
@@ -39,7 +40,7 @@ import type { SelectItem } from "@openremote/or-vaadin-components/or-vaadin-sele
 type NotificationMessage = EmailNotificationMessage | LocalizedNotificationMessage | PushNotificationMessage;
 
 @customElement("or-rule-form-localized")
-export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
+export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
   @property({ type: Object })
   public message?: LocalizedNotificationMessage;
 

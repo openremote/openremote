@@ -18,13 +18,14 @@
  */
 import type { GeoJsonConfig } from "@openremote/model";
 import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import { html, LitElement } from "lit";
+import { html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import "@openremote/or-components/or-ace-editor";
 import type { OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
 
 @customElement("or-conf-map-geojson")
-export class OrConfMapGeoJson extends LitElement {
+export class OrConfMapGeoJson extends OrElement {
   @property()
   protected geoJson?: GeoJsonConfig;
 

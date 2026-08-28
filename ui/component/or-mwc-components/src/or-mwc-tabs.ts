@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { MDCTabBar } from "@material/tab-bar";
-import { css, type CSSResult, html, LitElement, type TemplateResult, unsafeCSS } from "lit";
+import { css, type CSSResult, html, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { DefaultColor4, DefaultColor8 } from "@openremote/core";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
@@ -67,7 +68,7 @@ const tabStyling = css`
 /* ----------------- */
 
 @customElement("or-mwc-tabs")
-export class OrMwcTabs extends LitElement {
+export class OrMwcTabs extends OrElement {
   static get styles() {
     return [
       unsafeCSS(tabStyle),

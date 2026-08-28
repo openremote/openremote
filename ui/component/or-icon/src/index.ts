@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { type AssetDescriptor, AssetModelUtil, WellknownAssets } from "@openremote/model";
@@ -167,7 +168,7 @@ export function getAssetDescriptorIconTemplate(
 }
 
 @customElement("or-icon")
-export class OrIcon extends LitElement {
+export class OrIcon extends OrElement {
   // language=CSS
   static get styles() {
     return [

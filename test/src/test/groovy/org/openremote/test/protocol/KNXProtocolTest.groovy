@@ -96,8 +96,11 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         // inet 127.51.68.120 netmask 0xff000000
         // nd6 options=201<PERFORMNUD,DAD>
         // Use the same code as Calimero uses to find the address to listen on
-        def loopbackIP = ni.inetAddresses().filter(Inet4Address.class::isInstance).findFirst()
-                .map((ia) -> ia.getHostAddress()).orElse("127.0.0.1")
+        def loopbackIP = ni.inetAddresses()
+            .filter { it instanceof Inet4Address }
+            .findFirst()
+            .map { it.hostAddress }
+            .orElse("127.0.0.1")
         def knxAgent1 = new KNXAgent("KNX Agent 1")
             .setHost(loopbackIP)
             .setBindHost(loopbackIP)

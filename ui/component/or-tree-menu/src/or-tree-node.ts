@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 
 const styles = css`
@@ -74,7 +75,7 @@ const styles = css`
  * @cssprop --or-tree-node-color--selected - Sets the primary color of the node when selected
  */
 @customElement("or-tree-node")
-export class OrTreeNode extends LitElement {
+export class OrTreeNode extends OrElement {
   /**
    * HTML attribute that only applies CSS, showing this node cannot be interacted with.
    */

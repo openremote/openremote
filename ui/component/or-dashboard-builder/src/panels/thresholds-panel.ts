@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { css, type CSSResult, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, type CSSResult, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { DefaultColor5 } from "@openremote/core";
@@ -100,7 +101,7 @@ const styling = css`
 `;
 
 @customElement("thresholds-panel")
-export class ThresholdsPanel extends LitElement {
+export class ThresholdsPanel extends OrElement {
   @property()
   protected thresholds: [number, string][] = [];
 

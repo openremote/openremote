@@ -16,14 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues } from "lit";
+import { css, html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { i18next } from "@openremote/or-translate";
 import type { FileInfo } from "@openremote/model";
 import "./or-loading-indicator";
 
 @customElement("or-file-uploader")
-export class OrFileUploader extends LitElement {
+export class OrFileUploader extends OrElement {
   // Contains the content that will be shown towards the user.
   @property({ attribute: false })
   public readonly src: string = "";

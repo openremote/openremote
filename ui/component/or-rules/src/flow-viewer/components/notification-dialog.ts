@@ -16,13 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 @customElement("notification-dialog")
-export class NotificationDialog extends translate(i18next)(LitElement) {
+export class NotificationDialog extends translate(i18next)(OrElement) {
   @property({ type: String }) public buttonText = i18next.t("ok");
   @property({ type: String }) public message = " ";
 

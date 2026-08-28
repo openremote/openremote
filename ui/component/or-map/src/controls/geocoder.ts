@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement } from "lit";
+import { css, html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import type { Map as MapGL } from "maplibre-gl";
 import { OrMapBaseControl } from "./base";
@@ -56,7 +57,7 @@ declare global {
  * mapsettings.json.
  */
 @customElement("or-map-geocoder")
-export class OrMapGeocoder extends LitElement {
+export class OrMapGeocoder extends OrElement {
   static get styles() {
     return css`
       :host {

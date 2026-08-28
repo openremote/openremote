@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import manager, {
   DefaultBoxShadow,
@@ -874,7 +875,7 @@ export const style = css`
 `;
 
 @customElement("or-rules")
-export class OrRules extends translate(i18next)(LitElement) {
+export class OrRules extends translate(i18next)(OrElement) {
   public static DEFAULT_RULESET_NAME = "";
 
   static get styles() {

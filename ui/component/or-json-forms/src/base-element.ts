@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement } from "lit";
 import { property } from "lit/decorators.js";
+import { OrElement } from "@openremote/or-element";
 import type {
   JsonFormsCellRendererRegistryEntry,
   JsonFormsRendererRegistryEntry,
@@ -40,7 +40,7 @@ export interface AdditionalProps {
 }
 
 export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsOfRenderer>
-  extends LitElement
+  extends OrElement
   implements OwnPropsOfRenderer, AdditionalProps
 {
   @property({ type: Object })

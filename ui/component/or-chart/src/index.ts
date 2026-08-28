@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state, query } from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
 import {
@@ -381,7 +382,7 @@ const style = css`
 `;
 
 @customElement("or-chart")
-export class OrChart extends translate(i18next)(LitElement) {
+export class OrChart extends translate(i18next)(OrElement) {
   public static readonly DEFAULT_COLORS = [
     "#3869B1",
     "#DA7E30",
@@ -627,7 +628,9 @@ export class OrChart extends translate(i18next)(LitElement) {
         backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color") || "#FFFFFF",
         tooltip: {
           trigger: "axis",
+          appendTo: "body",
           confine: true,
+          extraCssText: "white-space: normal; word-wrap: break-word;",
           axisPointer: {
             type: "cross",
           },

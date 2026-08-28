@@ -25,7 +25,8 @@ import {
 } from "@openremote/model";
 import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
@@ -40,7 +41,7 @@ const styling = css`
 `;
 
 @customElement("or-rule-form-webhook")
-export class OrRuleFormWebhook extends LitElement {
+export class OrRuleFormWebhook extends OrElement {
   @property({ type: Object })
   protected webhook!: Webhook;
 

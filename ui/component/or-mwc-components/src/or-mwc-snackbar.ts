@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { MDCSnackbar, type MDCSnackbarCloseEvent } from "@material/snackbar";
 
@@ -75,7 +76,7 @@ export function showSnackbar(
 }
 
 @customElement("or-mwc-snackbar")
-export class OrMwcSnackbar extends LitElement {
+export class OrMwcSnackbar extends OrElement {
   /**
    * Can be set by apps to control where in the DOM snackbars are added
    */
