@@ -1376,19 +1376,6 @@ export class OrAttributeBarChart extends OrElement {
       console.error("Could not update bar chart data; the bar chart is not initialized yet.");
       return;
     }
-    // When data retrieved from HTTP API uses different start-end times, update them.
-    // For example, if 'endOfPeriod' is 18:03, but the interval is 15 min, the latest API datapoint will be from 18:15.
-    const firstEntry = this._data?.[0]?.data as [number, number][] | undefined;
-    if (firstEntry) {
-      const firstTimestamp = firstEntry[0][0];
-      if (firstTimestamp !== this._startOfPeriod) {
-        this._startOfPeriod = firstTimestamp;
-      }
-      const endTimestamp = [...firstEntry].reverse()[0][0];
-      if (endTimestamp !== this._endOfPeriod) {
-        this._endOfPeriod = endTimestamp;
-      }
-    }
 
     // Update ticks / labels
     const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);

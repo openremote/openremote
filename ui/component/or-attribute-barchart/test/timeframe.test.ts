@@ -5,6 +5,21 @@ import { shiftTimeframeByDuration } from "../src/timeframe";
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
+function centeredBarBounds(start: number, end: number, interval: number): [number, number] {
+  return [start + interval / 2, end - interval / 2];
+}
+
+ct("should keep requested chart bounds when bars are centered in their buckets", async () => {
+  for (const interval of [HOUR, 15 * 60 * 1000, 5 * 60 * 1000]) {
+    const requested: [number, number] = [0, DAY];
+    const rendered = centeredBarBounds(requested[0], requested[1], interval);
+
+    // The old dataset-derived bounds shrink by one interval; axis bounds must remain requested bounds.
+    expect(rendered[1] - rendered[0]).toBe(DAY - interval);
+    expect(requested[1] - requested[0]).toBe(DAY);
+  }
+});
+
 ct("should preserve the original 24-hour duration across repeated navigation", async () => {
   const initial: [Date, Date] = [new Date("2026-03-28T12:00:00+01:00"), new Date("2026-03-29T13:00:00+02:00")];
   const next = shiftTimeframeByDuration(initial[0], initial[1], DAY, "next");
