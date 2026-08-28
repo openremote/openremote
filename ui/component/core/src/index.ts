@@ -483,15 +483,6 @@ export class Manager implements EventProviderFactory {
       defaultNS: "app",
       fallbackNS: "or",
       ns: this.config.loadTranslations,
-      interpolation: {
-        format: (value, format, lng) => {
-          if (format === "uppercase") return value.toUpperCase();
-          if (value instanceof Date) {
-            return moment(value).format(format);
-          }
-          return value;
-        },
-      },
       backend: {
         loadPath: (langs: string[], namespaces: string[]) => {
           if (namespaces.length === 1 && namespaces[0] === "or") {
@@ -513,6 +504,14 @@ export class Manager implements EventProviderFactory {
 
     try {
       await i18next.use(i18nextBackend).init(initOptions);
+      i18next.services.formatter!.add("uppercase", (value: unknown) =>
+        typeof value === "string" ? value.toUpperCase() : String(value)
+      );
+      i18next.services.formatter!.add("moment", (value: unknown, _lng: string | undefined, options: any) =>
+        value instanceof Date
+          ? moment(value).format(typeof options?.format === "string" ? options.format : "")
+          : (value as string)
+      );
     } catch (e) {
       console.error(e);
       this._setError(ORError.TRANSLATION_ERROR);
