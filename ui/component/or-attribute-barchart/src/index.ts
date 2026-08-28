@@ -55,7 +55,7 @@ import { createMenuBarItem, type MenuBarItem } from "@openremote/or-vaadin-compo
 import { OrVaadinDateTimePicker } from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import { when } from "lit/directives/when.js";
 import { createRef, type Ref, ref } from "lit/directives/ref.js";
-import { shiftTimeframeByDuration, type TimeframeDirection } from "./timeframe";
+import { shiftTimeframe, type TimeframeDirection } from "./timeframe";
 import "@openremote/or-translate";
 
 echarts.use([GridComponent, TooltipComponent, DataZoomComponent, BarChart, CanvasRenderer, UniversalTransition]);
@@ -1062,8 +1062,9 @@ export class OrAttributeBarChart extends OrElement {
       throw new Error(`Unsupported time window selected: ${timeWindowSelected}`);
     }
 
+    const [unit, value] = this.timeWindowOptions.get(timeWindowSelected)!;
     const duration = this._navigationDuration ?? currentEnd.getTime() - currentStart.getTime();
-    this.timeframe = shiftTimeframeByDuration(currentStart, currentEnd, duration, direction);
+    this.timeframe = shiftTimeframe(currentStart, currentEnd, duration, unit, value, direction);
   }
 
   protected _getInterval(
