@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,91 +12,94 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.notification;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import tools.jackson.databind.JsonNode;
-import org.openremote.model.attribute.AttributeRef;
 
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD;
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.attribute.AttributeRef;
+import tools.jackson.databind.JsonNode;
 
 public class PushNotificationAction {
 
-    protected String url;
-    protected String httpMethod;
-    protected Object data;
-    protected boolean silent;
-    protected boolean openInBrowser; // For app based consoles (i.e. Android and iOS)
+  protected String url;
+  protected String httpMethod;
+  protected Object data;
+  protected boolean silent;
+  protected boolean openInBrowser; // For app based consoles (i.e. Android and iOS)
 
-    public PushNotificationAction(String url) {
-        this.url = url;
-    }
+  public PushNotificationAction(String url) {
+    this.url = url;
+  }
 
-    @JsonCreator
-    public PushNotificationAction(@JsonProperty("url") String url,
-                                  @JsonProperty("data") Object data,
-                                  @JsonProperty("silent") boolean silent,
-                                  @JsonProperty("openInBrowser") boolean openInBrowser,
-                                  @JsonProperty("httpMethod") String httpMethod) {
-        this.url = url;
-        this.data = data;
-        this.silent = silent;
-        this.openInBrowser = openInBrowser;
-        this.httpMethod = httpMethod;
-    }
+  @JsonCreator
+  public PushNotificationAction(
+      @JsonProperty("url") String url,
+      @JsonProperty("data") Object data,
+      @JsonProperty("silent") boolean silent,
+      @JsonProperty("openInBrowser") boolean openInBrowser,
+      @JsonProperty("httpMethod") String httpMethod) {
+    this.url = url;
+    this.data = data;
+    this.silent = silent;
+    this.openInBrowser = openInBrowser;
+    this.httpMethod = httpMethod;
+  }
 
-    @JsonProperty
-    public String getUrl() {
-        return url;
-    }
+  @JsonProperty
+  public String getUrl() {
+    return url;
+  }
 
-    public void setUrl(String url) {
-        this.url = url;
-    }
+  public void setUrl(String url) {
+    this.url = url;
+  }
 
-    @JsonProperty
-    public Object getData() {
-        return data;
-    }
+  @JsonProperty
+  public Object getData() {
+    return data;
+  }
 
-    public void setData(JsonNode data) {
-        this.data = data;
-    }
+  public void setData(JsonNode data) {
+    this.data = data;
+  }
 
-    @JsonProperty
-    public boolean isSilent() {
-        return silent;
-    }
+  @JsonProperty
+  public boolean isSilent() {
+    return silent;
+  }
 
-    public void setSilent(boolean silent) {
-        this.silent = silent;
-    }
+  public void setSilent(boolean silent) {
+    this.silent = silent;
+  }
 
-    @JsonProperty
-    public boolean isOpenInBrowser() {
-        return openInBrowser;
-    }
+  @JsonProperty
+  public boolean isOpenInBrowser() {
+    return openInBrowser;
+  }
 
-    public void setOpenInBrowser(boolean openInBrowser) {
-        this.openInBrowser = openInBrowser;
-    }
+  public void setOpenInBrowser(boolean openInBrowser) {
+    this.openInBrowser = openInBrowser;
+  }
 
-    @JsonProperty
-    public String getHttpMethod() {
-        return httpMethod;
-    }
+  @JsonProperty
+  public String getHttpMethod() {
+    return httpMethod;
+  }
 
-    public void setHttpMethod(String httpMethod) {
-        this.httpMethod = httpMethod;
-    }
+  public void setHttpMethod(String httpMethod) {
+    this.httpMethod = httpMethod;
+  }
 
-    public static PushNotificationAction writeAttributeValueAction(AttributeRef attributeRef, Object value) {
-        String url = getWriteAttributeUrl(attributeRef);
-        return new PushNotificationAction(url, value, true, false, WRITE_ATTRIBUTE_HTTP_METHOD);
-    }
+  public static PushNotificationAction writeAttributeValueAction(
+      AttributeRef attributeRef, Object value) {
+    String url = getWriteAttributeUrl(attributeRef);
+    return new PushNotificationAction(url, value, true, false, WRITE_ATTRIBUTE_HTTP_METHOD);
+  }
 }

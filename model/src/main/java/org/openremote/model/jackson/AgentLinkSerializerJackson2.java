@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.jackson;
 
@@ -24,33 +23,38 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import java.io.IOException;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.IOException;
-
 public class AgentLinkSerializerJackson2 extends StdSerializer<AgentLink<?>> {
 
-    public AgentLinkSerializerJackson2() {
-        super((Class<AgentLink<?>>) (Class<?>) AgentLink.class);
+  public AgentLinkSerializerJackson2() {
+    super((Class<AgentLink<?>>) (Class<?>) AgentLink.class);
+  }
+
+  @Override
+  public void serialize(AgentLink<?> value, JsonGenerator generator, SerializerProvider provider)
+      throws IOException {
+    if (value == null) {
+      generator.writeNull();
+      return;
     }
 
-    @Override
-    public void serialize(AgentLink<?> value, JsonGenerator generator, SerializerProvider provider) throws IOException {
-        if (value == null) {
-            generator.writeNull();
-            return;
-        }
-
-        try {
-            generator.writeRawValue(ValueUtil.JSON.writeValueAsString(value));
-        } catch (tools.jackson.core.JacksonException e) {
-            throw JsonMappingException.from(generator, "Failed to serialize agent link", e);
-        }
+    try {
+      generator.writeRawValue(ValueUtil.JSON.writeValueAsString(value));
+    } catch (tools.jackson.core.JacksonException e) {
+      throw JsonMappingException.from(generator, "Failed to serialize agent link", e);
     }
+  }
 
-    @Override
-    public void serializeWithType(AgentLink<?> value, JsonGenerator generator, SerializerProvider provider, TypeSerializer typeSerializer) throws IOException {
-        serialize(value, generator, provider);
-    }
+  @Override
+  public void serializeWithType(
+      AgentLink<?> value,
+      JsonGenerator generator,
+      SerializerProvider provider,
+      TypeSerializer typeSerializer)
+      throws IOException {
+    serialize(value, generator, provider);
+  }
 }

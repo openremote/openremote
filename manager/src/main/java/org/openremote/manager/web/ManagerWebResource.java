@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,65 +12,67 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.web;
 
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+
+import jakarta.ws.rs.WebApplicationException;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.security.Realm;
 
-import jakarta.ws.rs.WebApplicationException;
-
-import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
-
 public class ManagerWebResource extends WebResource {
 
-    final protected TimerService timerService;
-    final protected ManagerIdentityService identityService;
+  protected final TimerService timerService;
+  protected final ManagerIdentityService identityService;
 
-    public ManagerWebResource(TimerService timerService, ManagerIdentityService identityService) {
-        this.timerService = timerService;
-        this.identityService = identityService;
+  public ManagerWebResource(TimerService timerService, ManagerIdentityService identityService) {
+    this.timerService = timerService;
+    this.identityService = identityService;
+  }
+
+  public boolean isRestrictedUser() {
+    return isAuthenticated()
+        && identityService.getIdentityProvider().isRestrictedUser(getAuthContext());
+  }
+
+  public Realm getAuthenticatedRealm() {
+    return identityService.getIdentityProvider().getRealm(getAuthenticatedRealmName());
+  }
+
+  public Realm getRequestRealm() {
+    return identityService.getIdentityProvider().getRealm(getRequestRealmName());
+  }
+
+  public boolean isRealmActiveAndAccessible(String realm) {
+    return identityService
+        .getIdentityProvider()
+        .isRealmActiveAndAccessible(getAuthContext(), realm);
+  }
+
+  public boolean isRealmActiveAndAccessible(Realm realm) {
+    return identityService
+        .getIdentityProvider()
+        .isRealmActiveAndAccessible(getAuthContext(), realm);
+  }
+
+  /** Rejects the request with a 403 when the caller cannot access the realm. */
+  public void throwIfNotRealmActiveAndAccessible(String realm) {
+    if (!isRealmActiveAndAccessible(realm)) {
+      throw new WebApplicationException(
+          "Realm '" + realm + "' is nonexistent, inactive or inaccessible", FORBIDDEN);
     }
+  }
 
-    public boolean isRestrictedUser() {
-        return isAuthenticated() && identityService.getIdentityProvider().isRestrictedUser(getAuthContext());
+  /** Rejects the request with a 403 when the caller is a restricted user. */
+  public void throwIfRestrictedUser(String message) {
+    if (isRestrictedUser()) {
+      throw new WebApplicationException(message, FORBIDDEN);
     }
-
-    public Realm getAuthenticatedRealm() {
-        return identityService.getIdentityProvider().getRealm(getAuthenticatedRealmName());
-    }
-
-    public Realm getRequestRealm() {
-        return identityService.getIdentityProvider().getRealm(getRequestRealmName());
-    }
-
-    public boolean isRealmActiveAndAccessible(String realm) {
-        return identityService.getIdentityProvider().isRealmActiveAndAccessible(getAuthContext(), realm);
-    }
-
-    public boolean isRealmActiveAndAccessible(Realm realm) {
-        return identityService.getIdentityProvider().isRealmActiveAndAccessible(getAuthContext(), realm);
-    }
-
-    /**
-     * Rejects the request with a 403 when the caller cannot access the realm.
-     */
-    public void throwIfNotRealmActiveAndAccessible(String realm) {
-        if (!isRealmActiveAndAccessible(realm)) {
-            throw new WebApplicationException("Realm '" + realm + "' is nonexistent, inactive or inaccessible", FORBIDDEN);
-        }
-    }
-
-    /**
-     * Rejects the request with a 403 when the caller is a restricted user.
-     */
-    public void throwIfRestrictedUser(String message) {
-        if (isRestrictedUser()) {
-            throw new WebApplicationException(message, FORBIDDEN);
-        }
-    }
-
+  }
 }

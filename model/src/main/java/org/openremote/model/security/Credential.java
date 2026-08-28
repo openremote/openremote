@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,41 +12,42 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.security;
 
 public class Credential {
 
-    protected String type = "password";
-    protected String value;
-    protected Boolean temporary;
+  protected String type = "password";
+  protected String value;
+  protected Boolean temporary;
 
-    public Credential() {
-    }
+  public Credential() {}
 
-    public Credential(String value, Boolean temporary) {
-        this.value = value;
-        this.temporary = temporary;
-    }
+  public Credential(String value, Boolean temporary) {
+    this.value = value;
+    this.temporary = temporary;
+  }
 
-    public String getType() {
-        return type;
-    }
+  public String getType() {
+    return type;
+  }
 
-    public String getValue() {
-        return value;
-    }
+  public String getValue() {
+    return value;
+  }
 
-    public void setValue(String value) {
-        this.value = value;
-    }
+  public void setValue(String value) {
+    this.value = value;
+  }
 
-    public Boolean getTemporary() {
-        return temporary;
-    }
+  public Boolean getTemporary() {
+    return temporary;
+  }
 
-    public void setTemporary(Boolean temporary) {
-        this.temporary = temporary;
-    }
+  public void setTemporary(Boolean temporary) {
+    this.temporary = temporary;
+  }
 }

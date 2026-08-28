@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,20 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { OrMapBaseControl } from "./base";
 import "@openremote/or-icon";
 
 export class OrLogoControl extends OrMapBaseControl {
-    onAdd(): HTMLElement {
-        const a = document.createElement("a");
-        a.href = "https://openremote.io/";
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.style.cssText = "margin-left:10px;height:24px;pointer-events:auto;";
-        const icon = document.createElement("or-icon");
-        icon.setAttribute("icon", "or:logo-grayscale");
-        a.appendChild(icon);
-        return (this._container = a);
-    }
+  onAdd(): HTMLElement {
+    const a = document.createElement("a");
+    a.href = "https://openremote.io/";
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.style.cssText = "margin-left:10px;height:24px;pointer-events:auto;";
+    const icon = document.createElement("or-icon");
+    icon.setAttribute("icon", "or:logo-grayscale");
+    a.appendChild(icon);
+    return (this._container = a);
+  }
 }

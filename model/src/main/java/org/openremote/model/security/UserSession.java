@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.security;
 
@@ -23,35 +22,36 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class UserSession {
-    protected final String ID;
-    protected final String username;
-    protected final long startTimeMillis;
-    protected final String remoteAddress;
+  protected final String ID;
+  protected final String username;
+  protected final long startTimeMillis;
+  protected final String remoteAddress;
 
-    @JsonCreator
-    public UserSession(@JsonProperty("ID") String ID,
-                       @JsonProperty("username") String username,
-                       @JsonProperty("startTimeMillis") long startTimeMillis,
-                       @JsonProperty("remoteAddress") String remoteAddress) {
-        this.ID = ID;
-        this.username = username;
-        this.startTimeMillis = startTimeMillis;
-        this.remoteAddress = remoteAddress;
-    }
+  @JsonCreator
+  public UserSession(
+      @JsonProperty("ID") String ID,
+      @JsonProperty("username") String username,
+      @JsonProperty("startTimeMillis") long startTimeMillis,
+      @JsonProperty("remoteAddress") String remoteAddress) {
+    this.ID = ID;
+    this.username = username;
+    this.startTimeMillis = startTimeMillis;
+    this.remoteAddress = remoteAddress;
+  }
 
-    public String getUsername() {
-        return username;
-    }
+  public String getUsername() {
+    return username;
+  }
 
-    public long getStartTimeMillis() {
-        return startTimeMillis;
-    }
+  public long getStartTimeMillis() {
+    return startTimeMillis;
+  }
 
-    public String getRemoteAddress() {
-        return remoteAddress;
-    }
+  public String getRemoteAddress() {
+    return remoteAddress;
+  }
 
-    public String getID() {
-        return ID;
-    }
+  public String getID() {
+    return ID;
+  }
 }

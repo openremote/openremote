@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,13 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
+
+import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -35,256 +36,287 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import jakarta.ws.rs.ext.WriterInterceptor;
 import jakarta.ws.rs.ext.WriterInterceptorContext;
-import org.jboss.resteasy.plugins.validation.ResteasyViolationExceptionMapper;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
-import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
+import org.jboss.resteasy.plugins.validation.ResteasyViolationExceptionMapper;
 
 /**
  * Unified exception handling for all web services (Resteasy, Undertow, Servlets, WebSockets).
- * <p>
- * This is naturally quite messy, our goal is to disable all the other default exception
- * handling and do it here in a "simple" way.
- * <p>
- * In production we want to be INFOrmed of exceptions but only log a stacktrace if FINE
- * debug logging is enabled. We never want to send a stacktrace or some crappy HTML to a
- * client in production.
+ *
+ * <p>This is naturally quite messy, our goal is to disable all the other default exception handling
+ * and do it here in a "simple" way.
+ *
+ * <p>In production we want to be INFOrmed of exceptions but only log a stacktrace if FINE debug
+ * logging is enabled. We never want to send a stacktrace or some crappy HTML to a client in
+ * production.
+ *
  * <p>
  */
 public class WebServiceExceptions {
 
-    private static final System.Logger LOG = System.getLogger(WebServiceExceptions.class.getName());
+  private static final System.Logger LOG = System.getLogger(WebServiceExceptions.class.getName());
 
-    /**
-     * The mapper handles JAX-RS exceptions
-     */
-    public static class JAXRSExceptionMapper implements ExceptionMapper<Throwable> {
-        final protected boolean devMode;
+  /** The mapper handles JAX-RS exceptions */
+  public static class JAXRSExceptionMapper implements ExceptionMapper<Throwable> {
+    protected final boolean devMode;
 
-        public JAXRSExceptionMapper(boolean devMode) {
-            this.devMode = devMode;
-        }
-
-        @Override
-        public Response toResponse(Throwable exception) {
-            return handleResteasyException(devMode, exception);
-        }
+    public JAXRSExceptionMapper(boolean devMode) {
+      this.devMode = devMode;
     }
 
-    /**
-     * Takes precedence over RESTEasy's built-in {@link ResteasyViolationExceptionMapper} (application providers win
-     * over built-ins for the same exception type) which handles every {@link ValidationException} - including a
-     * validator that crashed rather than reported violations - without logging anything, turning such failures into
-     * silent {@code text/plain} 500 responses.
-     */
-    @Provider
-    public static class ValidationExceptionMapper extends ResteasyViolationExceptionMapper {
-        @Override
-        public Response toResponse(ValidationException exception) {
-            Response response = super.toResponse(exception);
-            System.Logger.Level level = response.getStatus() >= 500 ? System.Logger.Level.ERROR : System.Logger.Level.WARNING;
-            LOG.log(level, "Validation failure processing JAX-RS request: status=" + response.getStatus(), exception);
-            return response;
-        }
+    @Override
+    public Response toResponse(Throwable exception) {
+      return handleResteasyException(devMode, exception);
     }
+  }
 
-    /**
-     * Exceptions thrown while writing the response body (e.g. by a {@code MessageBodyWriter}) are never passed to a
-     * registered {@link ExceptionMapper} per the JAX-RS spec, so without this they'd otherwise only surface as a bare
-     * 500 with no logged cause.
-     */
-    @Provider
-    public static class LoggingWriterInterceptor implements WriterInterceptor {
-        @Override
-        public void aroundWriteTo(WriterInterceptorContext context) throws IOException, WebApplicationException {
-            try {
-                context.proceed();
-            } catch (IOException | RuntimeException e) {
-                LOG.log(System.Logger.Level.ERROR, "Failed to write response body: type=" + context.getType(), e);
-                throw e;
-            }
-        }
+  /**
+   * Takes precedence over RESTEasy's built-in {@link ResteasyViolationExceptionMapper} (application
+   * providers win over built-ins for the same exception type) which handles every {@link
+   * ValidationException} - including a validator that crashed rather than reported violations -
+   * without logging anything, turning such failures into silent {@code text/plain} 500 responses.
+   */
+  @Provider
+  public static class ValidationExceptionMapper extends ResteasyViolationExceptionMapper {
+    @Override
+    public Response toResponse(ValidationException exception) {
+      Response response = super.toResponse(exception);
+      System.Logger.Level level =
+          response.getStatus() >= 500 ? System.Logger.Level.ERROR : System.Logger.Level.WARNING;
+      LOG.log(
+          level,
+          "Validation failure processing JAX-RS request: status=" + response.getStatus(),
+          exception);
+      return response;
     }
+  }
 
-    /**
-     * An exception handler for any exception that bubbles out of a servlet or occurs within Undertow itself
-     */
-    public static class RootUndertowExceptionHandler extends io.undertow.server.handlers.ExceptionHandler {
-        final protected boolean devMode;
-
-        public RootUndertowExceptionHandler(boolean devMode, HttpHandler next) {
-            super(next);
-            this.devMode = devMode;
-            addExceptionHandler(Throwable.class, (HttpServerExchange exchange) -> {
-                // Get the exception that was thrown
-                Throwable throwable = exchange.getAttachment(io.undertow.server.handlers.ExceptionHandler.THROWABLE);
-                LoggingFilter.logException(
-                        devMode,
-                        "Undertow",
-                        System.Logger.Level.ERROR,
-                        throwable,
-                        null,
-                        500,
-                        TEXT_PLAIN_TYPE.toString()
-                );
-
-                // Send a clean response to the client
-                if (!exchange.isResponseStarted()) {
-                    exchange.setStatusCode(500);
-                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, TEXT_PLAIN_TYPE.toString());
-                    exchange.getResponseSender().send(devMode ? renderDevModeError(500, throwable) : renderProductionError(500, throwable));
-                }
-            });
-        }
+  /**
+   * Exceptions thrown while writing the response body (e.g. by a {@code MessageBodyWriter}) are
+   * never passed to a registered {@link ExceptionMapper} per the JAX-RS spec, so without this
+   * they'd otherwise only surface as a bare 500 with no logged cause.
+   */
+  @Provider
+  public static class LoggingWriterInterceptor implements WriterInterceptor {
+    @Override
+    public void aroundWriteTo(WriterInterceptorContext context)
+        throws IOException, WebApplicationException {
+      try {
+        context.proceed();
+      } catch (IOException | RuntimeException e) {
+        LOG.log(
+            System.Logger.Level.ERROR,
+            "Failed to write response body: type=" + context.getType(),
+            e);
+        throw e;
+      }
     }
+  }
 
-    /**
-     * Exception handler for servlet deployments to prevent HTML error pages being returned
-     */
-    public static class ServletExceptionHandler implements ExceptionHandler {
-        final protected boolean devMode;
+  /**
+   * An exception handler for any exception that bubbles out of a servlet or occurs within Undertow
+   * itself
+   */
+  public static class RootUndertowExceptionHandler
+      extends io.undertow.server.handlers.ExceptionHandler {
+    protected final boolean devMode;
 
-        public ServletExceptionHandler(boolean devMode) {
-            this.devMode = devMode;
-        }
-
-        @Override
-        public boolean handleThrowable(HttpServerExchange exchange, ServletRequest request, ServletResponse response, Throwable throwable) {
-            Throwable effectiveException = throwable;
-            int status = 500;
-
-            // Unpack ServletException to see if the root cause is a WebApplicationException
-            if (throwable instanceof jakarta.servlet.ServletException && throwable.getCause() != null) {
-                effectiveException = throwable.getCause();
-            }
-
-            if (effectiveException instanceof OptimisticLockException) {
-                // We get here if JPA entity id is set on merge but it doesn't already exist (unless ID generator is configured to allow ID to be assigned)
-                // Or we get here is JPA entity version doesn't match what's in the DB
-                effectiveException = new NotAllowedException(effectiveException);
-            }
-
-            if (effectiveException instanceof WebApplicationException webApplicationException) {
-                status = webApplicationException.getResponse().getStatus();
-            }
-
-            // Exceptions reaching this handler (e.g. from a MessageBodyWriter/Reader) never pass through the JAX-RS
-            // ExceptionMapper, so LoggingFilter's request/response summary is the only other place they could be
-            // logged from - and that summary never includes the Throwable. Always log here to guarantee visibility.
-            System.Logger.Level level = status >= 500 ? System.Logger.Level.ERROR : status >= 400 ? System.Logger.Level.DEBUG : System.Logger.Level.TRACE;
+    public RootUndertowExceptionHandler(boolean devMode, HttpHandler next) {
+      super(next);
+      this.devMode = devMode;
+      addExceptionHandler(
+          Throwable.class,
+          (HttpServerExchange exchange) -> {
+            // Get the exception that was thrown
+            Throwable throwable =
+                exchange.getAttachment(io.undertow.server.handlers.ExceptionHandler.THROWABLE);
             LoggingFilter.logException(
-                    devMode,
-                    "Servlet",
-                    level,
-                    effectiveException,
-                    request instanceof HttpServletRequest httpRequest ? httpRequest : null,
-                    status,
-                    response.getContentType()
-            );
+                devMode,
+                "Undertow",
+                System.Logger.Level.ERROR,
+                throwable,
+                null,
+                500,
+                TEXT_PLAIN_TYPE.toString());
 
+            // Send a clean response to the client
             if (!exchange.isResponseStarted()) {
-                exchange.setStatusCode(status);
-                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, TEXT_PLAIN_TYPE.toString());
-                exchange.getResponseSender().send(devMode ?
-                        renderDevModeError(status, effectiveException) :
-                        renderProductionError(status, effectiveException));
+              exchange.setStatusCode(500);
+              exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, TEXT_PLAIN_TYPE.toString());
+              exchange
+                  .getResponseSender()
+                  .send(
+                      devMode
+                          ? renderDevModeError(500, throwable)
+                          : renderProductionError(500, throwable));
             }
+          });
+    }
+  }
 
-            return true;
-        }
+  /** Exception handler for servlet deployments to prevent HTML error pages being returned */
+  public static class ServletExceptionHandler implements ExceptionHandler {
+    protected final boolean devMode;
+
+    public ServletExceptionHandler(boolean devMode) {
+      this.devMode = devMode;
     }
 
-    public static Response handleResteasyException(boolean devMode, Throwable throwable) {
-        Throwable effectiveException = throwable;
-        int status = 500;
-        Response webApplicationResponse = null;
+    @Override
+    public boolean handleThrowable(
+        HttpServerExchange exchange,
+        ServletRequest request,
+        ServletResponse response,
+        Throwable throwable) {
+      Throwable effectiveException = throwable;
+      int status = 500;
 
-        // Unpack ServletException to see if the root cause is a WebApplicationException
-        if (throwable instanceof jakarta.servlet.ServletException && throwable.getCause() != null) {
-            effectiveException = throwable.getCause();
-        }
+      // Unpack ServletException to see if the root cause is a WebApplicationException
+      if (throwable instanceof jakarta.servlet.ServletException && throwable.getCause() != null) {
+        effectiveException = throwable.getCause();
+      }
 
-        if (effectiveException instanceof OptimisticLockException) {
-            // We get here if JPA entity id is set on merge but it doesn't already exist (unless ID generator is
-            // configured to allow ID to be assigned). Or we get here is JPA entity version doesn't match what's in the DB
-            effectiveException = new NotAllowedException(effectiveException);
-        }
+      if (effectiveException instanceof OptimisticLockException) {
+        // We get here if JPA entity id is set on merge but it doesn't already exist (unless ID
+        // generator is configured to allow ID to be assigned)
+        // Or we get here is JPA entity version doesn't match what's in the DB
+        effectiveException = new NotAllowedException(effectiveException);
+      }
 
-        if (effectiveException instanceof WebApplicationException webApplicationException) {
-            webApplicationResponse = webApplicationException.getResponse();
+      if (effectiveException instanceof WebApplicationException webApplicationException) {
+        status = webApplicationException.getResponse().getStatus();
+      }
 
-            switch (webApplicationResponse.getStatusInfo().getFamily()) {
-                case CLIENT_ERROR:
-                    status = webApplicationResponse.getStatus();
-                    break;
-                case SERVER_ERROR:
-                    status = webApplicationResponse.getStatus();
-                    break;
-                default:
-                    LoggingFilter.logException(
-                            devMode,
-                            "JAX-RS",
-                            System.Logger.Level.TRACE,
-                            effectiveException,
-                            null,
-                            webApplicationResponse.getStatus(),
-                            webApplicationResponse.getMediaType() != null ? webApplicationResponse.getMediaType().toString() : null
-                    );
-                    // If it's not a client or server error, it's not really an "exception" to
-                    // be handled but a status that should be returned to the client
-                    return webApplicationResponse;
-            }
-        }
+      // Exceptions reaching this handler (e.g. from a MessageBodyWriter/Reader) never pass through
+      // the JAX-RS
+      // ExceptionMapper, so LoggingFilter's request/response summary is the only other place they
+      // could be
+      // logged from - and that summary never includes the Throwable. Always log here to guarantee
+      // visibility.
+      System.Logger.Level level =
+          status >= 500
+              ? System.Logger.Level.ERROR
+              : status >= 400 ? System.Logger.Level.DEBUG : System.Logger.Level.TRACE;
+      LoggingFilter.logException(
+          devMode,
+          "Servlet",
+          level,
+          effectiveException,
+          request instanceof HttpServletRequest httpRequest ? httpRequest : null,
+          status,
+          response.getContentType());
 
-        try {
-            System.Logger.Level level = status >= 500 ? System.Logger.Level.ERROR : status >= 400 ? System.Logger.Level.DEBUG : System.Logger.Level.TRACE;
-            LoggingFilter.logException(
-                    devMode,
-                    "JAX-RS",
-                    level,
-                    effectiveException,
-                    null,
-                    status,
-                    webApplicationResponse != null && webApplicationResponse.getMediaType() != null
-                            ? webApplicationResponse.getMediaType().toString()
-                            : TEXT_PLAIN_TYPE.toString()
-            );
+      if (!exchange.isResponseStarted()) {
+        exchange.setStatusCode(status);
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, TEXT_PLAIN_TYPE.toString());
+        exchange
+            .getResponseSender()
+            .send(
+                devMode
+                    ? renderDevModeError(status, effectiveException)
+                    : renderProductionError(status, effectiveException));
+      }
 
-            if (webApplicationResponse != null && webApplicationResponse.hasEntity()) {
-                return Response.fromResponse(webApplicationResponse).build();
-            }
+      return true;
+    }
+  }
 
-            Response.ResponseBuilder responseBuilder = webApplicationResponse != null
-                ? Response.fromResponse(webApplicationResponse)
-                : Response.status(status);
-            String errorBody = devMode
-                ? renderDevModeError(status, effectiveException)
-                : renderProductionError(status, effectiveException);
-            return responseBuilder.entity(errorBody).type(TEXT_PLAIN_TYPE).build();
-        } catch (Exception ex) {
-            LOG.log(System.Logger.Level.ERROR, "Couldn't render server error trace response", ex);
-            return Response.serverError().build();
-        }
+  public static Response handleResteasyException(boolean devMode, Throwable throwable) {
+    Throwable effectiveException = throwable;
+    int status = 500;
+    Response webApplicationResponse = null;
+
+    // Unpack ServletException to see if the root cause is a WebApplicationException
+    if (throwable instanceof jakarta.servlet.ServletException && throwable.getCause() != null) {
+      effectiveException = throwable.getCause();
     }
 
-    public static String renderDevModeError(int statusCode, Throwable t) {
-        StringWriter sw = new StringWriter();
-        t.printStackTrace(new PrintWriter(sw));
-        Response.Status status = Response.Status.fromStatusCode(statusCode);
-        return "Request failed with HTTP error status: "
-            + statusCode
-            + (status != null ? " " + status.getReasonPhrase() : "")
-            + "\n\n"
-            + sw;
+    if (effectiveException instanceof OptimisticLockException) {
+      // We get here if JPA entity id is set on merge but it doesn't already exist (unless ID
+      // generator is
+      // configured to allow ID to be assigned). Or we get here is JPA entity version doesn't match
+      // what's in the DB
+      effectiveException = new NotAllowedException(effectiveException);
     }
 
-    public static String renderProductionError(int statusCode, Throwable t) {
-        Response.Status status = Response.Status.fromStatusCode(statusCode);
-        return "Request failed with HTTP error status: "
-            + statusCode
-            + (status != null ? " " + status.getReasonPhrase() : "");
+    if (effectiveException instanceof WebApplicationException webApplicationException) {
+      webApplicationResponse = webApplicationException.getResponse();
+
+      switch (webApplicationResponse.getStatusInfo().getFamily()) {
+        case CLIENT_ERROR:
+          status = webApplicationResponse.getStatus();
+          break;
+        case SERVER_ERROR:
+          status = webApplicationResponse.getStatus();
+          break;
+        default:
+          LoggingFilter.logException(
+              devMode,
+              "JAX-RS",
+              System.Logger.Level.TRACE,
+              effectiveException,
+              null,
+              webApplicationResponse.getStatus(),
+              webApplicationResponse.getMediaType() != null
+                  ? webApplicationResponse.getMediaType().toString()
+                  : null);
+          // If it's not a client or server error, it's not really an "exception" to
+          // be handled but a status that should be returned to the client
+          return webApplicationResponse;
+      }
     }
+
+    try {
+      System.Logger.Level level =
+          status >= 500
+              ? System.Logger.Level.ERROR
+              : status >= 400 ? System.Logger.Level.DEBUG : System.Logger.Level.TRACE;
+      LoggingFilter.logException(
+          devMode,
+          "JAX-RS",
+          level,
+          effectiveException,
+          null,
+          status,
+          webApplicationResponse != null && webApplicationResponse.getMediaType() != null
+              ? webApplicationResponse.getMediaType().toString()
+              : TEXT_PLAIN_TYPE.toString());
+
+      if (webApplicationResponse != null && webApplicationResponse.hasEntity()) {
+        return Response.fromResponse(webApplicationResponse).build();
+      }
+
+      Response.ResponseBuilder responseBuilder =
+          webApplicationResponse != null
+              ? Response.fromResponse(webApplicationResponse)
+              : Response.status(status);
+      String errorBody =
+          devMode
+              ? renderDevModeError(status, effectiveException)
+              : renderProductionError(status, effectiveException);
+      return responseBuilder.entity(errorBody).type(TEXT_PLAIN_TYPE).build();
+    } catch (Exception ex) {
+      LOG.log(System.Logger.Level.ERROR, "Couldn't render server error trace response", ex);
+      return Response.serverError().build();
+    }
+  }
+
+  public static String renderDevModeError(int statusCode, Throwable t) {
+    StringWriter sw = new StringWriter();
+    t.printStackTrace(new PrintWriter(sw));
+    Response.Status status = Response.Status.fromStatusCode(statusCode);
+    return "Request failed with HTTP error status: "
+        + statusCode
+        + (status != null ? " " + status.getReasonPhrase() : "")
+        + "\n\n"
+        + sw;
+  }
+
+  public static String renderProductionError(int statusCode, Throwable t) {
+    Response.Status status = Response.Status.fromStatusCode(statusCode);
+    return "Request failed with HTTP error status: "
+        + statusCode
+        + (status != null ? " " + status.getReasonPhrase() : "");
+  }
 }

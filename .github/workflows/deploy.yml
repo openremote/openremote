@@ -9,18 +9,18 @@ on:
   workflow_dispatch:
     inputs:
       ENVIRONMENT:
-        description: 'Environment to use (if any)'
+        description: "Environment to use (if any)"
       MANAGER_TAG:
-        description: 'Manager docker tag to pull'
+        description: "Manager docker tag to pull"
       CLEAN_INSTALL:
-        description: 'Delete data before starting'
+        description: "Delete data before starting"
         type: boolean
       COMMIT:
-        description: 'Repo branch or commit SHA to checkout. WARNING: Picking an older commit may cause pipeline failures if build/deploy steps are missing or incompatible.'
+        description: "Repo branch or commit SHA to checkout. WARNING: Picking an older commit may cause pipeline failures if build/deploy steps are missing or incompatible."
       OR_HOSTNAME:
-        description: 'Host to deploy to (e.g. demo.openremote.app)'
+        description: "Host to deploy to (e.g. demo.openremote.app)"
       OR_ADMIN_PASSWORD:
-        description: 'Admin password override'
+        description: "Admin password override"
 
   workflow_call:
     inputs:

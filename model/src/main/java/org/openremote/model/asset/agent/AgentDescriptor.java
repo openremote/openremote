@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.agent;
 
@@ -23,91 +22,95 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import tools.jackson.databind.annotation.JsonSerialize;
-import tools.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.protocol.ProtocolAssetImport;
 import org.openremote.model.protocol.ProtocolInstanceDiscovery;
 import org.openremote.model.util.TsIgnoreTypeParams;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.util.StdConverter;
 
-/**
- * Special type of {@link AssetDescriptor} that describes an agent {@link Asset}.
- */
+/** Special type of {@link AssetDescriptor} that describes an agent {@link Asset}. */
 @JsonTypeName("agent")
 @TsIgnoreTypeParams
-public class AgentDescriptor<T extends Agent<T, U, V>, U extends Protocol<T>, V extends AgentLink<?>> extends AssetDescriptor<T> {
+public class AgentDescriptor<
+        T extends Agent<T, U, V>, U extends Protocol<T>, V extends AgentLink<?>>
+    extends AssetDescriptor<T> {
 
-    public static class DiscoveryBooleanConverter extends StdConverter<Class<?>, Boolean> {
+  public static class DiscoveryBooleanConverter extends StdConverter<Class<?>, Boolean> {
 
-        @Override
-        public Boolean convert(Class<?> value) {
-            return value != null;
-        }
+    @Override
+    public Boolean convert(Class<?> value) {
+      return value != null;
     }
+  }
 
-    public static final String ICON = "cogs";
-    public static final String ICON_COLOUR = "000000";
-    @JsonIgnore
-    protected Class<U> protocolClass;
-    @JsonIgnore
-    protected Class<V> agentLinkClass;
-    @JsonSerialize(converter = DiscoveryBooleanConverter.class)
-    protected Class<? extends ProtocolInstanceDiscovery> instanceDiscoveryProvider;
+  public static final String ICON = "cogs";
+  public static final String ICON_COLOUR = "000000";
+  @JsonIgnore protected Class<U> protocolClass;
+  @JsonIgnore protected Class<V> agentLinkClass;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    protected AgentDescriptor(@JsonProperty("name") String name,
-                              @JsonProperty("icon") String icon,
-                              @JsonProperty("colour") String colour,
-                              @JsonProperty("type") Class<T> type) {
-        super(name, icon, colour);
-        this.type = type;
-    }
+  @JsonSerialize(converter = DiscoveryBooleanConverter.class)
+  protected Class<? extends ProtocolInstanceDiscovery> instanceDiscoveryProvider;
 
-    public AgentDescriptor(Class<T> agentClass, Class<U> protocolClass, Class<V> agentLinkClass) {
-        this(agentClass, protocolClass, agentLinkClass, null);
-    }
+  @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+  protected AgentDescriptor(
+      @JsonProperty("name") String name,
+      @JsonProperty("icon") String icon,
+      @JsonProperty("colour") String colour,
+      @JsonProperty("type") Class<T> type) {
+    super(name, icon, colour);
+    this.type = type;
+  }
 
-    public AgentDescriptor(Class<T> agentClass, Class<U> protocolClass, Class<V> agentLinkClass, Class<? extends ProtocolInstanceDiscovery> instanceDiscoveryProvider) {
-        super(ICON, ICON_COLOUR, agentClass);
-        this.protocolClass = protocolClass;
-        this.agentLinkClass = agentLinkClass;
-        this.instanceDiscoveryProvider = instanceDiscoveryProvider;
-    }
+  public AgentDescriptor(Class<T> agentClass, Class<U> protocolClass, Class<V> agentLinkClass) {
+    this(agentClass, protocolClass, agentLinkClass, null);
+  }
 
-    public Class<? extends ProtocolInstanceDiscovery> getInstanceDiscoveryProvider() {
-        return instanceDiscoveryProvider;
-    }
+  public AgentDescriptor(
+      Class<T> agentClass,
+      Class<U> protocolClass,
+      Class<V> agentLinkClass,
+      Class<? extends ProtocolInstanceDiscovery> instanceDiscoveryProvider) {
+    super(ICON, ICON_COLOUR, agentClass);
+    this.protocolClass = protocolClass;
+    this.agentLinkClass = agentLinkClass;
+    this.instanceDiscoveryProvider = instanceDiscoveryProvider;
+  }
 
-    public boolean isInstanceDiscovery() {
-        return instanceDiscoveryProvider != null;
-    }
+  public Class<? extends ProtocolInstanceDiscovery> getInstanceDiscoveryProvider() {
+    return instanceDiscoveryProvider;
+  }
 
-    @JsonProperty
-    public boolean isAssetDiscovery() {
-        return ProtocolAssetDiscovery.class.isAssignableFrom(protocolClass);
-    }
+  public boolean isInstanceDiscovery() {
+    return instanceDiscoveryProvider != null;
+  }
 
-    @JsonProperty
-    public boolean isAssetImport() {
-        return ProtocolAssetImport.class.isAssignableFrom(protocolClass);
-    }
+  @JsonProperty
+  public boolean isAssetDiscovery() {
+    return ProtocolAssetDiscovery.class.isAssignableFrom(protocolClass);
+  }
 
-    @JsonProperty
-    public String getAgentLinkType() {
-        return agentLinkClass.getSimpleName();
-    }
+  @JsonProperty
+  public boolean isAssetImport() {
+    return ProtocolAssetImport.class.isAssignableFrom(protocolClass);
+  }
 
-    public Class<U> getProtocolClass() {
-        return protocolClass;
-    }
+  @JsonProperty
+  public String getAgentLinkType() {
+    return agentLinkClass.getSimpleName();
+  }
 
-    public Class<V> getAgentLinkClass() {
-        return agentLinkClass;
-    }
+  public Class<U> getProtocolClass() {
+    return protocolClass;
+  }
 
-    public Class<? extends ProtocolInstanceDiscovery> getInstanceDiscoveryProviderClass() {
-        return instanceDiscoveryProvider;
-    }
+  public Class<V> getAgentLinkClass() {
+    return agentLinkClass;
+  }
+
+  public Class<? extends ProtocolInstanceDiscovery> getInstanceDiscoveryProviderClass() {
+    return instanceDiscoveryProvider;
+  }
 }

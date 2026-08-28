@@ -5,7 +5,6 @@
 # Please see deploy.yml for configuration details for each service.
 #
 services:
-
   map:
     extends:
       file: deploy.yml

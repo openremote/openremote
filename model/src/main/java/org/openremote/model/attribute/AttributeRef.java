@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,94 +12,88 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.attribute;
+
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import org.openremote.model.Constants;
-
 import java.io.Serializable;
-
-import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
+import org.openremote.model.Constants;
 
 /**
  * A reference to an entity and an {@link Attribute}.
- * <p>
- * The {@link #id} and {@link #name} are required to identify an asset's attribute.
- * <p>
- * Two attribute references are {@link #equals} if they reference the same asset
- * and attribute.
+ *
+ * <p>The {@link #id} and {@link #name} are required to identify an asset's attribute.
+ *
+ * <p>Two attribute references are {@link #equals} if they reference the same asset and attribute.
  */
 public class AttributeRef implements Serializable {
 
-    @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.id.Pattern}")
-    @Schema(description = "The asset identifier", example = "7Bt8M3cXEP6BHPh8r47DYf")
-    protected String id;
+  @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.id.Pattern}") @Schema(description = "The asset identifier", example = "7Bt8M3cXEP6BHPh8r47DYf")
+  protected String id;
 
-    @NotBlank(message = "{Asset.valueHolder.name.NotBlank}")
-    @Pattern(regexp = "^\\w+$")
-    @Schema(description = "The attribute name", example = "location")
-    protected String name;
+  @NotBlank(message = "{Asset.valueHolder.name.NotBlank}") @Pattern(regexp = "^\\w+$") @Schema(description = "The attribute name", example = "location")
+  protected String name;
 
-    /**
-     * Constructs an attribute reference.
+  /**
+   * Constructs an attribute reference.
+   *
+   * @param id the asset identifier
+   * @param name the attribute name
+   */
+  @JsonCreator
+  public AttributeRef(@JsonProperty("id") String id, @JsonProperty("name") String name) {
+    requireNonNullAndNonEmpty(id);
+    requireNonNullAndNonEmpty(name);
+    this.id = id;
+    this.name = name;
+  }
 
-     * @param id the asset identifier
-     * @param name the attribute name
-     */
-    @JsonCreator
-    public AttributeRef(@JsonProperty("id") String id, @JsonProperty("name") String name) {
-        requireNonNullAndNonEmpty(id);
-        requireNonNullAndNonEmpty(name);
-        this.id = id;
-        this.name = name;
-    }
+  /**
+   * Returns the asset identifier.
+   *
+   * @return the asset identifier.
+   */
+  @JsonProperty
+  public String getId() {
+    return id;
+  }
 
-    /**
-     * Returns the asset identifier.
-     *
-     * @return the asset identifier.
-     */
-    @JsonProperty
-    public String getId() {
-        return id;
-    }
+  /**
+   * Returns the attribute name.
+   *
+   * @return the attribute name.
+   */
+  @JsonProperty
+  public String getName() {
+    return name;
+  }
 
-    /**
-     * Returns the attribute name.
-     *
-     * @return the attribute name.
-     */
-    @JsonProperty
-    public String getName() {
-        return name;
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    AttributeRef that = (AttributeRef) o;
+    return id.equals(that.id) && name.equals(that.name);
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AttributeRef that = (AttributeRef) o;
-        return id.equals(that.id) && name.equals(that.name);
-    }
+  @Override
+  public int hashCode() {
+    int result = id.hashCode();
+    result = 31 * result + name.hashCode();
+    return result;
+  }
 
-    @Override
-    public int hashCode() {
-        int result = id.hashCode();
-        result = 31 * result + name.hashCode();
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "id='" + id + '\'' +
-            ", name='" + name + '\'' +
-            '}';
-    }
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "{" + "id='" + id + '\'' + ", name='" + name + '\'' + '}';
+  }
 }

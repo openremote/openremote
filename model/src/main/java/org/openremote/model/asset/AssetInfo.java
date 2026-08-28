@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,36 +12,37 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.time.Instant;
 
 public interface AssetInfo {
 
-    @JsonProperty
-    String getId();
+  @JsonProperty
+  String getId();
 
-    @JsonProperty
-    String getRealm();
+  @JsonProperty
+  String getRealm();
 
-    @JsonProperty
-    String getParentId();
+  @JsonProperty
+  String getParentId();
 
-    @JsonProperty
-    String[] getPath();
+  @JsonProperty
+  String[] getPath();
 
-    String[] getAttributeNames();
+  String[] getAttributeNames();
 
-    String getAssetName();
+  String getAssetName();
 
-    String getAssetType();
+  String getAssetType();
 
-    Class<? extends Asset> getAssetClass();
+  Class<? extends Asset> getAssetClass();
 
-    @JsonProperty
-    Instant getCreatedOn();
+  @JsonProperty
+  Instant getCreatedOn();
 }

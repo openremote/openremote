@@ -5,7 +5,7 @@ on:
     inputs:
       COMMIT:
         type: string
-        description: 'Repo branch or commit SHA to checkout'
+        description: "Repo branch or commit SHA to checkout"
       skip:
         type: boolean
         description: Skip condition to allow branch protection checks to pass

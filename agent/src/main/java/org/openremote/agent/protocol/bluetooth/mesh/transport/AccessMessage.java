@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
@@ -25,49 +24,49 @@ import java.util.UUID;
 
 public final class AccessMessage extends Message {
 
-    private UUID label;                                // Label UUID for destination address
-    protected Map<Integer, byte[]> lowerTransportAccessPdu = new HashMap<>();
-    private byte[] accessPdu;
-    private byte[] transportPdu;
+  private UUID label; // Label UUID for destination address
+  protected Map<Integer, byte[]> lowerTransportAccessPdu = new HashMap<>();
+  private byte[] accessPdu;
+  private byte[] transportPdu;
 
-    public AccessMessage() {
-        this.ctl = 0;
-    }
+  public AccessMessage() {
+    this.ctl = 0;
+  }
 
-    @Override
-    public int getCtl() {
-        return ctl;
-    }
+  @Override
+  public int getCtl() {
+    return ctl;
+  }
 
-    public UUID getLabel() {
-        return label;
-    }
+  public UUID getLabel() {
+    return label;
+  }
 
-    public void setLabel(final UUID label) {
-        this.label = label;
-    }
+  public void setLabel(final UUID label) {
+    this.label = label;
+  }
 
-    public final byte[] getAccessPdu() {
-        return accessPdu;
-    }
+  public final byte[] getAccessPdu() {
+    return accessPdu;
+  }
 
-    public final void setAccessPdu(final byte[] accessPdu) {
-        this.accessPdu = accessPdu;
-    }
+  public final void setAccessPdu(final byte[] accessPdu) {
+    this.accessPdu = accessPdu;
+  }
 
-    public final byte[] getUpperTransportPdu() {
-        return transportPdu;
-    }
+  public final byte[] getUpperTransportPdu() {
+    return transportPdu;
+  }
 
-    public final void setUpperTransportPdu(final byte[] transportPdu) {
-        this.transportPdu = transportPdu;
-    }
+  public final void setUpperTransportPdu(final byte[] transportPdu) {
+    this.transportPdu = transportPdu;
+  }
 
-    public final Map<Integer, byte[]> getLowerTransportAccessPdu() {
-        return lowerTransportAccessPdu;
-    }
+  public final Map<Integer, byte[]> getLowerTransportAccessPdu() {
+    return lowerTransportAccessPdu;
+  }
 
-    public final void setLowerTransportAccessPdu(final Map<Integer, byte[]> lowerTransportAccessPdu) {
-        this.lowerTransportAccessPdu = lowerTransportAccessPdu;
-    }
+  public final void setLowerTransportAccessPdu(final Map<Integer, byte[]> lowerTransportAccessPdu) {
+    this.lowerTransportAccessPdu = lowerTransportAccessPdu;
+  }
 }

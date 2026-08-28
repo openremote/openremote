@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.jackson;
 
@@ -23,43 +22,43 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DatabindContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
+import java.io.IOException;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.IOException;
-
-/**
- * Jackson 2 resolver used by RESTEasy's Jackson provider while the model migrates to Jackson 3.
- */
+/** Jackson 2 resolver used by RESTEasy's Jackson provider while the model migrates to Jackson 3. */
 public class AssetTypeIdResolverJackson2 extends TypeIdResolverBase {
 
-    @Override
-    public String idFromValue(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (!(value instanceof Asset)) {
-            throw new IllegalArgumentException("Type must be an asset type");
-        }
-        return ((Asset<?>)value).getType();
+  @Override
+  public String idFromValue(Object value) {
+    if (value == null) {
+      return null;
     }
+    if (!(value instanceof Asset)) {
+      throw new IllegalArgumentException("Type must be an asset type");
+    }
+    return ((Asset<?>) value).getType();
+  }
 
-    @Override
-    public String idFromValueAndType(Object value, Class<?> suggestedType) {
-        return idFromValue(value);
-    }
+  @Override
+  public String idFromValueAndType(Object value, Class<?> suggestedType) {
+    return idFromValue(value);
+  }
 
-    @Override
-    public JsonTypeInfo.Id getMechanism() {
-        return JsonTypeInfo.Id.CUSTOM;
-    }
+  @Override
+  public JsonTypeInfo.Id getMechanism() {
+    return JsonTypeInfo.Id.CUSTOM;
+  }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    @Override
-    public JavaType typeFromId(DatabindContext context, String id) throws IOException {
-        Class<?> assetClass = ValueUtil.getAssetDescriptor(id).map(AssetDescriptor::getType).orElse((Class) ThingAsset.class);
-        return context.constructType(assetClass);
-    }
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  @Override
+  public JavaType typeFromId(DatabindContext context, String id) throws IOException {
+    Class<?> assetClass =
+        ValueUtil.getAssetDescriptor(id)
+            .map(AssetDescriptor::getType)
+            .orElse((Class) ThingAsset.class);
+    return context.constructType(assetClass);
+  }
 }

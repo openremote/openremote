@@ -1,7 +1,25 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
 import assets, { commonAttrs, thing, weather } from "./fixtures/data/assets.js";
-import { AssetModelUtil, WellknownMetaItems } from "@openremote/model";
+import { AssetModelUtil, type WellknownMetaItems } from "@openremote/model";
 // `@openremote/core` depends on or-icon and isn't supported in nodejs
 import * as Util from "@openremote/core/lib/util";
 
@@ -85,12 +103,10 @@ test("Toggle read-only for two attributes on a Weather asset", async ({ page, ma
   await page.getByRole("button", { name: "Expand all" }).click();
 
   await assetViewer.getAttributeLocator("temperature").click();
-  await assetViewer.getConfigurationItemLocator("temperature", "Read only")
-    .locator("label").click();
+  await assetViewer.getConfigurationItemLocator("temperature", "Read only").locator("label").click();
 
   await assetViewer.getAttributeLocator("humidity").click();
-  await assetViewer.getConfigurationItemLocator("humidity", "Read only")
-    .locator("label").click();
+  await assetViewer.getConfigurationItemLocator("humidity", "Read only").locator("label").click();
 
   const saveBtn = page.getByRole("button", { name: "Save" });
   await saveBtn.click();
@@ -122,16 +138,8 @@ test(`Set "ruleState" and "storeDataPoints" for Weather asset attributes`, async
   await assetViewer.switchMode("modify");
   await page.getByRole("button", { name: "Expand all" }).click();
 
-  await assetViewer.addConfigurationItems(
-    "temperature",
-    "ruleState",
-    "storeDataPoints",
-  );
-  await assetViewer.addConfigurationItems(
-    "humidity",
-    "ruleState",
-    "storeDataPoints",
-  );
+  await assetViewer.addConfigurationItems("temperature", "ruleState", "storeDataPoints");
+  await assetViewer.addConfigurationItems("humidity", "ruleState", "storeDataPoints");
 
   const saveBtn = page.getByRole("button", { name: "Save" });
   await saveBtn.click();
@@ -188,14 +196,15 @@ test.describe("Parent asset", () => {
 
     await page.getByText("Parent Edit").getByRole("button").click();
     await page.getByLabel("Select parent asset").getByText("Parent").click();
-    await page.getByLabel("Select parent asset").getByRole("button", {
-      name: "OK",
-    }).click();
+    await page
+      .getByLabel("Select parent asset")
+      .getByRole("button", {
+        name: "OK",
+      })
+      .click();
     await page.getByRole("button", { name: "Save" }).click();
 
-    await expect(page.getByRole("textbox", { name: "Parent" })).toHaveValue(
-      "Parent",
-    );
+    await expect(page.getByRole("textbox", { name: "Parent" })).toHaveValue("Parent");
   });
 
   /**
@@ -213,9 +222,12 @@ test.describe("Parent asset", () => {
     await assetViewer.switchMode("modify");
 
     await page.getByText("Parent Edit").getByRole("button").click();
-    await page.getByLabel("Select parent asset").getByRole("button", {
-      name: "NONE",
-    }).click();
+    await page
+      .getByLabel("Select parent asset")
+      .getByRole("button", {
+        name: "NONE",
+      })
+      .click();
     await page.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByRole("textbox", { name: "Parent" })).toBeEmpty();
@@ -243,19 +255,14 @@ test.describe("Attributes", () => {
 
     const dialog = page.getByLabel("Add attribute");
     await dialog.getByLabel("Name").fill("test");
-    await dialog.getByRole("combobox", { name: "Value type", exact: true })
-      .fill("Int");
+    await dialog.getByRole("combobox", { name: "Value type", exact: true }).fill("Int");
     await dialog.getByRole("option", { name: "Integer", exact: true }).click();
     await dialog.getByRole("button", { name: "Add", exact: true }).click();
     await page.getByRole("button", { name: "Save", exact: true }).click();
 
     await expect(assetViewer.getAttributeLocator("test")).toBeVisible();
-    await expect(assetViewer.getAttributeLocator("test")).toContainText(
-      /Integer/,
-    );
-    await expect(
-      assetViewer.getAttributeLocator("test").getByRole("spinbutton"),
-    ).toBeVisible();
+    await expect(assetViewer.getAttributeLocator("test")).toContainText(/Integer/);
+    await expect(assetViewer.getAttributeLocator("test").getByRole("spinbutton")).toBeVisible();
   });
 
   /**
@@ -309,16 +316,11 @@ test.describe("Configuration items", () => {
     await assetViewer.switchMode("modify");
 
     const configurationItems = AssetModelUtil.getMetaItemDescriptors().map(
-      ({ name }) => name as `${WellknownMetaItems}`,
+      ({ name }) => name as `${WellknownMetaItems}`
     );
     await assetViewer.addConfigurationItems("notes", ...configurationItems);
     for (const item of configurationItems) {
-      await expect(
-        assetViewer.getConfigurationItemLocator(
-          "notes",
-          Util.camelCaseToSentenceCase(item),
-        ),
-      ).toBeVisible();
+      await expect(assetViewer.getConfigurationItemLocator("notes", Util.camelCaseToSentenceCase(item))).toBeVisible();
     }
   });
 
@@ -334,7 +336,7 @@ test.describe("Configuration items", () => {
         number: 0,
         boolean: false,
         object: {},
-      },
+      }
     ): unknown {
       if (dimensions > 0) {
         return [valueForType(type, 0, { string, number, boolean, object })];
@@ -385,9 +387,7 @@ test.describe("Configuration items", () => {
         attributes: {
           ...commonAttrs,
           notes: {
-            meta: Object.fromEntries([
-              ...primitiveItemsWithValues, /*, ...complexItemsWithValues */
-            ]),
+            meta: Object.fromEntries([...primitiveItemsWithValues /*, ...complexItemsWithValues */]),
           },
         },
       });
@@ -402,20 +402,18 @@ test.describe("Configuration items", () => {
      * @then The configuration items should be visible
      */
     test("can be modified", async ({ page, assetViewer }) => {
-      const updatedPrimitivesWithValues = Util.getPrimitiveMetaItems().map(
-        (m) => {
-          const { jsonType } = AssetModelUtil.getValueDescriptor(m.type)!;
-          return [
-            m.name,
-            valueForType(jsonType, 0, {
-              boolean: false,
-              number: 7,
-              string: "test",
-              object: {},
-            }),
-          ];
-        },
-      ) as [`${WellknownMetaItems}`, any][];
+      const updatedPrimitivesWithValues = Util.getPrimitiveMetaItems().map((m) => {
+        const { jsonType } = AssetModelUtil.getValueDescriptor(m.type)!;
+        return [
+          m.name,
+          valueForType(jsonType, 0, {
+            boolean: false,
+            number: 7,
+            string: "test",
+            object: {},
+          }),
+        ];
+      }) as [`${WellknownMetaItems}`, any][];
       await assetViewer.expandAttribute("notes");
 
       // Modify primitive configuration items
@@ -439,18 +437,13 @@ test.describe("Configuration items", () => {
         const itemLocator = assetViewer.getConfigurationItemLocator("notes");
         const options = { name: Util.camelCaseToSentenceCase(item) };
         if (typeof value === "string") {
-          await expect(itemLocator.getByRole("textbox", options)).toHaveValue(
-            value,
-          );
+          await expect(itemLocator.getByRole("textbox", options)).toHaveValue(value);
         } else if (typeof value === "number") {
-          await expect(itemLocator.getByRole("spinbutton", options))
-            .toHaveValue(`${value}`);
+          await expect(itemLocator.getByRole("spinbutton", options)).toHaveValue(`${value}`);
         } else if (value) {
-          await expect(itemLocator.getByRole("checkbox", options)).not
-            .toBeChecked();
+          await expect(itemLocator.getByRole("checkbox", options)).not.toBeChecked();
         } else {
-          await expect(itemLocator.getByRole("checkbox", options))
-            .toBeChecked();
+          await expect(itemLocator.getByRole("checkbox", options)).toBeChecked();
         }
       }
       // Modify complex configuration items
@@ -463,24 +456,18 @@ test.describe("Configuration items", () => {
      */
     test("can be removed", async ({ page, assetViewer }) => {
       // Remove primitive configuration items
-      await assetViewer.removeConfigurationItems(
-        "notes",
-        ...primitiveItemsWithValues.map(([item]) => item),
-      );
+      await assetViewer.removeConfigurationItems("notes", ...primitiveItemsWithValues.map(([item]) => item));
       // Remove complex configuration items
       // await assetViewer.removeConfigurationItems("notes", ...complexItemsWithValues.map(([item]) => item));
 
       await page.getByRole("button", { name: "Save" }).click();
 
       const configurationItems = AssetModelUtil.getMetaItemDescriptors().map(
-        ({ name }) => name as `${WellknownMetaItems}`,
+        ({ name }) => name as `${WellknownMetaItems}`
       );
       for (const item of configurationItems) {
         await expect(
-          assetViewer.getConfigurationItemLocator(
-            "notes",
-            Util.camelCaseToSentenceCase(item),
-          ),
+          assetViewer.getConfigurationItemLocator("notes", Util.camelCaseToSentenceCase(item))
         ).not.toBeVisible();
       }
     });

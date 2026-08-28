@@ -1,132 +1,132 @@
 plugins {
-    id 'java-library'
-    id 'maven-publish'
-    id 'signing'
+  id 'java-library'
+  id 'maven-publish'
+  id 'signing'
 }
 
 dependencies {
-    api libs.jacksonDatabind
-    api libs.jacksonModuleParameterNames
-    api libs.jackson3Databind
+  api libs.jacksonDatabind
+  api libs.jacksonModuleParameterNames
+  api libs.jackson3Databind
 
-    api libs.hibernateCore
-    api libs.hibernateValidator
-    api libs.jakartaElApi
-    api libs.jakartaAnnotationApi
-    api libs.jakartaWsRsApi
-    api libs.resteasyCacheCore
+  api libs.hibernateCore
+  api libs.hibernateValidator
+  api libs.jakartaElApi
+  api libs.jakartaAnnotationApi
+  api libs.jakartaWsRsApi
+  api libs.resteasyCacheCore
 
-    api libs.keycloakCore
+  api libs.keycloakCore
 
-    api libs.geotoolsMain
-    api libs.jaywayJsonPath
+  api libs.geotoolsMain
+  api libs.jaywayJsonPath
 
-    api libs.easyRulesCore
-    api libs.ical4j
-    api libs.reflections
-    api libs.guava
+  api libs.easyRulesCore
+  api libs.ical4j
+  api libs.reflections
+  api libs.guava
 
-    api libs.checkerQual
+  api libs.checkerQual
 
-    api libs.swaggerAnnotations
+  api libs.swaggerAnnotations
 
-    api libs.victoolsJsonschemaGenerator
-    api libs.victoolsJsonschemaModuleJackson
-    api libs.victoolsJsonschemaModuleJakartaValidation
+  api libs.victoolsJsonschemaGenerator
+  api libs.victoolsJsonschemaModuleJackson
+  api libs.victoolsJsonschemaModuleJakartaValidation
 
-    api libs.classgraph
-    api libs.micrometerCore
-    api libs.friendlyId
-    api libs.javaUuidGenerator
+  api libs.classgraph
+  api libs.micrometerCore
+  api libs.friendlyId
+  api libs.javaUuidGenerator
 
-    api libs.exp4j
+  api libs.exp4j
 
-    dependencies {
-        testImplementation libs.jsonassert
-        testImplementation libs.junitJupiterParams
-        testImplementation libs.junitJupiterApi
-        testImplementation libs.mockitoCore
-        testRuntimeOnly libs.jakartaEl
-        testRuntimeOnly libs.junitJupiterEngine
-        testRuntimeOnly "org.junit.platform:junit-platform-launcher"
-    }
+  dependencies {
+    testImplementation libs.jsonassert
+    testImplementation libs.junitJupiterParams
+    testImplementation libs.junitJupiterApi
+    testImplementation libs.mockitoCore
+    testRuntimeOnly libs.jakartaEl
+    testRuntimeOnly libs.junitJupiterEngine
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+  }
 }
 
 tasks.withType(Test) {
-    environment("OR_LOGGING_CONFIG_FILE", "logging-dev.properties")
+  environment("OR_LOGGING_CONFIG_FILE", "logging-dev.properties")
 }
 
 test {}
 
 base {
-    archivesName = "openremote-${project.name}"
+  archivesName = "openremote-${project.name}"
 }
 
 jar {
-    from sourceSets.main.allJava
+  from sourceSets.main.allJava
 }
 
 javadoc {
-    failOnError = false
+  failOnError = false
 }
 
 java {
-    withJavadocJar()
-    withSourcesJar()
+  withJavadocJar()
+  withSourcesJar()
 }
 
 publishing {
-    publications {
-        maven(MavenPublication) {
-            group = "io.openremote"
-            artifactId = "openremote-${project.name}"
-            from components.java
-            pom {
-                name = 'OpenRemote Model'
-                description = 'Provides core model classes used within OpenRemote; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
-                url = 'https://github.com/openremote/openremote'
-                licenses {
-                    license {
-                        name = 'GNU Affero General Public License v3.0'
-                        url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'developers'
-                        name = 'Developers'
-                        email = 'developers@openremote.io'
-                        organization = 'OpenRemote'
-                        organizationUrl = 'https://openremote.io'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:git://github.com/openremote/openremote.git'
-                    developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
-                    url = 'https://github.com/openremote/openremote/tree/master'
-                }
-            }
+  publications {
+    maven(MavenPublication) {
+      group = "io.openremote"
+      artifactId = "openremote-${project.name}"
+      from components.java
+      pom {
+        name = 'OpenRemote Model'
+        description = 'Provides core model classes used within OpenRemote; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
+        url = 'https://github.com/openremote/openremote'
+        licenses {
+          license {
+            name = 'GNU Affero General Public License v3.0'
+            url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
+          }
         }
+        developers {
+          developer {
+            id = 'developers'
+            name = 'Developers'
+            email = 'developers@openremote.io'
+            organization = 'OpenRemote'
+            organizationUrl = 'https://openremote.io'
+          }
+        }
+        scm {
+          connection = 'scm:git:git://github.com/openremote/openremote.git'
+          developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
+          url = 'https://github.com/openremote/openremote/tree/master'
+        }
+      }
     }
+  }
 
-    repositories {
-        maven {
-            if (!version.endsWith('-LOCAL')) {
-                credentials {
-                    username = findProperty("publishUsername")
-                    password = findProperty("publishPassword")
-                }
-            }
-            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
+  repositories {
+    maven {
+      if (!version.endsWith('-LOCAL')) {
+        credentials {
+          username = findProperty("publishUsername")
+          password = findProperty("publishPassword")
         }
+      }
+      url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
     }
+  }
 }
 
 signing {
-    def signingKey = findProperty("signingKey")
-    def signingPassword = findProperty("signingPassword")
-    if (signingKey && signingPassword) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign publishing.publications.maven
-    }
+  def signingKey = findProperty("signingKey")
+  def signingPassword = findProperty("signingPassword")
+  if (signingKey && signingPassword) {
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.maven
+  }
 }

@@ -4,13 +4,7 @@
     "target": "es6",
     "module": "esNext",
     "moduleResolution": "node",
-    "lib": [
-      "dom",
-      "es2017",
-      "es2019",
-      "es2021",
-      "es2022"
-    ],
+    "lib": ["dom", "es2017", "es2019", "es2021", "es2022"],
     "strict": true,
     "declaration": true,
     "sourceMap": true,

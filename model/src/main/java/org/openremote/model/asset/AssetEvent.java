@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,117 +12,129 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.SharedEvent;
-
 import java.time.Instant;
 import java.util.Arrays;
+import org.openremote.model.event.shared.SharedEvent;
 
 /**
- * This event is used when an {@link Asset} is created, read, updated or deleted (updates are only fired when one or more top
- * level {@link Asset} properties are changed (including attributes). Attribute changes are handled via
- * the {@link org.openremote.model.attribute.AttributeEvent}. When the cause is {@link Cause#READ} then the asset's
- * {@link org.openremote.model.attribute.Attribute}s will be included in the asset otherwise they are not.
+ * This event is used when an {@link Asset} is created, read, updated or deleted (updates are only
+ * fired when one or more top level {@link Asset} properties are changed (including attributes).
+ * Attribute changes are handled via the {@link org.openremote.model.attribute.AttributeEvent}. When
+ * the cause is {@link Cause#READ} then the asset's {@link
+ * org.openremote.model.attribute.Attribute}s will be included in the asset otherwise they are not.
  */
 @JsonAutoDetect(getterVisibility = JsonAutoDetect.Visibility.PUBLIC_ONLY)
 public class AssetEvent extends SharedEvent implements AssetInfo {
 
-    public enum Cause {
-        CREATE,
-        READ,
-        UPDATE,
-        DELETE
-    }
+  public enum Cause {
+    CREATE,
+    READ,
+    UPDATE,
+    DELETE
+  }
 
-    @JsonProperty
-    protected Cause cause;
-    @JsonProperty
-    protected Asset<?> asset;
-    @JsonProperty
-    protected String[] updatedProperties;
+  @JsonProperty protected Cause cause;
+  @JsonProperty protected Asset<?> asset;
+  @JsonProperty protected String[] updatedProperties;
 
-    @JsonCreator
-    public AssetEvent(@JsonProperty("cause") Cause cause, @JsonProperty("asset") Asset<?> asset, @JsonProperty("updatedProperties") String[] updatedProperties) {
-        this.cause = cause;
-        this.asset = asset;
-        this.updatedProperties = updatedProperties;
-    }
+  @JsonCreator
+  public AssetEvent(
+      @JsonProperty("cause") Cause cause,
+      @JsonProperty("asset") Asset<?> asset,
+      @JsonProperty("updatedProperties") String[] updatedProperties) {
+    this.cause = cause;
+    this.asset = asset;
+    this.updatedProperties = updatedProperties;
+  }
 
-    public String getId() {
-        return asset.id;
-    }
+  public String getId() {
+    return asset.id;
+  }
 
-    public String getAssetName() {
-        return asset.name;
-    }
+  public String getAssetName() {
+    return asset.name;
+  }
 
-    @Override
-    public String getAssetType() {
-        return asset.type;
-    }
+  @Override
+  public String getAssetType() {
+    return asset.type;
+  }
 
-    @Override
-    public Class<? extends Asset> getAssetClass() {
-        return asset.getAssetClass();
-    }
+  @Override
+  public Class<? extends Asset> getAssetClass() {
+    return asset.getAssetClass();
+  }
 
-    @Override
-    public Instant getCreatedOn() {
-        return asset.createdOn;
-    }
+  @Override
+  public Instant getCreatedOn() {
+    return asset.createdOn;
+  }
 
-    @Override
-    public String getRealm() {
-        return asset.realm;
-    }
+  @Override
+  public String getRealm() {
+    return asset.realm;
+  }
 
-    @Override
-    public String getParentId() {
-        return asset.parentId;
-    }
+  @Override
+  public String getParentId() {
+    return asset.parentId;
+  }
 
-    @Override
-    public String[] getPath() {
-        return asset.getPath();
-    }
+  @Override
+  public String[] getPath() {
+    return asset.getPath();
+  }
 
-    @Override
-    public String[] getAttributeNames() {
-        return updatedProperties != null && Arrays.asList(updatedProperties).contains("attributes") && asset != null && asset.attributes != null ? asset.attributes.keySet().toArray(new String[0]) : new String[0];
-    }
+  @Override
+  public String[] getAttributeNames() {
+    return updatedProperties != null
+            && Arrays.asList(updatedProperties).contains("attributes")
+            && asset != null
+            && asset.attributes != null
+        ? asset.attributes.keySet().toArray(new String[0])
+        : new String[0];
+  }
 
-    @JsonProperty
-    public Cause getCause() {
-        return cause;
-    }
+  @JsonProperty
+  public Cause getCause() {
+    return cause;
+  }
 
-    @JsonProperty
-    public Asset<?> getAsset() {
-        return asset;
-    }
+  @JsonProperty
+  public Asset<?> getAsset() {
+    return asset;
+  }
 
-    @JsonProperty
-    public String[] getUpdatedProperties() {
-        return updatedProperties;
-    }
+  @JsonProperty
+  public String[] getUpdatedProperties() {
+    return updatedProperties;
+  }
 
-    public boolean isAccessPublicRead() {
-        return asset.isAccessPublicRead();
-    }
+  public boolean isAccessPublicRead() {
+    return asset.isAccessPublicRead();
+  }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "cause=" + cause +
-                ", asset=" + asset +
-                ", updatedProperties=" + Arrays.toString(updatedProperties) +
-                ", timestamp=" + timestamp +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return getClass().getSimpleName()
+        + "{"
+        + "cause="
+        + cause
+        + ", asset="
+        + asset
+        + ", updatedProperties="
+        + Arrays.toString(updatedProperties)
+        + ", timestamp="
+        + timestamp
+        + '}';
+  }
 }

@@ -3,8 +3,8 @@
 # optional SSH access security group and optional VPC peer accepter role or peering request.
 # ---------------------------------------------------------------------------------------------------------------------
 
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Creates standard OR VPC, subnets, route tables and IGW; optionally create VPC Peering request or acceptor role'
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Creates standard OR VPC, subnets, route tables and IGW; optionally create VPC Peering request or acceptor role"
 Parameters:
   IPV4CIDR:
     Description: IPv4 CIDR for VPC
@@ -65,41 +65,41 @@ Resources:
     Type: AWS::IAM::Role
     Condition: CreateVPCAcceptRole
     Properties:
-      RoleName: !Join [ "-", [ "or-vpc-peer", !Ref "AWS::Region" ] ]
+      RoleName: !Join ["-", ["or-vpc-peer", !Ref "AWS::Region"]]
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Principal:
               AWS: "*"
             Action:
-              - 'sts:AssumeRole'
+              - "sts:AssumeRole"
             Effect: Allow
             Condition:
               StringEquals:
-                'aws:PrincipalOrgID': o-dhb7rpaban
+                "aws:PrincipalOrgID": o-dhb7rpaban
       Path: /
       Policies:
         - PolicyName: root
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action: 'ec2:AcceptVpcPeeringConnection'
+                Action: "ec2:AcceptVpcPeeringConnection"
                 Resource:
-                  'Fn::Sub': 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${Vpc}'
-              - Action: 'ec2:AcceptVpcPeeringConnection'
+                  "Fn::Sub": "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${Vpc}"
+              - Action: "ec2:AcceptVpcPeeringConnection"
                 Condition:
                   StringEquals:
-                    'ec2:AccepterVpc':
-                      'Fn::Sub': 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${Vpc}'
+                    "ec2:AccepterVpc":
+                      "Fn::Sub": "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${Vpc}"
                 Effect: Allow
                 Resource:
-                  'Fn::Sub': >-
+                  "Fn::Sub": >-
                     arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-peering-connection/*
 
   # VPC Peering Request
   VpcPeeringConnection:
-    Type: 'AWS::EC2::VPCPeeringConnection'
+    Type: "AWS::EC2::VPCPeeringConnection"
     Condition: CreateVPCPeerRequest
     Properties:
       VpcId: !Ref Vpc
@@ -113,9 +113,9 @@ Resources:
     DependsOn: VpcCidrBlockIpv6
     Properties:
       VpcId: !Ref Vpc
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
-      CidrBlock: !Select [ 0, !Cidr [!Ref IPV4CIDR, 6, 8]]
-      Ipv6CidrBlock: !Select [1, !Cidr [!Select [0, !GetAtt 'Vpc.Ipv6CidrBlocks'], 7, 64]]
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Select [0, !Cidr [!Ref IPV4CIDR, 6, 8]]
+      Ipv6CidrBlock: !Select [1, !Cidr [!Select [0, !GetAtt "Vpc.Ipv6CidrBlocks"], 7, 64]]
       AssignIpv6AddressOnCreation: true
       MapPublicIpOnLaunch: true
       Tags:
@@ -127,9 +127,9 @@ Resources:
     DependsOn: VpcCidrBlockIpv6
     Properties:
       VpcId: !Ref Vpc
-      AvailabilityZone: !Select [ 1, !GetAZs '' ]
-      CidrBlock: !Select [ 1, !Cidr [!Ref IPV4CIDR, 6, 8]]
-      Ipv6CidrBlock: !Select [2, !Cidr [!Select [0, !GetAtt 'Vpc.Ipv6CidrBlocks'], 7, 64]]
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Select [1, !Cidr [!Ref IPV4CIDR, 6, 8]]
+      Ipv6CidrBlock: !Select [2, !Cidr [!Select [0, !GetAtt "Vpc.Ipv6CidrBlocks"], 7, 64]]
       AssignIpv6AddressOnCreation: true
       MapPublicIpOnLaunch: true
       Tags:
@@ -141,9 +141,9 @@ Resources:
     DependsOn: VpcCidrBlockIpv6
     Properties:
       VpcId: !Ref Vpc
-      AvailabilityZone: !Select [ 2, !GetAZs '' ]
-      CidrBlock: !Select [ 5, !Cidr [!Ref IPV4CIDR, 7, 8]]
-      Ipv6CidrBlock: !Select [6, !Cidr [!Select [0, !GetAtt 'Vpc.Ipv6CidrBlocks'], 8, 64]]
+      AvailabilityZone: !Select [2, !GetAZs ""]
+      CidrBlock: !Select [5, !Cidr [!Ref IPV4CIDR, 7, 8]]
+      Ipv6CidrBlock: !Select [6, !Cidr [!Select [0, !GetAtt "Vpc.Ipv6CidrBlocks"], 8, 64]]
       AssignIpv6AddressOnCreation: true
       MapPublicIpOnLaunch: true
       Tags:
@@ -155,9 +155,9 @@ Resources:
     DependsOn: VpcCidrBlockIpv6
     Properties:
       VpcId: !Ref Vpc
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
-      CidrBlock: !Select [ 2, !Cidr [!Ref IPV4CIDR, 6, 8]]
-      Ipv6CidrBlock: !Select [3, !Cidr [!Select [0, !GetAtt 'Vpc.Ipv6CidrBlocks'], 7, 64]]
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Select [2, !Cidr [!Ref IPV4CIDR, 6, 8]]
+      Ipv6CidrBlock: !Select [3, !Cidr [!Select [0, !GetAtt "Vpc.Ipv6CidrBlocks"], 7, 64]]
       AssignIpv6AddressOnCreation: true
       MapPublicIpOnLaunch: false
       Tags:
@@ -169,9 +169,9 @@ Resources:
     DependsOn: VpcCidrBlockIpv6
     Properties:
       VpcId: !Ref Vpc
-      AvailabilityZone: !Select [ 1, !GetAZs '' ]
-      CidrBlock: !Select [ 3, !Cidr [!Ref IPV4CIDR, 6, 8]]
-      Ipv6CidrBlock: !Select [4, !Cidr [!Select [0, !GetAtt 'Vpc.Ipv6CidrBlocks'], 7, 64]]
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Select [3, !Cidr [!Ref IPV4CIDR, 6, 8]]
+      Ipv6CidrBlock: !Select [4, !Cidr [!Select [0, !GetAtt "Vpc.Ipv6CidrBlocks"], 7, 64]]
       AssignIpv6AddressOnCreation: true
       MapPublicIpOnLaunch: false
       Tags:
@@ -183,9 +183,9 @@ Resources:
     DependsOn: VpcCidrBlockIpv6
     Properties:
       VpcId: !Ref Vpc
-      AvailabilityZone: !Select [ 2, !GetAZs '' ]
-      CidrBlock: !Select [ 6, !Cidr [!Ref IPV4CIDR, 7, 8]]
-      Ipv6CidrBlock: !Select [7, !Cidr [!Select [0, !GetAtt 'Vpc.Ipv6CidrBlocks'], 8, 64]]
+      AvailabilityZone: !Select [2, !GetAZs ""]
+      CidrBlock: !Select [6, !Cidr [!Ref IPV4CIDR, 7, 8]]
+      Ipv6CidrBlock: !Select [7, !Cidr [!Select [0, !GetAtt "Vpc.Ipv6CidrBlocks"], 8, 64]]
       AssignIpv6AddressOnCreation: true
       MapPublicIpOnLaunch: false
       Tags:

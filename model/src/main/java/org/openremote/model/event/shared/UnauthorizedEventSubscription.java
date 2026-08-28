@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,11 +12,15 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.event.shared;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.event.Event;
+import org.openremote.model.util.ValueUtil;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
@@ -30,79 +31,80 @@ import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.deser.std.StdDeserializer;
 import tools.jackson.databind.ser.std.StdSerializer;
-import org.openremote.model.event.Event;
-import org.openremote.model.util.ValueUtil;
 
 /**
  * The server returns this message when an {@link EventSubscription} failed.
- * <p>
- * Note that authorization might fail because the client doesn't have the necessary
- * access rights. It might also fail if the subscription is invalid, for example, if
- * a required filter is not supplied or if the filter is not valid.
+ *
+ * <p>Note that authorization might fail because the client doesn't have the necessary access
+ * rights. It might also fail if the subscription is invalid, for example, if a required filter is
+ * not supplied or if the filter is not valid.
  */
 @JsonSerialize(using = UnauthorizedEventSubscription.UnauthorizedEventSubscriptionSerializer.class)
-@JsonDeserialize(using = UnauthorizedEventSubscription.UnauthorizedEventSubscriptionDeserializer.class)
+@JsonDeserialize(
+    using = UnauthorizedEventSubscription.UnauthorizedEventSubscriptionDeserializer.class)
 public class UnauthorizedEventSubscription<E extends Event> {
 
-    public static class UnauthorizedEventSubscriptionSerializer extends StdSerializer<UnauthorizedEventSubscription> {
+  public static class UnauthorizedEventSubscriptionSerializer
+      extends StdSerializer<UnauthorizedEventSubscription> {
 
-        protected UnauthorizedEventSubscriptionSerializer() {
-            super(UnauthorizedEventSubscription.class);
-        }
-
-        @Override
-        public void serialize(UnauthorizedEventSubscription value, JsonGenerator gen, SerializationContext context) throws JacksonException {
-            gen.writeStartObject();
-            context.defaultSerializeProperty("subscription", value.subscription, gen);
-            gen.writeEndObject();
-        }
-    }
-
-    public static class UnauthorizedEventSubscriptionDeserializer extends StdDeserializer<UnauthorizedEventSubscription> {
-
-        protected UnauthorizedEventSubscriptionDeserializer() {
-            super(UnauthorizedEventSubscription.class);
-        }
-
-        @Override
-        public UnauthorizedEventSubscription deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
-            JsonNode node = ctxt.readTree(p);
-            JsonNode subscriptionNode = node.get("subscription");
-            EventSubscription subscription = null;
-
-            if (subscriptionNode != null && !subscriptionNode.isNull()) {
-                subscription = ValueUtil.convert(subscriptionNode, EventSubscription.class);
-            }
-
-            return new UnauthorizedEventSubscription(subscription);
-        }
-    }
-
-    public static final String MESSAGE_PREFIX = "UNAUTHORIZED:";
-
-    protected EventSubscription<E> subscription;
-
-    protected UnauthorizedEventSubscription() {
-    }
-
-    public UnauthorizedEventSubscription(EventSubscription<E> subscription) {
-        this.subscription = subscription;
-    }
-
-    @JsonProperty
-    public EventSubscription<E> getSubscription() {
-        return subscription;
-    }
-
-    @JsonProperty
-    public void setSubscription(EventSubscription<E> subscription) {
-        this.subscription = subscription;
+    protected UnauthorizedEventSubscriptionSerializer() {
+      super(UnauthorizedEventSubscription.class);
     }
 
     @Override
-    public String toString() {
-        return "UnauthorizedEventSubscription{" +
-                "subscription=" + subscription +
-                '}';
+    public void serialize(
+        UnauthorizedEventSubscription value, JsonGenerator gen, SerializationContext context)
+        throws JacksonException {
+      gen.writeStartObject();
+      context.defaultSerializeProperty("subscription", value.subscription, gen);
+      gen.writeEndObject();
     }
+  }
+
+  public static class UnauthorizedEventSubscriptionDeserializer
+      extends StdDeserializer<UnauthorizedEventSubscription> {
+
+    protected UnauthorizedEventSubscriptionDeserializer() {
+      super(UnauthorizedEventSubscription.class);
+    }
+
+    @Override
+    public UnauthorizedEventSubscription deserialize(JsonParser p, DeserializationContext ctxt)
+        throws JacksonException {
+      JsonNode node = ctxt.readTree(p);
+      JsonNode subscriptionNode = node.get("subscription");
+      EventSubscription subscription = null;
+
+      if (subscriptionNode != null && !subscriptionNode.isNull()) {
+        subscription = ValueUtil.convert(subscriptionNode, EventSubscription.class);
+      }
+
+      return new UnauthorizedEventSubscription(subscription);
+    }
+  }
+
+  public static final String MESSAGE_PREFIX = "UNAUTHORIZED:";
+
+  protected EventSubscription<E> subscription;
+
+  protected UnauthorizedEventSubscription() {}
+
+  public UnauthorizedEventSubscription(EventSubscription<E> subscription) {
+    this.subscription = subscription;
+  }
+
+  @JsonProperty
+  public EventSubscription<E> getSubscription() {
+    return subscription;
+  }
+
+  @JsonProperty
+  public void setSubscription(EventSubscription<E> subscription) {
+    this.subscription = subscription;
+  }
+
+  @Override
+  public String toString() {
+    return "UnauthorizedEventSubscription{" + "subscription=" + subscription + '}';
+  }
 }
