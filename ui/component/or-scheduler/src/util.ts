@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,19 +12,21 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { Frequency } from "rrule";
-import { ByRRulePartsKeys } from "./types";
+import type { Frequency } from "rrule";
+import type { ByRRulePartsKeys } from "./types";
 
 export const FREQUENCIES = {
-    YEARLY: "rrule.frequency.YEARLY",
-    MONTHLY: "rrule.frequency.MONTHLY",
-    WEEKLY: "rrule.frequency.WEEKLY",
-    DAILY: "rrule.frequency.DAILY",
-    HOURLY: "rrule.frequency.HOURLY",
-    MINUTELY: "rrule.frequency.MINUTELY",
-    SECONDLY: "rrule.frequency.SECONDLY",
+  YEARLY: "rrule.frequency.YEARLY",
+  MONTHLY: "rrule.frequency.MONTHLY",
+  WEEKLY: "rrule.frequency.WEEKLY",
+  DAILY: "rrule.frequency.DAILY",
+  HOURLY: "rrule.frequency.HOURLY",
+  MINUTELY: "rrule.frequency.MINUTELY",
+  SECONDLY: "rrule.frequency.SECONDLY",
 } as const satisfies Record<keyof typeof Frequency, string>;
 
 /**
@@ -35,14 +34,14 @@ export const FREQUENCIES = {
  * @link https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10
  */
 export const BY_RRULE_PARTS = [
-    "bymonth",
-    "byweekno",
-    "byyearday",
-    "bymonthday",
-    "byweekday",
-    "byhour",
-    "byminute",
-    "bysecond",
+  "bymonth",
+  "byweekno",
+  "byyearday",
+  "bymonthday",
+  "byweekday",
+  "byhour",
+  "byminute",
+  "bysecond",
 ] as const;
 
 type ByRRuleCombination = Record<keyof typeof Frequency, ByRRulePartsKeys[]>;
@@ -53,13 +52,13 @@ type ByRRuleCombination = Record<keyof typeof Frequency, ByRRulePartsKeys[]>;
  * @link https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10
  */
 export const RFC_STRICT_NOT_APPLICABLE = {
-    SECONDLY: ["byweekno"],
-    MINUTELY: ["byweekno"],
-    HOURLY: ["byweekno"],
-    DAILY: ["byweekno", "byyearday"],
-    WEEKLY: ["byweekno", "byyearday", "bymonthday"],
-    MONTHLY: ["byweekno", "byyearday"],
-    YEARLY: [],
+  SECONDLY: ["byweekno"],
+  MINUTELY: ["byweekno"],
+  HOURLY: ["byweekno"],
+  DAILY: ["byweekno", "byyearday"],
+  WEEKLY: ["byweekno", "byyearday", "bymonthday"],
+  MONTHLY: ["byweekno", "byyearday"],
+  YEARLY: [],
 } as const satisfies ByRRuleCombination;
 
 const COMMONLY_NOT_APPLICABLE = ["bymonth", "byweekno", "byyearday", "byhour", "byminute", "bysecond"] as const;
@@ -68,48 +67,48 @@ const COMMONLY_NOT_APPLICABLE = ["bymonth", "byweekno", "byyearday", "byhour", "
  * Use this to simplify UI options for end-users.
  */
 export const INTUITIVE_NOT_APPLICABLE = {
-    SECONDLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.SECONDLY],
-    MINUTELY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.MINUTELY],
-    HOURLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.HOURLY],
-    DAILY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.DAILY],
-    WEEKLY: ["bymonthday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.WEEKLY],
-    MONTHLY: ["byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.MONTHLY],
-    YEARLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.YEARLY],
+  SECONDLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.SECONDLY],
+  MINUTELY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.MINUTELY],
+  HOURLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.HOURLY],
+  DAILY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.DAILY],
+  WEEKLY: ["bymonthday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.WEEKLY],
+  MONTHLY: ["byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.MONTHLY],
+  YEARLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.YEARLY],
 } as const satisfies ByRRuleCombination;
 
 export const WEEKDAYS = {
-    MO: "monday",
-    TU: "tuesday",
-    WE: "wednesday",
-    TH: "thursday",
-    FR: "friday",
-    SA: "saturday",
-    SU: "sunday",
+  MO: "monday",
+  TU: "tuesday",
+  WE: "wednesday",
+  TH: "thursday",
+  FR: "friday",
+  SA: "saturday",
+  SU: "sunday",
 } as const;
 
 export const MONTHS = {
-    "1": "january",
-    "2": "february",
-    "3": "march",
-    "4": "april",
-    "5": "may",
-    "6": "june",
-    "7": "july",
-    "8": "august",
-    "9": "september",
-    "10": "october",
-    "11": "november",
-    "12": "december",
+  "1": "january",
+  "2": "february",
+  "3": "march",
+  "4": "april",
+  "5": "may",
+  "6": "june",
+  "7": "july",
+  "8": "august",
+  "9": "september",
+  "10": "october",
+  "11": "november",
+  "12": "december",
 } as const;
 
 export enum EventTypes {
-    default = "default",
-    period = "period",
-    recurrence = "recurrence",
+  default = "default",
+  period = "period",
+  recurrence = "recurrence",
 }
 
 export const RRULE_ENDS = {
-    never: "never",
-    until: "schedule.ends.until",
-    count: "schedule.ends.count",
+  never: "never",
+  until: "schedule.ends.until",
+  count: "schedule.ends.count",
 } as const;

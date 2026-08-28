@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,18 +12,20 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {AssetWidgetConfig} from "../util/widget-config";
-import {AssetModelUtil, Attribute, AttributeRef, WellknownValueTypes} from "@openremote/model";
-import {OrWidget, WidgetManifest} from "../util/or-widget";
+import type { AssetWidgetConfig } from "../util/widget-config";
+import { AssetModelUtil, type Attribute, type AttributeRef, WellknownValueTypes } from "@openremote/model";
+import type { OrWidget, WidgetManifest } from "../util/or-widget";
 import { customElement } from "lit/decorators.js";
-import {WidgetSettings} from "../util/widget-settings";
-import {css, CSSResult, html, PropertyValues, TemplateResult, unsafeCSS } from "lit";
-import {OrAssetWidget} from "../util/or-asset-widget";
-import {ImageSettings} from "../settings/image-settings";
+import type { WidgetSettings } from "../util/widget-settings";
+import { css, type CSSResult, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrAssetWidget } from "../util/or-asset-widget";
+import { ImageSettings } from "../settings/image-settings";
 import { when } from "lit/directives/when.js";
-import {DefaultColor2, DefaultColor3, Util} from "@openremote/core";
+import { DefaultColor2, DefaultColor3, Util } from "@openremote/core";
 import { styleMap } from "lit/directives/style-map.js";
 
 const styling = css`
@@ -68,133 +67,129 @@ const styling = css`
 `;
 
 export interface ImageAssetMarker {
-    attributeRef: AttributeRef,
-    coordinates: [number, number]
+  attributeRef: AttributeRef;
+  coordinates: [number, number];
 }
 
 export interface ImageWidgetConfig extends AssetWidgetConfig {
-    markers: ImageAssetMarker[];
-    showTimestampControls: boolean;
-    imagePath: string;
+  markers: ImageAssetMarker[];
+  showTimestampControls: boolean;
+  imagePath: string;
 }
 
 function getDefaultWidgetConfig(): ImageWidgetConfig {
-    return {
-        attributeRefs: [],
-        showTimestampControls: false,
-        imagePath: '',
-        markers: [],
-    };
+  return {
+    attributeRefs: [],
+    showTimestampControls: false,
+    imagePath: "",
+    markers: [],
+  };
 }
 
 @customElement("image-widget")
 export class ImageWidget extends OrAssetWidget {
+  // Override of widgetConfig with extended type
+  protected readonly widgetConfig!: ImageWidgetConfig;
 
-    // Override of widgetConfig with extended type
-    protected readonly widgetConfig!: ImageWidgetConfig;
+  static getManifest(): WidgetManifest {
+    return {
+      displayName: "Image",
+      displayIcon: "file-image-marker",
+      minColumnWidth: 1,
+      minColumnHeight: 1,
+      getContentHtml(config: ImageWidgetConfig): OrWidget {
+        return new ImageWidget(config);
+      },
+      getSettingsHtml(config: ImageWidgetConfig): WidgetSettings {
+        return new ImageSettings(config);
+      },
+      getDefaultConfig(): ImageWidgetConfig {
+        return getDefaultWidgetConfig();
+      },
+    };
+  }
 
-    static getManifest(): WidgetManifest {
-        return {
-            displayName: "Image",
-            displayIcon: "file-image-marker",
-            minColumnWidth: 1,
-            minColumnHeight: 1,
-            getContentHtml(config: ImageWidgetConfig): OrWidget {
-                return new ImageWidget(config);
-            },
-            getSettingsHtml(config: ImageWidgetConfig): WidgetSettings {
-                return new ImageSettings(config);
-            },
-            getDefaultConfig(): ImageWidgetConfig {
-                return getDefaultWidgetConfig();
-            }
-        }
-    }
+  public refreshContent(force: boolean) {
+    this.loadAssets();
+  }
 
-    public refreshContent(force: boolean) {
+  static get styles(): CSSResult[] {
+    return [...super.styles, styling];
+  }
+
+  willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has("widgetConfig") && this.widgetConfig) {
+      const attributeRefs = this.widgetConfig.attributeRefs;
+      const missingAssets = attributeRefs?.filter((attrRef: AttributeRef) => !this.isAttributeRefLoaded(attrRef));
+      if (missingAssets.length > 0) {
         this.loadAssets();
+      }
     }
 
-    static get styles(): CSSResult[] {
-        return [...super.styles, styling];
-    }
+    return super.willUpdate(changedProps);
+  }
 
-    willUpdate(changedProps: PropertyValues) {
+  protected loadAssets() {
+    this.fetchAssets(this.widgetConfig.attributeRefs).then((assets) => {
+      this.loadedAssets = assets!;
+      this.assetAttributes = this.widgetConfig.attributeRefs
+        .map((attrRef: AttributeRef) => {
+          const assetIndex = assets!.findIndex((asset) => asset.id === attrRef.id);
+          const foundAsset = assetIndex >= 0 ? assets![assetIndex] : undefined;
+          return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
+        })
+        .filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+    });
+  }
 
-        if(changedProps.has('widgetConfig') && this.widgetConfig) {
-            const attributeRefs = this.widgetConfig.attributeRefs;
-            const missingAssets = attributeRefs?.filter((attrRef: AttributeRef) => !this.isAttributeRefLoaded(attrRef));
-            if (missingAssets.length > 0) {
-                this.loadAssets();
-            }
+  // method to render and update the markers on the image
+  protected handleMarkerPlacement(config: ImageWidgetConfig) {
+    if (this.assetAttributes.length && config.attributeRefs.length > 0) {
+      if (config.markers.length === 0) {
+        console.error("No markers found!");
+        return [];
+      }
+      return config.attributeRefs.map((attributeRef, index) => {
+        const marker = config.markers.find(
+          (m) => m.attributeRef.id === attributeRef.id && m.attributeRef.name === attributeRef.name
+        );
+        const asset = this.loadedAssets.find((a) => a.id === attributeRef.id);
+        let value: string | undefined;
+        const styles: any = {
+          left: `${marker!.coordinates[0]}%`,
+          top: `${marker!.coordinates[1]}%`,
+        };
+        if (asset) {
+          const attribute = asset.attributes![attributeRef.name!];
+          const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
+          value = Util.getAttributeValueAsString(attribute, descriptors[0], asset.type, true, "-");
+          if (attribute?.type === WellknownValueTypes.COLOURRGB && value !== "-") {
+            styles.backgroundColor = value;
+            styles.minHeight = "21px";
+            styles.minWidth = "13px";
+            value = undefined;
+          }
         }
-
-        return super.willUpdate(changedProps);
+        return html` <span id="overlay" style="${styleMap(styles)}"> ${value} </span> `;
+      });
     }
+  }
 
-    protected loadAssets() {
-        this.fetchAssets(this.widgetConfig.attributeRefs).then(assets => {
-            this.loadedAssets = assets!;
-            this.assetAttributes = this.widgetConfig.attributeRefs.map((attrRef: AttributeRef) => {
-                const assetIndex = assets!.findIndex(asset => asset.id === attrRef.id);
-                const foundAsset = assetIndex >= 0 ? assets![assetIndex] : undefined;
-                return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
-            }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
-        });
-    }
-
-    // method to render and update the markers on the image
-    protected handleMarkerPlacement(config: ImageWidgetConfig) {
-        if (this.assetAttributes.length && config.attributeRefs.length > 0) {
-
-            if(config.markers.length === 0) {
-                console.error("No markers found!");
-                return [];
-            }
-            return config.attributeRefs.map((attributeRef, index) => {
-                const marker = config.markers.find(m => m.attributeRef.id === attributeRef.id && m.attributeRef.name === attributeRef.name);
-                const asset = this.loadedAssets.find(a => a.id === attributeRef.id);
-                let value: string | undefined;
-                const styles: any = {
-                    "left": `${marker!.coordinates[0]}%`,
-                    "top": `${marker!.coordinates[1]}%`
-                };
-                if(asset) {
-                    const attribute = asset.attributes![attributeRef.name!];
-                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
-                    value = Util.getAttributeValueAsString(attribute, descriptors[0], asset.type, true, "-");
-                    if(attribute?.type === WellknownValueTypes.COLOURRGB && value !== "-") {
-                        styles.backgroundColor = value;
-                        styles.minHeight = "21px";
-                        styles.minWidth = "13px";
-                        value = undefined;
-                    }
-                }
-                return html`
-                    <span id="overlay" style="${styleMap(styles)}">
-                        ${value}
-                    </span>
-                `;
-            });
-        }
-    }
-
-    protected render(): TemplateResult {
-        const imagePath = this.widgetConfig.imagePath;
-        return html`
-            <div id="img-wrapper">
-                ${when(imagePath, () => html`
-                    <div id="img-container">
-                        <img id="img-content" src="${imagePath}" alt=""/>
-                        <div>
-                            ${this.handleMarkerPlacement(this.widgetConfig)}
-                        </div>
-                    </div>
-                `, () => html`
-                    <span><or-translate value="dashboard.noImageSelected"></or-translate></span>
-                `)}
+  protected render(): TemplateResult {
+    const imagePath = this.widgetConfig.imagePath;
+    return html`
+      <div id="img-wrapper">
+        ${when(
+          imagePath,
+          () => html`
+            <div id="img-container">
+              <img id="img-content" src="${imagePath}" alt="" />
+              <div>${this.handleMarkerPlacement(this.widgetConfig)}</div>
             </div>
-        `;
-    }
-
+          `,
+          () => html` <span><or-translate value="dashboard.noImageSelected"></or-translate></span> `
+        )}
+      </div>
+    `;
+  }
 }

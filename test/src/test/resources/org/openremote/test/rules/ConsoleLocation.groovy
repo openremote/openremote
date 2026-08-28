@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.setup.integration.rules
 
 import org.openremote.manager.rules.RulesBuilder
@@ -22,71 +40,67 @@ Assets assets = binding.assets
 
 rules.add()
         .name("Welcome home")
-        .when({
-    facts ->
+        .when({ facts ->
 
-        def consoleIds = facts.matchAssetState(new AssetQuery()
-                .types(ConsoleAsset.class)
-                .attributes(new LocationAttributePredicate(
-                new RadialGeofencePredicate(100, ManagerTestSetup.SMART_BUILDING_LOCATION.y, ManagerTestSetup.SMART_BUILDING_LOCATION.x))))
-                .filter({ !facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
-                .map({ it.id })
-                .collect()
+          def consoleIds = facts.matchAssetState(new AssetQuery()
+          .types(ConsoleAsset.class)
+          .attributes(new LocationAttributePredicate(
+                  new RadialGeofencePredicate(100, ManagerTestSetup.SMART_BUILDING_LOCATION.y, ManagerTestSetup.SMART_BUILDING_LOCATION.x))))
+          .filter({ !facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
+          .map({ it.id })
+          .collect()
 
-        if (consoleIds.size() > 0) {
+          if (consoleIds.size() > 0) {
             facts.bind("consoleIds", consoleIds)
             true
-        } else {
+          } else {
             false
-        }
-})
-        .then({
-    facts ->
+          }
+        })
+        .then({ facts ->
 
-        List<String> consoleIds = facts.bound("consoleIds")
-        if (consoleIds != null) {
-            List<Notification.Target> targets = consoleIds.stream().map{new Notification.Target(Notification.TargetType.ASSET, it)}.collect(Collectors.toList())
+          List<String> consoleIds = facts.bound("consoleIds")
+          if (consoleIds != null) {
+            List<Notification.Target> targets = consoleIds.stream().map{
+              new Notification.Target(Notification.TargetType.ASSET, it)
+            }.collect(Collectors.toList())
             Notification notification = new Notification(
-                "Welcome Home",
-                new PushNotificationMessage("Welcome Home", "No new events to report", null, null, null), targets, null, null)
+                            "Welcome Home",
+                            new PushNotificationMessage("Welcome Home", "No new events to report", null, null, null), targets, null, null)
 
             notifications.send(notification)
 
             consoleIds.forEach({
-                LOG.info("Welcome Home triggered: $it")
-                facts.put("welcomeHome" + "_${it}", it)
+              LOG.info("Welcome Home triggered: $it")
+              facts.put("welcomeHome" + "_${it}", it)
             })
-        }
-})
+          }
+        })
 
 rules.add()
         .name("Welcome home reset")
-        .when({
-    facts ->
+        .when({ facts ->
 
-        def consoleIds = facts.matchAssetState(new AssetQuery()
-                .types(ConsoleAsset.class)
-                .attributeValue(Asset.LOCATION.name, new ValueEmptyPredicate()))
-                .filter({ facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
-                .map({ it.id })
-                .collect()
+          def consoleIds = facts.matchAssetState(new AssetQuery()
+          .types(ConsoleAsset.class)
+          .attributeValue(Asset.LOCATION.name, new ValueEmptyPredicate()))
+          .filter({ facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
+          .map({ it.id })
+          .collect()
 
-        if (consoleIds.size() > 0) {
+          if (consoleIds.size() > 0) {
             facts.bind("consoleIds", consoleIds)
             true
-        } else {
+          } else {
             false
-        }
+          }
+        })
+        .then({ facts ->
 
-})
-        .then(
-        {
-            facts ->
+          List<String> consoleIds = facts.bound("consoleIds")
 
-                List<String> consoleIds = facts.bound("consoleIds")
-
-                consoleIds.forEach({
-                    LOG.info("Welcome Home Reset Triggered: $it")
-                    facts.remove("welcomeHome" + "_${it}")
-                })
+          consoleIds.forEach({
+            LOG.info("Welcome Home Reset Triggered: $it")
+            facts.remove("welcomeHome" + "_${it}")
+          })
         })

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.test.users
 
@@ -50,713 +49,706 @@ import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_AT
 
 class UserResourceTest extends Specification implements ManagerContainerTrait {
 
-    @Shared
-    static UserResource adminUserResource
-    @Shared
-    static UserResource regularUserMasterResource
-    @Shared
-    static UserResource regularUserBuildingResource
-    @Shared
-    static UserResource adminUserBuildingResource
-    @Shared
-    static KeycloakTestSetup keycloakTestSetup
-    @Shared
-    static int resetPasswordRequests = 0
+  @Shared
+  static UserResource adminUserResource
+  @Shared
+  static UserResource regularUserMasterResource
+  @Shared
+  static UserResource regularUserBuildingResource
+  @Shared
+  static UserResource adminUserBuildingResource
+  @Shared
+  static KeycloakTestSetup keycloakTestSetup
+  @Shared
+  static int resetPasswordRequests = 0
 
-    def setupSpec() {
-        def container = startContainer(defaultConfig(), defaultServices())
-        keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
-        def identityProvider = Spy(container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider)
-        container.getService(ManagerIdentityService.class).identityProvider = identityProvider
-        identityProvider.requestPasswordReset(_ as String, _ as String)  >> {
-            realm, userId ->
-                resetPasswordRequests++
-        }
+  def setupSpec() {
+    def container = startContainer(defaultConfig(), defaultServices())
+    keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def identityProvider = Spy(container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider)
+    container.getService(ManagerIdentityService.class).identityProvider = identityProvider
+    identityProvider.requestPasswordReset(_ as String, _ as String) >> { realm, userId ->
+      resetPasswordRequests++
+    }
 
-        def accessToken = authenticate(
+    def accessToken = authenticate(
             container,
             MASTER_REALM,
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        )
+            )
 
-        def regularMasterAccessToken = authenticate(
+    def regularMasterAccessToken = authenticate(
             container,
             MASTER_REALM,
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-        )
+            )
 
-        def regularBuildingAccessToken = authenticate(
+    def regularBuildingAccessToken = authenticate(
             container,
             keycloakTestSetup.realmBuilding.name,
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-        )
+            )
 
-        def adminBuildingRoles = identityProvider.getUserClientRoles(
+    def adminBuildingRoles = identityProvider.getUserClientRoles(
             keycloakTestSetup.realmBuilding.name,
             keycloakTestSetup.testuser4Id,
             KEYCLOAK_CLIENT_ID
-        )
-        identityProvider.updateUserClientRoles(
+            )
+    identityProvider.updateUserClientRoles(
             keycloakTestSetup.realmBuilding.name,
             keycloakTestSetup.testuser4Id,
             KEYCLOAK_CLIENT_ID,
             ((adminBuildingRoles as List) + ClientRole.READ_ADMIN.value).unique() as String[]
-        )
+            )
 
-        def adminBuildingAccessToken = authenticate(
+    def adminBuildingAccessToken = authenticate(
             container,
             keycloakTestSetup.realmBuilding.name,
             KEYCLOAK_CLIENT_ID,
             "testuser4",
             "testuser4"
-        )
+            )
 
-        adminUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(UserResource.class)
-        regularUserMasterResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, regularMasterAccessToken).proxy(UserResource.class)
-        regularUserBuildingResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, regularBuildingAccessToken).proxy(UserResource.class)
-        adminUserBuildingResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, adminBuildingAccessToken).proxy(UserResource.class)
+    adminUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(UserResource.class)
+    regularUserMasterResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, regularMasterAccessToken).proxy(UserResource.class)
+    regularUserBuildingResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, regularBuildingAccessToken).proxy(UserResource.class)
+    adminUserBuildingResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, adminBuildingAccessToken).proxy(UserResource.class)
+  }
+
+  def "User queries"() {
+
+    when: "a request is made for all users by a super user"
+    def users = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+
+    then: "all users should be returned including system users"
+    users.size() == 4
+    users.find {it.isSystemAccount() && it.username == Constants.MANAGER_CLIENT_ID} != null
+    users.find {it.username == MASTER_REALM_ADMIN_USER} != null
+    users.find {it.id == keycloakTestSetup.testuser1Id} != null
+
+    when: "a request is made for all users in the same realm by a regular user"
+    users = regularUserMasterResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+
+    then: "only non system users of the users realm should be returned"
+    users.size() == 3
+    users.find {it.username == MASTER_REALM_ADMIN_USER} != null
+    users.find {it.id == keycloakTestSetup.testuser1Id} != null
+
+    when: "a request is made for all users in a different realm by a regular user"
+    users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+
+    then: "only non system users of the users realm should be returned"
+    users.size() == 6
+    users.count {it.isSystemAccount() && it.username == Constants.MANAGER_CLIENT_ID} == 0
+    users.find {it.id == keycloakTestSetup.testuser2Id} != null
+    users.find {it.id == keycloakTestSetup.testuser3Id} != null
+    users.find {it.id == keycloakTestSetup.testuser4Id} != null
+    users.find {it.id == keycloakTestSetup.buildingUserId} != null
+    users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id} != null
+    users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id} != null
+
+    when: "a request is made for all users ordered by username"
+    users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
+
+    then: "only non system users of the users realm should be returned in username order"
+    users.size() == 6
+    users[0].username == keycloakTestSetup.buildingUser.username
+    users[1].username == keycloakTestSetup.serviceUser.username
+    users[2].username == keycloakTestSetup.serviceUser2.username
+    users[3].username == keycloakTestSetup.testuser2.username
+    users[4].username == keycloakTestSetup.testuser3.username
+    users[5].username == keycloakTestSetup.testuser4.username
+
+    when: "a request is made for subset of users ordered by username descending (with wrong realm which will be automatically changed to the users realm)"
+    users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2))
+
+    then: "the correct users should be returned"
+    users.size() == 2
+    users[0].username == keycloakTestSetup.testuser4.username
+    users[1].username == keycloakTestSetup.testuser3.username
+
+    when: "a request is made for another subset of users ordered by username descending (with wrong realm which will be automatically changed to the users realm)"
+    users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2).offset(3))
+
+    then: "the correct users should be returned"
+    users.size() == 2
+    users[0].username == keycloakTestSetup.serviceUser2.username
+    users[1].username == keycloakTestSetup.serviceUser.username
+
+    when: "a request is made for only service users (users with a secret)"
+    users = adminUserResource.query(null, new UserQuery().serviceUsers(true).realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
+
+    then: "only service users of the requested realm should be returned"
+    users.size() == 2
+    users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id} != null
+    users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id} != null
+    users.find {
+      it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id
+    }.secret != null
+    users.find {
+      it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id
+    }.secret != null
+
+    when: "a request is made for only restricted users"
+    users = regularUserBuildingResource.query(null,
+            new UserQuery()
+            .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
+            .realmRoles(new StringPredicate(Constants.RESTRICTED_USER_REALM_ROLE))
+            .orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
+
+    then: "only restricted users of this realm should be returned"
+    users.size() == 3
+    users[0].username == keycloakTestSetup.buildingUser.username
+    users[1].username == keycloakTestSetup.serviceUser2.username
+    users[2].username == keycloakTestSetup.testuser3.username
+
+    when: "a request is made for non restricted users"
+    users = regularUserBuildingResource.query(null,
+            new UserQuery()
+            .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
+            .realmRoles(new StringPredicate(Constants.RESTRICTED_USER_REALM_ROLE).negate(true))
+            .orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
+
+    then: "only non restricted users of this realm should be returned"
+    users.size() == 3
+    users[0].username == keycloakTestSetup.serviceUser.username
+    users[1].username == keycloakTestSetup.testuser2.username
+    users[2].username == keycloakTestSetup.testuser4.username
+
+    when: "a request is made based on user attributes"
+    users = regularUserBuildingResource.query(null,
+            new UserQuery()
+            .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
+            .attributes(
+                    new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                    new UserQuery.AttributeValuePredicate(true, new StringPredicate(EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
+                    ).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
+
+    then: "only matching users of this realm should be returned"
+    users.size() == 5
+    users[0].username == keycloakTestSetup.buildingUser.username
+    users[1].username == keycloakTestSetup.serviceUser.username
+    users[2].username == keycloakTestSetup.serviceUser2.username
+    users[3].username == keycloakTestSetup.testuser2.username
+    users[4].username == keycloakTestSetup.testuser4.username
+
+    when: "a request is made for users with the write:alarms client role"
+    users = regularUserBuildingResource.query(null,
+            new UserQuery()
+            .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
+            .clientRoles(new StringPredicate(Constants.WRITE_ALARMS_ROLE))
+            .orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
+
+    then: "only users of this realm with the write:alarms client role should be returned"
+    users.size() == 3
+    users[0].username == keycloakTestSetup.buildingUser.username
+    users[1].username == keycloakTestSetup.testuser3.username
+    users[2].username == keycloakTestSetup.testuser4.username
+  }
+
+  def "Get and update roles"() {
+
+    when: "a request is made for the roles in the building realm by the admin user"
+    def roles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
+
+    then: "the standard client roles should have been returned"
+    roles.size() == ClientRole.values().length
+    def readComposite = roles.find {it.name == ClientRole.READ.value}
+    readComposite != null
+    readComposite.description == ClientRole.READ.description
+    readComposite.compositeRoleIds.length == ClientRole.READ.composites.length
+    assert readComposite.compositeRoleIds.every {roleId ->
+      String roleName = roles.find {it.id == roleId}.name
+      return ClientRole.READ.composites.any {it.value == roleName}
     }
 
-    def "User queries"() {
+    def readAssets = roles.find{ it.name == ClientRole.READ_ASSETS.value}
+    readAssets != null
+    readAssets.description == ClientRole.READ_ASSETS.description
+    readAssets.compositeRoleIds == null
 
-        when: "a request is made for all users by a super user"
-        def users = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+    when: "a request is made for the roles in the smart building realm by a regular user"
+    regularUserBuildingResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
 
-        then: "all users should be returned including system users"
-        users.size() == 4
-        users.find {it.isSystemAccount() && it.username == Constants.MANAGER_CLIENT_ID} != null
-        users.find {it.username == MASTER_REALM_ADMIN_USER} != null
-        users.find {it.id == keycloakTestSetup.testuser1Id} != null
+    then: "a not allowed exception should be thrown"
+    thrown(ForbiddenException.class)
 
-        when: "a request is made for all users in the same realm by a regular user"
-        users = regularUserMasterResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+    when: "a realm admin tries to read client roles from the master realm"
+    adminUserBuildingResource.getClientRoles(null, MASTER_REALM, KEYCLOAK_CLIENT_ID)
 
-        then: "only non system users of the users realm should be returned"
-        users.size() == 3
-        users.find {it.username == MASTER_REALM_ADMIN_USER} != null
-        users.find {it.id == keycloakTestSetup.testuser1Id} != null
+    then: "the cross-realm read should be rejected"
+    thrown(NotAllowedException)
 
-        when: "a request is made for all users in a different realm by a regular user"
-        users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+    when: "a new composite role is created by the admin user"
+    List<Role> updatedRoles = new ArrayList<>(Arrays.asList(roles))
+    updatedRoles.add(new Role(
+                    null,
+                    "test",
+                    true, // Value is ignored on update
+                    false, // Value is ignored on update
+                    [
+                      roles.find {it.name == ClientRole.READ_LOGS.value}.id,
+                      roles.find {it.name == ClientRole.READ_MAP.value}.id
+                    ] as String[]
+                    ).setDescription("This is a test"))
+    adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, updatedRoles as Role[])
+    roles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
+    def testRole = roles.find {it.name == "test"}
 
-        then: "only non system users of the users realm should be returned"
-        users.size() == 6
-        users.count {it.isSystemAccount() && it.username == Constants.MANAGER_CLIENT_ID} == 0
-        users.find {it.id == keycloakTestSetup.testuser2Id} != null
-        users.find {it.id == keycloakTestSetup.testuser3Id} != null
-        users.find {it.id == keycloakTestSetup.testuser4Id} != null
-        users.find {it.id == keycloakTestSetup.buildingUserId} != null
-        users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id} != null
-        users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id} != null
+    then: "the new composite role should have been saved"
+    testRole != null
+    testRole.description == "This is a test"
+    testRole.compositeRoleIds.length == 2
+    testRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_LOGS.value}.id)
+    testRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_MAP.value}.id)
 
-        when: "a request is made for all users ordered by username"
-        users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
+    when: "an existing composite role is updated by the admin user"
+    def writeRole = roles.find {it.name == ClientRole.WRITE.value}
+    writeRole.compositeRoleIds = [roles.find {it.name == ClientRole.READ_ASSETS.value}.id]
+    adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, roles)
+    roles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
+    writeRole = roles.find {it.name == ClientRole.WRITE.value}
 
-        then: "only non system users of the users realm should be returned in username order"
-        users.size() == 6
-        users[0].username == keycloakTestSetup.buildingUser.username
-        users[1].username == keycloakTestSetup.serviceUser.username
-        users[2].username == keycloakTestSetup.serviceUser2.username
-        users[3].username == keycloakTestSetup.testuser2.username
-        users[4].username == keycloakTestSetup.testuser3.username
-        users[5].username == keycloakTestSetup.testuser4.username
+    then: "the write role should have been updated"
+    writeRole != null
+    writeRole.compositeRoleIds.length == 1
+    writeRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_ASSETS.value}.id)
+  }
 
-        when: "a request is made for subset of users ordered by username descending (with wrong realm which will be automatically changed to the users realm)"
-        users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2))
+  def "Get and update users"() {
+    when: "a user is retrieved"
+    def user = adminUserResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id)
 
-        then: "the correct users should be returned"
-        users.size() == 2
-        users[0].username == keycloakTestSetup.testuser4.username
-        users[1].username == keycloakTestSetup.testuser3.username
+    then: "all data should be available"
+    user != null
+    user.attributes != null
+    user.attributes.size() == 1
+    user.attributes.get(0).getName() == EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE
+    user.attributes.get(0).getValue() == "true"
+    user.id == keycloakTestSetup.testuser3Id
+    user.realm == keycloakTestSetup.realmBuilding.name
+    user.username == keycloakTestSetup.testuser3.username
 
-        when: "a request is made for another subset of users ordered by username descending (with wrong realm which will be automatically changed to the users realm)"
-        users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2).offset(3))
+    when: "a new attribute is added to the user"
+    user.setAttribute("test", "testvalue")
+    user = adminUserResource.update(null, keycloakTestSetup.realmBuilding.name, user)
 
-        then: "the correct users should be returned"
-        users.size() == 2
-        users[0].username == keycloakTestSetup.serviceUser2.username
-        users[1].username == keycloakTestSetup.serviceUser.username
-
-        when: "a request is made for only service users (users with a secret)"
-        users = adminUserResource.query(null, new UserQuery().serviceUsers(true).realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
-
-        then: "only service users of the requested realm should be returned"
-        users.size() == 2
-        users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id} != null
-        users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id} != null
-        users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id}.secret != null
-        users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id}.secret != null
-
-        when: "a request is made for only restricted users"
-        users = regularUserBuildingResource.query(null,
-                new UserQuery()
-                        .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
-                        .realmRoles(new StringPredicate(Constants.RESTRICTED_USER_REALM_ROLE))
-                        .orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
-
-        then: "only restricted users of this realm should be returned"
-        users.size() == 3
-        users[0].username == keycloakTestSetup.buildingUser.username
-        users[1].username == keycloakTestSetup.serviceUser2.username
-        users[2].username == keycloakTestSetup.testuser3.username
-
-        when: "a request is made for non restricted users"
-        users = regularUserBuildingResource.query(null,
-                new UserQuery()
-                        .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
-                        .realmRoles(new StringPredicate(Constants.RESTRICTED_USER_REALM_ROLE).negate(true))
-                        .orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
-
-        then: "only non restricted users of this realm should be returned"
-        users.size() == 3
-        users[0].username == keycloakTestSetup.serviceUser.username
-        users[1].username == keycloakTestSetup.testuser2.username
-        users[2].username == keycloakTestSetup.testuser4.username
-
-        when: "a request is made based on user attributes"
-        users = regularUserBuildingResource.query(null,
-                new UserQuery()
-                        .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
-                        .attributes(
-                            new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
-                            new UserQuery.AttributeValuePredicate(true, new StringPredicate(EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
-                ).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
-
-        then: "only matching users of this realm should be returned"
-        users.size() == 5
-        users[0].username == keycloakTestSetup.buildingUser.username
-        users[1].username == keycloakTestSetup.serviceUser.username
-        users[2].username == keycloakTestSetup.serviceUser2.username
-        users[3].username == keycloakTestSetup.testuser2.username
-        users[4].username == keycloakTestSetup.testuser4.username
-
-        when: "a request is made for users with the write:alarms client role"
-        users = regularUserBuildingResource.query(null,
-                new UserQuery()
-                        .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
-                        .clientRoles(new StringPredicate(Constants.WRITE_ALARMS_ROLE))
-                        .orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
-
-        then: "only users of this realm with the write:alarms client role should be returned"
-        users.size() == 3
-        users[0].username == keycloakTestSetup.buildingUser.username
-        users[1].username == keycloakTestSetup.testuser3.username
-        users[2].username == keycloakTestSetup.testuser4.username
+    then: "the update should have succeeded"
+    user.attributes.size() == 2
+    user.attributes.any {
+      it.name == EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE && it.value == "true"
     }
+    user.attributes.any {it.name == "test" && it.value == "testvalue"}
 
-    def "Get and update roles"() {
+    when: "a user with ${Constants.WRITE_USER_ROLE} role updates their own user information"
+    keycloakTestSetup.testuser3.setAttribute("selfUpdate", "success")
+    def updatedUser = regularUserBuildingResource.updateCurrent(null, keycloakTestSetup.testuser3)
 
-        when: "a request is made for the roles in the building realm by the admin user"
-        def roles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
+    then: "the update should succeed"
+    updatedUser != null
+    updatedUser.attributes.any { it.name == "selfUpdate" && it.value == "success" }
 
-        then: "the standard client roles should have been returned"
-        roles.size() == ClientRole.values().length
-        def readComposite = roles.find {it.name == ClientRole.READ.value}
-        readComposite != null
-        readComposite.description == ClientRole.READ.description
-        readComposite.compositeRoleIds.length == ClientRole.READ.composites.length
-        assert readComposite.compositeRoleIds.every {roleId ->
-            String roleName = roles.find {it.id == roleId}.name
-            return ClientRole.READ.composites.any {it.value == roleName}
-        }
+    when: "the user tries to update another user's information"
+    keycloakTestSetup.testuser2.setAttribute("unauthorizedUpdate", "shouldFail")
+    regularUserBuildingResource.updateCurrent(null, keycloakTestSetup.testuser2)
 
-        def readAssets = roles.find{ it.name == ClientRole.READ_ASSETS.value}
-        readAssets != null
-        readAssets.description == ClientRole.READ_ASSETS.description
-        readAssets.compositeRoleIds == null
+    then: "an exception should be thrown"
+    thrown(ForbiddenException)
 
-        when: "a request is made for the roles in the smart building realm by a regular user"
-        regularUserBuildingResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
+    when: "an admin user tries to update another user's information"
+    keycloakTestSetup.testuser3.setAttribute("authorizedUpdate", "shouldNotFail")
+    updatedUser = adminUserResource.update(null, keycloakTestSetup.testuser3.realm, keycloakTestSetup.testuser3)
 
-        then: "a not allowed exception should be thrown"
-        thrown(ForbiddenException.class)
+    then: "the update should succeed"
+    updatedUser.attributes.any { it.name == "authorizedUpdate" && it.value == "shouldNotFail" }
 
-        when: "a realm admin tries to read client roles from the master realm"
-        adminUserBuildingResource.getClientRoles(null, MASTER_REALM, KEYCLOAK_CLIENT_ID)
+    when: "the admin verifies the user's attributes were updated"
+    def verifiedUser = adminUserResource.get(null, keycloakTestSetup.testuser3.realm, keycloakTestSetup.testuser3.id)
 
-        then: "the cross-realm read should be rejected"
-        thrown(NotAllowedException)
+    then: "the self-update attribute should be present"
+    verifiedUser.attributes.any { it.name == "selfUpdate" && it.value == "success" }
 
-        when: "a new composite role is created by the admin user"
-        List<Role> updatedRoles = new ArrayList<>(Arrays.asList(roles))
-        updatedRoles.add(new Role(
-            null,
-            "test",
-            true, // Value is ignored on update
-            false, // Value is ignored on update
-            [
-                roles.find {it.name == ClientRole.READ_LOGS.value}.id,
-                roles.find {it.name == ClientRole.READ_MAP.value}.id
-            ] as String[]
-        ).setDescription("This is a test"))
-        adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, updatedRoles as Role[])
-        roles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
-        def testRole = roles.find {it.name == "test"}
+    and: "the authorized update attribute should be present"
+    verifiedUser.attributes.any { it.name == "authorizedUpdate" && it.value == "shouldNotFail" }
 
-        then: "the new composite role should have been saved"
-        testRole != null
-        testRole.description == "This is a test"
-        testRole.compositeRoleIds.length == 2
-        testRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_LOGS.value}.id)
-        testRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_MAP.value}.id)
+    when: "a regular user tries to update another user's password"
+    regularUserBuildingResource.updatePassword(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, new Credential("newPassword", false))
 
-        when: "an existing composite role is updated by the admin user"
-        def writeRole = roles.find {it.name == ClientRole.WRITE.value}
-        writeRole.compositeRoleIds = [
-            roles.find {it.name == ClientRole.READ_ASSETS.value}.id
-        ]
-        adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, roles)
-        roles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
-        writeRole = roles.find {it.name == ClientRole.WRITE.value}
+    then: "an exception should be thrown"
+    thrown(ForbiddenException)
 
-        then: "the write role should have been updated"
-        writeRole != null
-        writeRole.compositeRoleIds.length == 1
-        writeRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_ASSETS.value}.id)
-    }
+    when: "an admin user tries to update another user's password"
+    adminUserResource.updatePassword(null, keycloakTestSetup.testuser2.realm, keycloakTestSetup.testuser2Id, new Credential("newPassword", false))
 
-    def "Get and update users"() {
-        when: "a user is retrieved"
-        def user = adminUserResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id)
-
-        then: "all data should be available"
-        user != null
-        user.attributes != null
-        user.attributes.size() == 1
-        user.attributes.get(0).getName() == EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE
-        user.attributes.get(0).getValue() == "true"
-        user.id == keycloakTestSetup.testuser3Id
-        user.realm == keycloakTestSetup.realmBuilding.name
-        user.username == keycloakTestSetup.testuser3.username
-
-        when: "a new attribute is added to the user"
-        user.setAttribute("test", "testvalue")
-        user = adminUserResource.update(null, keycloakTestSetup.realmBuilding.name, user)
-
-        then: "the update should have succeeded"
-        user.attributes.size() == 2
-        user.attributes.any {it.name == EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE && it.value == "true"}
-        user.attributes.any {it.name == "test" && it.value == "testvalue"}
-
-        when: "a user with ${Constants.WRITE_USER_ROLE} role updates their own user information"
-        keycloakTestSetup.testuser3.setAttribute("selfUpdate", "success")
-        def updatedUser = regularUserBuildingResource.updateCurrent(null, keycloakTestSetup.testuser3)
-        
-        then: "the update should succeed"
-        updatedUser != null
-        updatedUser.attributes.any { it.name == "selfUpdate" && it.value == "success" }
-        
-        when: "the user tries to update another user's information"
-        keycloakTestSetup.testuser2.setAttribute("unauthorizedUpdate", "shouldFail")
-        regularUserBuildingResource.updateCurrent(null, keycloakTestSetup.testuser2)
-        
-        then: "an exception should be thrown"
-        thrown(ForbiddenException)
-
-        when: "an admin user tries to update another user's information"
-        keycloakTestSetup.testuser3.setAttribute("authorizedUpdate", "shouldNotFail")
-        updatedUser = adminUserResource.update(null, keycloakTestSetup.testuser3.realm, keycloakTestSetup.testuser3)
-
-        then: "the update should succeed"
-        updatedUser.attributes.any { it.name == "authorizedUpdate" && it.value == "shouldNotFail" }
-        
-        when: "the admin verifies the user's attributes were updated"
-        def verifiedUser = adminUserResource.get(null, keycloakTestSetup.testuser3.realm, keycloakTestSetup.testuser3.id)
-        
-        then: "the self-update attribute should be present"
-        verifiedUser.attributes.any { it.name == "selfUpdate" && it.value == "success" }
-
-        and: "the authorized update attribute should be present"
-        verifiedUser.attributes.any { it.name == "authorizedUpdate" && it.value == "shouldNotFail" }
-
-        when: "a regular user tries to update another user's password"
-        regularUserBuildingResource.updatePassword(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, new Credential("newPassword", false))
-
-        then: "an exception should be thrown"
-        thrown(ForbiddenException)
-
-        when: "an admin user tries to update another user's password"
-        adminUserResource.updatePassword(null, keycloakTestSetup.testuser2.realm, keycloakTestSetup.testuser2Id, new Credential("newPassword", false))
-
-        then: "the password should have been updated"
-        def testUser2BuildingAccessToken = authenticate(
+    then: "the password should have been updated"
+    def testUser2BuildingAccessToken = authenticate(
             container,
             keycloakTestSetup.realmBuilding.name,
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "newPassword"
-        )
-        testUser2BuildingAccessToken != null
+            )
+    testUser2BuildingAccessToken != null
+  }
+
+  def "Get user requires realm administration rights"() {
+    when: "a realm admin retrieves a user from their own realm"
+    def sameRealmUser = adminUserBuildingResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
+
+    then: "the user should be returned"
+    sameRealmUser != null
+    sameRealmUser.id == keycloakTestSetup.testuser2Id
+    sameRealmUser.realm == keycloakTestSetup.realmBuilding.name
+
+    when: "a superuser retrieves a user across realms"
+    def crossRealmUser = adminUserResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
+
+    then: "the cross-realm read should succeed for the superuser"
+    crossRealmUser != null
+    crossRealmUser.id == keycloakTestSetup.testuser2Id
+
+    when: "a realm admin tries to retrieve a user from the master realm"
+    adminUserBuildingResource.get(null, MASTER_REALM, keycloakTestSetup.testuser1Id)
+
+    then: "the cross-realm read should be rejected"
+    thrown(NotAllowedException)
+
+    when: "a realm admin uses their own realm path with a user ID from another realm"
+    adminUserBuildingResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser1Id)
+
+    then: "the mismatched user realm should be rejected"
+    thrown(NotAllowedException)
+  }
+
+  def "Get user client roles requires realm administration rights"() {
+    when: "a realm admin retrieves client roles for a user in their own realm"
+    def sameRealmRoles = adminUserBuildingResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID)
+
+    then: "the roles should be returned"
+    sameRealmRoles as Set == [
+      ClientRole.WRITE_USER.value,
+      ClientRole.READ_MAP.value,
+      ClientRole.READ_ASSETS.value
+    ] as Set
+
+    when: "a superuser retrieves client roles across realms"
+    def crossRealmRoles = adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID)
+
+    then: "the cross-realm read should succeed for the superuser"
+    crossRealmRoles as Set == sameRealmRoles as Set
+
+    when: "a realm admin tries to retrieve client roles for a user in the master realm"
+    adminUserBuildingResource.getUserClientRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, KEYCLOAK_CLIENT_ID)
+
+    then: "the cross-realm read should be rejected"
+    thrown(NotAllowedException)
+  }
+
+  def "Get user realm roles requires realm administration rights"() {
+    when: "a realm admin retrieves realm roles for a user in their own realm"
+    def sameRealmRoles = adminUserBuildingResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id)
+
+    then: "the roles should be returned"
+    sameRealmRoles.contains(KeycloakTestSetup.REALM_ROLE_TEST)
+
+    when: "a superuser retrieves realm roles across realms"
+    def crossRealmRoles = adminUserResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id)
+
+    then: "the cross-realm read should succeed for the superuser"
+    crossRealmRoles == sameRealmRoles
+
+    when: "a realm admin tries to retrieve realm roles for a user in the master realm"
+    adminUserBuildingResource.getUserRealmRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id)
+
+    then: "the cross-realm read should be rejected"
+    thrown(NotAllowedException)
+  }
+
+  def "Get user sessions requires realm administration rights"() {
+    when: "a realm admin retrieves sessions for a user in their own realm"
+    def sameRealmSessions = adminUserBuildingResource.getUserSessions(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
+
+    then: "the sessions should be returned"
+    sameRealmSessions != null
+
+    when: "a superuser retrieves sessions across realms"
+    def crossRealmSessions = adminUserResource.getUserSessions(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
+
+    then: "the cross-realm read should succeed for the superuser"
+    crossRealmSessions != null
+
+    when: "a realm admin tries to retrieve sessions for a user in the master realm"
+    adminUserBuildingResource.getUserSessions(null, MASTER_REALM, keycloakTestSetup.testuser1Id)
+
+    then: "the cross-realm read should be rejected"
+    thrown(NotAllowedException)
+  }
+
+  def "Get user sessions rejects users outside the requested realm"() {
+    when: "a realm admin uses their own realm path with a user ID from another realm"
+    adminUserBuildingResource.getUserSessions(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser1Id)
+
+    then: "the mismatched user realm should be rejected"
+    thrown(NotAllowedException)
+  }
+
+  def "Request password reset"() {
+    when: "a user with ${Constants.WRITE_USER_ROLE} permission requests a password reset for themselves"
+    regularUserBuildingResource.requestPasswordResetCurrent(null)
+
+    then: "it should succeed"
+    resetPasswordRequests == 1
+
+    when: "the same user requests a password reset for another user in the same realm"
+    regularUserBuildingResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2.id)
+
+    then: "an exception should occur"
+    thrown(ForbiddenException)
+
+    when: "the same user requests a password reset for another user in a different realm"
+    regularUserBuildingResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser1.id)
+
+    then: "an exception should occur"
+    thrown(ForbiddenException)
+
+    when: "a user with ${Constants.WRITE_ADMIN_ROLE} role requests a password reset for another user in the same realm"
+    adminUserBuildingResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2.id)
+
+    then: "it should succeed"
+    resetPasswordRequests == 2
+
+    when: "a user with ${Constants.WRITE_ADMIN_ROLE} role in one realm requests a password reset for another user in a different realm"
+    adminUserBuildingResource.requestPasswordReset(null, MASTER_REALM, keycloakTestSetup.testuser1.id)
+
+    then: "an exception should occur"
+    thrown(NotAllowedException)
+
+    when: "a super admin requests a password reset for another user in a different realm"
+    adminUserResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2.id)
+
+    then: "it should succeed"
+    resetPasswordRequests == 3
+  }
+
+  def "Update user realm roles requires realm administration rights"() {
+    when: "a realm admin updates realm roles for a user in their own realm"
+    adminUserBuildingResource.updateUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, [KeycloakTestSetup.REALM_ROLE_TEST] as String[])
+
+    then: "the role update should succeed"
+    adminUserResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id) == [KeycloakTestSetup.REALM_ROLE_TEST] as String[]
+
+    when: "a superuser updates realm roles across realms"
+    adminUserResource.updateUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, [KeycloakTestSetup.REALM_ROLE_TEST2] as String[])
+
+    then: "the cross-realm update should succeed for the superuser"
+    adminUserResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id) == [KeycloakTestSetup.REALM_ROLE_TEST2] as String[]
+
+    when: "a realm admin tries to update realm roles for a user in the master realm"
+    adminUserBuildingResource.updateUserRealmRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, [Constants.SUPER_USER_REALM_ROLE] as String[])
+
+    then: "the cross-realm update should be rejected"
+    thrown(NotAllowedException)
+  }
+
+  def "Create invalid users"() {
+
+    when: "a regular user is created"
+    String username1 = "openremoteuser"
+    User user1 = new User().setUsername(username1)
+    adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user1)
+
+    then: "user1 is fetched correctly"
+    User[] users = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+    assert users.size() == (4 + 1)
+    assert users.any { it.username == username1 }
+
+    /* ---------- */
+
+    when: "the same user is created again"
+    adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user1)
+
+    then: "an exception is thrown, because it already exists"
+    thrown(ForbiddenException)
+
+    /* ---------- */
+
+    when: "a user with only special characters is created"
+    String username2 = '#$%^&*()' // only includes illegal characters
+    User user2 = new User().setUsername(username2)
+    adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user2)
+
+    then: "the invalid character-only username causes an exception to be thrown"
+    thrown(BadRequestException)
+
+    /* ---------- */
+
+    when: "a user with a few special characters is created"
+    String username3 = "openremoteuser!"
+    User user3 = new User().setUsername(username3)
+    adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user3)
+
+    then: "the single exclamation mark should cause an exception to be thrown"
+    thrown(BadRequestException)
+
+    /* ---------- */
+
+    when: "a user is created with their email address as username"
+    String username4 = "developers@openremote.io"
+    User user4 = new User().setUsername(username4)
+    adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user4)
+
+    then: "user4 is created correctly"
+    User[] users4 = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+    assert users4.size() == (4 + 2)
+    assert users4.any { it.username == username4 }
+
+    /* ---------- */
+
+    when: "a user is created with a special email address as their username"
+    String username5 = "dev_dev-dev.dev+dev++dev__ßçʊ@openremote.io" // all special characters should be valid
+    User user5 = new User().setUsername(username5)
+    adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user5)
+
+    then: "user5 is created correctly"
+    User[] users5 = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+    assert users5.size() == (4 + 3)
+    assert users5.any { it.username == username5 }
+  }
+
+  def "Create user requires realm administration rights"() {
+    String sameRealmUsername = "sameRealmCreate" + System.nanoTime()
+    String superuserRealmUsername = "superuserCreate" + System.nanoTime()
+    String crossRealmUsername = "crossRealmCreate" + System.nanoTime()
+    User sameRealmUser = null
+    User superuserRealmUser = null
+    User crossRealmUser = null
+
+    when: "a realm admin creates a user in their own realm"
+    sameRealmUser = adminUserBuildingResource.create(null, keycloakTestSetup.realmBuilding.name, new User().setUsername(sameRealmUsername))
+
+    then: "the user should be created"
+    sameRealmUser != null
+    sameRealmUser.realm == keycloakTestSetup.realmBuilding.name
+
+    when: "a superuser creates a user across realms"
+    superuserRealmUser = adminUserResource.create(null, keycloakTestSetup.realmBuilding.name, new User().setUsername(superuserRealmUsername))
+
+    then: "the cross-realm create should succeed for the superuser"
+    superuserRealmUser != null
+    superuserRealmUser.realm == keycloakTestSetup.realmBuilding.name
+
+    when: "a realm admin tries to create a user in the master realm"
+    crossRealmUser = adminUserBuildingResource.create(null, MASTER_REALM, new User().setUsername(crossRealmUsername))
+
+    then: "the cross-realm create should be rejected"
+    thrown(NotAllowedException)
+
+    cleanup:
+    if (sameRealmUser?.id) {
+      adminUserResource.delete(null, sameRealmUser.realm, sameRealmUser.id)
     }
-
-    def "Get user requires realm administration rights"() {
-        when: "a realm admin retrieves a user from their own realm"
-        def sameRealmUser = adminUserBuildingResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
-
-        then: "the user should be returned"
-        sameRealmUser != null
-        sameRealmUser.id == keycloakTestSetup.testuser2Id
-        sameRealmUser.realm == keycloakTestSetup.realmBuilding.name
-
-        when: "a superuser retrieves a user across realms"
-        def crossRealmUser = adminUserResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
-
-        then: "the cross-realm read should succeed for the superuser"
-        crossRealmUser != null
-        crossRealmUser.id == keycloakTestSetup.testuser2Id
-
-        when: "a realm admin tries to retrieve a user from the master realm"
-        adminUserBuildingResource.get(null, MASTER_REALM, keycloakTestSetup.testuser1Id)
-
-        then: "the cross-realm read should be rejected"
-        thrown(NotAllowedException)
-
-        when: "a realm admin uses their own realm path with a user ID from another realm"
-        adminUserBuildingResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser1Id)
-
-        then: "the mismatched user realm should be rejected"
-        thrown(NotAllowedException)
+    if (superuserRealmUser?.id) {
+      adminUserResource.delete(null, superuserRealmUser.realm, superuserRealmUser.id)
     }
-
-    def "Get user client roles requires realm administration rights"() {
-        when: "a realm admin retrieves client roles for a user in their own realm"
-        def sameRealmRoles = adminUserBuildingResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID)
-
-        then: "the roles should be returned"
-        sameRealmRoles as Set == [
-            ClientRole.WRITE_USER.value,
-            ClientRole.READ_MAP.value,
-            ClientRole.READ_ASSETS.value
-        ] as Set
-
-        when: "a superuser retrieves client roles across realms"
-        def crossRealmRoles = adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID)
-
-        then: "the cross-realm read should succeed for the superuser"
-        crossRealmRoles as Set == sameRealmRoles as Set
-
-        when: "a realm admin tries to retrieve client roles for a user in the master realm"
-        adminUserBuildingResource.getUserClientRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, KEYCLOAK_CLIENT_ID)
-
-        then: "the cross-realm read should be rejected"
-        thrown(NotAllowedException)
+    if (crossRealmUser?.id) {
+      adminUserResource.delete(null, MASTER_REALM, crossRealmUser.id)
     }
+  }
 
-    def "Get user realm roles requires realm administration rights"() {
-        when: "a realm admin retrieves realm roles for a user in their own realm"
-        def sameRealmRoles = adminUserBuildingResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id)
+  def "Reset secret requires realm administration rights"() {
+    when: "a realm admin resets a secret in their own realm"
+    String sameRealmSecret = adminUserBuildingResource.resetSecret(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.serviceUser.id)
 
-        then: "the roles should be returned"
-        sameRealmRoles.contains(KeycloakTestSetup.REALM_ROLE_TEST)
+    then: "the secret reset should succeed"
+    sameRealmSecret != null
+    !sameRealmSecret.isEmpty()
 
-        when: "a superuser retrieves realm roles across realms"
-        def crossRealmRoles = adminUserResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id)
+    when: "a superuser resets a secret across realms"
+    String superuserSecret = adminUserResource.resetSecret(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.serviceUser.id)
 
-        then: "the cross-realm read should succeed for the superuser"
-        crossRealmRoles == sameRealmRoles
+    then: "the cross-realm reset should succeed for the superuser"
+    superuserSecret != null
+    !superuserSecret.isEmpty()
 
-        when: "a realm admin tries to retrieve realm roles for a user in the master realm"
-        adminUserBuildingResource.getUserRealmRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id)
+    when: "a realm admin tries to reset a secret in the master realm"
+    adminUserBuildingResource.resetSecret(null, MASTER_REALM, keycloakTestSetup.superServiceUser.id)
 
-        then: "the cross-realm read should be rejected"
-        thrown(NotAllowedException)
-    }
+    then: "the cross-realm reset should be rejected"
+    thrown(NotAllowedException)
+  }
 
-    def "Get user sessions requires realm administration rights"() {
-        when: "a realm admin retrieves sessions for a user in their own realm"
-        def sameRealmSessions = adminUserBuildingResource.getUserSessions(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
+  def "Update user client roles requires realm administration rights"() {
+    String[] buildingUserRoles = adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID)
+    String[] masterUserRoles = adminUserResource.getUserClientRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, KEYCLOAK_CLIENT_ID)
 
-        then: "the sessions should be returned"
-        sameRealmSessions != null
+    when: "a realm admin updates client roles for a user in their own realm"
+    adminUserBuildingResource.updateUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, buildingUserRoles, KEYCLOAK_CLIENT_ID)
 
-        when: "a superuser retrieves sessions across realms"
-        def crossRealmSessions = adminUserResource.getUserSessions(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
+    then: "the role update should succeed"
+    adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID) as Set == buildingUserRoles as Set
 
-        then: "the cross-realm read should succeed for the superuser"
-        crossRealmSessions != null
+    when: "a superuser updates client roles across realms"
+    adminUserResource.updateUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, buildingUserRoles, KEYCLOAK_CLIENT_ID)
 
-        when: "a realm admin tries to retrieve sessions for a user in the master realm"
-        adminUserBuildingResource.getUserSessions(null, MASTER_REALM, keycloakTestSetup.testuser1Id)
+    then: "the cross-realm update should succeed for the superuser"
+    adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID) as Set == buildingUserRoles as Set
 
-        then: "the cross-realm read should be rejected"
-        thrown(NotAllowedException)
-    }
+    when: "a realm admin tries to update client roles for a user in the master realm"
+    adminUserBuildingResource.updateUserClientRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, masterUserRoles, KEYCLOAK_CLIENT_ID)
 
-    def "Get user sessions rejects users outside the requested realm"() {
-        when: "a realm admin uses their own realm path with a user ID from another realm"
-        adminUserBuildingResource.getUserSessions(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser1Id)
+    then: "the cross-realm update should be rejected"
+    thrown(NotAllowedException)
+  }
 
-        then: "the mismatched user realm should be rejected"
-        thrown(NotAllowedException)
-    }
+  def "Update default client roles requires realm administration rights"() {
+    Role[] buildingRoles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
+    Role[] masterRoles = adminUserResource.getClientRoles(null, MASTER_REALM, KEYCLOAK_CLIENT_ID)
 
-    def "Request password reset"() {
-        when: "a user with ${Constants.WRITE_USER_ROLE} permission requests a password reset for themselves"
-        regularUserBuildingResource.requestPasswordResetCurrent(null)
+    when: "a realm admin updates default client roles in their own realm"
+    adminUserBuildingResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles)
 
-        then: "it should succeed"
-        resetPasswordRequests == 1
+    then: "the role update should succeed"
+    adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
 
-        when: "the same user requests a password reset for another user in the same realm"
-        regularUserBuildingResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2.id)
+    when: "a superuser updates default client roles across realms"
+    adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles)
 
-        then: "an exception should occur"
-        thrown(ForbiddenException)
+    then: "the cross-realm update should succeed for the superuser"
+    adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
 
-        when: "the same user requests a password reset for another user in a different realm"
-        regularUserBuildingResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser1.id)
+    when: "a realm admin tries to update default client roles in the master realm"
+    adminUserBuildingResource.updateRoles(null, MASTER_REALM, masterRoles)
 
-        then: "an exception should occur"
-        thrown(ForbiddenException)
+    then: "the cross-realm update should be rejected"
+    thrown(NotAllowedException)
+  }
 
-        when: "a user with ${Constants.WRITE_ADMIN_ROLE} role requests a password reset for another user in the same realm"
-        adminUserBuildingResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2.id)
+  def "Update client roles requires realm administration rights"() {
+    Role[] buildingRoles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
+    Role[] masterRoles = adminUserResource.getClientRoles(null, MASTER_REALM, KEYCLOAK_CLIENT_ID)
 
-        then: "it should succeed"
-        resetPasswordRequests == 2
+    when: "a realm admin updates client roles in their own realm"
+    adminUserBuildingResource.updateClientRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles, KEYCLOAK_CLIENT_ID)
 
-        when: "a user with ${Constants.WRITE_ADMIN_ROLE} role in one realm requests a password reset for another user in a different realm"
-        adminUserBuildingResource.requestPasswordReset(null, MASTER_REALM, keycloakTestSetup.testuser1.id)
+    then: "the role update should succeed"
+    adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
 
-        then: "an exception should occur"
-        thrown(NotAllowedException)
+    when: "a superuser updates client roles across realms"
+    adminUserResource.updateClientRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles, KEYCLOAK_CLIENT_ID)
 
-        when: "a super admin requests a password reset for another user in a different realm"
-        adminUserResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2.id)
+    then: "the cross-realm update should succeed for the superuser"
+    adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
 
-        then: "it should succeed"
-        resetPasswordRequests == 3
-    }
+    when: "a realm admin tries to update client roles in the master realm"
+    adminUserBuildingResource.updateClientRoles(null, MASTER_REALM, masterRoles, KEYCLOAK_CLIENT_ID)
 
-    def "Update user realm roles requires realm administration rights"() {
-        when: "a realm admin updates realm roles for a user in their own realm"
-        adminUserBuildingResource.updateUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, [
-            KeycloakTestSetup.REALM_ROLE_TEST
-        ] as String[])
-
-        then: "the role update should succeed"
-        adminUserResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id) == [
-            KeycloakTestSetup.REALM_ROLE_TEST
-        ] as String[]
-
-        when: "a superuser updates realm roles across realms"
-        adminUserResource.updateUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, [
-            KeycloakTestSetup.REALM_ROLE_TEST2
-        ] as String[])
-
-        then: "the cross-realm update should succeed for the superuser"
-        adminUserResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id) == [
-            KeycloakTestSetup.REALM_ROLE_TEST2
-        ] as String[]
-
-        when: "a realm admin tries to update realm roles for a user in the master realm"
-        adminUserBuildingResource.updateUserRealmRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, [
-            Constants.SUPER_USER_REALM_ROLE
-        ] as String[])
-
-        then: "the cross-realm update should be rejected"
-        thrown(NotAllowedException)
-    }
-
-    def "Create invalid users"() {
-
-        when: "a regular user is created"
-        String username1 = "openremoteuser"
-        User user1 = new User().setUsername(username1)
-        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user1)
-
-        then: "user1 is fetched correctly"
-        User[] users = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
-        assert users.size() == (4 + 1)
-        assert users.any { it.username == username1 }
-
-        /* ---------- */
-
-        when: "the same user is created again"
-        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user1)
-
-        then: "an exception is thrown, because it already exists"
-        thrown(ForbiddenException)
-
-        /* ---------- */
-
-        when: "a user with only special characters is created"
-        String username2 = '#$%^&*()' // only includes illegal characters
-        User user2 = new User().setUsername(username2)
-        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user2)
-
-        then: "the invalid character-only username causes an exception to be thrown"
-        thrown(BadRequestException)
-
-        /* ---------- */
-
-        when: "a user with a few special characters is created"
-        String username3 = "openremoteuser!"
-        User user3 = new User().setUsername(username3)
-        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user3)
-
-        then: "the single exclamation mark should cause an exception to be thrown"
-        thrown(BadRequestException)
-
-        /* ---------- */
-
-        when: "a user is created with their email address as username"
-        String username4 = "developers@openremote.io"
-        User user4 = new User().setUsername(username4)
-        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user4)
-
-        then: "user4 is created correctly"
-        User[] users4 = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
-        assert users4.size() == (4 + 2)
-        assert users4.any { it.username == username4 }
-
-        /* ---------- */
-
-        when: "a user is created with a special email address as their username"
-        String username5 = "dev_dev-dev.dev+dev++dev__ßçʊ@openremote.io" // all special characters should be valid
-        User user5 = new User().setUsername(username5)
-        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user5)
-
-        then: "user5 is created correctly"
-        User[] users5 = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
-        assert users5.size() == (4 + 3)
-        assert users5.any { it.username == username5 }
-    }
-
-    def "Create user requires realm administration rights"() {
-        String sameRealmUsername = "sameRealmCreate" + System.nanoTime()
-        String superuserRealmUsername = "superuserCreate" + System.nanoTime()
-        String crossRealmUsername = "crossRealmCreate" + System.nanoTime()
-        User sameRealmUser = null
-        User superuserRealmUser = null
-        User crossRealmUser = null
-
-        when: "a realm admin creates a user in their own realm"
-        sameRealmUser = adminUserBuildingResource.create(null, keycloakTestSetup.realmBuilding.name, new User().setUsername(sameRealmUsername))
-
-        then: "the user should be created"
-        sameRealmUser != null
-        sameRealmUser.realm == keycloakTestSetup.realmBuilding.name
-
-        when: "a superuser creates a user across realms"
-        superuserRealmUser = adminUserResource.create(null, keycloakTestSetup.realmBuilding.name, new User().setUsername(superuserRealmUsername))
-
-        then: "the cross-realm create should succeed for the superuser"
-        superuserRealmUser != null
-        superuserRealmUser.realm == keycloakTestSetup.realmBuilding.name
-
-        when: "a realm admin tries to create a user in the master realm"
-        crossRealmUser = adminUserBuildingResource.create(null, MASTER_REALM, new User().setUsername(crossRealmUsername))
-
-        then: "the cross-realm create should be rejected"
-        thrown(NotAllowedException)
-
-        cleanup:
-        if (sameRealmUser?.id) {
-            adminUserResource.delete(null, sameRealmUser.realm, sameRealmUser.id)
-        }
-        if (superuserRealmUser?.id) {
-            adminUserResource.delete(null, superuserRealmUser.realm, superuserRealmUser.id)
-        }
-        if (crossRealmUser?.id) {
-            adminUserResource.delete(null, MASTER_REALM, crossRealmUser.id)
-        }
-    }
-
-    def "Reset secret requires realm administration rights"() {
-        when: "a realm admin resets a secret in their own realm"
-        String sameRealmSecret = adminUserBuildingResource.resetSecret(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.serviceUser.id)
-
-        then: "the secret reset should succeed"
-        sameRealmSecret != null
-        !sameRealmSecret.isEmpty()
-
-        when: "a superuser resets a secret across realms"
-        String superuserSecret = adminUserResource.resetSecret(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.serviceUser.id)
-
-        then: "the cross-realm reset should succeed for the superuser"
-        superuserSecret != null
-        !superuserSecret.isEmpty()
-
-        when: "a realm admin tries to reset a secret in the master realm"
-        adminUserBuildingResource.resetSecret(null, MASTER_REALM, keycloakTestSetup.superServiceUser.id)
-
-        then: "the cross-realm reset should be rejected"
-        thrown(NotAllowedException)
-    }
-
-    def "Update user client roles requires realm administration rights"() {
-        String[] buildingUserRoles = adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID)
-        String[] masterUserRoles = adminUserResource.getUserClientRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, KEYCLOAK_CLIENT_ID)
-
-        when: "a realm admin updates client roles for a user in their own realm"
-        adminUserBuildingResource.updateUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, buildingUserRoles, KEYCLOAK_CLIENT_ID)
-
-        then: "the role update should succeed"
-        adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID) as Set == buildingUserRoles as Set
-
-        when: "a superuser updates client roles across realms"
-        adminUserResource.updateUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, buildingUserRoles, KEYCLOAK_CLIENT_ID)
-
-        then: "the cross-realm update should succeed for the superuser"
-        adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID) as Set == buildingUserRoles as Set
-
-        when: "a realm admin tries to update client roles for a user in the master realm"
-        adminUserBuildingResource.updateUserClientRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, masterUserRoles, KEYCLOAK_CLIENT_ID)
-
-        then: "the cross-realm update should be rejected"
-        thrown(NotAllowedException)
-    }
-
-    def "Update default client roles requires realm administration rights"() {
-        Role[] buildingRoles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
-        Role[] masterRoles = adminUserResource.getClientRoles(null, MASTER_REALM, KEYCLOAK_CLIENT_ID)
-
-        when: "a realm admin updates default client roles in their own realm"
-        adminUserBuildingResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles)
-
-        then: "the role update should succeed"
-        adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
-
-        when: "a superuser updates default client roles across realms"
-        adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles)
-
-        then: "the cross-realm update should succeed for the superuser"
-        adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
-
-        when: "a realm admin tries to update default client roles in the master realm"
-        adminUserBuildingResource.updateRoles(null, MASTER_REALM, masterRoles)
-
-        then: "the cross-realm update should be rejected"
-        thrown(NotAllowedException)
-    }
-
-    def "Update client roles requires realm administration rights"() {
-        Role[] buildingRoles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
-        Role[] masterRoles = adminUserResource.getClientRoles(null, MASTER_REALM, KEYCLOAK_CLIENT_ID)
-
-        when: "a realm admin updates client roles in their own realm"
-        adminUserBuildingResource.updateClientRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles, KEYCLOAK_CLIENT_ID)
-
-        then: "the role update should succeed"
-        adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
-
-        when: "a superuser updates client roles across realms"
-        adminUserResource.updateClientRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles, KEYCLOAK_CLIENT_ID)
-
-        then: "the cross-realm update should succeed for the superuser"
-        adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
-
-        when: "a realm admin tries to update client roles in the master realm"
-        adminUserBuildingResource.updateClientRoles(null, MASTER_REALM, masterRoles, KEYCLOAK_CLIENT_ID)
-
-        then: "the cross-realm update should be rejected"
-        thrown(NotAllowedException)
-    }
+    then: "the cross-realm update should be rejected"
+    thrown(NotAllowedException)
+  }
 }

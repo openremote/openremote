@@ -4,12 +4,11 @@
     "outDir": "./lib",
     "rootDir": "src"
   },
-  "include": [
-    "./src"
-  ],
+  "include": ["./src"],
   "references": [
+    { "path": "../or-element" },
     { "path": "../core" },
     { "path": "../or-translate" },
     { "path": "../or-vaadin-components" }
-]
+  ]
 }

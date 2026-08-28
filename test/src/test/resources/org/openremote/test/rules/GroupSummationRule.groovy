@@ -1,5 +1,23 @@
 /*
-Example group summation rule for the summation of child asset attributes to parent asset attributes:
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+/*
+ Example group summation rule for the summation of child asset attributes to parent asset attributes:
  - The child and parent attributes must have the 'Rule state' configuration item added.
  - You must specify the parent asset ID below.
  */
@@ -35,101 +53,111 @@ rules.add()
         .name("Group summation rule")
         .when({ facts ->
 
-            // Check if parent asset ID is valid
-            Optional<AttributeInfo> parent = facts.matchFirstAssetState(new AssetQuery().ids(parentAssetId))
+          // Check if parent asset ID is valid
+          Optional<AttributeInfo> parent = facts.matchFirstAssetState(new AssetQuery().ids(parentAssetId))
 
-            if (parent.isEmpty()) {
-                LOG.warning("No Parent Asset found with ID: '" + parentAssetId + "'; Check Parent Asset ID and if the rule state configuration is added to the attribute")
-                return false
-            }
+          if (parent.isEmpty()) {
+            LOG.warning("No Parent Asset found with ID: '" + parentAssetId + "'; Check Parent Asset ID and if the rule state configuration is added to the attribute")
+            return false
+          }
 
-            // Find attribute changes in group for your attribute names
-            List<AttributeInfo> changes = facts
-                    .matchAssetState(new AssetQuery().parents(parentAssetId).attributeNames(attributeNames))
-                    .filter { attributeInfo ->
-                        boolean timestampChanged = false
+          // Find attribute changes in group for your attribute names
+          List<AttributeInfo> changes = facts
+                  .matchAssetState(new AssetQuery().parents(parentAssetId).attributeNames(attributeNames))
+                  .filter { attributeInfo ->
+                    boolean timestampChanged = false
 
-                        // Get previous attribute state from facts
-                        Optional<AttributeInfo> previous = facts.matchFirst(attributeInfo.id + attributeInfo.name)
+                    // Get previous attribute state from facts
+                    Optional<AttributeInfo> previous = facts.matchFirst(attributeInfo.id + attributeInfo.name)
 
-                        // Check if attribute timestamp has been updated (attribute value can be the same)
-                        if (attributeInfo.timestamp > previous.map { it.timestamp }.orElse(0)) {
-                            timestampChanged = true
-                        }
-
-                        return timestampChanged
+                    // Check if attribute timestamp has been updated (attribute value can be the same)
+                    if (attributeInfo.timestamp> previous.map { it.timestamp }.orElse(0)) {
+                      timestampChanged = true
                     }
+
+                    return timestampChanged
+                  }
+                  .toList()
+
+          // Get attribute names of changes
+          String[] changesAttributeNames = changes
+                  .collect { it.name }
+                  .unique()
+
+          // Find all relevant children attributes
+          List<AttributeInfo> childrenAttributes = Collections.synchronizedList(new ArrayList<>())
+
+          if (changesAttributeNames.length> 0) {
+            childrenAttributes = facts
+                    .matchAssetState(new AssetQuery().parents(parentAssetId).attributeNames(changesAttributeNames))
                     .toList()
+          }
 
-            // Get attribute names of changes
-            String[] changesAttributeNames = changes
-                    .collect { it.name }
-                    .unique()
+          // Bind attribute info for the then trigger
+          if (!changes.isEmpty()) {
+            facts.bind("parent", parent)
+            facts.bind("changes", changes)
 
-            // Find all relevant children attributes
-            List<AttributeInfo> childrenAttributes = Collections.synchronizedList(new ArrayList<>())
-
-            if (changesAttributeNames.length > 0) {
-                childrenAttributes = facts
-                        .matchAssetState(new AssetQuery().parents(parentAssetId).attributeNames(changesAttributeNames))
-                        .toList()
+            if (!childrenAttributes.isEmpty()) {
+              facts.bind("changesAttributeNames", changesAttributeNames)
+              facts.bind("childrenAttributes", childrenAttributes)
             }
+          }
 
-            // Bind attribute info for the then trigger
-            if (!changes.isEmpty()) {
-                facts.bind("parent", parent)
-                facts.bind("changes", changes)
-
-                if (!childrenAttributes.isEmpty()) {
-                    facts.bind("changesAttributeNames", changesAttributeNames)
-                    facts.bind("childrenAttributes", childrenAttributes)
-                }
-            }
-
-            // Trigger the rule 'then' action if there are changes to process
-            return !changes.isEmpty()
+          // Trigger the rule 'then' action if there are changes to process
+          return !changes.isEmpty()
         })
         .then({ facts ->
-            Optional<AttributeInfo> parent = facts.bound("parent")
-            List<AttributeInfo> changes = facts.bound("changes")
-            String[] changesAttributeNames = facts.bound("changesAttributeNames")
-            List<AttributeInfo> childrenAttributes = facts.bound("childrenAttributes")
+          Optional<AttributeInfo> parent = facts.bound("parent")
+          List<AttributeInfo> changes = facts.bound("changes")
+          String[] changesAttributeNames = facts.bound("changesAttributeNames")
+          List<AttributeInfo> childrenAttributes = facts.bound("childrenAttributes")
 
-            // Create fact for each attribute change
-            changes.forEach { attributeInfo -> facts.put(attributeInfo.id + attributeInfo.name, attributeInfo as Object) }
+          // Create fact for each attribute change
+          changes.forEach { attributeInfo ->
+            facts.put(attributeInfo.id + attributeInfo.name, attributeInfo as Object)
+          }
 
-            // Stop when group is empty
-            if (childrenAttributes == null) {
-                return
-            }
+          // Stop when group is empty
+          if (childrenAttributes == null) {
+            return
+          }
 
-            // Filter children attributes
-            List<AttributeInfo> childrenAttributesFiltered = childrenAttributes
+          // Filter children attributes
+          List<AttributeInfo> childrenAttributesFiltered = childrenAttributes
 
-            if (matchParentAssetType) {
-                childrenAttributesFiltered = childrenAttributes
-                        .findAll { it.assetType == parent.get().assetType }
-            }
+          if (matchParentAssetType) {
+            childrenAttributesFiltered = childrenAttributes
+                    .findAll { it.assetType == parent.get().assetType }
+          }
 
-            // Sum values per attribute
-            for (attributeName in changesAttributeNames) {
-                // Validate value type
-                boolean validValueType = childrenAttributesFiltered
-                        .find { it.name == attributeName }
-                        .collect { it.type.type.name }
-                        .any { it in ["java.lang.Double", "java.lang.Integer", "java.lang.Long", "java.math.BigDecimal", "java.math.BigInteger"] }
-
-                if (validValueType) {
-                    def sum = childrenAttributesFiltered
-                            .findAll { it.name == attributeName }
-                            .findAll { it.value.isPresent() }
-                            .collect { it.value.get() }
-                            .sum()
-
-                    // Update parent
-                    if (sum != null) {
-                        assets.dispatch(parentAssetId, attributeName, sum)
+          // Sum values per attribute
+          for (attributeName in changesAttributeNames) {
+            // Validate value type
+            boolean validValueType = childrenAttributesFiltered
+                    .find { it.name == attributeName }
+                    .collect { it.type.type.name }
+                    .any {
+                      it in [
+                        "java.lang.Double",
+                        "java.lang.Integer",
+                        "java.lang.Long",
+                        "java.math.BigDecimal",
+                        "java.math.BigInteger"
+                      ]
                     }
-                }
+
+            if (validValueType) {
+              def sum = childrenAttributesFiltered
+                      .findAll { it.name == attributeName }
+                      .findAll { it.value.isPresent() }
+                      .collect { it.value.get() }
+                      .sum()
+
+              // Update parent
+              if (sum != null) {
+                assets.dispatch(parentAssetId, attributeName, sum)
+              }
             }
+          }
         })

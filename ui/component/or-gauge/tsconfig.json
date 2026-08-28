@@ -5,11 +5,9 @@
     "rootDir": "src",
     "typeRoots": ["./@types"]
   },
-  "include": [
-    "./src",
-    "./@types"
-  ],
+  "include": ["./src", "./@types"],
   "references": [
+    { "path": "../or-element" },
     { "path": "../core" },
     { "path": "../or-components" },
     { "path": "../or-icon" },

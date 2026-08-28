@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-services",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "OpenRemote services related UI components",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -24,6 +24,7 @@
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/or-components": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-tree-menu": "workspace:*",

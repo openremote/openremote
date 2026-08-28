@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.test.rules
 
 import org.openremote.model.util.UniqueIdentifierGenerator
@@ -21,94 +39,94 @@ import spock.util.concurrent.PollingConditions
 
 class GroupSummationRuleTest extends Specification implements ManagerContainerTrait {
 
-    def "Group summation rule test"() {
+  def "Group summation rule test"() {
 
-        given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 5, delay: 0.2)
-        def container = startContainer(defaultConfig(), defaultServices())
-        def rulesService = container.getService(RulesService.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def rulesetStorageService = container.getService(RulesetStorageService.class)
-        RulesEngine engine = null
+    given: "the container environment is started"
+    def conditions = new PollingConditions(timeout: 5, delay: 0.2)
+    def container = startContainer(defaultConfig(), defaultServices())
+    def rulesService = container.getService(RulesService.class)
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def assetProcessingService = container.getService(AssetProcessingService.class)
+    def rulesetStorageService = container.getService(RulesetStorageService.class)
+    RulesEngine engine = null
 
-        and: "a parent asset and child assets are added"
-        def parentAsset = new ThingAsset("SummationParentAsset")
-                .setId(UniqueIdentifierGenerator.generateId("SummationParentAsset"))
-                .setRealm(Constants.MASTER_REALM)
-                .addAttributes(
-                        new Attribute<>("boolean", ValueType.BOOLEAN, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
-                        new Attribute<>("integer", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
-                        new Attribute<>("number", ValueType.NUMBER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
-                )
-        parentAsset = assetStorageService.merge(parentAsset)
+    and: "a parent asset and child assets are added"
+    def parentAsset = new ThingAsset("SummationParentAsset")
+            .setId(UniqueIdentifierGenerator.generateId("SummationParentAsset"))
+            .setRealm(Constants.MASTER_REALM)
+            .addAttributes(
+            new Attribute<>("boolean", ValueType.BOOLEAN, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
+            new Attribute<>("integer", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
+            new Attribute<>("number", ValueType.NUMBER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
+            )
+    parentAsset = assetStorageService.merge(parentAsset)
 
-        def childAsset1 = new ThingAsset("childAsset1")
-                .setId(UniqueIdentifierGenerator.generateId("childAsset1"))
-                .setParent(parentAsset)
-                .addAttributes(
-                        new Attribute<>("boolean", ValueType.BOOLEAN, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
-                        new Attribute<>("integer", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
-                        new Attribute<>("number", ValueType.NUMBER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
-                )
-        childAsset1 = assetStorageService.merge(childAsset1)
+    def childAsset1 = new ThingAsset("childAsset1")
+            .setId(UniqueIdentifierGenerator.generateId("childAsset1"))
+            .setParent(parentAsset)
+            .addAttributes(
+            new Attribute<>("boolean", ValueType.BOOLEAN, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
+            new Attribute<>("integer", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
+            new Attribute<>("number", ValueType.NUMBER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
+            )
+    childAsset1 = assetStorageService.merge(childAsset1)
 
-        def childAsset2 = new ThingAsset("childAsset2")
-                .setId(UniqueIdentifierGenerator.generateId("childAsset2"))
-                .setParent(parentAsset)
-                .addAttributes(
-                        new Attribute<>("boolean", ValueType.BOOLEAN, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
-                        new Attribute<>("integer", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
-                        new Attribute<>("number", ValueType.NUMBER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
-                )
-        childAsset2 = assetStorageService.merge(childAsset2)
+    def childAsset2 = new ThingAsset("childAsset2")
+            .setId(UniqueIdentifierGenerator.generateId("childAsset2"))
+            .setParent(parentAsset)
+            .addAttributes(
+            new Attribute<>("boolean", ValueType.BOOLEAN, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
+            new Attribute<>("integer", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
+            new Attribute<>("number", ValueType.NUMBER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
+            )
+    childAsset2 = assetStorageService.merge(childAsset2)
 
-        and: "the group summation ruleset is added"
-        Ruleset ruleset = new RealmRuleset(
-                Constants.MASTER_REALM,
-                "Group summation rule",
-                Ruleset.Lang.GROOVY,
-                getClass().getResource("/org/openremote/test/rules/GroupSummationRule.groovy").text)
-        ruleset = rulesetStorageService.merge(ruleset)
+    and: "the group summation ruleset is added"
+    Ruleset ruleset = new RealmRuleset(
+            Constants.MASTER_REALM,
+            "Group summation rule",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/org/openremote/test/rules/GroupSummationRule.groovy").text)
+    ruleset = rulesetStorageService.merge(ruleset)
 
-        expect: "the rule engines to become available and be running"
-        conditions.eventually {
-            engine = rulesService.realmEngines.get(Constants.MASTER_REALM)
-            assert engine != null
-            assert engine.isRunning()
-            assert engine.facts.assetStates.count { it.id == parentAsset.id } == 3
-            assert engine.lastFireTimestamp > ruleset.createdOn.toEpochMilli()
-            assert engine.deployments.get(ruleset.id) != null
-        }
-
-        when: "the integer attribute of the child assets is written to"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset1.id, "integer", 1))
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset2.id, "integer", 1))
-
-        then: "the corresponding attribute of the parent asset should be updated with the attribute sum of the child assets"
-        conditions.eventually {
-            parentAsset = assetStorageService.find(parentAsset.id, true) as ThingAsset
-            assert parentAsset.getAttribute("integer").flatMap { it.value }.orElse(0) == 2
-        }
-
-        when: "the number attribute of the child assets is written to"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset1.id, "number", 1.0))
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset2.id, "number", 1.0))
-
-        then: "the corresponding attribute of the parent asset should be updated with the attribute sum of the child assets"
-        conditions.eventually {
-            parentAsset = assetStorageService.find(parentAsset.id, true) as ThingAsset
-            assert parentAsset.getAttribute("number").flatMap { it.value }.orElse(0.0) == 2.0
-        }
-
-        when: "the boolean attribute of the child assets is written to"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset1.id, "boolean", true))
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset2.id, "boolean", true))
-
-        then: "the corresponding attribute of the parent asset should not be updated"
-        conditions.eventually {
-            parentAsset = assetStorageService.find(parentAsset.id, true) as ThingAsset
-            assert !parentAsset.getAttribute("boolean").flatMap { it.value }.orElse(false)
-        }
+    expect: "the rule engines to become available and be running"
+    conditions.eventually {
+      engine = rulesService.realmEngines.get(Constants.MASTER_REALM)
+      assert engine != null
+      assert engine.isRunning()
+      assert engine.facts.assetStates.count { it.id == parentAsset.id } == 3
+      assert engine.lastFireTimestamp> ruleset.createdOn.toEpochMilli()
+      assert engine.deployments.get(ruleset.id) != null
     }
+
+    when: "the integer attribute of the child assets is written to"
+    assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset1.id, "integer", 1))
+    assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset2.id, "integer", 1))
+
+    then: "the corresponding attribute of the parent asset should be updated with the attribute sum of the child assets"
+    conditions.eventually {
+      parentAsset = assetStorageService.find(parentAsset.id, true) as ThingAsset
+      assert parentAsset.getAttribute("integer").flatMap { it.value }.orElse(0) == 2
+    }
+
+    when: "the number attribute of the child assets is written to"
+    assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset1.id, "number", 1.0))
+    assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset2.id, "number", 1.0))
+
+    then: "the corresponding attribute of the parent asset should be updated with the attribute sum of the child assets"
+    conditions.eventually {
+      parentAsset = assetStorageService.find(parentAsset.id, true) as ThingAsset
+      assert parentAsset.getAttribute("number").flatMap { it.value }.orElse(0.0) == 2.0
+    }
+
+    when: "the boolean attribute of the child assets is written to"
+    assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset1.id, "boolean", true))
+    assetProcessingService.sendAttributeEvent(new AttributeEvent(childAsset2.id, "boolean", true))
+
+    then: "the corresponding attribute of the parent asset should not be updated"
+    conditions.eventually {
+      parentAsset = assetStorageService.find(parentAsset.id, true) as ThingAsset
+      assert !parentAsset.getAttribute("boolean").flatMap { it.value }.orElse(false)
+    }
+  }
 }

@@ -9,36 +9,34 @@ on:
   workflow_dispatch:
     inputs:
       ACCOUNT_NAME:
-        description: 'New account name (lowercase simple values recommended)'
+        description: "New account name (lowercase simple values recommended)"
         required: false
         type: string
       PARENT_DNS_ZONE:
-        description: 'Name of parent hosted domain zone in management account'
+        description: "Name of parent hosted domain zone in management account"
         type: string
         default: openremote.app
         required: true
       VPC_PEER:
-        description: 'Create VPC peering connection with management account'
+        description: "Create VPC peering connection with management account"
         type: boolean
         default: true
         required: false
       HOSTED_DNS:
-        description: 'Create hosted domain zone in new account'
+        description: "Create hosted domain zone in new account"
         type: boolean
         required: false
       OU:
-        description: 'Organisational unit to use for account'
+        description: "Organisational unit to use for account"
         type: string
         default: Custom
 
 jobs:
-
   provision:
     name: Provision
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Check CI/CD team membership
         uses: tspascoal/get-user-teams-membership@b2546c5affc730fd8e3d8483ae9ad3621938c2f9 # v4.0.2
         id: checkUserMember
@@ -49,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets._TEMP_ACCESS_TOKEN_FOR_READING_ORG_TEAMS }} # Personal access token used to query github (Requires scope: `read:org`)
 
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Provision Account
         if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}

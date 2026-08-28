@@ -2,6 +2,10 @@ name: Review
 
 on:
   pull_request:
+  merge_group:
+    types: [checks_requested]
+    branches:
+      - master
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,9 +18,13 @@ jobs:
     outputs: # See https://github.com/tj-actions/changed-files/tree/2bb135777322059ee3a3c9239999b159ff49febc#outputs-
       any_modified: ${{ steps.changed-files.outputs.backend_any_modified == 'true' || steps.changed-files.outputs.ui_any_modified == 'true' }}
       backend_any_modified: ${{ steps.changed-files.outputs.backend_any_modified }}
+      backend_spotless_any_modified: ${{ steps.changed-files.outputs.backend_spotless_any_modified }}
       ui_any_modified: ${{ steps.changed-files.outputs.ui_any_modified }}
+      ui_spotless_any_modified: ${{ steps.changed-files.outputs.ui_spotless_any_modified }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
       - name: Detect changes
         id: changed-files
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
@@ -40,6 +48,29 @@ jobs:
               - '!.yarnrc.yml'
               - '!package.json'
               - '!yarn.lock'
+            # Sources and configuration that spotlessBackendCheck reads
+            backend_spotless:
+              - '**/*.{gradle,groovy,java,md,tpl,xml,xsd,yaml,yml}'
+              - '!ui/**'
+              - 'package.json'
+              - 'tools/spotless/**'
+              - 'ui/.prettierignore'
+              - 'ui/.prettierrc.json'
+            # Sources and configuration that spotlessUiCheck reads
+            ui_spotless:
+              - '*.{gradle,md}'
+              - 'package.json'
+              - 'tools/spotless/**'
+              - 'ui/**/*.{cjs,css,cts,gradle,html,js,json,jsonc,jsx,md,mdx,mjs,mts,ts,tsx}'
+              - 'ui/.prettierignore'
+
+  check-spotless:
+    name: Lint
+    needs: detect-changes
+    if: ${{ !failure() && !cancelled() }}
+    uses: "./.github/workflows/check-spotless.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.backend_spotless_any_modified != 'true' }}
 
   ui-check-dependencies:
     name: Lint
@@ -48,6 +79,14 @@ jobs:
     uses: "./.github/workflows/ui-check-dependencies.yml"
     with:
       skip: ${{ needs.detect-changes.outputs.ui_any_modified != 'true' }}
+
+  ui-check-spotless:
+    name: Lint
+    needs: detect-changes
+    if: ${{ !failure() && !cancelled() }}
+    uses: "./.github/workflows/ui-check-spotless.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.ui_spotless_any_modified != 'true' }}
 
   ui-check-outdated-translations:
     name: Lint
@@ -146,7 +185,7 @@ jobs:
     needs: install-dist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Get version details
         id: get-version-details
-        uses: openremote/openremote/.github/actions/get-version-details@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
+        uses: openremote/openremote/.github/actions/get-version-details@46767a2b23c43e83057c8995d546a876fc185126

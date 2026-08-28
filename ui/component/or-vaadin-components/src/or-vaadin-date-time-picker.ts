@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,16 +12,17 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { customElement } from "lit/decorators.js";
 import { DateTimePicker } from "@vaadin/date-time-picker";
-import { OrVaadinComponent } from "./util";
+import type { OrVaadinComponent } from "./util";
 
 @customElement("or-vaadin-date-time-picker")
 export class OrVaadinDateTimePicker extends DateTimePicker implements OrVaadinComponent {
-
-    public static getLocalizedISOString(d?: Date) {
-        return d && new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    }
+  public static getLocalizedISOString(d?: Date) {
+    return d && new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  }
 }

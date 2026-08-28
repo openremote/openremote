@@ -1,101 +1,115 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import * as Util from "@openremote/core/lib/util";
-import { Asset, AssetTypeInfo } from "@openremote/model";
+import type { Asset, AssetTypeInfo } from "@openremote/model";
 
 export const notes = { name: "notes", type: "text" };
 export const location = { name: "location", type: "GEO_JSONPoint" };
 export const commonAttrs = { notes, location };
 
-export const assetMap = {
-    "Battery": "Electricity Battery Asset",
-    "Solar Panel": "PV Solar Asset"
-};
 const assets = [
-    {
-        name: "Battery",
-        type: "ThingAsset",
-        realm: "smartcity",
-        attributes: {
-            ...commonAttrs,
-            energyLevel: { name: "energyLevel", type: "positiveNumber", meta: { readOnly: true } },
-            power: { name: "power", type: "number", meta: { readOnly: false } },
-            powerSetpoint: { name: "powerSetpoint", type: "number" },
-            energyCapacity: { name: "energyCapacity", type: "positiveNumber" },
-        },
+  {
+    name: "Battery",
+    type: "ThingAsset",
+    realm: "smartcity",
+    attributes: {
+      ...commonAttrs,
+      energyLevel: { name: "energyLevel", type: "positiveNumber", meta: { readOnly: true } },
+      power: { name: "power", type: "number", meta: { readOnly: false } },
+      powerSetpoint: { name: "powerSetpoint", type: "number" },
+      energyCapacity: { name: "energyCapacity", type: "positiveNumber" },
     },
-    {
-        name: "Solar Panel",
-        type: "ThingAsset",
-        realm: "smartcity",
-        attributes: {
-            ...commonAttrs,
-            panelPitch: { name: "panelPitch", type: "positiveInteger", meta: { readOnly: true } },
-            power: { name: "power", type: "number", meta: { readOnly: false } },
-            powerForecast: { name: "powerForecast", type: "number", meta: { readOnly: true } },
-        },
+  },
+  {
+    name: "Solar Panel",
+    type: "ThingAsset",
+    realm: "smartcity",
+    attributes: {
+      ...commonAttrs,
+      panelPitch: { name: "panelPitch", type: "positiveInteger", meta: { readOnly: true } },
+      power: { name: "power", type: "number", meta: { readOnly: false } },
+      powerForecast: { name: "powerForecast", type: "number", meta: { readOnly: true } },
     },
+  },
 ] as const;
 
 export const preparedAssetsWithLocation = Object.values(
-    Util.mergeObjects(
-        structuredClone(assets),
-        [
-            {
-                attributes: {
-                    location: { value: { type: "Point", coordinates: [4.482259693115793, 51.91756799273] } },
-                },
-            },
-            {
-                attributes: {
-                    location: { value: { type: "Point", coordinates: [4.4845127486877345, 51.917435642781214] } },
-                },
-            },
-        ],
-        true
-    )
+  Util.mergeObjects(
+    structuredClone(assets),
+    [
+      {
+        attributes: {
+          location: { value: { type: "Point", coordinates: [4.482259693115793, 51.91756799273] } },
+        },
+      },
+      {
+        attributes: {
+          location: { value: { type: "Point", coordinates: [4.4845127486877345, 51.917435642781214] } },
+        },
+      },
+    ],
+    true
+  )
 );
 
 export const preparedAssetsForRules = Object.values(
-    Util.mergeObjects(
-        structuredClone(assets),
-        [
-            {
-                attributes: {
-                    energyLevel: { meta: { ruleState: true, storeDataPoints: true } },
-                    power: { meta: { ruleState: true, storeDataPoints: true } },
-                },
-            },
-            {
-                attributes: {
-                    power: { meta: { ruleState: true, storeDataPoints: true } },
-                    powerForecast: { meta: { ruleState: true, storeDataPoints: true } },
-                },
-            },
-        ],
-        true
-    )
+  Util.mergeObjects(
+    structuredClone(assets),
+    [
+      {
+        attributes: {
+          energyLevel: { meta: { ruleState: true, storeDataPoints: true } },
+          power: { meta: { ruleState: true, storeDataPoints: true } },
+        },
+      },
+      {
+        attributes: {
+          power: { meta: { ruleState: true, storeDataPoints: true } },
+          powerForecast: { meta: { ruleState: true, storeDataPoints: true } },
+        },
+      },
+    ],
+    true
+  )
 );
 
 export const preparedAssetsForInsights: Asset[] = [
-    {
-        name: "Energy Asset 1",
-        type: "ThingAsset",
-        realm: "smartcity",
-        attributes: {
-            ...commonAttrs,
-            energyLevel: { name: "energyLevel", type: "number", meta: { storeDataPoints: true } },
-            power: { name: "power", type: "number", meta: { storeDataPoints: true } },
-        },
+  {
+    name: "Energy Asset 1",
+    type: "ThingAsset",
+    realm: "smartcity",
+    attributes: {
+      ...commonAttrs,
+      energyLevel: { name: "energyLevel", type: "number", meta: { storeDataPoints: true } },
+      power: { name: "power", type: "number", meta: { storeDataPoints: true } },
     },
-    {
-        name: "Energy Asset 2",
-        type: "ThingAsset",
-        realm: "smartcity",
-        attributes: {
-            ...commonAttrs,
-            energyLevel: { name: "energyLevel", type: "number", meta: { storeDataPoints: true } },
-            power: { name: "power", type: "number", meta: { storeDataPoints: true } },
-        },
+  },
+  {
+    name: "Energy Asset 2",
+    type: "ThingAsset",
+    realm: "smartcity",
+    attributes: {
+      ...commonAttrs,
+      energyLevel: { name: "energyLevel", type: "number", meta: { storeDataPoints: true } },
+      power: { name: "power", type: "number", meta: { storeDataPoints: true } },
     },
+  },
 ];
 
 /**
@@ -103,81 +117,56 @@ export const preparedAssetsForInsights: Asset[] = [
  * attribute, for tests that need to distinguish the two datapoint types.
  */
 export const assetWithPredictedAndStoredDatapoints: Asset = {
-    name: "Import Asset",
-    type: "ThingAsset",
-    realm: "smartcity",
-    attributes: {
-        ...commonAttrs,
-        energyImportTotal: { name: "energyImportTotal", type: "number", meta: { hasPredictedDataPoints: true } },
-        energyExportTotal: { name: "energyExportTotal", type: "number", meta: { storeDataPoints: true } },
-    },
-};
-
-type AssetNames = (typeof assets)[number]["name"];
-
-export const assetPatches: Record<
-    AssetNames,
-    {
-        attribute1: string;
-        attribute2: string;
-        attribute3: string;
-        value1: string;
-        value2: string;
-        value3: string;
-        x: number;
-        y: number;
-    }
-> = {
-    Battery: {
-        attribute1: "energyLevel",
-        attribute2: "power",
-        attribute3: "powerSetpoint",
-        value1: "30",
-        value2: "50",
-        value3: "70",
-        x: 705,
-        y: 210,
-    },
-    "Solar Panel": {
-        attribute1: "panelPitch",
-        attribute2: "power",
-        attribute3: "powerForecast",
-        value1: "30",
-        value2: "70",
-        value3: "100",
-        x: 600,
-        y: 200,
-    },
+  name: "Import Asset",
+  type: "ThingAsset",
+  realm: "smartcity",
+  attributes: {
+    ...commonAttrs,
+    energyImportTotal: { name: "energyImportTotal", type: "number", meta: { hasPredictedDataPoints: true } },
+    energyExportTotal: { name: "energyExportTotal", type: "number", meta: { storeDataPoints: true } },
+  },
 };
 
 export type DefaultAssets = typeof assets;
 export default assets;
 
 export const thing: Asset = {
-    name: "Thing",
-    realm: "smartcity",
-    type: "ThingAsset",
-    attributes: { ...commonAttrs },
+  name: "Thing",
+  realm: "smartcity",
+  type: "ThingAsset",
+  attributes: { ...commonAttrs },
+};
+
+export const weather: Asset = {
+  name: "Weather",
+  realm: "smartcity",
+  type: "ThingAsset",
+  attributes: {
+    ...commonAttrs,
+    temperature: { name: "temperature", type: "number", meta: { readOnly: true } },
+    humidity: { name: "humidity", type: "positiveInteger", meta: { readOnly: false } },
+    rainfall: { name: "rainfall", type: "number" },
+  },
 };
 
 export const agent: Asset = {
-    name: "Simulator",
-    realm: "smartcity",
-    type: "SimulatorAgent",
-    attributes: {
-        ...commonAttrs,
-        agentDisabled: { name: "agentDisabled", type: "boolean", meta: {} },
-        agentStatus: { name: "agentStatus", type: "connectionStatus", meta: { readOnly: true } },
-    },
+  name: "Simulator",
+  realm: "smartcity",
+  type: "SimulatorAgent",
+  attributes: {
+    ...commonAttrs,
+    agentDisabled: { name: "agentDisabled", type: "boolean", meta: {} },
+    agentStatus: { name: "agentStatus", type: "connectionStatus", meta: { readOnly: true } },
+  },
 };
 
 export type BBox = { south: number; north: number; west: number; east: number };
 
 const rotterdam: BBox = {
-    south: 51.89,
-    north: 51.99,
-    west: 4.24,
-    east: 4.51,
+  south: 51.89,
+  north: 51.99,
+  west: 4.24,
+  east: 4.51,
 };
 
 /**
@@ -188,17 +177,17 @@ const rotterdam: BBox = {
  * @default `[4.483890476199264, 51.91547581791727]` (Jufferkade)
  */
 export function assignLocation(asset: Asset, coordinates = [4.483890476199264, 51.91547581791727]): Asset {
-    asset.attributes ??= {};
-    Object.assign(asset.attributes, {
-        location: {
-            name: "location",
-            type: "GEO_JSONPoint",
-            value: { type: "Point", coordinates },
-            meta: {},
-        },
-    });
+  asset.attributes ??= {};
+  Object.assign(asset.attributes, {
+    location: {
+      name: "location",
+      type: "GEO_JSONPoint",
+      value: { type: "Point", coordinates },
+      meta: {},
+    },
+  });
 
-    return asset;
+  return asset;
 }
 
 /**
@@ -209,54 +198,54 @@ export function assignLocation(asset: Asset, coordinates = [4.483890476199264, 5
  * @default {@link rotterdam}
  */
 export function assignRandomLocationInArea(asset: Asset, { south, north, east, west }: BBox = rotterdam): Asset {
-    const y = randomBetween(south, north);
-    const x = randomBetween(east, west);
-    assignLocation(asset, [x, y]);
-    return asset;
+  const y = randomBetween(south, north);
+  const x = randomBetween(east, west);
+  assignLocation(asset, [x, y]);
+  return asset;
 }
 
 export function getAssetAt(assetInfos: AssetTypeInfo[], index = 0): Asset {
-    const validAssetInfos = assetInfos.filter(
-        ({ assetDescriptor }) => assetDescriptor?.name && assetDescriptor.descriptorType === "asset"
-    );
+  const validAssetInfos = assetInfos.filter(
+    ({ assetDescriptor }) => assetDescriptor?.name && assetDescriptor.descriptorType === "asset"
+  );
 
-    const info = validAssetInfos[index % validAssetInfos.length];
+  const info = validAssetInfos[index % validAssetInfos.length];
 
-    const type = info.assetDescriptor!.name;
-    const attributes = Object.fromEntries(
-        Object.values(info?.attributeDescriptors ?? {}).map(({ name, type }) => [name, { name, type, meta: {} }])
-    );
+  const type = info.assetDescriptor!.name;
+  const attributes = Object.fromEntries(
+    Object.values(info?.attributeDescriptors ?? {}).map(({ name, type }) => [name, { name, type, meta: {} }])
+  );
 
-    return { type, name: type, attributes };
+  return { type, name: type, attributes };
 }
 
 export function getAssetsForAllTypes(
-    assetInfos: AssetTypeInfo[],
-    options?: { realm?: string; limit?: number; bbox?: BBox }
+  assetInfos: AssetTypeInfo[],
+  options?: { realm?: string; limit?: number; bbox?: BBox }
 ): Asset[] {
-    return Array.from({ length: options?.limit ?? assetInfos.length }).map((_, i) => {
-        return {
-            ...assignRandomLocationInArea(getAssetAt(assetInfos, i), options?.bbox),
-            name: String(i),
-            realm: options?.realm ?? "smartcity",
-        };
-    });
+  return Array.from({ length: options?.limit ?? assetInfos.length }).map((_, i) => {
+    return {
+      ...assignRandomLocationInArea(getAssetAt(assetInfos, i), options?.bbox),
+      name: String(i),
+      realm: options?.realm ?? "smartcity",
+    };
+  });
 }
 
 export function getAssetTypes(assets: Asset[]) {
-    return assets.map(({ type }) => type!).filter((value, index, array) => array.indexOf(value) === index);
+  return assets.map(({ type }) => type!).filter((value, index, array) => array.indexOf(value) === index);
 }
 
 export function getAssetTypeColour(type: string, infos: AssetTypeInfo[]) {
-    return infos.find(({ assetDescriptor }) => assetDescriptor?.name === type)?.assetDescriptor?.colour ?? "";
+  return infos.find(({ assetDescriptor }) => assetDescriptor?.name === type)?.assetDescriptor?.colour ?? "";
 }
 
 export const getRGBColor = (el: Element): string[] => window.getComputedStyle(el).color.match(/\d+/g)!;
 
 export function rgbToHex(rgb: string[]) {
-    return rgb?.map((i) => ("0" + parseInt(i).toString(16)).slice(-2)).join("");
+  return rgb?.map((i) => ("0" + parseInt(i).toString(16)).slice(-2)).join("");
 }
 
 function randomBetween(max: number, min: number) {
-    return Math.random() * (max - min) + min;
+  return Math.random() * (max - min) + min;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-attribute-barchart",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "OpenRemote attribute bar chart",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -20,6 +20,7 @@
   "dependencies": {
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",

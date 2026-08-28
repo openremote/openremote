@@ -1,0 +1,311 @@
+import static java.time.Year.now
+import com.diffplug.gradle.spotless.GroovyGradleExtension
+import groovy.json.JsonSlurper
+
+if (project != rootProject) {
+  throw new GradleException('The Spotless configuration must only be applied to the root project.')
+}
+
+pluginManager.apply('com.diffplug.spotless')
+
+Map<String, Object> packageJson = new JsonSlurper().parse(rootProject.file('package.json')) as Map<String, Object>
+Map<String, String> devDependencies =
+        (packageJson.devDependencies as Map<String, Object>)
+        .collectEntries { String name, Object version ->
+          [(name): version.toString()]
+        }
+Map<String, String> eslintDependencies = devDependencies.findAll { String name, String ignored ->
+  name == 'eslint' ||
+  name == 'typescript' ||
+  name.startsWith('@typescript-eslint/') ||
+  name.startsWith('eslint-config-') ||
+  name.startsWith('eslint-plugin-')
+}
+['eslint', 'prettier', 'typescript'].each { String dependency ->
+  if (!devDependencies.containsKey(dependency)) {
+    throw new GradleException(
+    "Missing required formatter dependency '${dependency}' in package.json"
+    )
+  }
+}
+String prettierVersion = devDependencies.prettier
+
+def readIgnorePatterns = { File ignoreFile ->
+  List<String> patterns = ignoreFile
+  .readLines('UTF-8')
+  .collect { it.trim() }
+  .findAll { it && !it.startsWith('#') }
+  List<String> unsupported = patterns.findAll {
+    it.startsWith('!') || it.startsWith('/') || it.contains('\\')
+  }
+  if (!unsupported.isEmpty()) {
+    throw new GradleException(
+    ".prettierignore contains patterns that cannot safely be reused as Gradle Ant patterns: ${unsupported}"
+    )
+  }
+  return patterns
+}
+def prettierIgnorePatterns = readIgnorePatterns(rootProject.file('ui/.prettierignore'))
+def backendTarget = { Collection<String> includes, Collection<String> excludes = [] ->
+  rootProject.fileTree(rootProject.projectDir) {
+    includes.each { include it }
+    (prettierIgnorePatterns + excludes + ['ui/**']).each { exclude it }
+  }
+}
+def uiTarget = { Collection<String> includes, Collection<String> excludes = [] ->
+  rootProject.fileTree(rootProject.file('ui')) {
+    includes.each { include it }
+    prettierIgnorePatterns.each { exclude it }
+    excludes.each { exclude it }
+  }
+}
+
+String defaultLicenseHeader = rootProject.file('tools/spotless/openremote-license-header.txt').getText('UTF-8').stripTrailing()
+String blockCommentLicenseDelimiter = '(?![ \\t]*/\\*(?:[ \\t]+|\\R[ \\t]*\\*[ \\t]+)Copyright\\b)(?![ \\t]*\\*)[ \\t]*\\S'
+
+spotless {
+  format('css') {
+    target uiTarget(['**/*.css'])
+    toggleOffOn()
+    licenseHeaderFile(rootProject.file('tools/spotless/openremote-license-header.txt'), blockCommentLicenseDelimiter).skipLinesMatching('^@charset\\s+.*$')
+    prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
+    endWithNewline()
+  }
+
+  format 'gradleBackend', GroovyGradleExtension, {
+    target backendTarget(['*/**/*.gradle'])
+    toggleOffOn()
+    greclipse().configFile(rootProject.file('tools/spotless/greclipse-google.properties'))
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+
+  format 'gradleRoot', GroovyGradleExtension, {
+    target '*.gradle'
+    toggleOffOn()
+    greclipse().configFile(rootProject.file('tools/spotless/greclipse-google.properties'))
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+
+  format 'gradleUi', GroovyGradleExtension, {
+    target uiTarget(['**/*.gradle'])
+    toggleOffOn()
+    greclipse().configFile(rootProject.file('tools/spotless/greclipse-google.properties'))
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+
+  groovy {
+    target backendTarget(['**/*.groovy'])
+    targetExclude('**/BasicBrokenRules.groovy')
+    toggleOffOn()
+    greclipse().configFile(rootProject.file('tools/spotless/greclipse-google.properties'))
+    licenseHeaderFile(rootProject.file('tools/spotless/openremote-license-header.txt'), blockCommentLicenseDelimiter)
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+
+  format('helmTemplates') {
+    target backendTarget([
+      'kubernetes/**/templates/**/*.yaml',
+      'kubernetes/**/templates/**/*.yml',
+      'kubernetes/**/templates/**/*.tpl'
+    ])
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+
+  java {
+    target backendTarget(['**/src/*/java/**/*.java'], [
+      // Exclude third-party files that must remain unchanged, including their original license headers
+      '**/org/openremote/container/security/basic/PasswordStorage.java',
+      '**/org/openremote/model/util/TimeUtil.java',
+      '**/org/openremote/model/util/ValueUtil.java'
+    ])
+    toggleOffOn()
+    googleJavaFormat()
+    licenseHeaderFile rootProject.file('tools/spotless/openremote-license-header.txt')
+    removeUnusedImports()
+    formatAnnotations()
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+
+  javascript {
+    target uiTarget(['**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'])
+    toggleOffOn()
+    eslint(eslintDependencies).npmInstallCache().configFile(rootProject.file('ui/.eslintrc.json'))
+    prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
+    // Delimiter selects the first meaningful nonblank line while avoiding an existing copyright header
+    licenseHeaderFile(rootProject.file('tools/spotless/openremote-license-header.txt'), '(?![ \\t]*/\\*(?:[ \\t]+|\\R[ \\t]*\\*[ \\t]+)Copyright\\b)(?![ \\t]*\\*)[ \\t]*\\S').skipLinesMatching('^#!.*$')
+    endWithNewline()
+  }
+
+  format('markdownBackend') {
+    target backendTarget(['*/**/*.md'])
+    toggleOffOn()
+    prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
+    endWithNewline()
+  }
+
+  format('markdownRoot') {
+    target '*.md'
+    toggleOffOn()
+    prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
+    endWithNewline()
+  }
+
+  format('markdownUi') {
+    target uiTarget(['**/*.md'])
+    toggleOffOn()
+    prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
+    endWithNewline()
+  }
+
+  format('mdx') {
+    target uiTarget(['**/*.mdx'])
+    toggleOffOn()
+    custom('mdxLicenseHeader') { String source ->
+      String prettierIgnoreStart = '{/* prettier-ignore-start */}'
+      String prettierIgnoreEnd = '{/* prettier-ignore-end */}'
+      String candidate = null
+      int candidateEnd = -1
+      if (source.startsWith(prettierIgnoreStart)) {
+        int end = source.indexOf(
+                prettierIgnoreEnd,
+                prettierIgnoreStart.length()
+                )
+        if (end >= 0) {
+          candidateEnd = end + prettierIgnoreEnd.length()
+          candidate = source.substring(0, candidateEnd)
+        }
+      } else if (source.startsWith('{/*')) {
+        int end = source.indexOf('*/}', 3)
+
+        if (end >= 0) {
+          candidateEnd = end + 3
+          candidate = source.substring(0, candidateEnd)
+        }
+      } else if (source.startsWith('{/\\*')) {
+        int end = source.indexOf('\\*/}', 4)
+
+        if (end >= 0) {
+          candidateEnd = end + 4
+          candidate = source.substring(0, candidateEnd)
+        }
+      }
+      String year = now().toString()
+      String body = source
+      boolean hasOpenRemoteHeader = candidate != null && candidate.contains('Copyright') && candidate.contains('OpenRemote Inc.')
+      if (hasOpenRemoteHeader) {
+        def yearMatcher = candidate =~ /Copyright\s+(\d{4}(?:-\d{4})?),\s+OpenRemote Inc\./
+        if (yearMatcher.find()) {
+          year = yearMatcher.group(1)
+        }
+        body = source.substring(candidateEnd)
+      }
+      body = body.replaceFirst('\\A(?:[ \\t]*\\R)+', '')
+      String header = prettierIgnoreStart + '\n\n' + '{' + defaultLicenseHeader.replace('$YEAR', year) + '}\n\n' + prettierIgnoreEnd + '\n\n'
+      return header + body
+    }
+    prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
+    endWithNewline()
+  }
+
+  format('miscUi') {
+    target uiTarget(['**/*.html', '**/*.json', '**/*.jsonc'])
+    toggleOffOn()
+    prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
+    endWithNewline()
+  }
+
+  typescript {
+    target uiTarget(['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'])
+    // ESLint ignores directories starting with a dot so exclude these to prevent errors
+    targetExclude('**/.storybook/**')
+    toggleOffOn()
+    eslint(eslintDependencies).npmInstallCache().configFile(rootProject.file('ui/.eslintrc.json')).tsconfigFile(rootProject.file('ui/tsconfig.json'))
+    prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
+    licenseHeaderFile rootProject.file('tools/spotless/openremote-license-header.txt'), '(import|export|declare|const|let|var|type|interface|class|enum|function) '
+    endWithNewline()
+  }
+
+  format('typescriptStorybook') {
+    target uiTarget([
+      '**/.storybook/**/*.ts',
+      '**/.storybook/**/*.tsx',
+      '**/.storybook/**/*.mts',
+      '**/.storybook/**/*.cts'
+    ])
+    toggleOffOn()
+    prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
+    licenseHeaderFile(rootProject.file('tools/spotless/openremote-license-header.txt'),'(import|export|declare|const|let|var|type|interface|class|enum|function) ')
+    endWithNewline()
+  }
+
+  format('xml') {
+    target backendTarget(['**/*.xml', '**/*.xsd'])
+    toggleOffOn()
+    eclipseWtp('xml').configFile(rootProject.file('tools/spotless/eclipse-wtp-xml.properties'))
+    endWithNewline()
+  }
+
+  format('yaml') {
+    target backendTarget(['**/*.yaml', '**/*.yml'], ['kubernetes/**/templates/**'])
+    toggleOffOn()
+    prettier(prettierVersion).npmInstallCache().configFile(rootProject.file('ui/.prettierrc.json'))
+    endWithNewline()
+  }
+}
+
+def spotlessFormatGroups = [
+  Backend: [
+    'GradleRoot',
+    'GradleBackend',
+    'Groovy',
+    'HelmTemplates',
+    'Java',
+    'MarkdownBackend',
+    'MarkdownRoot',
+    'Xml',
+    'Yaml'
+  ],
+  Ui: [
+    'Css',
+    'GradleRoot',
+    'GradleUi',
+    'Javascript',
+    'MarkdownRoot',
+    'MarkdownUi',
+    'Mdx',
+    'MiscUi',
+    'Typescript',
+    'TypescriptStorybook'
+  ]
+]
+
+def spotlessOperations = [
+  Apply : 'Apply formatting to',
+  Check : 'Check formatting of',
+  Diagnose: 'Diagnose formatting of'
+]
+
+spotlessFormatGroups.each { groupName, formats ->
+  spotlessOperations.each { operation, operationDescription ->
+    tasks.register("spotless${groupName}${operation}") { task ->
+      task.group = LifecycleBasePlugin.VERIFICATION_GROUP
+      task.description =
+              "${operationDescription} ${groupName.toLowerCase()} sources."
+
+      task.dependsOn formats.collect { format ->
+        "spotless${format}${operation}"
+      }
+    }
+  }
+}
+
+def yarnInstallTask = getYarnInstallTask()
+tasks.matching { it.name.startsWith("spotless") }.configureEach {
+  dependsOn yarnInstallTask
+}

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.test.protocol
 
@@ -37,174 +36,176 @@ import spock.util.concurrent.PollingConditions
  */
 class TcpClientTest extends Specification implements ManagerContainerTrait {
 
-    def "Check client"() {
+  def "Check client"() {
 
-        given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 60, delay: 0.2)
+    given: "expected conditions"
+    def conditions = new PollingConditions(timeout: 60, delay: 0.2)
 
-        and: "the container is started"
-        def container = startContainer(defaultConfig(), [new TimerService()])
+    and: "the container is started"
+    def container = startContainer(defaultConfig(), [new TimerService()])
 
-        and: "a simple TCP echo server"
-        def echoServerPort = findEphemeralPort()
-        def echoServer = new TCPStringServer(new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
-        echoServer.addMessageConsumer({
-            message, channel, sender -> echoServer.sendMessage(message)
-        })
+    and: "a simple TCP echo server"
+    def echoServerPort = findEphemeralPort()
+    def echoServer = new TCPStringServer(new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
+    echoServer.addMessageConsumer({ message, channel, sender ->
+      echoServer.sendMessage(message)
+    })
 
-        and: "a simple TCP client"
-        TestTCPClient client = new TestTCPClient(
-                "127.0.0.1",
-                echoServerPort)
-        client.setEncoderDecoderProvider({
-            [new StringEncoder(CharsetUtil.UTF_8),
-            new StringDecoder(CharsetUtil.UTF_8),
-            new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
-        })
+    and: "a simple TCP client"
+    TestTCPClient client = new TestTCPClient(
+            "127.0.0.1",
+            echoServerPort)
+    client.setEncoderDecoderProvider({
+      [
+        new StringEncoder(CharsetUtil.UTF_8),
+        new StringDecoder(CharsetUtil.UTF_8),
+        new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)
+      ].toArray(new ChannelHandler[0])
+    })
 
-        and: "we add callback consumers to the client"
-        def connectionStatuses = [client.getConnectionStatus()]
-        String lastMessage
-        client.addMessageConsumer({
-            message -> lastMessage = message
-        })
-        client.addConnectionStatusConsumer({
-            status -> connectionStatuses.add(status)
-        })
+    and: "we add callback consumers to the client"
+    def connectionStatuses = [client.getConnectionStatus()]
+    String lastMessage
+    client.addMessageConsumer({ message ->
+      lastMessage = message
+    })
+    client.addConnectionStatusConsumer({ status ->
+      connectionStatuses.add(status)
+    })
 
-        when: "the server is started"
-        echoServer.start()
+    when: "the server is started"
+    echoServer.start()
 
-        then: "the server should be running"
-        conditions.eventually {
-            assert echoServer.channelFuture.isDone()
-            assert echoServer.channelFuture.isSuccess()
-        }
-
-        when: "we call connect on the client"
-        client.connect()
-
-        then: "the client status should become CONNECTED"
-        conditions.eventually {
-//            assert client.connectionStatus == ConnectionStatus.CONNECTED
-            assert connectionStatuses.last() == ConnectionStatus.CONNECTED
-            assert echoServer.allChannels.size() == 1
-        }
-
-        when: "the server sends a message"
-        echoServer.sendMessage("Hello world")
-
-        then: "we should receive the message"
-        conditions.eventually {
-            assert lastMessage == "Hello world"
-        }
-
-        when: "we send a message to the server"
-        client.sendMessage("Test;")
-
-        then: "we should get the same message back"
-        conditions.eventually {
-            assert lastMessage == "Test"
-        }
-
-        when: "we request the client to disconnect"
-        client.disconnect()
-
-        then: "the client should become DISCONNECTED"
-        conditions.eventually {
-//            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
-            assert connectionStatuses.last() == ConnectionStatus.DISCONNECTED
-        }
-
-        when: "we reconnect the same client"
-        client.connect()
-
-        then: "the client status should become CONNECTED"
-        conditions.eventually {
-//            assert client.connectionStatus == ConnectionStatus.CONNECTED
-            assert connectionStatuses.last() == ConnectionStatus.CONNECTED
-            assert echoServer.allChannels.size() == 1
-        }
-
-        when: "the server sends a message"
-        echoServer.sendMessage("Is there anyone there?")
-
-        then: "we should receive the message"
-        conditions.eventually {
-            assert lastMessage == "Is there anyone there?"
-        }
-
-        when: "we send a message to the server"
-        client.sendMessage("Yes there is!;")
-
-        then: "we should get the same message back"
-        conditions.eventually {
-            assert lastMessage == "Yes there is!"
-        }
-
-        when: "we lose connection to the server"
-        connectionStatuses.clear()
-        client.connectAttempts = 0
-        echoServer.stop()
-
-        then: "the server status should be DISCONNECTED"
-        conditions.eventually {
-            assert echoServer.connectionStatus == ConnectionStatus.DISCONNECTED
-        }
-
-        then: "the client status should change to CONNECTING and several re-connection attempts should be made"
-        conditions.eventually {
-//            assert client.connectionStatus == ConnectionStatus.CONNECTING
-            assert connectionStatuses.contains(ConnectionStatus.CONNECTING)
-            assert client.connectAttempts > 2
-        }
-
-        when: "the connection to the server is restored"
-        // need to retry here as the previous connected socket might not have been released
-        def retries = 0
-        while (echoServer.connectionStatus != ConnectionStatus.CONNECTED && retries < 10) {
-            echoServer.start()
-            Thread.sleep(500)
-            retries++
-        }
-
-        then: "the server is connected"
-        assert echoServer.connectionStatus == ConnectionStatus.CONNECTED
-
-        then: "the client status should become CONNECTED"
-        conditions.eventually {
-//            assert client.connectionStatus == ConnectionStatus.CONNECTED
-            assert connectionStatuses.last() == ConnectionStatus.CONNECTED
-            assert echoServer.allChannels.size() == 1
-        }
-
-        when: "the server sends a message"
-        echoServer.sendMessage("Is there anyone there?")
-
-        then: "we should receive the message"
-        conditions.eventually {
-            assert lastMessage == "Is there anyone there?"
-        }
-
-        when: "we send a message to the server"
-        client.sendMessage("Yes there is!;")
-
-        then: "we should get the same message back"
-        conditions.eventually {
-            assert lastMessage == "Yes there is!"
-        }
-
-        when: "we request the processor to disconnect"
-        client.disconnect()
-
-        then: "the client should become DISCONNECTED"
-        conditions.eventually {
-//            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
-            assert connectionStatuses.last() == ConnectionStatus.DISCONNECTED
-        }
-
-        cleanup: "the server should be stopped"
-        client.disconnect()
-        echoServer.stop()
+    then: "the server should be running"
+    conditions.eventually {
+      assert echoServer.channelFuture.isDone()
+      assert echoServer.channelFuture.isSuccess()
     }
+
+    when: "we call connect on the client"
+    client.connect()
+
+    then: "the client status should become CONNECTED"
+    conditions.eventually {
+      //            assert client.connectionStatus == ConnectionStatus.CONNECTED
+      assert connectionStatuses.last() == ConnectionStatus.CONNECTED
+      assert echoServer.allChannels.size() == 1
+    }
+
+    when: "the server sends a message"
+    echoServer.sendMessage("Hello world")
+
+    then: "we should receive the message"
+    conditions.eventually {
+      assert lastMessage == "Hello world"
+    }
+
+    when: "we send a message to the server"
+    client.sendMessage("Test;")
+
+    then: "we should get the same message back"
+    conditions.eventually {
+      assert lastMessage == "Test"
+    }
+
+    when: "we request the client to disconnect"
+    client.disconnect()
+
+    then: "the client should become DISCONNECTED"
+    conditions.eventually {
+      //            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
+      assert connectionStatuses.last() == ConnectionStatus.DISCONNECTED
+    }
+
+    when: "we reconnect the same client"
+    client.connect()
+
+    then: "the client status should become CONNECTED"
+    conditions.eventually {
+      //            assert client.connectionStatus == ConnectionStatus.CONNECTED
+      assert connectionStatuses.last() == ConnectionStatus.CONNECTED
+      assert echoServer.allChannels.size() == 1
+    }
+
+    when: "the server sends a message"
+    echoServer.sendMessage("Is there anyone there?")
+
+    then: "we should receive the message"
+    conditions.eventually {
+      assert lastMessage == "Is there anyone there?"
+    }
+
+    when: "we send a message to the server"
+    client.sendMessage("Yes there is!;")
+
+    then: "we should get the same message back"
+    conditions.eventually {
+      assert lastMessage == "Yes there is!"
+    }
+
+    when: "we lose connection to the server"
+    connectionStatuses.clear()
+    client.connectAttempts = 0
+    echoServer.stop()
+
+    then: "the server status should be DISCONNECTED"
+    conditions.eventually {
+      assert echoServer.connectionStatus == ConnectionStatus.DISCONNECTED
+    }
+
+    then: "the client status should change to CONNECTING and several re-connection attempts should be made"
+    conditions.eventually {
+      //            assert client.connectionStatus == ConnectionStatus.CONNECTING
+      assert connectionStatuses.contains(ConnectionStatus.CONNECTING)
+      assert client.connectAttempts> 2
+    }
+
+    when: "the connection to the server is restored"
+    // need to retry here as the previous connected socket might not have been released
+    def retries = 0
+    while (echoServer.connectionStatus != ConnectionStatus.CONNECTED && retries < 10) {
+      echoServer.start()
+      Thread.sleep(500)
+      retries++
+    }
+
+    then: "the server is connected"
+    assert echoServer.connectionStatus == ConnectionStatus.CONNECTED
+
+    then: "the client status should become CONNECTED"
+    conditions.eventually {
+      //            assert client.connectionStatus == ConnectionStatus.CONNECTED
+      assert connectionStatuses.last() == ConnectionStatus.CONNECTED
+      assert echoServer.allChannels.size() == 1
+    }
+
+    when: "the server sends a message"
+    echoServer.sendMessage("Is there anyone there?")
+
+    then: "we should receive the message"
+    conditions.eventually {
+      assert lastMessage == "Is there anyone there?"
+    }
+
+    when: "we send a message to the server"
+    client.sendMessage("Yes there is!;")
+
+    then: "we should get the same message back"
+    conditions.eventually {
+      assert lastMessage == "Yes there is!"
+    }
+
+    when: "we request the processor to disconnect"
+    client.disconnect()
+
+    then: "the client should become DISCONNECTED"
+    conditions.eventually {
+      //            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
+      assert connectionStatuses.last() == ConnectionStatus.DISCONNECTED
+    }
+
+    cleanup: "the server should be stopped"
+    client.disconnect()
+    echoServer.stop()
+  }
 }

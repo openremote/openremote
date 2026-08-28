@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.test.rules.residence
 
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
@@ -24,171 +42,170 @@ import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES
 @Ignore
 class ResidenceAutoVentilationTest extends Specification implements ManagerContainerTrait {
 
-    @SuppressWarnings("GroovyAccessibility")
-    def "Auto ventilation with CO2 detection"() {
+  @SuppressWarnings("GroovyAccessibility")
+  def "Auto ventilation with CO2 detection"() {
 
-        given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
-        def container = startContainer(defaultConfig(), defaultServices())
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
-        def rulesService = container.getService(RulesService.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def rulesetStorageService = container.getService(RulesetStorageService.class)
-        def simulatorProtocol = container.getService(SimulatorProtocol.class)
-        RulesEngine apartment1Engine = null
+    given: "the container environment is started"
+    def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+    def container = startContainer(defaultConfig(), defaultServices())
+    def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+    def rulesService = container.getService(RulesService.class)
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def assetProcessingService = container.getService(AssetProcessingService.class)
+    def rulesetStorageService = container.getService(RulesetStorageService.class)
+    def simulatorProtocol = container.getService(SimulatorProtocol.class)
+    RulesEngine apartment1Engine = null
 
-        and: "some rules"
-        Ruleset ruleset = new AssetRuleset(
+    and: "some rules"
+    Ruleset ruleset = new AssetRuleset(
             managerTestSetup.apartment1Id,
             "Demo Apartment - Auto Ventilation",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/org/openremote/test/rules/ResidenceAutoVentilation.groovy").text)
-        rulesetStorageService.merge(ruleset)
+    rulesetStorageService.merge(ruleset)
 
-        expect: "the rule engines to become available, running and settled"
-        conditions.eventually {
-            apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
-            assert apartment1Engine != null
-            assert apartment1Engine.isRunning()
-            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
-        }
+    expect: "the rule engines to become available, running and settled"
+    conditions.eventually {
+      apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
+      assert apartment1Engine != null
+      assert apartment1Engine.isRunning()
+      assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+    }
 
-        and: "the ventilation should be off"
-        conditions.eventually {
-            def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert !apartment.getAttribute("ventilationAuto").get().getValue().isPresent()
-            assert !apartment.getAttribute("ventilationLevel").get().getValue().isPresent()
-        }
+    and: "the ventilation should be off"
+    conditions.eventually {
+      def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
+      assert !apartment.getAttribute("ventilationAuto").get().getValue().isPresent()
+      assert !apartment.getAttribute("ventilationLevel").get().getValue().isPresent()
+    }
 
-        when: "auto ventilation is turned on"
-        assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1Id, "ventilationAuto", true)
-        )
-
-        then: "auto ventilation should be on"
-        conditions.eventually {
-            def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationAuto").flatMap{it.value}.orElse(false)
-            assert !apartment.getAttribute("ventilationLevel").get().getValue().isPresent()
-        }
-
-        when: "CO2 is increasing in a room"
-        // The CO2 level increments 3 times, 2 minutes apart
-        for (i in 1..3) {
-
-            def co2LevelIncrement = new AttributeEvent(
-                    managerTestSetup.apartment1LivingroomId, "co2Level", 700 + i
+    when: "auto ventilation is turned on"
+    assetProcessingService.sendAttributeEvent(
+            new AttributeEvent(managerTestSetup.apartment1Id, "ventilationAuto", true)
             )
-            simulatorProtocol.putValue(co2LevelIncrement)
 
-            // Wait for event to be processed
-            conditions.eventually {
-                assert apartment1Engine.facts.assetEvents.any() {
-                    it.fact.matches(co2LevelIncrement, SENSOR, true)
-                }
-                assert noEventProcessedIn(assetProcessingService, 500)
-            }
+    then: "auto ventilation should be on"
+    conditions.eventually {
+      def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
+      assert apartment.getAttribute("ventilationAuto").flatMap{it.value}.orElse(false)
+      assert !apartment.getAttribute("ventilationLevel").get().getValue().isPresent()
+    }
 
-            advancePseudoClock(2, MINUTES, container)
+    when: "CO2 is increasing in a room"
+    // The CO2 level increments 3 times, 2 minutes apart
+    for (i in 1..3) {
+
+      def co2LevelIncrement = new AttributeEvent(
+              managerTestSetup.apartment1LivingroomId, "co2Level", 700 + i
+              )
+      simulatorProtocol.putValue(co2LevelIncrement)
+
+      // Wait for event to be processed
+      conditions.eventually {
+        assert apartment1Engine.facts.assetEvents.any() {
+          it.fact.matches(co2LevelIncrement, SENSOR, true)
         }
+        assert noEventProcessedIn(assetProcessingService, 500)
+      }
 
-        then: "ventilation level of the apartment should be MEDIUM"
-        conditions.eventually {
-            def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 128d
-        }
+      advancePseudoClock(2, MINUTES, container)
+    }
 
-        when: "CO2 is decreasing in a room"
-        def co2LevelDecrement = new AttributeEvent(
-                managerTestSetup.apartment1LivingroomId, "co2Level", 500
-        )
-        simulatorProtocol.putValue(co2LevelDecrement)
+    then: "ventilation level of the apartment should be MEDIUM"
+    conditions.eventually {
+      def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
+      assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 128d
+    }
 
-        then: "the decreasing CO2 should have been detected in rules"
-        conditions.eventually {
-            assert apartment1Engine.facts.assetEvents.any() {
-                it.fact.matches(co2LevelDecrement, SENSOR, true)
-            }
-            assert noEventProcessedIn(assetProcessingService, 500)
-        }
-
-        when: "time advances"
-        advancePseudoClock(35, MINUTES, container)
-
-        then: "ventilation level of the apartment should be LOW"
-        conditions.eventually {
-            def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 64d
-        }
-
-        when: "CO2 is increasing in a room"
-        // The CO2 level increments 3 times, 2 minutes apart
-        for (i in 1..3) {
-
-            def co2LevelIncrement = new AttributeEvent(
-                    managerTestSetup.apartment1LivingroomId, "co2Level", 1000 + i
+    when: "CO2 is decreasing in a room"
+    def co2LevelDecrement = new AttributeEvent(
+            managerTestSetup.apartment1LivingroomId, "co2Level", 500
             )
-            simulatorProtocol.putValue(co2LevelIncrement)
+    simulatorProtocol.putValue(co2LevelDecrement)
 
-            // Wait for event to be processed
-            conditions.eventually {
-                assert apartment1Engine.facts.assetEvents.any() {
-                    it.fact.matches(co2LevelIncrement, SENSOR, true)
-                }
-                assert noEventProcessedIn(assetProcessingService, 500)
-            }
+    then: "the decreasing CO2 should have been detected in rules"
+    conditions.eventually {
+      assert apartment1Engine.facts.assetEvents.any() {
+        it.fact.matches(co2LevelDecrement, SENSOR, true)
+      }
+      assert noEventProcessedIn(assetProcessingService, 500)
+    }
 
-            advancePseudoClock(2, MINUTES, container)
+    when: "time advances"
+    advancePseudoClock(35, MINUTES, container)
+
+    then: "ventilation level of the apartment should be LOW"
+    conditions.eventually {
+      def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
+      assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 64d
+    }
+
+    when: "CO2 is increasing in a room"
+    // The CO2 level increments 3 times, 2 minutes apart
+    for (i in 1..3) {
+
+      def co2LevelIncrement = new AttributeEvent(
+              managerTestSetup.apartment1LivingroomId, "co2Level", 1000 + i
+              )
+      simulatorProtocol.putValue(co2LevelIncrement)
+
+      // Wait for event to be processed
+      conditions.eventually {
+        assert apartment1Engine.facts.assetEvents.any() {
+          it.fact.matches(co2LevelIncrement, SENSOR, true)
         }
+        assert noEventProcessedIn(assetProcessingService, 500)
+      }
 
-        then: "ventilation level of the apartment should be HIGH"
-        conditions.eventually {
-            def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 255d
-        }
+      advancePseudoClock(2, MINUTES, container)
+    }
 
-        when: "CO2 is decreasing in a room"
-        def co2LevelDecrement2 = new AttributeEvent(
-                managerTestSetup.apartment1LivingroomId, "co2Level", 800
-        )
-        simulatorProtocol.putValue(co2LevelDecrement2)
-        conditions.eventually {
-            assert apartment1Engine.facts.assetEvents.any() {
-                it.fact.matches(co2LevelDecrement2, SENSOR, true)
-            }
-            assert noEventProcessedIn(assetProcessingService, 500)
-        }
+    then: "ventilation level of the apartment should be HIGH"
+    conditions.eventually {
+      def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
+      assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 255d
+    }
 
-        and: "time advances"
-        advancePseudoClock(20, MINUTES, container)
+    when: "CO2 is decreasing in a room"
+    def co2LevelDecrement2 = new AttributeEvent(
+            managerTestSetup.apartment1LivingroomId, "co2Level", 800
+            )
+    simulatorProtocol.putValue(co2LevelDecrement2)
+    conditions.eventually {
+      assert apartment1Engine.facts.assetEvents.any() {
+        it.fact.matches(co2LevelDecrement2, SENSOR, true)
+      }
+      assert noEventProcessedIn(assetProcessingService, 500)
+    }
 
-        then: "ventilation level of the apartment should be MEDIUM"
-        conditions.eventually {
-            def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 128d
-        }
+    and: "time advances"
+    advancePseudoClock(20, MINUTES, container)
 
-        when: "CO2 is decreasing in a room"
-        def co2LevelDecrement3 = new AttributeEvent(
-                managerTestSetup.apartment1LivingroomId, "co2Level", 500
-        )
-        simulatorProtocol.putValue(co2LevelDecrement3)
-        conditions.eventually {
-            assert apartment1Engine.facts.assetEvents.any() {
-                it.fact.matches(co2LevelDecrement3, SENSOR, true)
-            }
-            assert noEventProcessedIn(assetProcessingService, 500)
-        }
+    then: "ventilation level of the apartment should be MEDIUM"
+    conditions.eventually {
+      def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
+      assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 128d
+    }
 
-        and: "time advances"
-        advancePseudoClock(15, MINUTES, container)
+    when: "CO2 is decreasing in a room"
+    def co2LevelDecrement3 = new AttributeEvent(
+            managerTestSetup.apartment1LivingroomId, "co2Level", 500
+            )
+    simulatorProtocol.putValue(co2LevelDecrement3)
+    conditions.eventually {
+      assert apartment1Engine.facts.assetEvents.any() {
+        it.fact.matches(co2LevelDecrement3, SENSOR, true)
+      }
+      assert noEventProcessedIn(assetProcessingService, 500)
+    }
 
-        then: "ventilation level of the apartment should be LOW"
-        conditions.eventually {
-            def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 64d
-        }
+    and: "time advances"
+    advancePseudoClock(15, MINUTES, container)
 
-            }
+    then: "ventilation level of the apartment should be LOW"
+    conditions.eventually {
+      def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
+      assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 64d
+    }
+  }
 }

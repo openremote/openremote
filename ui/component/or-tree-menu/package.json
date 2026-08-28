@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-tree-menu",
-  "version": "1.14.0-snapshot",
+  "version": "1.28.0-snapshot",
   "description": "Web Component for displaying a tree menu of items with a predefined hierarchy",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -23,6 +23,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
+    "@openremote/or-element": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-vaadin-components": "workspace:*",
     "lit": "^3.3.1"

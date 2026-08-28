@@ -1,60 +1,147 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.model.gateway;
 
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.openremote.model.http.OpenApiDescriptions.*;
+
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 import org.openremote.model.Constants;
+import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
 
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-
-@Tag(name = "Gateway", description = "Operations on gateways")
+@Tag(
+    name = "Gateway",
+    description = "Inspect and control TCP tunnels through connected gateway assets")
 @Path("gateway")
+@OpenApiResponses.Authenticated
 public interface GatewayServiceResource {
 
-    /**
-     * TODO: write docs
-     */
-    @GET
-    @Path("tunnel/{realm}")
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    @Operation(operationId = "getAllActiveTunnelInfos", summary = "Retrieve all active gateway tunnel information of a realm")
-    GatewayTunnelInfo[] getAllActiveTunnelInfos(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+  /** TODO: write docs */
+  @GET
+  @Path("tunnel/{realm}")
+  @Produces(APPLICATION_JSON)
+  @RolesAllowed({Constants.READ_ADMIN_ROLE})
+  @Operation(
+      operationId = "getAllActiveTunnelInfos",
+      summary = "Retrieve all active gateway tunnels in a realm",
+      description =
+          "Returns active tunnels for all gateway assets in the requested realm. Restricted users cannot list an entire realm.")
+  @OpenApiResponses.Ok
+  @OpenApiResponses.BadRequest
+  GatewayTunnelInfo[] getAllActiveTunnelInfos(
+      @BeanParam RequestParams requestParams,
+      @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("realm") String realm);
 
-    /**
-     * TODO: write docs
-     */
-    @GET
-    @Path("tunnel/{realm}/{id}")
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getGatewayActiveTunnelInfos", summary = "Retrieve the active gateway tunnel information of gateway in a realm")
-    GatewayTunnelInfo[] getGatewayActiveTunnelInfos(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("id") String gatewayId);
+  /** TODO: write docs */
+  @GET
+  @Path("tunnel/{realm}/{id}")
+  @Produces(APPLICATION_JSON)
+  @Operation(
+      operationId = "getGatewayActiveTunnelInfos",
+      summary = "Retrieve the active tunnels of a gateway",
+      description =
+          "Returns active tunnels for one gateway asset. Restricted users may query only a linked gateway.")
+  @OpenApiResponses.Ok
+  @OpenApiResponses.BadRequest
+  GatewayTunnelInfo[] getGatewayActiveTunnelInfos(
+      @BeanParam RequestParams requestParams,
+      @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("realm") String realm,
+      @Parameter(description = "Gateway asset identifier.", example = EXAMPLE_ASSET_ID)
+          @PathParam("id")
+          String gatewayId);
 
-    @GET
-    @Path("tunnel/{realm}/{id}/{target}/{targetPort}")
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getActiveTunnelInfo", summary = "Retrieve the gateway tunnel information of tunnel for a gateway in a realm")
-    GatewayTunnelInfo getActiveTunnelInfo(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("id") String gatewayId, @PathParam("target") String target, @PathParam("targetPort") int targetPort);
+  @GET
+  @Path("tunnel/{realm}/{id}/{target}/{targetPort}")
+  @Produces(APPLICATION_JSON)
+  @Operation(
+      operationId = "getActiveTunnelInfo",
+      summary = "Retrieve one active gateway tunnel",
+      description =
+          "Returns the tunnel matching realm, gateway, target host, and target port, or null when no active tunnel matches.")
+  @OpenApiResponses.Ok
+  @OpenApiResponses.BadRequest
+  @ApiResponse(
+      responseCode = "204",
+      description = "No active tunnel matches the requested endpoint")
+  GatewayTunnelInfo getActiveTunnelInfo(
+      @BeanParam RequestParams requestParams,
+      @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("realm") String realm,
+      @Parameter(description = "Gateway asset identifier.", example = EXAMPLE_ASSET_ID)
+          @PathParam("id")
+          String gatewayId,
+      @Parameter(
+              description = "Host or IP address reachable from the gateway.",
+              example = "192.168.1.20")
+          @PathParam("target")
+          String target,
+      @Parameter(description = "TCP port on the target host.", example = "22")
+          @PathParam("targetPort")
+          int targetPort);
 
-    /**
-     * TODO: write docs
-     */
-    @POST
-    @Path("tunnel")
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "startTunnel", summary = "Start a tunnel for a gateway")
-    GatewayTunnelInfo startTunnel(GatewayTunnelInfo tunnelInfo);
+  /** TODO: write docs */
+  @POST
+  @Path("tunnel")
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  @Operation(
+      operationId = "startTunnel",
+      summary = "Start a tunnel for a gateway",
+      description =
+          "Requests a TCP tunnel through a connected gateway and returns its allocated local endpoint. When realm is omitted, the authenticated realm is used.")
+  @OpenApiResponses.Ok
+  @OpenApiResponses.BadRequest
+  @OpenApiResponses.NotFound
+  @ApiResponse(
+      responseCode = "417",
+      description = "The gateway could not establish the requested tunnel")
+  GatewayTunnelInfo startTunnel(
+      @RequestBody(
+              required = true,
+              description =
+                  "Gateway, realm, target host, and target port for the requested tunnel. Realm defaults to the authenticated realm.")
+          GatewayTunnelInfo tunnelInfo);
 
-    /**
-     * TODO: write docs
-     */
-    @DELETE
-    @Path("tunnel")
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "stopTunnel", summary = "Stop a tunnel for a gateway")
-    void stopTunnel(GatewayTunnelInfo tunnelInfo);
+  /** TODO: write docs */
+  @DELETE
+  @Path("tunnel")
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  @Operation(
+      operationId = "stopTunnel",
+      summary = "Stop a tunnel for a gateway",
+      description =
+          "Stops the tunnel identified by the supplied gateway, target, and port information. When realm is omitted, the authenticated realm is used.")
+  @OpenApiResponses.NoContent
+  @OpenApiResponses.BadRequest
+  @OpenApiResponses.NotFound
+  @OpenApiResponses.ServerError
+  void stopTunnel(
+      @RequestBody(
+              required = true,
+              description =
+                  "Tunnel identity returned by startTunnel, including gateway and allocated endpoint information.")
+          GatewayTunnelInfo tunnelInfo);
 }

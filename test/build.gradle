@@ -1,119 +1,118 @@
 plugins {
-    id 'com.adarshr.test-logger' version "$testLoggerPluginVersion"
+  id 'java-library'
+  id 'groovy'
+  id 'maven-publish'
+  id 'signing'
+  alias libs.plugins.testLogger
 }
-
-apply plugin: "java-library"
-apply plugin: "groovy"
-apply plugin: "maven-publish"
-apply plugin: "signing"
 
 dependencies {
 
-    testImplementation rootProject.project(":setup").sourceSets.integration.output
-    api project(":manager")
+  testImplementation rootProject.project(":setup").sourceSets.integration.output
+  api project(":manager")
 
-    implementation libs.groovyAll
-    implementation libs.groovyTest
-    api platform(libs.spockBom)
-    api libs.spockCore
+  implementation libs.groovyAll
+  implementation libs.groovyTest
+  api platform(libs.spockBom)
+  api libs.spockCore
 
-    // optional dependencies for using Spock
-    testImplementation libs.byteBuddy // allows mocking of classes (in addition to interfaces)
-    testImplementation libs.byteBuddyAgent // for runtime class redefinition
-    testRuntimeOnly libs.objenesis // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
+  // optional dependencies for using Spock
+  testImplementation libs.byteBuddy // allows mocking of classes (in addition to interfaces)
+  testImplementation libs.byteBuddyAgent // for runtime class redefinition
+  testRuntimeOnly libs.objenesis // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
-    testImplementation(libs.calimeroServer) {
-        // Has a dependency on the SLF4J simple provider
-        exclude group: "org.slf4j"
-    }
+  testImplementation(libs.calimeroServer) {
+    // Has a dependency on the SLF4J simple provider
+    exclude group: "org.slf4j"
+  }
 
-    testImplementation libs.firebaseAdmin
-    testImplementation libs.suncalc
-    testImplementation libs.greenmail
-    testImplementation libs.failsafe
+  testImplementation libs.firebaseAdmin
+  testImplementation libs.suncalc
+  testImplementation libs.greenmail
+  testImplementation libs.failsafe
 
-    testImplementation libs.niftyModbusTcp
-    testImplementation libs.niftyModbusRtuJsc
-    testImplementation libs.niftyModbusApi
-    testImplementation libs.niftyModbusCore
+  testImplementation libs.niftyModbusTcp
+  testImplementation libs.niftyModbusRtuJsc
+  testImplementation libs.niftyModbusApi
+  testImplementation libs.niftyModbusCore
 
-    testImplementation libs.moquette
-    testImplementation libs.hiveMqttClient
+  testImplementation libs.moquette
+  testImplementation libs.hiveMqttClient
 
-    testImplementation libs.grpcNettyShaded
-    testImplementation libs.grpcProtobuf
-    testImplementation libs.grpcStub
+  testImplementation libs.grpcNettyShaded
+  testImplementation libs.grpcProtobuf
+  testImplementation libs.grpcStub
 
-    testImplementation libs.bouncycastleBcpkixJdk18on
+  testImplementation libs.bouncycastleBcpkixJdk18on
 }
 
 tasks.withType(Test) {
-    environment("OR_LOGGING_CONFIG_FILE", "logging-dev.properties")
+  environment("OR_LOGGING_CONFIG_FILE", "logging-dev.properties")
 }
 
 test {}
 
 javadoc {
-    failOnError = false
+  failOnError = false
 }
 
 java {
-    withJavadocJar()
-    withSourcesJar()
+  withJavadocJar()
+  withSourcesJar()
 }
 
 publishing {
-    publications {
-        maven(MavenPublication) {
-            group = "io.openremote"
-            artifactId = "openremote-${project.name}"
-            from components.java
-            pom {
-                name = 'OpenRemote Test Fixtures'
-                description = 'Provides test fixtures for writing backend integration tests; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
-                url = 'https://github.com/openremote/openremote'
-                licenses {
-                    license {
-                        name = 'GNU Affero General Public License v3.0'
-                        url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'developers'
-                        name = 'Developers'
-                        email = 'developers@openremote.io'
-                        organization = 'OpenRemote'
-                        organizationUrl = 'https://openremote.io'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:git://github.com/openremote/openremote.git'
-                    developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
-                    url = 'https://github.com/openremote/openremote/tree/master'
-                }
-            }
+  publications {
+    maven(MavenPublication) {
+      group = "io.openremote"
+      artifactId = "openremote-${project.name}"
+      from components.java
+      pom {
+        name = 'OpenRemote Test Fixtures'
+        description = 'Provides test fixtures for writing backend integration tests; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
+        url = 'https://github.com/openremote/openremote'
+        licenses {
+          license {
+            name = 'GNU Affero General Public License v3.0'
+            url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
+          }
         }
+        developers {
+          developer {
+            id = 'developers'
+            name = 'Developers'
+            email = 'developers@openremote.io'
+            organization = 'OpenRemote'
+            organizationUrl = 'https://openremote.io'
+          }
+        }
+        scm {
+          connection = 'scm:git:git://github.com/openremote/openremote.git'
+          developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
+          url = 'https://github.com/openremote/openremote/tree/master'
+        }
+      }
     }
+  }
 
-    repositories {
-        maven {
-            if (!version.endsWith('-LOCAL')) {
-                credentials {
-                    username = findProperty("publishUsername")
-                    password = findProperty("publishPassword")
-                }
-            }
-            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
+  repositories {
+    maven {
+      if (!version.endsWith('-LOCAL')) {
+        credentials {
+          username = findProperty("publishUsername")
+          password = findProperty("publishPassword")
         }
+      }
+      url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
     }
+  }
 }
 
 signing {
-    def signingKey = findProperty("signingKey")
-    def signingPassword = findProperty("signingPassword")
-    if (signingKey && signingPassword) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign publishing.publications.maven
-    }
+  def signingKey = findProperty("signingKey")
+  def signingPassword = findProperty("signingPassword")
+  if (signingKey && signingPassword) {
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.maven
+  }
 }

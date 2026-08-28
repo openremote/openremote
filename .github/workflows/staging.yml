@@ -4,22 +4,9 @@ on:
   push:
     branches: [master]
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - "[0-9]+.[0-9]+.[0-9]+"
+
   workflow_dispatch:
-    inputs:
-      ENVIRONMENT:
-        description: 'Environment to use (if any)'
-      MANAGER_TAG:
-        description: 'Manager docker tag to pull'
-      CLEAN_INSTALL:
-        description: 'Delete data before starting'
-        type: boolean
-      COMMIT:
-        description: 'Repo branch or commit SHA to checkout'
-      OR_HOSTNAME:
-        description: 'Host to deploy to (e.g. demo.openremote.app)'
-      OR_ADMIN_PASSWORD:
-        description: 'Admin password override'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,7 +21,9 @@ jobs:
       # See https://github.com/tj-actions/changed-files/tree/2bb135777322059ee3a3c9239999b159ff49febc#outputs-
       any_modified: ${{ steps.changed-files.outputs.backend_any_modified == 'true' || steps.changed-files.outputs.ui_any_modified == 'true' }}
       backend_any_modified: ${{ steps.changed-files.outputs.backend_any_modified }}
+      backend_spotless_any_modified: ${{ steps.changed-files.outputs.backend_spotless_any_modified }}
       ui_any_modified: ${{ steps.changed-files.outputs.ui_any_modified }}
+      ui_spotless_any_modified: ${{ steps.changed-files.outputs.ui_spotless_any_modified }}
       # Version details
       version: ${{ steps.get-version-details.outputs.version }}
       version_with_qualifier: ${{ steps.get-version-details.outputs.version_with_qualifier }}
@@ -43,7 +32,7 @@ jobs:
       dockerTags: ${{ steps.ci-cd-output.outputs.dockerTags }}
       npmTag: ${{ steps.ci-cd-output.outputs.npmTag }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2 # Must be 2 for push events to compare to previous commit
 
@@ -70,23 +59,46 @@ jobs:
               - '!.yarnrc.yml'
               - '!package.json'
               - '!yarn.lock'
+            # Sources and configuration that spotlessBackendCheck reads
+            backend_spotless:
+              - '**/*.{gradle,groovy,java,md,tpl,xml,xsd,yaml,yml}'
+              - '!ui/**'
+              - 'package.json'
+              - 'tools/spotless/**'
+              - 'ui/.prettierignore'
+              - 'ui/.prettierrc.json'
+            # Sources and configuration that spotlessUiCheck reads
+            ui_spotless:
+              - '*.{gradle,md}'
+              - 'package.json'
+              - 'tools/spotless/**'
+              - 'ui/**/*.{cjs,css,cts,gradle,html,js,json,jsonc,jsx,md,mdx,mjs,mts,ts,tsx}'
+              - 'ui/.prettierignore'
 
       - name: Get version details
         id: get-version-details
-        uses: openremote/openremote/.github/actions/get-version-details@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
+        uses: openremote/openremote/.github/actions/get-version-details@46767a2b23c43e83057c8995d546a876fc185126
 
       - name: Check if main repo
         id: is_main_repo
-        uses: openremote/openremote/.github/actions/check-if-main-repo@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
+        uses: openremote/openremote/.github/actions/check-if-main-repo@5beec5454f28eda1dd25331c9ce1d5b430266f7e
 
       - name: Process ci_cd.json file
         id: ci-cd-output
-        uses: openremote/openremote/.github/actions/process-cicd-json@e9e87797bed31cdf6c2de6ec30fd6a05753f35f4
+        uses: openremote/openremote/.github/actions/process-cicd-json@9ea22e19db6711afd711f39517fe25509b018803
         with:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }} # Shouldn't be needed in this context
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
           IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}
           VERSION: ${{ steps.get-version-details.outputs.version }}
+
+  check-spotless:
+    name: Lint
+    needs: detect-changes
+    if: ${{ !failure() && !cancelled() }}
+    uses: "./.github/workflows/check-spotless.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.backend_spotless_any_modified != 'true' }}
 
   ui-check-dependencies:
     name: Lint
@@ -95,6 +107,14 @@ jobs:
     uses: "./.github/workflows/ui-check-dependencies.yml"
     with:
       skip: ${{ needs.detect-changes.outputs.ui_any_modified != 'true' }}
+
+  ui-check-spotless:
+    name: Lint
+    needs: detect-changes
+    if: ${{ !failure() && !cancelled() }}
+    uses: "./.github/workflows/ui-check-spotless.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.ui_spotless_any_modified != 'true' }}
 
   ui-check-outdated-translations:
     name: Lint
@@ -161,7 +181,16 @@ jobs:
 
   build-manager-image:
     name: Build
-    needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+    needs:
+      [
+        detect-changes,
+        install-dist,
+        unit-tests,
+        integration-tests,
+        ui-check-outdated-translations,
+        ui-component-tests,
+        ui-app-tests,
+      ]
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/build-manager-image.yml"
     with:
@@ -177,7 +206,16 @@ jobs:
 
   publish-maven:
     name: Publish
-    needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+    needs:
+      [
+        detect-changes,
+        install-dist,
+        unit-tests,
+        integration-tests,
+        ui-check-outdated-translations,
+        ui-component-tests,
+        ui-app-tests,
+      ]
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/publish-maven.yml"
     secrets:
@@ -188,7 +226,16 @@ jobs:
 
   publish-npm:
     name: Publish
-    needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+    needs:
+      [
+        detect-changes,
+        install-dist,
+        unit-tests,
+        integration-tests,
+        ui-check-outdated-translations,
+        ui-component-tests,
+        ui-app-tests,
+      ]
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/publish-npm.yml"
     with:
@@ -196,11 +243,14 @@ jobs:
     secrets:
       NPM_AUTH_TOKEN: ${{ secrets._TEMP_NPM_AUTH_TOKEN }}
 
-  deployment:
-    name: Deploy
-    needs: [detect-changes, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+  extensions:
+    name: Extensions
+    needs: [detect-changes, build-manager-image, publish-maven]
     if: ${{ !failure() && !cancelled() }}
-    uses: "./.github/workflows/deployment.yml"
+    uses: "./.github/workflows/extensions.yml"
     with:
-      INPUTS: ${{ toJSON(inputs) }}
-    secrets: inherit
+      version: ${{ needs.detect-changes.outputs.version_with_qualifier }}
+      is_release: ${{ needs.detect-changes.outputs.is_release }}
+    secrets:
+      CI_AUTOMATION_APP_CLIENT_ID: ${{ secrets._TEMP_CI_AUTOMATION_APP_CLIENT_ID }}
+      CI_AUTOMATION_APP_PRIVATE_KEY: ${{ secrets._TEMP_CI_AUTOMATION_APP_PRIVATE_KEY }}

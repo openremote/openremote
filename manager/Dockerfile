@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi10/openjdk-21-runtime:1.24-5
+FROM registry.access.redhat.com/ubi10/openjdk-21-runtime:1.24-11
 
 # Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
 ARG GIT_COMMIT=unknown
@@ -167,7 +167,6 @@ WORKDIR /opt/app
 ADD lib /opt/app/lib
 ADD web /opt/web
 ADD map /opt/map
-ADD deployment /deployment
 
 EXPOSE 8080
 EXPOSE 1883
