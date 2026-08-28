@@ -55,7 +55,7 @@ import { createMenuBarItem, type MenuBarItem } from "@openremote/or-vaadin-compo
 import { OrVaadinDateTimePicker } from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import { when } from "lit/directives/when.js";
 import { createRef, type Ref, ref } from "lit/directives/ref.js";
-import { shiftTimeframe, type TimeframeDirection } from "./timeframe";
+import { getChartAxisBounds, getNavigationDuration, shiftTimeframe, type TimeframeDirection } from "./timeframe";
 import "@openremote/or-translate";
 
 echarts.use([GridComponent, TooltipComponent, DataZoomComponent, BarChart, CanvasRenderer, UniversalTransition]);
@@ -564,7 +564,13 @@ export class OrAttributeBarChart extends OrElement {
       const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
       this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
       this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
-      this._navigationDuration = this._endOfPeriod - this._startOfPeriod;
+      this._navigationDuration = getNavigationDuration(
+        this._startOfPeriod,
+        this._endOfPeriod,
+        !!this.timeframe,
+        this.timeWindowOptions.get(this.timeWindowKey!)![0],
+        this.timeWindowOptions.get(this.timeWindowKey!)![1]
+      );
       this._intervalConfig = this._getInterval(this._startOfPeriod, this._endOfPeriod, this.interval!);
       this._loadData();
     }
@@ -985,6 +991,7 @@ export class OrAttributeBarChart extends OrElement {
     const recommendedTicks = this._chartElem?.clientWidth ? this._chartElem.clientWidth / 50 : Number.MAX_SAFE_INTEGER;
     const maxTicks = Math.floor(recommendedTicks * 1.5);
     const splitNumber = Math.max(1, Math.min(xAxisTicks, maxTicks));
+    const [axisMin, axisMax] = getChartAxisBounds(this._startOfPeriod, this._endOfPeriod);
     this._chart?.setOption({
       xAxis: {
         show: splitNumber > 1,
@@ -1390,8 +1397,8 @@ export class OrAttributeBarChart extends OrElement {
         show: splitNumber > 1,
         splitNumber,
         minInterval: this._intervalConfig!.millis,
-        min: this._startOfPeriod,
-        max: this._endOfPeriod,
+        min: axisMin,
+        max: axisMax,
         axisLabel: {
           interval: this._intervalConfig?.millis,
           rotate: splitNumber > recommendedTicks ? 45 : 0,

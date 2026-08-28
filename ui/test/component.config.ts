@@ -25,9 +25,9 @@ const { CI } = process.env;
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
-export const defineCtConfig = (path: string) => {
+export const defineCtConfig = (path: string, overrides: PlaywrightTestConfig = {}) => {
   const name = basename(path);
-  return baseConfig({
+  const config = {
     testMatch: "*.test.ts",
     /* Fail the build on CI if you accidentally left test.only in the source code. */
     forbidOnly: Boolean(CI),
@@ -35,14 +35,17 @@ export const defineCtConfig = (path: string) => {
     retries: CI ? 2 : 0,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
     reporter: [["html", { outputFolder: "component-test-report" }]],
-    /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-    use: {
-      /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-      trace: "retain-on-failure",
-      video: "on",
-      ctTemplateDir: resolve(__dirname, "playwright"),
-    },
     /* Configure projects */
     projects: [{ name, testDir: resolve(path, "test"), fullyParallel: true, use: { ct: name } }] as Project[],
-  } as PlaywrightTestConfig);
+    ...overrides,
+    use: {
+      ...({
+        trace: "retain-on-failure",
+        video: "on",
+        ctTemplateDir: resolve(__dirname, "playwright"),
+      } as PlaywrightTestConfig["use"]),
+      ...overrides.use,
+    },
+  } as PlaywrightTestConfig;
+  return baseConfig(config);
 };
