@@ -213,7 +213,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     long tzOffset = timezone.getOffset(nowUTC);
     long now = nowUTC + tzOffset;
 
-    long timeSinceOccurrenceStart = now - schedule.tryAdvanceActive(now, tzOffset);
+    long timeSinceOccurrenceStart = now - schedule.tryAdvanceActive(now);
 
     // Find datapoint with timestamp after the current occurrence
     SimulatorReplayDatapoint nextDatapoint =
@@ -233,7 +233,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     if (nextRun.isEmpty() || nextRun.getAsLong() < 0 || schedule.isAfterScheduleEnd(now)) {
       LOG.warning("Replay loop has ended for: " + attributeRef);
       predictedDatapointService.purgeValuesBefore(
-          attributeRef.getId(), attributeRef.getName(), Instant.ofEpochMilli(now));
+          attributeRef.getId(), attributeRef.getName(), Instant.ofEpochMilli(nowUTC));
       return null;
     }
 
@@ -465,12 +465,14 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
      *
      * <p>If a recurrence rule has been configured, the start of the current occurrence is used.
      *
+     * <p>Both the argument and the result are local times of the configured timezone.
+     *
      * @param millisSinceEpoch Milliseconds since the epoch (1970-01-01T00:00:00Z)
      * @return The start time of the active occurrence in milliseconds. If not started, the start of
      *     the schedule is returned.
      */
-    public long tryAdvanceActive(long millisSinceEpoch, long tzOffset) {
-      long startInMillis = start.toInstant(ZoneOffset.UTC).toEpochMilli() + tzOffset;
+    public long tryAdvanceActive(long millisSinceEpoch) {
+      long startInMillis = start.toInstant(ZoneOffset.UTC).toEpochMilli();
 
       if (recurrence == null) {
         current = start;
