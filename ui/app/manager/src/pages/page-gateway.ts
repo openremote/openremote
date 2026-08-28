@@ -314,7 +314,7 @@ export class PageGateway extends Page<AppStateKeyed> {
           <span>${i18next.t("gatewayConnection")}</span>
         </div>
         <div style="gap: 20px;">
-          <div>
+          <div style="gap: var(--lumo-space-s)">
             <or-translate value="enabled"></or-translate>
             <or-vaadin-toggle
               .checked="${!connection.disabled}"

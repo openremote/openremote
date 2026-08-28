@@ -312,7 +312,7 @@ export class ChartSettings extends WidgetSettings {
                   </div>
                 `
               )}
-              <div style="display: flex; align-items: baseline;">
+              <div style="display: flex; align-items: baseline; gap: var(--lumo-space-s);">
                 ${
                   max !== undefined
                     ? html`
@@ -339,7 +339,7 @@ export class ChartSettings extends WidgetSettings {
                   @change="${(ev: Event) => this.onMinMaxValueToggle("left", "max", ev)}"
                 ></or-vaadin-toggle>
               </div>
-              <div style="display: flex; margin-top: 12px;">
+              <div style="display: flex; margin-top: 12px; align-items: baseline; gap: var(--lumo-space-s);">
                 ${
                   min !== undefined
                     ? html`
