@@ -10,7 +10,7 @@ function normalizeUnit(unit: TimeframeUnit): string {
   return (moment as typeof moment & { normalizeUnits: (value: TimeframeUnit) => string }).normalizeUnits(unit);
 }
 
-export function getChartAxisBounds(start: number, end: number): [number, number] {
+export function getChartAxisBounds(start: number, end: number, _dataset?: unknown): [number, number] {
   return [start, end];
 }
 

@@ -1,5 +1,6 @@
 import { ct, expect } from "@openremote/test";
 
+import { BarChartInterval, OrAttributeBarChart } from "../src/index";
 import { getChartAxisBounds, getNavigationDuration, shiftTimeframe, type TimeframeUnit } from "../src/timeframe";
 
 const HOUR = 60 * 60 * 1000;
@@ -9,16 +10,53 @@ function centeredDatasetBounds(start: number, end: number, interval: number): [n
   return [start + interval / 2, end - interval / 2];
 }
 
+ct("should keep requested bounds when production updates a centered dataset", async ({ mount }) => {
+  const component = await mount(OrAttributeBarChart, {
+    props: { timePrefixKey: "this", timeWindowKey: "Hour", interval: BarChartInterval.ONE_HOUR },
+  });
+  const bounds = await component.evaluate(
+    (element, { hour, day }) => {
+      const chart = {
+        setOption: (option: any) => ((element as any).__testChartOption = option),
+      };
+      Object.assign(element as any, {
+        _chart: chart,
+        _startOfPeriod: 0,
+        _endOfPeriod: day,
+        _intervalConfig: { millis: hour },
+        _data: [
+          {
+            data: [
+              [hour / 2, 1],
+              [day - hour / 2, 2],
+            ],
+          },
+        ],
+      });
+      (element as any)._updateChartData();
+      return (element as any).__testChartOption.xAxis;
+    },
+    { hour: HOUR, day: DAY }
+  );
+
+  // If _updateChartData() restores centered datapoints into its period state, min/max become H/2 and DAY-H/2.
+  expect(bounds.min).toBe(0);
+  expect(bounds.max).toBe(DAY);
+});
+
 ct("should keep requested chart bounds when bars are centered in their buckets", async () => {
   for (const interval of [HOUR, 15 * 60 * 1000, 5 * 60 * 1000]) {
     const requested: [number, number] = [0, DAY];
     const centeredDataset = centeredDatasetBounds(requested[0], requested[1], interval);
-    const rendered = getChartAxisBounds(requested[0], requested[1]);
+    const rendered = getChartAxisBounds(requested[0], requested[1], centeredDataset);
+    const corrupted = getChartAxisBounds(centeredDataset[0], centeredDataset[1], centeredDataset);
 
     // The old dataset-derived bounds shrink by one interval; production axis bounds must remain requested bounds.
     expect(centeredDataset[1] - centeredDataset[0]).toBe(DAY - interval);
     expect(requested[1] - requested[0]).toBe(DAY);
     expect(rendered).toEqual(requested);
+    // Falsification: restoring the old assignments would pass these centered values as the requested bounds.
+    expect(corrupted).not.toEqual(requested);
   }
 });
 
