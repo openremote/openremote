@@ -1,23 +1,34 @@
 import { ct, expect } from "@openremote/test";
 
-import { shiftTimeframe } from "../src/timeframe";
+import { getChartAxisBounds, getNavigationDuration, shiftTimeframe, type TimeframeUnit } from "../src/timeframe";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
-function centeredBarBounds(start: number, end: number, interval: number): [number, number] {
+function centeredDatasetBounds(start: number, end: number, interval: number): [number, number] {
   return [start + interval / 2, end - interval / 2];
 }
 
 ct("should keep requested chart bounds when bars are centered in their buckets", async () => {
   for (const interval of [HOUR, 15 * 60 * 1000, 5 * 60 * 1000]) {
     const requested: [number, number] = [0, DAY];
-    const rendered = centeredBarBounds(requested[0], requested[1], interval);
+    const centeredDataset = centeredDatasetBounds(requested[0], requested[1], interval);
+    const rendered = getChartAxisBounds(requested[0], requested[1]);
 
-    // The old dataset-derived bounds shrink by one interval; axis bounds must remain requested bounds.
-    expect(rendered[1] - rendered[0]).toBe(DAY - interval);
+    // The old dataset-derived bounds shrink by one interval; production axis bounds must remain requested bounds.
+    expect(centeredDataset[1] - centeredDataset[0]).toBe(DAY - interval);
     expect(requested[1] - requested[0]).toBe(DAY);
+    expect(rendered).toEqual(requested);
   }
+});
+
+ct("should use configured elapsed duration for fixed windows and exact duration for custom windows", async () => {
+  expect(getNavigationDuration(0, DAY - 1, false, "hours", 24)).toBe(DAY);
+  expect(getNavigationDuration(0, 195 * 60 * 1000, true, "minutes", 195)).toBe(195 * 60 * 1000);
+
+  let start = 0;
+  for (let step = 0; step < 10; step++) start += getNavigationDuration(0, HOUR - 1, false, "hours", 1);
+  expect(start).toBe(10 * HOUR);
 });
 
 ct("should preserve the original 24-hour duration across repeated navigation", async () => {
@@ -43,6 +54,14 @@ ct("should preserve calendar-day semantics across DST", async () => {
 
   // A calendar day crossing the spring transition is 23 elapsed hours by design.
   expect(next[1].getTime() - next[0].getTime()).toBe(23 * HOUR);
+});
+
+ct("should recognize Moment singular and alias calendar units", async () => {
+  const initial: [Date, Date] = [new Date("2025-01-31T00:00:00Z"), new Date("2025-02-28T00:00:00Z")];
+  for (const unit of ["day", "d", "week", "w", "month", "M", "quarter", "Q", "year", "y"] as TimeframeUnit[]) {
+    const next = shiftTimeframe(initial[0], initial[1], 0, unit, 1, "next");
+    expect(next[0].getTime()).toBeGreaterThan(initial[0].getTime());
+  }
 });
 
 ct("should preserve calendar-month semantics instead of a fixed month length", async () => {
