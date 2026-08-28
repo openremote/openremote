@@ -16,17 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-package org.openremote.container.json;
+package org.openremote.container.json
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.impl.ThingAsset;
-import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.ValueType;
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.openremote.model.asset.Asset
+import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.util.ValueUtil
+import org.openremote.model.value.ValueType
+import spock.lang.Specification
 
 /**
  * Reproduces what RESTEasy's Jackson 2 provider (the only JSON {@link
@@ -34,14 +31,13 @@ import org.openremote.model.value.ValueType;
  * classpath) does when the manager's own REST API (e.g. {@code POST /api/asset}) round trips an
  * {@link Asset}.
  */
-class AssetJackson2Test {
+class AssetJackson2Test extends Specification {
 
-  static final ObjectMapper JSON = Jackson2Config.configureObjectMapper(new ObjectMapper());
+  static final ObjectMapper JSON = Jackson2Config.configureObjectMapper(new ObjectMapper())
 
-  @BeforeAll
-  static void setup() {
+  def setupSpec() {
     if (ValueUtil.getValueDescriptor("text").isEmpty()) {
-      ValueUtil.initialise(null);
+      ValueUtil.initialise(null)
     }
   }
 
@@ -52,19 +48,18 @@ class AssetJackson2Test {
    * from the asset descriptor even when the JSON omits the {@code "type"} field entirely. Without
    * {@code AssetDeserializerJackson2} the attribute type stays {@code null}.
    */
-  @Test
-  void resolveTypeFromAssetDescriptorWhenTypeFieldAbsent() throws Exception {
-    // "location" has no "type" field — type must come from Asset.LOCATION descriptor via context
-    String json =
-        """
-            {"name":"Thing","realm":"smartcity","type":"ThingAsset","attributes":{
-              "location":{"name":"location","value":{"type":"Point","coordinates":[0.0,0.0]}}}}""";
+  def "resolves type from asset descriptor when type field is absent"() {
+    given: "'location' has no 'type' field - type must come from Asset.LOCATION descriptor via context"
+    def json = '''
+        {"name":"Thing","realm":"smartcity","type":"ThingAsset","attributes":{
+          "location":{"name":"location","value":{"type":"Point","coordinates":[0.0,0.0]}}}}'''
 
-    Asset<?> asset = JSON.readValue(json, Asset.class);
-    assertEquals(ThingAsset.class, asset.getClass());
-    assertEquals(
-        ValueType.GEO_JSON_POINT,
-        asset.getAttributes().get("location").map(a -> a.getType()).orElse(null),
-        "Type must be resolved from Asset.LOCATION descriptor, not from a 'type' field");
+    when:
+    def asset = JSON.readValue(json, Asset)
+
+    then:
+    asset.class == ThingAsset
+    // Type must be resolved from the Asset.LOCATION descriptor, not from a 'type' field
+    asset.getAttributes().get("location").map { it.type }.orElse(null) == ValueType.GEO_JSON_POINT
   }
 }
