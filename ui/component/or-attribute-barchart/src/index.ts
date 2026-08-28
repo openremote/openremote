@@ -55,6 +55,7 @@ import { createMenuBarItem, type MenuBarItem } from "@openremote/or-vaadin-compo
 import { OrVaadinDateTimePicker } from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import { when } from "lit/directives/when.js";
 import { createRef, type Ref, ref } from "lit/directives/ref.js";
+import { shiftTimeframeByDuration, type TimeframeDirection } from "./timeframe";
 import "@openremote/or-translate";
 
 echarts.use([GridComponent, TooltipComponent, DataZoomComponent, BarChart, CanvasRenderer, UniversalTransition]);
@@ -502,6 +503,7 @@ export class OrAttributeBarChart extends OrElement {
   protected _style!: CSSStyleDeclaration;
   protected _startOfPeriod?: number; // Start timestamp of the visible period
   protected _endOfPeriod?: number; // End timestamp of the visible period
+  protected _navigationDuration?: number;
   protected _latestError?: string;
   protected _dataAbortController?: AbortController;
   protected _containerResizeObserver?: ResizeObserver;
@@ -562,6 +564,7 @@ export class OrAttributeBarChart extends OrElement {
       const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
       this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
       this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
+      this._navigationDuration = this._endOfPeriod - this._startOfPeriod;
       this._intervalConfig = this._getInterval(this._startOfPeriod, this._endOfPeriod, this.interval!);
       this._loadData();
     }
@@ -1049,19 +1052,18 @@ export class OrAttributeBarChart extends OrElement {
     return [startDate.toDate(), endDate.toDate()];
   }
 
-  protected _shiftTimeframe(currentStart: Date, currentEnd: Date, timeWindowSelected: string, direction: string) {
-    const timeWindow = this.timeWindowOptions.get(timeWindowSelected);
-
-    if (!timeWindow) {
+  protected _shiftTimeframe(
+    currentStart: Date,
+    currentEnd: Date,
+    timeWindowSelected: string,
+    direction: TimeframeDirection
+  ) {
+    if (!this.timeWindowOptions.has(timeWindowSelected)) {
       throw new Error(`Unsupported time window selected: ${timeWindowSelected}`);
     }
 
-    const [unit, value] = timeWindow;
-    const newStart = moment(currentStart);
-    direction === "previous" ? newStart.subtract(value, unit) : newStart.add(value, unit);
-    const newEnd = moment(currentEnd);
-    direction === "previous" ? newEnd.subtract(value, unit) : newEnd.add(value, unit);
-    this.timeframe = [newStart.toDate(), newEnd.toDate()];
+    const duration = this._navigationDuration ?? currentEnd.getTime() - currentStart.getTime();
+    this.timeframe = shiftTimeframeByDuration(currentStart, currentEnd, duration, direction);
   }
 
   protected _getInterval(
