@@ -8,6 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KUBERNETES_DIR="$SCRIPT_DIR"
 
 DEFAULT_CONFIG_FILE="$KUBERNETES_DIR/cluster.yaml"
+DEFAULT_STORAGE_CLASS_FILE="$KUBERNETES_DIR/cluster/eks/storage-class.yaml"
 DEFAULT_AWS_REGION="eu-west-1"
 DEFAULT_AWS_PROFILE="or"
 DEFAULT_LOAD_BALANCER_CONTROLLER_CHART_VERSION="1.14.0"
@@ -35,8 +36,8 @@ Usage:
   or-eks-cluster destroy --confirm <cluster-name> [options]
 
 Commands:
-  create             Create the EKS cluster and reconcile shared cluster add-ons.
-  apply              Reconcile shared cluster add-ons. Does not change the
+  create             Create the EKS cluster and reconcile shared resources.
+  apply              Reconcile shared cluster resources. Does not change the
                      Kubernetes minor version or node-group infrastructure.
   status             Show EKS, node, add-on, and controller status.
   kubeconfig         Create or refresh the stable kubeconfig context.
@@ -306,6 +307,17 @@ reconcile_load_balancer_controller() {
     --timeout 10m
 }
 
+reconcile_storage_class() {
+  [ -f "$DEFAULT_STORAGE_CLASS_FILE" ] || die \
+    "StorageClass manifest '$DEFAULT_STORAGE_CLASS_FILE' does not exist."
+
+  require_command kubectl
+  require_kube_context
+
+  log "Reconciling the OpenRemote EBS StorageClass."
+  kubectl --context "$KUBE_CONTEXT" apply -f "$DEFAULT_STORAGE_CLASS_FILE"
+}
+
 create_cluster() {
   require_command aws
   require_command eksctl
@@ -319,6 +331,7 @@ create_cluster() {
   log "Creating EKS cluster '$CLUSTER_NAME' in '$AWS_REGION_NAME'."
   eksctl_with_profile create cluster --config-file "$RENDERED_CONFIG_FILE"
   configure_kube_context
+  reconcile_storage_class
   reconcile_load_balancer_controller
   log "EKS cluster '$CLUSTER_NAME' is ready."
 }
@@ -338,8 +351,9 @@ apply_cluster() {
     die "Cluster configuration requests Kubernetes $desired_version but the cluster runs $current_version; Kubernetes version changes are outside the scope of this first-phase command."
   fi
 
+  reconcile_storage_class
   reconcile_load_balancer_controller
-  log "Cluster add-ons are reconciled. Node-group infrastructure updates remain outside apply until the cluster definition moves to CloudFormation."
+  log "Shared cluster resources are reconciled. Node-group infrastructure updates remain outside apply until the cluster definition moves to CloudFormation."
 }
 
 show_cluster_status() {
@@ -371,6 +385,11 @@ show_cluster_status() {
     log "Kubernetes nodes"
     kubectl --context "$KUBE_CONTEXT" get nodes \
       -o custom-columns='NAME:.metadata.name,STATUS:.status.conditions[-1].type,VERSION:.status.nodeInfo.kubeletVersion,NODEGROUP:.metadata.labels.eks\.amazonaws\.com/nodegroup'
+
+    log "OpenRemote EBS StorageClass"
+    if ! kubectl --context "$KUBE_CONTEXT" get storageclass openremote-ebs; then
+      warn "StorageClass 'openremote-ebs' is not installed."
+    fi
 
     if [ "$MANAGE_LOAD_BALANCER_CONTROLLER" = true ]; then
       log "AWS Load Balancer Controller"

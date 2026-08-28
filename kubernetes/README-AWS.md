@@ -34,9 +34,17 @@ By default, the group uses 2 VMs of type t2.large. The script places them in AZ 
 
 ### Persistence
 
-For persistence, the PVs are backed by [EBS volumes](https://docs.aws.amazon.com/eks/latest/userguide/ebs-csi.html).  
-Those must reside in the same AZ as the node that will be using them.  
-This means that pods must be deployed to specific nodes using node affinity.
+For persistence, the component charts request dynamically provisioned
+[EBS volumes](https://docs.aws.amazon.com/eks/latest/userguide/ebs-csi.html).
+`or-eks-cluster` reconciles the `openremote-ebs` StorageClass, which uses the
+EBS CSI driver, encrypted `gp3` volumes, and `WaitForFirstConsumer` binding.
+The EBS volume is therefore created in the availability zone selected for its
+pod; no fixed volume IDs or pod node-affinity rules are required.
+
+The EKS values files select `openremote-ebs`. Manager and PostgreSQL PVCs are
+retained by an ordinary Helm uninstall. Explicitly deleting a retained PVC
+deletes its dynamically provisioned EBS volume because this StorageClass uses
+the `Delete` reclaim policy.
 
 #### PosgreSQL data directory
 
@@ -192,12 +200,8 @@ It is best to always check the CloudFormation stacks using the AWS Console and m
 
 We are not using EKS Auto Mode for now. When we want to move forward with EKS, we should investigate this option.
 
-As indicated above, we're using EBS volumes and need to make sure the pod using them is on a node in the same AZ.  
-This limits the possibility of distributing pods on the different worker nodes and negates
-some of the automatic orchestration offered by k8s.  
-At this stage, it's not critical as anyway the pods using volumes are the DB (which is a stateful set with a single pod)  
-and the manager (which is not architected yet to support multiple replicas).  
-We could explore using storage class and not explicit binding and/or using other volume types.  
-We should anyway review the manager usage of persistent storage and limit the use of the file system for this purpose.
+The database is a single-pod StatefulSet, and the manager is not currently
+architected to support multiple replicas. The manager's use of persistent file
+storage should still be reviewed and reduced before production usage.
 
 When moving to production usage, the shell script might be replaced with CloudFormation templates or using Terraform or similar tools.

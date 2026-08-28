@@ -21,21 +21,20 @@ This README file covers deployment on a local machine, for information on deploy
 
 The following steps use the first option, managing connections through HAProxy.
 
-### Create the Persistent Volumes and the required secrets
+### Create the required secrets
 
-This is performed via the `or-setup` helm chart.
-Review the `values.yaml` file under the `or-setup` folder and create one with values appropriate for your environment.
-
-You should certainly edit the `basePath` value to point to a folder on your local machine.  
-Under macOS, it needs to be located under your home folder (/Users/xxx/...).
-
-The `openremote-secrets.yaml` file under `or-setup/templates` creates a secret to hold sensitive configuration from OpenRemote
+The `openremote-secret.yaml` file under `or-setup/templates` creates a secret to hold sensitive configuration from OpenRemote
 (database username and password, Keycloak admin password).  
 The values in this file are the default ones, update as required.
 
 ```bash
-helm install or-setup or-setup -f your_values.yaml
+helm install or-setup or-setup
 ```
+
+The Manager and PostgreSQL charts create their own namespaced PersistentVolumeClaims.
+By default, they use the cluster's default StorageClass for dynamic provisioning.
+Set `persistence.storageClass` in each chart when the cluster has no default or
+when a specific provisioner must be used.
 
 ### Install the charts
 
@@ -56,16 +55,19 @@ helm install postgresql postgresql --set requiresPermissionsFix=true
 
 ## Caveats
 
-### Persistent Volumes lifecycle
+### Persistent storage lifecycle
 
-Uninstalling the charts will delete the Persistent Volume Claims but not the PVs.  
-Those will go to the 'Released' state, at which point they can't be bound again.  
-You need to manually transition them to 'Available' before you re-install the charts
+Manager and PostgreSQL PVCs have the `helm.sh/resource-policy: keep` annotation
+by default. Uninstalling either chart removes its workload but preserves its PVC
+and data. Set `persistence.retain=false` if Helm should delete the chart-managed
+claim during uninstall.
 
-```bash
-kubectl patch pv manager-data-pv -p '{"spec":{"claimRef": null}}'
-kubectl patch pv postgresql-data-pv -p '{"spec":{"claimRef": null}}'
-```
+Set `persistence.existingClaim` to use a PVC managed outside the chart. When it
+is set, the chart does not create, annotate, or delete that claim.
+
+Deleting a retained PVC or its namespace is an explicit data-purge operation.
+Whether the backing volume is also deleted then depends on its StorageClass
+reclaim policy.
 
 ### Release names
 

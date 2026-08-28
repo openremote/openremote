@@ -197,7 +197,7 @@ spec:
         {{- end }}
         - name: manager-data
           persistentVolumeClaim:
-            claimName: {{ include "manager.fullname" . }}
+            claimName: {{ include "manager.persistence.claimName" . }}
       {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
       {{- end }}

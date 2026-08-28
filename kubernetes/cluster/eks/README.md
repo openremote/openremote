@@ -1,8 +1,9 @@
 # EKS cluster management
 
-`kubernetes/or-eks-cluster` manages the shared EKS cluster and its shared
-AWS Load Balancer Controller. It does not deploy or delete OpenRemote stacks,
-stack namespaces, certificates, DNS records, or stack data volumes.
+`kubernetes/or-eks-cluster` manages the shared EKS cluster, its shared AWS Load
+Balancer Controller, and the `openremote-ebs` StorageClass. It does not deploy
+or delete OpenRemote stacks, stack namespaces, certificates, DNS records, or
+stack data volumes.
 
 The current implementation uses the existing `kubernetes/cluster.yaml`
 `eksctl` configuration. This boundary is intended to remain stable when EKS
@@ -51,8 +52,9 @@ kubernetes/or-eks-cluster status --name openremote-test
 ```
 
 `apply` currently reconciles the AWS Load Balancer Controller, including its
-CRDs. It intentionally does not attempt to mutate node-group infrastructure;
-that reconciliation will be implemented by the future CloudFormation cluster
+CRDs, and the `openremote-ebs` StorageClass used by OpenRemote stack PVCs. It
+intentionally does not attempt to mutate node-group infrastructure; that
+reconciliation will be implemented by the future CloudFormation cluster
 definition.
 
 ```bash
@@ -75,3 +77,11 @@ Kubernetes minor-version upgrades are intentionally outside this first phase.
 The current `cluster.yaml` uses a self-managed `nodeGroups` entry, so an upgrade
 strategy must be designed separately before the cluster command exposes that
 lifecycle operation.
+
+## Persistent storage
+
+The `openremote-ebs` StorageClass uses the standard EBS CSI driver, encrypted
+`gp3` volumes, and `WaitForFirstConsumer` binding. Its `Delete` reclaim policy
+removes the EBS volume when its PVC is explicitly deleted. The component charts
+retain their PVCs during an ordinary Helm uninstall, and cluster destruction is
+blocked while any PVC remains.
