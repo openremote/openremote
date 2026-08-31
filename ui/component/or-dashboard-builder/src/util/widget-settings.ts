@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, type PropertyValues, type TemplateResult } from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { property } from "lit/decorators.js";
 import type { WidgetConfig } from "./widget-config";
 import { style } from "../style";
@@ -33,7 +34,7 @@ export class WidgetSettingsChangedEvent extends CustomEvent<WidgetConfig> {
   }
 }
 
-export abstract class WidgetSettings extends LitElement {
+export abstract class WidgetSettings extends OrElement {
   @property()
   protected readonly widgetConfig: WidgetConfig;
 

@@ -3,6 +3,7 @@
   "title" : "Object Map",
   "type" : "object",
   "additionalProperties" : {
+    "title" : "Any Type",
     "type" : [ "null", "number", "integer", "boolean", "string", "array", "object" ],
     "additionalProperties" : true
   }

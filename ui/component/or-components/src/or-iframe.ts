@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues } from "lit";
+import { css, html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import "./or-loading-indicator";
 import "@openremote/or-icon";
@@ -94,7 +95,7 @@ const style = css`
  * @event {OrIFrameEvent} or-iframe-event - Fired when the iframe loading state changes, and dispatches the event detail containing type, src, and optional error.
  */
 @customElement("or-iframe")
-export class OrIframe extends LitElement {
+export class OrIframe extends OrElement {
   static get styles() {
     return [style];
   }

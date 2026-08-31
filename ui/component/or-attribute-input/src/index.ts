@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { until } from "lit/directives/until.js";
@@ -325,7 +326,7 @@ const DEFAULT_TIMEOUT = 5000;
 
 // TODO: Add support for attribute not found and attribute deletion/addition
 @customElement("or-attribute-input")
-export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitElement)) {
+export class OrAttributeInput extends subscribe(manager)(translate(i18next)(OrElement)) {
   // language=CSS
   static get styles() {
     return [

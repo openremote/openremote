@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement, css, type PropertyValues } from "lit";
+import { html, css, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
@@ -44,7 +45,7 @@ declare global {
 }
 
 @customElement("or-add-attribute-panel")
-export class OrAddAttributePanel extends LitElement {
+export class OrAddAttributePanel extends OrElement {
   @property({ attribute: false })
   protected asset!: Asset;
 

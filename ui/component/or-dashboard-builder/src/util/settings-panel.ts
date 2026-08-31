@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { until } from "lit/directives/until.js";
 import { when } from "lit/directives/when.js";
@@ -62,7 +63,7 @@ const styling = css`
 `;
 
 @customElement("settings-panel")
-export class SettingsPanel extends LitElement {
+export class SettingsPanel extends OrElement {
   @property({ type: Boolean })
   public expanded = false;
 

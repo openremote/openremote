@@ -36,6 +36,10 @@ Access control belongs in the resource implementation, not in the service. Exten
 
 Own Lit components extend `OrElement` from `@openremote/or-element` instead of `LitElement` (also through mixins, e.g. `translate(i18next)(OrElement)`). It applies the shared shadow-DOM styling automatically. Vaadin wrappers are exempt; they extend their Vaadin base and are themed via Lumo.
 
+### Fine-grained rendering
+
+A state change should re-render only the part it affects. Re-rendering a whole page, or a large component such as a table, flickers and discards the state that component holds: sort order, pagination, selection, scroll position. Keep those children mounted and update their properties.
+
 ### Adding a new component package
 
 New packages under `ui/component/` are picked up automatically by the yarn workspace and by Gradle (any dir with a `build.gradle`). The rsbuild apps are not automatic: add the package to the `@openremote/*` alias maps in `ui/app/manager/rsbuild.config.ts` and `ui/app/storybook/rsbuild.config.ts`, which resolve workspace packages to their `src` dirs. A missing entry fails the build with "Module not found" for any file importing the package.
@@ -79,6 +83,7 @@ Stories call `getORStorybookHelpers(tagName)` (from `ui/component/storybook-util
 
 - **Test Naming:** `test.describe` blocks describe a feature. Tests should be named starting with "should ...".
 - **Test Structure:** Keep tests flat by default. Omit top-level `test.describe` blocks. If grouping is needed, target a specific feature (e.g., filtering notifications) rather than a parent concept like the whole page. Example: `test.describe("Filter Notifications", ...)` instead of `test.describe("Notifications", ...)`.
+- **Regression Tests:** Every bug fix ships with a test that fails without it. Name it after the behaviour that should hold rather than the defect, and record what used to go wrong in a comment on the assertion that catches it.
 
 #### Fixtures
 
@@ -96,7 +101,7 @@ Stories call `getORStorybookHelpers(tagName)` (from `ui/component/storybook-util
 
 - **Location:** Define tests in `ui/component/<component-name>/test/`. Define fixtures in `ui/component/<component-name>/test/fixtures/`.
 
-Component tests use Playwright component testing (`@sand4rt/experimental-ct-web`). They live in each package's `test/*.test.ts`, import `{ ct, expect }` from `@openremote/test`, and `mount(ComponentClass, { props, slots, on })`. Run them with `npm test` in the package (which does `tsc -b && playwright test`). CI runs `./gradlew -p ui/component npmTest`, which only executes packages that register an `npmTest` task, so when adding the first test to a package also register `npmTest` (and `npmTestUI`) in its `build.gradle` file; copy the tasks from a sibling package. Prefer web-first, role-based assertions (`getByRole("checkbox", { name }).toBeChecked()`, `toHaveCount(...)`) over poking at JS properties (`toHaveJSProperty`) or internal locators. Some important quirks to know about:
+Component tests use Playwright component testing (`@sand4rt/experimental-ct-web`). They live in each package's `test/*.test.ts`, import `{ ct, expect }` from `@openremote/test`, and `mount(ComponentClass, { props, slots, on })`. Run them with `npm test` in the package (which does `tsc -b && playwright test`). CI runs `./gradlew -p ui/component npmTest`, which only executes packages that register an `npmTest` task, so when adding the first test to a package also register `npmTest` in its `build.gradle` file; copy the tasks from a sibling package. Prefer web-first, role-based assertions (`getByRole("checkbox", { name }).toBeChecked()`, `toHaveCount(...)`) over poking at JS properties (`toHaveJSProperty`) or internal locators. Some important quirks to know about:
 
 - **Custom elements used as slotted/appended children must be eagerly registered.** Playwright CT turns each imported component into a _lazy_ dynamic import that only runs when that component is `mount()`ed, so a child element that is never mounted itself (e.g. `or-vaadin-toggle` slotted inside `or-vaadin-toggle-group`) never gets `customElements.define`d and stays an inert, unupgraded tag that appends to the DOM but does not render. Declare such components in the test itself via `mount(..., { hooksConfig: { components: [OrVaadinToggle] } })`; the `beforeMount` hook in `ui/test/playwright/index.js` resolves their import refs, which runs their modules and registers them before the mount.
 - **Use only one `mount()` call per test.** Multiple mounts do not resolve to separate locator paths and can hang until the test times out on a strict mode violation.

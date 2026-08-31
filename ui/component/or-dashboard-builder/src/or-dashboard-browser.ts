@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { GridStack, type GridStackNode } from "gridstack";
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { style } from "./style";
 import { widgetTypes } from "./index";
@@ -62,7 +63,7 @@ const browserStyling = css`
 `;
 
 @customElement("or-dashboard-browser")
-export class OrDashboardBrowser extends LitElement {
+export class OrDashboardBrowser extends OrElement {
   @property({ type: Number })
   public columns = 4;
 

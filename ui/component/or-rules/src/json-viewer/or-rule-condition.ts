@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import {
   type AssetTypeInfo,
@@ -165,7 +166,7 @@ const style = css`
 `;
 
 @customElement("or-rule-condition")
-class OrRuleCondition extends translate(i18next)(LitElement) {
+class OrRuleCondition extends translate(i18next)(OrElement) {
   @property({ type: Object, attribute: false })
   public ruleCondition!: RuleCondition;
 

@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { OrRulesRuleChangedEvent, type RulesConfig, type RuleView } from "./index";
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { RulesetLang, type RulesetUnion } from "@openremote/model";
 import "ace-builds/src-noconflict/mode-javascript";
@@ -53,7 +54,7 @@ const style = css`
 `;
 
 @customElement("or-rule-text-viewer")
-export class OrRuleTextViewer extends LitElement implements RuleView {
+export class OrRuleTextViewer extends OrElement implements RuleView {
   static get styles() {
     return style;
   }
