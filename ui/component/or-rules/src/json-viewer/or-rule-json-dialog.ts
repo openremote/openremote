@@ -99,7 +99,8 @@ export class OrRuleJsonDialog extends OrElement {
     this.removeEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onFormValueChange);
   }
 
-  protected _onFormValueChange() {
+  protected _onFormValueChange(ev?: OrRulesJsonRuleChangedEvent) {
+    ev?.stopPropagation();
     this._invalid =
       (this._childNodes
         ?.map((c) => c as unknown as OrRuleForm | HTMLInputElement)

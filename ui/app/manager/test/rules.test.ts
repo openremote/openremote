@@ -239,11 +239,14 @@ test("Create a When-Then rule for an asset with a email notification action", as
     operator: "Less than or equal to",
     value: energyRule.value.toString(),
   });
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
   await then.getByRole("menuitem", { name: "Add action" }).click();
   await then.getByRole("menuitem", { name: "Email" }).click();
+  await expect(page.getByRole("button", { name: "Save", exact: true })).not.toBeDisabled();
+
   await then.getByRole("combobox", { name: "Recipients", exact: true }).click();
   await then.getByRole("option", { name: "Users", exact: true }).click();
   await then.getByRole("combobox", { name: "Users", exact: true }).click();
@@ -306,11 +309,14 @@ test("Create a When-Then rule for an asset with a push notification action", asy
     operator: "Less than or equal to",
     value: energyRule.value.toString(),
   });
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
   await then.getByRole("menuitem", { name: "Add action" }).click();
   await then.getByRole("menuitem", { name: "Push notification" }).click();
+  await expect(page.getByRole("button", { name: "Save", exact: true })).not.toBeDisabled();
+
   await then.getByRole("button", { name: "Message", exact: true }).click();
 
   // Set up notification message in dialog
@@ -372,11 +378,14 @@ test("Create a When-Then rule for an asset with a alarm action", async ({ page, 
     operator: "Less than or equal to",
     value: energyRule.value.toString(),
   });
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
   await then.getByRole("menuitem", { name: "Add action" }).click();
   await then.getByRole("menuitem", { name: "Alarm" }).click();
+  await expect(page.getByRole("button", { name: "Save", exact: true })).not.toBeDisabled();
+
   await then.getByRole("button", { name: "Severity" }).click();
   await then.getByRole("option", { name: "High", exact: true }).click();
   await then.getByRole("button", { name: "Settings", exact: true }).click();
@@ -434,6 +443,7 @@ test("Create a When-Then rule for an asset with a webhook action", async ({ page
     operator: "Less than or equal to",
     value: energyRule.value.toString(),
   });
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -471,6 +481,7 @@ test("Create a When-Then rule for an asset with a webhook action", async ({ page
   await expect(then.getByRole("textbox", { name: "", exact: true }).last()).not.toBeVisible();
 
   // Close the dialog
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
   await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
   await then.getByRole("button", { name: "OK", exact: true }).click();
 
