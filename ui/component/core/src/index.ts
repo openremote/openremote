@@ -504,14 +504,6 @@ export class Manager implements EventProviderFactory {
 
     try {
       await i18next.use(i18nextBackend).init(initOptions);
-      i18next.services.formatter!.add("uppercase", (value: unknown) =>
-        typeof value === "string" ? value.toUpperCase() : String(value)
-      );
-      i18next.services.formatter!.add("moment", (value: unknown, _lng: string | undefined, options: any) =>
-        value instanceof Date
-          ? moment(value).format(typeof options?.format === "string" ? options.format : "")
-          : (value as string)
-      );
     } catch (e) {
       console.error(e);
       this._setError(ORError.TRANSLATION_ERROR);
