@@ -33,153 +33,155 @@ import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 
 class BasicRulesImport {
 
-    final Long globalRulesetId
-    final Long globalRuleset2Id
-    final Long masterRulesetId
-    final Long realmBuildingRulesetId
-    final Long realmCityRulesetId
-    final Long apartment1RulesetId
-    final Long apartment2RulesetId
-    final Long apartment3RulesetId
+  final Long globalRulesetId
+  final Long globalRuleset2Id
+  final Long masterRulesetId
+  final Long realmBuildingRulesetId
+  final Long realmCityRulesetId
+  final Long apartment1RulesetId
+  final Long apartment2RulesetId
+  final Long apartment3RulesetId
 
-    RulesEngine globalEngine
-    RulesEngine masterEngine
-    RulesEngine realmBuildingEngine
-    RulesEngine apartment1Engine
-    RulesEngine apartment2Engine
-    RulesEngine apartment3Engine
+  RulesEngine globalEngine
+  RulesEngine masterEngine
+  RulesEngine realmBuildingEngine
+  RulesEngine apartment1Engine
+  RulesEngine apartment2Engine
+  RulesEngine apartment3Engine
 
-    BasicRulesImport(RulesetStorageService rulesetStorageService,
-                     KeycloakTestSetup keycloakTestSetup,
-                     ManagerTestSetup managerTestSetup) {
+  BasicRulesImport(RulesetStorageService rulesetStorageService,
+  KeycloakTestSetup keycloakTestSetup,
+  ManagerTestSetup managerTestSetup) {
 
-        Ruleset ruleset = new GlobalRuleset(
-                "Some global demo rules", GROOVY,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
-        globalRulesetId = rulesetStorageService.merge(ruleset).id
+    Ruleset ruleset = new GlobalRuleset(
+            "Some global demo rules", GROOVY,
+            getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
+    globalRulesetId = rulesetStorageService.merge(ruleset).id
 
-        ruleset = new GlobalRuleset(
-                "Other global demo rules with a long name that should fill up space in UI", GROOVY,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
-        ruleset.setEnabled(false)
-        globalRuleset2Id = rulesetStorageService.merge(ruleset).id
+    ruleset = new GlobalRuleset(
+            "Other global demo rules with a long name that should fill up space in UI", GROOVY,
+            getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
+    ruleset.setEnabled(false)
+    globalRuleset2Id = rulesetStorageService.merge(ruleset).id
 
-        ruleset = new RealmRuleset(
+    ruleset = new RealmRuleset(
             keycloakTestSetup.realmMaster.name,
             "Some master realm demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
-        masterRulesetId = rulesetStorageService.merge(ruleset).id
+    masterRulesetId = rulesetStorageService.merge(ruleset).id
 
-        ruleset = new RealmRuleset(
+    ruleset = new RealmRuleset(
             keycloakTestSetup.realmBuilding.name,
             "Some building realm demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
-        realmBuildingRulesetId = rulesetStorageService.merge(ruleset).id
+    realmBuildingRulesetId = rulesetStorageService.merge(ruleset).id
 
-        ruleset = new RealmRuleset(
+    ruleset = new RealmRuleset(
             keycloakTestSetup.realmCity.name,
             "Some smartcity realm demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
-        ruleset.setEnabled(false)
-        realmCityRulesetId = rulesetStorageService.merge(ruleset).id
+    ruleset.setEnabled(false)
+    realmCityRulesetId = rulesetStorageService.merge(ruleset).id
 
-        ruleset = new AssetRuleset(
+    ruleset = new AssetRuleset(
             managerTestSetup.apartment1Id,
             "Some apartment 1 demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
-        ruleset.setEnabled(false)
-        apartment1RulesetId = rulesetStorageService.merge(ruleset).id
+    ruleset.setEnabled(false)
+    apartment1RulesetId = rulesetStorageService.merge(ruleset).id
 
-        ruleset = new AssetRuleset(
+    ruleset = new AssetRuleset(
             managerTestSetup.apartment2Id,
             "Some apartment 2 demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
-        .setShowOnList(true)
-        apartment2RulesetId = rulesetStorageService.merge(ruleset).id
+            .setShowOnList(true)
+    apartment2RulesetId = rulesetStorageService.merge(ruleset).id
 
-        ruleset = new AssetRuleset(
+    ruleset = new AssetRuleset(
             managerTestSetup.apartment3Id,
             "Some apartment 3 demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
-        apartment3RulesetId = rulesetStorageService.merge(ruleset).id
+    apartment3RulesetId = rulesetStorageService.merge(ruleset).id
+  }
+
+  @SuppressWarnings("GroovyAccessibility")
+  boolean assertEnginesReady(RulesService rulesService,
+          KeycloakTestSetup keycloakTestSetup,
+          ManagerTestSetup managerTestSetup) {
+
+    globalEngine = rulesService.globalEngine.get()
+    assert globalEngine != null
+    assert globalEngine.isRunning()
+    assert globalEngine.deployments.size() == 1
+    assert globalEngine.deployments.values().any { it ->
+      it.name == "Some global demo rules" && it.status == DEPLOYED
     }
 
-    @SuppressWarnings("GroovyAccessibility")
-    boolean assertEnginesReady(RulesService rulesService,
-                               KeycloakTestSetup keycloakTestSetup,
-                               ManagerTestSetup managerTestSetup) {
+    assert rulesService.realmEngines.size() == 2
+    masterEngine = rulesService.realmEngines.get(keycloakTestSetup.realmMaster.name)
+    assert masterEngine != null
+    assert masterEngine.isRunning()
+    assert masterEngine.deployments.size() == 1
+    assert masterEngine.deployments.values().iterator().next().name == "Some master realm demo rules"
+    assert masterEngine.deployments.values().iterator().next().status == DEPLOYED
+    realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+    assert realmBuildingEngine != null
+    assert realmBuildingEngine.isRunning()
+    assert realmBuildingEngine.deployments.size() == 1
+    assert realmBuildingEngine.deployments.values().iterator().next().name == "Some building realm demo rules"
+    assert realmBuildingEngine.deployments.values().iterator().next().status == DEPLOYED
+    def realmCityEngine = rulesService.realmEngines.get(keycloakTestSetup.realmCity.name)
+    assert realmCityEngine == null
 
-        globalEngine = rulesService.globalEngine.get()
-        assert globalEngine != null
-        assert globalEngine.isRunning()
-        assert globalEngine.deployments.size() == 1
-        assert globalEngine.deployments.values().any { it -> it.name == "Some global demo rules" && it.status == DEPLOYED }
+    assert rulesService.assetEngines.size() == 2
+    apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
+    assert apartment1Engine == null
+    apartment2Engine = rulesService.assetEngines.get(managerTestSetup.apartment2Id)
+    assert apartment2Engine != null
+    assert apartment2Engine.isRunning()
+    assert apartment2Engine.deployments.size() == 1
+    assert apartment2Engine.deployments.values().iterator().next().name == "Some apartment 2 demo rules"
+    assert apartment2Engine.deployments.values().iterator().next().status == DEPLOYED
+    apartment3Engine = rulesService.assetEngines.get(managerTestSetup.apartment3Id)
+    assert apartment3Engine != null
+    assert apartment3Engine.isRunning()
+    assert apartment3Engine.deployments.size() == 1
+    assert apartment3Engine.deployments.values().iterator().next().name == "Some apartment 3 demo rules"
+    assert apartment3Engine.deployments.values().iterator().next().status == DEPLOYED
 
-        assert rulesService.realmEngines.size() == 2
-        masterEngine = rulesService.realmEngines.get(keycloakTestSetup.realmMaster.name)
-        assert masterEngine != null
-        assert masterEngine.isRunning()
-        assert masterEngine.deployments.size() == 1
-        assert masterEngine.deployments.values().iterator().next().name == "Some master realm demo rules"
-        assert masterEngine.deployments.values().iterator().next().status == DEPLOYED
-        realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
-        assert realmBuildingEngine != null
-        assert realmBuildingEngine.isRunning()
-        assert realmBuildingEngine.deployments.size() == 1
-        assert realmBuildingEngine.deployments.values().iterator().next().name == "Some building realm demo rules"
-        assert realmBuildingEngine.deployments.values().iterator().next().status == DEPLOYED
-        def realmCityEngine = rulesService.realmEngines.get(keycloakTestSetup.realmCity.name)
-        assert realmCityEngine == null
+    return true
+  }
 
-        assert rulesService.assetEngines.size() == 2
-        apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
-        assert apartment1Engine == null
-        apartment2Engine = rulesService.assetEngines.get(managerTestSetup.apartment2Id)
-        assert apartment2Engine != null
-        assert apartment2Engine.isRunning()
-        assert apartment2Engine.deployments.size() == 1
-        assert apartment2Engine.deployments.values().iterator().next().name == "Some apartment 2 demo rules"
-        assert apartment2Engine.deployments.values().iterator().next().status == DEPLOYED
-        apartment3Engine = rulesService.assetEngines.get(managerTestSetup.apartment3Id)
-        assert apartment3Engine != null
-        assert apartment3Engine.isRunning()
-        assert apartment3Engine.deployments.size() == 1
-        assert apartment3Engine.deployments.values().iterator().next().name == "Some apartment 3 demo rules"
-        assert apartment3Engine.deployments.values().iterator().next().status == DEPLOYED
+  void resetRulesFired(RulesEngine... engine) {
+    // Remove all named facts (those are the only ones inserted by basic test rules)
+    Collection<RulesEngine> engines = [globalEngine, masterEngine, realmBuildingEngine, apartment2Engine, apartment3Engine]
+    engines.addAll(engine)
+    engines.forEach({ e ->
+      e.facts.namedFacts.keySet().forEach({ factName ->
+        e.facts.remove(factName)
+      })
+    })
+  }
 
-        return true
-    }
+  void assertNoRulesFired(RulesEngine... engine) {
+    Collection<RulesEngine> engines = [globalEngine, masterEngine, realmBuildingEngine, apartment2Engine, apartment3Engine]
+    engines.addAll(engine)
+    engines.forEach({ e ->
+      assert e.facts.namedFacts.size() == 0
+    })
+  }
 
-    void resetRulesFired(RulesEngine... engine) {
-        // Remove all named facts (those are the only ones inserted by basic test rules)
-        Collection<RulesEngine> engines = [globalEngine, masterEngine, realmBuildingEngine, apartment2Engine, apartment3Engine]
-        engines.addAll(engine)
-        engines.forEach({ e ->
-            e.facts.namedFacts.keySet().forEach({ factName ->
-                e.facts.remove(factName)
-            })
-        })
-    }
+  static void assertRulesFired(RulesEngine engine, int fired) {
+    assert engine.facts.namedFacts.keySet().size() == fired
+  }
 
-    void assertNoRulesFired(RulesEngine... engine) {
-        Collection<RulesEngine> engines = [globalEngine, masterEngine, realmBuildingEngine, apartment2Engine, apartment3Engine]
-        engines.addAll(engine)
-        engines.forEach({ e ->
-            assert e.facts.namedFacts.size() == 0
-        })
-    }
-
-    static void assertRulesFired(RulesEngine engine, int fired) {
-        assert engine.facts.namedFacts.keySet().size() == fired
-    }
-
-    static void assertRulesFired(RulesEngine engine, Collection<String> facts) {
-        engine.facts.namedFacts.keySet().containsAll(facts)
-    }
+  static void assertRulesFired(RulesEngine engine, Collection<String> facts) {
+    engine.facts.namedFacts.keySet().containsAll(facts)
+  }
 }

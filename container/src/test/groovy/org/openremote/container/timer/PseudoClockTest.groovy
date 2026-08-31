@@ -26,37 +26,37 @@ import java.time.ZoneId
 
 class PseudoClockTest extends Specification {
 
-    TimerService.Clock clock
+  TimerService.Clock clock
 
-    def setup() {
-        clock = TimerService.Clock.PSEUDO
-        clock.init()
-        clock.stop()
-    }
+  def setup() {
+    clock = TimerService.Clock.PSEUDO
+    clock.init()
+    clock.stop()
+  }
 
-    def "setTime sets #date at midnight in #zone to #expected milliseconds"() {
-        expect:
-        clock.setTime(LocalDate.parse(date), LocalTime.MIDNIGHT, ZoneId.of(zone)) == expected
-        clock.currentTimeMillis == expected
+  def "setTime sets #date at midnight in #zone to #expected milliseconds"() {
+    expect:
+    clock.setTime(LocalDate.parse(date), LocalTime.MIDNIGHT, ZoneId.of(zone)) == expected
+    clock.currentTimeMillis == expected
 
-        where:
-        date         | zone  || expected
-        "1970-01-01" | "UTC" || 0L
-        "1970-01-02" | "UTC" || 24L * 3_600_000
-        "1970-01-01" | "CET" || -3_600_000L
-        "1970-01-02" | "CET" || 23L * 3_600_000
-    }
+    where:
+    date | zone || expected
+    "1970-01-01" | "UTC" || 0L
+    "1970-01-02" | "UTC" || 24L * 3_600_000
+    "1970-01-01" | "CET" || -3_600_000L
+    "1970-01-02" | "CET" || 23L * 3_600_000
+  }
 
-    def "setTime sets #timestamp to #expected milliseconds"() {
-        expect:
-        clock.setTime(timestamp) == expected
-        clock.currentTimeMillis == expected
+  def "setTime sets #timestamp to #expected milliseconds"() {
+    expect:
+    clock.setTime(timestamp) == expected
+    clock.currentTimeMillis == expected
 
-        where:
-        timestamp                       || expected
-        "1970-01-01T00:00:00.000Z"      || 0L
-        "1970-01-02T00:00:00.000Z"      || 24L * 3_600_000
-        "1970-01-01T00:00:00.000+01:00" || -3_600_000L
-        "1970-01-02T00:00:00.000+01:00" || 23L * 3_600_000
-    }
+    where:
+    timestamp || expected
+    "1970-01-01T00:00:00.000Z" || 0L
+    "1970-01-02T00:00:00.000Z" || 24L * 3_600_000
+    "1970-01-01T00:00:00.000+01:00" || -3_600_000L
+    "1970-01-02T00:00:00.000+01:00" || 23L * 3_600_000
+  }
 }
