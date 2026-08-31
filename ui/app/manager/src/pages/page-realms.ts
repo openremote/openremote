@@ -370,22 +370,25 @@ export class PageRealms extends Page<AppStateKeyed> {
                               </or-vaadin-text-field>
                               <or-vaadin-toggle
                                 ?readonly="${readonly}"
-                                label="${i18next.t("resetPasswordAllowed")}"
-                                .checked="${realm.resetPasswordAllowed}"
+                                ?checked="${realm.resetPasswordAllowed}"
                                 @change="${(e: Event) => (realm.resetPasswordAllowed = (e.currentTarget as OrVaadinToggle).checked)}"
-                              ></or-vaadin-toggle>
+                              >
+                                <or-translate slot="label" value="resetPasswordAllowed"></or-translate>
+                              </or-vaadin-toggle>
                               <or-vaadin-toggle
                                 ?readonly="${readonly}"
-                                label="${i18next.t("enabled")}"
-                                .checked="${realm.enabled}"
+                                ?checked="${realm.enabled}"
                                 @change="${(e: Event) => (realm.enabled = (e.currentTarget as OrVaadinToggle).checked)}"
-                              ></or-vaadin-toggle>
+                              >
+                                <or-translate slot="label" value="enabled"></or-translate>
+                              </or-vaadin-toggle>
                               <or-vaadin-toggle
                                 ?readonly="${readonly}"
-                                label="${i18next.t("rememberMe")}"
-                                .checked="${realm.rememberMe}"
+                                ?checked="${realm.rememberMe}"
                                 @change="${(e: Event) => (realm.rememberMe = (e.currentTarget as OrVaadinToggle).checked)}"
-                              ></or-vaadin-toggle>
+                              >
+                                <or-translate slot="label" value="rememberMe"></or-translate>
+                              </or-vaadin-toggle>
                             </div>
                             <div class="column">
                               <or-vaadin-text-field

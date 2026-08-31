@@ -117,10 +117,11 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) {
 
         <!-- Open in browser switch -->
         <or-vaadin-toggle
-          .checked="${!!message.action?.openInBrowser}"
+          ?checked="${message.action?.openInBrowser}"
           @change="${(ev: Event) => onchange(ev, message).then((msg) => this._onOpenInBrowserChange(ev, msg))}"
-          .label="${i18next.t("openInBrowser")}"
-        ></or-vaadin-toggle>
+        >
+          <or-translate slot="label" value="openInBrowser"></or-translate>
+        </or-vaadin-toggle>
 
         <!-- Button controls -->
         <div style="display: flex; gap: 20px;">

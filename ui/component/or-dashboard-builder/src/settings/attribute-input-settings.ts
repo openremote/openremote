@@ -59,7 +59,7 @@ export class AttributeInputSettings extends AssetWidgetSettings {
               <span><or-translate value="dashboard.userCanEdit"></or-translate></span>
               <or-vaadin-toggle
                 style="margin: 0 -10px;"
-                .checked="${!this.widgetConfig.readonly}"
+                ?checked="${!this.widgetConfig.readonly}"
                 @change="${(ev: Event) => this.onReadonlyToggle(ev)}"
               ></or-vaadin-toggle>
             </div>
@@ -68,7 +68,7 @@ export class AttributeInputSettings extends AssetWidgetSettings {
               <span><or-translate value="dashboard.showHelperText"></or-translate></span>
               <or-vaadin-toggle
                 style="margin: 0 -10px;"
-                .checked="${this.widgetConfig.showHelperText}"
+                ?checked="${this.widgetConfig.showHelperText}"
                 @change="${(ev: Event) => this.onHelperTextToggle(ev)}"
               ></or-vaadin-toggle>
             </div>

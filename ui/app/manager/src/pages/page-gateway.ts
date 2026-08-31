@@ -317,7 +317,7 @@ export class PageGateway extends Page<AppStateKeyed> {
           <div style="gap: var(--lumo-space-s)">
             <or-translate value="enabled"></or-translate>
             <or-vaadin-toggle
-              .checked="${!connection.disabled}"
+              ?checked="${!connection.disabled}"
               ?disabled="${disabled}"
               @change="${(e: Event) => this._setConnectionProperty("disabled", !(e.currentTarget as OrVaadinToggle).checked)}"
             ></or-vaadin-toggle>

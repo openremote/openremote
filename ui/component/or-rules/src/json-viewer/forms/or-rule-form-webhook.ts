@@ -160,8 +160,7 @@ export class OrRuleFormWebhook extends OrElement {
             style="display: flex; flex-direction: column; gap: 10px; margin-bottom: ${this.webhook.oAuthGrant || this.webhook.usernamePassword ? "28px" : "0"};"
           >
             <or-vaadin-toggle
-              label="${i18next.t("requiresAuthorization")}"
-              .checked="${!!(this.webhook.oAuthGrant || this.webhook.usernamePassword)}"
+              ?checked="${this.webhook.oAuthGrant || this.webhook.usernamePassword}"
               @change="${(ev: Event) => {
                 this.webhook.usernamePassword = (ev.currentTarget as OrVaadinToggle).checked
                   ? {
@@ -171,7 +170,9 @@ export class OrRuleFormWebhook extends OrElement {
                   : undefined;
                 this.notifyWebhookUpdate();
               }}"
-            ></or-vaadin-toggle>
+            >
+              <or-translate slot="label" value="requiresAuthorization"></or-translate>
+            </or-vaadin-toggle>
             ${when(this.webhook.oAuthGrant || this.webhook.usernamePassword, () => {
               const values: SelectItem[] = Array.from(this.authMethodOptions.entries()).map(([value, label]) => ({
                 value,
@@ -198,8 +199,7 @@ export class OrRuleFormWebhook extends OrElement {
               this.webhook.httpMethod != HTTPMethod.GET && this.webhook.httpMethod != HTTPMethod.DELETE,
               () => html`
                 <or-vaadin-toggle
-                  label="${i18next.t("includeBodyInRequest")}"
-                  .checked="${this.webhook.payload != undefined}"
+                  ?checked="${this.webhook.payload != undefined}"
                   @change="${(ev: Event) => {
                     this.webhook.payload = (ev.currentTarget as OrVaadinToggle).checked
                       ? JSON.stringify(
@@ -213,7 +213,9 @@ export class OrRuleFormWebhook extends OrElement {
                       : undefined;
                     this.notifyWebhookUpdate();
                   }}"
-                ></or-vaadin-toggle>
+                >
+                  <or-translate slot="label" value="includeBodyInRequest"></or-translate>
+                </or-vaadin-toggle>
                 ${when(this.webhook.payload != undefined, () => {
                   return html`
                     <or-vaadin-text-area

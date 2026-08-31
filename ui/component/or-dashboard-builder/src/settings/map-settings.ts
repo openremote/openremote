@@ -101,7 +101,7 @@ export class MapSettings extends AssetWidgetSettings {
               <span><or-translate value="dashboard.showGeoJson"></or-translate></span>
               <or-vaadin-toggle
                 style="width: 70px;"
-                .checked="${this.widgetConfig.showGeoJson}"
+                ?checked="${this.widgetConfig.showGeoJson}"
                 @change="${(ev: Event) => this.onGeoJsonToggle(ev)}"
               ></or-vaadin-toggle>
             </div>
@@ -128,8 +128,8 @@ export class MapSettings extends AssetWidgetSettings {
               <span><or-translate value="dashboard.showLabels"></or-translate></span>
               <or-vaadin-toggle
                 style="width: 70px;"
-                .checked="${this.widgetConfig.showLabels}"
-                .disabled="${!this.widgetConfig.assetType}"
+                ?checked="${this.widgetConfig.showLabels}"
+                ?disabled="${!this.widgetConfig.assetType}"
                 @change="${(ev: Event) => this.onShowLabelsToggle(ev)}"
               ></or-vaadin-toggle>
             </div>
@@ -137,8 +137,8 @@ export class MapSettings extends AssetWidgetSettings {
               <span><or-translate value="dashboard.showUnits"></or-translate></span>
               <or-vaadin-toggle
                 style="width: 70px;"
-                .checked="${this.widgetConfig.showUnits}"
-                .disabled="${!this.widgetConfig.showLabels || !this.widgetConfig.assetType}"
+                ?checked="${this.widgetConfig.showUnits}"
+                ?disabled="${!this.widgetConfig.showLabels || !this.widgetConfig.assetType}"
                 @change="${(ev: Event) => this.onShowUnitsToggle(ev)}"
               ></or-vaadin-toggle>
             </div>

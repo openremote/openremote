@@ -338,13 +338,14 @@ export class OrConfMapCard extends OrElement {
 
             <div class="input" style="height: 56px;">
               <or-vaadin-toggle
-                .checked="${map.boxZoom}"
-                label="BoxZoom"
+                ?checked="${map.boxZoom}"
                 @change="${(e: Event) => {
                   map.boxZoom = (e.currentTarget as OrVaadinToggle).checked;
                   this.notifyConfigChange(map);
                 }}"
-              ></or-vaadin-toggle>
+              >
+                <or-translate slot="label" value="configuration.boxZoom"></or-translate>
+              </or-vaadin-toggle>
             </div>
           </div>
         </div>
