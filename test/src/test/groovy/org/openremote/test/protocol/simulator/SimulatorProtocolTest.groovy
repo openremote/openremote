@@ -752,7 +752,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     // spotless:on
   }
 
-  def "Check Simulator Agent protocol adds predicted datapoints recurringly until"() {
+  def "Check Simulator Agent protocol adds predicted datapoints recurringly up to the UNTIL of the recurrence"() {
     when: "replayData is configured to add a datapoint in 1, 2, and 3 hours and cutoff at 4 hours"
     asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
                     new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
@@ -907,5 +907,95 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     "America/New_York" || HOUR_IN_MILLIS * 11   | DAY_IN_MILLIS * 2 + HOUR_IN_MILLIS * 23                         | DAY_IN_MILLIS * 3 + HOUR_IN_MILLIS
     "Asia/Kolkata"     || MINUTE_IN_MILLIS * 30 | DAY_IN_MILLIS * 2 + HOUR_IN_MILLIS * 12 + MINUTE_IN_MILLIS * 30 | DAY_IN_MILLIS * 2 + HOUR_IN_MILLIS * 14 + MINUTE_IN_MILLIS * 30
     // spotless:on
+  }
+
+  def "Check Simulator Agent protocol adds predicted datapoints recurringly over the 26th of April 1970 in #timezone"() {
+    when: "the clock is on the 25th, the day before America/New_York moves from EST to EDT"
+    setPseudoClock("1970-04-25T12:00:00.000Z")
+
+    and: "replayData is configured to add a datapoint at 18:00 and 20:00 every day, local time in #timezone"
+    asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
+                    new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 18, "test"),
+                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 20, "test"),
+                            ).setSchedule(new SimulatorProtocol.Schedule(
+                            LocalDateTime.ofInstant(Instant.parse("1970-04-01T00:00:00.000Z"), ZoneOffset.UTC),
+                            null,
+                            "FREQ=DAILY"
+                            )).setTimezone(TimeZone.getTimeZone(timezone))),
+                    new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
+            )
+    asset = assetStorageService.merge(asset)
+    def attribute = asset.getAttribute("test7").get()
+    def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
+
+    then: "the agent status should become CONNECTED and the attribute linked to the protocol"
+    conditions.eventually {
+      assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+      protocol.linkedAttributes.get(attributeRef) == attribute
+    }
+
+    and: "the delay counts down to 18:00 local time on the 25th"
+    conditions.eventually {
+      scheduledFor(attributeRef)?.delay == firstDelay
+    }
+
+    and: "the predicted datapoints are the UTC instants of 18:00 and 20:00 local time on the 25th and 26th"
+    conditions.eventually {
+      def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+      datapoints.size() == 4
+      datapoints.get(3).getTimestamp() == instant(first)
+      datapoints.get(2).getTimestamp() == instant(second)
+      // The offset of the moment of scheduling was applied, dragging the day of a transition along
+      datapoints.get(1).getTimestamp() == instant(third)
+      datapoints.get(0).getTimestamp() == instant(fourth)
+    }
+
+    when: "fast forward to 18:00 on the 25th"
+    fastForwardToScheduled(attributeRef)
+
+    then: "the delay is 2 hours"
+    conditions.eventually {
+      scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 2
+    }
+
+    when: "fast forward to 20:00 on the 25th"
+    fastForwardToScheduled(attributeRef)
+
+    then: "the delay counts down to 18:00 local time on the 26th"
+    conditions.eventually {
+      // The local hours were delayed as if they were real hours, so a day losing one replayed late
+      scheduledFor(attributeRef)?.delay == nextDayDelay
+    }
+
+    when: "fast forward to the 26th"
+    fastForwardToScheduled(attributeRef)
+
+    then: "the replay lands on 18:00 local time on the 26th"
+    conditions.eventually {
+      getClockTimeOf(container) == instant(third)
+    }
+
+    and: "the predicted datapoints of the 25th have been replayed and purged"
+    conditions.eventually {
+      def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+      datapoints.size() == 2
+      datapoints.get(1).getTimestamp() == instant(third)
+      datapoints.get(0).getTimestamp() == instant(fourth)
+    }
+
+    where: "only New York changes its offset on the 26th, shortening its local day to 23 hours"
+    // spotless:off
+    timezone           || firstDelay            | nextDayDelay          | first                   | second                  | third                   | fourth
+    "America/New_York" || HOUR_IN_MILLIS * 11   | HOUR_IN_MILLIS * 21   | "1970-04-25T23:00:00Z"  | "1970-04-26T01:00:00Z"  | "1970-04-26T22:00:00Z"  | "1970-04-27T00:00:00Z"
+    // Amsterdam did not shift its clocks between 1946 and 1977
+    "Europe/Amsterdam" || HOUR_IN_MILLIS * 5    | HOUR_IN_MILLIS * 22   | "1970-04-25T17:00:00Z"  | "1970-04-25T19:00:00Z"  | "1970-04-26T17:00:00Z"  | "1970-04-26T19:00:00Z"
+    // Kolkata has not shifted its clocks since 1945
+    "Asia/Kolkata"     || MINUTE_IN_MILLIS * 30 | HOUR_IN_MILLIS * 22   | "1970-04-25T12:30:00Z"  | "1970-04-25T14:30:00Z"  | "1970-04-26T12:30:00Z"  | "1970-04-26T14:30:00Z"
+    // spotless:on
+  }
+
+  private static long instant(String value) {
+    Instant.parse(value).toEpochMilli()
   }
 }
