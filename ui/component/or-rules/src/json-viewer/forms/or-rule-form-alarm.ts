@@ -18,13 +18,13 @@
  */
 import { html, css } from "lit";
 import { OrElement } from "@openremote/or-element";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import type { RuleActionAlarm, Alarm, User } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
-import type { OrRuleForm } from "./or-rule-form";
+import { isFormValid, type OrRuleForm } from "./or-rule-form";
 
 @customElement("or-rule-form-alarm")
 export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
@@ -33,9 +33,6 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
 
   @property()
   public users: User[] = [];
-
-  @query("#form-container")
-  protected _formContainerElem?: HTMLElement;
 
   static get styles() {
     return css`
@@ -50,12 +47,8 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
     `;
   }
 
-  checkValidity() {
-    if (this._formContainerElem) {
-      const elems = Array.from(this._formContainerElem!.children) as HTMLInputElement[];
-      return elems.filter((e) => !e.checkValidity()).length === 0;
-    }
-    return false;
+  checkValidity(): boolean {
+    return isFormValid(this.renderRoot);
   }
 
   protected render() {

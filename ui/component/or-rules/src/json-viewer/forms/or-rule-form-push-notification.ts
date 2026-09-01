@@ -24,16 +24,13 @@ import type { PushNotificationMessage, PushNotificationButton } from "@openremot
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { until } from "lit/directives/until.js";
 import { when } from "lit/directives/when.js";
-import type { OrRuleForm } from "./or-rule-form";
 import "@openremote/or-vaadin-components/or-vaadin-toggle";
+import { isFormValid, type OrRuleForm } from "./or-rule-form";
 
 @customElement("or-rule-form-push-notification")
 export class OrRuleFormPushNotification extends translate(i18next)(OrElement) implements OrRuleForm {
   @property({ type: Object })
   public message?: PushNotificationMessage;
-
-  @query("#form-container")
-  protected _formContainerElem?: HTMLFormElement;
 
   @query("#push-title")
   protected _pushTitleElem?: HTMLInputElement;
@@ -74,11 +71,8 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
     `;
   }
 
-  checkValidity() {
-    if (this._formContainerElem) {
-      return this._formContainerElem.checkValidity();
-    }
-    return false;
+  checkValidity(): boolean {
+    return isFormValid(this.renderRoot);
   }
 
   protected render() {
