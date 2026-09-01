@@ -48,23 +48,6 @@ function createBuildingAssets(amount: number, realm = "smartcity"): Asset[] {
   }));
 }
 
-function createComplexTree(): Asset[] {
-  const [cityAsset1, cityAsset2] = parentAssets;
-  const buildingAssets = [cityAsset1, cityAsset2].flatMap((city) =>
-    createBuildingAssets(3).map((building) => ({
-      ...building,
-      parentId: city.id,
-    }))
-  );
-  const batteryAssets = buildingAssets.flatMap((building) =>
-    createBatteryAssets(5).map((battery) => ({
-      ...battery,
-      parentId: building.id,
-    }))
-  );
-  return [cityAsset1, cityAsset2, ...buildingAssets, ...batteryAssets];
-}
-
 // Utility function to create parent assets, and apply assets as children
 async function applyParentAssets(parentAssets: Asset[], manager: Manager) {
   for (const p of parentAssets) {
@@ -456,6 +439,85 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
   await assetsPage.deleteSelectedAsset(manager, battery10.name!, assetTree.getSelectedNodes());
   await expect(assetTree.getSelectedNodes()).toHaveCount(0);
   await expect(assetTree.getAssetNodes()).toHaveCount(0); // Nothing is visible anymore, since there is nothing matching the "Battery 10" text filter.
+});
+
+/**
+ * @given 4 assets are created in the "smartcity" realm
+ * @and the assets are visible in the tree (a total of 4)
+ * @when the user applies a combination of name, type and value in the filtering menu
+ * @then the asset tree should show the assets that comply with those requirements.
+ */
+test(`Applying filters updates the list correctly`, async ({ page, manager, assetsPage, assetTree }) => {
+  const asset1 = batteryAsset;
+  const asset2 = buildingAsset;
+  const asset3 = {
+    ...asset2,
+    name: "Building (new) 1",
+    attributes: {
+      ...asset2.attributes,
+      isNew: { name: "isNew", type: "boolean" },
+    },
+  };
+  const asset4 = {
+    ...asset2,
+    name: "Battery (new) 2",
+    attributes: {
+      ...asset2.attributes,
+      isNew: { name: "isNew", type: "boolean", value: "true" },
+    },
+  };
+
+  const assets = [asset1, asset2, asset3, asset4];
+  await manager.setup("smartcity", { assets });
+  await manager.goToRealmStartPage("smartcity");
+  await assetsPage.goto();
+  await expect(assetTree.getAssetNodes()).toHaveCount(5); // 1 battery + 3 buildings + 1 console group
+
+  const filterButton = assetTree.getFilterButton();
+  await expect(filterButton).toBeVisible();
+  await expect(filterButton).toHaveRole("button");
+  await expect(filterButton).not.toBeDisabled();
+  await filterButton.click();
+
+  const filterMenu = assetTree.getFilterMenu();
+  await expect(filterMenu).toBeVisible();
+
+  // Filter by the Building asset type, so only 3 out of 4 assets are visible
+  const assetTypeCombobox = filterMenu.getByRole("combobox", { name: "Asset type", exact: true });
+  await expect(assetTypeCombobox).toBeVisible();
+  await assetTypeCombobox.click();
+  await filterMenu.getByRole("option", { name: "Building asset" }).click();
+  await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
+  await expect(filterMenu).not.toBeVisible();
+  expect(await assetTree.getFilterInput().inputValue()).toBe("type:BuildingAsset");
+  await expect(assetTree.getAssetNodes()).toHaveCount(3); // 3 buildings that are left
+
+  // Filter by attribute name, to only contain 2 out of 4 assets
+  await filterButton.click();
+  await expect(filterMenu).toBeVisible();
+  await filterMenu.getByRole("textbox", { name: "Attribute", exact: true }).fill("isNew");
+  await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
+  await expect(filterMenu).not.toBeVisible();
+  expect(await assetTree.getFilterInput().inputValue()).toBe('type:BuildingAsset attribute:"isNew"');
+  await expect(assetTree.getAssetNodes()).toHaveCount(2); // 2 buildings that are left
+
+  // Filter by attribute value to only contain 1 out of 4 assets
+  await filterButton.click();
+  await expect(filterMenu).toBeVisible();
+  await filterMenu.getByRole("textbox", { name: "Attribute value", exact: true }).fill("true");
+  await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
+  await expect(filterMenu).not.toBeVisible();
+  expect(await assetTree.getFilterInput().inputValue()).toBe('type:BuildingAsset "isNew":true');
+  await expect(assetTree.getAssetNodes()).toHaveCount(1); // 1 building that is left
+
+  // Clearing the filter, shows them all again
+  await filterButton.click();
+  await expect(filterMenu).toBeVisible();
+  await filterMenu.getByRole("button", { name: "Clear", exact: true }).click();
+  await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
+  await expect(filterMenu).not.toBeVisible();
+  await expect(assetTree.getFilterInput()).toBeEmpty();
+  await expect(assetTree.getAssetNodes()).toHaveCount(5); // 1 battery + 3 buildings + 1 console group
 });
 
 /**
