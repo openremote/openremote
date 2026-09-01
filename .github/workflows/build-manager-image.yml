@@ -85,7 +85,7 @@ jobs:
           DOCKER_BUILD_RECORD_UPLOAD: false
 
       - name: Scan manager docker image
-        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         id: manager-anchore-scan
         with:
           image: ${{ steps.meta.outputs.first_tag }}
@@ -102,7 +102,7 @@ jobs:
           retention-days: 7
 
       - name: Upload Anchore scan SARIF report
-        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         if: ${{ always() && steps.meta.outputs.should_push == 'true' }}
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
