@@ -98,6 +98,7 @@ export class OrRuleActionAlarm extends OrElement {
       if (this._initialAction?.alarm && this.action.alarm) {
         // Severity is edited outside of the dialog, so it is kept rather than rolled back
         const initialAlarm = { ...structuredClone(this._initialAction.alarm), severity: this.action.alarm.severity };
+        console.debug("Rolling back the alarm to former state...");
 
         // Check if anything in the alarm has changed
         if (
@@ -109,6 +110,8 @@ export class OrRuleActionAlarm extends OrElement {
           this.action.assigneeId = this._initialAction.assigneeId;
           this._formElem?.requestUpdate();
           this.requestUpdate("action");
+        } else {
+          console.debug("Rolling back was not necessary, as no changes have been done.");
         }
       } else {
         console.warn("Could not rollback alarm form.");

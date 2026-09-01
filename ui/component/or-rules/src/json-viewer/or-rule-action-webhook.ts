@@ -70,11 +70,14 @@ export class OrRuleActionWebhook extends OrElement {
     const onModalCancel = (_ev: OrRulesActionDialogCancelEvent) => {
       if (this._initialWebhook && this.action.webhook) {
         const initialWebhook = structuredClone(this._initialWebhook);
+        console.debug("Rolling back the webhook to former state...");
 
         // Check if anything in the message has changed
         if (JSON.stringify(this.action.webhook) !== JSON.stringify(initialWebhook)) {
           this.action.webhook = initialWebhook;
           this.requestUpdate("action");
+        } else {
+          console.debug("Rolling back was not necessary, as no changes have been done.");
         }
       } else {
         console.warn("Could not rollback webhook form.");
