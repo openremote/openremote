@@ -67,7 +67,7 @@ Pick the approach by how much of the base component you need to keep. The base +
 
 #### Registering an input type in the input pipeline
 
-To make an input type usable through the input pipeline, register it in `or-vaadin-input.ts` (`TEMPLATES` map + a `getXTemplate`, and `nativeValue` if it is a boolean that exposes `checked` instead of `value`) and update `value-input-provider.ts` (boolean/checked types use the `checked` attribute, not `value`).
+To make an input type usable through the input pipeline, register it in `or-vaadin-input.ts` (`TEMPLATES` map + a `getXTemplate`, and `nativeValue` if it is a boolean that exposes `checked` instead of `value`) and update `value-input-provider.ts` (boolean/checked types use the `checked` attribute, not `value`). Where the Vaadin component represents the value differently than the attribute does, such as the date time picker taking a local ISO string instead of a timestamp, convert the value and any min/max there and convert back through `valueConverter`.
 
 ### Storybook
 
