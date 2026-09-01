@@ -16,14 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, type TemplateResult } from "lit";
+import { html } from "lit";
 import { OrElement } from "@openremote/or-element";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import type { ActionType, RulesConfig } from "../index";
 import { AlarmSeverity, type JsonRule, type RuleActionAlarm, type User, type UserQuery } from "@openremote/model";
 import "@openremote/or-vaadin-components/or-vaadin-select";
 import "./or-rule-json-dialog";
 import "./forms/or-rule-form-alarm";
+import type { OrRuleFormAlarm } from "./forms/or-rule-form-alarm";
 import manager from "@openremote/core";
 import type { OrRulesActionDialogCancelEvent, OrRulesActionDialogOkEvent } from "./or-rule-json-dialog";
 import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
@@ -46,6 +47,9 @@ export class OrRuleActionAlarm extends OrElement {
 
   @property({ type: Object })
   public config?: RulesConfig;
+
+  @query("or-rule-form-alarm")
+  protected _formElem?: OrRuleFormAlarm;
 
   protected _initialAction?: RuleActionAlarm;
   protected _loadedUsers: User[] = [];
@@ -73,22 +77,22 @@ export class OrRuleActionAlarm extends OrElement {
       return html``;
     }
 
-    const alarm = this.action.alarm;
-
-    const modalTemplate: TemplateResult | string = ``;
-
     // When 'cancel' is pressed, reset ACTION to the initial state (all changes get removed)
     const onModalCancel = (_ev: OrRulesActionDialogCancelEvent) => {
-      if (this._initialAction && this.action) {
-        const initialAction = structuredClone(this._initialAction);
+      if (this._initialAction?.alarm && this.action.alarm) {
+        // Severity is edited outside of the dialog, so it is kept rather than rolled back
+        const initialAlarm = { ...structuredClone(this._initialAction.alarm), severity: this.action.alarm.severity };
 
-        // Check if anything in the message has changed
-        if (JSON.stringify(this.action) !== JSON.stringify(initialAction)) {
-          console.debug("Rolling back the alarm to former state...");
-          this.action = initialAction;
+        // Check if anything in the alarm has changed
+        if (
+          JSON.stringify(this.action.alarm) !== JSON.stringify(initialAlarm) ||
+          this.action.assigneeId !== this._initialAction.assigneeId
+        ) {
+          // Assign into the existing action, as the rule holds a reference to it
+          this.action.alarm = initialAlarm;
+          this.action.assigneeId = this._initialAction.assigneeId;
+          this._formElem?.requestUpdate();
           this.requestUpdate("action");
-        } else {
-          console.debug("Rolling back was not necessary, as no changes have been done.");
         }
       } else {
         console.warn("Could not rollback alarm form.");

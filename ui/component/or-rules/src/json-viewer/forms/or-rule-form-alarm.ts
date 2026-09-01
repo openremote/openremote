@@ -85,14 +85,11 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
           <or-translate slot="label" value="alarm.content"></or-translate>
         </or-vaadin-text-area>
         <or-vaadin-combo-box
-          required
           .items=${options}
           .selectedItem=${options.find((o) => o.value === this.action.assigneeId)}
           @change=${(ev: CustomEvent) => {
-            // In the combobox, the 'value' is the User ID, while 'label' holds the username we need for assigneeId
-            const value: string | undefined = (ev.currentTarget as OrVaadinComboBox).selectedItem?.label;
-            this.action.assigneeId = value;
-            this.setActionAlarmName(value, undefined);
+            // The 'none' option carries no value, which clears the assignee
+            this.setActionAssignee((ev.currentTarget as OrVaadinComboBox).selectedItem?.value);
           }}
         >
           <or-translate slot="label" value="alarm.assignee"></or-translate>
@@ -101,19 +98,19 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
     `;
   }
 
-  protected setActionAlarmName(value: string | undefined, key?: string) {
-    if (key && this.action.alarm) {
+  protected setActionAlarmName(value: string | undefined, key: string) {
+    if (this.action.alarm) {
       const alarm: any = this.action.alarm;
       alarm[key] = value;
       this.action.alarm = { ...alarm };
     }
-    if (!key) {
-      const user = this.users.filter((obj) => obj.username === value).map((obj) => obj.id)[0];
-      if (!user) {
-        console.warn(`Could not select user ${value}, as we can't find the user in cache.`);
-      }
-      this.action.assigneeId = user;
-    }
+
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
+  }
+
+  protected setActionAssignee(assigneeId: string | undefined) {
+    this.action.assigneeId = assigneeId;
 
     this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
     this.requestUpdate();
