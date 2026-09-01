@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html } from "lit";
+import { css, html } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import type { ActionType, RulesConfig } from "../index";
@@ -31,8 +31,24 @@ import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
 import type { OrVaadinSelect, SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
 import { i18next } from "@openremote/or-translate";
 
+// language=CSS
+const style = css`
+  :host {
+    display: flex;
+    align-items: baseline;
+  }
+
+  :host > * {
+    margin: 0 3px 6px;
+  }
+`;
+
 @customElement("or-rule-action-alarm")
 export class OrRuleActionAlarm extends OrElement {
+  static get styles() {
+    return style;
+  }
+
   @property({ type: Object, attribute: false })
   public rule!: JsonRule;
 
