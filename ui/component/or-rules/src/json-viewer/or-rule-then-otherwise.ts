@@ -441,6 +441,7 @@ class OrRuleThenOtherwise extends translate(i18next)(OrElement) {
             .rule="${this.rule}"
             .action="${action}"
             .actionType="${ActionType.WEBHOOK}"
+            .readonly="${this.readonly}"
           ></or-rule-action-webhook>`;
           break;
         case ActionType.ALARM:
@@ -448,6 +449,7 @@ class OrRuleThenOtherwise extends translate(i18next)(OrElement) {
             .rule="${this.rule}"
             .action="${action}"
             .actionType="${ActionType.ALARM}"
+            .readonly="${this.readonly}"
           ></or-rule-action-alarm>`;
           break;
         default:

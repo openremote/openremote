@@ -53,6 +53,9 @@ export class OrRuleActionWebhook extends OrElement {
   @property({ type: Object, attribute: false })
   public action!: RuleActionWebhook;
 
+  @property({ type: Boolean })
+  public readonly?: boolean;
+
   protected _initialWebhook?: Webhook;
 
   override connectedCallback() {
@@ -84,7 +87,7 @@ export class OrRuleActionWebhook extends OrElement {
     };
 
     return html`
-      <or-rule-json-dialog @cancel="${onModalCancel}" @ok="${onModalOk}">
+      <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
         <or-translate slot="button" value="message"></or-translate>
         <or-translate slot="title" value="message"></or-translate>
         <or-rule-form-webhook .webhook="${this.action.webhook}"></or-rule-form-webhook>
