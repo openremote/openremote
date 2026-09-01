@@ -29,6 +29,9 @@ export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) implem
   @property({ type: Object })
   public message?: EmailNotificationMessage;
 
+  @property({ type: Boolean })
+  public readonly?: boolean;
+
   static get styles() {
     return css`
       #form-container {
@@ -56,6 +59,7 @@ export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) implem
         <or-vaadin-text-field
           value=${this.message?.subject}
           required
+          ?readonly=${this.readonly}
           @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "subject")}
         >
           <or-translate slot="label" value="subject"></or-translate>
@@ -63,6 +67,7 @@ export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) implem
         <or-vaadin-text-area
           value=${this.message?.html}
           required
+          ?readonly=${this.readonly}
           style="min-height: 200px;"
           @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "html")}
         >

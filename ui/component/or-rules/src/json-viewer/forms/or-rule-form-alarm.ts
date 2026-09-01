@@ -34,6 +34,9 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
   @property()
   public users: User[] = [];
 
+  @property({ type: Boolean })
+  public readonly?: boolean;
+
   static get styles() {
     return css`
       #form-container {
@@ -65,6 +68,7 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
         <or-vaadin-text-field
           value=${alarm?.title}
           required
+          ?readonly=${this.readonly}
           @change=${(ev: Event) => this.setActionAlarmName((ev.currentTarget as HTMLInputElement).value, "title")}
         >
           <or-translate slot="label" value="alarm.title"></or-translate>
@@ -72,6 +76,7 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
         <or-vaadin-text-area
           value=${alarm?.content}
           required
+          ?readonly=${this.readonly}
           style="min-height: 200px;"
           @change=${(ev: Event) => this.setActionAlarmName((ev.currentTarget as HTMLInputElement).value, "content")}
         >
@@ -80,6 +85,7 @@ export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
         <or-vaadin-combo-box
           .items=${options}
           .selectedItem=${options.find((o) => o.value === this.action.assigneeId)}
+          ?readonly=${this.readonly}
           @change=${(ev: CustomEvent) => {
             // The 'none' option carries no value, which clears the assignee
             this.setActionAssignee((ev.currentTarget as OrVaadinComboBox).selectedItem?.value);

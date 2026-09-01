@@ -50,6 +50,9 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) implement
   @property()
   public wrongLanguage = false;
 
+  @property({ type: Boolean })
+  public readonly?: boolean;
+
   @state()
   protected _selectedLanguage = "en";
 
@@ -88,7 +91,7 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) implement
       <div>
         ${when(this.wrongLanguage, () => until(this._getWrongLanguageTemplate()))}
         ${guard(
-          [this.message, this._selectedLanguage, this.languages, this.type],
+          [this.message, this._selectedLanguage, this.languages, this.type, this.readonly],
           () => html`
             ${until(this._getLanguageSelectForm(this._selectedLanguage, this.languages), html`Loading...`)}
             ${until(this._getNotificationForm(this.message, this._selectedLanguage), html`Loading...`)}
@@ -108,7 +111,11 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) implement
    */
   protected async _getWrongLanguageTemplate(): Promise<TemplateResult> {
     return html`
-      <or-vaadin-button style="width: 100%; margin: 10px 0;" @click=${() => this._fixDefaultLanguage()}>
+      <or-vaadin-button
+        style="width: 100%; margin: 10px 0;"
+        ?disabled=${this.readonly}
+        @click=${() => this._fixDefaultLanguage()}
+      >
         <or-translate value="defaultLanguageChangedError"></or-translate>
       </or-vaadin-button>
     `;
@@ -179,9 +186,13 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) implement
     const msg = message.languages[lang];
 
     if (msg.type === "push") {
-      return html` <or-rule-form-push-notification .message="${msg}"></or-rule-form-push-notification> `;
+      return html`
+        <or-rule-form-push-notification .message="${msg}" ?readonly=${this.readonly}></or-rule-form-push-notification>
+      `;
     } else if (msg.type === "email") {
-      return html` <or-rule-form-email-message .message="${msg}"></or-rule-form-email-message> `;
+      return html`
+        <or-rule-form-email-message .message="${msg}" ?readonly=${this.readonly}></or-rule-form-email-message>
+      `;
     } else {
       return html` <or-translate .value="${"errorOccurred"}"></or-translate> `;
     }

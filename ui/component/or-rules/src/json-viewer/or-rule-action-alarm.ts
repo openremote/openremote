@@ -130,6 +130,7 @@ export class OrRuleActionAlarm extends OrElement {
       <or-vaadin-select
         value=${this.action.alarm?.severity}
         .items=${severityOptions}
+        ?readonly=${this.readonly}
         style="width: 240px;"
         @change=${(ev: Event) => this.setActionAlarmSeverity((ev.currentTarget as OrVaadinSelect).value)}
       >
@@ -138,7 +139,11 @@ export class OrRuleActionAlarm extends OrElement {
       <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
         <or-translate slot="button" value="settings"></or-translate>
         <or-translate slot="title" value="alarm."></or-translate>
-        <or-rule-form-alarm .users="${this._loadedUsers}" .action="${this.action}"></or-rule-form-alarm>
+        <or-rule-form-alarm
+          .users="${this._loadedUsers}"
+          .action="${this.action}"
+          ?readonly=${this.readonly}
+        ></or-rule-form-alarm>
       </or-rule-json-dialog>
     `;
   }

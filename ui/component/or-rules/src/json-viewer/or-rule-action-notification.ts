@@ -445,6 +445,7 @@ export class OrRuleActionNotification extends OrElement {
             <or-translate slot="title" value="push-notification"></or-translate>
             <or-rule-form-push-notification
               .message="${message as PushNotificationMessage}"
+              ?readonly=${this.readonly}
             ></or-rule-form-push-notification>
           </or-rule-json-dialog>
         `;
@@ -453,7 +454,10 @@ export class OrRuleActionNotification extends OrElement {
           <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
             <or-translate slot="button" value="message"></or-translate>
             <or-translate slot="title" value="email"></or-translate>
-            <or-rule-form-email-message .message="${message as EmailNotificationMessage}"></or-rule-form-email-message>
+            <or-rule-form-email-message
+              .message="${message as EmailNotificationMessage}"
+              ?readonly=${this.readonly}
+            ></or-rule-form-email-message>
           </or-rule-json-dialog>
         `;
       } else if (messageType === "localized") {
@@ -482,6 +486,7 @@ export class OrRuleActionNotification extends OrElement {
               .languages="${languages}"
               .defaultLang="${defaultLang}"
               .wrongLanguage="${defaultLangHasChanged}"
+              ?readonly=${this.readonly}
             ></or-rule-form-localized>
           </or-rule-json-dialog>
         `;

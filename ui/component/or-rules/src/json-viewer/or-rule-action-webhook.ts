@@ -90,7 +90,7 @@ export class OrRuleActionWebhook extends OrElement {
       <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
         <or-translate slot="button" value="message"></or-translate>
         <or-translate slot="title" value="message"></or-translate>
-        <or-rule-form-webhook .webhook="${this.action.webhook}"></or-rule-form-webhook>
+        <or-rule-form-webhook .webhook="${this.action.webhook}" ?readonly=${this.readonly}></or-rule-form-webhook>
       </or-rule-json-dialog>
     `;
   }
