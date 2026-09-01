@@ -194,7 +194,6 @@ export class AssettypesPanel extends OrElement {
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span><or-translate value="allAssetsofType"></or-translate></span>
               <or-vaadin-toggle
-                style="width: 70px;"
                 ?checked="${this.allOfType}"
                 ?disabled="${!this.assetType}"
                 @change="${(ev: Event) => this.onAssetAllOfTypeToggle(ev)}"

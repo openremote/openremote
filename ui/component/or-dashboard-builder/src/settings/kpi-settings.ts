@@ -85,7 +85,6 @@ export class KpiSettings extends AssetWidgetSettings {
             <div class="switchMwcInputContainer">
               <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
               <or-vaadin-toggle
-                style="margin: 0 -10px;"
                 ?checked="${this.widgetConfig.showTimestampControls}"
                 @change="${(ev: Event) => this.onTimeframeToggle(ev)}"
               ></or-vaadin-toggle>

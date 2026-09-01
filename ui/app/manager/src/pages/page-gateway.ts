@@ -97,6 +97,13 @@ export class PageGateway extends Page<AppStateKeyed> {
       #title div {
         display: flex;
         align-items: center;
+        gap: var(--lumo-space-s);
+      }
+
+      /* Baseline alignment puts the toggle's label on the same line as the button label */
+      #title #title-actions {
+        align-items: baseline;
+        gap: 20px;
       }
 
       #title > div > span {
@@ -107,7 +114,6 @@ export class PageGateway extends Page<AppStateKeyed> {
       #title > div > or-icon {
         --or-icon-width: 20px;
         --or-icon-height: 20px;
-        margin-right: 10px;
         margin-left: 14px;
       }
 
@@ -313,8 +319,8 @@ export class PageGateway extends Page<AppStateKeyed> {
           <or-icon icon="cloud"></or-icon>
           <span>${i18next.t("gatewayConnection")}</span>
         </div>
-        <div style="gap: 20px;">
-          <div style="gap: var(--lumo-space-s)">
+        <div id="title-actions">
+          <div>
             <or-translate value="enabled"></or-translate>
             <or-vaadin-toggle
               ?checked="${!connection.disabled}"

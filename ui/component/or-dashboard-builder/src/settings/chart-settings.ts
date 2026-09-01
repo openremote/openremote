@@ -266,7 +266,6 @@ export class ChartSettings extends WidgetSettings {
             <div class="switch-container">
               <span><or-translate value="dashboard.toggleStackView"></or-translate></span>
               <or-vaadin-toggle
-                style="margin: 0 -10px;"
                 ?checked="${this.widgetConfig.stacked}"
                 @change="${(ev: Event) => this.onStackViewToggle(ev)}"
               ></or-vaadin-toggle>
@@ -274,7 +273,6 @@ export class ChartSettings extends WidgetSettings {
             <div class="switch-container">
               <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
               <or-vaadin-toggle
-                style="margin: 0 -10px;"
                 ?checked="${!this.widgetConfig.showTimestampControls}"
                 @change="${(ev: Event) => this.onTimestampControlsToggle(ev)}"
               ></or-vaadin-toggle>
@@ -282,7 +280,6 @@ export class ChartSettings extends WidgetSettings {
             <div class="switch-container">
               <span><or-translate value="dashboard.showLegend"></or-translate></span>
               <or-vaadin-toggle
-                style="margin: 0 -10px;"
                 ?checked="${this.widgetConfig.showLegend}"
                 @change="${(ev: Event) => this.onShowLegendToggle(ev)}"
               ></or-vaadin-toggle>
@@ -291,7 +288,6 @@ export class ChartSettings extends WidgetSettings {
             <div class="switch-container">
               <span><or-translate value="dashboard.showZoomBar"></or-translate></span>
               <or-vaadin-toggle
-                style="margin: 0 -10px;"
                 ?checked="${this.widgetConfig.showZoomBar}"
                 @change="${(ev: Event) => this.onShowZoomBarToggle(ev)}"
               ></or-vaadin-toggle>
@@ -334,7 +330,6 @@ export class ChartSettings extends WidgetSettings {
                       `
                 }
                 <or-vaadin-toggle
-                  style="margin: 0 -10px 0 0;"
                   ?checked="${max !== undefined}"
                   @change="${(ev: Event) => this.onMinMaxValueToggle("left", "max", ev)}"
                 ></or-vaadin-toggle>
@@ -361,7 +356,6 @@ export class ChartSettings extends WidgetSettings {
                       `
                 }
                 <or-vaadin-toggle
-                  style="margin: 0 -10px 0 0;"
                   ?checked="${min !== undefined}"
                   @change="${(ev: Event) => this.onMinMaxValueToggle("left", "min", ev)}"
                 ></or-vaadin-toggle>
@@ -399,7 +393,6 @@ export class ChartSettings extends WidgetSettings {
                           `
                     }
                     <or-vaadin-toggle
-                      style="margin: 0 -10px 0 0;"
                       ?checked="${rightMax !== undefined}"
                       @change="${(ev: Event) => this.onMinMaxValueToggle("right", "max", ev)}"
                     ></or-vaadin-toggle>
@@ -426,7 +419,6 @@ export class ChartSettings extends WidgetSettings {
                           `
                     }
                     <or-vaadin-toggle
-                      style="margin: 0 -10px 0 0;"
                       ?checked="${rightMin !== undefined}"
                       @change="${(ev: Event) => this.onMinMaxValueToggle("right", "min", ev)}"
                     ></or-vaadin-toggle>

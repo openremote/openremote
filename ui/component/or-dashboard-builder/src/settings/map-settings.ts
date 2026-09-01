@@ -100,7 +100,6 @@ export class MapSettings extends AssetWidgetSettings {
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span><or-translate value="dashboard.showGeoJson"></or-translate></span>
               <or-vaadin-toggle
-                style="width: 70px;"
                 ?checked="${this.widgetConfig.showGeoJson}"
                 @change="${(ev: Event) => this.onGeoJsonToggle(ev)}"
               ></or-vaadin-toggle>
@@ -123,11 +122,10 @@ export class MapSettings extends AssetWidgetSettings {
           ></assettypes-panel>
 
           <!-- Other settings like labels and units-->
-          <div>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
             <div class="switchMwcInputContainer">
               <span><or-translate value="dashboard.showLabels"></or-translate></span>
               <or-vaadin-toggle
-                style="width: 70px;"
                 ?checked="${this.widgetConfig.showLabels}"
                 ?disabled="${!this.widgetConfig.assetType}"
                 @change="${(ev: Event) => this.onShowLabelsToggle(ev)}"
@@ -136,7 +134,6 @@ export class MapSettings extends AssetWidgetSettings {
             <div class="switchMwcInputContainer">
               <span><or-translate value="dashboard.showUnits"></or-translate></span>
               <or-vaadin-toggle
-                style="width: 70px;"
                 ?checked="${this.widgetConfig.showUnits}"
                 ?disabled="${!this.widgetConfig.showLabels || !this.widgetConfig.assetType}"
                 @change="${(ev: Event) => this.onShowUnitsToggle(ev)}"

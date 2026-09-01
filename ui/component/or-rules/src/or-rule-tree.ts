@@ -64,6 +64,11 @@ const styling = css`
     color: var(--or-app-color7, white);
     --or-icon-fill: var(--or-app-color7, white);
   }
+
+  /* The default off track is a translucent dark, which disappears on this dark header */
+  #rules-tree-global-header or-vaadin-toggle {
+    --or-toggle-track-off-color: color-mix(in srgb, var(--or-app-color7, white) 40%, transparent);
+  }
 `;
 
 export interface RuleTreeNode extends TreeNode {

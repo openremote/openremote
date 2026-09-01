@@ -53,12 +53,11 @@ export class AttributeInputSettings extends AssetWidgetSettings {
 
         <!-- Other settings -->
         <settings-panel displayName="settings" expanded="${true}">
-          <div>
+          <div style="display: flex; flex-direction: column; gap: 16px;">
             <!-- Toggle readonly -->
             <div class="switch-container">
               <span><or-translate value="dashboard.userCanEdit"></or-translate></span>
               <or-vaadin-toggle
-                style="margin: 0 -10px;"
                 ?checked="${!this.widgetConfig.readonly}"
                 @change="${(ev: Event) => this.onReadonlyToggle(ev)}"
               ></or-vaadin-toggle>
@@ -67,7 +66,6 @@ export class AttributeInputSettings extends AssetWidgetSettings {
             <div class="switch-container">
               <span><or-translate value="dashboard.showHelperText"></or-translate></span>
               <or-vaadin-toggle
-                style="margin: 0 -10px;"
                 ?checked="${this.widgetConfig.showHelperText}"
                 @change="${(ev: Event) => this.onHelperTextToggle(ev)}"
               ></or-vaadin-toggle>
