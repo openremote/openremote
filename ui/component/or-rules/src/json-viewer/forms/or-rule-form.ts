@@ -19,3 +19,16 @@
 export interface OrRuleForm {
   checkValidity(): boolean;
 }
+
+/**
+ * Returns whether every element within {@link root} that can validate itself reports being valid.
+ * Elements without a `checkValidity` function are skipped, so this covers the Vaadin fields as well
+ * as any nested component implementing {@link OrRuleForm}, wherever they sit in the template.
+ */
+export function isFormValid(root: ParentNode | null | undefined): boolean {
+  if (!root) {
+    return false;
+  }
+  const elements = Array.from(root.querySelectorAll("*")) as Partial<HTMLInputElement>[];
+  return elements.every((elem) => typeof elem.checkValidity !== "function" || elem.checkValidity());
+}

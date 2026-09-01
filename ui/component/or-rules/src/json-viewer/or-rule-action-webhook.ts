@@ -53,6 +53,9 @@ export class OrRuleActionWebhook extends OrElement {
   @property({ type: Object, attribute: false })
   public action!: RuleActionWebhook;
 
+  @property({ type: Boolean })
+  public readonly?: boolean;
+
   protected _initialWebhook?: Webhook;
 
   override connectedCallback() {
@@ -67,10 +70,10 @@ export class OrRuleActionWebhook extends OrElement {
     const onModalCancel = (_ev: OrRulesActionDialogCancelEvent) => {
       if (this._initialWebhook && this.action.webhook) {
         const initialWebhook = structuredClone(this._initialWebhook);
+        console.debug("Rolling back the webhook to former state...");
 
         // Check if anything in the message has changed
         if (JSON.stringify(this.action.webhook) !== JSON.stringify(initialWebhook)) {
-          console.debug("Rolling back the webhook to former state...");
           this.action.webhook = initialWebhook;
           this.requestUpdate("action");
         } else {
@@ -87,10 +90,10 @@ export class OrRuleActionWebhook extends OrElement {
     };
 
     return html`
-      <or-rule-json-dialog @cancel="${onModalCancel}" @ok="${onModalOk}">
+      <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
         <or-translate slot="button" value="message"></or-translate>
         <or-translate slot="title" value="message"></or-translate>
-        <or-rule-form-webhook .webhook="${this.action.webhook}"></or-rule-form-webhook>
+        <or-rule-form-webhook .webhook="${this.action.webhook}" ?readonly=${this.readonly}></or-rule-form-webhook>
       </or-rule-json-dialog>
     `;
   }

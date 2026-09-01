@@ -99,7 +99,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], 
     createMenuBarItem(html`
       <div style="display: flex; align-items: center; gap: 6px;">
         <or-icon
-          style="--or-icon-fill: #${color ?? "4c4c4c"}"
+          style="--or-icon-fill: ${color ? "#" + color : "unset"}"
           icon=${icon || AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}
         ></or-icon>
         ${when(
@@ -441,6 +441,7 @@ class OrRuleThenOtherwise extends translate(i18next)(OrElement) {
             .rule="${this.rule}"
             .action="${action}"
             .actionType="${ActionType.WEBHOOK}"
+            .readonly="${this.readonly}"
           ></or-rule-action-webhook>`;
           break;
         case ActionType.ALARM:
@@ -448,6 +449,7 @@ class OrRuleThenOtherwise extends translate(i18next)(OrElement) {
             .rule="${this.rule}"
             .action="${action}"
             .actionType="${ActionType.ALARM}"
+            .readonly="${this.readonly}"
           ></or-rule-action-alarm>`;
           break;
         default:

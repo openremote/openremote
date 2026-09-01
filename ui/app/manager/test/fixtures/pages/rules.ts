@@ -61,4 +61,21 @@ export class RulesPage implements BasePage {
     await when.getByRole("option", { name: operator, exact: true }).click();
     await when.getByRole("spinbutton", { name: attribute }).fill(value);
   }
+
+  /**
+   * The overlay of an action settings dialog, which Vaadin renders in its own element rather than
+   * inside `or-rule-json-dialog`.
+   * @param scope - Clause the action belongs to, e.g. the `or-rule-then-otherwise` locator.
+   */
+  actionDialogOverlay(scope: Locator): Locator {
+    return scope.getByRole("dialog").locator("#overlay").first();
+  }
+
+  /**
+   * Moves focus off the field being edited so its `change` event fires and the dialog revalidates.
+   * The overlay padding is the only spot within the dialog that takes no focus of its own.
+   */
+  async blurActiveField(scope: Locator) {
+    await this.actionDialogOverlay(scope).click({ position: { x: 0, y: 0 } });
+  }
 }

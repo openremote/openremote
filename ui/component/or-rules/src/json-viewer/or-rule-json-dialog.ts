@@ -19,6 +19,8 @@
 import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, queryAssignedElements, state } from "lit/decorators.js";
 import { html } from "lit";
+import "@openremote/or-vaadin-components/or-vaadin-button";
+import "@openremote/or-vaadin-components/or-vaadin-dialog";
 import type { OrVaadinDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import type { OrRuleForm } from "./forms/or-rule-form";
 import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";

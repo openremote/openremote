@@ -24,15 +24,16 @@ import type { PushNotificationMessage, PushNotificationButton } from "@openremot
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { until } from "lit/directives/until.js";
 import { when } from "lit/directives/when.js";
-import type { OrRuleForm } from "./or-rule-form";
+import "@openremote/or-vaadin-components/or-vaadin-toggle";
+import { isFormValid, type OrRuleForm } from "./or-rule-form";
 
 @customElement("or-rule-form-push-notification")
 export class OrRuleFormPushNotification extends translate(i18next)(OrElement) implements OrRuleForm {
   @property({ type: Object })
   public message?: PushNotificationMessage;
 
-  @query("#form-container")
-  protected _formContainerElem?: HTMLFormElement;
+  @property({ type: Boolean })
+  public readonly?: boolean;
 
   @query("#push-title")
   protected _pushTitleElem?: HTMLInputElement;
@@ -73,11 +74,8 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
     `;
   }
 
-  checkValidity() {
-    if (this._formContainerElem) {
-      return this._formContainerElem.checkValidity();
-    }
-    return false;
+  checkValidity(): boolean {
+    return isFormValid(this.renderRoot);
   }
 
   protected render() {
@@ -104,6 +102,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
           id="push-title"
           value=${message.title}
           required
+          ?readonly=${this.readonly}
           @change=${(ev: Event) => onchange(ev, message).then((msg) => this._onTitleChange(this._pushTitleElem!, msg))}
         >
           <or-translate slot="label" value="title"></or-translate>
@@ -112,6 +111,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
           id="push-body"
           value=${message.body}
           required
+          ?readonly=${this.readonly}
           style="min-height: 200px;"
           @change=${(ev: Event) => onchange(ev, message).then((msg) => this._onBodyChange(this._pushBodyElem!, msg))}
         >
@@ -124,6 +124,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
           error-message="${i18next.t("invalidUrl")}"
           placeholder="https://example.com"
           value=${message.action?.url}
+          ?readonly=${this.readonly}
           @change=${(ev: Event) => onchange(ev, message).then((msg) => this._onActionUrlChange(this._pushUrlElem!, msg))}
         >
           <or-translate slot="label" value="openWebsiteUrl"></or-translate>
@@ -133,6 +134,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
         <or-vaadin-toggle
           id="push-browser-toggle"
           ?checked="${message.action?.openInBrowser ?? false}"
+          ?readonly=${this.readonly}
           @change="${(ev: Event) => onchange(ev, message).then((msg) => this._onOpenInBrowserChange(this._pushBrowserToggleElem!, msg))}"
         >
           <or-translate slot="label" value="openInBrowser"></or-translate>
@@ -144,6 +146,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
             id="push-button1"
             value=${message.buttons?.[0]?.title}
             class="input-small"
+            ?readonly=${this.readonly}
             @change=${(ev: Event) => onchange(ev, message).then((msg) => this._onButtonTitleChange(this._pushButton1Elem!, 0, msg))}
           >
             <or-translate slot="label" value="buttonTextConfirm"></or-translate>
@@ -152,6 +155,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
             id="push-button2"
             value=${message.buttons?.[1]?.title}
             class="input-small"
+            ?readonly=${this.readonly}
             @change=${(ev: Event) => onchange(ev, message).then((msg) => this._onButtonTitleChange(this._pushButton2Elem!, 1, msg))}
           >
             <or-translate slot="label" value="buttonTextDecline"></or-translate>

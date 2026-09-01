@@ -18,19 +18,19 @@
  */
 import { html, css } from "lit";
 import { OrElement } from "@openremote/or-element";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
 import type { EmailNotificationMessage } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
-import type { OrRuleForm } from "./or-rule-form";
+import { isFormValid, type OrRuleForm } from "./or-rule-form";
 
 @customElement("or-rule-form-email-message")
 export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) implements OrRuleForm {
   @property({ type: Object })
   public message?: EmailNotificationMessage;
 
-  @query("#form-container")
-  protected _formContainerElem?: HTMLDivElement;
+  @property({ type: Boolean })
+  public readonly?: boolean;
 
   static get styles() {
     return css`
@@ -46,11 +46,7 @@ export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) implem
   }
 
   checkValidity(): boolean {
-    if (this._formContainerElem) {
-      const elems = Array.from(this._formContainerElem!.children) as HTMLInputElement[];
-      return elems.filter((e) => !e.checkValidity()).length === 0;
-    }
-    return false;
+    return isFormValid(this.renderRoot);
   }
 
   protected render() {
@@ -63,6 +59,7 @@ export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) implem
         <or-vaadin-text-field
           value=${this.message?.subject}
           required
+          ?readonly=${this.readonly}
           @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "subject")}
         >
           <or-translate slot="label" value="subject"></or-translate>
@@ -70,6 +67,7 @@ export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) implem
         <or-vaadin-text-area
           value=${this.message?.html}
           required
+          ?readonly=${this.readonly}
           style="min-height: 200px;"
           @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "html")}
         >

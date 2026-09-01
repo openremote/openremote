@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { expect, Locator } from "@openremote/test";
+import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
 import { preparedAssetsForRules as assets } from "./fixtures/data/assets.js";
 import { energyRule } from "./fixtures/data/rules.js";
@@ -254,16 +254,15 @@ test("Create a When-Then rule for an asset with a email notification action", as
   await then.getByRole("button", { name: "Message", exact: true }).click();
 
   // Set up notification message in dialog
-  const dialog = then.getByRole("dialog");
-  const overlay = dialog.locator("#overlay").first();
+  const overlay = rulesPage.actionDialogOverlay(then);
   await expect(overlay).toBeVisible();
   await then.getByRole("textbox", { name: "Subject", exact: true }).clear();
-  await overlay.click({ position: { x: 0, y: 0 } }); // Click outside the dialog to lose focus
+  await rulesPage.blurActiveField(then);
   await expect(then.getByRole("textbox", { name: "Subject", exact: true })).toHaveAttribute("invalid");
   await expect(then.getByRole("button", { name: "OK", exact: true })).toBeDisabled();
 
   await then.getByRole("textbox", { name: "Subject", exact: true }).fill("Email notification");
-  await overlay.click({ position: { x: 0, y: 0 } }); // Click outside the dialog to lose focus
+  await rulesPage.blurActiveField(then);
   await expect(then.getByRole("textbox", { name: "Subject", exact: true })).not.toHaveAttribute("invalid");
   await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
 
@@ -320,17 +319,16 @@ test("Create a When-Then rule for an asset with a push notification action", asy
   await then.getByRole("button", { name: "Message", exact: true }).click();
 
   // Set up notification message in dialog
-  const dialog = then.getByRole("dialog");
-  const overlay = dialog.locator("#overlay").first();
+  const overlay = rulesPage.actionDialogOverlay(then);
   await expect(overlay).toBeVisible();
   await then.getByRole("textbox", { name: "Title", exact: true }).fill("Push notification");
   await then.getByRole("textbox", { name: "Body", exact: true }).clear();
-  await overlay.click({ position: { x: 0, y: 0 } }); // Click outside the dialog to lose focus
+  await rulesPage.blurActiveField(then);
   await expect(then.getByRole("textbox", { name: "Body", exact: true })).toHaveAttribute("invalid");
   await expect(then.getByRole("button", { name: "OK", exact: true })).toBeDisabled();
 
   await then.getByRole("textbox", { name: "Body", exact: true }).fill("Impacted assets: %TRIGGER_ASSETS%");
-  await overlay.click({ position: { x: 0, y: 0 } }); // Click outside the dialog to lose focus
+  await rulesPage.blurActiveField(then);
   await expect(then.getByRole("textbox", { name: "Body", exact: true })).not.toHaveAttribute("invalid");
   await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
 
@@ -391,17 +389,16 @@ test("Create a When-Then rule for an asset with a alarm action", async ({ page, 
   await then.getByRole("button", { name: "Settings", exact: true }).click();
 
   // Set up notification message in dialog
-  const dialog = then.getByRole("dialog");
-  const overlay = dialog.locator("#overlay").first();
+  const overlay = rulesPage.actionDialogOverlay(then);
   await expect(overlay).toBeVisible();
   await then.getByRole("textbox", { name: "Title", exact: true }).fill("High priority alarm");
   await then.getByRole("textbox", { name: "Content", exact: true }).clear();
-  await overlay.click({ position: { x: 0, y: 0 } }); // Click outside the dialog to lose focus
+  await rulesPage.blurActiveField(then);
   await expect(then.getByRole("textbox", { name: "Content", exact: true })).toHaveAttribute("invalid");
   await expect(then.getByRole("button", { name: "OK", exact: true })).toBeDisabled();
 
   await then.getByRole("textbox", { name: "Content", exact: true }).fill("Warning: %TRIGGER_ASSETS%");
-  await overlay.click({ position: { x: 0, y: 0 } }); // Click outside the dialog to lose focus
+  await rulesPage.blurActiveField(then);
   await expect(then.getByRole("textbox", { name: "Content", exact: true })).not.toHaveAttribute("invalid");
   await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
 
@@ -417,6 +414,72 @@ test("Create a When-Then rule for an asset with a alarm action", async ({ page, 
 
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
+});
+
+/**
+ * @given A When-Then rule with an alarm action
+ * @when Setting the alarm severity, which sits outside the settings dialog
+ * @and Editing the alarm title inside the dialog and cancelling
+ * @then The severity should be kept, and the saved rule should not contain the cancelled edit
+ */
+test("Cancelling the alarm settings dialog discards only the changes made inside it", async ({
+  page,
+  manager,
+  rulesPage,
+  shared,
+}) => {
+  await manager.setup("smartcity", { assets });
+  await manager.goToRealmStartPage("smartcity");
+  await rulesPage.goto();
+  await rulesPage.createRule("When-Then");
+  await rulesPage.setRuleName(energyRule.name);
+
+  // When clause
+  const when = page.locator("or-rule-when");
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  });
+
+  // Then clause, with an alarm that is filled in and confirmed
+  const then = page.locator("or-rule-then-otherwise");
+  await then.getByRole("menuitem", { name: "Add action" }).click();
+  await then.getByRole("menuitem", { name: "Alarm" }).click();
+  await then.getByRole("button", { name: "Settings", exact: true }).click();
+  await then.getByRole("textbox", { name: "Title", exact: true }).fill("Kept title");
+  await then.getByRole("textbox", { name: "Content", exact: true }).fill("Kept content");
+  await rulesPage.blurActiveField(then);
+  await then.getByRole("button", { name: "OK", exact: true }).click();
+
+  // Severity is edited outside of the dialog
+  await then.getByRole("button", { name: "Severity" }).click();
+  await then.getByRole("option", { name: "High", exact: true }).click();
+
+  // Reopen the dialog, edit the title, and back out again
+  await then.getByRole("button", { name: "Settings", exact: true }).click();
+  await then.getByRole("textbox", { name: "Title", exact: true }).fill("Discarded title");
+  await rulesPage.blurActiveField(then);
+  await then.getByRole("button", { name: "Cancel", exact: true }).click();
+
+  // Cancel used to restore a snapshot of the whole action, undoing the severity picked outside it
+  await expect(then.getByRole("button", { name: "Severity" })).toContainText("High");
+
+  let saved: RealmRuleset | undefined;
+  await shared.interceptResponse<number>("**/rules/realm", (rule, request) => {
+    if (rule) manager.rules.push(rule);
+    saved = request?.postDataJSON();
+  });
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
+
+  // Cancel used to swap the element's own action reference, leaving the rule holding the edit
+  const action = JSON.parse(saved!.rules!).rules[0].then[0];
+  expect(action.alarm.title).toBe("Kept title");
+  expect(action.alarm.severity).toBe("HIGH");
 });
 
 /**
@@ -452,15 +515,14 @@ test("Create a When-Then rule for an asset with a webhook action", async ({ page
   await then.getByRole("button", { name: "Message", exact: true }).click();
 
   // Set up notification message in dialog
-  const dialog = then.getByRole("dialog");
-  const overlay = dialog.locator("#overlay").first();
+  const overlay = rulesPage.actionDialogOverlay(then);
   await expect(overlay).toBeVisible();
   await expect(then.getByRole("button", { name: "OK", exact: true })).toBeDisabled();
   await then.getByRole("button", { name: "Method" }).first().click();
   await then.getByRole("option", { name: "PUT", exact: true }).click();
   await expect(then.getByRole("button", { name: "OK", exact: true })).toBeDisabled();
   await then.getByRole("textbox", { name: "Web URL", exact: true }).fill("https://localhost");
-  await overlay.click({ position: { x: 0, y: 0 } }); // Click outside the dialog to lose focus
+  await rulesPage.blurActiveField(then);
   await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
 
   // Add request header
@@ -478,7 +540,7 @@ test("Create a When-Then rule for an asset with a webhook action", async ({ page
 
   // Remove body
   await then.getByRole("switch", { name: "Include body in Request", exact: true }).click();
-  await expect(then.getByRole("textbox", { name: "", exact: true }).last()).not.toBeVisible();
+  await expect(then.locator("or-vaadin-text-area")).not.toBeVisible(); // The payload is the form's only text area
 
   // Close the dialog
   await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
