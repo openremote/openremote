@@ -99,7 +99,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], 
     createMenuBarItem(html`
       <div style="display: flex; align-items: center; gap: 6px;">
         <or-icon
-          style="--or-icon-fill: #${color ?? "4c4c4c"}"
+          style="--or-icon-fill: ${color ? "#" + color : "unset"}"
           icon=${icon || AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}
         ></or-icon>
         ${when(
