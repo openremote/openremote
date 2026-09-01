@@ -1385,7 +1385,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
             value: value
               ? {
                   predicateType: "string",
-                  match: AssetQueryMatch.CONTAINS,
+                  match: AssetQueryMatch.EXACT,
                   value,
                   caseSensitive: false,
                 }

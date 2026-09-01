@@ -447,7 +447,7 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
  * @when the user applies a combination of name, type and value in the filtering menu
  * @then the asset tree should show the assets that comply with those requirements.
  */
-test(`Applying filters updates the list correctly`, async ({ page, manager, assetsPage, assetTree }) => {
+test(`Should update asset list correctly when applying filters`, async ({ manager, assetsPage, assetTree }) => {
   const asset1 = batteryAsset;
   const asset2 = buildingAsset;
   const asset3 = {
