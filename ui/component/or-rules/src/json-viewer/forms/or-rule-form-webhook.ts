@@ -32,6 +32,7 @@ import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import type { OrVaadinSelect, SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
 import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import type { OrRuleForm } from "./or-rule-form";
+import "@openremote/or-vaadin-components/or-vaadin-toggle";
 import type { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
 
 // language=css

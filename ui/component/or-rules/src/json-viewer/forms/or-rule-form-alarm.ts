@@ -22,6 +22,7 @@ import { customElement, property, query } from "lit/decorators.js";
 import type { RuleActionAlarm, Alarm, User } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { i18next } from "@openremote/or-translate";
+import "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import type { OrRuleForm } from "./or-rule-form";
 

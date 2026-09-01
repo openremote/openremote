@@ -21,6 +21,7 @@ import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import type { ActionType, RulesConfig } from "../index";
 import { AlarmSeverity, type JsonRule, type RuleActionAlarm, type User, type UserQuery } from "@openremote/model";
+import "@openremote/or-vaadin-components/or-vaadin-select";
 import "./or-rule-json-dialog";
 import "./forms/or-rule-form-alarm";
 import manager from "@openremote/core";

@@ -25,6 +25,7 @@ import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { until } from "lit/directives/until.js";
 import { when } from "lit/directives/when.js";
 import type { OrRuleForm } from "./or-rule-form";
+import "@openremote/or-vaadin-components/or-vaadin-toggle";
 
 @customElement("or-rule-form-push-notification")
 export class OrRuleFormPushNotification extends translate(i18next)(OrElement) implements OrRuleForm {
