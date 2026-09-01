@@ -1187,8 +1187,10 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
 
     if (newFilter.attribute.length > 0 && newFilter.attributeValue.length > 0) {
       newFilter.attributeValue.forEach((attributeValue: string, index: number) => {
+        // Values that contain spaces get additional "quotes", so the parser keeps them as a single value
+        const displayValue = attributeValue.includes(" ") ? '"' + attributeValue + '"' : attributeValue;
         handledAttributeForValues.push(newFilter.attribute[index]);
-        searchInput += prefix + '"' + newFilter.attribute[index] + '":' + attributeValue;
+        searchInput += prefix + '"' + newFilter.attribute[index] + '":' + displayValue;
         prefix = " ";
       });
     }
@@ -1237,11 +1239,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     }
 
     if (this._attributeNameFilter.value && this._attributeValueFilter.value) {
-      let attributeValueValue: string = this._attributeValueFilter.value;
-      if (attributeValueValue.includes(" ")) {
-        attributeValueValue = '"' + attributeValueValue + '"';
-      }
-      filter.attributeValue = [attributeValueValue];
+      filter.attributeValue = [this._attributeValueFilter.value];
     } else {
       filter.attributeValue = [];
     }
@@ -1387,7 +1385,9 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
             value: value
               ? {
                   predicateType: "string",
+                  match: AssetQueryMatch.CONTAINS,
                   value,
+                  caseSensitive: false,
                 }
               : undefined,
           };
