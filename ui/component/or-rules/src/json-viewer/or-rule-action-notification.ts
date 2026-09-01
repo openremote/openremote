@@ -424,11 +424,8 @@ export class OrRuleActionNotification extends OrElement {
 
         // Check if anything in the message has changed
         if (JSON.stringify(this.action.notification.message) !== JSON.stringify(newAction.notification?.message)) {
-          console.debug("Rolling back the notification to former state...");
           this.action.notification.message = newAction.notification?.message;
           this.requestUpdate("action");
-        } else {
-          console.debug("Rolling back was not necessary, as no changes have been done.");
         }
       } else {
         console.warn("Could not rollback notification form.");

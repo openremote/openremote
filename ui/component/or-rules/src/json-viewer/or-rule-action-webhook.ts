@@ -70,11 +70,8 @@ export class OrRuleActionWebhook extends OrElement {
 
         // Check if anything in the message has changed
         if (JSON.stringify(this.action.webhook) !== JSON.stringify(initialWebhook)) {
-          console.debug("Rolling back the webhook to former state...");
           this.action.webhook = initialWebhook;
           this.requestUpdate("action");
-        } else {
-          console.debug("Rolling back was not necessary, as no changes have been done.");
         }
       } else {
         console.warn("Could not rollback webhook form.");
