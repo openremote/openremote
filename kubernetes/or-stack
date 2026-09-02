@@ -17,6 +17,7 @@ TARGET="${OR_STACK_TARGET:-}"
 HOSTNAME_VALUE="${OR_STACK_HOSTNAME:-localhost}"
 VALUES_DIR="${OR_STACK_VALUES_DIR:-}"
 TIMEOUT="${OR_STACK_TIMEOUT:-$DEFAULT_TIMEOUT}"
+CONFIRM_STACK_NAME=""
 
 usage() {
   cat <<'EOF'
@@ -25,11 +26,17 @@ Manage an OpenRemote stack in its own Kubernetes namespace.
 Usage:
   or-stack apply --name <name> --kube-context <context> --target <local|eks> [options]
   or-stack status --name <name> --kube-context <context>
+  or-stack uninstall --name <name> --kube-context <context> [options]
+  or-stack destroy --name <name> --kube-context <context> --confirm <name> [options]
 
 Commands:
   apply                 Create the stack namespace and install or upgrade the
                         internal OpenRemote components.
   status                Show releases and namespaced stack resources.
+  uninstall             Uninstall stack releases while retaining the namespace,
+                        PVCs, and data.
+  destroy               Uninstall stack releases and delete its namespace,
+                        PVCs, and data after exact-name confirmation.
 
 Options:
   --name <name>         Stack name and Kubernetes namespace. Env: OR_STACK_NAME.
@@ -42,15 +49,20 @@ Options:
                         or-setup.yaml, postgresql.yaml, keycloak.yaml, and
                         manager.yaml. Env: OR_STACK_VALUES_DIR.
   --timeout <duration>  Helm wait timeout. Env: OR_STACK_TIMEOUT. Default: 10m.
+  --confirm <name>      Required exact stack name for destroy.
   -h, --help            Show this help.
 
 The stack name is also its namespace. Helm release names remain stable within
 that namespace so component service discovery continues to use the names
 postgresql, keycloak, and manager.
 
-This first phase manages internal, namespaced resources only. It does not
-configure an Ingress or proxy, create DNS records or certificates, make AWS
-calls, uninstall releases, delete PVCs, or delete namespaces.
+The uninstall command retains chart-managed data and leaves the stack namespace
+in place. The destroy command is the explicit data-purge operation and deletes
+every resource in the stack namespace. Both commands refuse namespaces without
+the matching openremote.io/stack label.
+
+This command does not configure an Ingress or proxy, create DNS records or
+certificates, or make AWS calls.
 EOF
 }
 
@@ -78,7 +90,7 @@ parse_arguments() {
       usage
       exit 0
       ;;
-    apply|status)
+    apply|status|uninstall|destroy)
       COMMAND="$1"
       shift
       ;;
@@ -119,6 +131,11 @@ parse_arguments() {
         TIMEOUT="$2"
         shift 2
         ;;
+      --confirm)
+        [ "$#" -ge 2 ] || die "Option --confirm requires a value."
+        CONFIRM_STACK_NAME="$2"
+        shift 2
+        ;;
       -h|--help)
         usage
         exit 0
@@ -157,11 +174,21 @@ validate_apply_options() {
   if [[ ! "$HOSTNAME_VALUE" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$ ]]; then
     die "Hostname must be a lowercase DNS name."
   fi
-  [ -n "$TIMEOUT" ] || die "Timeout cannot be empty."
+  validate_timeout
 
   if [ -n "$VALUES_DIR" ] && [ ! -d "$VALUES_DIR" ]; then
     die "Values directory '$VALUES_DIR' does not exist."
   fi
+}
+
+validate_timeout() {
+  [ -n "$TIMEOUT" ] || die "Timeout cannot be empty."
+}
+
+validate_destroy_options() {
+  validate_timeout
+  [ "$CONFIRM_STACK_NAME" = "$STACK_NAME" ] || die \
+    "Destroy requires --confirm '$STACK_NAME'."
 }
 
 validate_target() {
@@ -184,8 +211,17 @@ require_kube_context() {
     "Kubernetes context '$KUBE_CONTEXT' does not exist."
 }
 
+stack_namespace_label() {
+  kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    -o 'jsonpath={.metadata.labels.openremote\.io/stack}'
+}
+
 ensure_namespace() {
-  if kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" >/dev/null 2>&1; then
+  local stack_label
+
+  if stack_label="$(stack_namespace_label 2>/dev/null)"; then
+    [ "$stack_label" = "$STACK_NAME" ] || die \
+      "Namespace '$STACK_NAME' already exists without the matching openremote.io/stack label; refusing to adopt it."
     log "Using namespace '$STACK_NAME'."
   else
     log "Creating namespace '$STACK_NAME'."
@@ -196,6 +232,17 @@ ensure_namespace() {
     app.kubernetes.io/part-of=openremote \
     "openremote.io/stack=$STACK_NAME" \
     --overwrite >/dev/null
+}
+
+require_stack_namespace() {
+  local stack_label
+
+  if ! stack_label="$(stack_namespace_label 2>/dev/null)"; then
+    die "Stack namespace '$STACK_NAME' does not exist in context '$KUBE_CONTEXT'."
+  fi
+
+  [ "$stack_label" = "$STACK_NAME" ] || die \
+    "Namespace '$STACK_NAME' does not have the matching openremote.io/stack label; refusing to modify it."
 }
 
 validate_target_cluster() {
@@ -252,6 +299,106 @@ apply_stack() {
   log "External routing is not managed by this first-phase command."
 }
 
+verify_retained_pvcs() {
+  local pvc_metadata
+  local claim_name
+  local release_owner
+  local resource_policy
+
+  pvc_metadata="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+    get persistentvolumeclaims \
+    -o 'jsonpath={range .items[*]}{.metadata.name}{"|"}{.metadata.annotations.meta\.helm\.sh/release-name}{"|"}{.metadata.annotations.helm\.sh/resource-policy}{"\n"}{end}')"
+
+  while IFS='|' read -r claim_name release_owner resource_policy; do
+    if [ -z "$claim_name" ]; then
+      continue
+    fi
+
+    case "$release_owner" in
+      manager|postgresql)
+        [ "$resource_policy" = "keep" ] || die \
+          "PVC '$STACK_NAME/$claim_name' is managed by Helm without the keep policy; refusing data-retaining uninstall."
+        ;;
+    esac
+  done <<< "$pvc_metadata"
+}
+
+uninstall_release() {
+  local release_name="$1"
+
+  if helm status "$release_name" \
+    --kube-context "$KUBE_CONTEXT" \
+    --namespace "$STACK_NAME" >/dev/null 2>&1; then
+    log "Uninstalling Helm release '$release_name'."
+    helm uninstall "$release_name" \
+      --kube-context "$KUBE_CONTEXT" \
+      --namespace "$STACK_NAME" \
+      --wait \
+      --timeout "$TIMEOUT"
+  else
+    log "Helm release '$release_name' is not installed; skipping."
+  fi
+}
+
+uninstall_releases() {
+  uninstall_release manager
+  uninstall_release keycloak
+  uninstall_release postgresql
+  uninstall_release or-setup
+}
+
+uninstall_stack() {
+  require_command helm
+  require_command kubectl
+  require_kube_context
+  require_stack_namespace
+  verify_retained_pvcs
+
+  uninstall_releases
+
+  log "Stack '$STACK_NAME' is uninstalled. Its namespace, PVCs, and data are retained."
+  log "Run apply with the same name and context to restore its workloads."
+}
+
+destroy_stack() {
+  local pv_names
+  local pv_name
+  local pv_cleanup_failed=false
+
+  require_command helm
+  require_command kubectl
+  require_kube_context
+  require_stack_namespace
+
+  pv_names="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+    get persistentvolumeclaims \
+    -o 'jsonpath={range .items[*]}{.spec.volumeName}{"\n"}{end}')"
+
+  uninstall_releases
+
+  log "Deleting stack namespace '$STACK_NAME', including all PVCs and namespaced data."
+  kubectl --context "$KUBE_CONTEXT" delete namespace "$STACK_NAME" \
+    --wait=true \
+    --timeout "$TIMEOUT"
+
+  for pv_name in $pv_names; do
+    if kubectl --context "$KUBE_CONTEXT" get "persistentvolume/$pv_name" >/dev/null 2>&1; then
+      log "Waiting for PersistentVolume '$pv_name' to be deleted."
+      if ! kubectl --context "$KUBE_CONTEXT" wait \
+        --for=delete "persistentvolume/$pv_name" \
+        --timeout "$TIMEOUT"; then
+        pv_cleanup_failed=true
+      fi
+    fi
+  done
+
+  if [ "$pv_cleanup_failed" = true ]; then
+    die "Stack namespace was deleted, but one or more PersistentVolumes remain; inspect their reclaim policy and backing storage."
+  fi
+
+  log "Stack '$STACK_NAME' and its namespaced data are destroyed."
+}
+
 show_stack_status() {
   require_command helm
   require_command kubectl
@@ -280,6 +427,10 @@ main() {
   parse_arguments "$@"
   validate_common_options
 
+  if [ "$COMMAND" != "destroy" ] && [ -n "$CONFIRM_STACK_NAME" ]; then
+    die "Option --confirm is only valid with destroy."
+  fi
+
   case "$COMMAND" in
     apply)
       validate_apply_options
@@ -287,6 +438,14 @@ main() {
       ;;
     status)
       show_stack_status
+      ;;
+    uninstall)
+      validate_timeout
+      uninstall_stack
+      ;;
+    destroy)
+      validate_destroy_options
+      destroy_stack
       ;;
   esac
 }

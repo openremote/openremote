@@ -74,6 +74,29 @@ or inspect one stack with:
   --kube-context <cluster-name>@eu-west-1
 ```
 
+Remove workloads while retaining their EBS-backed data with:
+
+```bash
+./or-stack uninstall \
+  --name stack-a \
+  --kube-context <cluster-name>@eu-west-1
+```
+
+Reapplying the stack reuses its retained PVCs. To explicitly delete the stack
+namespace, PVCs, and dynamically provisioned EBS volumes instead:
+
+```bash
+./or-stack destroy \
+  --name stack-a \
+  --kube-context <cluster-name>@eu-west-1 \
+  --confirm stack-a
+```
+
+The destroy command requires the matching stack namespace label and waits for
+the `Delete` reclaim policy to remove the stack's PersistentVolumes. Perform
+this cleanup before asking `or-eks-cluster` to destroy an otherwise empty
+cluster.
+
 #### PosgreSQL data directory
 
 PostgreSQL wants the data folder to be empty (on first startup), but an empty ext4 EBS volume contains a lost+found folder.  

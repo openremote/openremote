@@ -71,9 +71,41 @@ is also available:
   --values-dir ./stacks/stack-a
 ```
 
-There is deliberately no uninstall or destroy command yet. Removing a stack
-must distinguish between retaining its namespace and PVCs and explicitly
-purging all stack data; that lifecycle will be added separately.
+### Uninstalling or destroying a stack
+
+Uninstall a stack's Helm releases while preserving its namespace, PVCs, and
+data:
+
+```bash
+./or-stack uninstall \
+  --name stack-a \
+  --kube-context docker-desktop
+```
+
+The releases are removed in reverse dependency order. Before uninstalling,
+`or-stack` refuses to continue if a chart-managed PVC does not carry Helm's
+`keep` resource policy. Running `apply` again with the same stack name and
+context restores the workloads on the retained volumes.
+
+Destroying a stack is the explicit data-purge operation:
+
+```bash
+./or-stack destroy \
+  --name stack-a \
+  --kube-context docker-desktop \
+  --confirm stack-a
+```
+
+Destroy requires both exact-name confirmation and a matching
+`openremote.io/stack` label on the namespace. It uninstalls remaining releases
+and deletes the entire namespace, including every PVC and other namespaced
+resource in it. Backing volume deletion then follows the PV's StorageClass
+reclaim policy; Docker Desktop's default StorageClass and the OpenRemote EKS
+StorageClass currently use `Delete`.
+
+For the same reason, `apply` refuses to adopt a pre-existing namespace that
+does not already have the matching stack label. This prevents an unrelated
+namespace from later becoming eligible for stack destruction.
 
 ## TL;DR
 

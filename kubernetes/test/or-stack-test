@@ -33,6 +33,20 @@ assert_not_contains() {
   fi
 }
 
+assert_before() {
+  local first="$1"
+  local second="$2"
+  local first_line
+  local second_line
+
+  first_line="$(grep -nF -- "$first" "$CALL_LOG" | head -n 1 | cut -d: -f1)"
+  second_line="$(grep -nF -- "$second" "$CALL_LOG" | head -n 1 | cut -d: -f1)"
+  [ -n "$first_line" ] || fail "Expected command log to contain: $first"
+  [ -n "$second_line" ] || fail "Expected command log to contain: $second"
+  [ "$first_line" -lt "$second_line" ] || fail \
+    "Expected '$first' before '$second'"
+}
+
 reset_log() {
   : > "$CALL_LOG"
 }
@@ -95,6 +109,76 @@ test_status() {
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tpersistentvolumeclaims'
 }
 
+test_uninstall() {
+  reset_log
+  OR_STACK_TEST_NAMESPACE_EXISTS=true run_stack uninstall \
+    --name stack-a \
+    --kube-context test-context
+
+  assert_contains "metadata.name"
+  assert_contains $'helm\tuninstall\tmanager\t--kube-context\ttest-context\t--namespace\tstack-a'
+  assert_contains $'helm\tuninstall\tkeycloak\t--kube-context\ttest-context\t--namespace\tstack-a'
+  assert_contains $'helm\tuninstall\tpostgresql\t--kube-context\ttest-context\t--namespace\tstack-a'
+  assert_contains $'helm\tuninstall\tor-setup\t--kube-context\ttest-context\t--namespace\tstack-a'
+  assert_before $'helm\tuninstall\tmanager' $'helm\tuninstall\tkeycloak'
+  assert_before $'helm\tuninstall\tkeycloak' $'helm\tuninstall\tpostgresql'
+  assert_before $'helm\tuninstall\tpostgresql' $'helm\tuninstall\tor-setup'
+  assert_not_contains $'kubectl\t--context\ttest-context\tdelete'
+}
+
+test_destroy() {
+  reset_log
+  OR_STACK_TEST_NAMESPACE_EXISTS=true run_stack destroy \
+    --name stack-a \
+    --kube-context test-context \
+    --confirm stack-a
+
+  assert_contains "spec.volumeName"
+  assert_contains $'kubectl\t--context\ttest-context\tdelete\tnamespace\tstack-a'
+  assert_contains $'kubectl\t--context\ttest-context\twait\t--for=delete\tpersistentvolume/pvc-manager'
+  assert_contains $'kubectl\t--context\ttest-context\twait\t--for=delete\tpersistentvolume/pvc-postgresql'
+  assert_before $'helm\tuninstall\tor-setup' $'kubectl\t--context\ttest-context\tdelete\tnamespace\tstack-a'
+}
+
+test_lifecycle_safety() {
+  reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true OR_STACK_TEST_NAMESPACE_LABEL= run_stack apply \
+    --name stack-a --kube-context test-context --target local >/dev/null 2>&1; then
+    fail "Apply adopted an unlabeled namespace"
+  fi
+  assert_not_contains $'helm\tupgrade'
+
+  reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true run_stack destroy \
+    --name stack-a --kube-context test-context --confirm another-stack >/dev/null 2>&1; then
+    fail "Destroy accepted an incorrect confirmation"
+  fi
+  assert_not_contains $'delete\tnamespace'
+
+  reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true OR_STACK_TEST_NAMESPACE_LABEL= run_stack destroy \
+    --name stack-a --kube-context test-context --confirm stack-a >/dev/null 2>&1; then
+    fail "Destroy accepted an unlabeled namespace"
+  fi
+  assert_not_contains $'helm\tuninstall'
+  assert_not_contains $'delete\tnamespace'
+
+  reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true \
+    OR_STACK_TEST_PVC_METADATA=$'manager|manager|\npostgresql|postgresql|keep' \
+    run_stack uninstall --name stack-a --kube-context test-context >/dev/null 2>&1; then
+    fail "Uninstall accepted a chart-managed PVC without the keep policy"
+  fi
+  assert_not_contains $'helm\tuninstall'
+
+  reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true OR_STACK_TEST_PV_WAIT_SUCCESS=false run_stack destroy \
+    --name stack-a --kube-context test-context --confirm stack-a >/dev/null 2>&1; then
+    fail "Destroy reported success while PersistentVolume deletion failed"
+  fi
+  assert_contains $'delete\tnamespace\tstack-a'
+}
+
 test_validation() {
   if run_stack apply --name default --kube-context test-context --target local >/dev/null 2>&1; then
     fail "Reserved namespace was accepted"
@@ -122,6 +206,9 @@ test_validation() {
 test_local_apply
 test_eks_apply
 test_status
+test_uninstall
+test_destroy
+test_lifecycle_safety
 test_validation
 
 printf 'or-stack tests passed\n'

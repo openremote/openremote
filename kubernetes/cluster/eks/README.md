@@ -74,7 +74,10 @@ kubernetes/or-eks-cluster destroy \
 ```
 
 Remove OpenRemote stacks and make an explicit data-retention decision before
-destroying their cluster.
+destroying their cluster. `or-stack uninstall` preserves a stack's namespace
+and EBS-backed PVCs, so the cluster destroy preflight continues to block.
+`or-stack destroy --confirm <stack-name>` deletes that namespace and its data,
+allowing cluster destruction after the backing volumes have been removed.
 
 Kubernetes minor-version upgrades are intentionally outside this first phase.
 The current `cluster.yaml` uses a self-managed `nodeGroups` entry, so an upgrade

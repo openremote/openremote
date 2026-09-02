@@ -19,6 +19,25 @@ arguments=" $* "
 case "$arguments" in
   *" get namespace "*)
     if [ "${OR_STACK_TEST_NAMESPACE_EXISTS:-false}" = "true" ]; then
+      case "$arguments" in
+        *" jsonpath="*)
+          namespace_name=""
+          previous_argument=""
+          for argument in "$@"; do
+            if [ "$previous_argument" = "namespace" ]; then
+              namespace_name="$argument"
+              break
+            fi
+            previous_argument="$argument"
+          done
+
+          if [ "${OR_STACK_TEST_NAMESPACE_LABEL+x}" = "x" ]; then
+            printf '%s' "${OR_STACK_TEST_NAMESPACE_LABEL:-}"
+          else
+            printf '%s' "$namespace_name"
+          fi
+          ;;
+      esac
       exit 0
     fi
     exit 1
@@ -28,6 +47,20 @@ case "$arguments" in
     ;;
   *" get csidriver ebs.csi.aws.com "*)
     [ "${OR_STACK_TEST_EKS_CSI:-true}" = "true" ]
+    ;;
+  *" get persistentvolumeclaims "*"metadata.name"*)
+    printf '%s\n' "${OR_STACK_TEST_PVC_METADATA:-manager|manager|keep
+postgresql|postgresql|keep}"
+    ;;
+  *" get persistentvolumeclaims "*"spec.volumeName"*)
+    printf '%s\n' "${OR_STACK_TEST_PV_NAMES:-pvc-manager
+pvc-postgresql}"
+    ;;
+  *" get persistentvolume/"*)
+    [ "${OR_STACK_TEST_PV_EXISTS:-true}" = "true" ]
+    ;;
+  *" wait --for=delete persistentvolume/"*)
+    [ "${OR_STACK_TEST_PV_WAIT_SUCCESS:-true}" = "true" ]
     ;;
 esac
 
