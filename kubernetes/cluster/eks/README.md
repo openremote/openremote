@@ -73,6 +73,12 @@ kubernetes/or-eks-cluster destroy \
   --confirm openremote-test
 ```
 
+After this preflight succeeds, deletion bypasses PodDisruptionBudgets while
+draining the node group. This prevents replicated EKS system add-ons such as
+CoreDNS, the EBS CSI controller, and metrics-server from blocking deletion once
+all nodes have been cordoned. The bypass does not weaken the preflight for
+OpenRemote stacks or other non-system workloads.
+
 Remove OpenRemote stacks and make an explicit data-retention decision before
 destroying their cluster. `or-stack uninstall` preserves a stack's namespace
 and EBS-backed PVCs, so the cluster destroy preflight continues to block.

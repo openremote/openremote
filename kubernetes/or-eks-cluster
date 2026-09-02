@@ -456,10 +456,11 @@ destroy_cluster() {
       --wait
   fi
 
-  log "Deleting EKS cluster '$CLUSTER_NAME'."
+  log "Deleting EKS cluster '$CLUSTER_NAME' without waiting for system PodDisruptionBudgets."
   eksctl_with_profile delete cluster \
     --name "$CLUSTER_NAME" \
     --region "$AWS_REGION_NAME" \
+    --disable-nodegroup-eviction \
     --wait
 }
 

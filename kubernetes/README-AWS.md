@@ -95,7 +95,9 @@ namespace, PVCs, and dynamically provisioned EBS volumes instead:
 The destroy command requires the matching stack namespace label and waits for
 the `Delete` reclaim policy to remove the stack's PersistentVolumes. Perform
 this cleanup before asking `or-eks-cluster` to destroy an otherwise empty
-cluster.
+cluster. Once that cluster-level preflight succeeds, `or-eks-cluster` bypasses
+system PodDisruptionBudgets during the final node drain so EKS add-ons cannot
+leave cluster deletion waiting indefinitely.
 
 #### PosgreSQL data directory
 
