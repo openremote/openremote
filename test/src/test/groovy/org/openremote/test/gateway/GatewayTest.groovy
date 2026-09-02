@@ -98,13 +98,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     def spyGatewayClientService = Spy(gatewayClientService)
     services.add(gatewayClientServiceIndex, spyGatewayClientService) // Must go back in the correct position as already sorted by priority
 
-    spyGatewayClientService.createClientConnector(_ as GatewayConnection) >> {
-      GatewayConnection connection ->
-        def identityProvider = container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider
-        def keycloakURL = identityProvider.getKeycloakPublicUrl()
-        // Use keycloaks public URI as it's on a different port to the manager under test
-        connection.@tokenEndpointURI = new URIBuilder(keycloakURL).setPath("auth/realms/" + connection.getRealm() + "/protocol/openid-connect/token").build().toString()
-        callRealMethod()
+    spyGatewayClientService.createClientConnector(_ as GatewayConnection) >> { GatewayConnection connection ->
+      def identityProvider = container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider
+      def keycloakURL = identityProvider.getKeycloakPublicUrl()
+      // Use keycloaks public URI as it's on a different port to the manager under test
+      connection.@tokenEndpointURI = new URIBuilder(keycloakURL).setPath("auth/realms/" + connection.getRealm() + "/protocol/openid-connect/token").build().toString()
+      callRealMethod()
     }
 
     // Start the container with the spy service
@@ -1469,16 +1468,14 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
               ]).setAddAttributeMeta([
                 "*": new MetaMap([new MetaItem<>(ACCESS_RESTRICTED_READ, true)])
               ]).setExcludeAttributes([Asset.NOTES.name]),
-              "LightAsset" : new GatewayAssetSyncRule().setExcludeAttributeMeta([
+              "LightAsset": new GatewayAssetSyncRule().setExcludeAttributeMeta([
                 "*": [
                   ATTRIBUTE_LINKS.name,
                   ACCESS_PUBLIC_WRITE.name,
                   FORMAT.name
                 ]
               ]).setAddAttributeMeta([
-                "onOff" : new MetaMap([
-                  new MetaItem<>(FORMAT, ValueFormat.BOOLEAN_AS_PRESSED_RELEASED())
-                ])
+                "onOff": new MetaMap([new MetaItem<>(FORMAT, ValueFormat.BOOLEAN_AS_PRESSED_RELEASED())])
               ]).setExcludeAttributes([LightAsset.COLOUR_RGB.name]).setAccessPublicRead(false)
             ] as Map<String, GatewayAssetSyncRule>,
             false
@@ -1576,9 +1573,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
     and: "A configured GatewayTunnelInfo for HTTPS on 127.0.0.1:443"
     def tunnelInfo = new GatewayTunnelInfo(Constants.MASTER_REALM,
-      "abcedf123456",
-      GatewayTunnelInfo.Type.HTTPS,
-      "127.0.0.1", 443)
+            "abcedf123456",
+            GatewayTunnelInfo.Type.HTTPS,
+            "127.0.0.1", 443)
 
     and: "A completion variable for the close callback"
     AtomicBoolean closed = new AtomicBoolean(false)
