@@ -235,7 +235,13 @@ repositories {
 
 // Eclipse needs help
 pluginManager.apply('eclipse')
-
+// Editors using Eclipse JDT language server
+eclipse {
+  classpath {
+    baseSourceOutputDir.set(file('build/eclipse'))
+    defaultOutputDir = file('build/eclipse/default')
+  }
+}
 
 // Intellij needs help
 pluginManager.apply('idea')

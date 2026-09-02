@@ -982,6 +982,7 @@
     "mapSettings": "Kaartinstelling",
     "maxZoom": "Maximale zoom",
     "minZoom": "Minimale zoom",
+    "boxZoom": "Zoomen met selectiekader",
     "geoJson": "GeoJSON",
     "geoJsonDescription": "Bewerk de GeoJSON; voeg punten, lijnen, en andere vormen toe aan de kaart.",
     "deleteMapCustomization": "Kaartinstelling verwijderen",

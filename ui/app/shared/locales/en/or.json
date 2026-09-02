@@ -992,6 +992,7 @@
     "mapSettings": "Map settings",
     "maxZoom": "Maximal zoom",
     "minZoom": "Minimal zoom",
+    "boxZoom": "Box zoom",
     "geoJson": "GeoJSON",
     "geoJsonDescription": "Customize the GeoJSON; add points, lines and polygons to be drawn on the map.",
     "deleteMapCustomization": "Delete map settings",

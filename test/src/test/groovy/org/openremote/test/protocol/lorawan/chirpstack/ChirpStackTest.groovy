@@ -73,425 +73,443 @@ import static org.openremote.setup.integration.model.asset.ChirpStackTestAsset.*
 
 class ChirpStackTest extends Specification implements ManagerContainerTrait {
 
-    static final String APPLICATION_ID = "807036d9-9d96-4305-82c9-92f681a11908"
-    static final String CLIENT_ID = "chirpstackAgentClientId"
-    static final String DEV_EUI_1 = "1111111111111111"
-    static final String DEV_EUI_2 = "2222222222222222"
-    static final String ASSET_NAME_1 = "Test Asset 1"
-    static final String ASSET_NAME_2 = "Test Asset 2"
-    static final String VENDOR_ID  = "dragino"
-    static final String MODEL_ID = "lht65"
-    static final String FIRMWARE_VERSION = "1.8"
-    static final String HOST = "127.0.0.1"
-    static final Integer UPLINK_PORT = 2
-    static final Integer DOWNLINK_PORT = 4
-    static final Double TEMPERATURE_VALUE = 20.4
-    static final Double HUMIDITY_VALUE = 56.4
-    static final String PROFILE_ID = "4711"
-    static final String API_KEY = "123456789ABCDEFG"
+  static final String APPLICATION_ID = "807036d9-9d96-4305-82c9-92f681a11908"
+  static final String CLIENT_ID = "chirpstackAgentClientId"
+  static final String DEV_EUI_1 = "1111111111111111"
+  static final String DEV_EUI_2 = "2222222222222222"
+  static final String ASSET_NAME_1 = "Test Asset 1"
+  static final String ASSET_NAME_2 = "Test Asset 2"
+  static final String VENDOR_ID = "dragino"
+  static final String MODEL_ID = "lht65"
+  static final String FIRMWARE_VERSION = "1.8"
+  static final String HOST = "127.0.0.1"
+  static final Integer UPLINK_PORT = 2
+  static final Integer DOWNLINK_PORT = 4
+  static final Double TEMPERATURE_VALUE = 20.4
+  static final Double HUMIDITY_VALUE = 56.4
+  static final String PROFILE_ID = "4711"
+  static final String API_KEY = "123456789ABCDEFG"
 
-    @Shared
-    int mqttBrokerPort
+  @Shared
+  int mqttBrokerPort
 
-    @Shared
-    Server mqttBroker
+  @Shared
+  Server mqttBroker
 
-    @Shared
-    SubscriptionTracker subTracker
+  @Shared
+  SubscriptionTracker subTracker
 
-    @Shared
-    int grpcPort
+  @Shared
+  int grpcPort
 
-    @Shared
-    ChirpStackGrpcServer grpcServer
+  @Shared
+  ChirpStackGrpcServer grpcServer
 
-    @Shared
-    Mqtt3AsyncClient mqttClient
+  @Shared
+  Mqtt3AsyncClient mqttClient
 
-    def setupSpec() {
-        mqttBrokerPort = findEphemeralPort()
-        def props = new Properties()
-        props.setProperty('port', mqttBrokerPort.toString())
-        props.setProperty('persistence_enabled', 'false')
-        def config = new MemoryConfig(props)
-        subTracker = new SubscriptionTracker()
-        mqttBroker = new Server()
-        mqttBroker.startServer(config, [subTracker])
+  def setupSpec() {
+    mqttBrokerPort = findEphemeralPort()
+    def props = new Properties()
+    props.setProperty('port', mqttBrokerPort.toString())
+    props.setProperty('persistence_enabled', 'false')
+    def config = new MemoryConfig(props)
+    subTracker = new SubscriptionTracker()
+    mqttBroker = new Server()
+    mqttBroker.startServer(config, [subTracker])
 
-        grpcPort = findEphemeralPort()
-        grpcServer = new ChirpStackGrpcServer(grpcPort)
-        grpcServer.start()
+    grpcPort = findEphemeralPort()
+    grpcServer = new ChirpStackGrpcServer(grpcPort)
+    grpcServer.start()
 
-        mqttClient = MqttClient.builder()
+    mqttClient = MqttClient.builder()
             .useMqttVersion3()
             .identifier("testClientId")
             .serverHost(HOST)
             .serverPort(mqttBrokerPort)
             .buildAsync()
-        mqttClient.connect().get(2, TimeUnit.SECONDS)
+    mqttClient.connect().get(2, TimeUnit.SECONDS)
+  }
+
+  def cleanupSpec() {
+    mqttClient?.disconnect()
+    mqttBroker?.stopServer()
+    grpcServer?.stop()
+  }
+
+  def setup() {
+    subTracker?.subscriptions.clear()
+  }
+
+  def "ChirpStack CSV Import Test"() {
+    given: "expected conditions"
+    def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+    when: "the container starts"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def assetProcessingService = container.getService(AssetProcessingService.class)
+    def agentService = container.getService(AgentService.class)
+
+    and: "a ChirpStack agent is created"
+    def agent = new ChirpStackAgent("ChirpStackAgent")
+    agent.setRealm(MASTER_REALM)
+    agent.setMqttHost(HOST)
+    agent.setMqttPort(mqttBrokerPort)
+    agent.setClientId(CLIENT_ID)
+    agent.setApplicationId(APPLICATION_ID)
+    agent = assetStorageService.merge(agent)
+
+    then: "the protocol instance for the agent should be created"
+    conditions.eventually {
+      assert agentService.getProtocolInstance(agent.id) != null
+      assert ((ChirpStackProtocol)agentService.getProtocolInstance(agent.id)) != null
     }
 
-    def cleanupSpec() {
-        mqttClient?.disconnect()
-        mqttBroker?.stopServer()
-        grpcServer?.stop()
+    and: "the connection status should be CONNECTED"
+    conditions.eventually {
+      agent = assetStorageService.find(agent.id)
+      agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
     }
 
-    def setup() {
-        subTracker?.subscriptions.clear()
-    }
-
-    def "ChirpStack CSV Import Test"() {
-        given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-
-        when: "the container starts"
-        def container = startContainer(defaultConfig(), defaultServices())
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def agentService = container.getService(AgentService.class)
-
-        and: "a ChirpStack agent is created"
-        def agent = new ChirpStackAgent("ChirpStackAgent")
-        agent.setRealm(MASTER_REALM)
-        agent.setMqttHost(HOST)
-        agent.setMqttPort(mqttBrokerPort)
-        agent.setClientId(CLIENT_ID)
-        agent.setApplicationId(APPLICATION_ID)
-        agent = assetStorageService.merge(agent)
-
-        then: "the protocol instance for the agent should be created"
-        conditions.eventually {
-            assert agentService.getProtocolInstance(agent.id) != null
-            assert ((ChirpStackProtocol)agentService.getProtocolInstance(agent.id)) != null
-        }
-
-        and: "the connection status should be CONNECTED"
-        conditions.eventually {
-            agent = assetStorageService.find(agent.id)
-            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
-        }
-
-        when: "an authenticated admin user"
-        def accessToken = authenticate(
+    when: "an authenticated admin user"
+    def accessToken = authenticate(
             container,
             MASTER_REALM,
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        )
+            )
 
-        and: "the agent resource"
-        def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
+    and: "the agent resource"
+    def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
 
-        and: "CSV import is executed"
-        def csvContent = """\
+    and: "CSV import is executed"
+    def csvContent = """\
             ${DEV_EUI_1},${ASSET_NAME_1},ChirpStackTestAsset,${VENDOR_ID},${MODEL_ID},${FIRMWARE_VERSION}
             ${DEV_EUI_2},${ASSET_NAME_2},ChirpStackTestAsset,${VENDOR_ID},${MODEL_ID},${FIRMWARE_VERSION}
         """.stripIndent()
-        def fileInfo = new FileInfo("devices.csv", csvContent, false)
-        AssetTreeNode[] assets = agentResource.doProtocolAssetImport(null, agent.getId(), null, fileInfo)
+    def fileInfo = new FileInfo("devices.csv", csvContent, false)
+    AssetTreeNode[] assets = agentResource.doProtocolAssetImport(null, agent.getId(), null, fileInfo)
 
-        then: "new assets should have been imported"
-        conditions.eventually {
-            assert assets != null
-            assert assets.length == 2
-            def node1 = assets.find { it.asset.getAttribute(DEV_EUI).map { DEV_EUI_1.equalsIgnoreCase(it.value.get()) }.orElse(false) }
-            def node2 = assets.find { it.asset.getAttribute(DEV_EUI).map { DEV_EUI_2.equalsIgnoreCase(it.value.get()) }.orElse(false) }
-            assert node1 != null
-            assert node2 != null
-            def asset1 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
-            def asset2 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_2.toUpperCase()))
-            assert asset1 != null
-            assert asset2 != null
-        }
+    then: "new assets should have been imported"
+    conditions.eventually {
+      assert assets != null
+      assert assets.length == 2
+      def node1 = assets.find {
+        it.asset.getAttribute(DEV_EUI).map {
+          DEV_EUI_1.equalsIgnoreCase(it.value.get())
+        }.orElse(false)
+      }
+      def node2 = assets.find {
+        it.asset.getAttribute(DEV_EUI).map {
+          DEV_EUI_2.equalsIgnoreCase(it.value.get())
+        }.orElse(false)
+      }
+      assert node1 != null
+      assert node2 != null
+      def asset1 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
+      def asset2 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_2.toUpperCase()))
+      assert asset1 != null
+      assert asset2 != null
+    }
 
-        and: "MQTT wildcard subscription should have been registered"
-        conditions.eventually {
-            assert subTracker.containsTopic("application/${APPLICATION_ID}/device/+/event/up")
-        }
+    and: "MQTT wildcard subscription should have been registered"
+    conditions.eventually {
+      assert subTracker.containsTopic("application/${APPLICATION_ID}/device/+/event/up")
+    }
 
-        when: "the device sends a LoRaWAN uplink message"
-        def json = [
-            fPort: UPLINK_PORT,
-            object: [
-                Temperature: TEMPERATURE_VALUE,
-                Humidity: HUMIDITY_VALUE,
-                Errors: ["error1", "error2"]
-            ]
-        ]
-        mqttClient.publishWith()
+    when: "the device sends a LoRaWAN uplink message"
+    def json = [
+      fPort: UPLINK_PORT,
+      object: [
+        Temperature: TEMPERATURE_VALUE,
+        Humidity: HUMIDITY_VALUE,
+        Errors: ["error1", "error2"]
+      ]
+    ]
+    mqttClient.publishWith()
             .topic("application/${APPLICATION_ID}/device/${DEV_EUI_1}/event/up")
             .payload(JsonOutput.toJson(json).bytes)
             .send()
 
-        then: "asset attribute values should be updated"
-        conditions.eventually {
-            def asset = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
-            assertAttribute(asset, TEMPERATURE, TEMPERATURE_VALUE)
-            assertAttribute(asset, RELATIVE_HUMIDITY, HUMIDITY_VALUE)
-            assertAttribute(asset, ERRORS) { value ->
-                assert value.startsWith("[") && value.endsWith("]")
-                assert value.contains("error1") && value.contains("error2")
-            }
-        }
+    then: "asset attribute values should be updated"
+    conditions.eventually {
+      def asset = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
+      assertAttribute(asset, TEMPERATURE, TEMPERATURE_VALUE)
+      assertAttribute(asset, RELATIVE_HUMIDITY, HUMIDITY_VALUE)
+      assertAttribute(asset, ERRORS) { value ->
+        assert value.startsWith("[") && value.endsWith("]")
+        assert value.contains("error1") && value.contains("error2")
+      }
+    }
 
-        when: "an asset attribute value is written"
-        def asset1 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
-        def downlinkMessages = new CopyOnWriteArrayList<String>()
-        mqttClient.subscribeWith()
+    when: "an asset attribute value is written"
+    def asset1 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
+    def downlinkMessages = new CopyOnWriteArrayList<String>()
+    mqttClient.subscribeWith()
             .topicFilter("application/${APPLICATION_ID}/device/${DEV_EUI_1}/command/down")
             .callback { Mqtt3Publish publish ->
-                downlinkMessages.add(new String(publish.payloadAsBytes))
+              downlinkMessages.add(new String(publish.payloadAsBytes))
             }
             .send()
             .get(5, TimeUnit.SECONDS)
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, SWITCH, true))
+    assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, SWITCH, true))
 
-        then: "a LoRaWAN downlink message should have been published"
-        conditions.eventually {
-            assert downlinkMessages.size() == 1
-            def downlinkMessage = new JsonSlurper().parseText(downlinkMessages.get(0))
-            assert downlinkMessage != null
-            assert downlinkMessage.devEui == DEV_EUI_1
-            assert downlinkMessage.fPort == DOWNLINK_PORT
-            assert downlinkMessage.data == "DAE="
-        }
+    then: "a LoRaWAN downlink message should have been published"
+    conditions.eventually {
+      assert downlinkMessages.size() == 1
+      def downlinkMessage = new JsonSlurper().parseText(downlinkMessages.get(0))
+      assert downlinkMessage != null
+      assert downlinkMessage.devEui == DEV_EUI_1
+      assert downlinkMessage.fPort == DOWNLINK_PORT
+      assert downlinkMessage.data == "DAE="
+    }
+  }
+
+  def "ChirpStack Auto Discovery Test"() {
+    given: "expected conditions"
+    def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+    when: "the container starts"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def assetProcessingService = container.getService(AssetProcessingService.class)
+    def agentService = container.getService(AgentService.class)
+
+    and: "a ChirpStack agent is created"
+    def agent = new ChirpStackAgent("ChirpStackAgent")
+    agent.setRealm(MASTER_REALM)
+    agent.setMqttHost(HOST)
+    agent.setMqttPort(mqttBrokerPort)
+    agent.setHost(HOST)
+    agent.setPort(grpcPort)
+    agent.setClientId(CLIENT_ID)
+    agent.setApplicationId(APPLICATION_ID)
+    agent.setApiKey(API_KEY)
+    agent = assetStorageService.merge(agent)
+
+    then: "the protocol instance for the agent should be created"
+    conditions.eventually {
+      assert agentService.getProtocolInstance(agent.id) != null
+      assert ((ChirpStackProtocol)agentService.getProtocolInstance(agent.id)) != null
     }
 
-    def "ChirpStack Auto Discovery Test"() {
-        given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+    and: "the connection status should be CONNECTED"
+    conditions.eventually {
+      agent = assetStorageService.find(agent.id)
+      agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+    }
 
-        when: "the container starts"
-        def container = startContainer(defaultConfig(), defaultServices())
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def agentService = container.getService(AgentService.class)
-
-        and: "a ChirpStack agent is created"
-        def agent = new ChirpStackAgent("ChirpStackAgent")
-        agent.setRealm(MASTER_REALM)
-        agent.setMqttHost(HOST)
-        agent.setMqttPort(mqttBrokerPort)
-        agent.setHost(HOST)
-        agent.setPort(grpcPort)
-        agent.setClientId(CLIENT_ID)
-        agent.setApplicationId(APPLICATION_ID)
-        agent.setApiKey(API_KEY)
-        agent = assetStorageService.merge(agent)
-
-        then: "the protocol instance for the agent should be created"
-        conditions.eventually {
-            assert agentService.getProtocolInstance(agent.id) != null
-            assert ((ChirpStackProtocol)agentService.getProtocolInstance(agent.id)) != null
-        }
-
-        and: "the connection status should be CONNECTED"
-        conditions.eventually {
-            agent = assetStorageService.find(agent.id)
-            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
-        }
-
-        when: "an authenticated admin user"
-        def accessToken = authenticate(
+    when: "an authenticated admin user"
+    def accessToken = authenticate(
             container,
             MASTER_REALM,
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        )
+            )
 
-        and: "the agent resource"
-        def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
+    and: "the agent resource"
+    def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
 
-        AssetTreeNode[] assets = agentResource.doProtocolAssetDiscovery(null, agent.getId(), null)
+    AssetTreeNode[] assets = agentResource.doProtocolAssetDiscovery(null, agent.getId(), null)
 
-        then: "new assets should have been discovered"
-        conditions.eventually {
-            assert assets != null
-            assert assets.length == 2
-            def node1 = assets.find { it.asset.getAttribute(DEV_EUI).map { DEV_EUI_1.equalsIgnoreCase(it.value.get()) }.orElse(false) }
-            def node2 = assets.find { it.asset.getAttribute(DEV_EUI).map { DEV_EUI_2.equalsIgnoreCase(it.value.get()) }.orElse(false) }
-            assert node1 != null
-            assert node2 != null
-            def asset1 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
-            def asset2 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_2.toUpperCase()))
-            assert asset1 != null
-            assert asset2 != null
-        }
+    then: "new assets should have been discovered"
+    conditions.eventually {
+      assert assets != null
+      assert assets.length == 2
+      def node1 = assets.find {
+        it.asset.getAttribute(DEV_EUI).map {
+          DEV_EUI_1.equalsIgnoreCase(it.value.get())
+        }.orElse(false)
+      }
+      def node2 = assets.find {
+        it.asset.getAttribute(DEV_EUI).map {
+          DEV_EUI_2.equalsIgnoreCase(it.value.get())
+        }.orElse(false)
+      }
+      assert node1 != null
+      assert node2 != null
+      def asset1 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
+      def asset2 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_2.toUpperCase()))
+      assert asset1 != null
+      assert asset2 != null
+    }
 
-        and: "MQTT wildcard subscription should have been registered"
-        conditions.eventually {
-            assert subTracker.containsTopic("application/${APPLICATION_ID}/device/+/event/up")
-        }
+    and: "MQTT wildcard subscription should have been registered"
+    conditions.eventually {
+      assert subTracker.containsTopic("application/${APPLICATION_ID}/device/+/event/up")
+    }
 
-        when: "the device sends a LoRaWAN uplink message"
-        def json = [
-            fPort: UPLINK_PORT,
-            object: [
-                Temperature: TEMPERATURE_VALUE,
-                Humidity: HUMIDITY_VALUE,
-                Errors: ["error1", "error2"]
-            ]
-        ]
-        mqttClient.publishWith()
+    when: "the device sends a LoRaWAN uplink message"
+    def json = [
+      fPort: UPLINK_PORT,
+      object: [
+        Temperature: TEMPERATURE_VALUE,
+        Humidity: HUMIDITY_VALUE,
+        Errors: ["error1", "error2"]
+      ]
+    ]
+    mqttClient.publishWith()
             .topic("application/${APPLICATION_ID}/device/${DEV_EUI_1}/event/up")
             .payload(JsonOutput.toJson(json).bytes)
             .send()
 
-        then: "asset attribute values should be updated"
-        conditions.eventually {
-            def asset = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
-            assertAttribute(asset, TEMPERATURE, TEMPERATURE_VALUE)
-            assertAttribute(asset, RELATIVE_HUMIDITY, HUMIDITY_VALUE)
-            assertAttribute(asset, ERRORS) { value ->
-                assert value.startsWith("[") && value.endsWith("]")
-                assert value.contains("error1") && value.contains("error2")
-            }
-        }
+    then: "asset attribute values should be updated"
+    conditions.eventually {
+      def asset = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
+      assertAttribute(asset, TEMPERATURE, TEMPERATURE_VALUE)
+      assertAttribute(asset, RELATIVE_HUMIDITY, HUMIDITY_VALUE)
+      assertAttribute(asset, ERRORS) { value ->
+        assert value.startsWith("[") && value.endsWith("]")
+        assert value.contains("error1") && value.contains("error2")
+      }
+    }
 
-        when: "an asset attribute value is written"
-        def asset1 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
-        def downlinkMessages = new CopyOnWriteArrayList<String>()
-        mqttClient.subscribeWith()
+    when: "an asset attribute value is written"
+    def asset1 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
+    def downlinkMessages = new CopyOnWriteArrayList<String>()
+    mqttClient.subscribeWith()
             .topicFilter("application/${APPLICATION_ID}/device/${DEV_EUI_1}/command/down")
             .callback { Mqtt3Publish publish ->
-                downlinkMessages.add(new String(publish.payloadAsBytes))
+              downlinkMessages.add(new String(publish.payloadAsBytes))
             }
             .send()
             .get(5, TimeUnit.SECONDS)
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, SWITCH, true))
+    assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, SWITCH, true))
 
-        then: "a LoRaWAN downlink message should have been published"
-        conditions.eventually {
-            assert downlinkMessages.size() == 1
-            def downlinkMessage = new JsonSlurper().parseText(downlinkMessages.get(0))
-            assert downlinkMessage != null
-            assert downlinkMessage.devEui == DEV_EUI_1
-            assert downlinkMessage.fPort == DOWNLINK_PORT
-            assert downlinkMessage.data == "DAE="
-        }
+    then: "a LoRaWAN downlink message should have been published"
+    conditions.eventually {
+      assert downlinkMessages.size() == 1
+      def downlinkMessage = new JsonSlurper().parseText(downlinkMessages.get(0))
+      assert downlinkMessage != null
+      assert downlinkMessage.devEui == DEV_EUI_1
+      assert downlinkMessage.fPort == DOWNLINK_PORT
+      assert downlinkMessage.data == "DAE="
+    }
+  }
+
+  <T> void assertAttribute(Asset asset, AttributeDescriptor<T> descriptor, T expectedValue) {
+    def attrOpt = asset.getAttribute(descriptor)
+    assert attrOpt.isPresent() : "Attribute ${descriptor} is missing"
+
+    def valueOpt = attrOpt.get().value
+    assert valueOpt.isPresent() : "Value for attribute ${descriptor} is missing (it's empty)"
+
+    assert valueOpt.get() == expectedValue : "Expected ${expectedValue} but found ${valueOpt.get()}"
+  }
+
+  <T> void assertAttribute(Asset asset, AttributeDescriptor<T> descriptor, Closure validation) {
+    def attrOpt = asset.getAttribute(descriptor)
+    assert attrOpt.isPresent() : "Attribute ${descriptor} is missing"
+
+    def valueOpt = attrOpt.get().value
+    assert valueOpt.isPresent() : "Value for attribute ${descriptor} is missing (it's empty)"
+
+    validation(valueOpt.get())
+  }
+
+  static class ChirpStackGrpcServer {
+    private final int port
+    private io.grpc.Server server
+
+    ChirpStackGrpcServer(int port) {
+      this.port = port
     }
 
-    <T> void assertAttribute(Asset asset, AttributeDescriptor<T> descriptor, T expectedValue) {
-        def attrOpt = asset.getAttribute(descriptor)
-        assert attrOpt.isPresent() : "Attribute ${descriptor} is missing"
-
-        def valueOpt = attrOpt.get().value
-        assert valueOpt.isPresent() : "Value for attribute ${descriptor} is missing (it's empty)"
-
-        assert valueOpt.get() == expectedValue : "Expected ${expectedValue} but found ${valueOpt.get()}"
+    void start() {
+      server = ServerBuilder.forPort(port)
+              .addService(new DeviceService())
+              .addService(new DeviceProfileService())
+              .build()
+              .start()
     }
 
-    <T> void assertAttribute(Asset asset, AttributeDescriptor<T> descriptor, Closure validation) {
-        def attrOpt = asset.getAttribute(descriptor)
-        assert attrOpt.isPresent() : "Attribute ${descriptor} is missing"
-
-        def valueOpt = attrOpt.get().value
-        assert valueOpt.isPresent() : "Value for attribute ${descriptor} is missing (it's empty)"
-
-        validation(valueOpt.get())
+    void stop() {
+      if (server != null) {
+        server.shutdownNow()
+      }
     }
 
-    static class ChirpStackGrpcServer {
-        private final int port
-        private io.grpc.Server server
-
-        ChirpStackGrpcServer(int port) {
-            this.port = port
-        }
-
-        void start() {
-            server = ServerBuilder.forPort(port)
-                .addService(new DeviceService())
-                .addService(new DeviceProfileService())
+    private static class DeviceService extends DeviceServiceGrpc.DeviceServiceImplBase {
+      @Override
+      void list(ListDevicesRequest request, StreamObserver<ListDevicesResponse> responseObserver) {
+        DeviceListItem device1 = DeviceListItem.newBuilder()
+                .setDevEui(DEV_EUI_1)
+                .setName(ASSET_NAME_1)
+                .setDeviceProfileId(PROFILE_ID)
                 .build()
-                .start()
-        }
+        DeviceListItem device2 = DeviceListItem.newBuilder()
+                .setDevEui(DEV_EUI_2)
+                .setName(ASSET_NAME_2)
+                .setDeviceProfileId(PROFILE_ID)
+                .build()
+        ListDevicesResponse response = ListDevicesResponse.newBuilder()
+                .addResult(device1)
+                .addResult(device2)
+                .setTotalCount(2)
+                .build()
 
-        void stop() {
-            if (server != null) {
-                server.shutdownNow()
-            }
-        }
-
-        private static class DeviceService extends DeviceServiceGrpc.DeviceServiceImplBase {
-            @Override
-            void list(ListDevicesRequest request, StreamObserver<ListDevicesResponse> responseObserver) {
-                DeviceListItem device1 = DeviceListItem.newBuilder()
-                    .setDevEui(DEV_EUI_1)
-                    .setName(ASSET_NAME_1)
-                    .setDeviceProfileId(PROFILE_ID)
-                    .build()
-                DeviceListItem device2 = DeviceListItem.newBuilder()
-                    .setDevEui(DEV_EUI_2)
-                    .setName(ASSET_NAME_2)
-                    .setDeviceProfileId(PROFILE_ID)
-                    .build()
-                ListDevicesResponse response = ListDevicesResponse.newBuilder()
-                    .addResult(device1)
-                    .addResult(device2)
-                    .setTotalCount(2)
-                    .build()
-
-                responseObserver.onNext(response)
-                responseObserver.onCompleted()
-            }
-        }
-
-        private static class DeviceProfileService extends DeviceProfileServiceGrpc.DeviceProfileServiceImplBase {
-            @Override
-            void get(GetDeviceProfileRequest request, StreamObserver<GetDeviceProfileResponse> responseObserver) {
-                if (PROFILE_ID != request.id) {
-                    responseObserver.onError(
-                        Status.NOT_FOUND
-                            .withDescription("Device profile not found: ${request.id}")
-                            .asRuntimeException()
-                    )
-                    return
-                }
-
-                DeviceProfile profile = DeviceProfile.newBuilder()
-                    .setName("TestProfile")
-                    .setId(request.getId())
-                    .putTags(ChirpStackProtocol.CHIRPSTACK_ASSET_TYPE_TAG, "ChirpStackTestAsset")
-                    .build()
-
-                GetDeviceProfileResponse response = GetDeviceProfileResponse.newBuilder()
-                    .setDeviceProfile(profile)
-                    .build()
-
-                responseObserver.onNext(response)
-                responseObserver.onCompleted()
-            }
-        }
+        responseObserver.onNext(response)
+        responseObserver.onCompleted()
+      }
     }
 
-    static class SubscriptionTracker extends AbstractInterceptHandler {
-        static final Logger LOG = Logger.getLogger(SubscriptionTracker.class.getName())
-        final Set<String> subscriptions = new CopyOnWriteArraySet<>()
-
-        @Override
-        String getID() { "SubscriptionTracker" }
-
-        @Override
-        void onSubscribe(InterceptSubscribeMessage msg) {
-            subscriptions.add(msg.getTopicFilter())
+    private static class DeviceProfileService extends DeviceProfileServiceGrpc.DeviceProfileServiceImplBase {
+      @Override
+      void get(GetDeviceProfileRequest request, StreamObserver<GetDeviceProfileResponse> responseObserver) {
+        if (PROFILE_ID != request.id) {
+          responseObserver.onError(
+                  Status.NOT_FOUND
+                  .withDescription("Device profile not found: ${request.id}")
+                  .asRuntimeException()
+                  )
+          return
         }
 
-        @Override
-        void onUnsubscribe(InterceptUnsubscribeMessage msg) {
-            subscriptions.remove(msg.getTopicFilter())
-        }
+        DeviceProfile profile = DeviceProfile.newBuilder()
+                .setName("TestProfile")
+                .setId(request.getId())
+                .putTags(ChirpStackProtocol.CHIRPSTACK_ASSET_TYPE_TAG, "ChirpStackTestAsset")
+                .build()
 
-        @Override
-        void onSessionLoopError(Throwable throwable) {
-            LOG.log(Level.SEVERE, "MQTT session loop error in SubscriptionTracker", throwable)
-        }
+        GetDeviceProfileResponse response = GetDeviceProfileResponse.newBuilder()
+                .setDeviceProfile(profile)
+                .build()
 
-        boolean containsTopic(String topic) {
-            return subscriptions.contains(topic)
-        }
+        responseObserver.onNext(response)
+        responseObserver.onCompleted()
+      }
     }
+  }
+
+  static class SubscriptionTracker extends AbstractInterceptHandler {
+    static final Logger LOG = Logger.getLogger(SubscriptionTracker.class.getName())
+    final Set<String> subscriptions = new CopyOnWriteArraySet<>()
+
+    @Override
+    String getID() {
+      "SubscriptionTracker"
+    }
+
+    @Override
+    void onSubscribe(InterceptSubscribeMessage msg) {
+      subscriptions.add(msg.getTopicFilter())
+    }
+
+    @Override
+    void onUnsubscribe(InterceptUnsubscribeMessage msg) {
+      subscriptions.remove(msg.getTopicFilter())
+    }
+
+    @Override
+    void onSessionLoopError(Throwable throwable) {
+      LOG.log(Level.SEVERE, "MQTT session loop error in SubscriptionTracker", throwable)
+    }
+
+    boolean containsTopic(String topic) {
+      return subscriptions.contains(topic)
+    }
+  }
 }

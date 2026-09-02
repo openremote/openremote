@@ -104,9 +104,6 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
         querystring: require.resolve("querystring-es3"),
       },
     },
-    experiments: {
-      asyncWebAssembly: true,
-    },
   };
 
   config.plugins = [
@@ -159,11 +156,10 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
   // Build list of resources to copy
   const patterns = [
     {
-      from: path.dirname(require.resolve("@webcomponents/webcomponentsjs")),
+      from: "**/*.js",
+      context: path.dirname(require.resolve("@webcomponents/webcomponentsjs")),
       to: "modules/@webcomponents/webcomponentsjs",
-      globOptions: {
-        ignore: ["!*.js"],
-      },
+      toType: "dir",
     },
   ];
   // Check if images dir exists
@@ -280,8 +276,10 @@ function generateExports(dirname) {
       output: {
         filename: "[name].js",
         path: path.resolve(dirname, "dist/umd"),
-        library: libName,
-        libraryTarget: "umd",
+        library: {
+          name: libName,
+          target: "umd",
+        },
       },
       resolve: {
         extensions: [".ts", ".tsx", "..."],
