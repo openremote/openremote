@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import ace, { type Ace } from "ace-builds";
 import "ace-builds/src-noconflict/mode-javascript";
@@ -57,7 +58,7 @@ declare global {
 }
 
 @customElement("or-ace-editor")
-export class OrAceEditor extends LitElement {
+export class OrAceEditor extends OrElement {
   // language=CSS
   static get styles() {
     return css`

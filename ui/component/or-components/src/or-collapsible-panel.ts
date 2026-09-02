@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { i18next } from "@openremote/or-translate";
 import { DefaultColor5 } from "@openremote/core";
@@ -119,7 +120,7 @@ const style = css`
 `;
 
 @customElement("or-collapsible-panel")
-export class OrCollapsiblePanel extends LitElement {
+export class OrCollapsiblePanel extends OrElement {
   static get styles() {
     return [style];
   }

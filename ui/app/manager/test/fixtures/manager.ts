@@ -65,6 +65,7 @@ function warnOnHttpError(e: unknown, message: string, ...context: unknown[]) {
 export class Manager {
   private readonly clientId = "openremote";
   private readonly managerHost: string;
+  private authServerUrl?: string;
   readonly api: RestApi["api"];
   readonly axios: RestApi["_axiosInstance"];
 
@@ -197,7 +198,7 @@ export class Manager {
       await this.page.locator("#menu > #list > li").filter({ hasText: "Log out" }).click();
     }
     // Wait for navigation to login page to prevent simultaneous navigation
-    await this.page.waitForURL("**/auth/realms/**");
+    await this.page.waitForURL(`${await this.getAuthServerUrl()}/realms/**`);
   }
 
   async resetLocale(realm: string, username: Usernames, password: string) {
@@ -207,20 +208,35 @@ export class Manager {
     });
   }
 
+  /**
+   * Resolve the auth server URL from the manager info endpoint, the same source the apps use at startup.
+   *
+   * The manager reports either an absolute URL or one relative to itself, so it is resolved against the manager
+   * host and cached for the lifetime of the fixture.
+   */
+  async getAuthServerUrl() {
+    if (!this.authServerUrl) {
+      const { authServerUrl } = (await this.api.StatusResource.getInfo()).data;
+      this.authServerUrl = new URL(authServerUrl || "/auth", this.managerHost).toString().replace(/\/+$/, "");
+    }
+    return this.authServerUrl;
+  }
+
   async getAccessToken(realm: string, username: Usernames, password: string) {
     const data = new URLSearchParams();
     data.append("client_id", this.clientId);
     data.append("username", username);
     data.append("password", password);
     data.append("grant_type", "password");
-    const { access_token } = (
-      await this.axios.post(`${this.managerHost}/auth/realms/${realm}/protocol/openid-connect/token`, data, {
+    const authServerUrl = await this.getAuthServerUrl();
+    const { access_token: accessToken } = (
+      await this.axios.post(`${authServerUrl}/realms/${realm}/protocol/openid-connect/token`, data, {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
       })
     ).data;
-    return access_token;
+    return accessToken;
   }
 
   /**

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement } from "lit";
+import { css, html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { type Asset, AssetModelUtil, type Attribute, type AttributeRef } from "@openremote/model";
 // The runtime package is gaugeJS, its types ship separately as @types/gaugejs.
@@ -115,7 +116,7 @@ export interface OrGaugeConfig {
 }
 
 @customElement("or-gauge")
-export class OrGauge extends LitElement {
+export class OrGauge extends OrElement {
   static get styles() {
     return [styling];
   }

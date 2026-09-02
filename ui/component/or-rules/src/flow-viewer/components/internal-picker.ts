@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html, css, type TemplateResult } from "lit";
+import { html, css, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import {
   type Node,
@@ -42,7 +43,7 @@ import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 import { ifDefined } from "lit/directives/if-defined.js";
 
 @customElement("internal-picker")
-export class InternalPicker extends translate(i18next)(LitElement) {
+export class InternalPicker extends translate(i18next)(OrElement) {
   @property({ converter: nodeConverter, reflect: true }) public node!: Node;
   @property({ type: Number, reflect: true }) public internalIndex!: number;
 

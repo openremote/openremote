@@ -251,6 +251,7 @@ export const style = css`
 
   .node-name-noCheck {
     vertical-align: middle;
+    text-wrap: nowrap;
   }
 
   .node-name > or-icon {

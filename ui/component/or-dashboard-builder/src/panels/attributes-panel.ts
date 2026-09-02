@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, type CSSResult, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, type CSSResult, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { type Asset, type AssetDescriptor, AssetModelUtil, type Attribute, type AttributeRef } from "@openremote/model";
 import { style } from "../style";
@@ -205,7 +206,7 @@ const styling = css`
 `;
 
 @customElement("attributes-panel")
-export class AttributesPanel extends LitElement {
+export class AttributesPanel extends OrElement {
   @property({ type: Array })
   public attributeRefs: AttributeRef[] = [];
 

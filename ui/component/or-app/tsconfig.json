@@ -8,6 +8,7 @@
   },
   "include": ["./src"],
   "references": [
+    { "path": "../or-element" },
     { "path": "../../component/core" },
     { "path": "../../component/or-mwc-components" },
     { "path": "../../component/or-icon" },

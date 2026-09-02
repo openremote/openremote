@@ -7,6 +7,7 @@
   },
   "include": ["./src"],
   "references": [
+    { "path": "../or-element" },
     { "path": "../core" },
     { "path": "../or-chart" },
     { "path": "../or-mwc-components" },

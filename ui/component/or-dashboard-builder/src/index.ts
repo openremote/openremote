@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { styleMap } from "lit/directives/style-map.js";
@@ -259,7 +260,7 @@ export function registerWidgetTypes() {
 }
 
 @customElement("or-dashboard-builder")
-export class OrDashboardBuilder extends translate(i18next)(LitElement) {
+export class OrDashboardBuilder extends translate(i18next)(OrElement) {
   // Importing Styles; the unsafe GridStack css, and all custom css
   static get styles() {
     return [styling, style];

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { NodeType, type Node } from "@openremote/model";
 import { i18next, translate } from "@openremote/or-translate";
@@ -25,7 +26,7 @@ import type { FlowEditor } from "./flow-editor";
 import { OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 
 @customElement("node-panel")
-export class NodePanel extends translate(i18next)(LitElement) {
+export class NodePanel extends translate(i18next)(OrElement) {
   @property({ type: Array }) public nodes: Node[] = [];
   static get styles() {
     return css`

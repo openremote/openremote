@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, LitElement, type TemplateResult } from "lit";
+import { html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import type { ActionType, RulesConfig } from "../index";
 import type { JsonRule, RuleActionAlarm, User, UserQuery } from "@openremote/model";
@@ -25,7 +26,7 @@ import "./forms/or-rule-form-alarm";
 import manager from "@openremote/core";
 
 @customElement("or-rule-action-alarm")
-export class OrRuleActionAlarm extends LitElement {
+export class OrRuleActionAlarm extends OrElement {
   @property({ type: Object, attribute: false })
   public rule!: JsonRule;
 

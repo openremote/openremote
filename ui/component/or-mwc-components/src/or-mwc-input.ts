@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { css, html, type PropertyValues, type TemplateResult, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { ifDefined } from "lit/directives/if-defined.js";
@@ -484,7 +485,7 @@ const style = css`
  * @deprecated Not actively maintained anymore. We're slowly migrating towards `or-vaadin-input` instead.
  */
 @customElement("or-mwc-input")
-export class OrMwcInput extends LitElement {
+export class OrMwcInput extends OrElement {
   static get styles() {
     return [
       css`

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, type CSSResult, type CSSResultGroup, html, LitElement, type PropertyValues, unsafeCSS } from "lit";
+import { css, type CSSResult, type CSSResultGroup, html, type PropertyValues, unsafeCSS } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { markerActiveColorVar, markerColorVar } from "../style";
 import { DefaultBoxShadow } from "@openremote/core";
@@ -77,7 +78,7 @@ declare global {
  * This component doesn't directly render anything instead it generates DOM that can be added to the map component
  */
 @customElement("or-map-marker")
-export class OrMapMarker extends LitElement {
+export class OrMapMarker extends OrElement {
   static get styles(): CSSResultGroup {
     return css`
       .label {

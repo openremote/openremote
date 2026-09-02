@@ -52,12 +52,10 @@ function createAppSetupAndTeardown(app: string) {
       name: `setup ${app}`,
       testMatch: "**/*.setup.ts",
       teardown: `cleanup ${app}`,
-      worker: 1,
     },
     {
       name: `cleanup ${app}`,
       testMatch: "**/*.cleanup.ts",
-      worker: 1,
     },
   ];
 }
@@ -91,6 +89,7 @@ export const defineAppConfig = (path: string) => {
       url: "http://localhost:8080",
       reuseExistingServer: !process.env.CI,
     },
+    workers: 1,
     /* Configure projects */
     projects: [
       ...createAppSetupAndTeardown(name),
@@ -99,7 +98,6 @@ export const defineAppConfig = (path: string) => {
         testDir: resolve(path, "test"),
         fullyParallel: false,
         dependencies: [`setup ${name}`],
-        workers: 1,
         ...browser,
       })),
     ],

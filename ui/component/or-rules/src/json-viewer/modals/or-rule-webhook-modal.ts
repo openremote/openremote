@@ -20,11 +20,12 @@ import type { RuleActionWebhook } from "@openremote/model";
 import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import type { DialogAction, OrMwcDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
-import { html, LitElement, type PropertyValues } from "lit";
+import { html, type PropertyValues } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 
 @customElement("or-rule-webhook-modal")
-export class OrRuleWebhookModal extends LitElement {
+export class OrRuleWebhookModal extends OrElement {
   @property({ type: Object })
   protected action!: RuleActionWebhook;
 

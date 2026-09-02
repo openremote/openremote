@@ -37,7 +37,6 @@ import { type GenericAxiosResponse, isAxiosError } from "@openremote/rest";
 import { getAlarmsRoute } from "../routes";
 import { when } from "lit/directives/when.js";
 import { until } from "lit/directives/until.js";
-import { guard } from "lit/directives/guard.js";
 import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import type { OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent } from "@openremote/or-asset-tree";
 import type {
@@ -335,11 +334,14 @@ export class PageAlarms extends Page<AppStateKeyed> {
     if (changedProperties.has("alarm")) {
       this._updateRoute();
     }
-    if (changedProperties.has("severity") || changedProperties.has("status") || changedProperties.has("allActive")) {
-      this._data = undefined;
-    }
+    // Keep the previous rows on screen while reloading, so the table updates in place instead of being torn down
+    const filterChanged =
+      changedProperties.has("severity") ||
+      changedProperties.has("status") ||
+      changedProperties.has("allActive") ||
+      changedProperties.has("assign");
 
-    if (!this._data) {
+    if (filterChanged || !this._data) {
       this._loadData();
     }
 
@@ -508,11 +510,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                           <or-translate value="loading" />
                         </div>
                       `
-                    : html`
-                        <div id="table-container">
-                          ${when(this._data, () => guard([this._data], () => this.getAlarmsTable(writeAlarms)))}
-                        </div>
-                      `
+                    : html` <div id="table-container">${this.getAlarmsTable(writeAlarms)}</div> `
                 }
               </div>
             `;
@@ -573,7 +571,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
   protected getAlarmsTable(writeAlarms: boolean) {
     return html`
       <or-alarms-table
-        .alarms=${this._data}
+        .alarms=${this._data ?? []}
         .readonly=${!writeAlarms}
         @or-mwc-table-row-select="${(e: OrMwcTableRowSelectEvent) => this._onRowSelect(e)}"
         @or-mwc-table-row-click="${(e: OrMwcTableRowClickEvent) => this._onRowClick(e)}"
@@ -604,7 +602,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
       this._data = this._data.filter((e) => e.realm === manager.displayRealm);
       this._selectedIds = [];
 
-      if (this.config?.assignOnly) {
+      if (this.config?.assignOnly || this.assign) {
         const userResponse = await manager.rest.api.UserResource.getCurrent();
         if (userResponse.status === 200) {
           this._data = this._data.filter((e) => e.assigneeId === userResponse.data.id);
@@ -618,9 +616,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
       }
       if (!this.status && this.allActive) {
         this._data = this._data.filter((e) => e.status !== AlarmStatus.RESOLVED && e.status !== AlarmStatus.CLOSED);
-      }
-      if (this.assign) {
-        await this._onAssignCheckChanged(this.assign);
       }
     }
     this._loading = false;
@@ -749,7 +744,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                                   value=${this._getSourceText()}>
                                 <or-translate slot="label" value="alarm.source"></or-translate>
                             </or-vaadin-text-field>
-                            
+
                             <or-vaadin-select class="alarm-input" ?readonly=${!write}
                                               .items=${this._getAddSeverityOptions()} value=${alarm.severity}
                                               @change=${(ev: Event) => {
@@ -895,57 +890,21 @@ export class PageAlarms extends Page<AppStateKeyed> {
   }
 
   protected _onSeverityChanged(severity: AlarmSeverity | "all") {
-    console.debug(severity);
-    if (severity === "all") {
-      this.severity = undefined;
-      this._loadData();
-      return;
-    }
-
-    this.severity = severity;
-    this._data = this._data?.filter((e) => e.severity === this.severity);
+    this.severity = severity === "all" ? undefined : severity;
   }
 
-  protected async _onAssignCheckChanged(assign: boolean) {
+  protected _onAssignCheckChanged(assign: boolean) {
     this.assign = assign;
-
-    if (this.assign === undefined) {
-      return;
-    }
-    const response = await manager.rest.api.UserResource.getCurrent();
-    if (response.status === 200 && this.assign) {
-      this._data = this._data!.filter((e) => e.assigneeId === response.data.id);
-    } else if (!this.assign) {
-      this._loadData();
-    }
   }
 
+  // Filtering itself happens in _loadData; changing the state below is what triggers the reload.
   protected _onStatusChanged(status: AlarmStatus | "all" | "allActive") {
-    if (status === "all") {
-      this.status = undefined;
-      this.allActive = undefined;
-      this.requestUpdate();
-      return;
-    }
-    if (status === "allActive") {
-      this.status = undefined;
-      this.allActive = true;
-      this.requestUpdate();
-      return;
-    }
-    this.allActive = undefined;
-    this.status = this._getStatusOptions()
-      .filter((obj) => obj.label === status)
-      .map((obj) => obj.value)[0] as AlarmStatus;
-    if (!this.status) {
-      return;
-    }
-
-    this._data = this._data!.filter((e) => e.status === this.status);
+    this.status = status === "all" || status === "allActive" ? undefined : status;
+    this.allActive = status === "allActive";
   }
 
   protected _onRowSelect(ev: OrMwcTableRowSelectEvent) {
-    const alarm = this._data[ev.detail.index];
+    const alarm = this._data?.[ev.detail.index];
     if (alarm) {
       if (ev.detail.state) {
         if (this._selectedIds === undefined) {
@@ -967,12 +926,17 @@ export class PageAlarms extends Page<AppStateKeyed> {
     if (!ev.detail.index && ev.detail.index != 0) {
       return;
     }
-    this.alarm = this._data[ev.detail.index] as AlarmModel;
-    this.alarm.loaded = false;
-    this.alarm.loading = false;
-    this.alarm.alarmAssetLinks = [];
-    this.loadAlarm(this.alarm);
-    this.requestUpdate();
+    const alarm = this._data?.[ev.detail.index] as AlarmModel;
+    if (alarm) {
+      this.alarm = alarm;
+      this.alarm.loaded = false;
+      this.alarm.loading = false;
+      this.alarm.alarmAssetLinks = [];
+      this.loadAlarm(this.alarm);
+      this.requestUpdate();
+    } else {
+      console.warn("Tried selecting an alarm that does not exist?");
+    }
   }
 
   protected _getUsers() {

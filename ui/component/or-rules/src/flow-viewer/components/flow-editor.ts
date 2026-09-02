@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { Integration } from "../services/integration";
 import { CopyPasteManager } from "../services/copy-paste-manager";
@@ -43,7 +44,7 @@ export const shortcuts = new Shortcuts();
 export const newIds: Set<string> = new Set<string>();
 
 @customElement("flow-editor")
-export class FlowEditor extends translate(i18next)(LitElement) implements RuleView {
+export class FlowEditor extends translate(i18next)(OrElement) implements RuleView {
   @query("node-panel") public nodePanel!: NodePanel;
   @query("top-bar") public topBar!: TopBar;
   @query("editor-workspace") public editorWorkspace!: EditorWorkspace;

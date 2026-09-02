@@ -18,7 +18,8 @@
  */
 import type { MapConfig } from "@openremote/model";
 import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { css, html, LitElement } from "lit";
+import { css, html } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -26,7 +27,7 @@ import { i18next } from "@openremote/or-translate";
 import type { StyleSpecification } from "maplibre-gl";
 
 @customElement("or-conf-map-global")
-export class OrConfMapGlobal extends LitElement {
+export class OrConfMapGlobal extends OrElement {
   static styles = css`
     .subheader {
       padding: 10px 0 4px;

@@ -16,20 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { css, html, type TemplateResult, LitElement } from "lit";
+import { css, html, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import "@openremote/or-components/or-file-uploader";
 import { i18next } from "@openremote/or-translate";
 import type { MapRealmConfig } from "@openremote/model";
 import { type DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import type { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import type { OrMapLongPressEvent } from "@openremote/or-map";
 import type { LngLat } from "maplibre-gl";
 import "./or-conf-map-geojson";
 
 @customElement("or-conf-map-card")
-export class OrConfMapCard extends LitElement {
+export class OrConfMapCard extends OrElement {
   static styles = css`
     or-collapsible-panel {
       margin-bottom: 10px;
@@ -336,16 +337,15 @@ export class OrConfMapCard extends LitElement {
             </div>
 
             <div class="input" style="height: 56px;">
-              <or-mwc-input
-                .value="${map.boxZoom}"
-                .type="${InputType.SWITCH}"
-                label="BoxZoom"
-                @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                  map.boxZoom = e.detail.value;
+              <or-vaadin-toggle
+                ?checked="${map.boxZoom}"
+                @change="${(e: Event) => {
+                  map.boxZoom = (e.currentTarget as OrVaadinToggle).checked;
                   this.notifyConfigChange(map);
                 }}"
-                .step="${1}"
-              ></or-mwc-input>
+              >
+                <or-translate slot="label" value="configuration.boxZoom"></or-translate>
+              </or-vaadin-toggle>
             </div>
           </div>
         </div>

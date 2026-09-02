@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { LitElement, html, css } from "lit";
+import { html, css } from "lit";
+import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import { IdentityDomLink } from "../node-structure";
 import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
@@ -26,7 +27,7 @@ import { project, modal, input, exporter, type FlowEditor } from "./flow-editor"
 import { NodePanel } from "./node-panel";
 
 @customElement("top-bar")
-export class TopBar extends translate(i18next)(LitElement) {
+export class TopBar extends translate(i18next)(OrElement) {
   static get styles() {
     return css`
       :host {

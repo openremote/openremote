@@ -7,5 +7,5 @@
     "strict": false
   },
   "include": ["./src"],
-  "references": [{ "path": "../../component/or-app" }]
+  "references": [{ "path": "../../component/or-element" }, { "path": "../../component/or-app" }]
 }
