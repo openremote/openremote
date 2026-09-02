@@ -17,9 +17,69 @@ In the former case, an Ingress controller should NOT be installed as this causes
 
 This README file covers deployment on a local machine, for information on deploying into an EKS cluster on AWS, see README-AWS.md
 
+## Namespaced stack management
+
+`or-stack` installs each OpenRemote stack into a namespace with the same name.
+The Helm release names remain `or-setup`, `postgresql`, `keycloak`, and
+`manager` inside every namespace, so the existing service names continue to
+work while namespaced resources and persistent data remain independent.
+
+The first phase provides non-destructive `apply` and `status` commands. It
+installs the internal stack components but intentionally does not configure a
+proxy, Ingress, certificate, DNS record, or other external routing.
+
+To install or upgrade a local stack using the current Docker Desktop, kind, or
+kubeadm context:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context docker-desktop \
+  --target local
+```
+
+The local target uses the cluster's default StorageClass and enables the
+PostgreSQL volume permission init container required by Docker Desktop's
+dynamically provisioned hostpath volumes.
+
+Deploy another independent stack by choosing another name:
+
+```bash
+./or-stack apply \
+  --name stack-b \
+  --kube-context docker-desktop \
+  --target local
+```
+
+Show resources belonging to one stack:
+
+```bash
+./or-stack status --name stack-a --kube-context docker-desktop
+```
+
+`apply` accepts an optional `--values-dir`. Files named `or-setup.yaml`,
+`postgresql.yaml`, `keycloak.yaml`, and `manager.yaml` in that directory are
+applied after the selected target values. Command-line hostname configuration
+is also available:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context docker-desktop \
+  --target local \
+  --hostname stack-a.localhost \
+  --values-dir ./stacks/stack-a
+```
+
+There is deliberately no uninstall or destroy command yet. Removing a stack
+must distinguish between retaining its namespace and PVCs and explicitly
+purging all stack data; that lifecycle will be added separately.
+
 ## TL;DR
 
-The following steps use the first option, managing connections through HAProxy.
+The following manual steps deploy one stack in the current namespace using the
+first access option, managing connections through HAProxy. Prefer `or-stack`
+for namespaced multi-stack deployment.
 
 ### Create the required secrets
 

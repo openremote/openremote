@@ -46,6 +46,34 @@ retained by an ordinary Helm uninstall. Explicitly deleting a retained PVC
 deletes its dynamically provisioned EBS volume because this StorageClass uses
 the `Delete` reclaim policy.
 
+### Namespaced stacks
+
+After the shared EKS cluster has been created, `or-stack` can install the
+internal components of an OpenRemote stack in an independent namespace:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context <cluster-name>@eu-west-1 \
+  --target eks \
+  --hostname stack-a.example.com
+```
+
+The EKS target verifies that the EBS CSI driver and `openremote-ebs`
+StorageClass exist. It selects encrypted dynamically provisioned EBS storage
+without applying the instance-specific ingress, load balancer, certificate, or
+DNS values from the legacy setup scripts. Those external routing concerns are
+outside this first stack-management phase.
+
+Use the same command with a different stack name to create another namespace,
+or inspect one stack with:
+
+```bash
+./or-stack status \
+  --name stack-a \
+  --kube-context <cluster-name>@eu-west-1
+```
+
 #### PosgreSQL data directory
 
 PostgreSQL wants the data folder to be empty (on first startup), but an empty ext4 EBS volume contains a lost+found folder.  

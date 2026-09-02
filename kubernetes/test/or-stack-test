@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KUBERNETES_DIR="$(cd "$TEST_DIR/.." && pwd)"
+OR_STACK="$KUBERNETES_DIR/or-stack"
+TEST_BIN="$TEST_DIR/command-stubs"
+TEST_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/or-stack-test.XXXXXX")"
+CALL_LOG="$TEST_TEMP_DIR/calls.log"
+
+cleanup() {
+  rm -rf "$TEST_TEMP_DIR"
+}
+
+trap cleanup EXIT
+
+fail() {
+  printf 'FAIL: %s\n' "$*" >&2
+  exit 1
+}
+
+assert_contains() {
+  local expected="$1"
+  grep -F -- "$expected" "$CALL_LOG" >/dev/null || fail \
+    "Expected command log to contain: $expected"
+}
+
+assert_not_contains() {
+  local unexpected="$1"
+  if grep -F -- "$unexpected" "$CALL_LOG" >/dev/null; then
+    fail "Expected command log not to contain: $unexpected"
+  fi
+}
+
+reset_log() {
+  : > "$CALL_LOG"
+}
+
+run_stack() {
+  PATH="$TEST_BIN:$PATH" \
+    OR_STACK_TEST_LOG="$CALL_LOG" \
+    OR_STACK_TEST_CONTEXT="test-context" \
+    "$OR_STACK" "$@"
+}
+
+test_local_apply() {
+  local values_dir="$TEST_TEMP_DIR/values"
+  mkdir -p "$values_dir"
+  : > "$values_dir/manager.yaml"
+
+  reset_log
+  OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack apply \
+    --name stack-a \
+    --kube-context test-context \
+    --target local \
+    --hostname stack-a.localhost \
+    --values-dir "$values_dir"
+
+  assert_contains $'kubectl\t--context\ttest-context\tcreate\tnamespace\tstack-a'
+  assert_contains $'kubectl\t--context\ttest-context\tlabel\tnamespace\tstack-a'
+  assert_contains $'helm\tupgrade\t--install\tor-setup'
+  assert_contains $'helm\tupgrade\t--install\tpostgresql'
+  assert_contains "$KUBERNETES_DIR/stack/targets/local/postgresql.yaml"
+  assert_contains $'helm\tupgrade\t--install\tkeycloak'
+  assert_contains $'--set-string\tor.hostname=stack-a.localhost'
+  assert_contains $'helm\tupgrade\t--install\tmanager'
+  assert_contains "$values_dir/manager.yaml"
+  assert_not_contains "openremote-ebs"
+}
+
+test_eks_apply() {
+  reset_log
+  OR_STACK_TEST_NAMESPACE_EXISTS=true run_stack apply \
+    --name stack-eks \
+    --kube-context test-context \
+    --target eks
+
+  assert_contains $'kubectl\t--context\ttest-context\tget\tstorageclass\topenremote-ebs'
+  assert_contains $'kubectl\t--context\ttest-context\tget\tcsidriver\tebs.csi.aws.com'
+  assert_not_contains $'create\tnamespace\tstack-eks'
+  assert_contains "$KUBERNETES_DIR/stack/targets/eks/postgresql.yaml"
+  assert_contains "$KUBERNETES_DIR/stack/targets/eks/manager.yaml"
+}
+
+test_status() {
+  reset_log
+  OR_STACK_TEST_NAMESPACE_EXISTS=true run_stack status \
+    --name stack-a \
+    --kube-context test-context
+
+  assert_contains $'helm\tlist\t--kube-context\ttest-context\t--namespace\tstack-a'
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tdeployments,statefulsets,pods'
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tservices,ingresses'
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tpersistentvolumeclaims'
+}
+
+test_validation() {
+  if run_stack apply --name default --kube-context test-context --target local >/dev/null 2>&1; then
+    fail "Reserved namespace was accepted"
+  fi
+
+  if run_stack apply --name Stack_A --kube-context test-context --target local >/dev/null 2>&1; then
+    fail "Invalid namespace name was accepted"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target unknown >/dev/null 2>&1; then
+    fail "Unknown target was accepted"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
+    --hostname 'invalid host' >/dev/null 2>&1; then
+    fail "Invalid hostname was accepted"
+  fi
+
+  if OR_STACK_TEST_EKS_STORAGE=false run_stack apply \
+    --name stack-a --kube-context test-context --target eks >/dev/null 2>&1; then
+    fail "EKS target accepted a missing StorageClass"
+  fi
+}
+
+test_local_apply
+test_eks_apply
+test_status
+test_validation
+
+printf 'or-stack tests passed\n'

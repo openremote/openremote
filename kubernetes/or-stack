@@ -1,0 +1,294 @@
+#!/usr/bin/env bash
+
+# OpenRemote stack lifecycle only; cluster infrastructure is managed separately.
+
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KUBERNETES_DIR="$SCRIPT_DIR"
+TARGETS_DIR="$KUBERNETES_DIR/stack/targets"
+
+DEFAULT_TIMEOUT="10m"
+
+COMMAND=""
+STACK_NAME="${OR_STACK_NAME:-}"
+KUBE_CONTEXT="${OR_STACK_KUBE_CONTEXT:-}"
+TARGET="${OR_STACK_TARGET:-}"
+HOSTNAME_VALUE="${OR_STACK_HOSTNAME:-localhost}"
+VALUES_DIR="${OR_STACK_VALUES_DIR:-}"
+TIMEOUT="${OR_STACK_TIMEOUT:-$DEFAULT_TIMEOUT}"
+
+usage() {
+  cat <<'EOF'
+Manage an OpenRemote stack in its own Kubernetes namespace.
+
+Usage:
+  or-stack apply --name <name> --kube-context <context> --target <local|eks> [options]
+  or-stack status --name <name> --kube-context <context>
+
+Commands:
+  apply                 Create the stack namespace and install or upgrade the
+                        internal OpenRemote components.
+  status                Show releases and namespaced stack resources.
+
+Options:
+  --name <name>         Stack name and Kubernetes namespace. Env: OR_STACK_NAME.
+  --kube-context <c>    Kubernetes context to target. Env: OR_STACK_KUBE_CONTEXT.
+  --target <target>     Target profile: local or eks. Env: OR_STACK_TARGET.
+                        Required by apply.
+  --hostname <host>     Public hostname passed to Manager and Keycloak.
+                        Env: OR_STACK_HOSTNAME. Default: localhost.
+  --values-dir <path>   Optional directory containing per-component overrides:
+                        or-setup.yaml, postgresql.yaml, keycloak.yaml, and
+                        manager.yaml. Env: OR_STACK_VALUES_DIR.
+  --timeout <duration>  Helm wait timeout. Env: OR_STACK_TIMEOUT. Default: 10m.
+  -h, --help            Show this help.
+
+The stack name is also its namespace. Helm release names remain stable within
+that namespace so component service discovery continues to use the names
+postgresql, keycloak, and manager.
+
+This first phase manages internal, namespaced resources only. It does not
+configure an Ingress or proxy, create DNS records or certificates, make AWS
+calls, uninstall releases, delete PVCs, or delete namespaces.
+EOF
+}
+
+log() {
+  printf '[or-stack] %s\n' "$*"
+}
+
+die() {
+  printf '[or-stack] ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || die "Required command '$1' was not found in PATH."
+}
+
+parse_arguments() {
+  if [ "$#" -eq 0 ]; then
+    usage >&2
+    exit 1
+  fi
+
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    apply|status)
+      COMMAND="$1"
+      shift
+      ;;
+    *)
+      die "Unknown command '$1'. Run with --help for usage."
+      ;;
+  esac
+
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --name)
+        [ "$#" -ge 2 ] || die "Option --name requires a value."
+        STACK_NAME="$2"
+        shift 2
+        ;;
+      --kube-context)
+        [ "$#" -ge 2 ] || die "Option --kube-context requires a value."
+        KUBE_CONTEXT="$2"
+        shift 2
+        ;;
+      --target)
+        [ "$#" -ge 2 ] || die "Option --target requires a value."
+        TARGET="$2"
+        shift 2
+        ;;
+      --hostname)
+        [ "$#" -ge 2 ] || die "Option --hostname requires a value."
+        HOSTNAME_VALUE="$2"
+        shift 2
+        ;;
+      --values-dir)
+        [ "$#" -ge 2 ] || die "Option --values-dir requires a value."
+        VALUES_DIR="$2"
+        shift 2
+        ;;
+      --timeout)
+        [ "$#" -ge 2 ] || die "Option --timeout requires a value."
+        TIMEOUT="$2"
+        shift 2
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        die "Unknown option '$1'. Run with --help for usage."
+        ;;
+    esac
+  done
+}
+
+validate_stack_name() {
+  [ -n "$STACK_NAME" ] || die "A stack name is required; use --name."
+  [ "${#STACK_NAME}" -le 63 ] || die "Stack name must contain at most 63 characters."
+
+  if [[ ! "$STACK_NAME" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
+    die "Stack name must be a lowercase Kubernetes namespace name."
+  fi
+
+  case "$STACK_NAME" in
+    default|kube-system|kube-public|kube-node-lease)
+      die "Namespace '$STACK_NAME' is reserved and cannot be used as a stack name."
+      ;;
+  esac
+}
+
+validate_common_options() {
+  validate_stack_name
+  [ -n "$KUBE_CONTEXT" ] || die "A Kubernetes context is required; use --kube-context."
+}
+
+validate_apply_options() {
+  validate_target
+  [ -n "$HOSTNAME_VALUE" ] || die "Hostname cannot be empty."
+  [ "${#HOSTNAME_VALUE}" -le 253 ] || die "Hostname must contain at most 253 characters."
+  if [[ ! "$HOSTNAME_VALUE" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$ ]]; then
+    die "Hostname must be a lowercase DNS name."
+  fi
+  [ -n "$TIMEOUT" ] || die "Timeout cannot be empty."
+
+  if [ -n "$VALUES_DIR" ] && [ ! -d "$VALUES_DIR" ]; then
+    die "Values directory '$VALUES_DIR' does not exist."
+  fi
+}
+
+validate_target() {
+  [ -n "$TARGET" ] || die "A target is required for apply; use --target local or --target eks."
+
+  case "$TARGET" in
+    local|eks)
+      ;;
+    *)
+      die "Unsupported target '$TARGET'; expected local or eks."
+      ;;
+  esac
+}
+
+require_kube_context() {
+  local configured_context
+
+  configured_context="$(kubectl config get-contexts "$KUBE_CONTEXT" -o name 2>/dev/null || true)"
+  [ "$configured_context" = "$KUBE_CONTEXT" ] || die \
+    "Kubernetes context '$KUBE_CONTEXT' does not exist."
+}
+
+ensure_namespace() {
+  if kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" >/dev/null 2>&1; then
+    log "Using namespace '$STACK_NAME'."
+  else
+    log "Creating namespace '$STACK_NAME'."
+    kubectl --context "$KUBE_CONTEXT" create namespace "$STACK_NAME"
+  fi
+
+  kubectl --context "$KUBE_CONTEXT" label namespace "$STACK_NAME" \
+    app.kubernetes.io/part-of=openremote \
+    "openremote.io/stack=$STACK_NAME" \
+    --overwrite >/dev/null
+}
+
+validate_target_cluster() {
+  if [ "$TARGET" = "eks" ]; then
+    kubectl --context "$KUBE_CONTEXT" get storageclass openremote-ebs >/dev/null 2>&1 || die \
+      "StorageClass 'openremote-ebs' is not installed in context '$KUBE_CONTEXT'."
+    kubectl --context "$KUBE_CONTEXT" get csidriver ebs.csi.aws.com >/dev/null 2>&1 || die \
+      "EBS CSI driver 'ebs.csi.aws.com' is not installed in context '$KUBE_CONTEXT'."
+  fi
+}
+
+helm_apply() {
+  local component="$1"
+  shift
+  local chart="$KUBERNETES_DIR/$component"
+  local target_values="$TARGETS_DIR/$TARGET/$component.yaml"
+  local stack_values=""
+  local helm_args=(
+    upgrade --install "$component" "$chart"
+    --kube-context "$KUBE_CONTEXT"
+    --namespace "$STACK_NAME"
+  )
+
+  if [ -f "$target_values" ]; then
+    helm_args+=(--values "$target_values")
+  fi
+
+  if [ -n "$VALUES_DIR" ]; then
+    stack_values="$VALUES_DIR/$component.yaml"
+    if [ -f "$stack_values" ]; then
+      helm_args+=(--values "$stack_values")
+    fi
+  fi
+
+  helm_args+=("$@" --wait --timeout "$TIMEOUT")
+
+  log "Applying Helm release '$component'."
+  helm "${helm_args[@]}"
+}
+
+apply_stack() {
+  require_command helm
+  require_command kubectl
+  require_kube_context
+  validate_target_cluster
+  ensure_namespace
+
+  helm_apply or-setup
+  helm_apply postgresql
+  helm_apply keycloak --set-string "or.hostname=$HOSTNAME_VALUE"
+  helm_apply manager --set-string "or.hostname=$HOSTNAME_VALUE"
+
+  log "Stack '$STACK_NAME' is applied in context '$KUBE_CONTEXT'."
+  log "External routing is not managed by this first-phase command."
+}
+
+show_stack_status() {
+  require_command helm
+  require_command kubectl
+  require_kube_context
+
+  kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" >/dev/null 2>&1 || die \
+    "Stack namespace '$STACK_NAME' does not exist in context '$KUBE_CONTEXT'."
+
+  log "Helm releases"
+  helm list --kube-context "$KUBE_CONTEXT" --namespace "$STACK_NAME"
+
+  log "Workloads"
+  kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+    get deployments,statefulsets,pods -o wide
+
+  log "Networking"
+  kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+    get services,ingresses
+
+  log "Persistent storage"
+  kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+    get persistentvolumeclaims
+}
+
+main() {
+  parse_arguments "$@"
+  validate_common_options
+
+  case "$COMMAND" in
+    apply)
+      validate_apply_options
+      apply_stack
+      ;;
+    status)
+      show_stack_status
+      ;;
+  esac
+}
+
+main "$@"

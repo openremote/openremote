@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+set -eu
+
+printf 'kubectl' >> "$OR_STACK_TEST_LOG"
+for argument in "$@"; do
+  printf '\t%s' "$argument" >> "$OR_STACK_TEST_LOG"
+done
+printf '\n' >> "$OR_STACK_TEST_LOG"
+
+if [ "${1:-}" = "config" ] && [ "${2:-}" = "get-contexts" ]; then
+  if [ "${3:-}" = "${OR_STACK_TEST_CONTEXT:-test-context}" ]; then
+    printf '%s\n' "$3"
+  fi
+  exit 0
+fi
+
+arguments=" $* "
+case "$arguments" in
+  *" get namespace "*)
+    if [ "${OR_STACK_TEST_NAMESPACE_EXISTS:-false}" = "true" ]; then
+      exit 0
+    fi
+    exit 1
+    ;;
+  *" get storageclass openremote-ebs "*)
+    [ "${OR_STACK_TEST_EKS_STORAGE:-true}" = "true" ]
+    ;;
+  *" get csidriver ebs.csi.aws.com "*)
+    [ "${OR_STACK_TEST_EKS_CSI:-true}" = "true" ]
+    ;;
+esac
+
+exit 0

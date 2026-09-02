@@ -5,6 +5,9 @@ Balancer Controller, and the `openremote-ebs` StorageClass. It does not deploy
 or delete OpenRemote stacks, stack namespaces, certificates, DNS records, or
 stack data volumes.
 
+Use `kubernetes/or-stack` to install and inspect namespaced OpenRemote stacks
+after the shared cluster is ready.
+
 The current implementation uses the existing `kubernetes/cluster.yaml`
 `eksctl` configuration. This boundary is intended to remain stable when EKS
 infrastructure management moves from `eksctl` to CloudFormation.
