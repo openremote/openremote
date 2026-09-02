@@ -995,7 +995,7 @@ export class OrAttributeBarChart extends OrElement {
     const recommendedTicks = this._chartElem?.clientWidth ? this._chartElem.clientWidth / 50 : Number.MAX_SAFE_INTEGER;
     const maxTicks = Math.floor(recommendedTicks * 1.5);
     const splitNumber = Math.max(1, Math.min(xAxisTicks, maxTicks));
-    const [axisMin, axisMax] = getChartAxisBounds(this._startOfPeriod, this._endOfPeriod, this._data);
+    const [axisMin, axisMax] = getChartAxisBounds(this._startOfPeriod!, this._endOfPeriod!, this._data);
     this._chart?.setOption({
       xAxis: {
         show: splitNumber > 1,
@@ -1394,6 +1394,7 @@ export class OrAttributeBarChart extends OrElement {
     const recommendedTicks = this._chartElem?.clientWidth ? this._chartElem.clientWidth / 50 : Number.MAX_SAFE_INTEGER;
     const maxTicks = Math.floor(recommendedTicks * 1.5);
     const splitNumber = Math.max(1, Math.min(xAxisTicks, maxTicks));
+    const [axisMin, axisMax] = getChartAxisBounds(this._startOfPeriod!, this._endOfPeriod!, this._data);
 
     // Update chart
     this._chart.setOption({

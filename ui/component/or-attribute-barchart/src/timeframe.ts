@@ -49,7 +49,7 @@ export function shiftTimeframe(
 
   const start = moment(currentStart);
   const end = moment(currentEnd);
-  direction === "previous" ? start.subtract(value, normalizedUnit) : start.add(value, normalizedUnit);
-  direction === "previous" ? end.subtract(value, normalizedUnit) : end.add(value, normalizedUnit);
+  direction === "previous" ? start.subtract(value, unit) : start.add(value, unit);
+  direction === "previous" ? end.subtract(value, unit) : end.add(value, unit);
   return [start.toDate(), end.toDate()];
 }
