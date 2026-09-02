@@ -20,6 +20,7 @@ import { html, css, type TemplateResult } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
+import "@openremote/or-vaadin-components/or-vaadin-toggle";
 import type { PushNotificationMessage, PushNotificationButton } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { until } from "lit/directives/until.js";
@@ -132,10 +133,8 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
 
         <!-- Open in browser switch -->
         <or-vaadin-toggle
-          id="push-browser-toggle"
-          ?checked="${message.action?.openInBrowser ?? false}"
-          ?readonly=${this.readonly}
-          @change="${(ev: Event) => onchange(ev, message).then((msg) => this._onOpenInBrowserChange(this._pushBrowserToggleElem!, msg))}"
+          ?checked="${message.action?.openInBrowser}"
+          @change="${(ev: Event) => onchange(ev, message).then((msg) => this._onOpenInBrowserChange(ev, msg))}"
         >
           <or-translate slot="label" value="openInBrowser"></or-translate>
         </or-vaadin-toggle>
@@ -193,9 +192,10 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) im
   /**
    * HTML callback function when the "open in browser switch" of a notification has changed.
    */
-  protected _onOpenInBrowserChange(elem: HTMLInputElement, message: PushNotificationMessage) {
-    message.action ??= {};
-    message.action.openInBrowser = elem.checkValidity() ? elem.checked : undefined;
+  protected _onOpenInBrowserChange(ev: Event, message: PushNotificationMessage) {
+    message.action = message.action || {};
+    // Read from ev.target (the native input) because this runs after an async gap, where ev.currentTarget is already null.
+    message.action.openInBrowser = (ev.target as HTMLInputElement).checked;
     this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
   }
 

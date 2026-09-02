@@ -23,6 +23,7 @@ import {
   type Webhook,
   type OAuthPasswordGrant,
 } from "@openremote/model";
+import type { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import { i18next } from "@openremote/or-translate";
 import { css, html, type TemplateResult } from "lit";
 import { OrElement } from "@openremote/or-element";
@@ -172,9 +173,9 @@ export class OrRuleFormWebhook extends OrElement implements OrRuleForm {
             style="display: flex; flex-direction: column; gap: 10px; margin-bottom: ${this.webhook.oAuthGrant || this.webhook.usernamePassword ? "28px" : "0"};"
           >
             <or-vaadin-toggle
-              ?checked=${!!this.webhook.oAuthGrant || !!this.webhook.usernamePassword}
+              ?checked="${!!this.webhook.oAuthGrant || !!this.webhook.usernamePassword}"
               ?readonly=${this.readonly}
-              @change=${(ev: Event) => {
+              @change="${(ev: Event) => {
                 this.webhook.usernamePassword = (ev.currentTarget as OrVaadinToggle).checked
                   ? {
                       username: "admin",
@@ -182,7 +183,7 @@ export class OrRuleFormWebhook extends OrElement implements OrRuleForm {
                     }
                   : undefined;
                 this.notifyWebhookUpdate();
-              }}
+              }}"
             >
               <or-translate slot="label" value="requiresAuthorization"></or-translate>
             </or-vaadin-toggle>
@@ -213,9 +214,9 @@ export class OrRuleFormWebhook extends OrElement implements OrRuleForm {
               this.webhook.httpMethod != HTTPMethod.GET && this.webhook.httpMethod != HTTPMethod.DELETE,
               () => html`
                 <or-vaadin-toggle
-                  ?checked=${this.webhook.payload != undefined}
+                  ?checked="${this.webhook.payload != undefined}"
                   ?readonly=${this.readonly}
-                  @change=${(ev: Event) => {
+                  @change="${(ev: Event) => {
                     this.webhook.payload = (ev.currentTarget as OrVaadinToggle).checked
                       ? JSON.stringify(
                           {
@@ -227,7 +228,7 @@ export class OrRuleFormWebhook extends OrElement implements OrRuleForm {
                         )
                       : undefined;
                     this.notifyWebhookUpdate();
-                  }}
+                  }}"
                 >
                   <or-translate slot="label" value="includeBodyInRequest"></or-translate>
                 </or-vaadin-toggle>
