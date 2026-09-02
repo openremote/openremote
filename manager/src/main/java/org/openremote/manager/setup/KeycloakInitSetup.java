@@ -63,5 +63,7 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         KEYCLOAK_CLIENT_ID,
         ClientRole.READ.getValue(),
         ClientRole.WRITE.getValue());
+
+    keycloakProvider.onSetupDone(container);
   }
 }
