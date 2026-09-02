@@ -23,7 +23,6 @@ import {
   type Webhook,
   type OAuthPasswordGrant,
 } from "@openremote/model";
-import type { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import { i18next } from "@openremote/or-translate";
 import { css, html, type TemplateResult } from "lit";
 import { OrElement } from "@openremote/or-element";

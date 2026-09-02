@@ -102,7 +102,7 @@ export class OrRuleJsonDialog extends OrElement {
   }
 
   protected _onFormValueChange(ev?: OrRulesJsonRuleChangedEvent) {
-    ev?.stopPropagation();
+    ev?.stopPropagation(); // Don't make parent elements aware of form changes; only upon closing the dialog.
     this._invalid =
       (this._childNodes
         ?.map((c) => c as unknown as OrRuleForm | HTMLInputElement)
