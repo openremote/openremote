@@ -16,8 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.Converter;
 import cz.habarta.typescript.generator.compiler.ModelCompiler;
 import cz.habarta.typescript.generator.compiler.ModelTransformer;
 import cz.habarta.typescript.generator.compiler.SymbolTable;
@@ -32,6 +30,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.util.Converter;
 
 /**
  * Extension for applying {@link JsonSerialize} annotation. Supports:

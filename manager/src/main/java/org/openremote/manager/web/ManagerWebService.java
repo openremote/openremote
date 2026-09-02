@@ -20,13 +20,11 @@ package org.openremote.manager.web;
 
 import static org.openremote.model.util.MapAccess.getString;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.core.util.Yaml;
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.security.*;
 import io.undertow.server.handlers.RedirectHandler;
 import jakarta.ws.rs.core.Application;
 import java.io.IOException;
@@ -47,16 +45,6 @@ import org.openremote.model.util.Config;
 import org.openremote.model.util.TextUtil;
 
 public class ManagerWebService extends WebService {
-
-  private abstract static class ServerVariableMixin {
-    @JsonProperty("default")
-    List<String> _default;
-  }
-
-  private abstract static class StringSchemaMixin {
-    @JsonProperty("enum")
-    protected List<String> _enum;
-  }
 
   public static final int PRIORITY = LOW_PRIORITY + 100;
   public static final String OR_APP_DOCROOT = "OR_APP_DOCROOT";

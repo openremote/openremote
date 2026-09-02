@@ -27,13 +27,14 @@ import org.openremote.model.event.shared.SharedEvent;
 /** This event is used in response to a {@link ReadAssetsEvent}. */
 public class AssetsEvent extends SharedEvent {
 
-  protected List<Asset<?>> assets;
+  @JsonProperty protected List<Asset<?>> assets;
 
   @JsonCreator
   public AssetsEvent(@JsonProperty("assets") List<Asset<?>> assets) {
     this.assets = assets;
   }
 
+  @JsonProperty
   public List<Asset<?>> getAssets() {
     return assets;
   }

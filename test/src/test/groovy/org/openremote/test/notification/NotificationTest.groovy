@@ -19,7 +19,7 @@
 package org.openremote.test.notification
 
 
-import com.fasterxml.jackson.databind.node.TextNode
+import tools.jackson.databind.node.StringNode
 import jakarta.mail.Message
 import jakarta.mail.internet.InternetAddress
 import jakarta.ws.rs.BadRequestException
@@ -462,7 +462,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
     when: "the admin user marks a Building console notification as delivered and requests the notifications for Building consoles"
     adminNotificationResource.notificationAcknowledged(null, testuser3Console1.id, notifications.find {n ->
       n.targetId == testuser3Console1.id && n.deliveredOn != null
-    }.id, new TextNode("dismissed"))
+    }.id, new StringNode("dismissed"))
 
     then: "the notification should have been updated"
     conditions.eventually {

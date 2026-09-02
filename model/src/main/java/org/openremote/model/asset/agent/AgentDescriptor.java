@@ -18,17 +18,18 @@
  */
 package org.openremote.model.asset.agent;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.protocol.ProtocolAssetImport;
 import org.openremote.model.protocol.ProtocolInstanceDiscovery;
 import org.openremote.model.util.TsIgnoreTypeParams;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.util.StdConverter;
 
 /** Special type of {@link AssetDescriptor} that describes an agent {@link Asset}. */
 @JsonTypeName("agent")
@@ -52,6 +53,16 @@ public class AgentDescriptor<
 
   @JsonSerialize(converter = DiscoveryBooleanConverter.class)
   protected Class<? extends ProtocolInstanceDiscovery> instanceDiscoveryProvider;
+
+  @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+  protected AgentDescriptor(
+      @JsonProperty("name") String name,
+      @JsonProperty("icon") String icon,
+      @JsonProperty("colour") String colour,
+      @JsonProperty("type") Class<T> type) {
+    super(name, icon, colour);
+    this.type = type;
+  }
 
   public AgentDescriptor(Class<T> agentClass, Class<U> protocolClass, Class<V> agentLinkClass) {
     this(agentClass, protocolClass, agentLinkClass, null);

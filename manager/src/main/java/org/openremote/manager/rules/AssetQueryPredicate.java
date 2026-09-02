@@ -18,7 +18,6 @@
  */
 package org.openremote.manager.rules;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -35,6 +34,7 @@ import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.NameValueHolder;
+import tools.jackson.databind.JsonNode;
 
 /** Test an {@link AttributeInfo} with a {@link AssetQuery}. */
 public class AssetQueryPredicate implements Predicate<AttributeInfo> {

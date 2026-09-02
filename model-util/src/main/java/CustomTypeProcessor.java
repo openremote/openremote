@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import com.fasterxml.jackson.databind.JsonNode;
 import cz.habarta.typescript.generator.TsType;
 import cz.habarta.typescript.generator.TypeProcessor;
 import cz.habarta.typescript.generator.util.Utils;
@@ -25,14 +24,14 @@ import java.lang.reflect.Type;
 import java.util.*;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.TsIgnoreTypeParams;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Does some custom processing for our specific model and fixes any anomalies in the plugin itself:
  *
  * <ul>
  *   <li>Ignore types/super types annotated with {@link TsIgnore}
- *   <li>Will ignore types with a super type in the "com.fasterxml.jackson" package excluding those
- *       implementing {@link com.fasterxml.jackson.databind.JsonNode}
+ *   <li>Will ignore Jackson implementation types excluding those implementing {@link JsonNode}
  *   <li>Removes some or all type params from classes annotated with {@link TsIgnoreTypeParams}
  *   <li>Special processing for AssetModelInfo meta item value descriptors as JsonSerialize
  *       extension doesn't support @JsonSerialize(contentConverter=...)
@@ -40,7 +39,7 @@ import org.openremote.model.util.TsIgnoreTypeParams;
  */
 public class CustomTypeProcessor implements TypeProcessor {
 
-  public static final String JACKSON_PACKAGE = "com.fasterxml.jackson";
+  public static final String[] JACKSON_PACKAGES = {"com.fasterxml.jackson", "tools.jackson"};
 
   @Override
   public Result processType(Type javaType, Context context) {
@@ -61,7 +60,7 @@ public class CustomTypeProcessor implements TypeProcessor {
         return null;
       }
 
-      if (rawClass.getName().startsWith(JACKSON_PACKAGE)) {
+      if (isJacksonType(rawClass)) {
         return new Result(TsType.Any);
       }
       rawClass = rawClass.getSuperclass();
@@ -113,5 +112,10 @@ public class CustomTypeProcessor implements TypeProcessor {
     }
 
     return null;
+  }
+
+  protected static boolean isJacksonType(Class<?> rawClass) {
+    return Arrays.stream(JACKSON_PACKAGES)
+        .anyMatch(packageName -> rawClass.getName().startsWith(packageName));
   }
 }

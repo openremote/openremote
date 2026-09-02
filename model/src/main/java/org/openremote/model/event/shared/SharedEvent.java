@@ -42,7 +42,7 @@ import org.openremote.model.syslog.SyslogEvent;
   @JsonSubTypes.Type(value = AttributeEvent.class, name = "attribute"),
   @JsonSubTypes.Type(
       value = AssetPredictedDatapointEvent.class,
-      name = "asset-predicted-data-points"),
+      name = "asset-predicted-datapoint"),
   @JsonSubTypes.Type(value = AssetEvent.class, name = "asset"),
   @JsonSubTypes.Type(value = AssetsEvent.class, name = "assets"),
   @JsonSubTypes.Type(value = ReadAttributeEvent.class, name = "read-asset-attribute"),

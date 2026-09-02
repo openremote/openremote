@@ -18,7 +18,6 @@
  */
 package org.openremote.manager.map;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.ServerErrorException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -32,6 +31,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapConfig;
 import org.openremote.model.map.MapResource;
+import tools.jackson.databind.node.ObjectNode;
 
 public class MapResourceImpl extends WebResource implements MapResource {
 

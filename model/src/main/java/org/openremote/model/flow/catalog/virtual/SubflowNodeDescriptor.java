@@ -18,12 +18,12 @@
  */
 package org.openremote.model.flow.catalog.virtual;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.function.Supplier;
 import org.openremote.model.flow.Node;
 import org.openremote.model.flow.NodeColor;
 import org.openremote.model.flow.catalog.CatalogCategory;
 import org.openremote.model.flow.catalog.WidgetNodeDescriptor;
+import tools.jackson.databind.node.ObjectNode;
 
 public class SubflowNodeDescriptor extends WidgetNodeDescriptor {
 

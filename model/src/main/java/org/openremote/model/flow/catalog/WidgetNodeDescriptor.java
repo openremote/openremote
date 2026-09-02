@@ -18,13 +18,13 @@
  */
 package org.openremote.model.flow.catalog;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 import org.openremote.model.flow.Node;
 import org.openremote.model.flow.Slot;
 import org.openremote.model.util.ValueUtil;
+import tools.jackson.databind.node.ObjectNode;
 
 /** TODO Deploy this as a JSON file + some HTML files to create a widget */
 public abstract class WidgetNodeDescriptor extends ConsoleNodeDescriptor {

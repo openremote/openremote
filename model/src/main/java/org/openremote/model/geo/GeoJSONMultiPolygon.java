@@ -21,12 +21,12 @@ package org.openremote.model.geo;
 import static org.openremote.model.geo.GeoJSONMultiPolygon.TYPE;
 
 import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.StdConverter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.locationtech.jts.geom.Coordinate;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.util.StdConverter;
 
 /**
  * Represents a GeoJSON MultiPolygon geometry.
@@ -41,28 +41,17 @@ public class GeoJSONMultiPolygon extends GeoJSONGeometry {
 
     @Override
     public double[][][][] convert(List<List<Coordinate[]>> polygons) {
-      if (polygons == null || polygons.isEmpty()) {
-        return new double[0][][][];
-      }
+      return coordinatePolygonsToArray(polygons);
+    }
+  }
 
-      double[][][][] result = new double[polygons.size()][][][];
-      for (int i = 0; i < polygons.size(); i++) {
-        List<Coordinate[]> rings = polygons.get(i);
-        result[i] = new double[rings.size()][][];
-        for (int j = 0; j < rings.size(); j++) {
-          Coordinate[] ring = rings.get(j);
-          result[i][j] = new double[ring.length][];
-          for (int k = 0; k < ring.length; k++) {
-            Coordinate coord = ring[k];
-            if (Double.isNaN(coord.getZ())) {
-              result[i][j][k] = new double[] {coord.x, coord.y};
-            } else {
-              result[i][j][k] = new double[] {coord.x, coord.y, coord.getZ()};
-            }
-          }
-        }
-      }
-      return result;
+  public static class CoordinateListConverterJackson2
+      extends com.fasterxml.jackson.databind.util.StdConverter<
+          List<List<Coordinate[]>>, double[][][][]> {
+
+    @Override
+    public double[][][][] convert(List<List<Coordinate[]>> polygons) {
+      return coordinatePolygonsToArray(polygons);
     }
   }
 
@@ -71,7 +60,34 @@ public class GeoJSONMultiPolygon extends GeoJSONGeometry {
   @JsonProperty
   @JsonFormat(shape = JsonFormat.Shape.ARRAY)
   @JsonSerialize(converter = CoordinateListConverter.class)
+  @com.fasterxml.jackson.databind.annotation.JsonSerialize(
+      converter = CoordinateListConverterJackson2.class)
   protected List<List<Coordinate[]>> coordinates;
+
+  private static double[][][][] coordinatePolygonsToArray(List<List<Coordinate[]>> polygons) {
+    if (polygons == null || polygons.isEmpty()) {
+      return new double[0][][][];
+    }
+
+    double[][][][] result = new double[polygons.size()][][][];
+    for (int i = 0; i < polygons.size(); i++) {
+      List<Coordinate[]> rings = polygons.get(i);
+      result[i] = new double[rings.size()][][];
+      for (int j = 0; j < rings.size(); j++) {
+        Coordinate[] ring = rings.get(j);
+        result[i][j] = new double[ring.length][];
+        for (int k = 0; k < ring.length; k++) {
+          Coordinate coord = ring[k];
+          if (Double.isNaN(coord.getZ())) {
+            result[i][j][k] = new double[] {coord.x, coord.y};
+          } else {
+            result[i][j][k] = new double[] {coord.x, coord.y, coord.getZ()};
+          }
+        }
+      }
+    }
+    return result;
+  }
 
   @JsonCreator
   public GeoJSONMultiPolygon(@JsonProperty("coordinates") double[][][][] coordinates) {

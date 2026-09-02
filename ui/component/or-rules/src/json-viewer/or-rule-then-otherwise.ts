@@ -31,7 +31,6 @@ import {
   type SubMenuItem,
 } from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import {
-  type AbstractNotificationMessageUnion,
   AlarmSeverity,
   AlarmStatus,
   type Asset,
@@ -60,6 +59,8 @@ import "./or-rule-action-alarm";
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
 const ALARM_COLOR = "FC2D2D";
+
+type NotificationMessage = EmailNotificationMessage | LocalizedNotificationMessage | PushNotificationMessage;
 
 function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], selectedType?: string): SubMenuItem[] {
   let addAssetTypes = true;
@@ -661,7 +662,7 @@ class OrRuleThenOtherwise extends translate(i18next)(OrElement) {
         this.config?.notifications?.default?.defaultLanguage ||
         manager.config.defaultLanguage ||
         "en";
-      const languages: { [p: string]: AbstractNotificationMessageUnion } = {};
+      const languages: { [p: string]: NotificationMessage } = {};
       if (value === ActionType.EMAIL_LOCALIZED) {
         languages[locale] = {
           type: "email",

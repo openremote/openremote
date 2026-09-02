@@ -45,6 +45,7 @@ import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.ValueUtil;
 
 /**
  * Protocol for integrating with the OpenWeatherMap One Call 3.0 API.
@@ -257,7 +258,8 @@ public class OpenWeatherMapProtocol
   protected OpenWeatherMapResponse fetchWeatherData(String apiUrl) {
     try (Response response = WebTargetBuilder.getClient().target(apiUrl).request().get()) {
       if (response.getStatus() == 200) {
-        return response.readEntity(OpenWeatherMapResponse.class);
+        return ValueUtil.JSON.readValue(
+            response.readEntity(String.class), OpenWeatherMapResponse.class);
       } else if (response.getStatus() == 401) {
         LOG.warning(
             "API request was unauthorized, either the API key is invalid or the key does not have access to the One Call 3.0 API");

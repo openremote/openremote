@@ -21,7 +21,6 @@ package org.openremote.manager.datapoint;
 import static org.openremote.model.syslog.SyslogCategory.DATA;
 import static org.openremote.model.util.ValueUtil.JSON;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.NotSupportedException;
@@ -53,6 +52,7 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.value.MetaItemType;
+import tools.jackson.core.JacksonException;
 
 public class AssetDatapointResourceImpl extends ManagerWebResource
     implements AssetDatapointResource {
@@ -266,7 +266,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource
           HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"dataexport.zip\"");
 
       asyncResponse.resume(response);
-    } catch (JsonProcessingException ex) {
+    } catch (JacksonException ex) {
       asyncResponse.resume(new BadRequestException(ex));
     } catch (DatapointQueryTooLargeException dqex) {
       asyncResponse.resume(

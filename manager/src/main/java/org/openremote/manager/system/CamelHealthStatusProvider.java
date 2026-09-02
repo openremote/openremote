@@ -30,7 +30,6 @@ import org.apache.camel.support.service.BaseService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.util.ValueUtil;
 
 public class CamelHealthStatusProvider implements HealthStatusProvider {
 
@@ -43,10 +42,7 @@ public class CamelHealthStatusProvider implements HealthStatusProvider {
   }
 
   @Override
-  public void start(Container container) throws Exception {
-    // Add mixin for health check results
-    ValueUtil.JSON.addMixIn(HealthCheck.Result.class, HealthCheckResultMixin.class);
-  }
+  public void start(Container container) throws Exception {}
 
   @Override
   public void stop(Container container) throws Exception {}
@@ -74,8 +70,25 @@ public class CamelHealthStatusProvider implements HealthStatusProvider {
       endpointInfos.add(endpointInfo);
     }
 
-    result.put("healthChecks", HealthCheckHelper.invoke(brokerService.getContext()));
+    result.put(
+        "healthChecks",
+        HealthCheckHelper.invoke(brokerService.getContext()).stream()
+            .map(CamelHealthStatusProvider::getHealthCheckResult)
+            .toList());
     result.put("endpoints", endpointInfos);
+    return result;
+  }
+
+  protected static Map<String, Object> getHealthCheckResult(HealthCheck.Result healthCheckResult) {
+    Map<String, Object> result = new HashMap<>();
+    HealthCheck check = healthCheckResult.getCheck();
+
+    result.put("type", check.getClass().getSimpleName());
+    result.put("state", healthCheckResult.getState().name());
+    healthCheckResult.getMessage().ifPresent(message -> result.put("message", message));
+    healthCheckResult.getError().ifPresent(error -> result.put("error", error.toString()));
+    result.put("details", healthCheckResult.getDetails());
+
     return result;
   }
 }

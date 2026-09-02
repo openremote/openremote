@@ -20,11 +20,6 @@ package org.openremote.model.util;
 
 import static javax.tools.Diagnostic.Kind.*;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.nio.file.Files;
@@ -36,6 +31,11 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import org.openremote.model.util.JSONSchemaUtil.*;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
 
 public class I18nAnnotationProcessor extends AbstractProcessor {
 
@@ -152,9 +152,9 @@ public class I18nAnnotationProcessor extends AbstractProcessor {
         }
       }
       if (writeValue) {
-        node.set(keys[zeroIndexLength], new TextNode(entry.getValue()));
+        node.set(keys[zeroIndexLength], new StringNode(entry.getValue()));
       } else {
-        node.putIfAbsent(keys[zeroIndexLength], new TextNode(""));
+        node.putIfAbsent(keys[zeroIndexLength], new StringNode(""));
       }
     }
 

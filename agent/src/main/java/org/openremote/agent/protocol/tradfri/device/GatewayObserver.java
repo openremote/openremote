@@ -18,8 +18,6 @@
  */
 package org.openremote.agent.protocol.tradfri.device;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +25,8 @@ import org.openremote.agent.protocol.tradfri.device.event.EventHandler;
 import org.openremote.agent.protocol.tradfri.device.event.GatewayEvent;
 import org.openremote.agent.protocol.tradfri.util.ApiEndpoint;
 import org.openremote.agent.protocol.tradfri.util.CoapClient;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /** The class that observes an IKEA TRÅDFRI gateway to automagically detect changes */
 public class GatewayObserver extends Observer {
@@ -90,7 +90,7 @@ public class GatewayObserver extends Observer {
           called.add(eventHandler);
         }
       }
-    } catch (JsonProcessingException ignored) {
+    } catch (JacksonException ignored) {
     }
   }
 }

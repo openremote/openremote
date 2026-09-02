@@ -20,7 +20,12 @@ import { i18next, translate } from "@openremote/or-translate";
 import { type TemplateResult, css, html } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
-import type { AbstractNotificationMessageUnion, LocalizedNotificationMessage } from "@openremote/model";
+import type {
+  EmailNotificationMessage,
+  LocalizedNotificationMessage,
+  PushNotificationMessage,
+} from "@openremote/model";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { when } from "lit/directives/when.js";
@@ -31,6 +36,8 @@ import "./or-rule-form-push-notification";
 import ISO6391 from "iso-639-1";
 import { DefaultColor6 } from "@openremote/core";
 import type { SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
+
+type NotificationMessage = EmailNotificationMessage | LocalizedNotificationMessage | PushNotificationMessage;
 
 @customElement("or-rule-form-localized")
 export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
@@ -171,12 +178,16 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
         type: this.type,
       };
     }
-    const msg = message.languages[lang];
+    const msg = message.languages[lang] as NotificationMessage;
 
     if (msg.type === "push") {
-      return html` <or-rule-form-push-notification .message="${msg}"></or-rule-form-push-notification> `;
+      return html`
+        <or-rule-form-push-notification .message="${msg as PushNotificationMessage}"></or-rule-form-push-notification>
+      `;
     } else if (msg.type === "email") {
-      return html` <or-rule-form-email-message .message="${msg}"></or-rule-form-email-message> `;
+      return html`
+        <or-rule-form-email-message .message="${msg as EmailNotificationMessage}"></or-rule-form-email-message>
+      `;
     } else {
       return html` <or-translate .value="${"errorOccurred"}"></or-translate> `;
     }
@@ -213,12 +224,14 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
         if (!this.message?.languages?.[lang]) {
           return true;
         }
-        const msg = this.message.languages[lang];
+        const msg = this.message.languages[lang] as NotificationMessage;
         switch (msg.type) {
           case "email":
-            return msg.subject && msg.html;
+            const emailMsg = msg as EmailNotificationMessage;
+            return emailMsg.subject && emailMsg.html;
           case "push":
-            return msg.title && msg.body;
+            const pushMsg = msg as PushNotificationMessage;
+            return pushMsg.title && pushMsg.body;
           case "localized":
             return false;
           default:
@@ -242,7 +255,7 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
   protected _cleanNotificationMessage() {
     if (this.message?.languages) {
       const languageEntries = Object.entries(this.message.languages).filter(([lang, msg]) => {
-        const userDefinedFields = Object.entries(msg).filter((entry) => {
+        const userDefinedFields = Object.entries(msg as NotificationMessage).filter((entry) => {
           if (entry[0] === "type") return false;
           if (entry[1] == null) return false; // key has no value
           if (typeof entry[1] === "string" && entry[1].length === 0) return false;
@@ -265,7 +278,7 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
         }
         return true;
       });
-      this.message.languages = Object.fromEntries(languageEntries) as { [p: string]: AbstractNotificationMessageUnion };
+      this.message.languages = Object.fromEntries(languageEntries) as { [p: string]: NotificationMessage };
     }
   }
 }

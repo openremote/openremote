@@ -7,9 +7,8 @@ plugins {
 
 dependencies {
   api libs.jacksonDatabind
-  api libs.jacksonDatatypeJdk8
-  api libs.jacksonDatatypeJsr310
   api libs.jacksonModuleParameterNames
+  api libs.jackson3Databind
 
   api libs.hibernateCore
   api libs.hibernateValidator

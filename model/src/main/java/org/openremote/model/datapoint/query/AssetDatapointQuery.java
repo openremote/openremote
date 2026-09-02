@@ -20,13 +20,13 @@ package org.openremote.model.datapoint.query;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import org.openremote.model.attribute.AttributeRef;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AssetDatapointAllQuery.class, name = "all"),
@@ -68,6 +68,8 @@ public abstract class AssetDatapointQuery implements Serializable {
   public long toTimestamp;
 
   @JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializer.class)
+  @com.fasterxml.jackson.databind.annotation.JsonDeserialize(
+      using = AssetDatapointQueryLocalDateTimeDeserializerJackson2.class)
   @Schema(
       description =
           "Inclusive lower range bound for `all`, `interval`, and `lttb` as an ISO local or "
@@ -78,6 +80,8 @@ public abstract class AssetDatapointQuery implements Serializable {
   public LocalDateTime fromTime;
 
   @JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializer.class)
+  @com.fasterxml.jackson.databind.annotation.JsonDeserialize(
+      using = AssetDatapointQueryLocalDateTimeDeserializerJackson2.class)
   @Schema(
       description =
           "Inclusive upper range bound for `all`, `interval`, and `lttb` as an ISO local or "

@@ -23,7 +23,6 @@ import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVEN
 import static org.openremote.model.query.AssetQuery.Access;
 import static org.openremote.model.value.MetaItemType.*;
 
-import com.fasterxml.jackson.databind.node.NullNode;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.BadRequestException;
@@ -55,6 +54,7 @@ import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
+import tools.jackson.databind.node.NullNode;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 

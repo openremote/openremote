@@ -21,7 +21,6 @@ package org.openremote.manager.datapoint;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static org.openremote.model.util.MapAccess.getInteger;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import jakarta.validation.constraints.NotNull;
@@ -56,6 +55,7 @@ import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Base class for all classes that store and retrieve {@link

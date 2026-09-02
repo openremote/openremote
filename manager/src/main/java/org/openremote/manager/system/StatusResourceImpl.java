@@ -18,7 +18,6 @@
  */
 package org.openremote.manager.system;
 
-import com.fasterxml.jackson.databind.node.NullNode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +26,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
+import tools.jackson.databind.node.NullNode;
 
 public class StatusResourceImpl implements StatusResource {
 

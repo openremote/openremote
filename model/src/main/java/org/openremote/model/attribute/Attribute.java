@@ -20,25 +20,10 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nonnull;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -48,6 +33,21 @@ import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.databind.type.TypeFactory;
 
 /** Stores a named value with associated {@link MetaItem}s. */
 @JsonDeserialize(using = Attribute.AttributeDeserializer.class)
@@ -64,13 +64,13 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
   public static class AttributeDeserializer extends StdDeserializer<Attribute<?>> {
 
     protected static final JavaType META_MAP_TYPE =
-        TypeFactory.defaultInstance().constructType(MetaMap.class);
+        TypeFactory.createDefaultInstance().constructType(MetaMap.class);
     protected static final JavaType OBJECT_TYPE =
-        TypeFactory.defaultInstance().constructType(Object.class);
+        TypeFactory.createDefaultInstance().constructType(Object.class);
     public static final System.Logger LOG =
         System.getLogger(
             AttributeDeserializer.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES);
-    protected static JsonDeserializer<Object> metaDeserialiser = null;
+    protected static ValueDeserializer<Object> metaDeserialiser = null;
 
     protected AttributeDeserializer() {
       super(Attribute.class);
@@ -78,12 +78,12 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     public static Object deserialiseValue(
         ValueDescriptor<?> valueDescriptor, JsonParser jp, DeserializationContext ctxt)
-        throws IOException {
-      JsonDeserializer<Object> valueTypeDeserializer;
+        throws JacksonException {
+      ValueDeserializer<Object> valueTypeDeserializer;
       if (valueDescriptor != null) {
         valueTypeDeserializer =
             ctxt.findRootValueDeserializer(
-                TypeFactory.defaultInstance().constructType(valueDescriptor.getType()));
+                TypeFactory.createDefaultInstance().constructType(valueDescriptor.getType()));
       } else {
         valueTypeDeserializer = ctxt.findRootValueDeserializer(OBJECT_TYPE);
       }
@@ -92,7 +92,8 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public Attribute<?> deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+    public Attribute<?> deserialize(JsonParser jp, DeserializationContext ctxt)
+        throws JacksonException {
       if (!jp.isExpectedStartObjectToken()) {
         throw new InvalidFormatException(
             jp, "Attribute must be an object", jp.nextValue(), Attribute.class);
@@ -113,7 +114,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
       while (jp.nextToken() != JsonToken.END_OBJECT) {
         String propName = jp.currentName();
-        if (jp.currentToken() == JsonToken.FIELD_NAME) {
+        if (jp.currentToken() == JsonToken.PROPERTY_NAME) {
           jp.nextToken();
         }
         if (jp.currentToken() == JsonToken.VALUE_NULL) {
@@ -140,7 +141,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
           case "name" -> {
             String name = jp.getValueAsString();
             if (!name.equals(attribute.name)) {
-              throw new JsonParseException("Attribute name doesn't match attribute map key");
+              throw new StreamReadException("Attribute name doesn't match attribute map key");
             }
           }
           case "timestamp" -> attribute.timestamp = jp.getValueAsLong();
@@ -156,7 +157,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
               // We don't know the type so store the value as a string and hydrate on demand when
               // value
               // type may be known (this occurs when hydrating assets from the DB)
-              attribute.valueStr = jp.getCodec().readTree(jp).toString();
+              attribute.valueStr = ctxt.readTree(jp).toString();
             } else {
               try {
                 ((Attribute) attribute).value = deserialiseValue(valueDescriptor, jp, ctxt);
@@ -169,7 +170,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
       //            if (valueBuffer != null) {
       //                if (!typeFound) {
-      //                    throw new JsonParseException("Asset type is missing");
+      //                    throw new StreamReadException("Asset type is missing");
       //                }
       //
       //                attribute.value = deserialiseValue(attribute.getType(),
@@ -190,24 +191,24 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     }
 
     @Override
-    public void serialize(Attribute value, JsonGenerator gen, SerializerProvider provider)
-        throws IOException {
+    public void serialize(Attribute value, JsonGenerator gen, SerializationContext context)
+        throws JacksonException {
       gen.writeStartObject();
-      gen.writeFieldName("name");
+      gen.writeName("name");
       gen.writeString(value.getName());
       if (value.getType() != null) {
-        gen.writeFieldName("type");
+        gen.writeName("type");
         gen.writeString(value.getType().getName());
       }
-      provider.defaultSerializeField("meta", value.meta, gen);
+      context.defaultSerializeProperty("meta", value.meta, gen);
       if (value.valueStr != null) {
-        gen.writeFieldName("value");
+        gen.writeName("value");
         gen.writeRawValue(value.valueStr);
       } else {
-        provider.defaultSerializeField("value", value.value, gen);
+        context.defaultSerializeProperty("value", value.value, gen);
       }
       if (value.timestamp > 0) {
-        gen.writeFieldName("timestamp");
+        gen.writeName("timestamp");
         gen.writeNumber(value.timestamp);
       }
       gen.writeEndObject();

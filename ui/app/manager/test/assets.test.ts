@@ -196,7 +196,12 @@ test.describe("Parent asset", () => {
 
     await page.getByText("Parent Edit").getByRole("button").click();
     await page.getByLabel("Select parent asset").getByText("Parent").click();
-    await page.getByLabel("Select parent asset").getByRole("button", { name: "OK" }).click();
+    await page
+      .getByLabel("Select parent asset")
+      .getByRole("button", {
+        name: "OK",
+      })
+      .click();
     await page.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByRole("textbox", { name: "Parent" })).toHaveValue("Parent");
@@ -217,7 +222,12 @@ test.describe("Parent asset", () => {
     await assetViewer.switchMode("modify");
 
     await page.getByText("Parent Edit").getByRole("button").click();
-    await page.getByLabel("Select parent asset").getByRole("button", { name: "NONE" }).click();
+    await page
+      .getByLabel("Select parent asset")
+      .getByRole("button", {
+        name: "NONE",
+      })
+      .click();
     await page.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByRole("textbox", { name: "Parent" })).toBeEmpty();
@@ -321,7 +331,12 @@ test.describe("Configuration items", () => {
     function valueForType(
       type: unknown,
       dimensions = 0,
-      { string, number, boolean, object } = { string: "", number: 0, boolean: false, object: {} }
+      { string, number, boolean, object } = {
+        string: "",
+        number: 0,
+        boolean: false,
+        object: {},
+      }
     ): unknown {
       if (dimensions > 0) {
         return [valueForType(type, 0, { string, number, boolean, object })];
@@ -349,7 +364,15 @@ test.describe("Configuration items", () => {
       // We can safely ascribe defaults inline with their json type as these descriptors are primitives without format
       primitiveItemsWithValues = Util.getPrimitiveMetaItems().map((m) => {
         const { jsonType } = AssetModelUtil.getValueDescriptor(m.type)!;
-        return [m.name, valueForType(jsonType, 0, { boolean: true, number: 0, string: "", object: {} })];
+        return [
+          m.name,
+          valueForType(jsonType, 0, {
+            boolean: true,
+            number: 0,
+            string: "",
+            object: {},
+          }),
+        ];
       }) as [`${WellknownMetaItems}`, any][];
       // TODO: resolve complex meta item values through their JSON Schema
       // complexItemsWithValues = Util.getComplexMetaItems().map((m) => {
@@ -363,7 +386,9 @@ test.describe("Configuration items", () => {
         realm: "smartcity",
         attributes: {
           ...commonAttrs,
-          notes: { meta: Object.fromEntries([...primitiveItemsWithValues /*, ...complexItemsWithValues */]) },
+          notes: {
+            meta: Object.fromEntries([...primitiveItemsWithValues /*, ...complexItemsWithValues */]),
+          },
         },
       });
       await manager.goToRealmStartPage("smartcity");
@@ -379,7 +404,15 @@ test.describe("Configuration items", () => {
     test("can be modified", async ({ page, assetViewer }) => {
       const updatedPrimitivesWithValues = Util.getPrimitiveMetaItems().map((m) => {
         const { jsonType } = AssetModelUtil.getValueDescriptor(m.type)!;
-        return [m.name, valueForType(jsonType, 0, { boolean: false, number: 7, string: "test", object: {} })];
+        return [
+          m.name,
+          valueForType(jsonType, 0, {
+            boolean: false,
+            number: 7,
+            string: "test",
+            object: {},
+          }),
+        ];
       }) as [`${WellknownMetaItems}`, any][];
       await assetViewer.expandAttribute("notes");
 

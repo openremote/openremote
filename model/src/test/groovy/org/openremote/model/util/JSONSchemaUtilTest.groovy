@@ -148,7 +148,7 @@ class JSONSchemaUtilTest extends Specification {
                     "test1":{"type":"string"},
                     "test2":{"type":"boolean"},
                     "test3":{"type":"integer","format":"utc-millisec"},
-                    "test4":{"type":"object","patternProperties":{".+":{"type":["null","number","integer","boolean","string","array","object"]}}}}
+                    "test4":{"type":"object","patternProperties":{".+":{"type":["null","number","integer","boolean","string","array","object"]}}}
                 },
                 "required":["test1","test3"],
                 "title":"Remap Types",

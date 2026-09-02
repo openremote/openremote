@@ -21,11 +21,11 @@ package org.openremote.model.geo;
 import static org.openremote.model.geo.GeoJSONPoint.TYPE;
 
 import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.StdConverter;
 import java.util.Objects;
 import org.geotools.referencing.GeodeticCalculator;
 import org.locationtech.jts.geom.Coordinate;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.util.StdConverter;
 
 @JsonTypeName(TYPE)
 public class GeoJSONPoint extends GeoJSONGeometry {
@@ -34,10 +34,16 @@ public class GeoJSONPoint extends GeoJSONGeometry {
 
     @Override
     public double[] convert(Coordinate value) {
-      if (Double.isNaN(value.getZ())) {
-        return new double[] {value.x, value.y};
-      }
-      return new double[] {value.x, value.y, value.getZ()};
+      return coordinateToArray(value);
+    }
+  }
+
+  public static class CoordinateArrayConverterJackson2
+      extends com.fasterxml.jackson.databind.util.StdConverter<Coordinate, double[]> {
+
+    @Override
+    public double[] convert(Coordinate value) {
+      return coordinateToArray(value);
     }
   }
 
@@ -46,7 +52,16 @@ public class GeoJSONPoint extends GeoJSONGeometry {
   @JsonProperty
   @JsonFormat(shape = JsonFormat.Shape.ARRAY)
   @JsonSerialize(converter = CoordinateArrayConverter.class)
+  @com.fasterxml.jackson.databind.annotation.JsonSerialize(
+      converter = CoordinateArrayConverterJackson2.class)
   protected Coordinate coordinates;
+
+  private static double[] coordinateToArray(Coordinate value) {
+    if (Double.isNaN(value.getZ())) {
+      return new double[] {value.x, value.y};
+    }
+    return new double[] {value.x, value.y, value.getZ()};
+  }
 
   @JsonCreator
   public GeoJSONPoint(@JsonProperty("coordinates") Coordinate coordinates) {

@@ -438,13 +438,26 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
             } else {
 
               userRepresentation = convert(user, UserRepresentation.class);
+              userRepresentation.setUsername(user.getUsername());
+              userRepresentation.setFirstName(user.getFirstName());
+              userRepresentation.setLastName(user.getLastName());
+              userRepresentation.setEmail(user.getEmail());
+              userRepresentation.setEnabled(user.getEnabled());
+              userRepresentation.setAttributes(user.getAttributeMap());
               RealmResource realmResource = realmsResource.realm(realm);
               Response response = realmResource.users().create(userRepresentation);
               String location = response.getHeaderString(Headers.LOCATION_STRING);
+              String responseBody = response.hasEntity() ? response.readEntity(String.class) : null;
               response.close();
               if (!response.getStatusInfo().equals(Response.Status.CREATED)
                   || TextUtil.isNullOrEmpty(location)) {
-                throw new BadRequestException("Failed to create user: User=" + user);
+                throw new BadRequestException(
+                    "Failed to create user: status="
+                        + response.getStatus()
+                        + ", body="
+                        + responseBody
+                        + ", User="
+                        + user);
               }
               String[] locationArr = location.split("/");
               String userId = locationArr.length > 0 ? locationArr[locationArr.length - 1] : null;
@@ -463,6 +476,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
 
           User updatedUser = convert(userRepresentation, User.class);
           if (updatedUser != null) {
+            updatedUser.setId(userRepresentation.getId());
+            updatedUser.setUsername(userRepresentation.getUsername());
+            updatedUser.setFirstName(userRepresentation.getFirstName());
+            updatedUser.setLastName(userRepresentation.getLastName());
+            updatedUser.setEmail(userRepresentation.getEmail());
+            updatedUser.setEnabled(userRepresentation.isEnabled());
+            if (userRepresentation.getAttributes() != null) {
+              userRepresentation.getAttributes().forEach(updatedUser::setAttribute);
+            }
             updatedUser.setRealm(realm);
             if (updatedUser.isServiceAccount()) {
               updatedUser.setSecret(passwordSecret);
@@ -544,11 +566,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
       throws ClientErrorException {
     getRealms(
         realmsResource -> {
-          realmsResource
-              .realm(realm)
-              .users()
-              .get(userId)
-              .resetPassword(convert(credential, CredentialRepresentation.class));
+          CredentialRepresentation credentialRepresentation = new CredentialRepresentation();
+          credentialRepresentation.setType(credential.getType());
+          credentialRepresentation.setValue(credential.getValue());
+          credentialRepresentation.setTemporary(credential.getTemporary());
+          realmsResource.realm(realm).users().get(userId).resetPassword(credentialRepresentation);
           return null;
         });
   }
@@ -1037,23 +1059,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
 
           // Realm only has a subset of realm representation so overlay on actual realm
           // representation
-          realmRepresentation.setDisplayName(realm.getDisplayName());
-          realmRepresentation.setAccountTheme(realm.getAccountTheme());
-          realmRepresentation.setAdminTheme(realm.getAdminTheme());
-          realmRepresentation.setEmailTheme(realm.getEmailTheme());
-          realmRepresentation.setLoginTheme(realm.getLoginTheme());
-          realmRepresentation.setRememberMe(realm.getRememberMe());
-          realmRepresentation.setVerifyEmail(realm.getVerifyEmail());
-          realmRepresentation.setLoginWithEmailAllowed(realm.getLoginWithEmail());
-          realmRepresentation.setRegistrationAllowed(realm.getRegistrationAllowed());
-          realmRepresentation.setRegistrationEmailAsUsername(
-              realm.getRegistrationEmailAsUsername());
-          realmRepresentation.setEnabled(realm.getEnabled());
-          realmRepresentation.setDuplicateEmailsAllowed(realm.getDuplicateEmailsAllowed());
-          realmRepresentation.setResetPasswordAllowed(realm.getResetPasswordAllowed());
-          realmRepresentation.setPasswordPolicy(realm.getPasswordPolicyString());
-          realmRepresentation.setNotBefore(
-              realm.getNotBefore() != null ? realm.getNotBefore().intValue() : null);
+          applyRealmSettings(realm, realmRepresentation);
           configureRealm(realmRepresentation);
           realmResource.update(realmRepresentation);
 
@@ -1112,6 +1118,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
           RealmRepresentation realmRepresentation = convert(realm, RealmRepresentation.class);
           // Inject name as it is called realm in the realmRepresentation
           realmRepresentation.setRealm(realm.getName());
+          applyRealmSettings(realm, realmRepresentation);
 
           try {
             realmsResource.create(realmRepresentation);
@@ -1548,6 +1555,25 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
     return frontendURI;
   }
 
+  protected void applyRealmSettings(Realm realm, RealmRepresentation realmRepresentation) {
+    realmRepresentation.setDisplayName(realm.getDisplayName());
+    realmRepresentation.setAccountTheme(realm.getAccountTheme());
+    realmRepresentation.setAdminTheme(realm.getAdminTheme());
+    realmRepresentation.setEmailTheme(realm.getEmailTheme());
+    realmRepresentation.setLoginTheme(realm.getLoginTheme());
+    realmRepresentation.setRememberMe(realm.getRememberMe());
+    realmRepresentation.setVerifyEmail(realm.getVerifyEmail());
+    realmRepresentation.setLoginWithEmailAllowed(realm.getLoginWithEmail());
+    realmRepresentation.setRegistrationAllowed(realm.getRegistrationAllowed());
+    realmRepresentation.setRegistrationEmailAsUsername(realm.getRegistrationEmailAsUsername());
+    realmRepresentation.setEnabled(realm.getEnabled());
+    realmRepresentation.setDuplicateEmailsAllowed(realm.getDuplicateEmailsAllowed());
+    realmRepresentation.setResetPasswordAllowed(realm.getResetPasswordAllowed());
+    realmRepresentation.setPasswordPolicy(realm.getPasswordPolicyString());
+    realmRepresentation.setNotBefore(
+        realm.getNotBefore() != null ? realm.getNotBefore().intValue() : null);
+  }
+
   protected void configureRealm(RealmRepresentation realmRepresentation) {
 
     realmRepresentation.setAccessTokenLifespan(Constants.ACCESS_TOKEN_LIFESPAN_SECONDS);
@@ -1571,8 +1597,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
       realmRepresentation.setEmailTheme(themeName);
     }
 
-    realmRepresentation.setDisplayNameHtml(
-        realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", ""));
+    String displayName =
+        TextUtil.isNullOrEmpty(realmRepresentation.getDisplayName())
+            ? realmRepresentation.getRealm()
+            : realmRepresentation.getDisplayName();
+    realmRepresentation.setDisplayName(displayName);
+    realmRepresentation.setDisplayNameHtml(displayName.replaceAll("[^A-Za-z0-9]", ""));
     realmRepresentation.setSsoSessionIdleTimeout(sessionTimeoutSeconds);
     realmRepresentation.setSsoSessionMaxLifespan(sessionMaxSeconds);
     realmRepresentation.setOfflineSessionIdleTimeout(sessionOfflineTimeoutSeconds);

@@ -20,13 +20,13 @@ package org.openremote.model.flow.catalog;
 
 import static org.openremote.model.util.ValueUtil.JSON;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import org.openremote.model.flow.Node;
 import org.openremote.model.flow.NodeColor;
 import org.openremote.model.flow.Slot;
+import tools.jackson.databind.node.ObjectNode;
 
 public abstract class NodeDescriptor {
 

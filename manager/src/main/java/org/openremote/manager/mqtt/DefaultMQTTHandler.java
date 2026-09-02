@@ -23,7 +23,6 @@ import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
@@ -54,6 +53,7 @@ import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * This handler uses the {@link ClientEventService} to publish and subscribe to asset and attribute

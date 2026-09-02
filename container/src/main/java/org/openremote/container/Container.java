@@ -23,7 +23,6 @@ import static java.util.stream.StreamSupport.stream;
 import static org.openremote.model.util.MapAccess.getBoolean;
 import static org.openremote.model.util.MapAccess.getInteger;
 
-import com.fasterxml.jackson.databind.SerializationFeature;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
@@ -41,6 +40,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.util.Config;
 import org.openremote.model.util.MapAccess;
 import org.openremote.model.util.ValueUtil;
+import tools.jackson.databind.SerializationFeature;
 
 /**
  * A thread-safe registry of {@link ContainerService}s.
@@ -187,7 +187,8 @@ public class Container implements org.openremote.model.Container {
       ValueUtil.initialise(this);
 
       if (isDevMode()) {
-        ValueUtil.JSON.enable(SerializationFeature.INDENT_OUTPUT);
+        ValueUtil.JSON =
+            ValueUtil.JSON.rebuild().enable(SerializationFeature.INDENT_OUTPUT).build();
       }
 
       for (ContainerService service : getServices()) {

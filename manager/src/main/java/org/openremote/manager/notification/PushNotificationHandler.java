@@ -22,8 +22,6 @@ import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
 import static org.openremote.model.security.User.PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -57,6 +55,8 @@ import org.openremote.model.query.filter.*;
 import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 
 @SuppressWarnings("deprecation")
 public class PushNotificationHandler extends RouteBuilder implements NotificationHandler {
@@ -564,7 +564,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
       if (pushMessage.getButtons() != null) {
         builder.putData("buttons", ValueUtil.asJSONOrThrow(pushMessage.getButtons()));
       }
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       e.printStackTrace();
     }
 

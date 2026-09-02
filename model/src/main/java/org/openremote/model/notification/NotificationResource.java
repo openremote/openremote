@@ -22,7 +22,6 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.openremote.model.http.OpenApiDescriptions.*;
 import static org.openremote.model.http.OpenApiExamples.PUSH_NOTIFICATION;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -35,6 +34,7 @@ import jakarta.ws.rs.*;
 import org.openremote.model.Constants;
 import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
+import tools.jackson.databind.JsonNode;
 
 @Tag(
     name = "Notification",

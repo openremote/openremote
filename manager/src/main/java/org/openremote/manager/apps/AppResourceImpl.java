@@ -33,6 +33,7 @@ import org.openremote.model.apps.AppResource;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.ValueUtil;
+import tools.jackson.core.JacksonException;
 
 public class AppResourceImpl extends WebResource implements AppResource {
 
@@ -79,7 +80,7 @@ public class AppResourceImpl extends WebResource implements AppResource {
                         dir -> {
                           try {
                             return ValueUtil.JSON.readValue(dir.toFile(), Object.class);
-                          } catch (IOException e) {
+                          } catch (JacksonException e) {
                             throw new WebApplicationException(e);
                           }
                         }));
@@ -112,7 +113,7 @@ public class AppResourceImpl extends WebResource implements AppResource {
             ValueUtil.JSON.readValue(
                 new File(consoleAppDocRoot.resolve("console_config.json").toString()),
                 Object.class);
-      } catch (IOException e) {
+      } catch (JacksonException e) {
         throw new WebApplicationException(e);
       }
     }
@@ -133,7 +134,7 @@ public class AppResourceImpl extends WebResource implements AppResource {
               dir -> {
                 try {
                   return ValueUtil.JSON.readValue(dir.toFile(), ConsoleAppConfig.class);
-                } catch (IOException e) {
+                } catch (JacksonException e) {
                   throw new WebApplicationException(e);
                 }
               })

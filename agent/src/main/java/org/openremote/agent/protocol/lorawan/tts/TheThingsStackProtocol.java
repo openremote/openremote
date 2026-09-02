@@ -23,8 +23,6 @@ import static org.openremote.agent.protocol.lorawan.tts.TheThingsStackAgent.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.FieldMask;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -73,6 +71,8 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.JsonPathFilter;
 import org.openremote.model.value.ValueFilter;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import ttn.lorawan.v3.EndDeviceOuterClass;
 import ttn.lorawan.v3.EndDeviceRegistryGrpc;
 import ttn.lorawan.v3.EventsGrpc;
@@ -360,7 +360,7 @@ public class TheThingsStackProtocol
       try {
         String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
         agentLink.setWriteValue(json);
-      } catch (JsonProcessingException e) {
+      } catch (JacksonException e) {
         isOk = false;
         LOG.log(
             Level.SEVERE,

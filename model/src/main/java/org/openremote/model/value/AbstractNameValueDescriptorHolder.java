@@ -19,11 +19,12 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Pattern;
 import java.util.Arrays;
 import java.util.Objects;
 import org.openremote.model.util.TsIgnoreTypeParams;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 @TsIgnoreTypeParams
 public abstract class AbstractNameValueDescriptorHolder<T>
@@ -69,6 +70,9 @@ public abstract class AbstractNameValueDescriptorHolder<T>
   }
 
   @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
+  @com.fasterxml.jackson.databind.annotation.JsonSerialize(
+      converter = NameHolder.NameHolderToStringConverterJackson2.class)
+  @JsonProperty
   @Override
   public ValueDescriptor<T> getType() {
     return type;

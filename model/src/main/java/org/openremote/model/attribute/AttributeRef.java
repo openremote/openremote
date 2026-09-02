@@ -62,6 +62,7 @@ public class AttributeRef implements Serializable {
    *
    * @return the asset identifier.
    */
+  @JsonProperty
   public String getId() {
     return id;
   }
@@ -71,6 +72,7 @@ public class AttributeRef implements Serializable {
    *
    * @return the attribute name.
    */
+  @JsonProperty
   public String getName() {
     return name;
   }

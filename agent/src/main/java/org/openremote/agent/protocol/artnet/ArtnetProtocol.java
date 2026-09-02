@@ -197,7 +197,7 @@ public class ArtnetProtocol
     //                                    throw new NullPointerException("Could not find key: " +
     // requiredKey + " in the json-file.");
     //                                valuesToUpdate.put(requiredKey, requiredKeyValue.asInt());
-    //                            } catch (JsonProcessingException e) {
+    //                            } catch (JacksonException e) {
     //                                e.printStackTrace();
     //                            }
     //                        }
@@ -211,7 +211,7 @@ public class ArtnetProtocol
     //                            int dimValue = node.asInt();
     //                            updateLightStateInMemory(lightId, new ArtnetLightState(lightId,
     // oldLightState.getReceivedValues(), dimValue, oldLightState.isEnabled()));
-    //                        } catch (JsonProcessingException e) {
+    //                        } catch (JacksonException e) {
     //                            e.printStackTrace();
     //                        }
     //                    }
@@ -222,7 +222,7 @@ public class ArtnetProtocol
     //                            boolean enabled = node.asBoolean();
     //                            updateLightStateInMemory(lightId, new ArtnetLightState(lightId,
     // oldLightState.getReceivedValues(), oldLightState.getDim(), enabled));
-    //                        } catch (JsonProcessingException e) {
+    //                        } catch (JacksonException e) {
     //                            e.printStackTrace();
     //                        }
     //                    }
@@ -416,7 +416,7 @@ public class ArtnetProtocol
   //    }
   //
   //    protected AssetTreeNode formLightAsset(ArtnetLight light, Asset<?> parentAgent) throws
-  // JsonProcessingException {
+  // JacksonException {
   //        Asset<?> asset = new ThingAsset();
   //        asset.setId(UniqueIdentifierGenerator.generateId());
   //        asset.setParent(parentAgent);

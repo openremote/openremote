@@ -18,17 +18,17 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemDescriptor;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
 
 @JsonDeserialize(using = MetaMap.MetaObjectDeserializer.class)
 public class MetaMap extends NamedMap<String, MetaItem<?>> {
@@ -48,7 +48,7 @@ public class MetaMap extends NamedMap<String, MetaItem<?>> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public MetaMap deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+    public MetaMap deserialize(JsonParser jp, DeserializationContext ctxt) throws JacksonException {
 
       Function<String, MetaItemDescriptor<?>> metaDescriptorProvider =
           (Function<String, MetaItemDescriptor<?>>) ctxt.getAttribute(META_DESCRIPTOR_PROVIDER);
@@ -69,15 +69,15 @@ public class MetaMap extends NamedMap<String, MetaItem<?>> {
       JsonParser jp,
       DeserializationContext ctxt,
       Function<String, MetaItemDescriptor<?>> metaDescriptorProvider)
-      throws IOException {
+      throws JacksonException {
     if (!jp.isExpectedStartObjectToken()) {
-      throw JsonMappingException.from(jp, "MetaMap must be an object");
+      throw DatabindException.from(jp, "MetaMap must be an object");
     }
 
     List<MetaItem<?>> list = new ArrayList<>();
 
     while (jp.nextToken() != JsonToken.END_OBJECT) {
-      if (jp.currentToken() == JsonToken.FIELD_NAME) {
+      if (jp.currentToken() == JsonToken.PROPERTY_NAME) {
         jp.nextToken();
       }
       if (jp.currentToken() == JsonToken.VALUE_NULL) {

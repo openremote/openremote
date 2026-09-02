@@ -28,12 +28,18 @@ import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ValidationException;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.WriterInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptorContext;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import org.jboss.resteasy.plugins.validation.ResteasyViolationExceptionMapper;
 
 /**
  * Unified exception handling for all web services (Resteasy, Undertow, Servlets, WebSockets).
@@ -62,6 +68,49 @@ public class WebServiceExceptions {
     @Override
     public Response toResponse(Throwable exception) {
       return handleResteasyException(devMode, exception);
+    }
+  }
+
+  /**
+   * Takes precedence over RESTEasy's built-in {@link ResteasyViolationExceptionMapper} (application
+   * providers win over built-ins for the same exception type) which handles every {@link
+   * ValidationException} - including a validator that crashed rather than reported violations -
+   * without logging anything, turning such failures into silent {@code text/plain} 500 responses.
+   */
+  @Provider
+  public static class ValidationExceptionMapper extends ResteasyViolationExceptionMapper {
+    @Override
+    public Response toResponse(ValidationException exception) {
+      Response response = super.toResponse(exception);
+      System.Logger.Level level =
+          response.getStatus() >= 500 ? System.Logger.Level.ERROR : System.Logger.Level.WARNING;
+      LOG.log(
+          level,
+          "Validation failure processing JAX-RS request: status=" + response.getStatus(),
+          exception);
+      return response;
+    }
+  }
+
+  /**
+   * Exceptions thrown while writing the response body (e.g. by a {@code MessageBodyWriter}) are
+   * never passed to a registered {@link ExceptionMapper} per the JAX-RS spec, so without this
+   * they'd otherwise only surface as a bare 500 with no logged cause.
+   */
+  @Provider
+  public static class LoggingWriterInterceptor implements WriterInterceptor {
+    @Override
+    public void aroundWriteTo(WriterInterceptorContext context)
+        throws IOException, WebApplicationException {
+      try {
+        context.proceed();
+      } catch (IOException | RuntimeException e) {
+        LOG.log(
+            System.Logger.Level.ERROR,
+            "Failed to write response body: type=" + context.getType(),
+            e);
+        throw e;
+      }
     }
   }
 
@@ -139,22 +188,24 @@ public class WebServiceExceptions {
         status = webApplicationException.getResponse().getStatus();
       }
 
-      boolean filterApplied =
-          Boolean.TRUE.equals(request.getAttribute(LoggingFilter.FILTER_APPLIED_ATTR));
-      if (!filterApplied) {
-        System.Logger.Level level =
-            status >= 500
-                ? System.Logger.Level.ERROR
-                : status >= 400 ? System.Logger.Level.DEBUG : System.Logger.Level.TRACE;
-        LoggingFilter.logException(
-            devMode,
-            "Servlet",
-            level,
-            effectiveException,
-            request instanceof HttpServletRequest httpRequest ? httpRequest : null,
-            status,
-            response.getContentType());
-      }
+      // Exceptions reaching this handler (e.g. from a MessageBodyWriter/Reader) never pass through
+      // the JAX-RS
+      // ExceptionMapper, so LoggingFilter's request/response summary is the only other place they
+      // could be
+      // logged from - and that summary never includes the Throwable. Always log here to guarantee
+      // visibility.
+      System.Logger.Level level =
+          status >= 500
+              ? System.Logger.Level.ERROR
+              : status >= 400 ? System.Logger.Level.DEBUG : System.Logger.Level.TRACE;
+      LoggingFilter.logException(
+          devMode,
+          "Servlet",
+          level,
+          effectiveException,
+          request instanceof HttpServletRequest httpRequest ? httpRequest : null,
+          status,
+          response.getContentType());
 
       if (!exchange.isResponseStarted()) {
         exchange.setStatusCode(status);

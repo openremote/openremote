@@ -18,8 +18,6 @@
  */
 package org.openremote.agent.protocol.tradfri.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import org.eclipse.californium.core.CoapHandler;
@@ -36,6 +34,8 @@ import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
 import org.eclipse.californium.scandium.dtls.pskstore.AdvancedSinglePskStore;
 import org.eclipse.californium.scandium.util.SecretUtil;
 import org.openremote.model.util.ValueUtil;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /** The class that is used to communicate with the IKEA TRÅDFRI gateway using the CoAP protocol */
 public class CoapClient {
@@ -147,7 +147,7 @@ public class CoapClient {
       String responsePayload = response.getPayloadString();
       if (responseType == String.class) return (T) responsePayload;
       return objectMapper.readValue(responsePayload, responseType);
-    } catch (InterruptedException | JsonProcessingException e) {
+    } catch (InterruptedException | JacksonException e) {
       return null;
     }
   }
@@ -169,7 +169,7 @@ public class CoapClient {
       request.setPayload(requestPayload);
       request.getOptions().setContentFormat(MediaTypeRegistry.APPLICATION_JSON);
       return request(request, endpoint, responseType);
-    } catch (IOException e) {
+    } catch (JacksonException e) {
       return null;
     }
   }

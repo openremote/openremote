@@ -27,6 +27,7 @@ import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttribu
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 import jakarta.persistence.EntityManager;
+import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -54,6 +55,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.Agent;
+import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.Protocol;
@@ -69,6 +71,7 @@ import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
 
 /**
  * This service's role is to communicate asset attribute writes to actuators, through protocol
@@ -550,6 +553,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
             try {
               if (!protocol.getLinkedAttributes().containsKey(attributeRef)) {
                 LOG.finest("Linking attribute '" + attributeRef + "' to protocol: " + protocol);
+                ensureAgentLinkType(agent, attribute);
                 protocol.linkAttribute(assetId, attribute);
               }
             } catch (Exception ex) {
@@ -564,6 +568,44 @@ public class AgentService extends RouteBuilder implements ContainerService {
             }
           });
     }
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  protected void ensureAgentLinkType(Agent<?, ?, ?> agent, Attribute<?> attribute)
+      throws ReflectiveOperationException {
+    Optional<AgentLink> agentLinkOptional = attribute.getMetaValue(AGENT_LINK);
+
+    if (agentLinkOptional.isEmpty()) {
+      return;
+    }
+
+    AgentLink<?> agentLink = agentLinkOptional.get();
+    Class<? extends AgentLink<?>> agentLinkClass =
+        (Class<? extends AgentLink<?>>)
+            ValueUtil.getAgentDescriptor(agent.getType())
+                .map(AgentDescriptor::getAgentLinkClass)
+                .orElse(null);
+
+    if (agentLinkClass == null || agentLinkClass.isInstance(agentLink)) {
+      return;
+    }
+
+    AgentLink<?> coercedAgentLink = null;
+
+    try {
+      coercedAgentLink = ValueUtil.convert(agentLink, agentLinkClass);
+    } catch (RuntimeException ignored) {
+      // Fall back to the common AgentLink(String id) constructor below.
+    }
+
+    if (coercedAgentLink == null || TextUtil.isNullOrEmpty(coercedAgentLink.getId())) {
+      Constructor<? extends AgentLink<?>> constructor =
+          agentLinkClass.getDeclaredConstructor(String.class);
+      constructor.setAccessible(true);
+      coercedAgentLink = constructor.newInstance(agentLink.getId());
+    }
+
+    attribute.getMeta().addOrReplace(new MetaItem<>(AGENT_LINK, coercedAgentLink));
   }
 
   protected void unlinkAttributes(String agentId, String assetId, List<Attribute<?>> attributes) {

@@ -18,17 +18,26 @@
  */
 package org.openremote.manager.web;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import io.swagger.v3.oas.integration.api.ObjectMapperProcessor;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.servers.ServerVariable;
 import java.util.List;
-import org.openremote.model.util.ValueUtil;
+import java.util.Map;
+import tools.jackson.databind.JsonNode;
 
 /**
- * Applies the manager's Jackson configuration when Swagger generates an OpenAPI document outside
- * the running manager.
+ * Applies the manager's JSON configuration to the Swagger object mappers, which introspect the API
+ * model classes and write the OpenAPI document. Swagger uses Jackson 2 so these settings mirror the
+ * Jackson 3 model mapper.
  */
 public class ManagerObjectMapperProcessor implements ObjectMapperProcessor {
 
@@ -42,10 +51,34 @@ public class ManagerObjectMapperProcessor implements ObjectMapperProcessor {
     protected List<String> _enum;
   }
 
+  // Swagger does not recognise Jackson 3 nodes, so their internal fields would otherwise become
+  // schema properties
+  @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.NONE)
+  private abstract static class JsonNodeMixin {}
+
   public static void configure(ObjectMapper objectMapper) {
-    ValueUtil.configureObjectMapper(objectMapper);
+    objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    objectMapper.configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false);
+    objectMapper.configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
+    objectMapper.configure(SerializationFeature.INDENT_OUTPUT, false);
+    objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+    objectMapper.configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
+    objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    objectMapper.configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true);
+    objectMapper.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, false);
+    objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+    objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+    objectMapper.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
+    objectMapper
+        .configOverride(Map.class)
+        .setInclude(
+            JsonInclude.Value.construct(
+                JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
+    // Registered explicitly as module auto discovery fails in the Swagger Gradle plugin classloader
+    objectMapper.registerModule(new ParameterNamesModule());
     objectMapper.addMixIn(StringSchema.class, StringSchemaMixin.class);
     objectMapper.addMixIn(ServerVariable.class, ServerVariableMixin.class);
+    objectMapper.addMixIn(JsonNode.class, JsonNodeMixin.class);
   }
 
   @Override

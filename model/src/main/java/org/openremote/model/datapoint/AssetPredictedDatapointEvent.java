@@ -19,6 +19,7 @@
 package org.openremote.model.datapoint;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 import java.util.Objects;
 import org.openremote.model.attribute.AttributeRef;
@@ -38,12 +39,14 @@ public class AssetPredictedDatapointEvent extends SharedEvent {
   }
 
   @JsonCreator
-  public AssetPredictedDatapointEvent(AttributeRef ref, Long timestamp) {
+  public AssetPredictedDatapointEvent(
+      @JsonProperty("ref") AttributeRef ref, @JsonProperty("timestamp") Long timestamp) {
     super(timestamp);
     Objects.requireNonNull(ref);
     this.ref = ref;
   }
 
+  @JsonProperty
   public AttributeRef getRef() {
     return ref;
   }

@@ -18,14 +18,14 @@
  */
 package org.openremote.agent.protocol.tradfri.device;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import org.openremote.agent.protocol.tradfri.device.event.*;
 import org.openremote.agent.protocol.tradfri.payload.DeviceResponse;
 import org.openremote.agent.protocol.tradfri.util.CoapClient;
 import org.openremote.model.util.ValueUtil;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /** The class that observes a device to automagically detect changes */
 public class DeviceObserver extends Observer {
@@ -110,7 +110,7 @@ public class DeviceObserver extends Observer {
           }
         }
       }
-    } catch (JsonProcessingException ignored) {
+    } catch (JacksonException ignored) {
     }
   }
 }

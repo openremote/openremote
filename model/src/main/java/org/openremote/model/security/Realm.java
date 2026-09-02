@@ -20,19 +20,19 @@ package org.openremote.model.security;
 
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.io.IOException;
 import java.util.*;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 import org.openremote.model.persistence.PasswordPolicyConverter;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 /** This can be used (among other things) to query the REALM table in JPA queries. */
 @Entity
@@ -48,10 +48,11 @@ public class Realm {
   private static final PasswordPolicyConverter PASSWORD_POLICY_CONVERTER =
       new PasswordPolicyConverter();
 
-  public static class PasswordPolicyDeserializer extends JsonDeserializer<List<String>> {
+  public static class PasswordPolicyDeserializer extends ValueDeserializer<List<String>> {
     @Override
-    public List<String> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-      JsonNode node = p.getCodec().readTree(p);
+    public List<String> deserialize(JsonParser p, DeserializationContext ctxt)
+        throws JacksonException {
+      JsonNode node = ctxt.readTree(p);
       List<String> policies = new ArrayList<>();
       if (node.isArray()) {
         node.forEach(element -> policies.add(element.asText()));

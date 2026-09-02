@@ -21,7 +21,6 @@ package org.openremote.manager.notification;
 import static jakarta.ws.rs.core.Response.Status.*;
 import static org.openremote.model.notification.Notification.Source.CLIENT;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.ws.rs.WebApplicationException;
 import java.time.Instant;
 import java.util.Collections;
@@ -47,6 +46,7 @@ import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.security.User;
 import org.openremote.model.util.ValueUtil;
+import tools.jackson.databind.JsonNode;
 
 public class NotificationResourceImpl extends ManagerWebResource implements NotificationResource {
 

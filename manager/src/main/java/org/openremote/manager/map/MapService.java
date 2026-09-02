@@ -22,10 +22,6 @@ import static org.openremote.manager.web.ManagerWebService.API_PATH;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.util.MapAccess.getString;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
@@ -56,6 +52,10 @@ import org.openremote.model.manager.MapConfig;
 import org.openremote.model.manager.MapSourceConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 public class MapService implements ContainerService {
 
@@ -473,7 +473,7 @@ public class MapService implements ContainerService {
                                       : null)
                               .ifPresent(
                                   zoom -> {
-                                    ArrayNode centerArray = center.deepCopy();
+                                    ArrayNode centerArray = ((ArrayNode) center).deepCopy();
                                     centerArray.add(zoom);
                                     vectorTilesObj.replace("center", centerArray);
                                   }));
@@ -719,12 +719,10 @@ public class MapService implements ContainerService {
 
       boolean boundsValid =
           this.bounds.size() == 4
-              && StreamSupport.stream(Spliterators.spliterator(this.bounds.elements(), 0, 4), false)
-                  .allMatch(v -> v.numberType() != null);
+              && this.bounds.elements().stream().allMatch(v -> v.numberType() != null);
       boolean centerValid =
           this.center.size() >= 2
-              && StreamSupport.stream(Spliterators.spliterator(this.bounds.elements(), 0, 3), false)
-                  .allMatch(v -> v.numberType() != null);
+              && this.center.elements().stream().allMatch(v -> v.numberType() != null);
       if (!boundsValid) {
         LOG.log(Level.WARNING, "Map bounds are invalid.");
       }

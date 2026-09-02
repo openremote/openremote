@@ -19,6 +19,7 @@
 package org.openremote.model.alarm;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
@@ -85,7 +86,12 @@ public class Alarm {
   protected Source source;
 
   @JsonCreator
-  public Alarm(String title, String content, Severity severity, String assigneeId, String realm) {
+  public Alarm(
+      @JsonProperty("title") String title,
+      @JsonProperty("content") String content,
+      @JsonProperty("severity") Severity severity,
+      @JsonProperty("assigneeId") String assigneeId,
+      @JsonProperty("realm") String realm) {
     this.title = title;
     this.content = content;
     this.severity = severity;
@@ -96,6 +102,7 @@ public class Alarm {
 
   public Alarm() {}
 
+  @JsonProperty
   public String getTitle() {
     return this.title;
   }
@@ -105,6 +112,7 @@ public class Alarm {
     return this;
   }
 
+  @JsonProperty
   public String getContent() {
     return this.content;
   }
@@ -114,6 +122,7 @@ public class Alarm {
     return this;
   }
 
+  @JsonProperty
   public Severity getSeverity() {
     return this.severity;
   }
@@ -123,6 +132,7 @@ public class Alarm {
     return this;
   }
 
+  @JsonProperty
   public Status getStatus() {
     return this.status;
   }
@@ -132,6 +142,7 @@ public class Alarm {
     return this;
   }
 
+  @JsonProperty
   public String getAssigneeId() {
     return this.assigneeId;
   }
@@ -141,6 +152,7 @@ public class Alarm {
     return this;
   }
 
+  @JsonProperty
   public String getRealm() {
     return this.realm;
   }
@@ -150,6 +162,7 @@ public class Alarm {
     return this;
   }
 
+  @JsonProperty
   public Source getSource() {
     return source;
   }
@@ -159,6 +172,7 @@ public class Alarm {
     return this;
   }
 
+  @JsonProperty
   public String getSourceId() {
     return sourceId;
   }

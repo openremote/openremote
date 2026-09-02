@@ -22,7 +22,6 @@ import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
 import static org.openremote.model.util.MapAccess.getString;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -47,6 +46,8 @@ import org.openremote.model.file.FileInfo;
 import org.openremote.model.manager.ManagerAppConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.node.ObjectNode;
 
 public class ConfigurationService implements ContainerService {
 
@@ -159,8 +160,8 @@ public class ConfigurationService implements ContainerService {
     }
     try {
       return (ObjectNode) ValueUtil.JSON.readTree(mapSettingsPath.toFile());
-    } catch (IOException e) {
-      LOG.severe("Could not read map_settings.json from " + mapSettingsPath);
+    } catch (JacksonException e) {
+      LOG.severe("Could not parse map_settings.json from " + mapSettingsPath);
     }
 
     return null;

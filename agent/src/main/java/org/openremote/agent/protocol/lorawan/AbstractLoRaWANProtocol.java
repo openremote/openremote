@@ -28,8 +28,6 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK_CONFIG;
 import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -63,6 +61,8 @@ import org.openremote.model.value.JsonPathFilter;
 import org.openremote.model.value.RegexValueFilter;
 import org.openremote.model.value.ValueFilter;
 import org.openremote.model.value.ValueType;
+import tools.jackson.dataformat.csv.CsvMapper;
+import tools.jackson.dataformat.csv.CsvSchema;
 
 public abstract class AbstractLoRaWANProtocol<
         S extends AbstractLoRaWANProtocol<S, T>, T extends LoRaWANAgent<T, S>>

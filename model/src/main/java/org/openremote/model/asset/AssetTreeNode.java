@@ -18,15 +18,17 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 
 /** Allows {@link Asset}s to be represented in a hierarchical structure */
+@JsonAutoDetect(getterVisibility = JsonAutoDetect.Visibility.PUBLIC_ONLY)
 public class AssetTreeNode {
 
-  public Asset<?> asset;
-  public AssetTreeNode[] children;
+  @JsonProperty public Asset<?> asset;
+  @JsonProperty public AssetTreeNode[] children;
 
   public AssetTreeNode(Asset<?> asset) {
     this.asset = asset;
@@ -39,10 +41,12 @@ public class AssetTreeNode {
     this.children = children;
   }
 
+  @JsonProperty
   public Asset<?> getAsset() {
     return asset;
   }
 
+  @JsonProperty("children")
   public AssetTreeNode[] getChildAssets() {
     return children;
   }

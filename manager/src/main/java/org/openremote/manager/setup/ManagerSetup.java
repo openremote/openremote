@@ -49,6 +49,7 @@ import org.openremote.model.setup.Setup;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
+import tools.jackson.core.JacksonException;
 
 public class ManagerSetup implements Setup {
 
@@ -552,7 +553,7 @@ public class ManagerSetup implements Setup {
                 Asset<?> asset = ValueUtil.JSON.readValue(file.toFile(), Asset.class);
                 asset = assetStorageService.merge(asset);
                 LOG.log(System.Logger.Level.INFO, "Asset merged: " + asset);
-              } catch (IOException e) {
+              } catch (JacksonException e) {
                 LOG.log(
                     System.Logger.Level.INFO,
                     "Processing of file " + file.getFileName() + " went wrong",

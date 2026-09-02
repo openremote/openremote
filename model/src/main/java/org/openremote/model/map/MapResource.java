@@ -18,7 +18,6 @@
  */
 package org.openremote.model.map;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.headers.Header;
@@ -35,6 +34,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.http.OpenApiResponses;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapConfig;
+import tools.jackson.databind.node.ObjectNode;
 
 @Tag(
     name = "Map",

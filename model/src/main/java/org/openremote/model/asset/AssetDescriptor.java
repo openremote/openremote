@@ -19,19 +19,18 @@
 package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import jakarta.validation.constraints.Pattern;
-import java.io.IOException;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.NameHolder;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
 
 /**
  * Describes an {@link Asset} that can be added to this instance; the {@link #getName()} must match
@@ -60,8 +59,8 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
 
     @Override
     public AssetDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt)
-        throws IOException, JsonProcessingException {
-      JsonNode node = p.getCodec().readTree(p);
+        throws JacksonException {
+      JsonNode node = ctxt.readTree(p);
       String name = node.get("name").asText();
 
       // Try and lookup instance in type registry
@@ -85,8 +84,11 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
 
   AssetDescriptor() {}
 
-  @JsonCreator
-  protected AssetDescriptor(String name, String icon, String colour) {
+  @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+  public AssetDescriptor(
+      @JsonProperty("name") String name,
+      @JsonProperty("icon") String icon,
+      @JsonProperty("colour") String colour) {
     this.name = name;
     this.icon = icon;
     this.colour = colour;

@@ -24,6 +24,7 @@ import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.util.MapAccess.getString;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
@@ -64,6 +65,7 @@ import org.openremote.model.util.TextUtil;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
+  @JsonIgnoreProperties(ignoreUnknown = true)
   public record DiscoveryResult(String issuer) {}
 
   // We use this client ID to access Keycloak because by default it allows obtaining

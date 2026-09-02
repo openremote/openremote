@@ -19,6 +19,7 @@
 package org.openremote.model.query;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 import org.openremote.model.query.filter.PathPredicate;
@@ -48,8 +49,11 @@ public class UserQuery {
       this.name = name;
     }
 
-    @JsonCreator
-    public AttributeValuePredicate(boolean negated, StringPredicate name, StringPredicate value) {
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    public AttributeValuePredicate(
+        @JsonProperty("negated") boolean negated,
+        @JsonProperty("name") StringPredicate name,
+        @JsonProperty("value") StringPredicate value) {
       this.negated = negated;
       this.name = name;
       this.value = value;
