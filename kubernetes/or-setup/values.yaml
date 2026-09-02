@@ -1,2 +1,10 @@
 # OpenRemote component charts own their namespaced PersistentVolumeClaims.
 # This chart currently provides the namespaced shared secret only.
+
+credentials:
+  # Empty passwords are generated when the Secret is first created. Existing
+  # Secret values are always retained; apply does not rotate live credentials.
+  adminPassword: ""
+  # Empty defaults to postgres when the Secret is first created.
+  postgresqlUsername: ""
+  postgresqlPassword: ""

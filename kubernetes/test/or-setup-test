@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+OR_SETUP_CHART="$(cd "$TEST_DIR/../or-setup" && pwd)"
+MANAGER_CHART="$(cd "$TEST_DIR/../manager" && pwd)"
+
+fail() {
+  printf 'FAIL: %s\n' "$*" >&2
+  exit 1
+}
+
+secret_value() {
+  local key="$1"
+  awk -v key="$key" '$1 == key ":" { gsub(/"/, "", $2); print $2; exit }'
+}
+
+helm lint "$OR_SETUP_CHART" >/dev/null
+
+rendered_a="$(helm template or-setup "$OR_SETUP_CHART" --namespace stack-a)"
+rendered_b="$(helm template or-setup "$OR_SETUP_CHART" --namespace stack-b)"
+
+grep -F -- 'helm.sh/resource-policy: keep' <<< "$rendered_a" >/dev/null || fail \
+  "Generated Secret is not retained during Helm uninstall"
+
+admin_password_a="$(secret_value admin-password <<< "$rendered_a")"
+admin_password_b="$(secret_value admin-password <<< "$rendered_b")"
+postgresql_password_a="$(secret_value postgresql-password <<< "$rendered_a")"
+
+[ "${#admin_password_a}" -eq 44 ] || fail \
+  "Generated Manager password is not the encoded form of a 32-character value"
+[ "${#postgresql_password_a}" -eq 44 ] || fail \
+  "Generated PostgreSQL password is not the encoded form of a 32-character value"
+[ "$admin_password_a" != "$admin_password_b" ] || fail \
+  "Independent chart renders generated the same Manager password"
+[ "$admin_password_a" != "c2VjcmV0" ] || fail \
+  "Chart still uses the legacy default Manager password"
+[ "$postgresql_password_a" != "cG9zdGdyZXM=" ] || fail \
+  "Chart still uses the legacy default PostgreSQL password"
+grep -F -- 'postgresql-username: "cG9zdGdyZXM="' <<< "$rendered_a" >/dev/null || fail \
+  "Default PostgreSQL username is not postgres"
+
+rendered_explicit="$(helm template or-setup "$OR_SETUP_CHART" \
+  --namespace stack-explicit \
+  --set-string credentials.adminPassword=chosen-admin \
+  --set-string credentials.postgresqlUsername=database-user \
+  --set-string credentials.postgresqlPassword=chosen-database)"
+
+grep -F -- 'admin-password: "Y2hvc2VuLWFkbWlu"' <<< "$rendered_explicit" >/dev/null || fail \
+  "Explicit Manager password was not rendered"
+grep -F -- 'postgresql-username: "ZGF0YWJhc2UtdXNlcg=="' <<< "$rendered_explicit" >/dev/null || fail \
+  "Explicit PostgreSQL username was not rendered"
+grep -F -- 'postgresql-password: "Y2hvc2VuLWRhdGFiYXNl"' <<< "$rendered_explicit" >/dev/null || fail \
+  "Explicit PostgreSQL password was not rendered"
+
+rendered_manager="$(helm template manager "$MANAGER_CHART" --namespace stack-a)"
+
+grep -F -- '- name: OR_DB_USERNAME' <<< "$rendered_manager" >/dev/null || fail \
+  "Manager does not receive its PostgreSQL username through OR_DB_USERNAME"
+grep -F -- '- name: OR_DB_PASSWORD' <<< "$rendered_manager" >/dev/null || fail \
+  "Manager does not receive its PostgreSQL password through OR_DB_PASSWORD"
+if grep -F -- '- name: KC_DB_PASSWORD' <<< "$rendered_manager" >/dev/null; then
+  fail "Manager incorrectly receives its own database password through KC_DB_PASSWORD"
+fi
+
+printf 'or-setup tests passed\n'

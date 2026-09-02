@@ -26,6 +26,7 @@ Manage an OpenRemote stack in its own Kubernetes namespace.
 Usage:
   or-stack apply --name <name> --kube-context <context> --target <local|eks> [options]
   or-stack status --name <name> --kube-context <context>
+  or-stack credentials --name <name> --kube-context <context>
   or-stack uninstall --name <name> --kube-context <context> [options]
   or-stack destroy --name <name> --kube-context <context> --confirm <name> [options]
 
@@ -33,10 +34,11 @@ Commands:
   apply                 Create the stack namespace and install or upgrade the
                         internal OpenRemote components.
   status                Show releases and namespaced stack resources.
+  credentials           Show the Manager administrator login credentials.
   uninstall             Uninstall stack releases while retaining the namespace,
-                        PVCs, and data.
+                        credentials, PVCs, and data.
   destroy               Uninstall stack releases and delete its namespace,
-                        PVCs, and data after exact-name confirmation.
+                        credentials, PVCs, and data after exact-name confirmation.
 
 Options:
   --name <name>         Stack name and Kubernetes namespace. Env: OR_STACK_NAME.
@@ -56,10 +58,11 @@ The stack name is also its namespace. Helm release names remain stable within
 that namespace so component service discovery continues to use the names
 postgresql, keycloak, and manager.
 
-The uninstall command retains chart-managed data and leaves the stack namespace
-in place. The destroy command is the explicit data-purge operation and deletes
-every resource in the stack namespace. Both commands refuse namespaces without
-the matching openremote.io/stack label.
+The uninstall command retains chart-managed credentials and data and leaves the
+stack namespace in place. The destroy command is the explicit data-purge
+operation and deletes every resource in the stack namespace. Lifecycle and
+credential commands refuse namespaces without the matching openremote.io/stack
+label.
 
 This command does not configure an Ingress or proxy, create DNS records or
 certificates, or make AWS calls.
@@ -90,7 +93,7 @@ parse_arguments() {
       usage
       exit 0
       ;;
-    apply|status|uninstall|destroy)
+    apply|status|credentials|uninstall|destroy)
       COMMAND="$1"
       shift
       ;;
@@ -296,7 +299,23 @@ apply_stack() {
   helm_apply manager --set-string "or.hostname=$HOSTNAME_VALUE"
 
   log "Stack '$STACK_NAME' is applied in context '$KUBE_CONTEXT'."
+  log "Retrieve its Manager login at any time with:"
+  printf '  %q credentials --name %q --kube-context %q\n' \
+    "$0" "$STACK_NAME" "$KUBE_CONTEXT"
   log "External routing is not managed by this first-phase command."
+}
+
+verify_retained_secret() {
+  local resource_policy
+
+  if ! resource_policy="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+    get secret openremote-secret \
+    -o 'jsonpath={.metadata.annotations.helm\.sh/resource-policy}' 2>/dev/null)"; then
+    die "Secret '$STACK_NAME/openremote-secret' does not exist; refusing data-retaining uninstall."
+  fi
+
+  [ "$resource_policy" = "keep" ] || die \
+    "Secret '$STACK_NAME/openremote-secret' does not have the Helm keep policy; run apply before data-retaining uninstall."
 }
 
 verify_retained_pvcs() {
@@ -321,6 +340,11 @@ verify_retained_pvcs() {
         ;;
     esac
   done <<< "$pvc_metadata"
+}
+
+verify_retained_state() {
+  verify_retained_secret
+  verify_retained_pvcs
 }
 
 uninstall_release() {
@@ -352,12 +376,32 @@ uninstall_stack() {
   require_command kubectl
   require_kube_context
   require_stack_namespace
-  verify_retained_pvcs
+  verify_retained_state
 
   uninstall_releases
 
-  log "Stack '$STACK_NAME' is uninstalled. Its namespace, PVCs, and data are retained."
+  log "Stack '$STACK_NAME' is uninstalled. Its namespace, credentials, PVCs, and data are retained."
   log "Run apply with the same name and context to restore its workloads."
+}
+
+show_stack_credentials() {
+  local admin_password
+
+  require_command kubectl
+  require_kube_context
+  require_stack_namespace
+
+  if ! admin_password="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+    get secret openremote-secret \
+    -o 'go-template={{index .data "admin-password" | base64decode}}' 2>/dev/null)"; then
+    die "Unable to read admin-password from Secret '$STACK_NAME/openremote-secret'."
+  fi
+
+  [ -n "$admin_password" ] || die \
+    "Secret '$STACK_NAME/openremote-secret' contains an empty admin-password."
+
+  printf 'Manager username: admin\n'
+  printf 'Manager password: %s\n' "$admin_password"
 }
 
 destroy_stack() {
@@ -438,6 +482,9 @@ main() {
       ;;
     status)
       show_stack_status
+      ;;
+    credentials)
+      show_stack_credentials
       ;;
     uninstall)
       validate_timeout

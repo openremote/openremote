@@ -74,7 +74,17 @@ or inspect one stack with:
   --kube-context <cluster-name>@eu-west-1
 ```
 
-Remove workloads while retaining their EBS-backed data with:
+New stacks receive independently generated Manager and PostgreSQL passwords.
+Retrieve a stack's Manager administrator login without exposing its database
+credentials with:
+
+```bash
+./or-stack credentials \
+  --name stack-a \
+  --kube-context <cluster-name>@eu-west-1
+```
+
+Remove workloads while retaining their credentials and EBS-backed data with:
 
 ```bash
 ./or-stack uninstall \
@@ -82,8 +92,9 @@ Remove workloads while retaining their EBS-backed data with:
   --kube-context <cluster-name>@eu-west-1
 ```
 
-Reapplying the stack reuses its retained PVCs. To explicitly delete the stack
-namespace, PVCs, and dynamically provisioned EBS volumes instead:
+Reapplying the stack reuses its retained Secret and PVCs. To explicitly delete
+the stack namespace, credentials, PVCs, and dynamically provisioned EBS volumes
+instead:
 
 ```bash
 ./or-stack destroy \

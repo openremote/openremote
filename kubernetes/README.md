@@ -24,9 +24,10 @@ The Helm release names remain `or-setup`, `postgresql`, `keycloak`, and
 `manager` inside every namespace, so the existing service names continue to
 work while namespaced resources and persistent data remain independent.
 
-The first phase provides non-destructive `apply` and `status` commands. It
-installs the internal stack components but intentionally does not configure a
-proxy, Ingress, certificate, DNS record, or other external routing.
+The stack command provides apply, inspection, credential retrieval, uninstall,
+and explicit destruction operations. It installs the internal stack components
+but intentionally does not configure a proxy, Ingress, certificate, DNS record,
+or other external routing.
 
 To install or upgrade a local stack using the current Docker Desktop, kind, or
 kubeadm context:
@@ -57,6 +58,17 @@ Show resources belonging to one stack:
 ./or-stack status --name stack-a --kube-context docker-desktop
 ```
 
+Each new stack receives a generated Manager administrator password and a
+separate generated PostgreSQL password. Retrieve the Manager login at any time
+with:
+
+```bash
+./or-stack credentials --name stack-a --kube-context docker-desktop
+```
+
+The Manager username is `admin`. The command deliberately does not display the
+PostgreSQL credentials.
+
 `apply` accepts an optional `--values-dir`. Files named `or-setup.yaml`,
 `postgresql.yaml`, `keycloak.yaml`, and `manager.yaml` in that directory are
 applied after the selected target values. Command-line hostname configuration
@@ -71,10 +83,26 @@ is also available:
   --values-dir ./stacks/stack-a
 ```
 
+To choose initial credentials instead of generating them, put the following in
+`or-setup.yaml` in that values directory:
+
+```yaml
+credentials:
+  adminPassword: "replace-me"
+  postgresqlUsername: "postgres"
+  postgresqlPassword: "replace-me-too"
+```
+
+Avoid committing credential values to source control. These settings apply only
+when the stack Secret is first created. A later `apply` preserves the existing
+values and rejects a conflicting override because changing a Kubernetes Secret
+alone does not rotate credentials inside an initialized PostgreSQL or Keycloak
+database.
+
 ### Uninstalling or destroying a stack
 
-Uninstall a stack's Helm releases while preserving its namespace, PVCs, and
-data:
+Uninstall a stack's Helm releases while preserving its namespace, credentials,
+PVCs, and data:
 
 ```bash
 ./or-stack uninstall \
@@ -83,9 +111,10 @@ data:
 ```
 
 The releases are removed in reverse dependency order. Before uninstalling,
-`or-stack` refuses to continue if a chart-managed PVC does not carry Helm's
-`keep` resource policy. Running `apply` again with the same stack name and
-context restores the workloads on the retained volumes.
+`or-stack` refuses to continue if the stack Secret or a chart-managed PVC does
+not carry Helm's `keep` resource policy. Running `apply` again with the same
+stack name and context restores the workloads with the retained credentials and
+volumes.
 
 Destroying a stack is the explicit data-purge operation:
 
@@ -115,12 +144,20 @@ for namespaced multi-stack deployment.
 
 ### Create the required secrets
 
-The `openremote-secret.yaml` file under `or-setup/templates` creates a secret to hold sensitive configuration from OpenRemote
-(database username and password, Keycloak admin password).  
-The values in this file are the default ones, update as required.
+The `or-setup` chart creates `openremote-secret` to hold the PostgreSQL and
+Manager administrator credentials. It generates passwords unless initial
+values are supplied through the chart's `credentials` values.
 
 ```bash
 helm install or-setup or-setup
+```
+
+For this legacy manual installation, retrieve the generated Manager password
+directly from the Secret:
+
+```bash
+kubectl get secret openremote-secret \
+  -o 'go-template={{index .data "admin-password" | base64decode}}{{"\n"}}'
 ```
 
 The Manager and PostgreSQL charts create their own namespaced PersistentVolumeClaims.

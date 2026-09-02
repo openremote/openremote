@@ -59,17 +59,18 @@ run_stack() {
 }
 
 test_local_apply() {
+  local output
   local values_dir="$TEST_TEMP_DIR/values"
   mkdir -p "$values_dir"
   : > "$values_dir/manager.yaml"
 
   reset_log
-  OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack apply \
+  output="$(OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack apply \
     --name stack-a \
     --kube-context test-context \
     --target local \
     --hostname stack-a.localhost \
-    --values-dir "$values_dir"
+    --values-dir "$values_dir")"
 
   assert_contains $'kubectl\t--context\ttest-context\tcreate\tnamespace\tstack-a'
   assert_contains $'kubectl\t--context\ttest-context\tlabel\tnamespace\tstack-a'
@@ -81,6 +82,8 @@ test_local_apply() {
   assert_contains $'helm\tupgrade\t--install\tmanager'
   assert_contains "$values_dir/manager.yaml"
   assert_not_contains "openremote-ebs"
+  grep -F -- "credentials --name stack-a --kube-context test-context" <<< "$output" >/dev/null || fail \
+    "Apply output did not explain how to retrieve Manager credentials"
 }
 
 test_eks_apply() {
@@ -116,6 +119,7 @@ test_uninstall() {
     --kube-context test-context
 
   assert_contains "metadata.name"
+  assert_contains "helm\\.sh/resource-policy"
   assert_contains $'helm\tuninstall\tmanager\t--kube-context\ttest-context\t--namespace\tstack-a'
   assert_contains $'helm\tuninstall\tkeycloak\t--kube-context\ttest-context\t--namespace\tstack-a'
   assert_contains $'helm\tuninstall\tpostgresql\t--kube-context\ttest-context\t--namespace\tstack-a'
@@ -124,6 +128,22 @@ test_uninstall() {
   assert_before $'helm\tuninstall\tkeycloak' $'helm\tuninstall\tpostgresql'
   assert_before $'helm\tuninstall\tpostgresql' $'helm\tuninstall\tor-setup'
   assert_not_contains $'kubectl\t--context\ttest-context\tdelete'
+}
+
+test_credentials() {
+  local output
+
+  reset_log
+  output="$(OR_STACK_TEST_NAMESPACE_EXISTS=true \
+    OR_STACK_TEST_ADMIN_PASSWORD=stack-a-password \
+    run_stack credentials --name stack-a --kube-context test-context)"
+
+  grep -Fx -- "Manager username: admin" <<< "$output" >/dev/null || fail \
+    "Credentials did not show the Manager username"
+  grep -Fx -- "Manager password: stack-a-password" <<< "$output" >/dev/null || fail \
+    "Credentials did not show the decoded Manager password"
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tsecret\topenremote-secret'
+  assert_not_contains "postgresql-password"
 }
 
 test_destroy() {
@@ -164,6 +184,13 @@ test_lifecycle_safety() {
   assert_not_contains $'delete\tnamespace'
 
   reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true OR_STACK_TEST_SECRET_POLICY= run_stack uninstall \
+    --name stack-a --kube-context test-context >/dev/null 2>&1; then
+    fail "Uninstall accepted a Secret without the keep policy"
+  fi
+  assert_not_contains $'helm\tuninstall'
+
+  reset_log
   if OR_STACK_TEST_NAMESPACE_EXISTS=true \
     OR_STACK_TEST_PVC_METADATA=$'manager|manager|\npostgresql|postgresql|keep' \
     run_stack uninstall --name stack-a --kube-context test-context >/dev/null 2>&1; then
@@ -177,6 +204,19 @@ test_lifecycle_safety() {
     fail "Destroy reported success while PersistentVolume deletion failed"
   fi
   assert_contains $'delete\tnamespace\tstack-a'
+
+  reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true OR_STACK_TEST_SECRET_EXISTS=false run_stack credentials \
+    --name stack-a --kube-context test-context >/dev/null 2>&1; then
+    fail "Credentials succeeded without the stack Secret"
+  fi
+
+  reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true OR_STACK_TEST_NAMESPACE_LABEL= run_stack credentials \
+    --name stack-a --kube-context test-context >/dev/null 2>&1; then
+    fail "Credentials accepted an unlabeled namespace"
+  fi
+  assert_not_contains $'get\tsecret\topenremote-secret'
 }
 
 test_validation() {
@@ -207,6 +247,7 @@ test_local_apply
 test_eks_apply
 test_status
 test_uninstall
+test_credentials
 test_destroy
 test_lifecycle_safety
 test_validation

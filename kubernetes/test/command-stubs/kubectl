@@ -48,6 +48,17 @@ case "$arguments" in
   *" get csidriver ebs.csi.aws.com "*)
     [ "${OR_STACK_TEST_EKS_CSI:-true}" = "true" ]
     ;;
+  *" get secret openremote-secret "*)
+    [ "${OR_STACK_TEST_SECRET_EXISTS:-true}" = "true" ] || exit 1
+    case "$arguments" in
+      *"helm\\.sh/resource-policy"*)
+        printf '%s' "${OR_STACK_TEST_SECRET_POLICY-keep}"
+        ;;
+      *"base64decode"*)
+        printf '%s' "${OR_STACK_TEST_ADMIN_PASSWORD:-generated-admin-password}"
+        ;;
+    esac
+    ;;
   *" get persistentvolumeclaims "*"metadata.name"*)
     printf '%s\n' "${OR_STACK_TEST_PVC_METADATA:-manager|manager|keep
 postgresql|postgresql|keep}"

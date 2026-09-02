@@ -99,12 +99,12 @@ spec:
               value: "{{ .Values.or.postgresql.database }}"
             - name: OR_DB_SCHEMA
               value: "{{ .Values.or.postgresql.schema }}"
-            - name: KC_DB_USERNAME
+            - name: OR_DB_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: openremote-secret
                   key: postgresql-username
-            - name: KC_DB_PASSWORD
+            - name: OR_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: openremote-secret
