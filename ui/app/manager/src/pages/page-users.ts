@@ -1061,7 +1061,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <or-translate slot="label" value="username"></or-translate>
                     </or-vaadin-text-field>
                     <!-- if identity provider is set to use email as username, make it required -->
-                    <or-vaadin-email-field id="new-email" class=${isServiceUser ? "hidden" : "validate"} 
+                    <or-vaadin-email-field id="new-email" class=${isServiceUser ? "hidden" : "validate"}
                                            ?readonly=${(!!user.id && this._registrationEmailAsUsername) || readonly}
                                            ?required=${!isServiceUser && this._registrationEmailAsUsername}
                                            value=${user.email} autocomplete="false"
