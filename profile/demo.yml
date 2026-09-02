@@ -87,6 +87,7 @@ services:
       - ../deployment:/deployment
     environment:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
+      KC_HOSTNAME: https://${OR_HOSTNAME:-localhost}/auth
     <<: *awslogs
 
   manager:
