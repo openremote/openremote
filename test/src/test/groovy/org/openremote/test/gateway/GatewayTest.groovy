@@ -1529,6 +1529,40 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     }
   }
 
+  def "Verify GatewayResource realm boundary checks"() {
+    given: "some polling conditions and services from the container"
+    def gatewayService = container.getService(GatewayService.class)
+    def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+
+    and: "an authenticated user in the building realm"
+    def accessToken = authenticate(
+      container,
+      managerTestSetup.realmBuildingName,
+      KEYCLOAK_CLIENT_ID,
+      "testuser2",
+      "testuser2"
+    )
+
+    and: "the gateway service resource"
+    def gatewayResource = getClientApiTarget(serverUri(serverPort), managerTestSetup.realmBuildingName, accessToken).proxy(GatewayServiceResource.class)
+
+    when: "a fake tunnel for a fake gateway ID in the smart city realm is injected into the gateway service"
+    gatewayService.@tunnelInfos.put("fake-tunnel-id",
+      new GatewayTunnelInfo(managerTestSetup.realmCityName, "fake-gateway-id", GatewayTunnelInfo.Type.HTTPS, "127.0.0.1", 443)
+    )
+
+    and: "the building user then retrieves the list of tunnels for the fake gateway ID"
+    def activeTunnels = gatewayResource.getGatewayActiveTunnelInfos(null, managerTestSetup.realmBuildingName, "fake-gateway-id")
+
+    then: "the smart city user should not be able to see any tunnels for the fake gateway ID in the building realm"
+    assert activeTunnels.length == 0
+
+    cleanup: "the fake tunnel is removed"
+    if (gatewayService != null) {
+      gatewayService.@tunnelInfos.remove("fake-tunnel-id")
+    }
+  }
+
   /**
    * This test requires a manager instance with tunnelling configured, so is manual for now unfortunately.
    * Change the test url and key path to match the instance to connect to.
