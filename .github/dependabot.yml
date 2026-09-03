@@ -59,4 +59,7 @@ updates:
       day: "monday"
       time: "03:00"
       timezone: "Europe/Amsterdam"
+    groups:
+      docker-dependencies:
+        group-by: dependency-name
     rebase-strategy: disabled # Prevent unnecessary pipeline runs
