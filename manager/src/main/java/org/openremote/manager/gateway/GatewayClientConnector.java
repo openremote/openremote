@@ -23,6 +23,8 @@ import static org.openremote.manager.gateway.GatewayConnector.ASSET_READ_EVENT_N
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 import io.netty.channel.ChannelHandler;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -180,16 +182,7 @@ public class GatewayClientConnector implements AutoCloseable {
                   .build(),
               null,
               new OAuthClientCredentialsGrant(
-                      new URIBuilder()
-                          .setScheme(connection.isSecured() ? "https" : "http")
-                          .setHost(connection.getHost())
-                          .setPort(connection.getPort() == null ? -1 : connection.getPort())
-                          .setPath(
-                              "auth/realms/"
-                                  + connection.getRealm()
-                                  + "/protocol/openid-connect/token")
-                          .build()
-                          .toString(),
+                      getAuthTokenEndpoint(),
                       connection.getClientId(),
                       connection.getClientSecret(),
                       null)
@@ -229,6 +222,19 @@ public class GatewayClientConnector implements AutoCloseable {
     }
 
     return null;
+  }
+
+  protected String getAuthTokenEndpoint() throws URISyntaxException, IllegalArgumentException {
+    if (connection.getTokenEndpointURI() != null) {
+      return URI.create(connection.getTokenEndpointURI()).toString();
+    }
+    return new URIBuilder()
+        .setScheme(connection.isSecured() ? "https" : "http")
+        .setHost(connection.getHost())
+        .setPort(connection.getPort() == null ? -1 : connection.getPort())
+        .setPath("auth/realms/" + connection.getRealm() + "/protocol/openid-connect/token")
+        .build()
+        .toString();
   }
 
   protected CompletableFuture<Void> doInit() {

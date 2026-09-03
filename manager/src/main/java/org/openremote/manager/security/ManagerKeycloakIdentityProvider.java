@@ -52,6 +52,7 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
+import org.keycloak.representations.userprofile.config.UPConfig;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -94,7 +95,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
   public static final String OR_KEYCLOAK_GRANT_FILE = "OR_KEYCLOAK_GRANT_FILE";
   public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/keycloak-credentials.json";
   public static final String OR_KEYCLOAK_PUBLIC_URI = "OR_KEYCLOAK_PUBLIC_URI";
-  public static final String OR_KEYCLOAK_PUBLIC_URI_DEFAULT = "/auth";
   public static final String OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT =
       "OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT";
   public static final int REALM_CACHE_EXPIRY_MINS = 10;
@@ -124,8 +124,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
                 Duration.ofMinutes(container.isDevMode() ? 0 : REALM_CACHE_EXPIRY_MINS))
             .build();
 
-    String keycloakPublicUri =
-        getString(container.getConfig(), OR_KEYCLOAK_PUBLIC_URI, OR_KEYCLOAK_PUBLIC_URI_DEFAULT);
+    String keycloakPublicUri = getString(container.getConfig(), OR_KEYCLOAK_PUBLIC_URI, null);
+    if (TextUtil.isNullOrEmpty(keycloakPublicUri)) {
+      // Use full public URI from keycloak backend - in our docker image this is set to '/auth'
+      // indicating that
+      // keycloak is available on the same hostname port and schema as the manager - needed for
+      // gateway tunnelling
+      // scenarios specifically
+      keycloakPublicUri = getKeycloakPublicUrl();
+    }
     try {
       URIBuilder uriBuilder = new URIBuilder(keycloakPublicUri);
       frontendURI = uriBuilder.build().toString();
@@ -148,16 +155,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
     validRedirectUris.add("/*");
     validRedirectUris.addAll(
         WebService.getExternalHostnames().stream().map(host -> "https://" + host + "/*").toList());
-  }
-
-  @Override
-  public void start(Container container) {
-    super.start(container);
-    if (container.isDevMode()) {
-      String keycloakPath =
-          getString(container.getConfig(), OR_KEYCLOAK_PATH, OR_KEYCLOAK_PATH_DEFAULT);
-      enableAuthProxy(container.getService(WebService.class), keycloakPath);
-    }
   }
 
   @Override
@@ -233,6 +230,17 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
     } catch (Exception e) {
       LOG.info("Failed to write " + OR_KEYCLOAK_GRANT_FILE + ": " + grantPath);
       return null;
+    }
+  }
+
+  // TODO: Remove this once #3156 is implemented
+  @Override
+  public void onSetupDone(Container container) {
+    // Need to add the attribute to the keycloak user now the master realm is properly configured
+    User keycloakProxyUser = getUserByUsername(MASTER_REALM, MANAGER_CLIENT_ID);
+    if (keycloakProxyUser != null) {
+      keycloakProxyUser.setSystemAccount(true);
+      createUpdateUser(MASTER_REALM, keycloakProxyUser, null, true);
     }
   }
 
@@ -439,12 +447,21 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
 
               userRepresentation = convert(user, UserRepresentation.class);
               RealmResource realmResource = realmsResource.realm(realm);
-              Response response = realmResource.users().create(userRepresentation);
-              String location = response.getHeaderString(Headers.LOCATION_STRING);
-              response.close();
-              if (!response.getStatusInfo().equals(Response.Status.CREATED)
-                  || TextUtil.isNullOrEmpty(location)) {
-                throw new BadRequestException("Failed to create user: User=" + user);
+              String location;
+              String error = null;
+              Response.StatusType status;
+
+              try (Response response = realmResource.users().create(userRepresentation)) {
+                location = response.getHeaderString(Headers.LOCATION_STRING);
+                status = response.getStatusInfo();
+                if (!status.equals(Response.Status.CREATED) || TextUtil.isNullOrEmpty(location)) {
+                  error = response.readEntity(String.class);
+                }
+              }
+
+              if (!status.equals(Response.Status.CREATED) || TextUtil.isNullOrEmpty(location)) {
+                throw new BadRequestException(
+                    "Failed to create user: User=" + user + ", Error=" + error);
               }
               String[] locationArr = location.split("/");
               String userId = locationArr.length > 0 ? locationArr[locationArr.length - 1] : null;
@@ -1054,7 +1071,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
           realmRepresentation.setPasswordPolicy(realm.getPasswordPolicyString());
           realmRepresentation.setNotBefore(
               realm.getNotBefore() != null ? realm.getNotBefore().intValue() : null);
-          configureRealm(realmRepresentation);
+          configureRealm(realmRepresentation, realmResource);
           realmResource.update(realmRepresentation);
 
           realmCache.invalidate(realm.getName());
@@ -1119,7 +1136,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
             realmRepresentation = realmResource.toRepresentation();
 
             // Need a committed realmRepresentation to update the security
-            configureRealm(realmRepresentation);
+            configureRealm(realmRepresentation, realmResource);
             realmResource.update(realmRepresentation);
 
             // Create realm roles inserting
@@ -1139,6 +1156,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
                           new RoleRepresentation(
                               realmRole.getName(), realmRole.getDescription(), false));
                 });
+
+            // Since Keycloak 26.7.0 Verify Profile is enabled for new realms but not the master
+            // realm
+            RequiredActionProviderRepresentation requiredActionConfigRepresentation =
+                realmResource.flows().getRequiredAction("VERIFY_PROFILE");
+            requiredActionConfigRepresentation.setEnabled(false);
+            realmResource
+                .flows()
+                .updateRequiredAction("VERIFY_PROFILE", requiredActionConfigRepresentation);
 
             // Auto create the standard openremote client
             ClientRepresentation clientRepresentation = generateOpenRemoteClientRepresentation();
@@ -1548,7 +1574,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
     return frontendURI;
   }
 
-  protected void configureRealm(RealmRepresentation realmRepresentation) {
+  protected void configureRealm(
+      RealmRepresentation realmRepresentation, RealmResource realmResource) {
 
     realmRepresentation.setAccessTokenLifespan(Constants.ACCESS_TOKEN_LIFESPAN_SECONDS);
 
@@ -1579,6 +1606,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider
 
     // Service-internal network (between manager and keycloak service containers) does not use SSL
     realmRepresentation.setSslRequired(SslRequired.NONE.toString());
+
+    // Internationalization must be enabled for locale attribute to be persisted
+    realmRepresentation.setInternationalizationEnabled(true);
+
+    // Since Keycloak 26.7.0 Unmanaged user attributes are disabled for all realms
+    UserProfileResource userProfileResource = realmResource.users().userProfile();
+    UPConfig upConfig = userProfileResource.getConfiguration();
+    upConfig.setUnmanagedAttributePolicy(UPConfig.UnmanagedAttributePolicy.ADMIN_EDIT);
+    userProfileResource.update(upConfig);
 
     // Configure SMTP
     String host = container.getConfig().getOrDefault(OR_EMAIL_HOST, null);

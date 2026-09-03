@@ -117,7 +117,7 @@ export { customElements, packageJson };
 /* ------------------------------------------------------- */
 
 async function loadOrManager() {
-  if (await manager.init({ managerUrl: "http://localhost:8080", realm: "smartcity" })) {
+  if (await manager.init({ managerUrl: "http://127.0.0.1:8080", realm: "smartcity" })) {
     if (!manager.authenticated) {
       manager.login();
     }

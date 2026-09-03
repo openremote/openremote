@@ -3,7 +3,7 @@
 For documenting and showcasing UI components, we use a tool called [Storybook](https://storybook.js.org/).<br />
 It can also be used as a workshop during development, or to test if components are working as expected.<br />
 
-When running locally, use `npm run serve` in this directory, and navigate to `http://localhost:9000`.<br />
+When running locally, use `npm run serve` in this directory, and navigate to `http://127.0.0.1:9000`.<br />
 If deployed using Docker, you can access it at `https://<your url>/storybook/`.
 
 ## Contributing

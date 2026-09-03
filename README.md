@@ -30,7 +30,7 @@ docker compose pull
 docker compose -p openremote up
 ```
 
-If all goes well then you should now be able to access the OpenRemote Manager UI at [https://localhost](https://localhost). You will need to accept the self-signed
+If all goes well then you should now be able to access the OpenRemote Manager UI at [https://127.0.0.1](https://127.0.01). You will need to accept the self-signed
 certificate, see [here](https://www.technipages.com/google-chrome-bypass-your-connection-is-not-private-message) for details how to do this in Chrome (similar for other browsers).
 
 ### Login credentials
@@ -40,7 +40,7 @@ Password: secret
 
 ### Changing host and/or port
 
-The URL you use to access the system is important, the default is configured as `https://localhost` if you are using a VM then you will need to set the `OR_HOSTNAME` environment variable, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command:
+The URL you use to access the system is important, the default is configured as `https://127.0.0.1` if you are using a VM then you will need to set the `OR_HOSTNAME` environment variable, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command:
 
 BASH:
 

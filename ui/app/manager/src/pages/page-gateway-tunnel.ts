@@ -556,7 +556,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
    */
   protected _getDefaultTunnelToAdd(): GatewayTunnelInfo {
     return {
-      target: "localhost",
+      target: "127.0.0.1",
       targetPort: 443,
       type: this.GATEWAY_TUNNEL_PROTOCOL_TYPES?.[0],
     };

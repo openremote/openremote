@@ -31,9 +31,10 @@ import "./or-rule-form-push-notification";
 import ISO6391 from "iso-639-1";
 import { DefaultColor6 } from "@openremote/core";
 import type { SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
+import { isFormValid, type OrRuleForm } from "./or-rule-form";
 
 @customElement("or-rule-form-localized")
-export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
+export class OrRuleFormLocalized extends translate(i18next)(OrElement) implements OrRuleForm {
   @property({ type: Object })
   public message?: LocalizedNotificationMessage;
 
@@ -48,6 +49,9 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
 
   @property()
   public wrongLanguage = false;
+
+  @property({ type: Boolean })
+  public readonly?: boolean;
 
   @state()
   protected _selectedLanguage = "en";
@@ -78,12 +82,16 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
     this._selectedLanguage = this.defaultLang;
   }
 
+  checkValidity(): boolean {
+    return isFormValid(this.renderRoot) && this.isValid();
+  }
+
   protected render() {
     return html`
       <div>
         ${when(this.wrongLanguage, () => until(this._getWrongLanguageTemplate()))}
         ${guard(
-          [this.message, this._selectedLanguage, this.languages, this.type],
+          [this.message, this._selectedLanguage, this.languages, this.type, this.readonly],
           () => html`
             ${until(this._getLanguageSelectForm(this._selectedLanguage, this.languages), html`Loading...`)}
             ${until(this._getNotificationForm(this.message, this._selectedLanguage), html`Loading...`)}
@@ -103,7 +111,11 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
    */
   protected async _getWrongLanguageTemplate(): Promise<TemplateResult> {
     return html`
-      <or-vaadin-button style="width: 100%; margin: 10px 0;" @click=${() => this._fixDefaultLanguage()}>
+      <or-vaadin-button
+        style="width: 100%; margin: 10px 0;"
+        ?disabled=${this.readonly}
+        @click=${() => this._fixDefaultLanguage()}
+      >
         <or-translate value="defaultLanguageChangedError"></or-translate>
       </or-vaadin-button>
     `;
@@ -174,9 +186,13 @@ export class OrRuleFormLocalized extends translate(i18next)(OrElement) {
     const msg = message.languages[lang];
 
     if (msg.type === "push") {
-      return html` <or-rule-form-push-notification .message="${msg}"></or-rule-form-push-notification> `;
+      return html`
+        <or-rule-form-push-notification .message="${msg}" ?readonly=${this.readonly}></or-rule-form-push-notification>
+      `;
     } else if (msg.type === "email") {
-      return html` <or-rule-form-email-message .message="${msg}"></or-rule-form-email-message> `;
+      return html`
+        <or-rule-form-email-message .message="${msg}" ?readonly=${this.readonly}></or-rule-form-email-message>
+      `;
     } else {
       return html` <or-translate .value="${"errorOccurred"}"></or-translate> `;
     }

@@ -92,7 +92,7 @@ export { customElements, packageJson };
 /* ------------------------------------------------------- */
 
 async function loadOrManager() {
-  if (await manager.init({ managerUrl: "http://localhost:8080", realm: "master" })) {
+  if (await manager.init({ managerUrl: "http://127.0.0.1:8080", realm: "master" })) {
     if (!manager.authenticated) {
       manager.login();
     }

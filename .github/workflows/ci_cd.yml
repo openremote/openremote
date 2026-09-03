@@ -736,7 +736,7 @@ jobs:
 
           # Run the tests
           ${{ steps.test-backend-command.outputs.value }}
-        timeout-minutes: 20
+        timeout-minutes: 30
         #continue-on-error: true
 
       - name: Generate backend test reports

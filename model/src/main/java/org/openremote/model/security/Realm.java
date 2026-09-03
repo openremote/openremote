@@ -30,7 +30,6 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.io.IOException;
 import java.util.*;
-import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 import org.openremote.model.persistence.PasswordPolicyConverter;
 
@@ -70,8 +69,7 @@ public class Realm {
   @Schema(description = "Stable realm name used in API paths and tokens.", example = "building")
   protected String name;
 
-  @Formula(
-      "(select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = ID and ra.name = 'displayName')")
+  @Column(name = "DISPLAY_NAME")
   @Schema(description = "Human-readable realm label.", example = "Building Management")
   protected String displayName;
 
