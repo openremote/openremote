@@ -1,9 +1,9 @@
 # EKS cluster management
 
-`kubernetes/or-eks-cluster` manages the shared EKS cluster, its shared AWS Load
-Balancer Controller, and the `openremote-ebs` StorageClass. It does not deploy
-or delete OpenRemote stacks, stack namespaces, certificates, DNS records, or
-stack data volumes.
+`kubernetes/or-eks-cluster` manages the shared EKS cluster, native VPC CNI
+NetworkPolicy enforcement, its shared AWS Load Balancer Controller, and the
+`openremote-ebs` StorageClass. It does not deploy or delete OpenRemote stacks,
+stack namespaces, certificates, DNS records, or stack data volumes.
 
 Use `kubernetes/or-stack` to install and inspect namespaced OpenRemote stacks
 after the shared cluster is ready.
@@ -54,15 +54,35 @@ Inspect it:
 kubernetes/or-eks-cluster status --name openremote-test
 ```
 
-`apply` currently reconciles the AWS Load Balancer Controller, including its
-CRDs, and the `openremote-ebs` StorageClass used by OpenRemote stack PVCs. It
-intentionally does not attempt to mutate node-group infrastructure; that
-reconciliation will be implemented by the future CloudFormation cluster
+`apply` currently enables NetworkPolicy enforcement in the existing managed
+VPC CNI configuration, reconciles the AWS Load Balancer Controller and its
+CRDs, and applies the `openremote-ebs` StorageClass used by OpenRemote stack
+PVCs. It intentionally does not attempt to mutate node-group infrastructure;
+that reconciliation will be implemented by the future CloudFormation cluster
 definition.
 
 ```bash
 kubernetes/or-eks-cluster apply --name openremote-test
 ```
+
+The VPC CNI configuration update retains other configuration keys and does not
+change the installed add-on version. If that version does not support native
+NetworkPolicy, `apply` stops and asks for an explicit add-on update rather than
+performing a version upgrade implicitly. New clusters select the latest
+compatible VPC CNI version, give its dedicated IAM role the
+`AmazonEKS_CNI_Policy`, and enable NetworkPolicy during creation.
+
+For an existing managed add-on with a `serviceAccountRoleArn`, `apply` also
+ensures that the `aws-node` ServiceAccount carries the matching IRSA annotation
+before starting an add-on update. This prevents a VPC CNI rollout from losing
+access to EC2 network-interface operations. If no dedicated add-on role exists,
+the script warns that those permissions must instead come from the node IAM
+role. Add-on waiter failures include the EKS health issue and current
+`aws-node` rollout state.
+
+See the AWS documentation for the current
+[VPC CNI NetworkPolicy prerequisites and behavior](https://docs.aws.amazon.com/eks/latest/userguide/cni-network-policy.html)
+and [managed add-on configuration](https://docs.aws.amazon.com/eks/latest/userguide/cni-network-policy-configure.html).
 
 Cluster destruction requires an exact-name confirmation and is refused while
 Ingresses, LoadBalancer Services, PVCs, or non-system Pods remain:

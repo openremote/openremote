@@ -5,6 +5,8 @@ set -Eeuo pipefail
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OR_SETUP_CHART="$(cd "$TEST_DIR/../or-setup" && pwd)"
 MANAGER_CHART="$(cd "$TEST_DIR/../manager" && pwd)"
+LOCAL_TARGET_VALUES="$TEST_DIR/../stack/targets/local/or-setup.yaml"
+EKS_TARGET_VALUES="$TEST_DIR/../stack/targets/eks/or-setup.yaml"
 
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
@@ -18,8 +20,22 @@ secret_value() {
 
 helm lint "$OR_SETUP_CHART" >/dev/null
 
-rendered_a="$(helm template or-setup "$OR_SETUP_CHART" --namespace stack-a)"
-rendered_b="$(helm template or-setup "$OR_SETUP_CHART" --namespace stack-b)"
+rendered_a="$(helm template or-setup "$OR_SETUP_CHART" \
+  --namespace stack-a \
+  --values "$LOCAL_TARGET_VALUES")"
+rendered_b="$(helm template or-setup "$OR_SETUP_CHART" \
+  --namespace stack-b \
+  --values "$EKS_TARGET_VALUES")"
+
+grep -F -- 'kind: NetworkPolicy' <<< "$rendered_a" >/dev/null || fail \
+  "Stack ingress NetworkPolicy was not rendered"
+grep -F -- 'name: openremote-stack-ingress' <<< "$rendered_a" >/dev/null || fail \
+  "Stack ingress NetworkPolicy has the wrong name"
+grep -F -- 'podSelector: {}' <<< "$rendered_a" >/dev/null || fail \
+  "Stack ingress NetworkPolicy does not allow same-namespace Pods"
+if grep -F -- '- Egress' <<< "$rendered_a" >/dev/null; then
+  fail "Stack NetworkPolicy unexpectedly restricts outbound traffic"
+fi
 
 grep -F -- 'helm.sh/resource-policy: keep' <<< "$rendered_a" >/dev/null || fail \
   "Generated Secret is not retained during Helm uninstall"
@@ -63,5 +79,19 @@ grep -F -- '- name: OR_DB_PASSWORD' <<< "$rendered_manager" >/dev/null || fail \
 if grep -F -- '- name: KC_DB_PASSWORD' <<< "$rendered_manager" >/dev/null; then
   fail "Manager incorrectly receives its own database password through KC_DB_PASSWORD"
 fi
+
+rendered_without_policy="$(helm template or-setup "$OR_SETUP_CHART" \
+  --namespace stack-disabled)"
+if grep -F -- 'kind: NetworkPolicy' <<< "$rendered_without_policy" >/dev/null; then
+  fail "Disabled stack NetworkPolicy was still rendered"
+fi
+
+rendered_with_ingress_peer="$(helm template or-setup "$OR_SETUP_CHART" \
+  --namespace stack-ingress \
+  --set networkPolicy.enabled=true \
+  --set 'networkPolicy.additionalIngressFrom[0].namespaceSelector.matchLabels.kubernetes\.io/metadata\.name=ingress-nginx')"
+grep -F -- 'kubernetes.io/metadata.name: ingress-nginx' \
+  <<< "$rendered_with_ingress_peer" >/dev/null || fail \
+    "Additional trusted ingress namespace was not rendered"
 
 printf 'or-setup tests passed\n'

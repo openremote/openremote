@@ -318,6 +318,140 @@ reconcile_storage_class() {
   kubectl --context "$KUBE_CONTEXT" apply -f "$DEFAULT_STORAGE_CLASS_FILE"
 }
 
+verify_network_policy_support() {
+  local vpc_cni_containers
+
+  vpc_cni_containers="$(kubectl --context "$KUBE_CONTEXT" --namespace kube-system \
+    get daemonset aws-node \
+    -o 'jsonpath={.spec.template.spec.containers[*].name}')" || die \
+      "Unable to inspect the Amazon VPC CNI DaemonSet."
+
+  case " $vpc_cni_containers " in
+    *" aws-eks-nodeagent "*|*" aws-network-policy-agent "*)
+      ;;
+    *)
+      die "The Amazon VPC CNI NetworkPolicy agent is not installed."
+      ;;
+  esac
+
+  kubectl --context "$KUBE_CONTEXT" get \
+    customresourcedefinition/policyendpoints.networking.k8s.aws >/dev/null 2>&1 || die \
+      "The Amazon VPC CNI NetworkPolicy PolicyEndpoint CRD is unavailable."
+}
+
+show_vpc_cni_diagnostics() {
+  warn "Amazon VPC CNI add-on diagnostics:"
+  aws_eks describe-addon \
+    --cluster-name "$CLUSTER_NAME" \
+    --addon-name vpc-cni \
+    --query 'addon.{Status:status,Version:addonVersion,ServiceAccountRoleArn:serviceAccountRoleArn,Configuration:configurationValues,Issues:health.issues}' \
+    --output json >&2 || true
+  kubectl --context "$KUBE_CONTEXT" --namespace kube-system get daemonset aws-node \
+    -o custom-columns='NAME:.metadata.name,DESIRED:.status.desiredNumberScheduled,UPDATED:.status.updatedNumberScheduled,READY:.status.numberReady,AVAILABLE:.status.numberAvailable,CONTAINERS:.spec.template.spec.containers[*].name' >&2 || true
+  kubectl --context "$KUBE_CONTEXT" --namespace kube-system get pods \
+    --selector k8s-app=aws-node -o wide >&2 || true
+}
+
+reconcile_network_policy_support() {
+  local addon
+  local current_configuration
+  local current_service_account_role_arn
+  local desired_configuration
+  local service_account_role_arn
+  local update_id=""
+  local update_required=false
+  local update_args
+
+  require_command jq
+  require_command kubectl
+  require_kube_context
+
+  if ! addon="$(aws_eks describe-addon \
+    --cluster-name "$CLUSTER_NAME" \
+    --addon-name vpc-cni \
+    --query addon \
+    --output json)"; then
+    die "The managed vpc-cni add-on is required for EKS NetworkPolicy enforcement."
+  fi
+
+  current_configuration="$(jq -r '.configurationValues // "{}"' <<< "$addon")" || die \
+    "The vpc-cni add-on returned an unreadable configuration."
+  service_account_role_arn="$(jq -r '.serviceAccountRoleArn // empty' <<< "$addon")" || die \
+    "The vpc-cni add-on returned an unreadable service account role."
+
+  if [ -z "$current_configuration" ] || [ "$current_configuration" = "None" ]; then
+    current_configuration='{}'
+  fi
+
+  desired_configuration="$(jq -c '.enableNetworkPolicy = "true"' <<< "$current_configuration")" || die \
+    "The vpc-cni add-on returned invalid configuration values."
+
+  if [ -n "$service_account_role_arn" ]; then
+    if ! current_service_account_role_arn="$(kubectl --context "$KUBE_CONTEXT" --namespace kube-system \
+      get serviceaccount aws-node \
+      -o 'jsonpath={.metadata.annotations.eks\.amazonaws\.com/role-arn}')"; then
+      die "Unable to inspect the Amazon VPC CNI aws-node ServiceAccount."
+    fi
+
+    if [ "$current_service_account_role_arn" != "$service_account_role_arn" ]; then
+      log "Associating the Amazon VPC CNI IAM role with the aws-node ServiceAccount."
+      kubectl --context "$KUBE_CONTEXT" --namespace kube-system annotate serviceaccount aws-node \
+        "eks.amazonaws.com/role-arn=$service_account_role_arn" \
+        --overwrite >/dev/null
+      update_required=true
+    fi
+  else
+    warn "The managed vpc-cni add-on has no dedicated service account role; it must obtain its EC2 permissions from the node IAM role."
+  fi
+
+  if jq -e '(.enableNetworkPolicy | tostring) == "true"' \
+    <<< "$current_configuration" >/dev/null; then
+    log "Amazon VPC CNI NetworkPolicy enforcement is already enabled."
+  else
+    log "Enabling Amazon VPC CNI NetworkPolicy enforcement."
+    update_required=true
+  fi
+
+  if [ "$update_required" = true ]; then
+    update_args=(
+      update-addon
+      --cluster-name "$CLUSTER_NAME"
+      --addon-name vpc-cni
+      --resolve-conflicts PRESERVE
+      --configuration-values "$desired_configuration"
+    )
+    if [ -n "$service_account_role_arn" ]; then
+      update_args+=(--service-account-role-arn "$service_account_role_arn")
+    fi
+
+    if ! update_id="$(aws_eks "${update_args[@]}" --query 'update.id' --output text)"; then
+      show_vpc_cni_diagnostics
+      die "Unable to enable NetworkPolicy on the current vpc-cni version; update the add-on to a supported version before retrying."
+    fi
+
+    log "Waiting for Amazon VPC CNI add-on update '$update_id'."
+  fi
+
+  if ! aws_eks wait addon-active \
+      --cluster-name "$CLUSTER_NAME" \
+      --addon-name vpc-cni; then
+    if [ -n "$update_id" ]; then
+      aws_eks describe-update \
+        --name "$CLUSTER_NAME" \
+        --addon-name vpc-cni \
+        --update-id "$update_id" \
+        --query 'update.{Id:id,Status:status,Errors:errors}' \
+        --output json >&2 || true
+    fi
+    show_vpc_cni_diagnostics
+    die "Amazon VPC CNI did not become active; resolve the reported add-on or Pod health issue before retrying."
+  fi
+
+  kubectl --context "$KUBE_CONTEXT" --namespace kube-system rollout status \
+    daemonset/aws-node --timeout 10m
+  verify_network_policy_support
+}
+
 create_cluster() {
   require_command aws
   require_command eksctl
@@ -331,6 +465,7 @@ create_cluster() {
   log "Creating EKS cluster '$CLUSTER_NAME' in '$AWS_REGION_NAME'."
   eksctl_with_profile create cluster --config-file "$RENDERED_CONFIG_FILE"
   configure_kube_context
+  reconcile_network_policy_support
   reconcile_storage_class
   reconcile_load_balancer_controller
   log "EKS cluster '$CLUSTER_NAME' is ready."
@@ -351,6 +486,7 @@ apply_cluster() {
     die "Cluster configuration requests Kubernetes $desired_version but the cluster runs $current_version; Kubernetes version changes are outside the scope of this first-phase command."
   fi
 
+  reconcile_network_policy_support
   reconcile_storage_class
   reconcile_load_balancer_controller
   log "Shared cluster resources are reconciled. Node-group infrastructure updates remain outside apply until the cluster definition moves to CloudFormation."
@@ -380,6 +516,15 @@ show_cluster_status() {
     --query 'addons' \
     --output table
 
+  log "Amazon VPC CNI NetworkPolicy configuration"
+  if ! aws_eks describe-addon \
+    --cluster-name "$CLUSTER_NAME" \
+    --addon-name vpc-cni \
+    --query 'addon.{Status:status,Version:addonVersion,ServiceAccountRoleArn:serviceAccountRoleArn,Configuration:configurationValues,Issues:health.issues}' \
+    --output table; then
+    warn "The managed vpc-cni add-on is unavailable."
+  fi
+
   if kube_context_exists; then
     require_kube_context
     log "Kubernetes nodes"
@@ -389,6 +534,15 @@ show_cluster_status() {
     log "OpenRemote EBS StorageClass"
     if ! kubectl --context "$KUBE_CONTEXT" get storageclass openremote-ebs; then
       warn "StorageClass 'openremote-ebs' is not installed."
+    fi
+
+    log "Amazon VPC CNI NetworkPolicy agent"
+    if kubectl --context "$KUBE_CONTEXT" get \
+      customresourcedefinition/policyendpoints.networking.k8s.aws >/dev/null 2>&1; then
+      kubectl --context "$KUBE_CONTEXT" --namespace kube-system get daemonset aws-node \
+        -o custom-columns='NAME:.metadata.name,DESIRED:.status.desiredNumberScheduled,READY:.status.numberReady,CONTAINERS:.spec.template.spec.containers[*].name'
+    else
+      warn "Amazon VPC CNI NetworkPolicy enforcement is not enabled."
     fi
 
     if [ "$MANAGE_LOAD_BALANCER_CONTROLLER" = true ]; then

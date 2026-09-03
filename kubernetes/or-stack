@@ -249,11 +249,27 @@ require_stack_namespace() {
 }
 
 validate_target_cluster() {
+  local vpc_cni_containers
+
   if [ "$TARGET" = "eks" ]; then
     kubectl --context "$KUBE_CONTEXT" get storageclass openremote-ebs >/dev/null 2>&1 || die \
       "StorageClass 'openremote-ebs' is not installed in context '$KUBE_CONTEXT'."
     kubectl --context "$KUBE_CONTEXT" get csidriver ebs.csi.aws.com >/dev/null 2>&1 || die \
       "EBS CSI driver 'ebs.csi.aws.com' is not installed in context '$KUBE_CONTEXT'."
+    kubectl --context "$KUBE_CONTEXT" get \
+      customresourcedefinition/policyendpoints.networking.k8s.aws >/dev/null 2>&1 || die \
+      "Amazon VPC CNI NetworkPolicy enforcement is not enabled in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
+    vpc_cni_containers="$(kubectl --context "$KUBE_CONTEXT" --namespace kube-system \
+      get daemonset aws-node \
+      -o 'jsonpath={.spec.template.spec.containers[*].name}')" || die \
+        "Unable to inspect the Amazon VPC CNI DaemonSet in context '$KUBE_CONTEXT'."
+    case " $vpc_cni_containers " in
+      *" aws-eks-nodeagent "*|*" aws-network-policy-agent "*)
+        ;;
+      *)
+        die "Amazon VPC CNI NetworkPolicy enforcement is not active in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
+        ;;
+    esac
   fi
 }
 
@@ -299,6 +315,7 @@ apply_stack() {
   helm_apply manager --set-string "or.hostname=$HOSTNAME_VALUE"
 
   log "Stack '$STACK_NAME' is applied in context '$KUBE_CONTEXT'."
+  log "NetworkPolicy enforcement depends on the cluster CNI; verify cross-stack isolation before relying on it."
   log "Retrieve its Manager login at any time with:"
   printf '  %q credentials --name %q --kube-context %q\n' \
     "$0" "$STACK_NAME" "$KUBE_CONTEXT"
@@ -460,7 +477,7 @@ show_stack_status() {
 
   log "Networking"
   kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
-    get services,ingresses
+    get services,ingresses,networkpolicies
 
   log "Persistent storage"
   kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \

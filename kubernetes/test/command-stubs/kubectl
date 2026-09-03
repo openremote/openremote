@@ -48,6 +48,12 @@ case "$arguments" in
   *" get csidriver ebs.csi.aws.com "*)
     [ "${OR_STACK_TEST_EKS_CSI:-true}" = "true" ]
     ;;
+  *" get customresourcedefinition/policyendpoints.networking.k8s.aws "*)
+    [ "${OR_STACK_TEST_EKS_NETWORK_POLICY:-true}" = "true" ]
+    ;;
+  *" get daemonset aws-node "*)
+    printf '%s' "${OR_STACK_TEST_EKS_CNI_CONTAINERS:-aws-node aws-eks-nodeagent}"
+    ;;
   *" get secret openremote-secret "*)
     [ "${OR_STACK_TEST_SECRET_EXISTS:-true}" = "true" ] || exit 1
     case "$arguments" in

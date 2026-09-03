@@ -69,6 +69,69 @@ with:
 The Manager username is `admin`. The command deliberately does not display the
 PostgreSQL credentials.
 
+### Network isolation
+
+Every stack installs a `NetworkPolicy` that selects all Pods in its namespace.
+Inbound traffic is allowed from Pods in the same namespace and denied from
+other namespaces. Outbound traffic remains unrestricted so Manager and
+Keycloak can still use DNS and external integrations.
+
+NetworkPolicy enforcement is provided by the cluster's CNI plugin, not by the
+Kubernetes API. A cluster can accept and display the policy while ignoring it.
+Docker Desktop, kind, and kubeadm installations must therefore use a
+NetworkPolicy-capable CNI and be verified with a connectivity test.
+
+The Docker Desktop cluster used during development accepted the policies but
+did not enforce them: cross-namespace connections succeeded in both directions.
+Consequently, deploying with `--target local` on Docker Desktop isolates names
+and storage, but does not by itself guarantee network isolation. Treat that
+environment as non-enforcing unless the connectivity test below proves
+otherwise. For local enforcement testing, use a cluster configured with a
+policy-capable CNI; for example, create a kind cluster with its default CNI
+disabled and install Calico or Cilium.
+
+With two running stacks, create a controller-managed test Pod in stack A:
+
+```bash
+kubectl create deployment network-policy-test \
+  --namespace stack-a \
+  --image busybox:1.36 \
+  -- sleep 3600
+
+kubectl rollout status deployment/network-policy-test \
+  --namespace stack-a \
+  --timeout 2m
+```
+
+Its own PostgreSQL service must be reachable:
+
+```bash
+kubectl exec --namespace stack-a deployment/network-policy-test -- \
+  nc -z -w 3 postgresql.stack-a.svc.cluster.local 5432
+```
+
+The PostgreSQL service in stack B must time out or be rejected:
+
+```bash
+kubectl exec --namespace stack-a deployment/network-policy-test -- \
+  nc -z -w 3 postgresql.stack-b.svc.cluster.local 5432
+```
+
+The same-stack command must succeed and the cross-stack command must fail. If
+both commands succeed, as observed with the development Docker Desktop cluster,
+the policies are installed but the cluster is not enforcing them. Remove the
+test workload afterwards:
+
+```bash
+kubectl delete deployment network-policy-test --namespace stack-a
+```
+
+Set `networkPolicy.enabled: false` in a stack's `or-setup.yaml` only when
+isolation is deliberately not required. `networkPolicy.additionalIngressFrom`
+accepts additional Kubernetes `NetworkPolicyPeer` entries; it is reserved for
+trusted sources such as an ingress-controller namespace when external routing
+is added.
+
 `apply` accepts an optional `--values-dir`. Files named `or-setup.yaml`,
 `postgresql.yaml`, `keycloak.yaml`, and `manager.yaml` in that directory are
 applied after the selected target values. Command-line hostname configuration

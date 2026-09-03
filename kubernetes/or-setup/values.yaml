@@ -8,3 +8,12 @@ credentials:
   # Empty defaults to postgres when the Secret is first created.
   postgresqlUsername: ""
   postgresqlPassword: ""
+
+networkPolicy:
+  # or-stack target profiles enable this. It remains opt-in for standalone and
+  # legacy chart installations, whose external routing may require extra peers.
+  # The cluster CNI must implement NetworkPolicy for it to be enforced.
+  enabled: false
+  # Optional NetworkPolicyPeer entries for trusted ingress sources outside the
+  # stack namespace, such as a future ingress controller namespace.
+  additionalIngressFrom: []

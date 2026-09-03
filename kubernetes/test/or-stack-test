@@ -47,6 +47,22 @@ assert_before() {
     "Expected '$first' before '$second'"
 }
 
+assert_on_line_before() {
+  local first="$1"
+  local second="$2"
+  local line
+
+  line="$(grep -F -- "$first" "$CALL_LOG" | grep -F -- "$second" | head -n 1)"
+  [ -n "$line" ] || fail "Expected one command containing '$first' and '$second'"
+  case "$line" in
+    *"$first"*"$second"*)
+      ;;
+    *)
+      fail "Expected '$first' before '$second' in the same command"
+      ;;
+  esac
+}
+
 reset_log() {
   : > "$CALL_LOG"
 }
@@ -62,6 +78,7 @@ test_local_apply() {
   local output
   local values_dir="$TEST_TEMP_DIR/values"
   mkdir -p "$values_dir"
+  : > "$values_dir/or-setup.yaml"
   : > "$values_dir/manager.yaml"
 
   reset_log
@@ -75,6 +92,9 @@ test_local_apply() {
   assert_contains $'kubectl\t--context\ttest-context\tcreate\tnamespace\tstack-a'
   assert_contains $'kubectl\t--context\ttest-context\tlabel\tnamespace\tstack-a'
   assert_contains $'helm\tupgrade\t--install\tor-setup'
+  assert_contains "$KUBERNETES_DIR/stack/targets/local/or-setup.yaml"
+  assert_contains "$values_dir/or-setup.yaml"
+  assert_on_line_before "$KUBERNETES_DIR/stack/targets/local/or-setup.yaml" "$values_dir/or-setup.yaml"
   assert_contains $'helm\tupgrade\t--install\tpostgresql'
   assert_contains "$KUBERNETES_DIR/stack/targets/local/postgresql.yaml"
   assert_contains $'helm\tupgrade\t--install\tkeycloak'
@@ -82,6 +102,7 @@ test_local_apply() {
   assert_contains $'helm\tupgrade\t--install\tmanager'
   assert_contains "$values_dir/manager.yaml"
   assert_not_contains "openremote-ebs"
+  assert_not_contains "policyendpoints.networking.k8s.aws"
   grep -F -- "credentials --name stack-a --kube-context test-context" <<< "$output" >/dev/null || fail \
     "Apply output did not explain how to retrieve Manager credentials"
 }
@@ -95,8 +116,11 @@ test_eks_apply() {
 
   assert_contains $'kubectl\t--context\ttest-context\tget\tstorageclass\topenremote-ebs'
   assert_contains $'kubectl\t--context\ttest-context\tget\tcsidriver\tebs.csi.aws.com'
+  assert_contains $'kubectl\t--context\ttest-context\tget\tcustomresourcedefinition/policyendpoints.networking.k8s.aws'
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tkube-system\tget\tdaemonset\taws-node'
   assert_not_contains $'create\tnamespace\tstack-eks'
   assert_contains "$KUBERNETES_DIR/stack/targets/eks/postgresql.yaml"
+  assert_contains "$KUBERNETES_DIR/stack/targets/eks/or-setup.yaml"
   assert_contains "$KUBERNETES_DIR/stack/targets/eks/manager.yaml"
 }
 
@@ -108,7 +132,7 @@ test_status() {
 
   assert_contains $'helm\tlist\t--kube-context\ttest-context\t--namespace\tstack-a'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tdeployments,statefulsets,pods'
-  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tservices,ingresses'
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tservices,ingresses,networkpolicies'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tpersistentvolumeclaims'
 }
 
@@ -241,6 +265,20 @@ test_validation() {
     --name stack-a --kube-context test-context --target eks >/dev/null 2>&1; then
     fail "EKS target accepted a missing StorageClass"
   fi
+
+  if OR_STACK_TEST_EKS_NETWORK_POLICY=false run_stack apply \
+    --name stack-a --kube-context test-context --target eks >/dev/null 2>&1; then
+    fail "EKS target accepted disabled NetworkPolicy enforcement"
+  fi
+
+  if OR_STACK_TEST_EKS_CNI_CONTAINERS=aws-node run_stack apply \
+    --name stack-a --kube-context test-context --target eks >/dev/null 2>&1; then
+    fail "EKS target accepted a missing NetworkPolicy agent"
+  fi
+
+  OR_STACK_TEST_NAMESPACE_EXISTS=true \
+  OR_STACK_TEST_EKS_CNI_CONTAINERS='aws-node aws-network-policy-agent' \
+    run_stack apply --name stack-legacy-agent --kube-context test-context --target eks >/dev/null
 }
 
 test_local_apply

@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KUBERNETES_DIR="$(cd "$TEST_DIR/.." && pwd)"
+TEST_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/or-eks-cluster-test.XXXXXX")"
+CALL_LOG="$TEST_TEMP_DIR/calls.log"
+TEST_CNI_ROLE_ARN="arn:aws:iam::123456789012:role/test-vpc-cni"
+TEST_DEFAULT_VPC_CNI_CONFIGURATION='{}'
+
+cleanup_test() {
+  rm -rf "$TEST_TEMP_DIR"
+}
+
+# Source the command so its cluster operations can be replaced with deterministic
+# stubs. Its main function is guarded when sourced.
+source "$KUBERNETES_DIR/or-eks-cluster"
+trap cleanup_test EXIT
+
+fail() {
+  printf 'FAIL: %s\n' "$*" >&2
+  exit 1
+}
+
+log_call() {
+  local command="$1"
+  shift
+  printf '%s' "$command" >> "$CALL_LOG"
+  for argument in "$@"; do
+    printf '\t%s' "$argument" >> "$CALL_LOG"
+  done
+  printf '\n' >> "$CALL_LOG"
+}
+
+require_command() {
+  :
+}
+
+require_kube_context() {
+  :
+}
+
+aws_eks() {
+  log_call aws-eks "$@"
+  case " $* " in
+    *" describe-addon "*)
+      jq -cn \
+        --arg configuration "${OR_EKS_TEST_VPC_CNI_CONFIGURATION-$TEST_DEFAULT_VPC_CNI_CONFIGURATION}" \
+        --arg role "${OR_EKS_TEST_ADDON_ROLE_ARN-$TEST_CNI_ROLE_ARN}" \
+        '{configurationValues: $configuration} +
+          (if $role == "" then {} else {serviceAccountRoleArn: $role} end)'
+      ;;
+    *" update-addon "*)
+      printf '%s\n' "${OR_EKS_TEST_UPDATE_ID:-test-update}"
+      ;;
+    *" wait addon-active "*)
+      [ "${OR_EKS_TEST_ADDON_WAIT_SUCCESS:-true}" = "true" ]
+      ;;
+    *" describe-update "*)
+      printf '%s\n' '{"Id":"test-update","Status":"Failed","Errors":[{"errorCode":"test-error"}]}'
+      ;;
+  esac
+}
+
+kubectl() {
+  log_call kubectl "$@"
+  case " $* " in
+    *" get serviceaccount aws-node "*)
+      printf '%s' "${OR_EKS_TEST_SERVICE_ACCOUNT_ROLE_ARN-$TEST_CNI_ROLE_ARN}"
+      ;;
+    *" get daemonset aws-node "*)
+      printf '%s' "${OR_EKS_TEST_CNI_CONTAINERS:-aws-node aws-eks-nodeagent}"
+      ;;
+    *" get customresourcedefinition/policyendpoints.networking.k8s.aws "*)
+      [ "${OR_EKS_TEST_POLICY_CRD:-true}" = "true" ]
+      ;;
+  esac
+}
+
+assert_contains() {
+  local expected="$1"
+  grep -F -- "$expected" "$CALL_LOG" >/dev/null || fail \
+    "Expected command log to contain: $expected"
+}
+
+assert_not_contains() {
+  local unexpected="$1"
+  if grep -F -- "$unexpected" "$CALL_LOG" >/dev/null; then
+    fail "Expected command log not to contain: $unexpected"
+  fi
+}
+
+CLUSTER_NAME=test-cluster
+AWS_REGION_NAME=eu-west-1
+AWS_PROFILE_NAME=
+KUBE_CONTEXT=test-cluster@eu-west-1
+
+: > "$CALL_LOG"
+OR_EKS_TEST_VPC_CNI_CONFIGURATION='{"env":{"WARM_IP_TARGET":"2"}}' \
+  reconcile_network_policy_support
+assert_contains $'aws-eks\tupdate-addon\t--cluster-name\ttest-cluster\t--addon-name\tvpc-cni'
+assert_contains $'--configuration-values\t{"env":{"WARM_IP_TARGET":"2"},"enableNetworkPolicy":"true"}'
+assert_contains $'--service-account-role-arn\tarn:aws:iam::123456789012:role/test-vpc-cni'
+assert_contains $'aws-eks\twait\taddon-active'
+assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\trollout\tstatus\tdaemonset/aws-node'
+
+: > "$CALL_LOG"
+OR_EKS_TEST_VPC_CNI_CONFIGURATION='{"enableNetworkPolicy":true}' \
+  reconcile_network_policy_support
+assert_not_contains $'aws-eks\tupdate-addon'
+
+: > "$CALL_LOG"
+OR_EKS_TEST_VPC_CNI_CONFIGURATION='{"enableNetworkPolicy":true}' \
+OR_EKS_TEST_SERVICE_ACCOUNT_ROLE_ARN='' \
+  reconcile_network_policy_support
+assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\tannotate\tserviceaccount\taws-node'
+assert_contains $'aws-eks\tupdate-addon'
+
+: > "$CALL_LOG"
+OR_EKS_TEST_VPC_CNI_CONFIGURATION='{"enableNetworkPolicy":true}' \
+OR_EKS_TEST_CNI_CONTAINERS='aws-node aws-network-policy-agent' \
+  reconcile_network_policy_support
+
+: > "$CALL_LOG"
+if (OR_EKS_TEST_POLICY_CRD=false reconcile_network_policy_support) >/dev/null 2>&1; then
+  fail "NetworkPolicy reconciliation succeeded without the PolicyEndpoint CRD"
+fi
+
+: > "$CALL_LOG"
+if (OR_EKS_TEST_CNI_CONTAINERS=aws-node reconcile_network_policy_support) >/dev/null 2>&1; then
+  fail "NetworkPolicy reconciliation succeeded without the policy agent"
+fi
+
+: > "$CALL_LOG"
+show_vpc_cni_diagnostics >/dev/null 2>&1
+assert_contains $'aws-eks\tdescribe-addon'
+assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\tget\tdaemonset\taws-node'
+assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\tget\tpods\t--selector\tk8s-app=aws-node'
+
+: > "$CALL_LOG"
+set +e
+failure_output="$(OR_EKS_TEST_ADDON_WAIT_SUCCESS=false \
+  reconcile_network_policy_support 2>&1)"
+failure_status=$?
+set -e
+if [ "$failure_status" -eq 0 ]; then
+  fail "NetworkPolicy reconciliation succeeded while the managed add-on was unhealthy"
+fi
+grep -F -- 'Amazon VPC CNI add-on diagnostics:' <<< "$failure_output" >/dev/null || fail \
+  "Unhealthy add-on failure did not include diagnostics"
+
+printf 'or-eks-cluster tests passed\n'

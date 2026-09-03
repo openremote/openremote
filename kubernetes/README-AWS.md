@@ -2,7 +2,10 @@
 
 ## TL;DR
 
-Requirements: you need to have kubectl, helm, [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and [eksctl](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html#eksctl-install-update) installed beforehand.
+Requirements: you need to have kubectl, helm, jq,
+[aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html),
+and [eksctl](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html#eksctl-install-update)
+installed beforehand.
 
 Cluster-only lifecycle management is available through
 [`or-eks-cluster`](or-eks-cluster). It creates, inspects, reconciles shared
@@ -60,10 +63,21 @@ internal components of an OpenRemote stack in an independent namespace:
 ```
 
 The EKS target verifies that the EBS CSI driver and `openremote-ebs`
-StorageClass exist. It selects encrypted dynamically provisioned EBS storage
-without applying the instance-specific ingress, load balancer, certificate, or
-DNS values from the legacy setup scripts. Those external routing concerns are
+StorageClass exist. It also requires the Amazon VPC CNI NetworkPolicy
+`PolicyEndpoint` CRD and node agent, confirming that native policy support is
+configured. It selects encrypted dynamically provisioned EBS storage without
+applying the instance-specific ingress, load balancer, certificate, or DNS
+values from the legacy setup scripts. Those external routing concerns are
 outside this first stack-management phase.
+
+Each stack applies an ingress NetworkPolicy that allows traffic from its own
+namespace and rejects traffic originating in other stack namespaces. Egress is
+not restricted. `or-eks-cluster create` enables NetworkPolicy on the managed
+VPC CNI add-on, and `or-eks-cluster apply` reconciles that setting without
+changing the installed add-on version. New clusters give the VPC CNI add-on a
+dedicated IAM role with `AmazonEKS_CNI_Policy`; for existing add-ons, cluster
+reconciliation aligns the `aws-node` ServiceAccount annotation with the role
+already recorded by EKS.
 
 Use the same command with a different stack name to create another namespace,
 or inspect one stack with:
