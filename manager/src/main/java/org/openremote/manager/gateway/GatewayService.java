@@ -396,7 +396,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
       exchange.setRouteStop(true);
       String sessionKey = ClientEventService.getSessionKey(exchange);
       String gatewayId = getGatewayIdFromClientId(clientId);
-      processGatewayMessage(realm, gatewayId, sessionKey, exchange.getIn().getBody(SharedEvent.class));
+      processGatewayMessage(
+          realm, gatewayId, sessionKey, exchange.getIn().getBody(SharedEvent.class));
     }
   }
 
@@ -575,7 +576,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
   public GatewayTunnelInfo[] getGatewayTunnelInfos(String realm, String gatewayID) {
     return getTunnelInfos().stream()
         .filter(tunnel -> tunnel.getGatewayId().equals(gatewayID))
-         .filter(tunnel -> tunnel.getRealm().equals(realm))
+        .filter(tunnel -> tunnel.getRealm().equals(realm))
         .toArray(GatewayTunnelInfo[]::new);
   }
 
@@ -804,7 +805,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         });
   }
 
-  protected void processGatewayDisconnected(String realm, String gatewayClientId, String sessionId) {
+  protected void processGatewayDisconnected(
+      String realm, String gatewayClientId, String sessionId) {
     String gatewayId = getGatewayIdFromClientId(gatewayClientId);
     GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
@@ -834,7 +836,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     }
   }
 
-  protected void processGatewayMessage(String realm, String gatewayId, String sessionId, SharedEvent event) {
+  protected void processGatewayMessage(
+      String realm, String gatewayId, String sessionId, SharedEvent event) {
     GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
     if (connector == null || !Objects.equals(realm, connector.getRealm())) {
       return;

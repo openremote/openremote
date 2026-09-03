@@ -30,8 +30,6 @@ import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.TextUtil;
 
-import java.util.Arrays;
-
 public class GatewayServiceResourceImpl extends ManagerWebResource
     implements GatewayServiceResource {
 

@@ -662,24 +662,24 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     def rogueClientId = getGatewayClientId(gateway.getId())
     def secret = UUID.randomUUID().toString()
     def rogueGatewayUser =
-      identityProvider.createUpdateUser(
-        managerTestSetup.realmCityName,
-        new User()
-          .setServiceAccount(true)
-          .setSystemAccount(true)
-          .setUsername(rogueClientId)
-          .setEnabled(true),
-        secret,
-        true)
+            identityProvider.createUpdateUser(
+            managerTestSetup.realmCityName,
+            new User()
+            .setServiceAccount(true)
+            .setSystemAccount(true)
+            .setUsername(rogueClientId)
+            .setEnabled(true),
+            secret,
+            true)
 
     and: "the rogue client connects"
     def rogueGatewayClient = new WebsocketIOClient(
-      new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$managerTestSetup.realmCityName").build(),
-      null,
-      new OAuthClientCredentialsGrant("http://127.0.0.1:8081/auth/realms/$managerTestSetup.realmCityName/protocol/openid-connect/token",
-        rogueClientId,
-        secret,
-        null).setBasicAuthHeader(true))
+            new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$managerTestSetup.realmCityName").build(),
+            null,
+            new OAuthClientCredentialsGrant("http://127.0.0.1:8081/auth/realms/$managerTestSetup.realmCityName/protocol/openid-connect/token",
+            rogueClientId,
+            secret,
+            null).setBasicAuthHeader(true))
     rogueGatewayClient.setEncoderDecoderProvider({
       [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, rogueGatewayClient)].toArray(new ChannelHandler[0])
     })
@@ -1536,20 +1536,20 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
     and: "an authenticated user in the building realm"
     def accessToken = authenticate(
-      container,
-      managerTestSetup.realmBuildingName,
-      KEYCLOAK_CLIENT_ID,
-      "testuser2",
-      "testuser2"
-    )
+            container,
+            managerTestSetup.realmBuildingName,
+            KEYCLOAK_CLIENT_ID,
+            "testuser2",
+            "testuser2"
+            )
 
     and: "the gateway service resource"
     def gatewayResource = getClientApiTarget(serverUri(serverPort), managerTestSetup.realmBuildingName, accessToken).proxy(GatewayServiceResource.class)
 
     when: "a fake tunnel for a fake gateway ID in the smart city realm is injected into the gateway service"
     gatewayService.@tunnelInfos.put("fake-tunnel-id",
-      new GatewayTunnelInfo(managerTestSetup.realmCityName, "fake-gateway-id", GatewayTunnelInfo.Type.HTTPS, "127.0.0.1", 443)
-    )
+            new GatewayTunnelInfo(managerTestSetup.realmCityName, "fake-gateway-id", GatewayTunnelInfo.Type.HTTPS, "127.0.0.1", 443)
+            )
 
     and: "the building user then retrieves the list of tunnels for the fake gateway ID"
     def activeTunnels = gatewayResource.getGatewayActiveTunnelInfos(null, managerTestSetup.realmBuildingName, "fake-gateway-id")
