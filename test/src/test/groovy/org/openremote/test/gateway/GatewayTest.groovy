@@ -108,7 +108,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
   def "Gateway asset provisioning and local manager logic test"() {
 
-    given: "the container environment is started"
+    given: "some polling conditions and services from the container"
     def conditions = new PollingConditions(timeout: 15, delay: 0.2)
     def assetProcessingService = container.getService(AssetProcessingService.class)
     def timerService = container.getService(TimerService.class)
@@ -192,10 +192,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     and: "the gateway connects to this manager"
     gatewayClient.connect()
 
-    then: "the gateway netty client status should become CONNECTING"
+    then: "the gateway netty client status should become CONNECTED"
     conditions.eventually {
-      assert connectionStatus == ConnectionStatus.CONNECTING
-      assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTING
+      assert connectionStatus == ConnectionStatus.CONNECTED
+      assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
     }
 
     and: "the gateway asset connection status should be CONNECTING"
@@ -507,12 +507,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
       assert gatewayInitDoneEvent != null
     }
 
-    and: "the gateway client should now be CONNECTED"
-    conditions.eventually {
-      assert connectionStatus == ConnectionStatus.CONNECTED
-      assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
-    }
-
     and: "the gateway asset connection status should be CONNECTED"
     conditions.eventually {
       gateway = assetStorageService.find(gateway.getId()) as GatewayAsset
@@ -664,6 +658,56 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     then: "the asset should not have been deleted"
     assert assetStorageService.find(mapAssetId(gateway.id, assetIds[0], false)) != null
 
+    when: "a rogue client user is provisioned in another realm with the gateway ID from the building realm"
+    def rogueClientId = getGatewayClientId(gateway.getId())
+    def secret = UUID.randomUUID().toString()
+    def rogueGatewayUser =
+      identityProvider.createUpdateUser(
+        managerTestSetup.realmCityName,
+        new User()
+          .setServiceAccount(true)
+          .setSystemAccount(true)
+          .setUsername(rogueClientId)
+          .setEnabled(true),
+        secret,
+        true)
+
+    and: "the rogue client connects"
+    def rogueGatewayClient = new WebsocketIOClient(
+      new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$managerTestSetup.realmCityName").build(),
+      null,
+      new OAuthClientCredentialsGrant("http://127.0.0.1:8081/auth/realms/$managerTestSetup.realmCityName/protocol/openid-connect/token",
+        rogueClientId,
+        secret,
+        null).setBasicAuthHeader(true))
+    rogueGatewayClient.setEncoderDecoderProvider({
+      [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, rogueGatewayClient)].toArray(new ChannelHandler[0])
+    })
+
+    and: "we add callback consumers to the rogue client"
+    List<ConnectionStatus> rogueConnectionStatuses = new CopyOnWriteArrayList<>()
+    List<String> rogueClientReceivedMessages = new CopyOnWriteArrayList<>()
+    rogueGatewayClient.addMessageConsumer({message ->
+      getLOG().info("Message received from central manager: $message")
+      rogueClientReceivedMessages.add(message as String)
+    })
+    rogueGatewayClient.addConnectionStatusConsumer({status ->
+      getLOG().info("Rouge gateway client connection staus changed: $status")
+      rogueConnectionStatuses.add(status)
+    })
+
+    and: "the rogue client connects"
+    rogueGatewayClient.connect()
+
+    then: "the rogue netty client status should continually connect as legitimate gateway client ALREADY_CONNECTED"
+    conditions.eventually {
+      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTING) > 5
+      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTED) > 5
+    }
+
+    then: "the rogue client is disconnected"
+    rogueGatewayClient.disconnect()
+
     when: "time advances"
     advancePseudoClock(1, TimeUnit.SECONDS, container)
 
@@ -720,7 +764,23 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
       assert !gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).disabled
     }
 
-    when: "the gateway asset client secret attribute is updated"
+    when: "the rogue client connects now the legitimate gateway client is disconnected"
+    rogueConnectionStatuses.clear()
+    rogueGatewayClient.connect()
+
+    then: "the gateway connector disconnect runnable should not be set"
+    assert gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).requestDisconnect == null
+
+    and: "the gateway netty client status should still continually connect as it's rogue"
+    conditions.eventually {
+      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTING) > 5
+      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTED) > 5
+    }
+
+    when: "the rogue client is disconnected"
+    rogueGatewayClient.disconnect()
+
+    and: "the gateway asset client secret attribute is updated"
     def newSecret = UUID.randomUUID().toString()
     assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.CLIENT_SECRET, newSecret))
 
@@ -886,7 +946,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(VersionInfo.getGatewayApiVersion(), true)
     gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 
-
     then: "the gateway connector sync should be completed"
     conditions.eventually {
       def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
@@ -932,6 +991,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
       gatewayClient.disconnect()
       gatewayClient.removeAllMessageConsumers()
     }
+    if (rogueGatewayClient != null) {
+      rogueGatewayClient.disconnect()
+      rogueGatewayClient.removeAllMessageConsumers()
+    }
     if (gateway != null) {
       assetStorageService.delete([gateway.id])
     }
@@ -939,7 +1002,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
   def "Verify gateway client service"() {
 
-    given: "the container environment is started"
+    given: "some polling conditions and services from the container"
     def conditions = new PollingConditions(timeout: 30, delay: 0.2)
     def delayedConditions = new PollingConditions(initialDelay: 1, delay: 1, timeout: 10)
     def assetProcessingService = container.getService(AssetProcessingService.class)
@@ -1325,84 +1388,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     }
   }
 
-  /**
-   * This test requires a manager instance with tunnelling configured, so is manual for now unfortunately.
-   * Change the test url and key path to match the instance to connect to.
-   * Recommended to run profile/dev-proxy.yml profile.
-   */
-  @Ignore
-  def "Verify gateway tunnel factory"() {
-    given: "an ssh private key and the URL of a manager instance with tunnelling configured"
-    def keyPath = Paths.get(System.getProperty("user.home"), ".ssh", "test_key")
-    def tunnelSSHHost = "custom-project-test.openremote.app"
-    def tunnelSSHPort = 2222
-    def tmpDir = new File("tmp")
-    def lockFile = new File(tmpDir, "lock.file")
-
-    and: "an instance of the gateway tunnel factory is created"
-    def container = new Container(Collections.emptyMap(), Collections.emptyList())
-    def conditions = new PollingConditions(timeout: 15, delay: 1)
-    def tunnelFactory = new MINAGatewayTunnelFactory(container.EXECUTOR, Container.SCHEDULED_EXECUTOR, keyPath.toFile(), null)
-    tunnelFactory.start()
-
-    expect: "the SSH client to be ready"
-    conditions.eventually {
-      tunnelFactory.client.isStarted()
-    }
-
-    and: "A configured GatewayTunnelInfo for HTTPS on localhost:443"
-    def tunnelInfo = new GatewayTunnelInfo(Constants.MASTER_REALM,
-            "abcedf123456",
-            GatewayTunnelInfo.Type.HTTPS,
-            "localhost", 443)
-
-    and: "A completion variable for the close callback"
-    AtomicBoolean closed = new AtomicBoolean(false)
-
-    when: "Create session is called"
-    GatewayTunnelSession session = tunnelFactory.createSession(tunnelSSHHost, tunnelSSHPort, tunnelInfo, { t ->
-      closed.set(true)
-    })
-
-    then: "The session connection future should complete successfully"
-    new PollingConditions(timeout: 60).eventually {
-      assert session.getConnectFuture().isDone()
-      assert !session.getConnectFuture().isCompletedExceptionally()
-    }
-
-    then: "we keep the tunnel open for manual testing until lock file is deleted"
-    if (!tmpDir.exists()) {
-      tmpDir.mkdirs()
-    }
-    if (!lockFile.exists()) {
-      lockFile.createNewFile()
-    }
-    getLOG().info("---------------------------------------------------------------------------------")
-    getLOG().info("TEST PAUSED FOR TUNNEL TESTING")
-    getLOG().info("Delete the lock file to continue: ${lockFile.absolutePath}")
-    getLOG().info("Tunnel should be accessible at: gw-54tnxwr2oobjafque1jndh.${tunnelSSHHost}")
-    getLOG().info("---------------------------------------------------------------------------------")
-
-    while (lockFile.exists()) {
-      getLOG().info("Tunnel is open")
-      Thread.sleep(5000)
-    }
-
-    when: "we close the tunnel gracefully"
-    session.disconnect()
-
-    then: "the tunnel should be closed without error"
-    noExceptionThrown()
-
-    cleanup: "cleanup"
-    if (tunnelFactory != null) {
-      tunnelFactory.stop()
-    }
-  }
-
   def "Verify GatewayAssetSyncRules"() {
 
-    given: "the container environment is started"
+    given: "some polling conditions and services from the container"
     def conditions = new PollingConditions(timeout: 30, delay: 0.2)
     def assetProcessingService = container.getService(AssetProcessingService.class)
     def assetStorageService = container.getService(AssetStorageService.class)
@@ -1540,7 +1528,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
       gatewayClientResource.deleteConnection(null, managerTestSetup.realmCityName)
     }
   }
-
 
   /**
    * This test requires a manager instance with tunnelling configured, so is manual for now unfortunately.
@@ -1704,7 +1691,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     def centralManagerTunnelInfo = gatewayResource.startTunnel(tunnelInfo)
 
     then: "gateway should have been opened"
-
     conditions.eventually {
       def res = gatewayResource.getAllActiveTunnelInfos(null, centralInstanceRealm)
       print(res)
@@ -1725,7 +1711,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
      webserver.
      * */
     and: "We request a new admin token from the tunnel URL"
-
     def token = authenticate(true,
             centralManagerTunnelInfo.id + "." + centralManagerTunnelInfo.hostname,
             MASTER_REALM,
@@ -1747,7 +1732,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     then: "The request should be successful"
     conditions.eventually {
       def info = target.proxy(StatusResource.class).getInfo()
-
       assert info != null
       assert info.size() > 0
     }
