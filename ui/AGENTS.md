@@ -4,7 +4,7 @@ Applies to everything under `ui/`. See the root `AGENTS.md` for build, test stac
 
 ### Build and test output
 
-Every package writes its output to its own `build/` dir, so a single Gradle `clean` removes it and a single `**/build/**` pattern covers it in `.gitignore`, `ui/.prettierignore` and `ui/.eslintrc.json`. Do not introduce a new top-level dir for compiler output, bundles, generated manifests, reports, caches or auth state. Point the tool at `build/` instead: `outDir` and `tsBuildInfoFile` in the package `tsconfig.json`, `outdir` in the cem config, `outputDir` and the reporter's `outputFolder` in the Playwright configs, and `output.path` in `ui/util/webpack.util.js`. A package's `exports`, `module`, `types` and `files` must then point into `build/` too.
+Every package writes its output to its own `build/` dir, so a single Gradle `clean` removes it and a single `**/build/**` pattern covers it in `.gitignore`, `ui/.prettierignore` and `ui/.eslintrc.json`. Do not introduce a new top-level dir for compiler output, bundles, generated manifests, reports, caches or auth state. Point the tool at `build/` instead: `outDir` and `tsBuildInfoFile` in the package `tsconfig.json`, `outdir` in the cem config, `outputDir` and the reporter's `outputFolder` in the Playwright configs, and `output.path` in `ui/util/rspack.util.js`. A package's `exports`, `module`, `types` and `files` must then point into `build/` too.
 
 Packages with no Gradle plugin need `tasks.register('clean', Delete) { delete layout.buildDirectory }`, since only the `base` plugin supplies `clean`. Where a plugin is already applied, add nothing: a second `clean` is redundant, and configuring it through `doLast` breaks the configuration cache.
 
