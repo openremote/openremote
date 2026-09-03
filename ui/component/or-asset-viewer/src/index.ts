@@ -853,17 +853,17 @@ function getPanelContent(
       };
 
       dialog = showDialog(
-        document.body,
+        hostElement,
         html`
           <or-vaadin-dialog width="384px">
             <h2 slot="header-content">
               <or-translate value="addRemoveAttributes"></or-translate>
             </h2>
             <or-vaadin-checkbox-group ${ref(groupRef)} theme="vertical" .value="${selectedAttributes}">
-              ${availableAttributes.map(
+              ${availableAttributes.sort().map(
                 (attr) => html`
                   <vaadin-checkbox value=${attr}>
-                    <or-translate slot="label" value=${attr}></or-translate>
+                    <or-translate slot="label" value=${Util.camelCaseToSentenceCase(attr)}></or-translate>
                   </vaadin-checkbox>
                 `
               )}
