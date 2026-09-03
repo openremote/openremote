@@ -30,6 +30,8 @@ import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.TextUtil;
 
+import java.util.Arrays;
+
 public class GatewayServiceResourceImpl extends ManagerWebResource
     implements GatewayServiceResource {
 
@@ -84,7 +86,7 @@ public class GatewayServiceResourceImpl extends ManagerWebResource
       throw new WebApplicationException(Response.Status.FORBIDDEN);
     }
 
-    return gatewayService.getGatewayTunnelInfos(gatewayID);
+    return gatewayService.getGatewayTunnelInfos(realm, gatewayID);
   }
 
   @Override

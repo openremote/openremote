@@ -467,7 +467,7 @@ public class GatewayConnector {
     expectedSyncResponseName = ASSET_READ_EVENT_NAME_INITIAL;
     sendMessageToGateway(
         new GatewayInitStartEvent(
-            gatewayService.getGatewayTunnelInfos(gatewayId),
+            gatewayService.getGatewayTunnelInfos(realm, gatewayId),
             VersionInfo.getGatewayApiVersion(),
             gatewayService.getTunnelSSHHostname(),
             gatewayService.getTunnelSSHPort() > 0 ? gatewayService.getTunnelSSHPort() : null));

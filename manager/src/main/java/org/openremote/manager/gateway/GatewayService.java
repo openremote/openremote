@@ -572,9 +572,10 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     return this.tunnelInfos.values();
   }
 
-  public GatewayTunnelInfo[] getGatewayTunnelInfos(String gatewayID) {
+  public GatewayTunnelInfo[] getGatewayTunnelInfos(String realm, String gatewayID) {
     return getTunnelInfos().stream()
         .filter(tunnel -> tunnel.getGatewayId().equals(gatewayID))
+         .filter(tunnel -> tunnel.getRealm().equals(realm))
         .toArray(GatewayTunnelInfo[]::new);
   }
 
