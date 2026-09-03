@@ -14,8 +14,16 @@ application {
   mainClass = "org.openremote.manager.Main"
 }
 
+sourceSets {
+  demo {
+    compileClasspath += main.output
+    runtimeClasspath += main.output
+  }
+}
+
 configurations {
-  demoExtension
+  demoImplementation.extendsFrom implementation
+  demoRuntimeOnly.extendsFrom runtimeOnly
 }
 
 dependencies {
@@ -62,11 +70,13 @@ dependencies {
 
   implementation libs.sshdNetty
 
-  // Select the newest published demo extension up to and including the
+  // Select the newest published extensions up to and including the
   // current project version, falling back to an earlier version when the
   // current version has not been published yet.
-  def demoExtensionMaxVersion = project.version.toString().replaceFirst(/-SNAPSHOT$/, "")
-  demoExtension "io.openremote.extension:openremote-demo-setup-extension:(,${demoExtensionMaxVersion}]"
+  def extensionMaxVersion = project.version.toString().replaceFirst(/-SNAPSHOT$/, "")
+  demoRuntimeOnly("io.openremote.extension:openremote-demo-setup-extension:(,${extensionMaxVersion}]") {
+    exclude group: "io.openremote"
+  }
 
   testImplementation libs.groovyAll
   testImplementation platform(libs.spockBom)
@@ -127,7 +137,7 @@ tasks.withType(Sync).configureEach {
   duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-tasks.withType(Tar){
+tasks.withType(Tar) {
   duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
@@ -253,11 +263,12 @@ publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
 sourcesJar.dependsOn(setVersionProperties)
 
-
 tasks.named("run", JavaExec) {
   def setupType = System.getenv("OR_SETUP_TYPE")
+  if (setupType == "demo") {
+    classpath = sourceSets.demo.runtimeClasspath
+  }
   if (setupType != null) {
-    classpath += configurations.demoExtension
     classpath += files({
       def setupProject = project(':setup')
       def targetSourceSet = setupProject.sourceSets.findByName(setupType)
