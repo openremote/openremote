@@ -853,7 +853,7 @@ function getPanelContent(
       };
 
       dialog = showDialog(
-        hostElement,
+        hostElement.shadowRoot!,
         html`
           <or-vaadin-dialog width="384px">
             <h2 slot="header-content">

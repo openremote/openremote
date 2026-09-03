@@ -21,7 +21,6 @@ import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import type { AssetDescriptor, AttributePredicate, AssetQuery, RadialGeofencePredicate } from "@openremote/model";
 import type { OrVaadinDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
-import "@openremote/or-mwc-components/or-mwc-input";
 import { i18next, translate } from "@openremote/or-translate";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { type OrMap, OrMapClickedEvent, type LngLatLike } from "@openremote/or-map";
