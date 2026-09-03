@@ -25,7 +25,7 @@ import { buttonStyle } from "../style";
 import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
 import { TimeTriggerType } from "../index";
 import { Util } from "@openremote/core";
-import {type LngLatLike, type OrMap, OrMapClickedEvent} from "@openremote/or-map";
+import { type LngLatLike, type OrMap, OrMapClickedEvent } from "@openremote/or-map";
 import { i18next } from "@openremote/or-translate";
 import type { OrVaadinSelect } from "@openremote/or-vaadin-components/or-vaadin-select";
 import { when } from "lit/directives/when.js";
