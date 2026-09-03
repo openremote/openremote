@@ -1,9 +1,10 @@
 # EKS cluster management
 
 `kubernetes/or-eks-cluster` manages the shared EKS cluster, native VPC CNI
-NetworkPolicy enforcement, its shared AWS Load Balancer Controller, and the
-`openremote-ebs` StorageClass. It does not deploy or delete OpenRemote stacks,
-stack namespaces, certificates, DNS records, or stack data volumes.
+NetworkPolicy enforcement, its shared AWS Load Balancer Controller and ALB
+IngressClass, and the `openremote-ebs` StorageClass. It does not deploy or
+delete OpenRemote stacks, stack namespaces, certificates, DNS records, or stack
+data volumes.
 
 Use `kubernetes/or-stack` to install and inspect namespaced OpenRemote stacks
 after the shared cluster is ready.
@@ -56,10 +57,10 @@ kubernetes/or-eks-cluster status --name openremote-test
 
 `apply` currently enables NetworkPolicy enforcement in the existing managed
 VPC CNI configuration, reconciles the AWS Load Balancer Controller and its
-CRDs, and applies the `openremote-ebs` StorageClass used by OpenRemote stack
-PVCs. It intentionally does not attempt to mutate node-group infrastructure;
-that reconciliation will be implemented by the future CloudFormation cluster
-definition.
+CRDs, applies the shared `openremote-alb` IngressClass, and applies the
+`openremote-ebs` StorageClass used by OpenRemote stack PVCs. It intentionally
+does not attempt to mutate node-group infrastructure; that reconciliation will
+be implemented by the future CloudFormation cluster definition.
 
 ```bash
 kubernetes/or-eks-cluster apply --name openremote-test
@@ -83,6 +84,24 @@ role. Add-on waiter failures include the EKS health issue and current
 See the AWS documentation for the current
 [VPC CNI NetworkPolicy prerequisites and behavior](https://docs.aws.amazon.com/eks/latest/userguide/cni-network-policy.html)
 and [managed add-on configuration](https://docs.aws.amazon.com/eks/latest/userguide/cni-network-policy-configure.html).
+
+## Shared ALB ingress
+
+The `openremote-alb` IngressClass uses `IngressClassParams` to place all of its
+Ingresses in one `openremote-stacks` group. This produces one internet-facing
+ALB for the cluster by default and sends traffic directly to Pod IPs through
+the Amazon VPC CNI. Its namespace selector accepts only namespaces labeled
+`app.kubernetes.io/part-of=openremote`; `or-stack` owns that label. It enforces
+port 443 as the SSL redirect destination for every group member.
+
+The class defines shared transport behavior only. Stack-specific hostname,
+route, and certificate references are namespaced resources managed by
+`or-stack`. ACM certificate creation and Route 53 records remain outside both
+scripts. The certificate must be in the ALB's account and region, while its DNS
+validation records and the stack hostnames may be managed from another AWS
+account. See the controller's
+[IngressClass documentation](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/)
+for the enforced group and namespace-selector behavior.
 
 Cluster destruction requires an exact-name confirmation and is refused while
 Ingresses, LoadBalancer Services, PVCs, or non-system Pods remain:

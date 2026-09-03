@@ -82,6 +82,8 @@ service:
 ingress:
   enabled: false
   className: "nginx"
+  # When set, overrides the host of every rule without replacing its paths.
+  hostname: ""
   annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"

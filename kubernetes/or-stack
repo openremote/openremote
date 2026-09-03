@@ -14,7 +14,8 @@ COMMAND=""
 STACK_NAME="${OR_STACK_NAME:-}"
 KUBE_CONTEXT="${OR_STACK_KUBE_CONTEXT:-}"
 TARGET="${OR_STACK_TARGET:-}"
-HOSTNAME_VALUE="${OR_STACK_HOSTNAME:-localhost}"
+HOSTNAME_VALUE="${OR_STACK_HOSTNAME:-}"
+CERTIFICATE_ARN="${OR_STACK_CERTIFICATE_ARN:-}"
 VALUES_DIR="${OR_STACK_VALUES_DIR:-}"
 TIMEOUT="${OR_STACK_TIMEOUT:-$DEFAULT_TIMEOUT}"
 CONFIRM_STACK_NAME=""
@@ -46,7 +47,11 @@ Options:
   --target <target>     Target profile: local or eks. Env: OR_STACK_TARGET.
                         Required by apply.
   --hostname <host>     Public hostname passed to Manager and Keycloak.
-                        Env: OR_STACK_HOSTNAME. Default: localhost.
+                        Env: OR_STACK_HOSTNAME. Required for EKS; the local
+                        target defaults to localhost.
+  --certificate-arn <arn>
+                        ACM certificate ARN for the EKS ALB listener. Env:
+                        OR_STACK_CERTIFICATE_ARN. Required for EKS.
   --values-dir <path>   Optional directory containing per-component overrides:
                         or-setup.yaml, postgresql.yaml, keycloak.yaml, and
                         manager.yaml. Env: OR_STACK_VALUES_DIR.
@@ -64,8 +69,10 @@ operation and deletes every resource in the stack namespace. Lifecycle and
 credential commands refuse namespaces without the matching openremote.io/stack
 label.
 
-This command does not configure an Ingress or proxy, create DNS records or
-certificates, or make AWS calls.
+The EKS target creates HTTPS Ingress rules on the cluster's shared OpenRemote
+ALB and redirects HTTP to HTTPS. The local target does not expose an Ingress by
+default. This command references but does not create certificates or DNS
+records and does not make AWS calls.
 EOF
 }
 
@@ -124,6 +131,11 @@ parse_arguments() {
         HOSTNAME_VALUE="$2"
         shift 2
         ;;
+      --certificate-arn)
+        [ "$#" -ge 2 ] || die "Option --certificate-arn requires a value."
+        CERTIFICATE_ARN="$2"
+        shift 2
+        ;;
       --values-dir)
         [ "$#" -ge 2 ] || die "Option --values-dir requires a value."
         VALUES_DIR="$2"
@@ -172,10 +184,27 @@ validate_common_options() {
 
 validate_apply_options() {
   validate_target
+
+  if [ -z "$HOSTNAME_VALUE" ]; then
+    if [ "$TARGET" = "local" ]; then
+      HOSTNAME_VALUE=localhost
+    else
+      die "A public hostname is required for the EKS target; use --hostname or OR_STACK_HOSTNAME."
+    fi
+  fi
+
   [ -n "$HOSTNAME_VALUE" ] || die "Hostname cannot be empty."
   [ "${#HOSTNAME_VALUE}" -le 253 ] || die "Hostname must contain at most 253 characters."
   if [[ ! "$HOSTNAME_VALUE" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$ ]]; then
     die "Hostname must be a lowercase DNS name."
+  fi
+
+  if [ "$TARGET" = "eks" ]; then
+    [ -n "$CERTIFICATE_ARN" ] || die \
+      "An ACM certificate ARN is required for the EKS target; use --certificate-arn or OR_STACK_CERTIFICATE_ARN."
+    if [[ ! "$CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:[a-z0-9-]+:[0-9]{12}:certificate/[A-Za-z0-9-]+$ ]]; then
+      die "Certificate ARN must be a valid ACM certificate ARN."
+    fi
   fi
   validate_timeout
 
@@ -249,6 +278,7 @@ require_stack_namespace() {
 }
 
 validate_target_cluster() {
+  local ssl_redirect_port
   local vpc_cni_containers
 
   if [ "$TARGET" = "eks" ]; then
@@ -259,6 +289,18 @@ validate_target_cluster() {
     kubectl --context "$KUBE_CONTEXT" get \
       customresourcedefinition/policyendpoints.networking.k8s.aws >/dev/null 2>&1 || die \
       "Amazon VPC CNI NetworkPolicy enforcement is not enabled in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
+    kubectl --context "$KUBE_CONTEXT" --namespace kube-system get \
+      deployment aws-load-balancer-controller >/dev/null 2>&1 || die \
+      "AWS Load Balancer Controller is not installed in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
+    kubectl --context "$KUBE_CONTEXT" get ingressclass openremote-alb >/dev/null 2>&1 || die \
+      "Shared IngressClass 'openremote-alb' is not installed in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
+    if ! ssl_redirect_port="$(kubectl --context "$KUBE_CONTEXT" get \
+      ingressclassparams.elbv2.k8s.aws openremote-alb \
+      -o 'jsonpath={.spec.sslRedirectPort}' 2>/dev/null)"; then
+      die "Shared IngressClassParams 'openremote-alb' is not installed in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
+    fi
+    [ "$ssl_redirect_port" = "443" ] || die \
+      "Shared IngressClassParams 'openremote-alb' does not enforce HTTPS redirection; run or-eks-cluster apply first."
     vpc_cni_containers="$(kubectl --context "$KUBE_CONTEXT" --namespace kube-system \
       get daemonset aws-node \
       -o 'jsonpath={.spec.template.spec.containers[*].name}')" || die \
@@ -303,23 +345,40 @@ helm_apply() {
 }
 
 apply_stack() {
+  local component_ingress_args=(
+    --set-string "or.hostname=$HOSTNAME_VALUE"
+    --set-string "ingress.hostname=$HOSTNAME_VALUE"
+  )
+
   require_command helm
   require_command kubectl
   require_kube_context
   validate_target_cluster
   ensure_namespace
 
+  if [ "$TARGET" = "eks" ]; then
+    component_ingress_args+=(
+      --set-string "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn=$CERTIFICATE_ARN"
+    )
+  fi
+
   helm_apply or-setup
   helm_apply postgresql
-  helm_apply keycloak --set-string "or.hostname=$HOSTNAME_VALUE"
-  helm_apply manager --set-string "or.hostname=$HOSTNAME_VALUE"
+  helm_apply keycloak "${component_ingress_args[@]}"
+  helm_apply manager "${component_ingress_args[@]}"
 
   log "Stack '$STACK_NAME' is applied in context '$KUBE_CONTEXT'."
   log "NetworkPolicy enforcement depends on the cluster CNI; verify cross-stack isolation before relying on it."
   log "Retrieve its Manager login at any time with:"
   printf '  %q credentials --name %q --kube-context %q\n' \
     "$0" "$STACK_NAME" "$KUBE_CONTEXT"
-  log "External routing is not managed by this first-phase command."
+  if [ "$TARGET" = "eks" ]; then
+    log "HTTPS routing is requested through the cluster's shared OpenRemote ALB:"
+    printf '  https://%s/manager\n' "$HOSTNAME_VALUE"
+    log "DNS records and certificate lifecycle remain external to this command."
+  else
+    log "External routing is not enabled by the local target."
+  fi
 }
 
 verify_retained_secret() {

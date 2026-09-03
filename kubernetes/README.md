@@ -25,9 +25,10 @@ The Helm release names remain `or-setup`, `postgresql`, `keycloak`, and
 work while namespaced resources and persistent data remain independent.
 
 The stack command provides apply, inspection, credential retrieval, uninstall,
-and explicit destruction operations. It installs the internal stack components
-but intentionally does not configure a proxy, Ingress, certificate, DNS record,
-or other external routing.
+and explicit destruction operations. The local target installs only the
+internal stack components. The EKS target also creates Manager and Keycloak
+HTTPS routes on the cluster's shared OpenRemote ALB; certificate creation and
+DNS records remain external concerns.
 
 To install or upgrade a local stack using the current Docker Desktop, kind, or
 kubeadm context:
@@ -128,9 +129,12 @@ kubectl delete deployment network-policy-test --namespace stack-a
 
 Set `networkPolicy.enabled: false` in a stack's `or-setup.yaml` only when
 isolation is deliberately not required. `networkPolicy.additionalIngressFrom`
-accepts additional Kubernetes `NetworkPolicyPeer` entries; it is reserved for
-trusted sources such as an ingress-controller namespace when external routing
-is added.
+accepts additional Kubernetes `NetworkPolicyPeer` entries for trusted sources.
+The EKS target separately enables `networkPolicy.publicHttp`, which permits
+external traffic only to port 8080 on Manager and Keycloak Pods carrying the
+`openremote.io/public-http` label. It does not open PostgreSQL or other ports.
+TLS terminates at the ALB, so this policy continues to allow only the Pods'
+internal HTTP port.
 
 `apply` accepts an optional `--values-dir`. Files named `or-setup.yaml`,
 `postgresql.yaml`, `keycloak.yaml`, and `manager.yaml` in that directory are

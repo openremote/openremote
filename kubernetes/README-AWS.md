@@ -59,25 +59,76 @@ internal components of an OpenRemote stack in an independent namespace:
   --name stack-a \
   --kube-context <cluster-name>@eu-west-1 \
   --target eks \
-  --hostname stack-a.example.com
+  --hostname stack-a.example.com \
+  --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example
 ```
 
 The EKS target verifies that the EBS CSI driver and `openremote-ebs`
 StorageClass exist. It also requires the Amazon VPC CNI NetworkPolicy
 `PolicyEndpoint` CRD and node agent, confirming that native policy support is
-configured. It selects encrypted dynamically provisioned EBS storage without
-applying the instance-specific ingress, load balancer, certificate, or DNS
-values from the legacy setup scripts. Those external routing concerns are
-outside this first stack-management phase.
+configured, as well as the AWS Load Balancer Controller and the shared
+`openremote-alb` IngressClass. It selects encrypted dynamically provisioned EBS
+storage and creates HTTPS Ingresses for Manager `/` and Keycloak `/auth` using
+the hostname passed to `--hostname`. The hostname and ACM certificate ARN are
+required for the EKS target. The certificate must be issued in the same AWS
+account and region as the ALB; its DNS validation can be hosted in another
+account.
 
 Each stack applies an ingress NetworkPolicy that allows traffic from its own
 namespace and rejects traffic originating in other stack namespaces. Egress is
-not restricted. `or-eks-cluster create` enables NetworkPolicy on the managed
-VPC CNI add-on, and `or-eks-cluster apply` reconciles that setting without
-changing the installed add-on version. New clusters give the VPC CNI add-on a
-dedicated IAM role with `AmazonEKS_CNI_Policy`; for existing add-ons, cluster
-reconciliation aligns the `aws-node` ServiceAccount annotation with the role
-already recorded by EKS.
+not restricted. A second policy permits external traffic only to the HTTP port
+on the Manager and Keycloak Pods selected for public routing; PostgreSQL
+remains reachable only from its own stack namespace. `or-eks-cluster create`
+enables NetworkPolicy on the managed VPC CNI add-on, and
+`or-eks-cluster apply` reconciles that setting without changing the installed
+add-on version. New clusters give the VPC CNI add-on a dedicated IAM role with
+`AmazonEKS_CNI_Policy`; for existing add-ons, cluster reconciliation aligns the
+`aws-node` ServiceAccount annotation with the role already recorded by EKS.
+
+#### Shared HTTPS routing
+
+`or-eks-cluster` creates an `openremote-alb` IngressClass backed by an AWS Load
+Balancer Controller `IngressClassParams` resource. It fixes the scheme to
+`internet-facing`, uses VPC CNI Pod IPs as targets, and puts every matching
+Ingress in the `openremote-stacks` group. It also enforces redirection from
+HTTP to HTTPS. The controller therefore merges the Manager and Keycloak routes
+from all stack namespaces onto one ALB by default.
+
+Only namespaces carrying `app.kubernetes.io/part-of=openremote` may use this
+class. `or-stack` applies that label when it creates or adopts a valid stack
+namespace. This cluster-side restriction prevents unrelated namespaces from
+joining the shared ALB merely by naming its group.
+
+After applying the first stack, wait for the controller to publish the shared
+ALB hostname:
+
+```bash
+kubectl --context <cluster-name>@eu-west-1 \
+  --namespace stack-a \
+  get ingress manager \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
+```
+
+Create a DNS record for each stack hostname that points to that ALB. The
+EKS target configures listeners on ports 80 and 443, while `or-stack` adds the
+certificate supplied through `--certificate-arn` to both component Ingresses.
+It deliberately does not create Route 53 records or ACM certificates.
+
+Certificate annotations are merged across the shared IngressGroup, allowing
+the ALB to use SNI when stacks use different certificates. A wildcard
+certificate can instead be passed to every stack. The shared class owns the
+HTTPS redirect so stacks cannot configure conflicting redirect behavior. See
+the AWS Load Balancer Controller documentation for
+[IngressClassParams](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/)
+and [IngressGroup annotation behavior](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/#ingressgroup).
+
+A stack can opt out of the default group through its component values. Set
+`ingress.className: alb` and give both component Ingresses the same unique
+`alb.ingress.kubernetes.io/group.name`, together with the desired `scheme` and
+`target-type` annotations. Also add the `ssl-redirect` annotation because the
+dedicated class does not inherit the shared class's redirect setting. That
+creates a separate ALB group for that stack; the shared class remains the
+default.
 
 Use the same command with a different stack name to create another namespace,
 or inspect one stack with:

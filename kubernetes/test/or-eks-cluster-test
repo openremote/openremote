@@ -63,6 +63,15 @@ aws_eks() {
   esac
 }
 
+helm() {
+  log_call helm "$@"
+  case " $* " in
+    *" show crds "*)
+      printf '%s\n' 'apiVersion: apiextensions.k8s.io/v1' 'kind: CustomResourceDefinition'
+      ;;
+  esac
+}
+
 kubectl() {
   log_call kubectl "$@"
   case " $* " in
@@ -95,6 +104,25 @@ CLUSTER_NAME=test-cluster
 AWS_REGION_NAME=eu-west-1
 AWS_PROFILE_NAME=
 KUBE_CONTEXT=test-cluster@eu-west-1
+
+: > "$CALL_LOG"
+reconcile_load_balancer_controller
+assert_contains $'helm\tupgrade\t--install\taws-load-balancer-controller'
+assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\twait\t--for=condition=Established\tcustomresourcedefinition/ingressclassparams.elbv2.k8s.aws'
+assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tapply\t-f\t'"$DEFAULT_INGRESS_CLASS_FILE"
+
+grep -F -- 'name: openremote-stacks' "$DEFAULT_INGRESS_CLASS_FILE" >/dev/null || fail \
+  "Shared ALB group is missing from the IngressClass manifest"
+grep -F -- 'app.kubernetes.io/part-of: openremote' "$DEFAULT_INGRESS_CLASS_FILE" >/dev/null || fail \
+  "Shared ALB IngressClass does not restrict namespace membership"
+grep -F -- 'targetType: ip' "$DEFAULT_INGRESS_CLASS_FILE" >/dev/null || fail \
+  "Shared ALB IngressClass does not use VPC CNI Pod IP targets"
+grep -F -- 'sslRedirectPort: "443"' "$DEFAULT_INGRESS_CLASS_FILE" >/dev/null || fail \
+  "Shared ALB IngressClass does not enforce HTTPS redirection"
+
+: > "$CALL_LOG"
+MANAGE_LOAD_BALANCER_CONTROLLER=false reconcile_load_balancer_controller
+assert_not_contains $'helm\tupgrade'
 
 : > "$CALL_LOG"
 OR_EKS_TEST_VPC_CNI_CONFIGURATION='{"env":{"WARM_IP_TARGET":"2"}}' \

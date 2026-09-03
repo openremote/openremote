@@ -51,6 +51,16 @@ case "$arguments" in
   *" get customresourcedefinition/policyendpoints.networking.k8s.aws "*)
     [ "${OR_STACK_TEST_EKS_NETWORK_POLICY:-true}" = "true" ]
     ;;
+  *" get deployment aws-load-balancer-controller "*)
+    [ "${OR_STACK_TEST_EKS_LOAD_BALANCER_CONTROLLER:-true}" = "true" ]
+    ;;
+  *" get ingressclass openremote-alb "*)
+    [ "${OR_STACK_TEST_EKS_INGRESS_CLASS:-true}" = "true" ]
+    ;;
+  *" get ingressclassparams.elbv2.k8s.aws openremote-alb "*)
+    [ "${OR_STACK_TEST_EKS_INGRESS_CLASS_PARAMS:-true}" = "true" ] || exit 1
+    printf '%s' "${OR_STACK_TEST_EKS_SSL_REDIRECT_PORT:-443}"
+    ;;
   *" get daemonset aws-node "*)
     printf '%s' "${OR_STACK_TEST_EKS_CNI_CONTAINERS:-aws-node aws-eks-nodeagent}"
     ;;

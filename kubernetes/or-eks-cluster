@@ -9,6 +9,7 @@ KUBERNETES_DIR="$SCRIPT_DIR"
 
 DEFAULT_CONFIG_FILE="$KUBERNETES_DIR/cluster.yaml"
 DEFAULT_STORAGE_CLASS_FILE="$KUBERNETES_DIR/cluster/eks/storage-class.yaml"
+DEFAULT_INGRESS_CLASS_FILE="$KUBERNETES_DIR/cluster/eks/ingress-class.yaml"
 DEFAULT_AWS_REGION="eu-west-1"
 DEFAULT_AWS_PROFILE="or"
 DEFAULT_LOAD_BALANCER_CONTROLLER_CHART_VERSION="1.14.0"
@@ -276,6 +277,8 @@ reconcile_load_balancer_controller() {
 
   [ -n "$LOAD_BALANCER_CONTROLLER_CHART_VERSION" ] || die \
     "A pinned AWS Load Balancer Controller chart version is required."
+  [ -f "$DEFAULT_INGRESS_CLASS_FILE" ] || die \
+    "IngressClass manifest '$DEFAULT_INGRESS_CLASS_FILE' does not exist."
 
   require_command helm
   require_command kubectl
@@ -294,6 +297,10 @@ reconcile_load_balancer_controller() {
   helm show crds eks/aws-load-balancer-controller \
     --version "$LOAD_BALANCER_CONTROLLER_CHART_VERSION" | \
     kubectl --context "$KUBE_CONTEXT" apply -f - >/dev/null
+  kubectl --context "$KUBE_CONTEXT" wait \
+    --for=condition=Established \
+    customresourcedefinition/ingressclassparams.elbv2.k8s.aws \
+    --timeout 2m >/dev/null
 
   log "Reconciling AWS Load Balancer Controller chart $LOAD_BALANCER_CONTROLLER_CHART_VERSION."
   helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
@@ -305,6 +312,9 @@ reconcile_load_balancer_controller() {
     --set serviceAccount.name=aws-load-balancer-controller \
     --wait \
     --timeout 10m
+
+  log "Reconciling the shared OpenRemote ALB IngressClass."
+  kubectl --context "$KUBE_CONTEXT" apply -f "$DEFAULT_INGRESS_CLASS_FILE"
 }
 
 reconcile_storage_class() {
@@ -551,6 +561,14 @@ show_cluster_status() {
         --kube-context "$KUBE_CONTEXT" \
         --namespace kube-system; then
         warn "AWS Load Balancer Controller is not installed or is unhealthy."
+      fi
+
+      log "Shared OpenRemote ALB IngressClass"
+      if ! kubectl --context "$KUBE_CONTEXT" get ingressclass openremote-alb; then
+        warn "IngressClass 'openremote-alb' is not installed."
+      elif ! kubectl --context "$KUBE_CONTEXT" get \
+        ingressclassparams.elbv2.k8s.aws openremote-alb; then
+        warn "IngressClassParams 'openremote-alb' is not installed."
       fi
     fi
   else

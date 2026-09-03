@@ -8,6 +8,7 @@ OR_STACK="$KUBERNETES_DIR/or-stack"
 TEST_BIN="$TEST_DIR/command-stubs"
 TEST_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/or-stack-test.XXXXXX")"
 CALL_LOG="$TEST_TEMP_DIR/calls.log"
+TEST_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"
 
 cleanup() {
   rm -rf "$TEST_TEMP_DIR"
@@ -99,6 +100,8 @@ test_local_apply() {
   assert_contains "$KUBERNETES_DIR/stack/targets/local/postgresql.yaml"
   assert_contains $'helm\tupgrade\t--install\tkeycloak'
   assert_contains $'--set-string\tor.hostname=stack-a.localhost'
+  assert_contains $'--set-string\tingress.hostname=stack-a.localhost'
+  assert_not_contains 'certificate-arn='
   assert_contains $'helm\tupgrade\t--install\tmanager'
   assert_contains "$values_dir/manager.yaml"
   assert_not_contains "openremote-ebs"
@@ -112,16 +115,24 @@ test_eks_apply() {
   OR_STACK_TEST_NAMESPACE_EXISTS=true run_stack apply \
     --name stack-eks \
     --kube-context test-context \
-    --target eks
+    --target eks \
+    --hostname stack-eks.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN"
 
   assert_contains $'kubectl\t--context\ttest-context\tget\tstorageclass\topenremote-ebs'
   assert_contains $'kubectl\t--context\ttest-context\tget\tcsidriver\tebs.csi.aws.com'
   assert_contains $'kubectl\t--context\ttest-context\tget\tcustomresourcedefinition/policyendpoints.networking.k8s.aws'
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tkube-system\tget\tdeployment\taws-load-balancer-controller'
+  assert_contains $'kubectl\t--context\ttest-context\tget\tingressclass\topenremote-alb'
+  assert_contains $'kubectl\t--context\ttest-context\tget\tingressclassparams.elbv2.k8s.aws\topenremote-alb'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tkube-system\tget\tdaemonset\taws-node'
   assert_not_contains $'create\tnamespace\tstack-eks'
   assert_contains "$KUBERNETES_DIR/stack/targets/eks/postgresql.yaml"
   assert_contains "$KUBERNETES_DIR/stack/targets/eks/or-setup.yaml"
+  assert_contains "$KUBERNETES_DIR/stack/targets/eks/keycloak.yaml"
   assert_contains "$KUBERNETES_DIR/stack/targets/eks/manager.yaml"
+  assert_contains $'--set-string\tingress.hostname=stack-eks.example.com'
+  assert_contains "certificate-arn=$TEST_CERTIFICATE_ARN"
 }
 
 test_status() {
@@ -262,23 +273,75 @@ test_validation() {
   fi
 
   if OR_STACK_TEST_EKS_STORAGE=false run_stack apply \
-    --name stack-a --kube-context test-context --target eks >/dev/null 2>&1; then
+    --name stack-a --kube-context test-context --target eks \
+    --hostname stack-a.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
     fail "EKS target accepted a missing StorageClass"
   fi
 
   if OR_STACK_TEST_EKS_NETWORK_POLICY=false run_stack apply \
-    --name stack-a --kube-context test-context --target eks >/dev/null 2>&1; then
+    --name stack-a --kube-context test-context --target eks \
+    --hostname stack-a.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
     fail "EKS target accepted disabled NetworkPolicy enforcement"
   fi
 
   if OR_STACK_TEST_EKS_CNI_CONTAINERS=aws-node run_stack apply \
-    --name stack-a --kube-context test-context --target eks >/dev/null 2>&1; then
+    --name stack-a --kube-context test-context --target eks \
+    --hostname stack-a.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
     fail "EKS target accepted a missing NetworkPolicy agent"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target eks \
+    >/dev/null 2>&1; then
+    fail "EKS target accepted a missing public hostname"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target eks \
+    --hostname stack-a.example.com >/dev/null 2>&1; then
+    fail "EKS target accepted a missing ACM certificate ARN"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target eks \
+    --hostname stack-a.example.com \
+    --certificate-arn not-an-arn >/dev/null 2>&1; then
+    fail "EKS target accepted an invalid ACM certificate ARN"
+  fi
+
+  if OR_STACK_TEST_EKS_LOAD_BALANCER_CONTROLLER=false run_stack apply \
+    --name stack-a --kube-context test-context --target eks \
+    --hostname stack-a.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
+    fail "EKS target accepted a missing AWS Load Balancer Controller"
+  fi
+
+  if OR_STACK_TEST_EKS_INGRESS_CLASS=false run_stack apply \
+    --name stack-a --kube-context test-context --target eks \
+    --hostname stack-a.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
+    fail "EKS target accepted a missing shared IngressClass"
+  fi
+
+  if OR_STACK_TEST_EKS_INGRESS_CLASS_PARAMS=false run_stack apply \
+    --name stack-a --kube-context test-context --target eks \
+    --hostname stack-a.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
+    fail "EKS target accepted missing shared IngressClass parameters"
+  fi
+
+  if OR_STACK_TEST_EKS_SSL_REDIRECT_PORT=80 run_stack apply \
+    --name stack-a --kube-context test-context --target eks \
+    --hostname stack-a.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
+    fail "EKS target accepted an IngressClass without HTTPS redirection"
   fi
 
   OR_STACK_TEST_NAMESPACE_EXISTS=true \
   OR_STACK_TEST_EKS_CNI_CONTAINERS='aws-node aws-network-policy-agent' \
-    run_stack apply --name stack-legacy-agent --kube-context test-context --target eks >/dev/null
+    run_stack apply --name stack-legacy-agent --kube-context test-context --target eks \
+      --hostname stack-legacy-agent.example.com \
+      --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null
 }
 
 test_local_apply

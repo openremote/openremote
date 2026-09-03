@@ -15,5 +15,15 @@ networkPolicy:
   # The cluster CNI must implement NetworkPolicy for it to be enforced.
   enabled: false
   # Optional NetworkPolicyPeer entries for trusted ingress sources outside the
-  # stack namespace, such as a future ingress controller namespace.
+  # stack namespace.
   additionalIngressFrom: []
+  # Allow ingress-controller traffic only to explicitly labeled public HTTP
+  # workloads. The EKS target enables this for its ALB routes.
+  publicHttp:
+    enabled: false
+    podSelector:
+      matchLabels:
+        openremote.io/public-http: "true"
+    ports:
+      - protocol: TCP
+        port: 8080
