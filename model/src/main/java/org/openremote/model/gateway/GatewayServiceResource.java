@@ -43,7 +43,7 @@ public interface GatewayServiceResource {
   @GET
   @Path("tunnel/{realm}")
   @Produces(APPLICATION_JSON)
-  @RolesAllowed({Constants.READ_ADMIN_ROLE})
+  @RolesAllowed({Constants.READ_TUNNELS_ROLE})
   @Operation(
       operationId = "getAllActiveTunnelInfos",
       summary = "Retrieve all active gateway tunnels in a realm",
@@ -59,6 +59,7 @@ public interface GatewayServiceResource {
   @GET
   @Path("tunnel/{realm}/{id}")
   @Produces(APPLICATION_JSON)
+  @RolesAllowed({Constants.READ_TUNNELS_ROLE})
   @Operation(
       operationId = "getGatewayActiveTunnelInfos",
       summary = "Retrieve the active tunnels of a gateway",
@@ -76,6 +77,7 @@ public interface GatewayServiceResource {
   @GET
   @Path("tunnel/{realm}/{id}/{target}/{targetPort}")
   @Produces(APPLICATION_JSON)
+  @RolesAllowed({Constants.READ_TUNNELS_ROLE})
   @Operation(
       operationId = "getActiveTunnelInfo",
       summary = "Retrieve one active gateway tunnel",
@@ -106,6 +108,7 @@ public interface GatewayServiceResource {
   @Path("tunnel")
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
+  @RolesAllowed({Constants.WRITE_TUNNELS_ROLE})
   @Operation(
       operationId = "startTunnel",
       summary = "Start a tunnel for a gateway",
@@ -129,6 +132,7 @@ public interface GatewayServiceResource {
   @Path("tunnel")
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
+  @RolesAllowed({Constants.WRITE_TUNNELS_ROLE})
   @Operation(
       operationId = "stopTunnel",
       summary = "Stop a tunnel for a gateway",

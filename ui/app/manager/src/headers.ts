@@ -86,7 +86,7 @@ export function headerItemGatewayTunnel<S extends AppStateKeyed, A extends AnyAc
     value: "gateway-tunnel",
     href: "gateway-tunnel",
     text: "gatewayTunnel",
-    roles: [ClientRole.WRITE_ADMIN, ClientRole.READ_ADMIN],
+    roles: [ClientRole.WRITE_TUNNELS, ClientRole.READ_TUNNELS],
   };
 }
 
