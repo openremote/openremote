@@ -23,7 +23,7 @@ import { when } from "lit/directives/when.js";
 import "@openremote/or-components/or-file-uploader";
 import { i18next } from "@openremote/or-translate";
 import type { MapRealmConfig } from "@openremote/model";
-import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
+import { getConfirmDialogContent, showConfirmDialog } from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 import type { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import type { OrMapLongPressEvent } from "@openremote/or-map";
 import type { LngLat } from "maplibre-gl";

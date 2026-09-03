@@ -38,7 +38,7 @@ import type { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { when } from "lit/directives/when.js";
 import { DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu } from "../../../index";
 import type { OrVaadinMultiSelectComboBox } from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
-import {getConfirmDialogContent, showConfirmDialog} from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
+import { getConfirmDialogContent, showConfirmDialog } from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends translate(i18next)(OrElement) {
