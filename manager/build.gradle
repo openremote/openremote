@@ -14,18 +14,6 @@ application {
   mainClass = "org.openremote.manager.Main"
 }
 
-sourceSets {
-  demo {
-    compileClasspath += main.output
-    runtimeClasspath += main.output
-  }
-}
-
-configurations {
-  demoImplementation.extendsFrom implementation
-  demoRuntimeOnly.extendsFrom runtimeOnly
-}
-
 dependencies {
 
   api project(":container")
@@ -69,14 +57,6 @@ dependencies {
   implementation libs.prometheusMetricsExporterHttpserver
 
   implementation libs.sshdNetty
-
-  // Select the newest published extensions up to and including the
-  // current project version, falling back to an earlier version when the
-  // current version has not been published yet.
-  def extensionMaxVersion = project.version.toString().replaceFirst(/-SNAPSHOT$/, "")
-  demoRuntimeOnly("io.openremote.extension:openremote-demo-setup-extension:(,${extensionMaxVersion}]") {
-    exclude group: "io.openremote"
-  }
 
   testImplementation libs.groovyAll
   testImplementation platform(libs.spockBom)
@@ -262,19 +242,3 @@ publish.mustRunAfter(setVersionProperties)
 publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
 sourcesJar.dependsOn(setVersionProperties)
-
-tasks.named("run", JavaExec) {
-  def setupType = System.getenv("OR_SETUP_TYPE")
-  if (setupType == "demo") {
-    classpath = sourceSets.demo.runtimeClasspath
-  }
-  if (setupType != null) {
-    classpath += files({
-      def setupProject = project(':setup')
-      def targetSourceSet = setupProject.sourceSets.findByName(setupType)
-      if (targetSourceSet != null) {
-        return targetSourceSet.output
-      }
-    })
-  }
-}

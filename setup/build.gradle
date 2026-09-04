@@ -2,7 +2,7 @@ plugins {
   id 'java-library'
 }
 
-var setupJar = project.hasProperty("SETUP_JAR") ? project.getProperties().get("SETUP_JAR") : ""
+var setupJar = project.hasProperty("SETUP_JAR") ? project.property("SETUP_JAR") : ""
 
 base {
   archivesName = "openremote-${setupJar}-${project.name}"
@@ -10,6 +10,7 @@ base {
 
 sourceSets {
   clustering
+  demo
   integration
   load1
   load2
@@ -19,6 +20,7 @@ sourceSets {
 // dependencies declaration
 configurations {
   clusteringImplementation.extendsFrom(implementation)
+  demoImplementation.extendsFrom(implementation)
   integrationImplementation.extendsFrom(implementation)
   load1Implementation.extendsFrom(implementation)
   load2Implementation.extendsFrom(implementation)
@@ -27,6 +29,14 @@ configurations {
 
 dependencies {
   implementation project(":manager")
+
+  // Select the newest published extensions up to and including the
+  // current project version, falling back to an earlier version when the
+  // current version has not been published yet.
+  def extensionMaxVersion = project.version.toString().replaceFirst(/-SNAPSHOT$/, "")
+  demoRuntimeOnly("io.openremote.extension:openremote-demo-setup-extension:(,${extensionMaxVersion}]") {
+    exclude group: "io.openremote"
+  }
 }
 
 tasks.register('clusteringJar', Jar) {
@@ -62,4 +72,15 @@ tasks.register('installDist', Copy) {
     from setupTask.archiveFile
     into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
   }
+}
+
+tasks.register("run", JavaExec) {
+  group = "application"
+  description = "Runs the manager with the setup selected by OR_SETUP_TYPE"
+  mainClass = "org.openremote.manager.Main"
+  workingDir = rootProject.projectDir
+
+  def setupType = providers.environmentVariable("OR_SETUP_TYPE").orNull
+  def targetSourceSet = setupType != null ? sourceSets.named(setupType) : null
+  classpath = targetSourceSet != null ? targetSourceSet.runtimeClasspath : sourceSets.main.runtimeClasspath
 }
