@@ -34,13 +34,16 @@ export const defineCtConfig = (path: string) => {
     /* Retry failed tests twice on CI only to allow flaky behavior such as test timeouts to be retried */
     retries: CI ? 2 : 0,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-    reporter: [["html", { outputFolder: "component-test-report" }]],
+    reporter: [["html", { outputFolder: resolve(path, "build/component-test-report") }]],
+    /* Traces, videos and other per-test output. See https://playwright.dev/docs/test-use-options */
+    outputDir: resolve(path, "build/test-results"),
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
     use: {
       /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
       trace: "retain-on-failure",
       video: "on",
       ctTemplateDir: resolve(__dirname, "playwright"),
+      ctCacheDir: resolve(path, "build/.cache"),
     },
     /* Configure projects */
     projects: [{ name, testDir: resolve(path, "test"), fullyParallel: true, use: { ct: name } }] as Project[],
