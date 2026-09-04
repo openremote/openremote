@@ -37,13 +37,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.17.2":
-  version: 7.29.7
-  resolution: "@babel/runtime@npm:7.29.7"
-  checksum: 10c0/ca11572f7146b21e0bde6a9ed4bb6a89eafbee5f0944c7eb54d0d8a2dac962c33638a1d611e14faa71dfbb92b4b5f9236232208568a6b7d5c6f3f39ddb91771e
-  languageName: node
-  linkType: hard
-
 "@custom-elements-manifest/analyzer@npm:^0.11.0":
   version: 0.11.0
   resolution: "@custom-elements-manifest/analyzer@npm:0.11.0"
@@ -1838,7 +1831,7 @@ __metadata:
     "@types/lodash.transform": "npm:^4"
     "@types/qs": "npm:^6.9.7"
     axios: "npm:1.18.1"
-    i18next: "npm:^21.5.3"
+    i18next: "npm:^26.3.6"
     i18next-http-backend: "npm:^4.0.0"
     keycloak-js: "npm:^25.0.1"
     lodash.transform: "npm:^4.6.0"
@@ -1995,8 +1988,9 @@ __metadata:
     "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/util": "workspace:*"
     axios: "npm:1.18.1"
-    i18next: "npm:^21.5.3"
+    i18next: "npm:^26.3.6"
     lit: "npm:^3.3.1"
+    moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
 
@@ -2083,6 +2077,7 @@ __metadata:
     "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
+    moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
 
@@ -2398,7 +2393,7 @@ __metadata:
   dependencies:
     "@openremote/or-element": "workspace:*"
     "@openremote/util": "workspace:*"
-    i18next: "npm:^21.5.3"
+    i18next: "npm:^26.3.6"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -2494,7 +2489,7 @@ __metadata:
     "@sand4rt/experimental-ct-web": "npm:1.59.1"
     css-loader: "npm:^7.1.2"
     html-webpack-plugin: "npm:^5.6.6"
-    i18next: "npm:^21.5.3"
+    i18next: "npm:^26.3.6"
     i18next-http-backend: "npm:^4.0.0"
     playwright: "npm:1.59.1"
     playwright-core: "npm:1.59.1"
@@ -2546,7 +2541,7 @@ __metadata:
     shx: "npm:~0.4.0"
     source-map-loader: "npm:^5.0.0"
     ts-loader: "npm:~9.5.2"
-    typescript: "npm:5.8.3"
+    typescript: "npm:~5.9.3"
     webpack: "npm:^5.108.3"
   bin:
     orutil: ./cli.js
@@ -4044,21 +4039,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*":
-  version: 20.11.16
-  resolution: "@types/node@npm:20.11.16"
+"@types/node@npm:*, @types/node@npm:>=10.0.0":
+  version: 26.2.0
+  resolution: "@types/node@npm:26.2.0"
   dependencies:
-    undici-types: "npm:~5.26.4"
-  checksum: 10c0/4886b90278e9c877a84efd3edd4667cd990e032d77268d2a798b99ebc1901ea336fa7dfbe9eaf4ad6ad1da9ce2ec31baf300038a3905838692362eb19904ebde
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:>=10.0.0":
-  version: 24.10.1
-  resolution: "@types/node@npm:24.10.1"
-  dependencies:
-    undici-types: "npm:~7.16.0"
-  checksum: 10c0/d6bca7a78f550fbb376f236f92b405d676003a8a09a1b411f55920ef34286ee3ee51f566203920e835478784df52662b5b2af89159d9d319352e9ea21801c002
+    undici-types: "npm:~8.3.0"
+  checksum: 10c0/f8566d88162241eb55a46f7e4ea097188eab0aaafefea7a58e63adab8c4144eb98c08b7911452c846104c339a0f82282f5e1ed4b26b578d60709614fe2843f4d
   languageName: node
   linkType: hard
 
@@ -7794,12 +7780,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"i18next@npm:^21.5.3":
-  version: 21.10.0
-  resolution: "i18next@npm:21.10.0"
-  dependencies:
-    "@babel/runtime": "npm:^7.17.2"
-  checksum: 10c0/2a674739aab219704d5a0bf62d03bed20ad2bceff9579efb4da61c4946c883fc172062ba7405a26bf795995860f2ab15826b05271f4c457bf7eb19e852f6006d
+"i18next@npm:^26.3.6":
+  version: 26.3.6
+  resolution: "i18next@npm:26.3.6"
+  peerDependencies:
+    typescript: ^5 || ^6 || ^7
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/5920ac8fb6b647a2bdd439d121de04e5297246e52c4d95d13f5faae0824fd45b2faeb66038bcd61fc62362daa815f9c32fb992d6faa3787607d1dfe768e9a8b1
   languageName: node
   linkType: hard
 
@@ -9175,7 +9164,7 @@ __metadata:
     eslint-plugin-promise: "npm:6.6.0"
     eslint-plugin-wc: "npm:3.1.0"
     prettier: "npm:3.9.6"
-    typescript: "npm:5.8.3"
+    typescript: "npm:~5.9.3"
   languageName: unknown
   linkType: soft
 
@@ -11061,16 +11050,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.8.3":
-  version: 5.8.3
-  resolution: "typescript@npm:5.8.3"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 10c0/5f8bb01196e542e64d44db3d16ee0e4063ce4f3e3966df6005f2588e86d91c03e1fb131c2581baf0fb65ee79669eea6e161cd448178986587e9f6844446dbb48
-  languageName: node
-  linkType: hard
-
 "typescript@npm:~5.4.2":
   version: 5.4.5
   resolution: "typescript@npm:5.4.5"
@@ -11088,16 +11067,6 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/6bd7552ce39f97e711db5aa048f6f9995b53f1c52f7d8667c1abdc1700c68a76a308f579cd309ce6b53646deb4e9a1be7c813a93baaf0a28ccd536a30270e1c5
-  languageName: node
-  linkType: hard
-
-"typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>":
-  version: 5.8.3
-  resolution: "typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=5786d5"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 10c0/39117e346ff8ebd87ae1510b3a77d5d92dae5a89bde588c747d25da5c146603a99c8ee588c7ef80faaf123d89ed46f6dbd918d534d641083177d5fac38b8a1cb
   languageName: node
   linkType: hard
 
@@ -11140,17 +11109,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici-types@npm:~5.26.4":
-  version: 5.26.5
-  resolution: "undici-types@npm:5.26.5"
-  checksum: 10c0/bb673d7876c2d411b6eb6c560e0c571eef4a01c1c19925175d16e3a30c4c428181fb8d7ae802a261f283e4166a0ac435e2f505743aa9e45d893f9a3df017b501
-  languageName: node
-  linkType: hard
-
-"undici-types@npm:~7.16.0":
-  version: 7.16.0
-  resolution: "undici-types@npm:7.16.0"
-  checksum: 10c0/3033e2f2b5c9f1504bdc5934646cb54e37ecaca0f9249c983f7b1fc2e87c6d18399ebb05dc7fd5419e02b2e915f734d872a65da2e3eeed1813951c427d33cc9a
+"undici-types@npm:~8.3.0":
+  version: 8.3.0
+  resolution: "undici-types@npm:8.3.0"
+  checksum: 10c0/c8aa7e2fbebfce519654dafadc0ece59be888d2ccaf180fb4495da875e7b536d2456345c384069c7e6f3e9c9ab7435f074957da306f142343eee86ff8048855a
   languageName: node
   linkType: hard
 

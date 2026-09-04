@@ -35,8 +35,9 @@
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-vaadin-components": "workspace:*",
-    "i18next": "^21.5.3",
-    "lit": "^3.3.1"
+    "i18next": "^26.3.6",
+    "lit": "^3.3.1",
+    "moment": "^2.29.4"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
