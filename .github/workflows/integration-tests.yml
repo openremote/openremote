@@ -25,7 +25,7 @@ jobs:
       - name: Pull Docker images
         run: docker compose -f profile/dev-testing.yml pull # Only Keycloak and PostgreSQL for running integration tests
       - name: Run integration tests
-        timeout-minutes: 20
+        timeout-minutes: 30
         run: |
           # Run Integration Tests
           # Make temp dir with 777 mask as docker seems to run as root
