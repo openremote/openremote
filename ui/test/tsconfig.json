@@ -4,8 +4,10 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
-    "outDir": "./lib",
+    "tsBuildInfoFile": "./build/tsconfig.tsbuildinfo",
+    "outDir": "./build/lib",
     "rootDir": "."
   },
-  "include": ["."]
+  "include": ["."],
+  "exclude": ["build"]
 }

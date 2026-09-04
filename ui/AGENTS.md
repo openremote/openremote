@@ -2,6 +2,16 @@
 
 Applies to everything under `ui/`. See the root `AGENTS.md` for build, test stack and backend conventions.
 
+### Build and test output
+
+Every package writes its output to its own `build/` dir, so a single Gradle `clean` removes it and a single `**/build/**` pattern covers it in `.gitignore`, `ui/.prettierignore` and `ui/.eslintrc.json`. Do not introduce a new top-level dir for compiler output, bundles, generated manifests, reports, caches or auth state. Point the tool at `build/` instead: `outDir` and `tsBuildInfoFile` in the package `tsconfig.json`, `outdir` in the cem config, `outputDir` and the reporter's `outputFolder` in the Playwright configs, and `output.path` in `ui/util/rspack.util.js`. A package's `exports`, `module`, `types` and `files` must then point into `build/` too.
+
+Packages with no Gradle plugin need `tasks.register('clean', Delete) { delete layout.buildDirectory }`, since only the `base` plugin supplies `clean`. Where a plugin is already applied, add nothing: a second `clean` is redundant, and configuring it through `doLast` breaks the configuration cache.
+
+Anything a package references relative to its own emitted files must survive the extra `build/lib` nesting. Reach assets through a package self-reference resolved by an `exports` subpath, not a path relative to the output dir, so the same specifier works from `src` and from the compiled output.
+
+Three outputs stay outside `build/` on purpose. `ui/app/shared/fonts` is packaged by a `generateSources` task that copies the project dir minus `build/**`. `ui/app/shared/cache` is a checksum-keyed download that `clean` would force to re-download. The generated `model.ts` and `restclient.ts` are sources rather than artifacts, so they stay under `rootDir`.
+
 ## Generated model types
 
 `ui/component/model/src/model.ts` is generated from the Java backend by typescript-generator. Do not edit it by hand. When a TypeScript type mirrors a backend class, import it from `@openremote/model` instead of redeclaring a local interface. Regenerate it from the backend rather than patching the output.

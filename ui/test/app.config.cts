@@ -72,7 +72,9 @@ export const defineAppConfig = (path: string) => {
     /* Retry failed tests twice on CI only to allow flaky behavior such as test timeouts to be retried */
     retries: CI ? 2 : 0,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-    reporter: [["html", { outputFolder: "app-test-report" }]],
+    reporter: [["html", { outputFolder: resolve(path, "build/app-test-report") }]],
+    /* Traces, videos and other per-test output. See https://playwright.dev/docs/test-use-options */
+    outputDir: resolve(path, "build/test-results"),
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
     use: {
       // Defaults to the default Manager Docker container port as that significantly speeds up the tests compared to serving the frontend with Webpack

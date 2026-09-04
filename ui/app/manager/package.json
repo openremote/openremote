@@ -5,26 +5,29 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "exports": {
-    ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    ".": "./build/lib/index.js",
+    "./*": "./build/lib/*.js"
   },
   "typesVersions": {
     "*": {
       "*": [
-        "lib/*"
+        "build/lib/*"
       ]
     }
   },
-  "types": "lib/index.d.ts",
+  "files": [
+    "build/lib/**"
+  ],
+  "types": "build/lib/index.d.ts",
   "scripts": {
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
+    "clean": "npx tsc -b --clean && npx shx rm -rf build",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
     "doctor": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 RSDOCTOR=true rspack --mode production",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
     "build:experimental": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild build",
-    "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
-    "serve:experimental": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild dev",
+    "serve": "npx tsc -b --clean && npx shx rm -rf build && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
+    "serve:experimental": "npx tsc -b --clean && npx shx rm -rf build && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild dev",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
     "serveNoModelBuild:experimental": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild dev",
     "test": "npx playwright test",

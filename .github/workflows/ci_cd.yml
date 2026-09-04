@@ -586,7 +586,7 @@ jobs:
 
       - name: Configure AWS Credentials
         if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}"
@@ -805,7 +805,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ui-component-test-results
-          path: ui/component/*/component-test-report/**
+          path: ui/component/*/build/component-test-report/**
 
       - name: Run UI app tests
         id: run-ui-app-tests
@@ -837,7 +837,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ui-app-test-results
-          path: ui/app/*/app-test-report/**
+          path: ui/app/*/build/app-test-report/**
 
       - name: Cleanup UI app tests
         if: ${{ steps.test-ui-apps-command.outputs.value != '' }}

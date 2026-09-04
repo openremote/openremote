@@ -20,7 +20,9 @@ import { css, html } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { type Asset, AssetModelUtil, type Attribute, type AttributeRef } from "@openremote/model";
-import { Gauge, type GaugeOptions } from "gaugeJS";
+// The runtime package is gaugeJS, its types ship separately as @types/gaugejs.
+import { Gauge } from "gaugeJS";
+import type { GaugeOptions } from "gaugejs";
 import manager, { Util } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import debounce from "lodash.debounce";

@@ -2,28 +2,34 @@
   "name": "@openremote/or-components",
   "version": "1.28.0-snapshot",
   "description": "OpenRemote basic UI components",
-  "customElements": "custom-elements.json",
-  "main": "dist/umd/index.bundle.js",
-  "module": "lib/index.js",
+  "customElements": "build/custom-elements.json",
+  "main": "build/dist/umd/index.bundle.js",
+  "module": "build/lib/index.js",
   "exports": {
-    ".": "./lib/index.js",
-    "./*": "./lib/*.js",
+    ".": "./build/lib/index.js",
+    "./*": "./build/lib/*.js",
     "./jsx": {
-      "types": "./custom-elements-jsx.d.ts"
+      "types": "./build/custom-elements-jsx.d.ts"
     }
   },
   "typesVersions": {
     "*": {
       "*": [
-        "lib/*"
+        "build/lib/*"
       ]
     }
   },
+  "files": [
+    "build/lib/**",
+    "build/dist/**",
+    "build/custom-elements.json",
+    "build/custom-elements-jsx.d.ts"
+  ],
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
     "test": "npx tsc -b && npx playwright test",
-    "prepack": "npx tsc -b"
+    "prepack": "npx tsc -b && npx rspack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",

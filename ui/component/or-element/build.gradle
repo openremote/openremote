@@ -1,6 +1,5 @@
 tasks.register('clean', Delete) {
-  delete layout.projectDirectory.dir('dist')
-  delete layout.projectDirectory.dir('lib')
+  delete layout.buildDirectory
 }
 
 tasks.register('npmBuild', Exec) {
