@@ -4,4 +4,4 @@ description: A Helm chart for setting up additional elements required for an OR 
 
 type: application
 
-version: 0.4.0
+version: 0.5.0

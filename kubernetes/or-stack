@@ -7,6 +7,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KUBERNETES_DIR="$SCRIPT_DIR"
 TARGETS_DIR="$KUBERNETES_DIR/stack/targets"
+EXPOSURES_DIR="$KUBERNETES_DIR/stack/exposures"
 
 DEFAULT_TIMEOUT="10m"
 
@@ -14,11 +15,24 @@ COMMAND=""
 STACK_NAME="${OR_STACK_NAME:-}"
 KUBE_CONTEXT="${OR_STACK_KUBE_CONTEXT:-}"
 TARGET="${OR_STACK_TARGET:-}"
+EXPOSURE="${OR_STACK_EXPOSURE:-haproxy}"
 HOSTNAME_VALUE="${OR_STACK_HOSTNAME:-}"
 CERTIFICATE_ARN="${OR_STACK_CERTIFICATE_ARN:-}"
 VALUES_DIR="${OR_STACK_VALUES_DIR:-}"
 TIMEOUT="${OR_STACK_TIMEOUT:-$DEFAULT_TIMEOUT}"
+HTTP_PORT="${OR_STACK_HTTP_PORT:-80}"
+HTTPS_PORT="${OR_STACK_HTTPS_PORT:-443}"
+HTTP_PORT_CONFIGURED=false
+HTTPS_PORT_CONFIGURED=false
+CLUSTER_DNS=""
 CONFIRM_STACK_NAME=""
+
+if [ "${OR_STACK_HTTP_PORT+x}" = "x" ]; then
+  HTTP_PORT_CONFIGURED=true
+fi
+if [ "${OR_STACK_HTTPS_PORT+x}" = "x" ]; then
+  HTTPS_PORT_CONFIGURED=true
+fi
 
 usage() {
   cat <<'EOF'
@@ -46,15 +60,24 @@ Options:
   --kube-context <c>    Kubernetes context to target. Env: OR_STACK_KUBE_CONTEXT.
   --target <target>     Target profile: local or eks. Env: OR_STACK_TARGET.
                         Required by apply.
+  --exposure <mode>     Public exposure: haproxy, ingress, or none. Env:
+                        OR_STACK_EXPOSURE. Default: haproxy for every target.
   --hostname <host>     Public hostname passed to Manager and Keycloak.
-                        Env: OR_STACK_HOSTNAME. Required for EKS; the local
-                        target defaults to localhost.
+                        Env: OR_STACK_HOSTNAME. Required for public EKS
+                        exposure; otherwise defaults to localhost.
   --certificate-arn <arn>
-                        ACM certificate ARN for the EKS ALB listener. Env:
-                        OR_STACK_CERTIFICATE_ARN. Required for EKS.
+                        ACM certificate ARN for an EKS ALB listener. Env:
+                        OR_STACK_CERTIFICATE_ARN. Required only for EKS with
+                        ingress exposure.
+  --http-port <port>    Public HAProxy Service HTTP port. Env:
+                        OR_STACK_HTTP_PORT. Default: 80.
+  --https-port <port>   Public HAProxy Service HTTPS port and forwarded port.
+                        Env: OR_STACK_HTTPS_PORT. Default: 443.
   --values-dir <path>   Optional directory containing per-component overrides:
                         or-setup.yaml, postgresql.yaml, keycloak.yaml, and
-                        manager.yaml. Env: OR_STACK_VALUES_DIR.
+                        manager.yaml, plus proxy.yaml for either public
+                        exposure.
+                        Env: OR_STACK_VALUES_DIR.
   --timeout <duration>  Helm wait timeout. Env: OR_STACK_TIMEOUT. Default: 10m.
   --confirm <name>      Required exact stack name for destroy.
   -h, --help            Show this help.
@@ -69,10 +92,12 @@ operation and deletes every resource in the stack namespace. Lifecycle and
 credential commands refuse namespaces without the matching openremote.io/stack
 label.
 
-The EKS target creates HTTPS Ingress rules on the cluster's shared OpenRemote
-ALB and redirects HTTP to HTTPS. The local target does not expose an Ingress by
-default. This command references but does not create certificates or DNS
-records and does not make AWS calls.
+HAProxy is the default exposure for local and EKS targets. On EKS it creates a
+per-stack internet-facing NLB; locally it uses the cluster's LoadBalancer
+support. Select ingress explicitly to route through a private per-stack HAProxy
+gateway (the EKS profile exposes it through the cluster's shared OpenRemote
+ALB), or none for an internal-only stack. This command does not create DNS
+records, call AWS APIs, or manage ACM certificates.
 EOF
 }
 
@@ -126,6 +151,11 @@ parse_arguments() {
         TARGET="$2"
         shift 2
         ;;
+      --exposure)
+        [ "$#" -ge 2 ] || die "Option --exposure requires a value."
+        EXPOSURE="$2"
+        shift 2
+        ;;
       --hostname)
         [ "$#" -ge 2 ] || die "Option --hostname requires a value."
         HOSTNAME_VALUE="$2"
@@ -134,6 +164,18 @@ parse_arguments() {
       --certificate-arn)
         [ "$#" -ge 2 ] || die "Option --certificate-arn requires a value."
         CERTIFICATE_ARN="$2"
+        shift 2
+        ;;
+      --http-port)
+        [ "$#" -ge 2 ] || die "Option --http-port requires a value."
+        HTTP_PORT="$2"
+        HTTP_PORT_CONFIGURED=true
+        shift 2
+        ;;
+      --https-port)
+        [ "$#" -ge 2 ] || die "Option --https-port requires a value."
+        HTTPS_PORT="$2"
+        HTTPS_PORT_CONFIGURED=true
         shift 2
         ;;
       --values-dir)
@@ -184,12 +226,13 @@ validate_common_options() {
 
 validate_apply_options() {
   validate_target
+  validate_exposure
 
   if [ -z "$HOSTNAME_VALUE" ]; then
-    if [ "$TARGET" = "local" ]; then
+    if [ "$TARGET" = "local" ] || [ "$EXPOSURE" = "none" ]; then
       HOSTNAME_VALUE=localhost
     else
-      die "A public hostname is required for the EKS target; use --hostname or OR_STACK_HOSTNAME."
+      die "A public hostname is required for public EKS exposure; use --hostname or OR_STACK_HOSTNAME."
     fi
   fi
 
@@ -199,18 +242,37 @@ validate_apply_options() {
     die "Hostname must be a lowercase DNS name."
   fi
 
-  if [ "$TARGET" = "eks" ]; then
+  if [ "$TARGET" = "eks" ] && [ "$EXPOSURE" = "ingress" ]; then
     [ -n "$CERTIFICATE_ARN" ] || die \
-      "An ACM certificate ARN is required for the EKS target; use --certificate-arn or OR_STACK_CERTIFICATE_ARN."
+      "An ACM certificate ARN is required for EKS ingress exposure; use --certificate-arn or OR_STACK_CERTIFICATE_ARN."
     if [[ ! "$CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:[a-z0-9-]+:[0-9]{12}:certificate/[A-Za-z0-9-]+$ ]]; then
       die "Certificate ARN must be a valid ACM certificate ARN."
     fi
+  elif [ -n "$CERTIFICATE_ARN" ]; then
+    die "Option --certificate-arn is only valid with --target eks --exposure ingress."
+  fi
+
+  if [ "$EXPOSURE" = "haproxy" ]; then
+    validate_port "$HTTP_PORT" "HTTP"
+    validate_port "$HTTPS_PORT" "HTTPS"
+    [ "$HTTP_PORT" != "$HTTPS_PORT" ] || die "HAProxy HTTP and HTTPS ports must be different."
+  elif [ "$HTTP_PORT_CONFIGURED" = true ] || [ "$HTTPS_PORT_CONFIGURED" = true ]; then
+    die "Options --http-port and --https-port are only valid with HAProxy exposure."
   fi
   validate_timeout
 
   if [ -n "$VALUES_DIR" ] && [ ! -d "$VALUES_DIR" ]; then
     die "Values directory '$VALUES_DIR' does not exist."
   fi
+}
+
+validate_port() {
+  local port="$1"
+  local name="$2"
+
+  [[ "$port" =~ ^[0-9]+$ ]] || die "$name port must be a number from 1 to 65535."
+  [ "$port" -ge 1 ] && [ "$port" -le 65535 ] || die \
+    "$name port must be a number from 1 to 65535."
 }
 
 validate_timeout() {
@@ -235,6 +297,16 @@ validate_target() {
   esac
 }
 
+validate_exposure() {
+  case "$EXPOSURE" in
+    haproxy|ingress|none)
+      ;;
+    *)
+      die "Unsupported exposure '$EXPOSURE'; expected haproxy, ingress, or none."
+      ;;
+  esac
+}
+
 require_kube_context() {
   local configured_context
 
@@ -248,12 +320,39 @@ stack_namespace_label() {
     -o 'jsonpath={.metadata.labels.openremote\.io/stack}'
 }
 
+stack_namespace_target() {
+  kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    -o 'jsonpath={.metadata.labels.openremote\.io/target}'
+}
+
+stack_namespace_exposure() {
+  kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    -o 'jsonpath={.metadata.labels.openremote\.io/exposure}'
+}
+
 ensure_namespace() {
   local stack_label
+  local stored_exposure
+  local stored_target
 
   if stack_label="$(stack_namespace_label 2>/dev/null)"; then
     [ "$stack_label" = "$STACK_NAME" ] || die \
       "Namespace '$STACK_NAME' already exists without the matching openremote.io/stack label; refusing to adopt it."
+
+    stored_target="$(stack_namespace_target)"
+    if [ -n "$stored_target" ] && [ "$stored_target" != "$TARGET" ]; then
+      die "Stack '$STACK_NAME' uses target '$stored_target'; refusing to change it to '$TARGET'."
+    fi
+
+    stored_exposure="$(stack_namespace_exposure)"
+    if [ -z "$stored_exposure" ] && kubectl --context "$KUBE_CONTEXT" \
+      --namespace "$STACK_NAME" get ingress manager >/dev/null 2>&1; then
+      stored_exposure=ingress
+      log "Detected ingress exposure for existing stack '$STACK_NAME'."
+    fi
+    if [ -n "$stored_exposure" ] && [ "$stored_exposure" != "$EXPOSURE" ]; then
+      die "Stack '$STACK_NAME' uses exposure '$stored_exposure'; refusing to change it to '$EXPOSURE'."
+    fi
     log "Using namespace '$STACK_NAME'."
   else
     log "Creating namespace '$STACK_NAME'."
@@ -263,6 +362,8 @@ ensure_namespace() {
   kubectl --context "$KUBE_CONTEXT" label namespace "$STACK_NAME" \
     app.kubernetes.io/part-of=openremote \
     "openremote.io/stack=$STACK_NAME" \
+    "openremote.io/target=$TARGET" \
+    "openremote.io/exposure=$EXPOSURE" \
     --overwrite >/dev/null
 }
 
@@ -289,18 +390,22 @@ validate_target_cluster() {
     kubectl --context "$KUBE_CONTEXT" get \
       customresourcedefinition/policyendpoints.networking.k8s.aws >/dev/null 2>&1 || die \
       "Amazon VPC CNI NetworkPolicy enforcement is not enabled in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
-    kubectl --context "$KUBE_CONTEXT" --namespace kube-system get \
-      deployment aws-load-balancer-controller >/dev/null 2>&1 || die \
-      "AWS Load Balancer Controller is not installed in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
-    kubectl --context "$KUBE_CONTEXT" get ingressclass openremote-alb >/dev/null 2>&1 || die \
-      "Shared IngressClass 'openremote-alb' is not installed in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
-    if ! ssl_redirect_port="$(kubectl --context "$KUBE_CONTEXT" get \
-      ingressclassparams.elbv2.k8s.aws openremote-alb \
-      -o 'jsonpath={.spec.sslRedirectPort}' 2>/dev/null)"; then
-      die "Shared IngressClassParams 'openremote-alb' is not installed in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
+    if [ "$EXPOSURE" != "none" ]; then
+      kubectl --context "$KUBE_CONTEXT" --namespace kube-system get \
+        deployment aws-load-balancer-controller >/dev/null 2>&1 || die \
+        "AWS Load Balancer Controller is not installed in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
     fi
-    [ "$ssl_redirect_port" = "443" ] || die \
-      "Shared IngressClassParams 'openremote-alb' does not enforce HTTPS redirection; run or-eks-cluster apply first."
+    if [ "$EXPOSURE" = "ingress" ]; then
+      kubectl --context "$KUBE_CONTEXT" get ingressclass openremote-alb >/dev/null 2>&1 || die \
+        "Shared IngressClass 'openremote-alb' is not installed in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
+      if ! ssl_redirect_port="$(kubectl --context "$KUBE_CONTEXT" get \
+        ingressclassparams.elbv2.k8s.aws openremote-alb \
+        -o 'jsonpath={.spec.sslRedirectPort}' 2>/dev/null)"; then
+        die "Shared IngressClassParams 'openremote-alb' is not installed in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."
+      fi
+      [ "$ssl_redirect_port" = "443" ] || die \
+        "Shared IngressClassParams 'openremote-alb' does not enforce HTTPS redirection; run or-eks-cluster apply first."
+    fi
     vpc_cni_containers="$(kubectl --context "$KUBE_CONTEXT" --namespace kube-system \
       get daemonset aws-node \
       -o 'jsonpath={.spec.template.spec.containers[*].name}')" || die \
@@ -315,11 +420,23 @@ validate_target_cluster() {
   fi
 }
 
+discover_cluster_dns() {
+  if ! CLUSTER_DNS="$(kubectl --context "$KUBE_CONTEXT" --namespace kube-system \
+    get service kube-dns \
+    -o 'jsonpath={.spec.clusterIP}:{.spec.ports[?(@.name=="dns")].port}' 2>/dev/null)"; then
+    die "Unable to discover the kube-dns Service in context '$KUBE_CONTEXT'."
+  fi
+  [ -n "$CLUSTER_DNS" ] && [[ "$CLUSTER_DNS" == *:* ]] || die \
+    "The kube-dns Service in context '$KUBE_CONTEXT' has no usable DNS endpoint."
+}
+
 helm_apply() {
   local component="$1"
   shift
   local chart="$KUBERNETES_DIR/$component"
   local target_values="$TARGETS_DIR/$TARGET/$component.yaml"
+  local exposure_values="$EXPOSURES_DIR/$EXPOSURE/$component.yaml"
+  local target_exposure_values="$EXPOSURES_DIR/$EXPOSURE/$TARGET/$component.yaml"
   local stack_values=""
   local helm_args=(
     upgrade --install "$component" "$chart"
@@ -329,6 +446,14 @@ helm_apply() {
 
   if [ -f "$target_values" ]; then
     helm_args+=(--values "$target_values")
+  fi
+
+  if [ -f "$exposure_values" ]; then
+    helm_args+=(--values "$exposure_values")
+  fi
+
+  if [ -f "$target_exposure_values" ]; then
+    helm_args+=(--values "$target_exposure_values")
   fi
 
   if [ -n "$VALUES_DIR" ]; then
@@ -345,39 +470,78 @@ helm_apply() {
 }
 
 apply_stack() {
-  local component_ingress_args=(
+  local component_args=(
     --set-string "or.hostname=$HOSTNAME_VALUE"
-    --set-string "ingress.hostname=$HOSTNAME_VALUE"
   )
+  local proxy_args=()
 
   require_command helm
   require_command kubectl
   require_kube_context
   validate_target_cluster
-  ensure_namespace
-
-  if [ "$TARGET" = "eks" ]; then
-    component_ingress_args+=(
-      --set-string "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn=$CERTIFICATE_ARN"
-    )
+  if [ "$EXPOSURE" != "none" ]; then
+    discover_cluster_dns
   fi
+  ensure_namespace
 
   helm_apply or-setup
   helm_apply postgresql
-  helm_apply keycloak "${component_ingress_args[@]}"
-  helm_apply manager "${component_ingress_args[@]}"
+  helm_apply keycloak "${component_args[@]}"
+  helm_apply manager "${component_args[@]}"
+  if [ "$EXPOSURE" != "none" ]; then
+    proxy_args=(
+      --set-string "or.hostname=$HOSTNAME_VALUE"
+      --set-string "or.managerHost=manager.$STACK_NAME.svc.cluster.local"
+      --set-string "or.keycloakHost=keycloak.$STACK_NAME.svc.cluster.local"
+      --set-string "or.nameserver=$CLUSTER_DNS"
+    )
+    if [ "$EXPOSURE" = "haproxy" ]; then
+      proxy_args+=(
+        --set-string "or.httpsForwardedPort=$HTTPS_PORT"
+        --set-string "service.http.port=$HTTP_PORT"
+        --set-string "service.https.port=$HTTPS_PORT"
+      )
+    else
+      proxy_args+=(--set-string "ingress.hostname=$HOSTNAME_VALUE")
+      if [ "$TARGET" = "eks" ]; then
+        proxy_args+=(
+          --set-string "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn=$CERTIFICATE_ARN"
+        )
+      else
+        proxy_args+=(--set-string "ingress.tls[0].hosts[0]=$HOSTNAME_VALUE")
+      fi
+    fi
+    helm_apply proxy "${proxy_args[@]}"
+  fi
 
   log "Stack '$STACK_NAME' is applied in context '$KUBE_CONTEXT'."
   log "NetworkPolicy enforcement depends on the cluster CNI; verify cross-stack isolation before relying on it."
   log "Retrieve its Manager login at any time with:"
   printf '  %q credentials --name %q --kube-context %q\n' \
     "$0" "$STACK_NAME" "$KUBE_CONTEXT"
-  if [ "$TARGET" = "eks" ]; then
-    log "HTTPS routing is requested through the cluster's shared OpenRemote ALB:"
-    printf '  https://%s/manager\n' "$HOSTNAME_VALUE"
-    log "DNS records and certificate lifecycle remain external to this command."
+  if [ "$EXPOSURE" = "ingress" ]; then
+    if [ "$TARGET" = "eks" ]; then
+      log "HTTPS routing is requested through the cluster's shared OpenRemote ALB and this stack's private HAProxy gateway:"
+      printf '  https://%s/manager\n' "$HOSTNAME_VALUE"
+      log "DNS records and certificate lifecycle remain external to this command."
+    else
+      log "Routing is requested through the cluster's configured Ingress controller and this stack's private HAProxy gateway:"
+      printf '  Host: %s, path: /manager\n' "$HOSTNAME_VALUE"
+      log "Ingress controller, DNS, and TLS configuration remain external to this command."
+    fi
+  elif [ "$EXPOSURE" = "haproxy" ]; then
+    log "HAProxy is exposed through the stack's 'proxy' LoadBalancer Service."
+    printf '  https://%s' "$HOSTNAME_VALUE"
+    if [ "$HTTPS_PORT" != "443" ]; then
+      printf ':%s' "$HTTPS_PORT"
+    fi
+    printf '/manager\n'
+    log "Inspect its external address with:"
+    printf '  kubectl --context %q --namespace %q get service proxy\n' \
+      "$KUBE_CONTEXT" "$STACK_NAME"
+    log "DNS records and production certificate issuance remain external to this command."
   else
-    log "External routing is not enabled by the local target."
+    log "External routing is disabled for this stack."
   fi
 }
 
@@ -410,7 +574,7 @@ verify_retained_pvcs() {
     fi
 
     case "$release_owner" in
-      manager|postgresql)
+      manager|postgresql|proxy)
         [ "$resource_policy" = "keep" ] || die \
           "PVC '$STACK_NAME/$claim_name' is managed by Helm without the keep policy; refusing data-retaining uninstall."
         ;;
@@ -441,6 +605,7 @@ uninstall_release() {
 }
 
 uninstall_releases() {
+  uninstall_release proxy
   uninstall_release manager
   uninstall_release keycloak
   uninstall_release postgresql
@@ -520,12 +685,21 @@ destroy_stack() {
 }
 
 show_stack_status() {
+  local exposure
+  local proxy_address
+  local proxy_certificate
+  local target
+
   require_command helm
   require_command kubectl
   require_kube_context
+  require_stack_namespace
 
-  kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" >/dev/null 2>&1 || die \
-    "Stack namespace '$STACK_NAME' does not exist in context '$KUBE_CONTEXT'."
+  target="$(stack_namespace_target)"
+  exposure="$(stack_namespace_exposure)"
+  log "Configuration"
+  printf 'Target: %s\n' "${target:-unknown}"
+  printf 'Exposure: %s\n' "${exposure:-unknown}"
 
   log "Helm releases"
   helm list --kube-context "$KUBE_CONTEXT" --namespace "$STACK_NAME"
@@ -541,6 +715,27 @@ show_stack_status() {
   log "Persistent storage"
   kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
     get persistentvolumeclaims
+
+  if [ "$exposure" = "haproxy" ]; then
+    if proxy_address="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+      get service proxy \
+      -o 'jsonpath={.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}' \
+      2>/dev/null)" && [ -n "$proxy_address" ]; then
+      printf 'HAProxy external address: %s\n' "$proxy_address"
+    else
+      log "WARNING: HAProxy LoadBalancer external address is pending or unavailable."
+    fi
+
+    if proxy_certificate="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+      exec deployment/proxy -- sh -c \
+      'for cert in /deployment/certs/* /data/proxy/certs/*; do [ -f "$cert" ] || continue; openssl x509 -in "$cert" -noout -issuer -enddate && exit 0; done; exit 1' \
+      2>/dev/null)"; then
+      log "HAProxy certificate"
+      printf '%s\n' "$proxy_certificate"
+    else
+      log "WARNING: HAProxy has no readable managed or custom certificate yet; its fallback self-signed certificate may be in use."
+    fi
+  fi
 }
 
 main() {

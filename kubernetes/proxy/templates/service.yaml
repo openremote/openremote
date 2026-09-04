@@ -15,14 +15,18 @@ spec:
       targetPort: {{ .Values.or.httpPort }}
       protocol: TCP
       name: http
-    - port: 443
+    {{- if .Values.service.https.enabled }}
+    - port: {{ .Values.service.https.port }}
       targetPort: {{ .Values.or.httpsPort }}
       protocol: TCP
       name: https
-    - port: 8883
+    {{- end }}
+    {{- if .Values.service.mqtts.enabled }}
+    - port: {{ .Values.service.mqtts.port }}
       targetPort: {{ .Values.or.mqttPort }}
       protocol: TCP
       name: mqtts
+    {{- end }}
   selector:
     {{- include "proxy.selectorLabels" . | nindent 4 }}
 ---

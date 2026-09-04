@@ -7,13 +7,13 @@ It supposes you have already installed the required tools on your machine:
 - kubectl
 - helm
 
-There are two options on how the OR components can be accessed:
-
-- using a HAProxy pod to manage all connections
-- using the standard kubernetes network objects: Ingress and Service
-
-In the later case, an Ingress controller must be installed in the cluster ([Nginx Controller](https://kubernetes.github.io/ingress-nginx/deploy/#quick-start) was used during testing).
-In the former case, an Ingress controller should NOT be installed as this causes conflicts.
+There are three exposure modes: public HAProxy, Kubernetes Ingress, and
+internal-only. Both public modes use a HAProxy Pod in each stack namespace.
+With HAProxy exposure it is the public TLS endpoint; with Ingress exposure it
+is a private gateway behind the Ingress controller. An Ingress controller must
+be installed for the latter mode
+([Nginx Controller](https://kubernetes.github.io/ingress-nginx/deploy/#quick-start)
+was used during local testing).
 
 This README file covers deployment on a local machine, for information on deploying into an EKS cluster on AWS, see README-AWS.md
 
@@ -21,14 +21,15 @@ This README file covers deployment on a local machine, for information on deploy
 
 `or-stack` installs each OpenRemote stack into a namespace with the same name.
 The Helm release names remain `or-setup`, `postgresql`, `keycloak`, and
-`manager` inside every namespace, so the existing service names continue to
-work while namespaced resources and persistent data remain independent.
+`manager`, plus `proxy` in either public mode, inside every namespace. Existing
+component service names therefore continue to work while namespaced resources
+and persistent data remain independent.
 
 The stack command provides apply, inspection, credential retrieval, uninstall,
-and explicit destruction operations. The local target installs only the
-internal stack components. The EKS target also creates Manager and Keycloak
-HTTPS routes on the cluster's shared OpenRemote ALB; certificate creation and
-DNS records remain external concerns.
+and explicit destruction operations. Target platform and public exposure are
+separate choices. `--target` selects local or EKS storage and cluster
+requirements; `--exposure` selects `haproxy`, `ingress`, or `none`. HAProxy is
+the default exposure for both targets.
 
 To install or upgrade a local stack using the current Docker Desktop, kind, or
 kubeadm context:
@@ -37,21 +38,69 @@ kubeadm context:
 ./or-stack apply \
   --name stack-a \
   --kube-context docker-desktop \
-  --target local
+  --target local \
+  --http-port 8080 \
+  --https-port 8443
 ```
 
 The local target uses the cluster's default StorageClass and enables the
 PostgreSQL volume permission init container required by Docker Desktop's
 dynamically provisioned hostpath volumes.
 
-Deploy another independent stack by choosing another name:
+The local HAProxy Service uses the cluster's `LoadBalancer` support and reports
+the configured HTTPS port to Manager and Keycloak. On Docker Desktop, deploy a
+second independent stack with another name and different host-facing ports:
 
 ```bash
 ./or-stack apply \
   --name stack-b \
   --kube-context docker-desktop \
-  --target local
+  --target local \
+  --http-port 9080 \
+  --https-port 9443
 ```
+
+The Managers are then available at `https://localhost:8443/manager` and
+`https://localhost:9443/manager`, using the proxy's locally generated
+certificates. Browser warnings for those local certificates are expected.
+The HAProxy Pod readiness probe checks that the proxy can serve traffic;
+`or-stack status` reports certificate material separately. Certificate
+issuance must not gate Pod readiness because an HTTP ACME challenge needs the
+Service to send traffic to that Pod.
+
+For kind, kubeadm, or another cluster without a LoadBalancer implementation,
+put this in the stack's `proxy.yaml` values override:
+
+```yaml
+service:
+  http:
+    type: ClusterIP
+```
+
+Apply with explicit local ports, then keep a port-forward running:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context kind-openremote \
+  --target local \
+  --hostname localhost \
+  --http-port 8080 \
+  --https-port 8443 \
+  --values-dir ./stacks/stack-a
+
+kubectl --context kind-openremote --namespace stack-a \
+  port-forward service/proxy 8080:8080 8443:8443
+```
+
+Select Kubernetes Ingress explicitly with `--exposure ingress`, or use
+`--exposure none` for an internal-only stack. Ingress traffic terminates TLS at
+the configured controller and then passes through a private per-stack HAProxy
+gateway to Manager or Keycloak. A local Ingress installation and its TLS Secret
+are user-managed. `or-stack` declares the TLS hostname; a controller may use its
+default certificate when no `secretName` is provided. The selected target and
+exposure are stored on the namespace; reapplying with a different choice is
+rejected because changing public routing in place needs a deliberate migration.
 
 Show resources belonging to one stack:
 
@@ -130,16 +179,16 @@ kubectl delete deployment network-policy-test --namespace stack-a
 Set `networkPolicy.enabled: false` in a stack's `or-setup.yaml` only when
 isolation is deliberately not required. `networkPolicy.additionalIngressFrom`
 accepts additional Kubernetes `NetworkPolicyPeer` entries for trusted sources.
-The EKS target separately enables `networkPolicy.publicHttp`, which permits
-external traffic only to port 8080 on Manager and Keycloak Pods carrying the
-`openremote.io/public-http` label. It does not open PostgreSQL or other ports.
-TLS terminates at the ALB, so this policy continues to allow only the Pods'
-internal HTTP port.
+Ingress exposure permits external traffic only to port 8080 on the stack's
+proxy Pod. HAProxy exposure permits external traffic only to ports 8080 and
+8443 on that Pod. In both modes, the proxy reaches Manager and Keycloak through
+the same-namespace rule, while direct access from other namespaces to Manager,
+Keycloak, and PostgreSQL remains denied. `none` adds no public ingress rule.
 
 `apply` accepts an optional `--values-dir`. Files named `or-setup.yaml`,
-`postgresql.yaml`, `keycloak.yaml`, and `manager.yaml` in that directory are
-applied after the selected target values. Command-line hostname configuration
-is also available:
+`postgresql.yaml`, `keycloak.yaml`, `manager.yaml`, and `proxy.yaml` in that
+directory are applied after the selected target and exposure values.
+Command-line hostname configuration is also available:
 
 ```bash
 ./or-stack apply \
@@ -147,6 +196,8 @@ is also available:
   --kube-context docker-desktop \
   --target local \
   --hostname stack-a.localhost \
+  --http-port 8080 \
+  --https-port 8443 \
   --values-dir ./stacks/stack-a
 ```
 
@@ -177,11 +228,12 @@ PVCs, and data:
   --kube-context docker-desktop
 ```
 
-The releases are removed in reverse dependency order. Before uninstalling,
-`or-stack` refuses to continue if the stack Secret or a chart-managed PVC does
-not carry Helm's `keep` resource policy. Running `apply` again with the same
-stack name and context restores the workloads with the retained credentials and
-volumes.
+The releases are removed in reverse dependency order, beginning with HAProxy
+when present. Before uninstalling, `or-stack` refuses to continue if the stack
+Secret or a chart-managed PVC does not carry Helm's `keep` resource policy.
+Running `apply` again with the same stack name, context, target, exposure, and
+ports restores the workloads with the retained credentials, data volumes, and
+HAProxy ACME/certificate state.
 
 Destroying a stack is the explicit data-purge operation:
 
@@ -237,10 +289,10 @@ when a specific provisioner must be used.
 Install the different charts in order
 
 ```bash
-helm install proxy proxy
 helm install postgresql postgresql
 helm install keycloak keycloak
 helm install manager manager
+helm install proxy proxy
 ```
 
 If running under linux, you must enable the requiresPermissionsFix flag when installing postgresql
@@ -253,13 +305,28 @@ helm install postgresql postgresql --set requiresPermissionsFix=true
 
 ### Persistent storage lifecycle
 
-Manager and PostgreSQL PVCs have the `helm.sh/resource-policy: keep` annotation
-by default. Uninstalling either chart removes its workload but preserves its PVC
-and data. Set `persistence.retain=false` if Helm should delete the chart-managed
-claim during uninstall.
+Manager, PostgreSQL, and HAProxy PVCs have the `helm.sh/resource-policy: keep`
+annotation by default. HAProxy mounts its claim at `/deployment`, the proxy
+image's location for Certbot account data and generated certificates. Replacing
+the Pod or uninstalling/reapplying the release therefore does not needlessly
+request a new certificate. Set `persistence.retain=false` if Helm should delete
+a chart-managed claim during uninstall.
 
 Set `persistence.existingClaim` to use a PVC managed outside the chart. When it
 is set, the chart does not create, annotate, or delete that claim.
+
+The proxy can instead load full-chain PEM files (including their private keys)
+from a Secret by setting `certificate.existingSecret`. Secret keys are mounted
+as files under `/data/proxy/certs`; manage and rotate that Secret outside this
+chart. ACME is disabled when this setting is present. If no proxy-managed state
+is required, also disable its PVC:
+
+```yaml
+certificate:
+  existingSecret: stack-certificate
+persistence:
+  enabled: false
+```
 
 Deleting a retained PVC or its namespace is an explicit data-purge operation.
 Whether the backing volume is also deleted then depends on its StorageClass
@@ -397,39 +464,66 @@ and port forwarding, this is the hostname you need to use for the JMX configurat
 
 #### Accessing MQTT
 
-MQTTS is accessible on port 8883 through HAProxy.  
-Non-TLS access to MQTT requires using a manual port forward to the pod e.g.  
-`kubectl port-forward manager-…  1883:1883`
+MQTT(S) is intentionally disabled in the current namespaced exposure profiles.
+It will be added as a separate option with its DNS, certificate, load-balancer,
+and NetworkPolicy lifecycle handled together.
 
 #### Using with IDE for development
 
-It is not possible to run the manager inside the IDE and have HAProxy deployed as a pod in the cluster.  
-Use an ingress instead for that scenario.
+Both public exposure modes now use a HAProxy Pod and expect Manager to be
+available through its namespace-local Service. To run Manager in the IDE, use
+the direct development workflow and port-forward its Kubernetes dependencies;
+do not apply either managed public exposure profile.
 
 #### Certificate management
 
 HAProxy is responsible for certificate management (either using the default self-signed or using ACME).  
 Please refer to the proxy documentation for more information.
 
-### When using Ingress (no HAProxy pod)
+### When using Ingress
 
-For this scenario, make sure an Ingress controller is installed in the cluster.  
-Review the values files for your deployment scenario, in particular make sure to configure and enable the ingress on keycloak and manager pods.  
-Install the different charts in order
+Ingress mode still deploys a HAProxy Pod, but it has a narrower role than in
+HAProxy exposure mode:
+
+```text
+Client -> Ingress controller -> per-stack HAProxy gateway -> Manager/Keycloak
+```
+
+The Kubernetes Ingress targets the proxy Service, never the Manager or
+Keycloak Services. TLS terminates at the Ingress controller, ACME and
+certificate persistence are disabled in the proxy, and HAProxy receives plain
+HTTP before routing `/auth` to Keycloak and other paths to Manager.
+
+This gateway is required for NetworkPolicy isolation. An external Ingress data
+plane such as an AWS ALB has no Pod or namespace labels that a portable
+NetworkPolicy can select. Allowing it to connect directly to Manager and
+Keycloak would also allow Pods in other namespaces to use those same ports. A
+single public rule on the proxy keeps the application Pods namespace-private.
+
+The tradeoff is one additional internal HTTP hop and one small proxy Pod per
+stack. In return, Ingress mode retains controller-managed TLS and layer-7
+features. On EKS that means ACM, a shared ALB, SNI, HTTP redirects, and optional
+ALB integrations such as WAF. It is not a load-balancer cost optimization:
+once MQTT(S) is implemented, an Ingress stack will also require its own NLB for
+MQTT in addition to the shared web ALB.
+
+Apply this mode through `or-stack` so the proxy, its Ingress, and its
+NetworkPolicy are configured consistently:
 
 ```bash
-helm install postgresql postgresql
-helm install keycloak keycloak
-helm install manager manager
+./or-stack apply \
+  --name stack-a \
+  --kube-context <context> \
+  --target local \
+  --exposure ingress \
+  --hostname stack-a.example.com
 ```
 
 #### Accessing MQTT
 
-If, in the manager values files, you enable the MQTT/MQTTS services, you can directly access them (by default on port 1883 and 8883).  
-**In this configuration, the MQTTS service does not have a certificate and although named MQTTS will only accept MQTT connections !!!**
-
-Alternatively, if you do not enable a service, you can use manual port forwarding to the pod e.g.  
-`kubectl port-forward manager-…  1883:1883`
+The HTTP Ingress does not carry MQTT traffic. MQTT(S) remains disabled pending
+the dedicated per-stack NLB implementation. A development-only plaintext MQTT
+connection can still use a manual port-forward to Manager port 1883.
 
 #### Running a custom project
 
@@ -496,36 +590,37 @@ Make sure that other ports (e.g. MQTT 1883) are not used / forwarded from pods.
 
 ### Changing hostname / adding custom certificate
 
-The default values file creates the ingress on localhost and uses the default kubernetes fake certificate for its TLS termination.  
-You can change your hostname by overriding the appropriate values, e.g. using a custom values files.  
-Here is an example of a `values-openremote.yaml` file that you could use
+With `--exposure ingress`, the proxy chart owns the Ingress. Pass its hostname
+to `or-stack` with `--hostname`. For a local controller, configure TLS through
+the stack's `proxy.yaml` override. For example:
 
 ```yaml
 ingress:
-  hosts:
-    - host: test.openremote.io
-      paths:
-        - path: /
-          pathType: Prefix
+  hostname: test.openremote.io
   tls:
     - hosts:
         - test.openremote.io
-
-or:
-  hostname: "test.openremote.io"
 ```
 
-You can then deploy the manager using
+Apply it as part of the complete stack:
 
 ```bash
-helm install manager manager -f values-openremote.yaml
+./or-stack apply \
+  --name stack-a \
+  --kube-context <context> \
+  --target local \
+  --exposure ingress \
+  --hostname test.openremote.io \
+  --values-dir ./stacks/stack-a
 ```
 
 If in addition to changing the hostname, you'd like to use a custom certificate for the TLS termination, you need to create a kubernetes secret with the certificate and reference it from the ingress definition.  
 Supposing you have the private/public keys available in .PEM encoded files, you create the secret using
 
 ```
-kubectl create secret tls or-manager-tls --key test.openremote.io.key --cert test.openremote.io.crt
+kubectl --namespace stack-a create secret tls openremote-web-tls \
+  --key test.openremote.io.key \
+  --cert test.openremote.io.crt
 ```
 
 With that in place, you can now reference the secret in the ingress configuration.  
@@ -533,18 +628,11 @@ The above example file now becomes
 
 ```yaml
 ingress:
-  hosts:
-    - host: test.openremote.io
-      paths:
-        - path: /
-          pathType: Prefix
+  hostname: test.openremote.io
   tls:
     - hosts:
         - test.openremote.io
-      secretName: or-manager-tls
-
-or:
-  hostname: "test.openremote.io"
+      secretName: openremote-web-tls
 ```
 
 ### Connecting to the database

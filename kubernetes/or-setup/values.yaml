@@ -17,13 +17,16 @@ networkPolicy:
   # Optional NetworkPolicyPeer entries for trusted ingress sources outside the
   # stack namespace.
   additionalIngressFrom: []
-  # Allow ingress-controller traffic only to explicitly labeled public HTTP
-  # workloads. The EKS target enables this for its ALB routes.
-  publicHttp:
+  # Allow external traffic only to the per-stack proxy Pod. In HAProxy mode it
+  # is the public TLS endpoint; in Ingress mode it is the internal gateway
+  # targeted by the Ingress controller. Manager and Keycloak remain private.
+  proxy:
     enabled: false
     podSelector:
       matchLabels:
-        openremote.io/public-http: "true"
+        app.kubernetes.io/name: proxy
     ports:
       - protocol: TCP
         port: 8080
+      - protocol: TCP
+        port: 8443

@@ -1,4 +1,2 @@
 networkPolicy:
   enabled: true
-  publicHttp:
-    enabled: true

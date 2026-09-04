@@ -1,12 +1,2 @@
 persistence:
   storageClass: openremote-ebs
-
-podLabels:
-  openremote.io/public-http: "true"
-
-ingress:
-  enabled: true
-  className: openremote-alb
-  annotations:
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
-  tls: []

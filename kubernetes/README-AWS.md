@@ -29,8 +29,10 @@ See comments within the script for more information.
 
 ## Setup
 
-We have two different options for deployment: using a HAProxy container or not.  
-There are pros and cons to both approaches, see [Networking](#Networking) section for more details.
+We support two public routing options: HAProxy exposed directly through a
+per-stack NLB, or a private per-stack HAProxy gateway behind the shared ALB.
+There are pros and cons to both approaches; see the [Networking](#networking)
+section for more details.
 
 We're creating an EKS cluster with a managed node group.  
 By default, the group uses 2 VMs of type t2.large. The script places them in AZ eu-west-1a and eu-west-1b
@@ -52,47 +54,129 @@ the `Delete` reclaim policy.
 ### Namespaced stacks
 
 After the shared EKS cluster has been created, `or-stack` can install the
-internal components of an OpenRemote stack in an independent namespace:
+components of an OpenRemote stack in an independent namespace. HAProxy is the
+default exposure and creates one internet-facing NLB per stack:
 
 ```bash
 ./or-stack apply \
   --name stack-a \
   --kube-context <cluster-name>@eu-west-1 \
   --target eks \
-  --hostname stack-a.example.com \
-  --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example
+  --hostname stack-a.example.com
 ```
 
 The EKS target verifies that the EBS CSI driver and `openremote-ebs`
 StorageClass exist. It also requires the Amazon VPC CNI NetworkPolicy
 `PolicyEndpoint` CRD and node agent, confirming that native policy support is
-configured, as well as the AWS Load Balancer Controller and the shared
-`openremote-alb` IngressClass. It selects encrypted dynamically provisioned EBS
-storage and creates HTTPS Ingresses for Manager `/` and Keycloak `/auth` using
-the hostname passed to `--hostname`. The hostname and ACM certificate ARN are
-required for the EKS target. The certificate must be issued in the same AWS
-account and region as the ALB; its DNS validation can be hosted in another
-account.
+configured. Public HAProxy and Ingress exposure also require the AWS Load
+Balancer Controller, while `--exposure none` does not. The target selects
+encrypted dynamically provisioned EBS storage for Manager and PostgreSQL.
+HAProxy exposure additionally persists its certificate state; the private
+Ingress gateway does not store certificates.
 
 Each stack applies an ingress NetworkPolicy that allows traffic from its own
 namespace and rejects traffic originating in other stack namespaces. Egress is
-not restricted. A second policy permits external traffic only to the HTTP port
-on the Manager and Keycloak Pods selected for public routing; PostgreSQL
-remains reachable only from its own stack namespace. `or-eks-cluster create`
-enables NetworkPolicy on the managed VPC CNI add-on, and
-`or-eks-cluster apply` reconciles that setting without changing the installed
-add-on version. New clusters give the VPC CNI add-on a dedicated IAM role with
-`AmazonEKS_CNI_Policy`; for existing add-ons, cluster reconciliation aligns the
-`aws-node` ServiceAccount annotation with the role already recorded by EKS.
+not restricted. In HAProxy mode, a second policy permits external traffic only
+to the HAProxy Pod's HTTP and HTTPS ports; Manager, Keycloak, and PostgreSQL are
+not directly public. In Ingress mode, the second policy permits the ALB to
+reach only HTTP port 8080 on a private per-stack HAProxy gateway. That gateway
+then reaches Manager and Keycloak through the same-namespace rule, so neither
+application Pod is directly reachable from another stack namespace.
+`or-eks-cluster create` enables NetworkPolicy on the managed VPC CNI add-on,
+and `or-eks-cluster apply` reconciles that setting without changing the
+installed add-on version. New clusters give the VPC CNI add-on a dedicated IAM
+role with `AmazonEKS_CNI_Policy`; for existing add-ons, cluster reconciliation
+aligns the `aws-node` ServiceAccount annotation with the role already recorded
+by EKS.
 
-#### Shared HTTPS routing
+Wait for the per-stack NLB address:
+
+```bash
+kubectl --context <cluster-name>@eu-west-1 \
+  --namespace stack-a \
+  get service proxy \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
+```
+
+Point the stack hostname at that address. DNS automation is a later phase; the
+portable `or-stack` command intentionally makes no AWS calls. HAProxy manages
+its own TLS certificate and keeps Certbot account/certificate data on its
+retained `proxy` PVC. Because the NLB address is not known until after the Pod
+first starts, restart the Deployment once the initial DNS record resolves to
+trigger a fresh certificate attempt:
+
+```bash
+kubectl --context <cluster-name>@eu-west-1 \
+  --namespace stack-a \
+  rollout restart deployment/proxy
+
+kubectl --context <cluster-name>@eu-west-1 \
+  --namespace stack-a \
+  rollout status deployment/proxy \
+  --timeout 10m
+
+./or-stack status \
+  --name stack-a \
+  --kube-context <cluster-name>@eu-west-1
+```
+
+The proxy readiness probe and certificate status are deliberately separate.
+The Pod must be ready and reachable for the HTTP ACME challenge before a
+production certificate can be issued; `or-stack status` shows the certificate
+issuer and expiry once managed or custom certificate material is present.
+
+Use `--exposure none` for an internal-only EKS stack. It creates no proxy,
+Ingress, ALB, or NLB.
+
+#### Shared HTTPS routing with Ingress
+
+Select Ingress explicitly to route web traffic through the shared OpenRemote
+ALB and a private gateway in each stack namespace:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context <cluster-name>@eu-west-1 \
+  --target eks \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example
+```
+
+Ingress mode additionally validates the shared `openremote-alb` IngressClass
+and its enforced HTTPS redirect. The ACM certificate must be issued in the same
+AWS account and region as the ALB; its DNS validation can be hosted in another
+account.
 
 `or-eks-cluster` creates an `openremote-alb` IngressClass backed by an AWS Load
 Balancer Controller `IngressClassParams` resource. It fixes the scheme to
 `internet-facing`, uses VPC CNI Pod IPs as targets, and puts every matching
 Ingress in the `openremote-stacks` group. It also enforces redirection from
-HTTP to HTTPS. The controller therefore merges the Manager and Keycloak routes
-from all stack namespaces onto one ALB by default.
+HTTP to HTTPS. The controller therefore merges one proxy Ingress from each
+stack namespace onto one ALB by default.
+
+The resulting web path is:
+
+```text
+Client -> shared ALB (TLS/ACM) -> stack HAProxy gateway (HTTP) -> Manager/Keycloak
+```
+
+HAProxy uses its edge-terminated TLS configuration in this mode. It does not
+request a certificate or expose its own HTTPS Service port; it routes `/auth`
+to Keycloak and other paths to Manager.
+
+The gateway is an intentional NetworkPolicy boundary. The external ALB has no
+Kubernetes Pod or namespace labels, so a portable NetworkPolicy rule that lets
+it target Manager and Keycloak directly also admits Pods from other namespaces
+on those ports. Opening only the proxy port preserves direct cross-stack
+isolation.
+
+This design adds one internal HTTP hop and one small proxy Pod per stack. The
+reason to select it is ALB-managed web TLS and layer-7 integration: ACM, SNI,
+central HTTP redirects, and optional AWS features such as WAF. It does not
+reduce the final load-balancer count. The planned MQTT(S) support requires one
+additional NLB per ingress stack, while HAProxy exposure will reuse its existing
+per-stack NLB.
 
 Only namespaces carrying `app.kubernetes.io/part-of=openremote` may use this
 class. `or-stack` applies that label when it creates or adopts a valid stack
@@ -105,13 +189,13 @@ ALB hostname:
 ```bash
 kubectl --context <cluster-name>@eu-west-1 \
   --namespace stack-a \
-  get ingress manager \
+  get ingress proxy \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 ```
 
 Create a DNS record for each stack hostname that points to that ALB. The
 EKS target configures listeners on ports 80 and 443, while `or-stack` adds the
-certificate supplied through `--certificate-arn` to both component Ingresses.
+certificate supplied through `--certificate-arn` to the stack's proxy Ingress.
 It deliberately does not create Route 53 records or ACM certificates.
 
 Certificate annotations are merged across the shared IngressGroup, allowing
@@ -122,8 +206,8 @@ the AWS Load Balancer Controller documentation for
 [IngressClassParams](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/)
 and [IngressGroup annotation behavior](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/#ingressgroup).
 
-A stack can opt out of the default group through its component values. Set
-`ingress.className: alb` and give both component Ingresses the same unique
+A stack can opt out of the default group through its `proxy.yaml` values. Set
+`ingress.className: alb` and give the proxy Ingress a unique
 `alb.ingress.kubernetes.io/group.name`, together with the desired `scheme` and
 `target-type` annotations. Also add the `ssl-redirect` annotation because the
 dedicated class does not inherit the shared class's redirect setting. That
@@ -157,9 +241,13 @@ Remove workloads while retaining their credentials and EBS-backed data with:
   --kube-context <cluster-name>@eu-west-1
 ```
 
-Reapplying the stack reuses its retained Secret and PVCs. To explicitly delete
-the stack namespace, credentials, PVCs, and dynamically provisioned EBS volumes
-instead:
+Reapplying the stack with the same target and exposure reuses its retained
+Secret and data PVCs. HAProxy exposure also reuses its retained certificate
+PVC; Ingress gateways have no certificate PVC because TLS terminates at the
+ALB. The selected target and exposure are stored as namespace labels; changing
+either is rejected until a deliberate migration workflow is implemented. To
+explicitly delete the stack namespace, credentials, PVCs, and dynamically
+provisioned EBS volumes instead:
 
 ```bash
 ./or-stack destroy \
@@ -225,20 +313,21 @@ HAProxy exposes a LoadBalancer service for communication from the outside world.
 We're using [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.7/) to automatically create a Network Load Balancer (NLB) based on that service.  
 One NLB is automatically created when a (LoadBalancer) Service object exists and destroyed when the Service is deleted.
 
-In this configuration, only MQTTS connectivity is available, not MQTT.
+The current namespaced HAProxy profile exposes HTTP and HTTPS only. Port 8883
+is reserved but disabled until MQTT(S) hostname, certificate, policy, and
+lifecycle behavior are implemented together.
 
-#### Using Ingresses and individual LoadBalancer services
+#### Using Ingress with a per-stack gateway
 
-TL;DR: Use scripts `eks-setup.sh` and `eks-cleanup.sh` for this configuration.
+In this configuration, each stack creates one proxy Ingress. The AWS Load
+Balancer Controller merges those Ingresses into the shared ALB and targets the
+corresponding private HAProxy gateway Pods by IP. Manager and Keycloak expose
+only ClusterIP Services and are never direct ALB targets.
 
-In this configuration, standard kubernetes Ingress and Load Balancer services are used
-by each pod to expose their APIs to the outside world.
-
-We're using [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.7/) to automatically create an Application Load Balancer based on the Ingress manifests.  
-An Application Load Balancer (ALB) is automatically created when an Ingress object exists in the cluster and destroyed when there are none.
-
-By default, each ingress creates its own ALB, using the [IngressGroup](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/#ingressgroup) feature
-and the corresponding `alb.ingress.kubernetes.io/group.name` annotation on the Ingress allows to use a single ALB for multiple ingresses.
+The shared `IngressClassParams` supplies the common
+[IngressGroup](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/#ingressgroup)
+name, public scheme, IP target type, and HTTPS redirect. Deleting the last
+Ingress removes the shared ALB.
 
 The ALB will automatically assign a public "Amazon" DNS name for access.  
 We want to use our own DNS names (for ease of use, consistency but also to associate a TLS certificate with it).  
@@ -247,13 +336,12 @@ For that, we use [Route 53](https://aws.amazon.com/route53/) and an alias record
 To create the certificate, we use [AWS Certificate Manager](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html).  
 Domain ownership validation is performed via DNS record.
 
-For MQTT(S), the manager uses two Load Balancer services (one for MQTT, one for MQTTS).  
-This creates one Network Load Balancer per service.  
-We need to use different domain names to route traffic to the appropriate NLB.  
-We use subdomains for that, with prefix mqtt and mqtts respectively.
-
-For MQTTS, we use the same certificate as for the ingress.  
-During certificate creation, we add a SAN for the mqtts subdomain.
+The old combined scripts exposed MQTT(S) with additional Manager LoadBalancer
+services. The namespaced `or-stack` workflow does not enable those services
+yet. MQTT and MQTTS will be added as explicit options in a follow-up. Ingress
+stacks will need a per-stack NLB in addition to the shared web ALB; HAProxy
+stacks can reuse their existing NLB. Both paths must preserve the NetworkPolicy
+model.
 
 #### Annotations
 

@@ -31,16 +31,29 @@ case "$arguments" in
             previous_argument="$argument"
           done
 
-          if [ "${OR_STACK_TEST_NAMESPACE_LABEL+x}" = "x" ]; then
-            printf '%s' "${OR_STACK_TEST_NAMESPACE_LABEL:-}"
-          else
-            printf '%s' "$namespace_name"
-          fi
+          case "$arguments" in
+            *"openremote\\.io/target"*)
+              printf '%s' "${OR_STACK_TEST_TARGET_LABEL-local}"
+              ;;
+            *"openremote\\.io/exposure"*)
+              printf '%s' "${OR_STACK_TEST_EXPOSURE_LABEL-haproxy}"
+              ;;
+            *)
+              if [ "${OR_STACK_TEST_NAMESPACE_LABEL+x}" = "x" ]; then
+                printf '%s' "${OR_STACK_TEST_NAMESPACE_LABEL:-}"
+              else
+                printf '%s' "$namespace_name"
+              fi
+              ;;
+          esac
           ;;
       esac
       exit 0
     fi
     exit 1
+    ;;
+  *" get ingress manager "*)
+    [ "${OR_STACK_TEST_MANAGER_INGRESS_EXISTS:-false}" = "true" ]
     ;;
   *" get storageclass openremote-ebs "*)
     [ "${OR_STACK_TEST_EKS_STORAGE:-true}" = "true" ]
@@ -64,6 +77,19 @@ case "$arguments" in
   *" get daemonset aws-node "*)
     printf '%s' "${OR_STACK_TEST_EKS_CNI_CONTAINERS:-aws-node aws-eks-nodeagent}"
     ;;
+  *" get service kube-dns "*)
+    [ "${OR_STACK_TEST_KUBE_DNS_EXISTS:-true}" = "true" ] || exit 1
+    printf '%s' "${OR_STACK_TEST_KUBE_DNS:-10.96.0.10:53}"
+    ;;
+  *" get service proxy "*)
+    [ "${OR_STACK_TEST_PROXY_SERVICE_EXISTS:-true}" = "true" ] || exit 1
+    printf '%s' "${OR_STACK_TEST_PROXY_ADDRESS:-localhost}"
+    ;;
+  *" exec deployment/proxy "*)
+    [ "${OR_STACK_TEST_PROXY_CERTIFICATE_EXISTS:-true}" = "true" ] || exit 1
+    printf '%s\n' "${OR_STACK_TEST_PROXY_CERTIFICATE:-issuer=CN=OpenRemote Test CA
+notAfter=Sep  3 12:00:00 2027 GMT}"
+    ;;
   *" get secret openremote-secret "*)
     [ "${OR_STACK_TEST_SECRET_EXISTS:-true}" = "true" ] || exit 1
     case "$arguments" in
@@ -77,11 +103,13 @@ case "$arguments" in
     ;;
   *" get persistentvolumeclaims "*"metadata.name"*)
     printf '%s\n' "${OR_STACK_TEST_PVC_METADATA:-manager|manager|keep
-postgresql|postgresql|keep}"
+postgresql|postgresql|keep
+proxy|proxy|keep}"
     ;;
   *" get persistentvolumeclaims "*"spec.volumeName"*)
     printf '%s\n' "${OR_STACK_TEST_PV_NAMES:-pvc-manager
-pvc-postgresql}"
+pvc-postgresql
+pvc-proxy}"
     ;;
   *" get persistentvolume/"*)
     [ "${OR_STACK_TEST_PV_EXISTS:-true}" = "true" ]

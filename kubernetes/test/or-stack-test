@@ -81,6 +81,7 @@ test_local_apply() {
   mkdir -p "$values_dir"
   : > "$values_dir/or-setup.yaml"
   : > "$values_dir/manager.yaml"
+  : > "$values_dir/proxy.yaml"
 
   reset_log
   output="$(OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack apply \
@@ -88,34 +89,84 @@ test_local_apply() {
     --kube-context test-context \
     --target local \
     --hostname stack-a.localhost \
+    --http-port 8080 \
+    --https-port 8443 \
     --values-dir "$values_dir")"
 
   assert_contains $'kubectl\t--context\ttest-context\tcreate\tnamespace\tstack-a'
   assert_contains $'kubectl\t--context\ttest-context\tlabel\tnamespace\tstack-a'
+  assert_contains $'openremote.io/target=local'
+  assert_contains $'openremote.io/exposure=haproxy'
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tkube-system\tget\tservice\tkube-dns'
   assert_contains $'helm\tupgrade\t--install\tor-setup'
   assert_contains "$KUBERNETES_DIR/stack/targets/local/or-setup.yaml"
+  assert_contains "$KUBERNETES_DIR/stack/exposures/haproxy/or-setup.yaml"
   assert_contains "$values_dir/or-setup.yaml"
-  assert_on_line_before "$KUBERNETES_DIR/stack/targets/local/or-setup.yaml" "$values_dir/or-setup.yaml"
+  assert_on_line_before "$KUBERNETES_DIR/stack/targets/local/or-setup.yaml" "$KUBERNETES_DIR/stack/exposures/haproxy/or-setup.yaml"
+  assert_on_line_before "$KUBERNETES_DIR/stack/exposures/haproxy/or-setup.yaml" "$values_dir/or-setup.yaml"
   assert_contains $'helm\tupgrade\t--install\tpostgresql'
   assert_contains "$KUBERNETES_DIR/stack/targets/local/postgresql.yaml"
   assert_contains $'helm\tupgrade\t--install\tkeycloak'
   assert_contains $'--set-string\tor.hostname=stack-a.localhost'
-  assert_contains $'--set-string\tingress.hostname=stack-a.localhost'
+  assert_not_contains $'--set-string\tingress.hostname=stack-a.localhost'
   assert_not_contains 'certificate-arn='
   assert_contains $'helm\tupgrade\t--install\tmanager'
   assert_contains "$values_dir/manager.yaml"
+  assert_contains $'helm\tupgrade\t--install\tproxy'
+  assert_contains "$KUBERNETES_DIR/stack/exposures/haproxy/proxy.yaml"
+  assert_contains "$KUBERNETES_DIR/stack/exposures/haproxy/local/proxy.yaml"
+  assert_contains "$values_dir/proxy.yaml"
+  assert_on_line_before "$KUBERNETES_DIR/stack/exposures/haproxy/local/proxy.yaml" "$values_dir/proxy.yaml"
+  assert_contains $'--set-string\tor.managerHost=manager.stack-a.svc.cluster.local'
+  assert_contains $'--set-string\tor.keycloakHost=keycloak.stack-a.svc.cluster.local'
+  assert_contains $'--set-string\tor.nameserver=10.96.0.10:53'
+  assert_contains $'--set-string\tor.httpsForwardedPort=8443'
+  assert_contains $'--set-string\tservice.http.port=8080'
+  assert_contains $'--set-string\tservice.https.port=8443'
   assert_not_contains "openremote-ebs"
   assert_not_contains "policyendpoints.networking.k8s.aws"
   grep -F -- "credentials --name stack-a --kube-context test-context" <<< "$output" >/dev/null || fail \
     "Apply output did not explain how to retrieve Manager credentials"
+  grep -F -- "https://stack-a.localhost:8443/manager" <<< "$output" >/dev/null || fail \
+    "Apply output did not use the configured HAProxy HTTPS port"
+}
+
+test_local_ingress_apply() {
+  local output
+
+  reset_log
+  output="$(OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack apply \
+    --name stack-local-ingress \
+    --kube-context test-context \
+    --target local \
+    --exposure ingress \
+    --hostname stack-local-ingress.example.com)"
+
+  assert_contains "$KUBERNETES_DIR/stack/targets/local/or-setup.yaml"
+  assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/or-setup.yaml"
+  assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/proxy.yaml"
+  assert_contains $'--set-string\tingress.hostname=stack-local-ingress.example.com'
+  assert_contains $'--set-string\tingress.tls[0].hosts[0]=stack-local-ingress.example.com'
+  assert_not_contains 'certificate-arn='
+  assert_contains $'get\tservice\tkube-dns'
+  assert_contains $'helm\tupgrade\t--install\tproxy'
+  assert_contains $'--set-string\tor.managerHost=manager.stack-local-ingress.svc.cluster.local'
+  assert_contains $'--set-string\tor.keycloakHost=keycloak.stack-local-ingress.svc.cluster.local'
+  if grep -F -- "shared OpenRemote ALB" <<< "$output" >/dev/null; then
+    fail "Local ingress output claimed to use the EKS shared ALB"
+  fi
 }
 
 test_eks_apply() {
   reset_log
-  OR_STACK_TEST_NAMESPACE_EXISTS=true run_stack apply \
+  OR_STACK_TEST_NAMESPACE_EXISTS=true \
+  OR_STACK_TEST_TARGET_LABEL=eks \
+  OR_STACK_TEST_EXPOSURE_LABEL=ingress \
+  run_stack apply \
     --name stack-eks \
     --kube-context test-context \
     --target eks \
+    --exposure ingress \
     --hostname stack-eks.example.com \
     --certificate-arn "$TEST_CERTIFICATE_ARN"
 
@@ -129,22 +180,69 @@ test_eks_apply() {
   assert_not_contains $'create\tnamespace\tstack-eks'
   assert_contains "$KUBERNETES_DIR/stack/targets/eks/postgresql.yaml"
   assert_contains "$KUBERNETES_DIR/stack/targets/eks/or-setup.yaml"
-  assert_contains "$KUBERNETES_DIR/stack/targets/eks/keycloak.yaml"
   assert_contains "$KUBERNETES_DIR/stack/targets/eks/manager.yaml"
+  assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/or-setup.yaml"
+  assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/proxy.yaml"
+  assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/eks/proxy.yaml"
   assert_contains $'--set-string\tingress.hostname=stack-eks.example.com'
   assert_contains "certificate-arn=$TEST_CERTIFICATE_ARN"
+  assert_contains $'helm\tupgrade\t--install\tproxy'
+  assert_contains $'--set-string\tor.managerHost=manager.stack-eks.svc.cluster.local'
+  assert_contains $'--set-string\tor.keycloakHost=keycloak.stack-eks.svc.cluster.local'
+}
+
+test_eks_haproxy_apply() {
+  reset_log
+  OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack apply \
+    --name stack-eks-proxy \
+    --kube-context test-context \
+    --target eks \
+    --hostname stack-eks-proxy.example.com
+
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tkube-system\tget\tdeployment\taws-load-balancer-controller'
+  assert_not_contains $'get\tingressclass\topenremote-alb'
+  assert_not_contains 'certificate-arn='
+  assert_contains $'helm\tupgrade\t--install\tproxy'
+  assert_contains "$KUBERNETES_DIR/stack/exposures/haproxy/eks/proxy.yaml"
+  assert_contains $'--set-string\tor.hostname=stack-eks-proxy.example.com'
+  assert_contains $'--set-string\tor.managerHost=manager.stack-eks-proxy.svc.cluster.local'
+}
+
+test_eks_none_apply() {
+  reset_log
+  OR_STACK_TEST_NAMESPACE_EXISTS=false \
+  OR_STACK_TEST_EKS_LOAD_BALANCER_CONTROLLER=false \
+  run_stack apply \
+    --name stack-eks-none \
+    --kube-context test-context \
+    --target eks \
+    --exposure none
+
+  assert_contains "$KUBERNETES_DIR/stack/exposures/none/or-setup.yaml"
+  assert_not_contains $'get\tdeployment\taws-load-balancer-controller'
+  assert_not_contains $'get\tingressclass\topenremote-alb'
+  assert_not_contains $'helm\tupgrade\t--install\tproxy'
+  assert_not_contains $'--set-string\tingress.hostname='
 }
 
 test_status() {
-  reset_log
-  OR_STACK_TEST_NAMESPACE_EXISTS=true run_stack status \
-    --name stack-a \
-    --kube-context test-context
+  local output
 
+  reset_log
+  output="$(OR_STACK_TEST_NAMESPACE_EXISTS=true run_stack status \
+    --name stack-a \
+    --kube-context test-context)"
+
+  grep -Fx -- "Target: local" <<< "$output" >/dev/null || fail \
+    "Status did not show the stored target"
+  grep -Fx -- "Exposure: haproxy" <<< "$output" >/dev/null || fail \
+    "Status did not show the stored exposure"
   assert_contains $'helm\tlist\t--kube-context\ttest-context\t--namespace\tstack-a'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tdeployments,statefulsets,pods'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tservices,ingresses,networkpolicies'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tpersistentvolumeclaims'
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tservice\tproxy'
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\texec\tdeployment/proxy'
 }
 
 test_uninstall() {
@@ -155,10 +253,12 @@ test_uninstall() {
 
   assert_contains "metadata.name"
   assert_contains "helm\\.sh/resource-policy"
+  assert_contains $'helm\tuninstall\tproxy\t--kube-context\ttest-context\t--namespace\tstack-a'
   assert_contains $'helm\tuninstall\tmanager\t--kube-context\ttest-context\t--namespace\tstack-a'
   assert_contains $'helm\tuninstall\tkeycloak\t--kube-context\ttest-context\t--namespace\tstack-a'
   assert_contains $'helm\tuninstall\tpostgresql\t--kube-context\ttest-context\t--namespace\tstack-a'
   assert_contains $'helm\tuninstall\tor-setup\t--kube-context\ttest-context\t--namespace\tstack-a'
+  assert_before $'helm\tuninstall\tproxy' $'helm\tuninstall\tmanager'
   assert_before $'helm\tuninstall\tmanager' $'helm\tuninstall\tkeycloak'
   assert_before $'helm\tuninstall\tkeycloak' $'helm\tuninstall\tpostgresql'
   assert_before $'helm\tuninstall\tpostgresql' $'helm\tuninstall\tor-setup'
@@ -192,6 +292,7 @@ test_destroy() {
   assert_contains $'kubectl\t--context\ttest-context\tdelete\tnamespace\tstack-a'
   assert_contains $'kubectl\t--context\ttest-context\twait\t--for=delete\tpersistentvolume/pvc-manager'
   assert_contains $'kubectl\t--context\ttest-context\twait\t--for=delete\tpersistentvolume/pvc-postgresql'
+  assert_contains $'kubectl\t--context\ttest-context\twait\t--for=delete\tpersistentvolume/pvc-proxy'
   assert_before $'helm\tuninstall\tor-setup' $'kubectl\t--context\ttest-context\tdelete\tnamespace\tstack-a'
 }
 
@@ -252,6 +353,53 @@ test_lifecycle_safety() {
     fail "Credentials accepted an unlabeled namespace"
   fi
   assert_not_contains $'get\tsecret\topenremote-secret'
+
+  reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true \
+    OR_STACK_TEST_TARGET_LABEL=local \
+    OR_STACK_TEST_EXPOSURE_LABEL=ingress \
+    run_stack apply --name stack-a --kube-context test-context --target local \
+      >/dev/null 2>&1; then
+    fail "Apply changed an existing stack's exposure mode"
+  fi
+  assert_not_contains $'label\tnamespace\tstack-a'
+  assert_not_contains $'helm\tupgrade'
+
+  reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true \
+    OR_STACK_TEST_TARGET_LABEL=eks \
+    OR_STACK_TEST_EXPOSURE_LABEL=haproxy \
+    run_stack apply --name stack-a --kube-context test-context --target local \
+      >/dev/null 2>&1; then
+    fail "Apply changed an existing stack's target"
+  fi
+  assert_not_contains $'label\tnamespace\tstack-a'
+  assert_not_contains $'helm\tupgrade'
+
+  reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true \
+    OR_STACK_TEST_TARGET_LABEL= \
+    OR_STACK_TEST_EXPOSURE_LABEL= \
+    OR_STACK_TEST_MANAGER_INGRESS_EXISTS=true \
+    run_stack apply --name stack-a --kube-context test-context --target eks \
+      --hostname stack-a.example.com >/dev/null 2>&1; then
+    fail "Apply converted an unlabeled legacy ingress stack to HAProxy"
+  fi
+  assert_not_contains $'label\tnamespace\tstack-a'
+  assert_not_contains $'helm\tupgrade'
+
+  reset_log
+  OR_STACK_TEST_NAMESPACE_EXISTS=true \
+  OR_STACK_TEST_TARGET_LABEL= \
+  OR_STACK_TEST_EXPOSURE_LABEL= \
+  OR_STACK_TEST_MANAGER_INGRESS_EXISTS=true \
+  run_stack apply --name stack-a --kube-context test-context --target eks \
+    --exposure ingress \
+    --hostname stack-a.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null
+  assert_contains $'openremote.io/target=eks'
+  assert_contains $'openremote.io/exposure=ingress'
+  assert_contains $'helm\tupgrade\t--install\tmanager'
 }
 
 test_validation() {
@@ -268,28 +416,30 @@ test_validation() {
   fi
 
   if run_stack apply --name stack-a --kube-context test-context --target local \
+    --exposure unknown >/dev/null 2>&1; then
+    fail "Unknown exposure was accepted"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
     --hostname 'invalid host' >/dev/null 2>&1; then
     fail "Invalid hostname was accepted"
   fi
 
   if OR_STACK_TEST_EKS_STORAGE=false run_stack apply \
     --name stack-a --kube-context test-context --target eks \
-    --hostname stack-a.example.com \
-    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
+    --hostname stack-a.example.com >/dev/null 2>&1; then
     fail "EKS target accepted a missing StorageClass"
   fi
 
   if OR_STACK_TEST_EKS_NETWORK_POLICY=false run_stack apply \
     --name stack-a --kube-context test-context --target eks \
-    --hostname stack-a.example.com \
-    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
+    --hostname stack-a.example.com >/dev/null 2>&1; then
     fail "EKS target accepted disabled NetworkPolicy enforcement"
   fi
 
   if OR_STACK_TEST_EKS_CNI_CONTAINERS=aws-node run_stack apply \
     --name stack-a --kube-context test-context --target eks \
-    --hostname stack-a.example.com \
-    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
+    --hostname stack-a.example.com >/dev/null 2>&1; then
     fail "EKS target accepted a missing NetworkPolicy agent"
   fi
 
@@ -299,53 +449,77 @@ test_validation() {
   fi
 
   if run_stack apply --name stack-a --kube-context test-context --target eks \
-    --hostname stack-a.example.com >/dev/null 2>&1; then
-    fail "EKS target accepted a missing ACM certificate ARN"
+    --exposure ingress --hostname stack-a.example.com >/dev/null 2>&1; then
+    fail "EKS ingress exposure accepted a missing ACM certificate ARN"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target eks \
+    --exposure ingress --hostname stack-a.example.com \
+    --certificate-arn not-an-arn >/dev/null 2>&1; then
+    fail "EKS ingress exposure accepted an invalid ACM certificate ARN"
   fi
 
   if run_stack apply --name stack-a --kube-context test-context --target eks \
     --hostname stack-a.example.com \
-    --certificate-arn not-an-arn >/dev/null 2>&1; then
-    fail "EKS target accepted an invalid ACM certificate ARN"
+    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
+    fail "HAProxy exposure accepted an ACM certificate ARN"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
+    --exposure none --http-port 8080 >/dev/null 2>&1; then
+    fail "Non-HAProxy exposure accepted an HTTP port"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
+    --http-port 8443 --https-port 8443 >/dev/null 2>&1; then
+    fail "HAProxy exposure accepted identical HTTP and HTTPS ports"
+  fi
+
+  if OR_STACK_TEST_KUBE_DNS_EXISTS=false run_stack apply \
+    --name stack-a --kube-context test-context --target local >/dev/null 2>&1; then
+    fail "HAProxy exposure accepted a missing kube-dns Service"
   fi
 
   if OR_STACK_TEST_EKS_LOAD_BALANCER_CONTROLLER=false run_stack apply \
     --name stack-a --kube-context test-context --target eks \
-    --hostname stack-a.example.com \
-    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
-    fail "EKS target accepted a missing AWS Load Balancer Controller"
+    --hostname stack-a.example.com >/dev/null 2>&1; then
+    fail "Public EKS exposure accepted a missing AWS Load Balancer Controller"
   fi
 
   if OR_STACK_TEST_EKS_INGRESS_CLASS=false run_stack apply \
     --name stack-a --kube-context test-context --target eks \
-    --hostname stack-a.example.com \
+    --exposure ingress --hostname stack-a.example.com \
     --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
     fail "EKS target accepted a missing shared IngressClass"
   fi
 
   if OR_STACK_TEST_EKS_INGRESS_CLASS_PARAMS=false run_stack apply \
     --name stack-a --kube-context test-context --target eks \
-    --hostname stack-a.example.com \
+    --exposure ingress --hostname stack-a.example.com \
     --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
     fail "EKS target accepted missing shared IngressClass parameters"
   fi
 
   if OR_STACK_TEST_EKS_SSL_REDIRECT_PORT=80 run_stack apply \
     --name stack-a --kube-context test-context --target eks \
-    --hostname stack-a.example.com \
+    --exposure ingress --hostname stack-a.example.com \
     --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
     fail "EKS target accepted an IngressClass without HTTPS redirection"
   fi
 
   OR_STACK_TEST_NAMESPACE_EXISTS=true \
+  OR_STACK_TEST_TARGET_LABEL=eks \
+  OR_STACK_TEST_EXPOSURE_LABEL=haproxy \
   OR_STACK_TEST_EKS_CNI_CONTAINERS='aws-node aws-network-policy-agent' \
     run_stack apply --name stack-legacy-agent --kube-context test-context --target eks \
-      --hostname stack-legacy-agent.example.com \
-      --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null
+      --hostname stack-legacy-agent.example.com >/dev/null
 }
 
 test_local_apply
+test_local_ingress_apply
 test_eks_apply
+test_eks_haproxy_apply
+test_eks_none_apply
 test_status
 test_uninstall
 test_credentials
