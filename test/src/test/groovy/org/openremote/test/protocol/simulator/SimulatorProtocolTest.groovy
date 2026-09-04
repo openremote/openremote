@@ -52,6 +52,7 @@ import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.HOURS
+import static java.util.concurrent.TimeUnit.MILLISECONDS
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS
 
@@ -166,6 +167,17 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     def future = protocol.replayMap.get(attributeRef)
     def delay = future != null ? delayByFuture.get(future) : null
     return delay != null ? [delay: delay, future: future] : null
+  }
+
+  /**
+   * Advances the clock by the delay the protocol scheduled for an attribute and runs its replay, so a test can step
+   * from datapoint to datapoint without knowing the offset of the configured timezone.
+   */
+  private void fastForwardToScheduled(AttributeRef attributeRef) {
+    def scheduled = scheduledFor(attributeRef)
+    assert scheduled != null
+    advancePseudoClock(scheduled.delay as long, MILLISECONDS, container)
+    scheduled.future.get() // resolve future manually, because we surpassed the delay
   }
 
   private long getDatapointTimestamp(Attribute attribute) {
@@ -664,7 +676,83 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
   }
 
-  def "Check Simulator Agent protocol adds predicted datapoints recurringly until"() {
+  def "Check Simulator Agent protocol adds predicted datapoints for one-time occurrence in #timezone"() {
+    when: "replayData is configured to add a datapoint at 01:00 and 02:00 on the 2nd, local time in #timezone"
+    asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
+                    new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS, "test"),
+                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 2, "test"),
+                            ).setSchedule(new SimulatorProtocol.Schedule(
+                            LocalDateTime.ofInstant(Instant.parse("1970-01-02T00:00:00.000Z"), ZoneOffset.UTC), null, null
+                            )).setTimezone(TimeZone.getTimeZone(timezone))),
+                    new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
+            )
+    asset = assetStorageService.merge(asset)
+    def attribute = asset.getAttribute("test7").get()
+    def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
+
+    then: "the agent status should become CONNECTED and the attribute linked to the protocol"
+    conditions.eventually {
+      assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+      protocol.linkedAttributes.get(attributeRef) == attribute
+    }
+
+    and: "the delay counts down from the epoch to the first datapoint"
+    conditions.eventually {
+      // The offset was applied to the start as well, delaying every one-time occurrence by twice the offset
+      scheduledFor(attributeRef)?.delay == first
+    }
+
+    and: "the predicted datapoints are the UTC instants of 01:00 and 02:00 local time"
+    conditions.eventually {
+      def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+      datapoints.size() == 2
+      datapoints.get(1).getTimestamp() == first
+      datapoints.get(0).getTimestamp() == second
+    }
+
+    when: "fast forward to the first datapoint"
+    fastForwardToScheduled(attributeRef)
+
+    then: "the delay is 1 hour"
+    conditions.eventually {
+      scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS
+    }
+
+    and: "the predicted datapoints are present"
+    conditions.eventually {
+      def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+      datapoints.size() == 2
+      datapoints.get(1).getTimestamp() == first
+      datapoints.get(0).getTimestamp() == second
+    }
+
+    when: "fast forward to the second datapoint"
+    fastForwardToScheduled(attributeRef)
+
+    then: "nothing is scheduled anymore because the occurrence ended"
+    conditions.eventually {
+      scheduledFor(attributeRef) == null
+    }
+
+    and: "the last predicted datapoint is present"
+    conditions.eventually {
+      def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+      // Purging on the local time cut off an extra offset of datapoints, including this one
+      datapoints.size() == 1
+      datapoints.get(0).getTimestamp() == second
+    }
+
+    where: "the timezone shifts the UTC instants of 01:00 and 02:00 local time on the 2nd"
+    // spotless:off
+    timezone           || first                                                      | second
+    "Europe/Amsterdam" || DAY_IN_MILLIS                                              | DAY_IN_MILLIS + HOUR_IN_MILLIS
+    "America/New_York" || DAY_IN_MILLIS + HOUR_IN_MILLIS * 6                         | DAY_IN_MILLIS + HOUR_IN_MILLIS * 7
+    "Asia/Kolkata"     || DAY_IN_MILLIS - HOUR_IN_MILLIS * 4 - MINUTE_IN_MILLIS * 30 | DAY_IN_MILLIS - HOUR_IN_MILLIS * 3 - MINUTE_IN_MILLIS * 30
+    // spotless:on
+  }
+
+  def "Check Simulator Agent protocol adds predicted datapoints recurringly up to the UNTIL of the recurrence"() {
     when: "replayData is configured to add a datapoint in 1, 2, and 3 hours and cutoff at 4 hours"
     asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
                     new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
@@ -704,18 +792,20 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
   }
 
-  def "Check Simulator Agent protocol adds predicted datapoints recurringly for Europe/Amsterdam timezone"() {
-    when: "replayData is configured to add 3 datapoints every day until the 2nd at 1 for Europe/Amsterdam timezone"
+  def "Check Simulator Agent protocol adds predicted datapoints recurringly in #timezone"() {
+    when: "the clock is at noon UTC on the 3rd, halfway into the daily occurrence of every timezone"
+    advancePseudoClock(DAY_IN_MILLIS * 2 + HOUR_IN_MILLIS * 12, MILLISECONDS, container)
+
+    and: "replayData is configured to add a datapoint at 18:00 and 20:00 every day until the 4th, local time in #timezone"
     asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
                     new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS, "test"),
-                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 12, "test"),
-                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 24, "test"),
+                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 18, "test"),
+                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 20, "test"),
                             ).setSchedule(new SimulatorProtocol.Schedule(
                             LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC),
                             null,
-                            "FREQ=DAILY;UNTIL=19700102T010000"
-                            )).setTimezone(TimeZone.getTimeZone("Europe/Amsterdam"))),
+                            "FREQ=DAILY;UNTIL=19700104T200000"
+                            )).setTimezone(TimeZone.getTimeZone(timezone))),
                     new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
             )
     asset = assetStorageService.merge(asset)
@@ -728,84 +818,184 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
       protocol.linkedAttributes.get(attributeRef) == attribute
     }
 
-    and: "the delay is 11 hours"
+    and: "the delay counts down to 18:00 local time on the 3rd"
     conditions.eventually {
-      scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 11
+      scheduledFor(attributeRef)?.delay == firstDelay
+    }
+
+    and: "the predicted datapoints of the current and upcoming occurrence are the UTC instants of local time"
+    conditions.eventually {
+      def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+      datapoints.size() == 4
+      datapoints.get(3).getTimestamp() == first // 18:00 on the 3rd
+      datapoints.get(2).getTimestamp() == second // 20:00 on the 3rd
+      datapoints.get(1).getTimestamp() == first + DAY_IN_MILLIS // 18:00 on the 4th
+      datapoints.get(0).getTimestamp() == second + DAY_IN_MILLIS // 20:00 on the 4th
+    }
+
+    when: "fast forward to 18:00 on the 3rd"
+    fastForwardToScheduled(attributeRef)
+
+    then: "the delay is 2 hours"
+    conditions.eventually {
+      scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 2
     }
 
     and: "the predicted datapoints are present"
     conditions.eventually {
       def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
-      datapoints.size() == 3
-      datapoints.get(2).getTimestamp() == HOUR_IN_MILLIS * 11
-      datapoints.get(1).getTimestamp() == HOUR_IN_MILLIS * 23
-      datapoints.get(0).getTimestamp() == HOUR_IN_MILLIS * 24
+      datapoints.size() == 4
+      datapoints.get(3).getTimestamp() == first
+      datapoints.get(2).getTimestamp() == second
+      datapoints.get(1).getTimestamp() == first + DAY_IN_MILLIS
+      datapoints.get(0).getTimestamp() == second + DAY_IN_MILLIS
     }
 
-    when: "fast forward 11 hours"
-    advancePseudoClock(11, HOURS, container)
-    scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
+    when: "fast forward to 20:00 on the 3rd"
+    fastForwardToScheduled(attributeRef)
 
-    then: "the delay is 12 hours"
+    then: "the delay is 22 hours, until the occurrence of the 4th"
     conditions.eventually {
-      scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 12
+      scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 22
     }
 
-    and: "the predicted datapoints are present"
+    and: "the predicted datapoint of 18:00 on the 3rd has been replayed and purged"
     conditions.eventually {
       def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
       datapoints.size() == 3
-      datapoints.get(2).getTimestamp() == HOUR_IN_MILLIS * 11
-      datapoints.get(1).getTimestamp() == HOUR_IN_MILLIS * 23
-      datapoints.get(0).getTimestamp() == HOUR_IN_MILLIS * 24
+      datapoints.get(2).getTimestamp() == second
+      datapoints.get(1).getTimestamp() == first + DAY_IN_MILLIS
+      datapoints.get(0).getTimestamp() == second + DAY_IN_MILLIS
     }
 
-    when: "fast forward 12 hours"
-    advancePseudoClock(12, HOURS, container)
-    scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
+    when: "fast forward to 18:00 on the 4th"
+    fastForwardToScheduled(attributeRef)
 
-    then: "the delay is 1 hour"
+    then: "the delay is 2 hours"
     conditions.eventually {
-      scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS
+      scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 2
     }
 
-    and: "the predicted datapoints are present"
+    and: "the predicted datapoints of the 3rd have been replayed and purged"
     conditions.eventually {
       def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
       datapoints.size() == 2
-      datapoints.get(1).getTimestamp() == HOUR_IN_MILLIS * 23
-      datapoints.get(0).getTimestamp() == HOUR_IN_MILLIS * 24
+      datapoints.get(1).getTimestamp() == first + DAY_IN_MILLIS
+      datapoints.get(0).getTimestamp() == second + DAY_IN_MILLIS
     }
 
-    when: "fast forward 1 hours"
-    advancePseudoClock(1, HOURS, container)
-    scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
-
-    then: "the delay is 11 hours"
-    conditions.eventually {
-      scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 11
-    }
-
-    and: "the predicted datapoints are present"
-    conditions.eventually {
-      def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
-      datapoints.size() == 1
-      datapoints.get(0).getTimestamp() == HOUR_IN_MILLIS * 24 // Last datapoint on the 2nd but -1 because CET
-    }
-
-    when: "fast forward 11 hours"
-    advancePseudoClock(11, HOURS, container)
-    scheduledFor(attributeRef).future.get() // resolve future manually, because we surpassed the delay
+    when: "fast forward to 20:00 on the 4th"
+    fastForwardToScheduled(attributeRef)
 
     then: "nothing is scheduled anymore because the recurrence ended"
     conditions.eventually {
       scheduledFor(attributeRef) == null
     }
 
-    and: "the predicted datapoints are present"
+    and: "only the predicted datapoint of the moment the recurrence ended is left"
     conditions.eventually {
       def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
-      datapoints.size() == 0
+      // Purging on the local time cut off an extra offset of datapoints, including this one
+      datapoints.size() == 1
+      datapoints.get(0).getTimestamp() == second + DAY_IN_MILLIS
     }
+
+    where: "the timezone shifts the UTC instants of 18:00 and 20:00 local time on the 3rd"
+    // spotless:off
+    timezone           || firstDelay            | first                                                           | second
+    "Europe/Amsterdam" || HOUR_IN_MILLIS * 5    | DAY_IN_MILLIS * 2 + HOUR_IN_MILLIS * 17                         | DAY_IN_MILLIS * 2 + HOUR_IN_MILLIS * 19
+    "America/New_York" || HOUR_IN_MILLIS * 11   | DAY_IN_MILLIS * 2 + HOUR_IN_MILLIS * 23                         | DAY_IN_MILLIS * 3 + HOUR_IN_MILLIS
+    "Asia/Kolkata"     || MINUTE_IN_MILLIS * 30 | DAY_IN_MILLIS * 2 + HOUR_IN_MILLIS * 12 + MINUTE_IN_MILLIS * 30 | DAY_IN_MILLIS * 2 + HOUR_IN_MILLIS * 14 + MINUTE_IN_MILLIS * 30
+    // spotless:on
+  }
+
+  def "Check Simulator Agent protocol adds predicted datapoints recurringly over the 26th of April 1970 in #timezone"() {
+    when: "the clock is on the 25th, the day before America/New_York moves from EST to EDT"
+    setPseudoClock("1970-04-25T12:00:00.000Z")
+
+    and: "replayData is configured to add a datapoint at 18:00 and 20:00 every day, local time in #timezone"
+    asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
+                    new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 18, "test"),
+                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 20, "test"),
+                            ).setSchedule(new SimulatorProtocol.Schedule(
+                            LocalDateTime.ofInstant(Instant.parse("1970-04-01T00:00:00.000Z"), ZoneOffset.UTC),
+                            null,
+                            "FREQ=DAILY"
+                            )).setTimezone(TimeZone.getTimeZone(timezone))),
+                    new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
+            )
+    asset = assetStorageService.merge(asset)
+    def attribute = asset.getAttribute("test7").get()
+    def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
+
+    then: "the agent status should become CONNECTED and the attribute linked to the protocol"
+    conditions.eventually {
+      assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+      protocol.linkedAttributes.get(attributeRef) == attribute
+    }
+
+    and: "the delay counts down to 18:00 local time on the 25th"
+    conditions.eventually {
+      scheduledFor(attributeRef)?.delay == firstDelay
+    }
+
+    and: "the predicted datapoints are the UTC instants of 18:00 and 20:00 local time on the 25th and 26th"
+    conditions.eventually {
+      def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+      datapoints.size() == 4
+      datapoints.get(3).getTimestamp() == instant(first)
+      datapoints.get(2).getTimestamp() == instant(second)
+      // The offset of the moment of scheduling was applied, dragging the day of a transition along
+      datapoints.get(1).getTimestamp() == instant(third)
+      datapoints.get(0).getTimestamp() == instant(fourth)
+    }
+
+    when: "fast forward to 18:00 on the 25th"
+    fastForwardToScheduled(attributeRef)
+
+    then: "the delay is 2 hours"
+    conditions.eventually {
+      scheduledFor(attributeRef)?.delay == HOUR_IN_MILLIS * 2
+    }
+
+    when: "fast forward to 20:00 on the 25th"
+    fastForwardToScheduled(attributeRef)
+
+    then: "the delay counts down to 18:00 local time on the 26th"
+    conditions.eventually {
+      // The local hours were delayed as if they were real hours, so a day losing one replayed late
+      scheduledFor(attributeRef)?.delay == nextDayDelay
+    }
+
+    when: "fast forward to the 26th"
+    fastForwardToScheduled(attributeRef)
+
+    then: "the replay lands on 18:00 local time on the 26th"
+    conditions.eventually {
+      getClockTimeOf(container) == instant(third)
+    }
+
+    and: "the predicted datapoints of the 25th have been replayed and purged"
+    conditions.eventually {
+      def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+      datapoints.size() == 2
+      datapoints.get(1).getTimestamp() == instant(third)
+      datapoints.get(0).getTimestamp() == instant(fourth)
+    }
+
+    where: "only New York changes its offset on the 26th, shortening its local day to 23 hours"
+    // spotless:off
+    timezone           || firstDelay            | nextDayDelay          | first                   | second                  | third                   | fourth
+    "America/New_York" || HOUR_IN_MILLIS * 11   | HOUR_IN_MILLIS * 21   | "1970-04-25T23:00:00Z"  | "1970-04-26T01:00:00Z"  | "1970-04-26T22:00:00Z"  | "1970-04-27T00:00:00Z"
+    // Amsterdam did not shift its clocks between 1946 and 1977
+    "Europe/Amsterdam" || HOUR_IN_MILLIS * 5    | HOUR_IN_MILLIS * 22   | "1970-04-25T17:00:00Z"  | "1970-04-25T19:00:00Z"  | "1970-04-26T17:00:00Z"  | "1970-04-26T19:00:00Z"
+    // Kolkata has not shifted its clocks since 1945
+    "Asia/Kolkata"     || MINUTE_IN_MILLIS * 30 | HOUR_IN_MILLIS * 22   | "1970-04-25T12:30:00Z"  | "1970-04-25T14:30:00Z"  | "1970-04-26T12:30:00Z"  | "1970-04-26T14:30:00Z"
+    // spotless:on
+  }
+
+  private static long instant(String value) {
+    Instant.parse(value).toEpochMilli()
   }
 }
