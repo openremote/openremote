@@ -73,6 +73,108 @@ Persistent data is stored in a PostgreSQL DB which is stored in the `openremote_
 Note that historical attribute data is purged daily based on value of `OR_DATA_POINTS_MAX_AGE_DAYS`; this value can also be overridden for individual attributes by using the `dataPointsMaxAgeDays` configuration item.
 See the [Developer Guide](https://docs.openremote.io/docs/developer-guide/useful-commands-and-queries/#backuprestore-openremote-db) for details on making backups of the database.
 
+## OpenTelemetry tracing
+
+The manager distribution and container image include OpenTelemetry Java agent. The image entrypoint adds
+`-javaagent:/opt/opentelemetry/opentelemetry-javaagent.jar` only when the standard
+`OTEL_JAVAAGENT_ENABLED` environment variable is `true`; tracing is therefore opt-in and the agent is not loaded for
+existing deployments.
+
+No application source instrumentation is used. The agent and its automatic instrumentations are configured with
+standard OpenTelemetry environment variables.
+
+### Docker Compose
+
+Set these values in the deployment environment or `.env` file used by `docker-compose.yml` or
+`profile/deploy.yml`:
+
+```dotenv
+OTEL_JAVAAGENT_ENABLED=true
+OTEL_SERVICE_NAME=openremote-manager
+OTEL_TRACES_EXPORTER=otlp
+OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy-otel:4318
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED=true
+```
+
+The `alloy-otel` service must be reachable from the manager container's Compose network. The Compose profile sets
+`OTEL_METRICS_EXPORTER=none` and `OTEL_LOGS_EXPORTER=none` by default so this integration exports traces only and
+does not duplicate the existing Prometheus metrics or export application logs. These remain standard OpenTelemetry
+settings and can be overridden in the deployment environment.
+
+Do not configure Tempo credentials on the manager. The manager sends OTLP to its local Alloy instance, and Alloy
+handles authenticated forwarding to Tempo.
+
+### Kubernetes
+
+Add the following to the environment-specific manager Helm values file, replacing the example service DNS name and
+namespace with the Alloy service used by the cluster:
+
+```yaml
+or:
+  otel:
+    enabled: true
+    serviceName: openremote-manager
+    endpoint: http://alloy-otel.observability.svc.cluster.local:4318
+    protocol: http/protobuf
+```
+
+This uses Alloy's OTLP/HTTP receiver on port `4318`. The service name, namespace, sampling, resource attributes, and
+all other customer- or environment-specific settings belong in the deployment values, not in the common manager
+image or chart defaults. Additional OpenTelemetry Java agent settings, such as sampling, can be supplied through
+`or.env`.
+
+### Validated automatic visibility
+
+An integration run against PostgreSQL and Keycloak, exporting over OTLP/HTTP to Alloy, produced the following useful
+automatic telemetry:
+
+- Undertow HTTP server spans enriched with RESTEasy/JAX-RS routes, including manager API and authentication proxy
+  requests.
+- Apache HTTP client and `HttpURLConnection` client spans for manager-to-Keycloak calls.
+- JDBC and Hibernate spans for PostgreSQL operations, including transaction spans and sanitized SQL statements.
+- Trace-context propagation across supported executor and concurrency APIs. No executor task spans are expected;
+  executor instrumentation connects asynchronous work to its parent trace.
+
+Query the appropriate Tempo data source in Grafana for `service.name = openremote-manager` to verify that the same
+span types arrive through the environment's Alloy and Tempo pipeline.
+
+The MQTT to Artemis to attribute-processing path is outside this first version; there is no manual span creation or MQTT trace propagation.
+
+### Data safety
+
+The default agent instrumentation does not capture HTTP request or response bodies, and HTTP header and servlet
+request-parameter capture are opt-in. Do not enable those capture settings without a separate data review. Database
+statement sanitization is enabled by default and must remain enabled. The traces still contain operational metadata
+such as route and URL information, database operation and table names, remote addresses, exception details, and
+messaging destinations. Do not put credentials or sensitive values in URLs, destination names, exception messages,
+resource attributes, or custom OpenTelemetry configuration.
+
+Validate the actual trace data with representative non-production requests before enabling tracing in production.
+Specifically inspect span names, resource attributes, span attributes, and events for authorization headers, cookies,
+tokens, passwords, request bodies, OpenRemote attribute values, personal data, and un-sanitized SQL parameters.
+
+During the integration run, synthetic username, password, asset-name, and attribute-value markers and the exact bearer
+token used for an API request were absent from Alloy's detailed trace output. No authorization, cookie, request-body,
+or database-parameter attributes were emitted. SQL statement text was present, but bound values were represented by
+`?` placeholders.
+
+### Runtime validation
+
+Use the following checks in an environment with PostgreSQL, Keycloak, Alloy, Tempo, and Grafana available:
+
+1. Start the manager without `OTEL_JAVAAGENT_ENABLED`, confirm the Java agent banner is absent, and exercise normal
+   login, API, and database-backed operations.
+2. Enable the environment variables above, repeat those operations, and confirm the manager remains healthy.
+3. In Grafana Explore, select the environment's Tempo data source and query for
+   `{ resource.service.name = "openremote-manager" }`. Record which of the expected span types are present.
+4. Inspect representative spans using the data-safety checklist above.
+5. Temporarily set `OTEL_EXPORTER_OTLP_ENDPOINT` to an unused address, restart the manager, and confirm startup,
+   health checks, API calls, and database operations still succeed. Export failures should be reported by the agent
+   without terminating or blocking the manager.
+
+To disable tracing, unset the tracing variables or set `OTEL_JAVAAGENT_ENABLED=false`, then restart the manager.
+
 ## Contributing to OpenRemote
 
 For information and how to set up a development environment, see the [Developer Guide](https://docs.openremote.io/docs/category/developer-guide).
