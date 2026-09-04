@@ -242,3 +242,12 @@ publish.mustRunAfter(setVersionProperties)
 publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
 sourcesJar.dependsOn(setVersionProperties)
+
+tasks.named("run", JavaExec) {
+  doFirst {
+    def setupType = providers.environmentVariable("OR_SETUP_TYPE").orNull?.trim()
+    if (setupType) {
+      throw new GradleException("OR_SETUP_TYPE is not supported by manager:run. Use setup:run instead.")
+    }
+  }
+}

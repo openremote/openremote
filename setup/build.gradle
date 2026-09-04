@@ -80,7 +80,14 @@ tasks.register("run", JavaExec) {
   mainClass = "org.openremote.manager.Main"
   workingDir = rootProject.projectDir
 
-  def setupType = providers.environmentVariable("OR_SETUP_TYPE").orNull
-  def targetSourceSet = setupType != null ? sourceSets.named(setupType) : null
-  classpath = targetSourceSet != null ? targetSourceSet.runtimeClasspath : sourceSets.main.runtimeClasspath
+  def setupType = providers.environmentVariable("OR_SETUP_TYPE").orNull?.trim()
+  if (!setupType) {
+    classpath = sourceSets.main.runtimeClasspath
+  } else {
+    try {
+      classpath = sourceSets.named(setupType).get().runtimeClasspath
+    } catch (UnknownDomainObjectException e) {
+      throw new GradleException("Unknown OR_SETUP_TYPE '${setupType}'. No matching setup source set exists.", e)
+    }
+  }
 }
