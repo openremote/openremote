@@ -692,7 +692,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
       )}
       ${when(
         !this._nodes,
-        () => html` <span id="loading"><or-translate value="loading"></or-translate></span> `,
+        () => html`<span id="loading"><or-translate value="loading"></or-translate></span> `,
         () => html`
           ${when(
             this._nodes!.length === 0 || !this.atLeastOneNodeToBeShown(),
@@ -1187,8 +1187,10 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
 
     if (newFilter.attribute.length > 0 && newFilter.attributeValue.length > 0) {
       newFilter.attributeValue.forEach((attributeValue: string, index: number) => {
+        // Values that contain spaces get additional "quotes", so the parser keeps them as a single value
+        const displayValue = attributeValue.includes(" ") ? '"' + attributeValue + '"' : attributeValue;
         handledAttributeForValues.push(newFilter.attribute[index]);
-        searchInput += prefix + '"' + newFilter.attribute[index] + '":' + attributeValue;
+        searchInput += prefix + '"' + newFilter.attribute[index] + '":' + displayValue;
         prefix = " ";
       });
     }
@@ -1237,11 +1239,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     }
 
     if (this._attributeNameFilter.value && this._attributeValueFilter.value) {
-      let attributeValueValue: string = this._attributeValueFilter.value;
-      if (attributeValueValue.includes(" ")) {
-        attributeValueValue = '"' + attributeValueValue + '"';
-      }
-      filter.attributeValue = [attributeValueValue];
+      filter.attributeValue = [this._attributeValueFilter.value];
     } else {
       filter.attributeValue = [];
     }
@@ -1375,7 +1373,8 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     if (this._filter.attribute.length > 0) {
       attributeCond = {
         operator: LogicGroupOperator.AND,
-        items: this._filter.attribute.map((attributeName: string) => {
+        items: this._filter.attribute.map((attributeName: string, index) => {
+          const value = this._filter?.attributeValue?.[index];
           return {
             name: {
               predicateType: "string",
@@ -1383,6 +1382,14 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
               value: Util.sentenceCaseToCamelCase(attributeName),
               caseSensitive: false,
             },
+            value: value
+              ? {
+                  predicateType: "string",
+                  match: AssetQueryMatch.EXACT,
+                  value,
+                  caseSensitive: false,
+                }
+              : undefined,
           };
         }),
       };
@@ -1655,7 +1662,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
           },
           {
             actionName: "add",
-            content: html` <or-vaadin-button id="add-btn" theme="primary" disabled>
+            content: html`<or-vaadin-button id="add-btn" theme="primary" disabled>
               <or-translate value="add"></or-translate>
             </or-vaadin-button>`,
             action: () => {
@@ -2424,7 +2431,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
             >
             ${
               this.checkboxes
-                ? html` <span class="mdc-list-item__graphic">
+                ? html`<span class="mdc-list-item__graphic">
                     ${
                       treeNode.expandable
                         ? html`<div class="mdc-checkbox">
