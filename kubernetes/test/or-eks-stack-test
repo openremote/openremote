@@ -1,0 +1,309 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KUBERNETES_DIR="$(cd "$TEST_DIR/.." && pwd)"
+TEST_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/or-eks-stack-test.XXXXXX")"
+CALL_LOG="$TEST_TEMP_DIR/calls.log"
+CURL_COUNT_FILE="$TEST_TEMP_DIR/curl-count"
+TEST_CLUSTER_ENDPOINT="https://test-cluster.eks.example.com"
+DEFAULT_EXTERNAL_DNS_ARGS=$'--source=service\n--source=ingress\n--policy=sync\n--registry=txt\n--txt-owner-id=test-cluster-eu-west-1\n--label-filter=openremote.io/managed-dns=true\n--domain-filter=example.com'
+
+cleanup_test() {
+  rm -rf "$TEST_TEMP_DIR"
+}
+
+trap cleanup_test EXIT
+
+# Source the command so external tools and the portable stack invocation can be
+# replaced with deterministic stubs.
+source "$KUBERNETES_DIR/or-eks-stack"
+
+fail() {
+  printf 'FAIL: %s\n' "$*" >&2
+  exit 1
+}
+
+log_call() {
+  local command="$1"
+  shift
+  printf '%s' "$command" >> "$CALL_LOG"
+  for argument in "$@"; do
+    printf '\t%s' "$argument" >> "$CALL_LOG"
+  done
+  printf '\n' >> "$CALL_LOG"
+}
+
+assert_contains() {
+  local expected="$1"
+  grep -F -- "$expected" "$CALL_LOG" >/dev/null || fail \
+    "Expected command log to contain: $expected"
+}
+
+assert_not_contains() {
+  local unexpected="$1"
+  if grep -F -- "$unexpected" "$CALL_LOG" >/dev/null; then
+    fail "Expected command log not to contain: $unexpected"
+  fi
+}
+
+assert_before() {
+  local first="$1"
+  local first_line
+  local second="$2"
+  local second_line
+
+  first_line="$(grep -nF -- "$first" "$CALL_LOG" | head -n 1 | cut -d: -f1)"
+  second_line="$(grep -nF -- "$second" "$CALL_LOG" | head -n 1 | cut -d: -f1)"
+  [ -n "$first_line" ] || fail "Expected command log to contain: $first"
+  [ -n "$second_line" ] || fail "Expected command log to contain: $second"
+  [ "$first_line" -lt "$second_line" ] || fail \
+    "Expected '$first' before '$second'"
+}
+
+reset_test() {
+  : > "$CALL_LOG"
+  printf '0\n' > "$CURL_COUNT_FILE"
+  COMMAND=""
+  STACK_NAME=""
+  CLUSTER_NAME=""
+  AWS_REGION_NAME="eu-west-1"
+  AWS_PROFILE_NAME=""
+  KUBE_CONTEXT=""
+  EXPOSURE="haproxy"
+  HOSTNAME_VALUE=""
+  VALUES_DIR=""
+  TIMEOUT="20m"
+  HTTP_PORT="80"
+  HTTPS_PORT="443"
+  CONFIRM_STACK_NAME=""
+  OR_STACK_COMMAND="$KUBERNETES_DIR/or-stack"
+  NLB_ADDRESS=""
+}
+
+require_command() {
+  :
+}
+
+aws_eks() {
+  log_call aws-eks "$@"
+  case " $* " in
+    *" cluster.status "*)
+      printf '%s\n' "${OR_EKS_STACK_TEST_CLUSTER_STATUS:-ACTIVE}"
+      ;;
+    *" cluster.endpoint "*)
+      printf '%s\n' "$TEST_CLUSTER_ENDPOINT"
+      ;;
+  esac
+}
+
+helm() {
+  log_call helm "$@"
+  [ "${OR_EKS_STACK_TEST_EXTERNAL_DNS_HELM_READY:-true}" = "true" ]
+}
+
+kubectl() {
+  log_call kubectl "$@"
+  local arguments=" $* "
+
+  case "$arguments" in
+    *" config get-contexts "*)
+      if [ "${OR_EKS_STACK_TEST_CONTEXT_EXISTS:-true}" = "true" ]; then
+        printf '%s\n' "${KUBE_CONTEXT:-test-cluster@eu-west-1}"
+      fi
+      ;;
+    *" config view "*)
+      printf '%s' "${OR_EKS_STACK_TEST_CONTEXT_ENDPOINT:-$TEST_CLUSTER_ENDPOINT}"
+      ;;
+    *" get namespace kube-system "*)
+      [ "${OR_EKS_STACK_TEST_CONTEXT_REACHABLE:-true}" = "true" ]
+      ;;
+    *" rollout status deployment/openremote-external-dns "*)
+      [ "${OR_EKS_STACK_TEST_EXTERNAL_DNS_ROLLOUT_READY:-true}" = "true" ]
+      ;;
+    *" get deployment openremote-external-dns "*)
+      printf '%s\n' "${OR_EKS_STACK_TEST_EXTERNAL_DNS_ARGS-$DEFAULT_EXTERNAL_DNS_ARGS}"
+      ;;
+    *" get serviceaccount external-dns "*)
+      printf '%s' "${OR_EKS_STACK_TEST_EXTERNAL_DNS_ROLE_ARN-arn:aws:iam::123456789012:role/openremote-external-dns}"
+      ;;
+    *" get service proxy "*)
+      printf '%s' "${OR_EKS_STACK_TEST_NLB_ADDRESS:-test-nlb.elb.eu-west-1.amazonaws.com}"
+      ;;
+    *" exec deployment/proxy "*)
+      [ "${OR_EKS_STACK_TEST_ACME_SUCCESS:-true}" = "true" ]
+      ;;
+  esac
+}
+
+dig() {
+  log_call dig "$@"
+  case "${2:-}" in
+    stack-a.example.com)
+      printf '%s\n' "${OR_EKS_STACK_TEST_HOST_ADDRESS:-192.0.2.10}"
+      ;;
+    test-nlb.elb.eu-west-1.amazonaws.com)
+      printf '%s\n' "${OR_EKS_STACK_TEST_NLB_RESOLVED_ADDRESS:-192.0.2.10}"
+      ;;
+  esac
+}
+
+curl() {
+  local curl_count
+
+  log_call curl "$@"
+  curl_count="$(< "$CURL_COUNT_FILE")"
+  curl_count="$((curl_count + 1))"
+  printf '%s\n' "$curl_count" > "$CURL_COUNT_FILE"
+  if [ "${OR_EKS_STACK_TEST_HTTPS_READY_IMMEDIATELY:-false}" = "true" ]; then
+    return 0
+  fi
+  [ "$curl_count" -gt 1 ]
+}
+
+sleep() {
+  :
+}
+
+run_or_stack() {
+  log_call or-stack "$@"
+}
+
+run_eks_stack() {
+  reset_test
+  main "$@"
+}
+
+test_apply() {
+  local output
+  local values_dir="$TEST_TEMP_DIR/values"
+
+  mkdir -p "$values_dir"
+  output="$(run_eks_stack apply \
+    --name stack-a \
+    --cluster test-cluster \
+    --hostname stack-a.example.com \
+    --profile '' \
+    --https-port 8443 \
+    --values-dir "$values_dir")"
+
+  assert_contains $'aws-eks\tdescribe-cluster\t--name\ttest-cluster\t--query\tcluster.status'
+  assert_contains $'kubectl\tconfig\tget-contexts\ttest-cluster@eu-west-1\t-o\tname'
+  assert_contains $'aws-eks\tdescribe-cluster\t--name\ttest-cluster\t--query\tcluster.endpoint'
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tconfig\tview\t--minify'
+  assert_contains $'helm\tstatus\topenremote-external-dns\t--kube-context\ttest-cluster@eu-west-1\t--namespace\tkube-system'
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\trollout\tstatus\tdeployment/openremote-external-dns'
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\tget\tserviceaccount\texternal-dns'
+  assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\thaproxy\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--http-port\t80\t--https-port\t8443\t--timeout\t20m\t--values-dir\t'"$values_dir"
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tget\tservice\tproxy'
+  assert_contains $'dig\t+short\tstack-a.example.com\tA'
+  assert_contains $'dig\t+short\ttest-nlb.elb.eu-west-1.amazonaws.com\tA'
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\texec\tdeployment/proxy\t--container\tproxy\t--\t/entrypoint.sh\tadd\tstack-a.example.com'
+  assert_contains $'curl\t--disable\t--fail\t--silent\t--show-error\t--location'
+  assert_contains $'--proto\t=https\t--proto-redir\t=https\t--max-redirs\t5'
+  assert_contains 'https://stack-a.example.com:8443/manager/'
+  assert_before $'helm\tstatus\topenremote-external-dns' $'or-stack\tapply'
+  assert_before $'or-stack\tapply' $'get\tservice\tproxy'
+  assert_before $'dig\t+short\tstack-a.example.com' $'exec\tdeployment/proxy'
+  grep -F -- 'Stack '\''stack-a'\'' is ready at:' <<< "$output" >/dev/null || fail \
+    "Apply did not report stack readiness"
+  grep -F -- 'https://stack-a.example.com:8443/manager/' <<< "$output" >/dev/null || fail \
+    "Apply did not report the canonical Manager URL"
+}
+
+test_apply_reuses_valid_certificate() {
+  OR_EKS_STACK_TEST_HTTPS_READY_IMMEDIATELY=true \
+    run_eks_stack apply \
+      --name stack-a \
+      --cluster test-cluster \
+      --hostname stack-a.example.com \
+      --profile '' >/dev/null
+
+  assert_not_contains $'exec\tdeployment/proxy'
+  [ "$(< "$CURL_COUNT_FILE")" -eq 1 ] || fail \
+    "Apply did not stop after verifying the retained valid certificate"
+}
+
+test_lifecycle_delegation() {
+  run_eks_stack status --name stack-a --cluster test-cluster --profile '' >/dev/null
+  assert_contains $'or-stack\tstatus\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1'
+
+  run_eks_stack credentials --name stack-a --cluster test-cluster --profile '' >/dev/null
+  assert_contains $'or-stack\tcredentials\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1'
+
+  run_eks_stack uninstall --name stack-a --cluster test-cluster \
+    --profile '' --timeout 15m >/dev/null
+  assert_contains $'or-stack\tuninstall\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--timeout\t15m'
+
+  run_eks_stack destroy --name stack-a --cluster test-cluster \
+    --profile '' --confirm stack-a --timeout 15m >/dev/null
+  assert_contains $'or-stack\tdestroy\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--confirm\tstack-a\t--timeout\t15m'
+}
+
+test_validation() {
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress) >/dev/null 2>&1; then
+    fail "Ingress exposure was accepted before ACM automation exists"
+  fi
+
+  if (run_eks_stack apply --name stack-a --cluster test-cluster) >/dev/null 2>&1; then
+    fail "Apply accepted a missing hostname"
+  fi
+
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --timeout 0) >/dev/null 2>&1; then
+    fail "Apply accepted a zero timeout"
+  fi
+
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --http-port 8080) >/dev/null 2>&1; then
+    fail "The ACME workflow accepted a non-standard public HTTP port"
+  fi
+
+  if (run_eks_stack destroy --name stack-a --cluster test-cluster \
+      --confirm another-stack) >/dev/null 2>&1; then
+    fail "Destroy accepted an incorrect confirmation"
+  fi
+
+  if (OR_EKS_STACK_TEST_CLUSTER_STATUS=CREATING \
+      run_eks_stack status --name stack-a --cluster test-cluster) >/dev/null 2>&1; then
+    fail "A non-ACTIVE EKS cluster was accepted"
+  fi
+
+  if (OR_EKS_STACK_TEST_CONTEXT_ENDPOINT=https://another-cluster.example.com \
+      run_eks_stack status --name stack-a --cluster test-cluster) >/dev/null 2>&1; then
+    fail "A Kubernetes context for another cluster was accepted"
+  fi
+
+  if (OR_EKS_STACK_TEST_EXTERNAL_DNS_ARGS="${DEFAULT_EXTERNAL_DNS_ARGS/--domain-filter=example.com/--domain-filter=another.example.com}" \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com) >/dev/null 2>&1; then
+    fail "ExternalDNS with an unrelated domain filter was accepted"
+  fi
+
+  if (OR_EKS_STACK_TEST_EXTERNAL_DNS_ARGS="$DEFAULT_EXTERNAL_DNS_ARGS"$'\n--dry-run' \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com) >/dev/null 2>&1; then
+    fail "ExternalDNS dry-run mode was accepted"
+  fi
+
+  if (OR_EKS_STACK_TEST_EXTERNAL_DNS_ROLE_ARN= \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com) >/dev/null 2>&1; then
+    fail "ExternalDNS without an IRSA role was accepted"
+  fi
+
+  if addresses_intersect '192.0.2.10' '198.51.100.20'; then
+    fail "Unrelated stale and current load-balancer addresses matched"
+  fi
+  addresses_intersect $'192.0.2.10\n192.0.2.11' $'198.51.100.20\n192.0.2.11' || fail \
+    "Matching hostname and load-balancer address sets were rejected"
+}
+
+test_apply
+test_apply_reuses_valid_certificate
+test_lifecycle_delegation
+test_validation
+
+printf 'or-eks-stack tests passed\n'

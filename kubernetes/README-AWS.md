@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Requirements: you need to have kubectl, helm, jq,
+Requirements: you need to have kubectl, helm, jq, curl, dig,
 [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html),
 and [eksctl](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html#eksctl-install-update)
 installed beforehand.
@@ -12,6 +12,11 @@ Cluster-only lifecycle management is available through
 add-ons, and destroys the shared EKS cluster without deploying or deleting an
 OpenRemote stack. See [`cluster/eks/README.md`](cluster/eks/README.md) for its
 configuration and safety model.
+
+[`or-eks-stack`](or-eks-stack) is the normal stack command for an EKS cluster
+with OpenRemote-managed ExternalDNS. Its default HAProxy workflow delegates
+the Kubernetes installation to `or-stack`, then waits for the stack NLB, DNS,
+ACME certificate, and trusted Manager HTTPS endpoint.
 
 The `eks-setup*.sh` and `eks-cleanup*.sh` scripts below are the legacy combined
 cluster-and-stack workflow. They will be split further as part of multi-stack
@@ -53,9 +58,29 @@ the `Delete` reclaim policy.
 
 ### Namespaced stacks
 
-After the shared EKS cluster has been created, `or-stack` can install the
-components of an OpenRemote stack in an independent namespace. HAProxy is the
-default exposure and creates one internet-facing NLB per stack:
+After creating and configuring the shared cluster, the normal managed-DNS
+HAProxy deployment is one command. HAProxy is the default exposure and creates
+one internet-facing NLB per stack:
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --profile <aws-profile> \
+  --hostname stack-a.example.com
+```
+
+`or-eks-stack` verifies that the named cluster is active and that the selected
+kubeconfig context points to that cluster. It also requires the non-dry-run,
+OpenRemote-managed ExternalDNS release installed by `or-eks-cluster`, and
+checks that its domain filter covers the requested hostname. The managed Route
+53 controller and its cross-account IAM bootstrap are documented in
+[`cluster/eks/README.md`](cluster/eks/README.md).
+
+The portable `or-stack` command remains the lower-level interface for custom
+DNS ownership, internal-only stacks, local Kubernetes, and the current Ingress
+workflow. For example, omit DNS automation on EKS with:
 
 ```bash
 ./or-stack apply \
@@ -63,12 +88,8 @@ default exposure and creates one internet-facing NLB per stack:
   --kube-context <cluster-name>@eu-west-1 \
   --target eks \
   --hostname stack-a.example.com \
-  --dns external-dns
+  --dns none
 ```
-
-Omit `--dns external-dns` when the hostname is managed outside Kubernetes. The
-managed Route 53 controller and its cross-account IAM bootstrap are documented
-in [`cluster/eks/README.md`](cluster/eks/README.md).
 
 The EKS target verifies that the EBS CSI driver and `openremote-ebs`
 StorageClass exist. It also requires the Amazon VPC CNI NetworkPolicy
@@ -94,7 +115,7 @@ role with `AmazonEKS_CNI_Policy`; for existing add-ons, cluster reconciliation
 aligns the `aws-node` ServiceAccount annotation with the role already recorded
 by EKS.
 
-Wait for the per-stack NLB address:
+In the low-level workflow, inspect the per-stack NLB address with:
 
 ```bash
 kubectl --context <cluster-name>@eu-west-1 \
@@ -107,19 +128,25 @@ With `--dns external-dns`, the proxy Service declares the hostname and the
 cluster controller points it at that address. The portable `or-stack` command
 still makes no AWS calls. Without DNS ownership, create the record externally.
 HAProxy manages its own TLS certificate and keeps Certbot account/certificate
-data on its retained `proxy` PVC. Because the NLB address is not known until
-after the Pod first starts, restart the Deployment once the initial DNS record
-resolves to trigger a fresh certificate attempt:
+data on its retained `proxy` PVC.
+
+`or-eks-stack` automates the necessary ordering. It waits until the public
+hostname and the current NLB hostname resolve to at least one common address,
+so a stale record from an older deployment is not considered ready. It then
+checks for a retained valid certificate, triggers `/entrypoint.sh add` only
+when needed, and waits for a trusted response from the canonical
+`/manager/` URL. Its default timeout is 20 minutes for each readiness phase.
+The automated HTTP-01 flow requires public HTTP port 80; use `or-stack`
+directly when a custom HTTP port is intentional.
+
+When using `or-stack` directly, perform the ACME trigger after DNS is ready:
 
 ```bash
 kubectl --context <cluster-name>@eu-west-1 \
   --namespace stack-a \
-  rollout restart deployment/proxy
-
-kubectl --context <cluster-name>@eu-west-1 \
-  --namespace stack-a \
-  rollout status deployment/proxy \
-  --timeout 10m
+  exec deployment/proxy \
+  --container proxy \
+  -- /entrypoint.sh add stack-a.example.com
 
 ./or-stack status \
   --name stack-a \
@@ -223,13 +250,16 @@ dedicated class does not inherit the shared class's redirect setting. That
 creates a separate ALB group for that stack; the shared class remains the
 default.
 
-Use the same command with a different stack name to create another namespace,
-or inspect one stack with:
+Use the same apply command with a different stack name to create another
+namespace. For a default HAProxy stack managed through the facade, inspect it
+with:
 
 ```bash
-./or-stack status \
+./or-eks-stack status \
   --name stack-a \
-  --kube-context <cluster-name>@eu-west-1
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --profile <aws-profile>
 ```
 
 New stacks receive independently generated Manager and PostgreSQL passwords.
@@ -237,17 +267,21 @@ Retrieve a stack's Manager administrator login without exposing its database
 credentials with:
 
 ```bash
-./or-stack credentials \
+./or-eks-stack credentials \
   --name stack-a \
-  --kube-context <cluster-name>@eu-west-1
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --profile <aws-profile>
 ```
 
 Remove workloads while retaining their credentials and EBS-backed data with:
 
 ```bash
-./or-stack uninstall \
+./or-eks-stack uninstall \
   --name stack-a \
-  --kube-context <cluster-name>@eu-west-1
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --profile <aws-profile>
 ```
 
 Reapplying the stack with the same target and exposure reuses its retained
@@ -259,9 +293,11 @@ explicitly delete the stack namespace, credentials, PVCs, and dynamically
 provisioned EBS volumes instead:
 
 ```bash
-./or-stack destroy \
+./or-eks-stack destroy \
   --name stack-a \
-  --kube-context <cluster-name>@eu-west-1 \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --profile <aws-profile> \
   --confirm stack-a
 ```
 
@@ -271,6 +307,11 @@ this cleanup before asking `or-eks-cluster` to destroy an otherwise empty
 cluster. Once that cluster-level preflight succeeds, `or-eks-cluster` bypasses
 system PodDisruptionBudgets during the final node drain so EKS add-ons cannot
 leave cluster deletion waiting indefinitely.
+
+This first `or-eks-stack` increment supports HAProxy apply only. Ingress still
+uses `or-stack --exposure ingress` with an existing ACM certificate ARN. ACM
+certificate discovery and the `existing`, `shared`, and `managed` certificate
+modes are the next facade increment.
 
 #### PosgreSQL data directory
 

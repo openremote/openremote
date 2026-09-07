@@ -7,8 +7,10 @@ does not deploy or delete OpenRemote stacks, stack namespaces, certificates, or
 stack data volumes. ExternalDNS changes records only for stack resources that
 explicitly opt in.
 
-Use `kubernetes/or-stack` to install and inspect namespaced OpenRemote stacks
-after the shared cluster is ready.
+After the shared cluster is ready, use `kubernetes/or-eks-stack` for the normal
+HAProxy stack workflow with managed ExternalDNS. It delegates namespaced
+resources to `kubernetes/or-stack`, which remains the portable and low-level
+interface.
 
 The current implementation uses the existing `kubernetes/cluster.yaml`
 `eksctl` configuration. This boundary is intended to remain stable when EKS
@@ -142,6 +144,11 @@ the stack's one proxy Ingress. In HAProxy mode they are on the proxy
 LoadBalancer Service. No Manager, Keycloak, metrics Service, or private gateway
 Service declares the same hostname.
 
+The higher-level `or-eks-stack apply` command validates this managed release,
+rejects dry-run mode or a domain filter that does not cover the requested
+hostname, delegates the source-resource creation to `or-stack`, and waits for
+the current load balancer and record to converge before triggering ACME.
+
 ### Cross-account IAM bootstrap
 
 Two short-lived credential chains remain separate:
@@ -233,19 +240,24 @@ release.
 
 ### Fresh records and safe migration
 
-For a new hostname, apply the stack with DNS ownership enabled:
+For a new HAProxy hostname, use the AWS-aware facade:
 
 ```bash
-../../or-stack apply \
+../../or-eks-stack apply \
   --name stack-a \
-  --kube-context "${CLUSTER_NAME}@${CLUSTER_REGION}" \
-  --target eks \
-  --hostname stack-a.example.com \
-  --dns external-dns
+  --cluster "$CLUSTER_NAME" \
+  --region "$CLUSTER_REGION" \
+  --profile "$CLUSTER_AWS_PROFILE" \
+  --hostname stack-a.example.com
 ```
 
 ExternalDNS waits for the ALB or NLB hostname in resource status and then
 creates the Route 53 alias and its TXT ownership record.
+
+Use `or-stack apply --dns external-dns` directly for the explicit Ingress
+workflow or when another orchestrator owns endpoint readiness. The first
+`or-eks-stack` increment deliberately supports only HAProxy; automatic ACM
+certificate selection and creation follow in the next increment.
 
 ExternalDNS does not silently adopt a manually created record. Migrate existing
 records with this dry-run-first sequence:

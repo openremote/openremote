@@ -17,6 +17,11 @@ was used during local testing).
 
 This README file covers deployment on a local machine, for information on deploying into an EKS cluster on AWS, see README-AWS.md
 
+For EKS with the OpenRemote-managed ExternalDNS controller, use
+[`or-eks-stack`](or-eks-stack) for the default end-to-end HAProxy workflow. It
+keeps `or-stack` portable while coordinating the EKS NLB, Route 53 record,
+HAProxy ACME certificate, and HTTPS readiness.
+
 ## Namespaced stack management
 
 `or-stack` installs each OpenRemote stack into a namespace with the same name.

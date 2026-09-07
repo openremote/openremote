@@ -1,0 +1,702 @@
+#!/usr/bin/env bash
+
+# AWS-aware orchestration for an OpenRemote stack on an existing EKS cluster.
+# Namespace-scoped Kubernetes resources remain owned by the portable or-stack
+# command; this facade validates shared EKS services and coordinates endpoint
+# readiness around it.
+
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+DEFAULT_AWS_REGION="eu-west-1"
+DEFAULT_AWS_PROFILE="or"
+DEFAULT_TIMEOUT="20m"
+EXTERNAL_DNS_RELEASE_NAME="openremote-external-dns"
+EXTERNAL_DNS_SERVICE_ACCOUNT_NAME="external-dns"
+
+COMMAND=""
+STACK_NAME="${OR_EKS_STACK_NAME:-}"
+CLUSTER_NAME="${OR_EKS_STACK_CLUSTER:-}"
+AWS_REGION_NAME="${OR_EKS_STACK_AWS_REGION:-${AWS_REGION:-$DEFAULT_AWS_REGION}}"
+AWS_PROFILE_NAME="${OR_EKS_STACK_AWS_PROFILE:-${AWS_PROFILE:-$DEFAULT_AWS_PROFILE}}"
+KUBE_CONTEXT="${OR_EKS_STACK_KUBE_CONTEXT:-}"
+EXPOSURE="${OR_EKS_STACK_EXPOSURE:-haproxy}"
+HOSTNAME_VALUE="${OR_EKS_STACK_HOSTNAME:-}"
+VALUES_DIR="${OR_EKS_STACK_VALUES_DIR:-}"
+TIMEOUT="${OR_EKS_STACK_TIMEOUT:-$DEFAULT_TIMEOUT}"
+HTTP_PORT="${OR_EKS_STACK_HTTP_PORT:-80}"
+HTTPS_PORT="${OR_EKS_STACK_HTTPS_PORT:-443}"
+CONFIRM_STACK_NAME=""
+OR_STACK_COMMAND="${OR_EKS_STACK_OR_STACK:-$SCRIPT_DIR/or-stack}"
+NLB_ADDRESS=""
+
+usage() {
+  cat <<'EOF'
+Manage an OpenRemote stack on an existing Amazon EKS cluster.
+
+Usage:
+  or-eks-stack apply --name <name> --cluster <cluster> --hostname <host> [options]
+  or-eks-stack status --name <name> --cluster <cluster> [options]
+  or-eks-stack credentials --name <name> --cluster <cluster> [options]
+  or-eks-stack uninstall --name <name> --cluster <cluster> [options]
+  or-eks-stack destroy --name <name> --cluster <cluster> --confirm <name> [options]
+
+Commands:
+  apply                 Install or upgrade the stack, wait for its NLB and DNS,
+                        trigger HAProxy ACME issuance, and verify trusted HTTPS.
+  status                Show the stack's Kubernetes status.
+  credentials           Show the Manager administrator login credentials.
+  uninstall             Remove workloads while retaining namespace, credentials,
+                        PVCs, and certificate state.
+  destroy               Delete the stack namespace and its data after exact-name
+                        confirmation.
+
+Options:
+  --name <name>         Stack and namespace name. Env: OR_EKS_STACK_NAME.
+  --cluster <name>      Existing EKS cluster name. Env: OR_EKS_STACK_CLUSTER.
+  --region <region>     AWS region. Env: OR_EKS_STACK_AWS_REGION.
+                        Default: eu-west-1.
+  --profile <name>      AWS CLI profile. Use an empty value for environment
+                        credentials. Env: OR_EKS_STACK_AWS_PROFILE. Default: or.
+  --kube-context <c>    Kubernetes context. Defaults to <cluster>@<region>.
+                        Env: OR_EKS_STACK_KUBE_CONTEXT.
+  --exposure <mode>     Public exposure. This first increment supports only
+                        haproxy. Env: OR_EKS_STACK_EXPOSURE. Default: haproxy.
+  --hostname <host>     Public, ExternalDNS-managed hostname. Required by apply.
+                        Env: OR_EKS_STACK_HOSTNAME.
+  --http-port <port>    Public HAProxy Service HTTP port. Env:
+                        OR_EKS_STACK_HTTP_PORT. Must remain 80 for automated
+                        HTTP-01 certificate issuance.
+  --https-port <port>   Public HAProxy Service HTTPS port. Env:
+                        OR_EKS_STACK_HTTPS_PORT. Default: 443.
+  --values-dir <path>   Optional per-component values directory passed to
+                        or-stack. Env: OR_EKS_STACK_VALUES_DIR.
+  --timeout <duration>  Timeout used by Helm and each endpoint readiness phase.
+                        Accepts seconds or an s, m, or h suffix. Env:
+                        OR_EKS_STACK_TIMEOUT. Default: 20m.
+  --confirm <name>      Required exact stack name for destroy.
+  -h, --help            Show this help.
+
+This is an AWS-aware facade over or-stack. It requires the OpenRemote-managed
+ExternalDNS release installed by or-eks-cluster, with active Route 53 writes
+for the requested hostname. The portable or-stack command remains available
+for local clusters, unmanaged DNS, internal-only stacks, and the current
+low-level EKS Ingress workflow.
+
+Ingress certificate discovery and ACM lifecycle automation are intentionally
+deferred to the next increment; use or-stack directly with an existing ACM ARN
+until those certificate modes are implemented here.
+EOF
+}
+
+log() {
+  printf '[or-eks-stack] %s\n' "$*"
+}
+
+die() {
+  printf '[or-eks-stack] ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || die \
+    "Required command '$1' was not found in PATH."
+}
+
+aws_eks() {
+  if [ -n "$AWS_PROFILE_NAME" ]; then
+    aws eks "$@" --region "$AWS_REGION_NAME" --profile "$AWS_PROFILE_NAME"
+  else
+    aws eks "$@" --region "$AWS_REGION_NAME"
+  fi
+}
+
+run_or_stack() {
+  "$OR_STACK_COMMAND" "$@"
+}
+
+parse_arguments() {
+  if [ "$#" -eq 0 ]; then
+    usage >&2
+    exit 1
+  fi
+
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    apply|status|credentials|uninstall|destroy)
+      COMMAND="$1"
+      shift
+      ;;
+    *)
+      die "Unknown command '$1'. Run with --help for usage."
+      ;;
+  esac
+
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --name)
+        [ "$#" -ge 2 ] || die "Option --name requires a value."
+        STACK_NAME="$2"
+        shift 2
+        ;;
+      --cluster)
+        [ "$#" -ge 2 ] || die "Option --cluster requires a value."
+        CLUSTER_NAME="$2"
+        shift 2
+        ;;
+      --region)
+        [ "$#" -ge 2 ] || die "Option --region requires a value."
+        AWS_REGION_NAME="$2"
+        shift 2
+        ;;
+      --profile)
+        [ "$#" -ge 2 ] || die "Option --profile requires a value."
+        AWS_PROFILE_NAME="$2"
+        shift 2
+        ;;
+      --kube-context)
+        [ "$#" -ge 2 ] || die "Option --kube-context requires a value."
+        KUBE_CONTEXT="$2"
+        shift 2
+        ;;
+      --exposure)
+        [ "$#" -ge 2 ] || die "Option --exposure requires a value."
+        EXPOSURE="$2"
+        shift 2
+        ;;
+      --hostname)
+        [ "$#" -ge 2 ] || die "Option --hostname requires a value."
+        HOSTNAME_VALUE="$2"
+        shift 2
+        ;;
+      --http-port)
+        [ "$#" -ge 2 ] || die "Option --http-port requires a value."
+        HTTP_PORT="$2"
+        shift 2
+        ;;
+      --https-port)
+        [ "$#" -ge 2 ] || die "Option --https-port requires a value."
+        HTTPS_PORT="$2"
+        shift 2
+        ;;
+      --values-dir)
+        [ "$#" -ge 2 ] || die "Option --values-dir requires a value."
+        VALUES_DIR="$2"
+        shift 2
+        ;;
+      --timeout)
+        [ "$#" -ge 2 ] || die "Option --timeout requires a value."
+        TIMEOUT="$2"
+        shift 2
+        ;;
+      --confirm)
+        [ "$#" -ge 2 ] || die "Option --confirm requires a value."
+        CONFIRM_STACK_NAME="$2"
+        shift 2
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        die "Unknown option '$1'. Run with --help for usage."
+        ;;
+    esac
+  done
+}
+
+validate_stack_name() {
+  [ -n "$STACK_NAME" ] || die "A stack name is required; use --name."
+  [ "${#STACK_NAME}" -le 63 ] || die \
+    "Stack name must contain at most 63 characters."
+  if [[ ! "$STACK_NAME" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
+    die "Stack name must be a lowercase Kubernetes namespace name."
+  fi
+
+  case "$STACK_NAME" in
+    default|kube-system|kube-public|kube-node-lease)
+      die "Namespace '$STACK_NAME' is reserved and cannot be used as a stack name."
+      ;;
+  esac
+}
+
+validate_cluster_name() {
+  [ -n "$CLUSTER_NAME" ] || die "An EKS cluster name is required; use --cluster."
+  [ "${#CLUSTER_NAME}" -le 100 ] || die \
+    "EKS cluster name must contain at most 100 characters."
+  if [[ ! "$CLUSTER_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_-]*$ ]]; then
+    die "EKS cluster name may contain only letters, numbers, underscores, and hyphens."
+  fi
+}
+
+validate_port() {
+  local port="$1"
+  local name="$2"
+
+  [[ "$port" =~ ^[0-9]+$ ]] || die \
+    "$name port must be a number from 1 to 65535."
+  [ "$port" -ge 1 ] && [ "$port" -le 65535 ] || die \
+    "$name port must be a number from 1 to 65535."
+}
+
+duration_seconds() {
+  local duration="$1"
+  local multiplier
+
+  if [[ ! "$duration" =~ ^([0-9]+)([smh]?)$ ]]; then
+    return 1
+  fi
+
+  case "${BASH_REMATCH[2]}" in
+    ""|s) multiplier=1 ;;
+    m) multiplier=60 ;;
+    h) multiplier=3600 ;;
+    *) return 1 ;;
+  esac
+
+  printf '%s\n' "$((10#${BASH_REMATCH[1]} * multiplier))"
+}
+
+validate_common_options() {
+  local timeout_seconds
+
+  validate_stack_name
+  validate_cluster_name
+  [ -n "$AWS_REGION_NAME" ] || die "AWS region cannot be empty."
+  if [ -z "$KUBE_CONTEXT" ]; then
+    KUBE_CONTEXT="${CLUSTER_NAME}@${AWS_REGION_NAME}"
+  fi
+  [ -n "$KUBE_CONTEXT" ] || die "Kubernetes context cannot be empty."
+  if ! timeout_seconds="$(duration_seconds "$TIMEOUT")"; then
+    die "Timeout must be seconds or a duration with an s, m, or h suffix."
+  fi
+  [ "$timeout_seconds" -gt 0 ] || die "Timeout must be greater than zero."
+}
+
+validate_hostname() {
+  HOSTNAME_VALUE="${HOSTNAME_VALUE%.}"
+  [ -n "$HOSTNAME_VALUE" ] || die \
+    "A public hostname is required for apply; use --hostname."
+  [ "${#HOSTNAME_VALUE}" -le 253 ] || die \
+    "Hostname must contain at most 253 characters."
+  if [[ ! "$HOSTNAME_VALUE" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)+$ ]]; then
+    die "Hostname must be a lowercase, fully qualified DNS name."
+  fi
+}
+
+validate_apply_options() {
+  [ "$EXPOSURE" = "haproxy" ] || die \
+    "This first or-eks-stack increment supports only HAProxy exposure. Use or-stack directly for Ingress until ACM automation is implemented."
+  validate_hostname
+  validate_port "$HTTP_PORT" "HTTP"
+  validate_port "$HTTPS_PORT" "HTTPS"
+  [ "$HTTP_PORT" != "$HTTPS_PORT" ] || die \
+    "HAProxy HTTP and HTTPS ports must be different."
+  [ "$HTTP_PORT" = "80" ] || die \
+    "The automated HAProxy ACME workflow requires public HTTP port 80. Use or-stack directly for a custom HTTP port."
+  if [ -n "$VALUES_DIR" ] && [ ! -d "$VALUES_DIR" ]; then
+    die "Values directory '$VALUES_DIR' does not exist."
+  fi
+}
+
+validate_command_options() {
+  if [ "$COMMAND" != "destroy" ] && [ -n "$CONFIRM_STACK_NAME" ]; then
+    die "Option --confirm is only valid with destroy."
+  fi
+  if [ "$COMMAND" = "destroy" ] && [ "$CONFIRM_STACK_NAME" != "$STACK_NAME" ]; then
+    die "Destroy requires --confirm '$STACK_NAME'."
+  fi
+  if [ "$COMMAND" = "apply" ]; then
+    validate_apply_options
+  fi
+}
+
+require_active_cluster() {
+  local cluster_status
+  local output
+  local status
+
+  set +e
+  output="$(aws_eks describe-cluster \
+    --name "$CLUSTER_NAME" \
+    --query 'cluster.status' \
+    --output text 2>&1)"
+  status=$?
+  set -e
+
+  if [ "$status" -ne 0 ]; then
+    case "$output" in
+      *ResourceNotFoundException*)
+        die "EKS cluster '$CLUSTER_NAME' does not exist in region '$AWS_REGION_NAME'."
+        ;;
+      *)
+        die "Unable to query EKS cluster '$CLUSTER_NAME': $output"
+        ;;
+    esac
+  fi
+
+  cluster_status="$output"
+  [ "$cluster_status" = "ACTIVE" ] || die \
+    "EKS cluster '$CLUSTER_NAME' is '$cluster_status', not ACTIVE."
+}
+
+require_matching_kube_context() {
+  local configured_context
+  local context_endpoint
+  local expected_endpoint
+
+  configured_context="$(kubectl config get-contexts "$KUBE_CONTEXT" -o name \
+    2>/dev/null || true)"
+  [ "$configured_context" = "$KUBE_CONTEXT" ] || die \
+    "Kubernetes context '$KUBE_CONTEXT' does not exist; run or-eks-cluster kubeconfig first."
+
+  expected_endpoint="$(aws_eks describe-cluster \
+    --name "$CLUSTER_NAME" \
+    --query 'cluster.endpoint' \
+    --output text)" || die \
+      "Unable to read the endpoint for EKS cluster '$CLUSTER_NAME'."
+  context_endpoint="$(kubectl --context "$KUBE_CONTEXT" config view \
+    --minify \
+    -o 'jsonpath={.clusters[0].cluster.server}')" || die \
+      "Unable to inspect Kubernetes context '$KUBE_CONTEXT'."
+
+  [ "$context_endpoint" = "$expected_endpoint" ] || die \
+    "Kubernetes context '$KUBE_CONTEXT' does not point to EKS cluster '$CLUSTER_NAME'."
+  kubectl --context "$KUBE_CONTEXT" get namespace kube-system >/dev/null 2>&1 || die \
+    "Kubernetes context '$KUBE_CONTEXT' cannot reach the EKS cluster."
+}
+
+require_eks_target() {
+  require_command aws
+  require_command kubectl
+  require_active_cluster
+  require_matching_kube_context
+}
+
+require_external_dns_argument() {
+  local external_dns_args="$1"
+  local required_argument="$2"
+
+  grep -Fx -- "$required_argument" <<< "$external_dns_args" >/dev/null || die \
+    "ExternalDNS is missing required argument '$required_argument'; run or-eks-cluster apply with the managed DNS configuration."
+}
+
+hostname_is_covered() {
+  local domain_filter="$1"
+
+  domain_filter="${domain_filter%.}"
+  [ "$HOSTNAME_VALUE" = "$domain_filter" ] || \
+    [[ "$HOSTNAME_VALUE" == *."$domain_filter" ]]
+}
+
+require_managed_external_dns() {
+  local domain_filter
+  local external_dns_args
+  local hostname_covered=false
+  local service_account_role_arn
+
+  helm status "$EXTERNAL_DNS_RELEASE_NAME" \
+    --kube-context "$KUBE_CONTEXT" \
+    --namespace kube-system >/dev/null 2>&1 || die \
+      "OpenRemote-managed ExternalDNS is not installed; configure it with or-eks-cluster apply first."
+
+  kubectl --context "$KUBE_CONTEXT" --namespace kube-system rollout status \
+    "deployment/$EXTERNAL_DNS_RELEASE_NAME" --timeout "$TIMEOUT" >/dev/null || die \
+      "ExternalDNS is not ready; inspect deployment/$EXTERNAL_DNS_RELEASE_NAME in kube-system."
+
+  external_dns_args="$(kubectl --context "$KUBE_CONTEXT" \
+    --namespace kube-system \
+    get deployment "$EXTERNAL_DNS_RELEASE_NAME" \
+    -o 'go-template={{range (index .spec.template.spec.containers 0).args}}{{println .}}{{end}}')" || die \
+      "Unable to inspect the ExternalDNS deployment."
+
+  require_external_dns_argument "$external_dns_args" "--source=service"
+  require_external_dns_argument "$external_dns_args" "--policy=sync"
+  require_external_dns_argument "$external_dns_args" "--registry=txt"
+  require_external_dns_argument "$external_dns_args" \
+    "--label-filter=openremote.io/managed-dns=true"
+  grep -Eq '^--txt-owner-id=.+$' <<< "$external_dns_args" || die \
+    "ExternalDNS has no TXT owner ID; reconcile its managed configuration before applying a stack."
+  if grep -Eq '^--dry-run(=true)?$' <<< "$external_dns_args"; then
+    die "ExternalDNS dry-run is enabled; disable it with or-eks-cluster apply before applying a stack."
+  fi
+
+  while IFS= read -r domain_filter; do
+    [ -n "$domain_filter" ] || continue
+    if hostname_is_covered "$domain_filter"; then
+      hostname_covered=true
+      break
+    fi
+  done < <(sed -n 's/^--domain-filter=//p' <<< "$external_dns_args")
+
+  [ "$hostname_covered" = true ] || die \
+    "ExternalDNS domain filters do not cover '$HOSTNAME_VALUE'; reconcile the cluster DNS configuration first."
+
+  service_account_role_arn="$(kubectl --context "$KUBE_CONTEXT" \
+    --namespace kube-system \
+    get serviceaccount "$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME" \
+    -o 'jsonpath={.metadata.annotations.eks\.amazonaws\.com/role-arn}')" || die \
+      "Unable to inspect the ExternalDNS ServiceAccount."
+  [ -n "$service_account_role_arn" ] || die \
+    "ExternalDNS ServiceAccount kube-system/$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME has no IRSA role annotation."
+}
+
+apply_portable_stack() {
+  local stack_args=(
+    apply
+    --name "$STACK_NAME"
+    --kube-context "$KUBE_CONTEXT"
+    --target eks
+    --exposure haproxy
+    --dns external-dns
+    --hostname "$HOSTNAME_VALUE"
+    --http-port "$HTTP_PORT"
+    --https-port "$HTTPS_PORT"
+    --timeout "$TIMEOUT"
+  )
+
+  if [ -n "$VALUES_DIR" ]; then
+    stack_args+=(--values-dir "$VALUES_DIR")
+  fi
+
+  run_or_stack "${stack_args[@]}"
+}
+
+wait_for_nlb() {
+  local deadline
+  local next_notice
+  local now
+  local timeout_seconds
+
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  NLB_ADDRESS=""
+  log "Waiting for the stack NLB address."
+
+  while [ "$now" -lt "$deadline" ]; do
+    NLB_ADDRESS="$(kubectl --context "$KUBE_CONTEXT" \
+      --namespace "$STACK_NAME" \
+      get service proxy \
+      -o 'jsonpath={.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}' \
+      2>/dev/null || true)"
+    if [ -n "$NLB_ADDRESS" ]; then
+      log "Stack NLB is '$NLB_ADDRESS'."
+      return
+    fi
+    if [ "$now" -ge "$next_notice" ]; then
+      log "The stack NLB address is still pending."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "The proxy Service did not receive an NLB address within '$TIMEOUT'; inspect service '$STACK_NAME/proxy' and the AWS Load Balancer Controller."
+}
+
+resolve_addresses() {
+  local dns_name="$1"
+
+  {
+    dig +short "$dns_name" A 2>/dev/null || true
+    dig +short "$dns_name" AAAA 2>/dev/null || true
+  } | awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ || index($0, ":") > 0 { print }' | sort -u
+}
+
+addresses_intersect() {
+  local first_addresses="$1"
+  local second_addresses="$2"
+  local address
+
+  while IFS= read -r address; do
+    [ -n "$address" ] || continue
+    if grep -Fx -- "$address" <<< "$second_addresses" >/dev/null; then
+      return 0
+    fi
+  done <<< "$first_addresses"
+  return 1
+}
+
+wait_for_dns() {
+  local deadline
+  local hostname_addresses
+  local nlb_address="$1"
+  local nlb_addresses
+  local next_notice
+  local now
+  local timeout_seconds
+
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  log "Waiting for '$HOSTNAME_VALUE' to resolve to the stack NLB '$nlb_address'."
+
+  while [ "$now" -lt "$deadline" ]; do
+    hostname_addresses="$(resolve_addresses "$HOSTNAME_VALUE")"
+    if [[ "$nlb_address" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || \
+       [[ "$nlb_address" == *:* ]]; then
+      nlb_addresses="$nlb_address"
+    else
+      nlb_addresses="$(resolve_addresses "$nlb_address")"
+    fi
+
+    if [ -n "$hostname_addresses" ] && [ -n "$nlb_addresses" ] && \
+       addresses_intersect "$hostname_addresses" "$nlb_addresses"; then
+      log "DNS now resolves to the current stack NLB."
+      return
+    fi
+    if [ "$now" -ge "$next_notice" ]; then
+      log "DNS is still pending or points to another load balancer."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "DNS '$HOSTNAME_VALUE' did not resolve to the current stack NLB within '$TIMEOUT'. Inspect deployment/$EXTERNAL_DNS_RELEASE_NAME logs and allow for resolver negative caching before retrying."
+}
+
+public_manager_url() {
+  printf 'https://%s' "$HOSTNAME_VALUE"
+  if [ "$HTTPS_PORT" != "443" ]; then
+    printf ':%s' "$HTTPS_PORT"
+  fi
+  printf '/manager/'
+}
+
+endpoint_is_ready() {
+  local endpoint_url="$1"
+
+  curl --disable --fail --silent --show-error --location \
+    --proto '=https' \
+    --proto-redir '=https' \
+    --max-redirs 5 \
+    --connect-timeout 10 \
+    --max-time 30 \
+    --output /dev/null \
+    "$endpoint_url"
+}
+
+trigger_acme() {
+  log "Triggering HAProxy ACME issuance for '$HOSTNAME_VALUE'."
+  kubectl --context "$KUBE_CONTEXT" \
+    --namespace "$STACK_NAME" \
+    exec deployment/proxy \
+    --container proxy \
+    -- /entrypoint.sh add "$HOSTNAME_VALUE" || die \
+      "HAProxy ACME issuance failed. DNS is ready; inspect deployment/proxy logs and retry apply."
+}
+
+wait_for_https() {
+  local deadline
+  local endpoint_url="$1"
+  local next_notice
+  local now
+  local timeout_seconds
+
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  log "Waiting for a trusted certificate and Manager response at '$endpoint_url'."
+
+  while [ "$now" -lt "$deadline" ]; do
+    if endpoint_is_ready "$endpoint_url" 2>/dev/null; then
+      log "Trusted HTTPS is ready."
+      return
+    fi
+    if [ "$now" -ge "$next_notice" ]; then
+      log "The trusted HTTPS endpoint is still pending."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "Trusted HTTPS did not become ready at '$endpoint_url' within '$TIMEOUT'. Inspect deployment/proxy logs and its persisted certificate state."
+}
+
+apply_stack() {
+  local endpoint_url
+
+  require_command helm
+  require_command dig
+  require_command curl
+  [ -x "$OR_STACK_COMMAND" ] || die \
+    "Portable stack command '$OR_STACK_COMMAND' is missing or not executable."
+
+  require_eks_target
+  require_managed_external_dns
+  apply_portable_stack
+
+  wait_for_nlb
+  wait_for_dns "$NLB_ADDRESS"
+  endpoint_url="$(public_manager_url)"
+
+  if endpoint_is_ready "$endpoint_url" 2>/dev/null; then
+    log "HAProxy already presents a trusted certificate for '$HOSTNAME_VALUE'."
+  else
+    trigger_acme
+    wait_for_https "$endpoint_url"
+  fi
+
+  log "Stack '$STACK_NAME' is ready at:"
+  printf '  %s\n' "$endpoint_url"
+  log "Retrieve its Manager login at any time with:"
+  printf '  %q credentials --name %q --cluster %q --region %q' \
+    "$0" "$STACK_NAME" "$CLUSTER_NAME" "$AWS_REGION_NAME"
+  if [ -n "$AWS_PROFILE_NAME" ]; then
+    printf ' --profile %q' "$AWS_PROFILE_NAME"
+  else
+    printf " --profile ''"
+  fi
+  printf '\n'
+}
+
+delegate_stack_command() {
+  local stack_args=(
+    "$COMMAND"
+    --name "$STACK_NAME"
+    --kube-context "$KUBE_CONTEXT"
+  )
+
+  case "$COMMAND" in
+    uninstall)
+      stack_args+=(--timeout "$TIMEOUT")
+      ;;
+    destroy)
+      stack_args+=(--confirm "$CONFIRM_STACK_NAME" --timeout "$TIMEOUT")
+      ;;
+  esac
+
+  run_or_stack "${stack_args[@]}"
+}
+
+main() {
+  parse_arguments "$@"
+  validate_common_options
+  validate_command_options
+
+  case "$COMMAND" in
+    apply)
+      apply_stack
+      ;;
+    status|credentials|uninstall|destroy)
+      [ -x "$OR_STACK_COMMAND" ] || die \
+        "Portable stack command '$OR_STACK_COMMAND' is missing or not executable."
+      require_eks_target
+      delegate_stack_command
+      ;;
+  esac
+}
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  main "$@"
+fi
