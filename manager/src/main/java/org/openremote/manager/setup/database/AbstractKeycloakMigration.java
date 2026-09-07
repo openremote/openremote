@@ -18,6 +18,7 @@
  */
 package org.openremote.manager.setup.database;
 
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.UriBuilder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -66,12 +67,39 @@ public abstract class AbstractKeycloakMigration extends BaseJavaMigration {
 
   protected Keycloak openKeycloak() {
     OAuthPasswordGrant credentials = resolveCredentials();
-    return Keycloak.getInstance(
-        buildKeycloakUrl(),
-        Constants.MASTER_REALM,
-        credentials.getUsername(),
-        credentials.getPassword(),
-        KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID);
+    Keycloak keycloak =
+        Keycloak.getInstance(
+            buildKeycloakUrl(),
+            Constants.MASTER_REALM,
+            credentials.getUsername(),
+            credentials.getPassword(),
+            KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID);
+
+    try {
+      keycloak.tokenManager().grantToken();
+    } catch (WebApplicationException e) {
+      String msg = "Unknown error";
+      if (e.getResponse().hasEntity()) {
+        msg = e.getResponse().readEntity(String.class);
+        e.getResponse().close();
+      }
+      LOG.warning("Failed to connect to Keycloak: error=" + msg);
+      keycloak.close();
+
+      // Falling back to admin credentials
+      LOG.warning("Falling back to admin credentials");
+      credentials = loadAdminFallbackCredentials();
+
+      keycloak =
+          Keycloak.getInstance(
+              buildKeycloakUrl(),
+              Constants.MASTER_REALM,
+              credentials.getUsername(),
+              credentials.getPassword(),
+              KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID);
+    }
+
+    return keycloak;
   }
 
   /**

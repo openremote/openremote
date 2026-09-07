@@ -91,11 +91,12 @@ jobs:
           path: |
             ui/component/model/src/model.ts
             ui/component/rest/src/restclient.ts
-            ui/component/**/custom-elements.json
-            ui/component/**/custom-elements-jsx.d.ts
-            ui/component/**/dist
-            ui/component/**/lib
-            ui/component/**/tsconfig.tsbuildinfo
+            ui/component/*/build/lib
+            ui/component/*/build/dist
+            ui/component/*/build/custom-elements.json
+            ui/component/*/build/custom-elements-jsx.d.ts
+            ui/component/*/build/tsconfig.tsbuildinfo
+            ui/component/or-icon/build/Material Design Icons
             ui/component/**/package.json
 
       - name: Archive UI app build
@@ -104,8 +105,8 @@ jobs:
           name: or-ui-app-build
           if-no-files-found: error
           path: |
-            ui/app/**/dist
-            ui/app/**/lib
+            ui/app/*/build/dist
+            ui/app/*/build/lib
             ui/app/**/package.json
 
       - name: Archive UI util build

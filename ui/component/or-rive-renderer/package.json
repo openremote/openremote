@@ -2,16 +2,21 @@
   "name": "@openremote/or-rive-renderer",
   "version": "1.28.0-snapshot",
   "description": "A web component for displaying Rive animations using WebGL",
-  "customElements": "custom-elements.json",
-  "main": "dist/umd/index.bundle.js",
-  "module": "lib/index.js",
+  "customElements": "build/custom-elements.json",
+  "main": "build/dist/umd/index.bundle.js",
+  "module": "build/lib/index.js",
   "exports": {
-    ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    ".": "./build/lib/index.js",
+    "./*": "./build/lib/*.js"
   },
-  "types": "lib/index.d.ts",
+  "types": "build/lib/index.d.ts",
+  "files": [
+    "build/lib/**",
+    "build/dist/**",
+    "build/custom-elements.json"
+  ],
   "scripts": {
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
+    "clean": "npx tsc -b --clean && npx shx rm -rf build",
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
     "test": "npx tsc -b && npx playwright test",

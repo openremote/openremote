@@ -59,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: or-ui-app-test-results-${{ matrix.shardIndex }}
-          path: ui/app/*/app-test-report/**
+          path: ui/app/*/build/app-test-report/**
 
   ui-app-tests-status:
     name: UI App Tests Status

@@ -53,8 +53,8 @@ import { AssetTree } from "../../../../component/or-asset-tree/test/fixtures";
 import { isAxiosError, type AxiosRequestConfig } from "axios";
 const { admin, smartcity } = users;
 
-export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
-export const userStatePath = path.join(__dirname, "data/.auth/user.json");
+export const adminStatePath = path.join(__dirname, "../../build/.auth/admin.json");
+export const userStatePath = path.join(__dirname, "../../build/.auth/user.json");
 
 /** Logs a warning for a failed HTTP request; any other error is a test bug and is rethrown to fail the test. */
 function warnOnHttpError(e: unknown, message: string, ...context: unknown[]) {
@@ -82,7 +82,7 @@ export class Manager {
     readonly baseURL: string,
     request?: APIRequestContext
   ) {
-    this.managerHost = process.env.managerUrl || "http://localhost:8080";
+    this.managerHost = process.env.managerUrl || "http://127.0.0.1:8080";
     rest.initialise(`${this.managerHost}/api/master/`);
     this.api = rest.api;
     this.axios = rest.axiosInstance;

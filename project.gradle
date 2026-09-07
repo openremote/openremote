@@ -162,7 +162,7 @@ if (project == rootProject) {
           workingDirectory = projectDir.toString()
         }
         "Demo Setup"(Application) {
-          moduleName = getProject().idea.module.name + ".manager.main"
+          moduleName = getProject().idea.module.name + ".setup.demo"
           envs = [
             OR_SETUP_TYPE: "demo"
           ]

@@ -20,10 +20,7 @@ package org.openremote.model.gateway;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -98,6 +95,12 @@ public class GatewayConnection {
   @JdbcTypeCode(SqlTypes.JSON)
   @Schema(description = "Synchronization rules keyed by asset type; use * as a wildcard.")
   protected Map<String, GatewayAssetSyncRule> assetSyncRules;
+
+  /**
+   * This is currently used in testing, but we may want to support a different token endpoint URI
+   * for gateways in the future
+   */
+  @Transient protected String tokenEndpointURI;
 
   /** For JPA */
   protected GatewayConnection() {}
@@ -227,6 +230,10 @@ public class GatewayConnection {
   public GatewayConnection setAssetSyncRules(Map<String, GatewayAssetSyncRule> assetSyncRules) {
     this.assetSyncRules = assetSyncRules;
     return this;
+  }
+
+  public String getTokenEndpointURI() {
+    return tokenEndpointURI;
   }
 
   @Override

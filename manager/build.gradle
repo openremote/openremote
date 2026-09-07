@@ -14,10 +14,6 @@ application {
   mainClass = "org.openremote.manager.Main"
 }
 
-configurations {
-  demoExtension
-}
-
 dependencies {
 
   api project(":container")
@@ -61,12 +57,6 @@ dependencies {
   implementation libs.prometheusMetricsExporterHttpserver
 
   implementation libs.sshdNetty
-
-  // Select the newest published demo extension up to and including the
-  // current project version, falling back to an earlier version when the
-  // current version has not been published yet.
-  def demoExtensionMaxVersion = project.version.toString().replaceFirst(/-SNAPSHOT$/, "")
-  demoExtension "io.openremote.extension:openremote-demo-setup-extension:(,${demoExtensionMaxVersion}]"
 
   testImplementation libs.groovyAll
   testImplementation platform(libs.spockBom)
@@ -127,7 +117,7 @@ tasks.withType(Sync).configureEach {
   duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-tasks.withType(Tar){
+tasks.withType(Tar) {
   duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
@@ -253,17 +243,11 @@ publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
 sourcesJar.dependsOn(setVersionProperties)
 
-
 tasks.named("run", JavaExec) {
-  def setupType = System.getenv("OR_SETUP_TYPE")
-  if (setupType != null) {
-    classpath += configurations.demoExtension
-    classpath += files({
-      def setupProject = project(':setup')
-      def targetSourceSet = setupProject.sourceSets.findByName(setupType)
-      if (targetSourceSet != null) {
-        return targetSourceSet.output
-      }
-    })
+  doFirst {
+    def setupType = providers.environmentVariable("OR_SETUP_TYPE").orNull?.trim()
+    if (setupType) {
+      throw new GradleException("OR_SETUP_TYPE is not supported by manager:run. Use setup:run instead.")
+    }
   }
 }

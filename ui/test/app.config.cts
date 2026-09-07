@@ -52,12 +52,10 @@ function createAppSetupAndTeardown(app: string) {
       name: `setup ${app}`,
       testMatch: "**/*.setup.ts",
       teardown: `cleanup ${app}`,
-      worker: 1,
     },
     {
       name: `cleanup ${app}`,
       testMatch: "**/*.cleanup.ts",
-      worker: 1,
     },
   ];
 }
@@ -74,11 +72,13 @@ export const defineAppConfig = (path: string) => {
     /* Retry failed tests twice on CI only to allow flaky behavior such as test timeouts to be retried */
     retries: CI ? 2 : 0,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-    reporter: [["html", { outputFolder: "app-test-report" }]],
+    reporter: [["html", { outputFolder: resolve(path, "build/app-test-report") }]],
+    /* Traces, videos and other per-test output. See https://playwright.dev/docs/test-use-options */
+    outputDir: resolve(path, "build/test-results"),
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
     use: {
       // Defaults to the default Manager Docker container port as that significantly speeds up the tests compared to serving the frontend with Webpack
-      baseURL: managerUrl || DEV ? "http://localhost:9000" : "http://localhost:8080",
+      baseURL: managerUrl || DEV ? "http://127.0.0.1:9000" : "http://127.0.0.1:8080",
       /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
       trace: "retain-on-failure",
       video: "on",
@@ -86,9 +86,10 @@ export const defineAppConfig = (path: string) => {
     },
     webServer: {
       command: `node ${join(__dirname, "manager.cjs")}`,
-      url: "http://localhost:8080",
+      url: "http://127.0.0.1:8080",
       reuseExistingServer: !process.env.CI,
     },
+    workers: 1,
     /* Configure projects */
     projects: [
       ...createAppSetupAndTeardown(name),
@@ -97,7 +98,6 @@ export const defineAppConfig = (path: string) => {
         testDir: resolve(path, "test"),
         fullyParallel: false,
         dependencies: [`setup ${name}`],
-        workers: 1,
         ...browser,
       })),
     ],

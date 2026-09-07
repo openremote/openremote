@@ -1,6 +1,6 @@
 # OpenRemote v3
 #
-# Profile that runs the stack by default on https://localhost using a self-signed SSL certificate,
+# Profile that runs the stack by default on the docker host port 443 using HTTPS with a self-signed SSL certificate,
 # but optionally on https://$OR_HOSTNAME with an auto generated SSL certificate from Letsencrypt.
 #
 # It is configured to use the AWS logging driver.
@@ -21,7 +21,7 @@ services:
       - "80:80" # Needed for SSL generation using letsencrypt
       - "${OR_SSL_PORT:-443}:443"
       - "8883:8883"
-      - "127.0.0.1:8404:8404" # Localhost metrics access
+      - "127.0.0.1:8404:8404" # Local metrics access
       - "${PRIVATE_IP:-127.0.0.1}:8404:8404" # Allows to also expose metrics on a given IP address,
         # intended to be IP of the interface of the private subnet of the EC2 VM
     volumes:
@@ -50,9 +50,8 @@ services:
     volumes:
       - ./deployment:/deployment
     environment:
-      KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
-      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
-      KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
+      KC_HOSTNAME: https://${OR_HOSTNAME:-localhost}/auth
 
   manager:
     #    privileged: true
@@ -62,7 +61,7 @@ services:
       keycloak:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8405:8405" # Localhost metrics access
+      - "127.0.0.1:8405:8405" # Local metrics access
       - "${PRIVATE_IP:-127.0.0.1}:8405:8405" # Allows to also expose metrics on a given IP address,
         # intended to be IP of the interface of the private subnet of the EC2 VM
     environment:

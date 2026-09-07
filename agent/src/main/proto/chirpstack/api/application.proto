@@ -605,7 +605,7 @@ message InfluxDbIntegration {
   // Application ID (UUID).
   string application_id = 1;
 
-  // InfluxDb API write endpoint (e.g. http://localhost:8086/write).
+  // InfluxDb API write endpoint (e.g. http://127.0.0.1:8086/write).
   string endpoint = 2;
 
   // InfluxDb database name. (InfluxDb v1)

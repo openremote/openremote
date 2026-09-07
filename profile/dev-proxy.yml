@@ -1,12 +1,7 @@
 # OpenRemote v3
 #
-# Profile for running the reverse proxy on https://localhost/ with the manager backend mapped to the host machine on
-# localhost:8080 and the keycloak backend mapped to the host machine on localhost:8081
-#
-# Your changes will be visible live on browser reload or after restart:
-#
-# - Run the manager in an IDE with the following required environment variables:
-#       OR_WEBSERVER_LISTEN_HOST=0.0.0.0
+# Profile for running the reverse proxy on https://127.0.0.1/ with the manager backend mapped to the host machine on
+# 127.0.0.1:8080 and the keycloak backend mapped to the host machine on 127.0.0.1:8081
 #
 # Please see deploy.yml for configuration details for each service.
 #
@@ -19,7 +14,7 @@ services:
       file: deploy.yml
       service: proxy
     environment:
-      MANAGER_HOST: ${MANAGER_HOST:-'host.docker.internal'}
+      MANAGER_HOST: ${MANAGER_HOST:-host.docker.internal}
       # Uncomment to use sish in development
       #SISH_HOST: sish
       #SISH_PORT: 8090
@@ -28,18 +23,8 @@ services:
     extends:
       file: deploy.yml
       service: keycloak
-    #volumes:
-    #   Map custom themes
-    #  - ../deployment:/deployment
-    # Access directly if needed on localhost
     ports:
       - "8081:8080"
-    # Following options are useful for tunnelling functionality do not use on public instance
-    environment:
-      KEYCLOAK_ISSUER_BASE_URI: https://localhost/auth
-      KC_HOSTNAME_STRICT: false
-      KC_HOSTNAME:
-      KC_LOG_CONSOLE_FORMAT: "%-5p [%c] (%t) %s%e%n"
     depends_on:
       postgresql:
         condition: service_healthy
@@ -51,7 +36,6 @@ services:
     volumes:
       - ../tmp:/storage
       - postgresql-data:/var/lib/postgresql/data
-    # Access directly if needed on localhost
     ports:
       - "5432:5432"
 
