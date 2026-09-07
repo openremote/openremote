@@ -1084,7 +1084,6 @@
   "savePasswordFailed": "Nie udało się ustawić hasła.",
   "userAlreadyExists": "Użytkownik o tej nazwie już istnieje.",
   "realmAlreadyExists": "Obszar o tej nazwie już istnieje.",
-  "invalidUsername": "Nazwa użytkownika musi zawierać od 3 do 255 znaków alfanumerycznych",
   "invalidEmail": "Nieprawidłowy adres e-mail",
   "yes": "Tak",
   "no": "Nie",

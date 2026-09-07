@@ -25,12 +25,10 @@ RulesBuilder rules = binding.rules
 
 rules.add()
         .name("All")
-        .when(
-        { facts ->
-            !facts.matchFirst("All").isPresent() &&
-                    facts.matchFirstAssetState(new AssetQuery()).isPresent()
+        .when({ facts ->
+          !facts.matchFirst("All").isPresent() &&
+          facts.matchFirstAssetState(new AssetQuery()).isPresent()
         })
-        .then(
-        { facts ->
-            facts.put("All", "fired")
+        .then({ facts ->
+          facts.put("All", "fired")
         })

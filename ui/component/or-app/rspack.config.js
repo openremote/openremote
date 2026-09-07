@@ -19,6 +19,9 @@
 const util = require("@openremote/util");
 
 bundles = {
+  "index.bundle": {
+    excludeOr: true,
+  },
   "index.orbundle": undefined,
 };
 

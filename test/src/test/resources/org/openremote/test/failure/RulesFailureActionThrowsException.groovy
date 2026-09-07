@@ -24,11 +24,9 @@ RulesBuilder rules = binding.rules
 
 rules.add()
         .name("Action always throws exception")
-        .when(
-        { facts ->
-            true
+        .when({ facts ->
+          true
         })
-        .then(
-        { facts ->
-            throw new RuntimeException("Oops")
+        .then({ facts ->
+          throw new RuntimeException("Oops")
         })

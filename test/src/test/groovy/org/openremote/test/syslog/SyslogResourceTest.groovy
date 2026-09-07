@@ -35,56 +35,56 @@ import static org.openremote.model.Constants.*
 
 class SyslogResourceTest extends Specification implements ManagerContainerTrait {
 
-    @Shared
-    private static String userId
+  @Shared
+  private static String userId
 
-    def "Users with rules read role cannot retrieve syslog events"() {
-        given: "the server container is started with the syslog resource"
-        def container = startContainer(defaultConfig(), defaultServices(new SyslogService()))
-        def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
-        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+  def "Users with rules read role cannot retrieve syslog events"() {
+    given: "the server container is started with the syslog resource"
+    def container = startContainer(defaultConfig(), defaultServices(new SyslogService()))
+    def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
+    def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
-        and: "a user has the old rules role but not the logs role"
-        def rulesAccessToken = createUserToken(container, keycloakTestSetup, "read-rules", ClientRole.READ_RULES)
+    and: "a user has the old rules role but not the logs role"
+    def rulesAccessToken = createUserToken(container, keycloakTestSetup, "read-rules", ClientRole.READ_RULES)
 
-        when: "the user requests syslog events"
-        def response = getSyslogEvents(rulesAccessToken)
+    when: "the user requests syslog events"
+    def response = getSyslogEvents(rulesAccessToken)
 
-        then: "the resource rejects the wrong role"
-        response.withCloseable { r ->
-            assert r.status == Response.Status.FORBIDDEN.statusCode
-            return true
-        }
-
-        cleanup: "the test user is removed"
-        deleteUser(identityProvider)
+    then: "the resource rejects the wrong role"
+    response.withCloseable { r ->
+      assert r.status == Response.Status.FORBIDDEN.statusCode
+      return true
     }
 
-    def "Users with logs read role can retrieve syslog events"() {
-        given: "the server container is started with the syslog resource"
-        def container = startContainer(defaultConfig(), defaultServices(new SyslogService()))
-        def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
-        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    cleanup: "the test user is removed"
+    deleteUser(identityProvider)
+  }
 
-        and: "a user has the logs role"
-        def logsAccessToken = createUserToken(container, keycloakTestSetup, "read-logs", ClientRole.READ_LOGS)
+  def "Users with logs read role can retrieve syslog events"() {
+    given: "the server container is started with the syslog resource"
+    def container = startContainer(defaultConfig(), defaultServices(new SyslogService()))
+    def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
+    def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
-        when: "the user requests syslog events"
-        def response = getSyslogEvents(logsAccessToken)
+    and: "a user has the logs role"
+    def logsAccessToken = createUserToken(container, keycloakTestSetup, "read-logs", ClientRole.READ_LOGS)
 
-        then: "the resource allows the correct role"
-        response.withCloseable { r ->
-            assert r.status == Response.Status.OK.statusCode
-            return true
-        }
+    when: "the user requests syslog events"
+    def response = getSyslogEvents(logsAccessToken)
 
-        cleanup: "the test user is removed"
-        deleteUser(identityProvider)
+    then: "the resource allows the correct role"
+    response.withCloseable { r ->
+      assert r.status == Response.Status.OK.statusCode
+      return true
     }
 
-    private String createUserToken(container, KeycloakTestSetup keycloakTestSetup, String roleName, ClientRole role) {
-        def username = "syslog-test-${roleName}"
-        def user = keycloakTestSetup.createUser(
+    cleanup: "the test user is removed"
+    deleteUser(identityProvider)
+  }
+
+  private String createUserToken(container, KeycloakTestSetup keycloakTestSetup, String roleName, ClientRole role) {
+    def username = "syslog-test-${roleName}"
+    def user = keycloakTestSetup.createUser(
             MASTER_REALM,
             username,
             username,
@@ -93,23 +93,23 @@ class SyslogResourceTest extends Specification implements ManagerContainerTrait 
             "${username}@openremote.local",
             true,
             [role] as ClientRole[]
-        )
+            )
 
-        userId = user.id
-        authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, username, username)
+    userId = user.id
+    authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, username, username)
+  }
+
+  private static void deleteUser(ManagerIdentityProvider identityProvider) {
+    if (userId != null) {
+      identityProvider.deleteUser(MASTER_REALM, userId)
     }
+  }
 
-   private static void deleteUser(ManagerIdentityProvider identityProvider) {
-      if (userId != null) {
-          identityProvider.deleteUser(MASTER_REALM, userId)
-      }
-   }
-
-    private def getSyslogEvents(String accessToken) {
-        getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken)
+  private def getSyslogEvents(String accessToken) {
+    getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken)
             .path("syslog")
             .path("event")
             .request()
             .get()
-    }
+  }
 }

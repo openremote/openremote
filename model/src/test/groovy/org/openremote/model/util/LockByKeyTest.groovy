@@ -24,93 +24,93 @@ import spock.util.concurrent.PollingConditions
 import java.util.concurrent.*
 
 class LockByKeyTest extends Specification {
-    /**
-     * A controllable version of LockByKey that allows us to pause the unlock method at a critical
-     * point.
-     */
-    static class ControllableLockByKey extends LockByKey {
+  /**
+   * A controllable version of LockByKey that allows us to pause the unlock method at a critical
+   * point.
+   */
+  static class ControllableLockByKey extends LockByKey {
 
-        private final CountDownLatch pauseLatch = new CountDownLatch(1)
-        private final CountDownLatch resumeLatch = new CountDownLatch(1)
+    private final CountDownLatch pauseLatch = new CountDownLatch(1)
+    private final CountDownLatch resumeLatch = new CountDownLatch(1)
 
-        @Override
-        protected LockWrapper createLockWrapper() {
-            new LockWrapper() {
+    @Override
+    protected LockWrapper createLockWrapper() {
+      new LockWrapper() {
                 @Override
                 int removeThreadFromQueue() {
-                    def result = super.removeThreadFromQueue()
-                    if (result == 0) {
-                        // Signal that we are at the critical point
-                        pauseLatch.countDown()
-                        // Wait for the test to tell us to continue
-                        try {
-                            resumeLatch.await()
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e)
-                        }
+                  def result = super.removeThreadFromQueue()
+                  if (result == 0) {
+                    // Signal that we are at the critical point
+                    pauseLatch.countDown()
+                    // Wait for the test to tell us to continue
+                    try {
+                      resumeLatch.await()
+                    } catch (InterruptedException e) {
+                      throw new RuntimeException(e)
                     }
-                    result
+                  }
+                  result
                 }
-            }
-        }
-
-        void waitForPause() throws InterruptedException {
-            pauseLatch.await(5, TimeUnit.SECONDS)
-        }
-
-        void resume() {
-            resumeLatch.countDown()
-        }
+              }
     }
 
-    def "threads queued behind an unlock are not starved"() {
-        given:
-        def conditions = new PollingConditions(timeout: 5)
-        def lockByKey = new ControllableLockByKey()
-        def key = "testKey"
-        def executor = Executors.newFixedThreadPool(3)
-        def threadResumeLatch = new CountDownLatch(1)
-
-        when: "a thread acquires and releases the lock, pausing in the middle of unlock"
-        def future1 = executor.submit {
-            lockByKey.lock(key)
-            lockByKey.unlock(key)
-        }
-        lockByKey.waitForPause()
-
-        and: "two more threads try to acquire the lock while the first is unlocking"
-        def contenders = new CopyOnWriteArrayList<Thread>()
-        def contend = {
-            contenders.add(Thread.currentThread())
-            lockByKey.lock(key)
-            threadResumeLatch.await(5, TimeUnit.SECONDS)
-            lockByKey.unlock(key)
-        }
-        def future2 = executor.submit(contend)
-        def future3 = executor.submit(contend)
-
-        then: "both contend for the lock the first thread is about to remove"
-        conditions.eventually {
-            assert contenders.size() == 2
-            assert contenders.every {
-                it.state == Thread.State.BLOCKED || it.state == Thread.State.WAITING
-            }
-        }
-
-        when: "the first thread completes its unlock and removes the LockWrapper"
-        lockByKey.resume()
-
-        then:
-        future1.get(5, TimeUnit.SECONDS) == null
-
-        when: "the queued threads are released"
-        threadResumeLatch.countDown()
-
-        then: "neither is stuck"
-        future2.get(5, TimeUnit.SECONDS) == null
-        future3.get(5, TimeUnit.SECONDS) == null
-
-        cleanup:
-        executor.shutdownNow()
+    void waitForPause() throws InterruptedException {
+      pauseLatch.await(5, TimeUnit.SECONDS)
     }
+
+    void resume() {
+      resumeLatch.countDown()
+    }
+  }
+
+  def "threads queued behind an unlock are not starved"() {
+    given:
+    def conditions = new PollingConditions(timeout: 5)
+    def lockByKey = new ControllableLockByKey()
+    def key = "testKey"
+    def executor = Executors.newFixedThreadPool(3)
+    def threadResumeLatch = new CountDownLatch(1)
+
+    when: "a thread acquires and releases the lock, pausing in the middle of unlock"
+    def future1 = executor.submit {
+      lockByKey.lock(key)
+      lockByKey.unlock(key)
+    }
+    lockByKey.waitForPause()
+
+    and: "two more threads try to acquire the lock while the first is unlocking"
+    def contenders = new CopyOnWriteArrayList<Thread>()
+    def contend = {
+      contenders.add(Thread.currentThread())
+      lockByKey.lock(key)
+      threadResumeLatch.await(5, TimeUnit.SECONDS)
+      lockByKey.unlock(key)
+    }
+    def future2 = executor.submit(contend)
+    def future3 = executor.submit(contend)
+
+    then: "both contend for the lock the first thread is about to remove"
+    conditions.eventually {
+      assert contenders.size() == 2
+      assert contenders.every {
+        it.state == Thread.State.BLOCKED || it.state == Thread.State.WAITING
+      }
+    }
+
+    when: "the first thread completes its unlock and removes the LockWrapper"
+    lockByKey.resume()
+
+    then:
+    future1.get(5, TimeUnit.SECONDS) == null
+
+    when: "the queued threads are released"
+    threadResumeLatch.countDown()
+
+    then: "neither is stuck"
+    future2.get(5, TimeUnit.SECONDS) == null
+    future3.get(5, TimeUnit.SECONDS) == null
+
+    cleanup:
+    executor.shutdownNow()
+  }
 }

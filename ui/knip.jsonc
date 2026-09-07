@@ -45,7 +45,7 @@
   "workspaces": {
     "ui/{app,component,demo}/*": {
       "paths": {
-        "@openremote/util": ["../../util/webpack.util.js"],
+        "@openremote/util": ["../../util/rspack.util.js"],
       },
     },
     "ui/util": {},

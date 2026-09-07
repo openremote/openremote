@@ -337,6 +337,9 @@ public class User {
         + '\''
         + ", enabled="
         + enabled
+        + '\''
+        + ", attributes="
+        + (attributes != null ? Arrays.toString(attributes.toArray()) : "")
         + '}';
   }
 }

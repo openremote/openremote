@@ -17,7 +17,7 @@
     "browser": true,
     "es2021": true
   },
-  "ignorePatterns": ["build", "dist", "lib", "node_modules"],
+  "ignorePatterns": ["build", "node_modules"],
   "rules": {
     // Required because inline type imports may otherwise appear duplicated
     "import/no-duplicates": "off",

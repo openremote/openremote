@@ -47,6 +47,7 @@ import org.openremote.container.security.TokenPrincipal;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
 import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 
 /**
  * An {@link ActiveMQSecurityManager5} implementation that authenticates the user by either
@@ -88,7 +89,7 @@ public class ActiveMQORSecurityManager implements ActiveMQSecurityManager5 {
     // Create a connection principal to track the remoting connection associated with this subject
     principals.add(new RemotingConnectionPrincipal(remotingConnection));
 
-    if (password == null) {
+    if (TextUtil.isNullOrEmpty(password)) {
       // Replicate anonymous guest user
       principals.add(new UserPrincipal(ANONYMOUS_USERNAME));
       principals.add(new RolePrincipal(ANONYMOUS_USERNAME));

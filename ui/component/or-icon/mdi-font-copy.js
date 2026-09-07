@@ -16,20 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-// Script for copying @mdi/font files into dist dir
+// Script for copying @mdi/font files into build dir
 const fs = require("fs");
 const path = require("path");
 
-if (!fs.existsSync("dist")) {
-  fs.mkdirSync("dist");
+if (!fs.existsSync("build")) {
+  fs.mkdirSync("build");
 }
 
 const fontDir = path.join(path.dirname(require.resolve("@mdi/font/package.json")), "fonts");
 const cssDir = path.join(path.dirname(require.resolve("@mdi/font/package.json")), "css");
 
-if (!fs.existsSync("dist/Material Design Icons")) {
-  fs.mkdirSync("dist/Material Design Icons", { recursive: true });
+if (!fs.existsSync("build/Material Design Icons")) {
+  fs.mkdirSync("build/Material Design Icons", { recursive: true });
 }
 
-fs.cpSync(fontDir, "./dist/Material Design Icons/fonts", { recursive: true });
-fs.cpSync(cssDir, "./dist/Material Design Icons/css", { recursive: true });
+fs.cpSync(fontDir, "./build/Material Design Icons/fonts", { recursive: true });
+fs.cpSync(cssDir, "./build/Material Design Icons/css", { recursive: true });

@@ -3,15 +3,15 @@
   "version": "1.28.0-snapshot",
   "description": "Build Util",
   "author": "OpenRemote",
-  "main": "webpack.util.js",
+  "main": "rspack.util.js",
   "bin": {
     "orutil": "./cli.js"
   },
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@custom-elements-manifest/analyzer": "^0.11.0",
-    "@rspack/cli": "~1.7.10",
-    "@rspack/core": "~1.7.10",
+    "@rspack/cli": "~2.1.10",
+    "@rspack/core": "~2.1.10",
     "@types/react": "^18",
     "@typescript-eslint/eslint-plugin": "8.40.0",
     "@typescript-eslint/parser": "8.40.0",

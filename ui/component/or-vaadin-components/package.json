@@ -2,28 +2,34 @@
   "name": "@openremote/or-vaadin-components",
   "version": "1.28.0-snapshot",
   "description": "Vaadin Components packaged as components aligned with the OpenRemote design system",
-  "customElements": "custom-elements.json",
-  "main": "dist/umd/index.bundle.js",
+  "customElements": "build/custom-elements.json",
+  "main": "build/dist/umd/index.bundle.js",
   "exports": {
-    ".": "./lib/index.js",
-    "./*": "./lib/*.js",
+    ".": "./build/lib/index.js",
+    "./*": "./build/lib/*.js",
     "./jsx": {
-      "types": "./custom-elements-jsx.d.ts"
+      "types": "./build/custom-elements-jsx.d.ts"
     }
   },
   "typesVersions": {
     "*": {
       "*": [
-        "lib/*"
+        "build/lib/*"
       ]
     }
   },
+  "files": [
+    "build/lib/**",
+    "build/dist/**",
+    "build/custom-elements.json",
+    "build/custom-elements-jsx.d.ts"
+  ],
   "scripts": {
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
+    "clean": "npx tsc -b --clean && npx shx rm -rf build",
     "analyze": "npx cem analyze --config custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
     "test": "npx tsc -b && npx playwright test",
-    "prepack": "npx tsc -b"
+    "prepack": "npx tsc -b && npx rspack"
   },
   "author": "OpenRemote",
   "repository": "https://github.com/openremote/openremote",
@@ -58,5 +64,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "@openremote/util": "workspace:*"
   }
 }

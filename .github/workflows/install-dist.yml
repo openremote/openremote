@@ -35,7 +35,7 @@ jobs:
         uses: openremote/openremote/.github/actions/check-if-main-repo@5beec5454f28eda1dd25331c9ce1d5b430266f7e
 
       - name: Set up JDK 21 and Gradle cache
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: "temurin"
           java-version: "21"
@@ -91,11 +91,12 @@ jobs:
           path: |
             ui/component/model/src/model.ts
             ui/component/rest/src/restclient.ts
-            ui/component/**/custom-elements.json
-            ui/component/**/custom-elements-jsx.d.ts
-            ui/component/**/dist
-            ui/component/**/lib
-            ui/component/**/tsconfig.tsbuildinfo
+            ui/component/*/build/lib
+            ui/component/*/build/dist
+            ui/component/*/build/custom-elements.json
+            ui/component/*/build/custom-elements-jsx.d.ts
+            ui/component/*/build/tsconfig.tsbuildinfo
+            ui/component/or-icon/build/Material Design Icons
             ui/component/**/package.json
 
       - name: Archive UI app build
@@ -104,8 +105,8 @@ jobs:
           name: or-ui-app-build
           if-no-files-found: error
           path: |
-            ui/app/**/dist
-            ui/app/**/lib
+            ui/app/*/build/dist
+            ui/app/*/build/lib
             ui/app/**/package.json
 
       - name: Archive UI util build

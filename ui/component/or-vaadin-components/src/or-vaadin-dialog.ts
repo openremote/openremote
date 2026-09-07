@@ -19,7 +19,8 @@
 import { Dialog } from "@vaadin/dialog";
 import type { OrVaadinComponent } from "./util";
 import { customElement } from "lit/decorators.js";
-import { type LitElement, css } from "lit";
+import { type LitElement, type TemplateResult, css, render } from "lit";
+import { Util } from "@openremote/core";
 
 /**
  * Vaadin uses custom directives for rendering the dialog content.
@@ -36,6 +37,32 @@ export {
 } from "@vaadin/dialog/lit";
 
 type WithLit<T> = T & typeof LitElement;
+
+/**
+ * Helper function for rendering the `<or-vaadin-dialog>` dynamically, to "show a dialog on command".
+ * This saves initial render time for components, and prevents state handling on the consumer side.
+ * `showDialog()` appends (and updates) dialogs to the host element when called,
+ * and automatically removes the element upon closing the dialog.
+ * @param host - Host element (often shadow root) to append the dialog container as a child.
+ * @param dialog - A {@link TemplateResult} to render. It is required to contain a `<or-vaadin-dialog>` tag.
+ */
+export function showDialog(host: Node, dialog: TemplateResult): OrVaadinDialog | undefined {
+  const container = document.createElement("div");
+  container.id = `dialog-${Util.generateUniqueUUID()}`;
+  render(dialog, container); // Render Lit template inside the container
+
+  const dialogElem = container.querySelector("or-vaadin-dialog") as OrVaadinDialog | null;
+  if (dialogElem) {
+    dialogElem.open();
+    dialogElem.addEventListener("closed", () => container.remove());
+  } else {
+    // As no or-vaadin-dialog is present, we can remove the HTMLElement
+    container.remove();
+    return;
+  }
+  host.appendChild(container);
+  return dialogElem;
+}
 
 @customElement("or-vaadin-dialog")
 export class OrVaadinDialog extends (Dialog as new () => Dialog & LitElement) implements OrVaadinComponent {
