@@ -482,15 +482,6 @@ export class Manager implements EventProviderFactory {
       defaultNS: "app",
       fallbackNS: "or",
       ns: this.config.loadTranslations,
-      interpolation: {
-        format: (value, format, lng) => {
-          if (format === "uppercase") return value.toUpperCase();
-          if (value instanceof Date) {
-            return moment(value).format(format);
-          }
-          return value;
-        },
-      },
       backend: {
         loadPath: (langs: string[], namespaces: string[]) => {
           if (namespaces.length === 1 && namespaces[0] === "or") {

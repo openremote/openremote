@@ -30,9 +30,35 @@ interface CustomElement {
   readonly isConnected: boolean;
 }
 
+export interface SubscribedElement extends CustomElement {
+  set assetIds(value: string[] | undefined);
+  get assetIds(): string[] | undefined;
+  set attributeRefs(value: AttributeRef[] | undefined);
+  get attributeRefs(): AttributeRef[] | undefined;
+  _connectRequested: boolean;
+  _subscriptionIds?: string[];
+  _assetIds?: string[];
+  _attributeRefs?: AttributeRef[];
+  _status: EventProviderStatus;
+  connectEvents(): void;
+  disconnectEvents(): void;
+  _doConnect(): Promise<void>;
+  readonly eventsConnected: boolean;
+  _addEventSubscriptions(): Promise<void>;
+  _removeEventSubscriptions(): void;
+  _refreshEventSubscriptions(): void;
+  _sendEvent(event: SharedEvent): void;
+  _sendEventWithReply<U extends SharedEvent, V extends SharedEvent>(event: U): Promise<V>;
+  onEventsConnect(): void;
+  onEventsDisconnect(): void;
+  _onEvent(event: SharedEvent): void;
+  _onEventsConnect(): void;
+  _onEventsDisconnect(): void;
+}
+
 export const subscribe =
   (eventProviderFactory: EventProviderFactory) =>
-  <T extends Constructor<CustomElement>>(base: T) =>
+  <T extends Constructor<CustomElement>>(base: T): T & Constructor<SubscribedElement> =>
     class extends base {
       public _connectRequested = false;
       public _subscriptionIds?: string[];

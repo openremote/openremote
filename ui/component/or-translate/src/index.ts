@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { translate } from "./translate-mixin";
-import i18next, { type InitOptions, type TOptions } from "i18next";
+import i18next, { type TOptions } from "i18next";
 import { html, css } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
@@ -42,7 +42,7 @@ export class OrTranslate extends translate(i18next)(OrElement) {
   public value?: string;
 
   @property({ type: Object })
-  public options?: TOptions<InitOptions>;
+  public options?: TOptions;
 
   protected render() {
     return html` ${this._getTranslatedValue()} `;
