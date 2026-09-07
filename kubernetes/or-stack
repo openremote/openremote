@@ -16,6 +16,7 @@ STACK_NAME="${OR_STACK_NAME:-}"
 KUBE_CONTEXT="${OR_STACK_KUBE_CONTEXT:-}"
 TARGET="${OR_STACK_TARGET:-}"
 EXPOSURE="${OR_STACK_EXPOSURE:-haproxy}"
+DNS_MODE="${OR_STACK_DNS:-none}"
 HOSTNAME_VALUE="${OR_STACK_HOSTNAME:-}"
 CERTIFICATE_ARN="${OR_STACK_CERTIFICATE_ARN:-}"
 VALUES_DIR="${OR_STACK_VALUES_DIR:-}"
@@ -62,6 +63,8 @@ Options:
                         Required by apply.
   --exposure <mode>     Public exposure: haproxy, ingress, or none. Env:
                         OR_STACK_EXPOSURE. Default: haproxy for every target.
+  --dns <mode>          DNS ownership: none or external-dns. Env: OR_STACK_DNS.
+                        Default: none.
   --hostname <host>     Public hostname passed to Manager and Keycloak.
                         Env: OR_STACK_HOSTNAME. Required for public EKS
                         exposure; otherwise defaults to localhost.
@@ -96,8 +99,10 @@ HAProxy is the default exposure for local and EKS targets. On EKS it creates a
 per-stack internet-facing NLB; locally it uses the cluster's LoadBalancer
 support. Select ingress explicitly to route through a private per-stack HAProxy
 gateway (the EKS profile exposes it through the cluster's shared OpenRemote
-ALB), or none for an internal-only stack. This command does not create DNS
-records, call AWS APIs, or manage ACM certificates.
+ALB), or none for an internal-only stack. With --dns external-dns, this command
+labels and annotates the stack's public routing resource for a separately
+installed ExternalDNS controller. It never calls a DNS provider API itself and
+does not manage ACM certificates.
 EOF
 }
 
@@ -154,6 +159,11 @@ parse_arguments() {
       --exposure)
         [ "$#" -ge 2 ] || die "Option --exposure requires a value."
         EXPOSURE="$2"
+        shift 2
+        ;;
+      --dns)
+        [ "$#" -ge 2 ] || die "Option --dns requires a value."
+        DNS_MODE="$2"
         shift 2
         ;;
       --hostname)
@@ -227,6 +237,7 @@ validate_common_options() {
 validate_apply_options() {
   validate_target
   validate_exposure
+  validate_dns_mode
 
   if [ -z "$HOSTNAME_VALUE" ]; then
     if [ "$TARGET" = "local" ] || [ "$EXPOSURE" = "none" ]; then
@@ -258,6 +269,13 @@ validate_apply_options() {
     [ "$HTTP_PORT" != "$HTTPS_PORT" ] || die "HAProxy HTTP and HTTPS ports must be different."
   elif [ "$HTTP_PORT_CONFIGURED" = true ] || [ "$HTTPS_PORT_CONFIGURED" = true ]; then
     die "Options --http-port and --https-port are only valid with HAProxy exposure."
+  fi
+
+  if [ "$DNS_MODE" = "external-dns" ]; then
+    [ "$EXPOSURE" != "none" ] || die \
+      "ExternalDNS ownership requires haproxy or ingress exposure."
+    [ "$HOSTNAME_VALUE" != "localhost" ] && [[ "$HOSTNAME_VALUE" == *.* ]] || die \
+      "ExternalDNS ownership requires a non-local, fully qualified hostname."
   fi
   validate_timeout
 
@@ -307,6 +325,16 @@ validate_exposure() {
   esac
 }
 
+validate_dns_mode() {
+  case "$DNS_MODE" in
+    none|external-dns)
+      ;;
+    *)
+      die "Unsupported DNS mode '$DNS_MODE'; expected none or external-dns."
+      ;;
+  esac
+}
+
 require_kube_context() {
   local configured_context
 
@@ -328,6 +356,11 @@ stack_namespace_target() {
 stack_namespace_exposure() {
   kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
     -o 'jsonpath={.metadata.labels.openremote\.io/exposure}'
+}
+
+stack_namespace_dns() {
+  kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    -o 'jsonpath={.metadata.labels.openremote\.io/dns}'
 }
 
 ensure_namespace() {
@@ -364,6 +397,7 @@ ensure_namespace() {
     "openremote.io/stack=$STACK_NAME" \
     "openremote.io/target=$TARGET" \
     "openremote.io/exposure=$EXPOSURE" \
+    "openremote.io/dns=$DNS_MODE" \
     --overwrite >/dev/null
 }
 
@@ -494,7 +528,14 @@ apply_stack() {
       --set-string "or.managerHost=manager.$STACK_NAME.svc.cluster.local"
       --set-string "or.keycloakHost=keycloak.$STACK_NAME.svc.cluster.local"
       --set-string "or.nameserver=$CLUSTER_DNS"
+      --set dns.enabled=false
     )
+    if [ "$DNS_MODE" = "external-dns" ]; then
+      proxy_args+=(
+        --set dns.enabled=true
+        --set-string "dns.hostname=$HOSTNAME_VALUE"
+      )
+    fi
     if [ "$EXPOSURE" = "haproxy" ]; then
       proxy_args+=(
         --set-string "or.httpsForwardedPort=$HTTPS_PORT"
@@ -523,11 +564,19 @@ apply_stack() {
     if [ "$TARGET" = "eks" ]; then
       log "HTTPS routing is requested through the cluster's shared OpenRemote ALB and this stack's private HAProxy gateway:"
       printf '  https://%s/manager\n' "$HOSTNAME_VALUE"
-      log "DNS records and certificate lifecycle remain external to this command."
+      if [ "$DNS_MODE" = "external-dns" ]; then
+        log "The proxy Ingress declares '$HOSTNAME_VALUE' for the cluster's ExternalDNS controller."
+      else
+        log "DNS records and certificate lifecycle remain external to this command."
+      fi
     else
       log "Routing is requested through the cluster's configured Ingress controller and this stack's private HAProxy gateway:"
       printf '  Host: %s, path: /manager\n' "$HOSTNAME_VALUE"
-      log "Ingress controller, DNS, and TLS configuration remain external to this command."
+      if [ "$DNS_MODE" = "external-dns" ]; then
+        log "The proxy Ingress declares '$HOSTNAME_VALUE' for the cluster's ExternalDNS controller."
+      else
+        log "Ingress controller, DNS, and TLS configuration remain external to this command."
+      fi
     fi
   elif [ "$EXPOSURE" = "haproxy" ]; then
     log "HAProxy is exposed through the stack's 'proxy' LoadBalancer Service."
@@ -539,7 +588,11 @@ apply_stack() {
     log "Inspect its external address with:"
     printf '  kubectl --context %q --namespace %q get service proxy\n' \
       "$KUBE_CONTEXT" "$STACK_NAME"
-    log "DNS records and production certificate issuance remain external to this command."
+    if [ "$DNS_MODE" = "external-dns" ]; then
+      log "The proxy LoadBalancer Service declares '$HOSTNAME_VALUE' for the cluster's ExternalDNS controller."
+    else
+      log "DNS records and production certificate issuance remain external to this command."
+    fi
   else
     log "External routing is disabled for this stack."
   fi
@@ -685,6 +738,7 @@ destroy_stack() {
 }
 
 show_stack_status() {
+  local dns_mode
   local exposure
   local proxy_address
   local proxy_certificate
@@ -697,9 +751,11 @@ show_stack_status() {
 
   target="$(stack_namespace_target)"
   exposure="$(stack_namespace_exposure)"
+  dns_mode="$(stack_namespace_dns)"
   log "Configuration"
   printf 'Target: %s\n' "${target:-unknown}"
   printf 'Exposure: %s\n' "${exposure:-unknown}"
+  printf 'DNS: %s\n' "${dns_mode:-none}"
 
   log "Helm releases"
   helm list --kube-context "$KUBE_CONTEXT" --namespace "$STACK_NAME"

@@ -6,10 +6,13 @@ TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KUBERNETES_DIR="$(cd "$TEST_DIR/.." && pwd)"
 TEST_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/or-eks-cluster-test.XXXXXX")"
 CALL_LOG="$TEST_TEMP_DIR/calls.log"
+IAM_CONFIG_LOG="$TEST_TEMP_DIR/iam-config.log"
 TEST_CNI_ROLE_ARN="arn:aws:iam::123456789012:role/test-vpc-cni"
 TEST_DEFAULT_VPC_CNI_CONFIGURATION='{}'
+EXTERNAL_DNS_ROUTE53_ROLE_TEMPLATE="$KUBERNETES_DIR/cluster/eks/external-dns-route53-role.yaml"
 
 cleanup_test() {
+  cleanup
   rm -rf "$TEST_TEMP_DIR"
 }
 
@@ -63,6 +66,30 @@ aws_eks() {
   esac
 }
 
+eksctl_with_profile() {
+  local argument
+  local config_file=""
+  local previous_argument=""
+
+  log_call eksctl "$@"
+  case " $* " in
+    *" get iamserviceaccount "*)
+      printf '%s\n' "${OR_EKS_TEST_IAM_SERVICE_ACCOUNTS:-[]}"
+      ;;
+    *" create iamserviceaccount "*|*" update iamserviceaccount "*)
+      for argument in "$@"; do
+        if [ "$previous_argument" = "--config-file" ]; then
+          config_file="$argument"
+          break
+        fi
+        previous_argument="$argument"
+      done
+      [ -n "$config_file" ] || fail "IAM service account command has no config file"
+      cp "$config_file" "$IAM_CONFIG_LOG"
+      ;;
+  esac
+}
+
 helm() {
   log_call helm "$@"
   case " $* " in
@@ -75,6 +102,13 @@ helm() {
 kubectl() {
   log_call kubectl "$@"
   case " $* " in
+    *" get serviceaccount external-dns "*)
+      printf '%s' "${OR_EKS_TEST_EXTERNAL_DNS_IRSA_ROLE_ARN:-arn:aws:iam::123456789012:role/openremote-test-cluster-eu-west-1-external-dns}"
+      ;;
+    *" get deployment openremote-external-dns "*)
+      printf '%s\n' '--source=service' '--source=ingress' \
+        '--txt-owner-id=test-cluster-eu-west-1' '--dry-run'
+      ;;
     *" get serviceaccount aws-node "*)
       printf '%s' "${OR_EKS_TEST_SERVICE_ACCOUNT_ROLE_ARN-$TEST_CNI_ROLE_ARN}"
       ;;
@@ -100,10 +134,105 @@ assert_not_contains() {
   fi
 }
 
+set_external_dns_test_configuration() {
+  MANAGE_EXTERNAL_DNS=true
+  EXTERNAL_DNS_HOSTED_ZONE_ID=Z0123456789
+  EXTERNAL_DNS_DOMAIN=example.com
+  EXTERNAL_DNS_ASSUME_ROLE_ARN=arn:aws:iam::210987654321:role/openremote-route53
+  EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL_ID=test-external-id
+  EXTERNAL_DNS_OWNER_ID=test-cluster-eu-west-1
+  EXTERNAL_DNS_IRSA_ROLE_NAME=openremote-test-cluster-eu-west-1-external-dns
+  EXTERNAL_DNS_DRY_RUN=true
+}
+
 CLUSTER_NAME=test-cluster
 AWS_REGION_NAME=eu-west-1
 AWS_PROFILE_NAME=
 KUBE_CONTEXT=test-cluster@eu-west-1
+
+set_external_dns_test_configuration
+validate_external_dns_configuration
+
+: > "$CALL_LOG"
+: > "$IAM_CONFIG_LOG"
+reconcile_external_dns
+assert_contains $'eksctl\tget\tiamserviceaccount'
+assert_contains $'eksctl\tcreate\tiamserviceaccount'
+assert_contains $'--include\tkube-system/external-dns'
+assert_contains $'helm\tupgrade\t--install\topenremote-external-dns\texternal-dns/external-dns'
+assert_contains $'--version\t1.21.1'
+assert_contains $'image.tag=v0.22.0'
+assert_contains $'policy=sync'
+assert_contains $'registry=txt'
+assert_contains $'txtOwnerId=test-cluster-eu-west-1'
+assert_contains $'labelFilter=openremote.io/managed-dns=true'
+assert_contains $'extraArgs.aws-zone-type=public'
+assert_contains $'extraArgs.zone-id-filter=Z0123456789'
+assert_contains $'domainFilters[0]=example.com'
+assert_contains $'extraArgs.aws-assume-role=arn:aws:iam::210987654321:role/openremote-route53'
+assert_contains $'extraArgs.aws-assume-role-external-id=test-external-id'
+assert_contains $'extraArgs.dry-run=true'
+grep -F -- 'roleName: "openremote-test-cluster-eu-west-1-external-dns"' \
+  "$IAM_CONFIG_LOG" >/dev/null || fail "IRSA config does not use the deterministic role name"
+grep -F -- 'Action:' "$IAM_CONFIG_LOG" >/dev/null || fail \
+  "IRSA config has no inline policy"
+grep -F -- '- sts:AssumeRole' "$IAM_CONFIG_LOG" >/dev/null || fail \
+  "IRSA config does not permit assuming the DNS-account role"
+grep -F -- 'Resource: "arn:aws:iam::210987654321:role/openremote-route53"' \
+  "$IAM_CONFIG_LOG" >/dev/null || fail "IRSA policy is not scoped to the DNS-account role"
+
+: > "$CALL_LOG"
+OR_EKS_TEST_IAM_SERVICE_ACCOUNTS='[{"metadata":{"name":"external-dns"}}]' \
+  reconcile_external_dns
+assert_contains $'eksctl\tupdate\tiamserviceaccount'
+assert_not_contains $'eksctl\tcreate\tiamserviceaccount'
+
+: > "$CALL_LOG"
+EXTERNAL_DNS_DRY_RUN=false \
+EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL_ID= \
+OR_EKS_TEST_IAM_SERVICE_ACCOUNTS='[{"metadata":{"name":"external-dns"}}]' \
+  reconcile_external_dns
+assert_not_contains 'extraArgs.aws-assume-role-external-id='
+assert_not_contains 'extraArgs.dry-run=true'
+
+: > "$CALL_LOG"
+MANAGE_EXTERNAL_DNS=false reconcile_external_dns
+assert_not_contains $'eksctl\tget\tiamserviceaccount'
+assert_not_contains $'helm\tupgrade'
+
+if (set_external_dns_test_configuration; EXTERNAL_DNS_DOMAIN=; \
+    validate_external_dns_configuration) >/dev/null 2>&1; then
+  fail "Incomplete ExternalDNS configuration was accepted"
+fi
+
+grep -F -- 'route53:ChangeResourceRecordSetsNormalizedRecordNames' \
+  "$EXTERNAL_DNS_ROUTE53_ROLE_TEMPLATE" >/dev/null || fail \
+    "DNS-account role does not restrict writable record names"
+grep -F -- 'route53:ChangeResourceRecordSetsRecordTypes' \
+  "$EXTERNAL_DNS_ROUTE53_ROLE_TEMPLATE" >/dev/null || fail \
+    "DNS-account role does not restrict writable record types"
+grep -F -- 'aws:PrincipalArn:' "$EXTERNAL_DNS_ROUTE53_ROLE_TEMPLATE" >/dev/null || fail \
+  "DNS-account role does not restrict its cluster-account principal"
+grep -F -- 'arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}' \
+  "$EXTERNAL_DNS_ROUTE53_ROLE_TEMPLATE" >/dev/null || fail \
+    "DNS-account role does not restrict writes to the configured hosted zone"
+
+: > "$CALL_LOG"
+external_dns_status_output="$(show_external_dns_status)"
+assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\tget\tdeployments,pods'
+grep -Fx -- 'ExternalDNS TXT owner ID: test-cluster-eu-west-1' \
+  <<< "$external_dns_status_output" >/dev/null || fail \
+    "ExternalDNS status did not report the deployed TXT owner ID"
+grep -Fx -- 'ExternalDNS dry run: true' <<< "$external_dns_status_output" >/dev/null || fail \
+  "ExternalDNS status did not report dry-run mode"
+
+: > "$CALL_LOG"
+MANAGE_EXTERNAL_DNS=true uninstall_external_dns
+assert_contains $'helm\tuninstall\topenremote-external-dns'
+
+: > "$CALL_LOG"
+MANAGE_EXTERNAL_DNS=false uninstall_external_dns
+assert_not_contains $'helm\tuninstall\topenremote-external-dns'
 
 : > "$CALL_LOG"
 reconcile_load_balancer_controller

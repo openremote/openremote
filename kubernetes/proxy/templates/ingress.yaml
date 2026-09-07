@@ -5,9 +5,17 @@ metadata:
   name: {{ include "proxy.fullname" . }}
   labels:
     {{- include "proxy.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
+    {{- if .Values.dns.enabled }}
+    openremote.io/managed-dns: "true"
+    {{- end }}
+  {{- if or .Values.ingress.annotations .Values.dns.enabled }}
   annotations:
+    {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- if .Values.dns.enabled }}
+    external-dns.kubernetes.io/hostname: {{ required "dns.hostname is required when dns.enabled is true" .Values.dns.hostname | quote }}
+    {{- end }}
   {{- end }}
 spec:
   {{- with .Values.ingress.className }}

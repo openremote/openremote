@@ -97,6 +97,7 @@ test_local_apply() {
   assert_contains $'kubectl\t--context\ttest-context\tlabel\tnamespace\tstack-a'
   assert_contains $'openremote.io/target=local'
   assert_contains $'openremote.io/exposure=haproxy'
+  assert_contains $'openremote.io/dns=none'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tkube-system\tget\tservice\tkube-dns'
   assert_contains $'helm\tupgrade\t--install\tor-setup'
   assert_contains "$KUBERNETES_DIR/stack/targets/local/or-setup.yaml"
@@ -109,6 +110,7 @@ test_local_apply() {
   assert_contains $'helm\tupgrade\t--install\tkeycloak'
   assert_contains $'--set-string\tor.hostname=stack-a.localhost'
   assert_not_contains $'--set-string\tingress.hostname=stack-a.localhost'
+  assert_not_contains $'--set\tdns.enabled=true'
   assert_not_contains 'certificate-arn='
   assert_contains $'helm\tupgrade\t--install\tmanager'
   assert_contains "$values_dir/manager.yaml"
@@ -167,6 +169,7 @@ test_eks_apply() {
     --kube-context test-context \
     --target eks \
     --exposure ingress \
+    --dns external-dns \
     --hostname stack-eks.example.com \
     --certificate-arn "$TEST_CERTIFICATE_ARN"
 
@@ -185,6 +188,9 @@ test_eks_apply() {
   assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/proxy.yaml"
   assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/eks/proxy.yaml"
   assert_contains $'--set-string\tingress.hostname=stack-eks.example.com'
+  assert_contains $'openremote.io/dns=external-dns'
+  assert_contains $'--set\tdns.enabled=true'
+  assert_contains $'--set-string\tdns.hostname=stack-eks.example.com'
   assert_contains "certificate-arn=$TEST_CERTIFICATE_ARN"
   assert_contains $'helm\tupgrade\t--install\tproxy'
   assert_contains $'--set-string\tor.managerHost=manager.stack-eks.svc.cluster.local'
@@ -197,6 +203,7 @@ test_eks_haproxy_apply() {
     --name stack-eks-proxy \
     --kube-context test-context \
     --target eks \
+    --dns external-dns \
     --hostname stack-eks-proxy.example.com
 
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tkube-system\tget\tdeployment\taws-load-balancer-controller'
@@ -205,6 +212,8 @@ test_eks_haproxy_apply() {
   assert_contains $'helm\tupgrade\t--install\tproxy'
   assert_contains "$KUBERNETES_DIR/stack/exposures/haproxy/eks/proxy.yaml"
   assert_contains $'--set-string\tor.hostname=stack-eks-proxy.example.com'
+  assert_contains $'--set\tdns.enabled=true'
+  assert_contains $'--set-string\tdns.hostname=stack-eks-proxy.example.com'
   assert_contains $'--set-string\tor.managerHost=manager.stack-eks-proxy.svc.cluster.local'
 }
 
@@ -237,6 +246,8 @@ test_status() {
     "Status did not show the stored target"
   grep -Fx -- "Exposure: haproxy" <<< "$output" >/dev/null || fail \
     "Status did not show the stored exposure"
+  grep -Fx -- "DNS: none" <<< "$output" >/dev/null || fail \
+    "Status did not show the stored DNS mode"
   assert_contains $'helm\tlist\t--kube-context\ttest-context\t--namespace\tstack-a'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tdeployments,statefulsets,pods'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tservices,ingresses,networkpolicies'
@@ -418,6 +429,21 @@ test_validation() {
   if run_stack apply --name stack-a --kube-context test-context --target local \
     --exposure unknown >/dev/null 2>&1; then
     fail "Unknown exposure was accepted"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
+    --dns unknown >/dev/null 2>&1; then
+    fail "Unknown DNS mode was accepted"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
+    --exposure none --dns external-dns --hostname stack-a.example.com >/dev/null 2>&1; then
+    fail "ExternalDNS ownership was accepted without a public endpoint"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
+    --dns external-dns >/dev/null 2>&1; then
+    fail "ExternalDNS ownership accepted the default localhost hostname"
   fi
 
   if run_stack apply --name stack-a --kube-context test-context --target local \

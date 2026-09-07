@@ -29,7 +29,9 @@ The stack command provides apply, inspection, credential retrieval, uninstall,
 and explicit destruction operations. Target platform and public exposure are
 separate choices. `--target` selects local or EKS storage and cluster
 requirements; `--exposure` selects `haproxy`, `ingress`, or `none`. HAProxy is
-the default exposure for both targets.
+the default exposure for both targets. DNS ownership is a separate, portable
+choice: `--dns external-dns` declares the hostname to a compatible cluster
+controller, while the default `--dns none` leaves it externally managed.
 
 To install or upgrade a local stack using the current Docker Desktop, kind, or
 kubeadm context:
@@ -254,6 +256,42 @@ StorageClass currently use `Delete`.
 For the same reason, `apply` refuses to adopt a pre-existing namespace that
 does not already have the matching stack label. This prevents an unrelated
 namespace from later becoming eligible for stack destruction.
+
+### DNS ownership
+
+`or-stack` does not call Route 53 or any other DNS provider. With the default
+`--dns none`, it adds no DNS metadata. With `--dns external-dns`, it places the
+GA `external-dns.kubernetes.io/hostname` annotation and the
+`openremote.io/managed-dns=true` selection label on exactly one resource:
+
+- the proxy `Ingress` for ingress exposure;
+- the proxy `LoadBalancer` Service for HAProxy exposure.
+
+The cluster's ExternalDNS installation must watch `Ingress` and `Service`
+sources and select that label. The managed EKS setup is documented in
+[`cluster/eks/README.md`](cluster/eks/README.md). A bring-your-own controller on
+another Kubernetes platform can use the same contract. ExternalDNS `0.22` or
+later understands the GA annotation prefix by default; an older controller
+must be configured with the matching annotation prefix.
+
+DNS ownership requires public exposure and a fully qualified, non-local
+hostname. For example:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context cluster@eu-west-1 \
+  --target eks \
+  --hostname stack-a.example.com \
+  --dns external-dns
+```
+
+The DNS mode is recorded in the stack namespace and shown by
+`or-stack status`. Unlike target or exposure, it may be changed deliberately: reapply
+with `--dns none` to remove the annotation and return the hostname to external
+management. A TXT-registry controller using `sync` policy then removes only
+records it owns. Wait for that reconciliation before creating a manual record
+with the same name or destroying the cluster.
 
 ## TL;DR
 

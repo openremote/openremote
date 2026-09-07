@@ -4,6 +4,6 @@ description: A Helm chart for deploying OR HAProxy in Kubernetes
 
 type: application
 
-version: 0.3.0
+version: 0.4.0
 
 appVersion: "3.2.19.0"

@@ -62,8 +62,13 @@ default exposure and creates one internet-facing NLB per stack:
   --name stack-a \
   --kube-context <cluster-name>@eu-west-1 \
   --target eks \
-  --hostname stack-a.example.com
+  --hostname stack-a.example.com \
+  --dns external-dns
 ```
+
+Omit `--dns external-dns` when the hostname is managed outside Kubernetes. The
+managed Route 53 controller and its cross-account IAM bootstrap are documented
+in [`cluster/eks/README.md`](cluster/eks/README.md).
 
 The EKS target verifies that the EBS CSI driver and `openremote-ebs`
 StorageClass exist. It also requires the Amazon VPC CNI NetworkPolicy
@@ -98,12 +103,13 @@ kubectl --context <cluster-name>@eu-west-1 \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 ```
 
-Point the stack hostname at that address. DNS automation is a later phase; the
-portable `or-stack` command intentionally makes no AWS calls. HAProxy manages
-its own TLS certificate and keeps Certbot account/certificate data on its
-retained `proxy` PVC. Because the NLB address is not known until after the Pod
-first starts, restart the Deployment once the initial DNS record resolves to
-trigger a fresh certificate attempt:
+With `--dns external-dns`, the proxy Service declares the hostname and the
+cluster controller points it at that address. The portable `or-stack` command
+still makes no AWS calls. Without DNS ownership, create the record externally.
+HAProxy manages its own TLS certificate and keeps Certbot account/certificate
+data on its retained `proxy` PVC. Because the NLB address is not known until
+after the Pod first starts, restart the Deployment once the initial DNS record
+resolves to trigger a fresh certificate attempt:
 
 ```bash
 kubectl --context <cluster-name>@eu-west-1 \
@@ -140,7 +146,8 @@ ALB and a private gateway in each stack namespace:
   --target eks \
   --exposure ingress \
   --hostname stack-a.example.com \
-  --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example
+  --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example \
+  --dns external-dns
 ```
 
 Ingress mode additionally validates the shared `openremote-alb` IngressClass
@@ -193,10 +200,12 @@ kubectl --context <cluster-name>@eu-west-1 \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 ```
 
-Create a DNS record for each stack hostname that points to that ALB. The
-EKS target configures listeners on ports 80 and 443, while `or-stack` adds the
-certificate supplied through `--certificate-arn` to the stack's proxy Ingress.
-It deliberately does not create Route 53 records or ACM certificates.
+With `--dns external-dns`, the stack Ingress declares its hostname and the
+cluster controller creates the record that points to the ALB. Without that
+option, create the record externally. The EKS target configures listeners on
+ports 80 and 443, while `or-stack` adds the certificate supplied through
+`--certificate-arn` to the stack's proxy Ingress. It deliberately does not call
+Route 53 itself or create ACM certificates.
 
 Certificate annotations are merged across the shared IngressGroup, allowing
 the ALB to use SNI when stacks use different certificates. A wildcard

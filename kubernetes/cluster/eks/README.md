@@ -2,9 +2,10 @@
 
 `kubernetes/or-eks-cluster` manages the shared EKS cluster, native VPC CNI
 NetworkPolicy enforcement, its shared AWS Load Balancer Controller and ALB
-IngressClass, and the `openremote-ebs` StorageClass. It does not deploy or
-delete OpenRemote stacks, stack namespaces, certificates, DNS records, or stack
-data volumes.
+IngressClass, the `openremote-ebs` StorageClass, and optionally ExternalDNS. It
+does not deploy or delete OpenRemote stacks, stack namespaces, certificates, or
+stack data volumes. ExternalDNS changes records only for stack resources that
+explicitly opt in.
 
 Use `kubernetes/or-stack` to install and inspect namespaced OpenRemote stacks
 after the shared cluster is ready.
@@ -32,6 +33,27 @@ export OR_EKS_KUBE_CONTEXT=openremote-test@eu-west-1
 export OR_EKS_LOAD_BALANCER_CONTROLLER_CHART_VERSION=1.14.0
 ```
 
+ExternalDNS is disabled when no DNS configuration is supplied. Its complete
+managed configuration is:
+
+```bash
+export OR_EKS_EXTERNAL_DNS_HOSTED_ZONE_ID=Z0123456789
+export OR_EKS_EXTERNAL_DNS_DOMAIN=example.com
+export OR_EKS_EXTERNAL_DNS_ASSUME_ROLE_ARN=arn:aws:iam::123456789012:role/openremote-external-dns
+export OR_EKS_EXTERNAL_DNS_OWNER_ID=210987654321-openremote-test-eu-west-1
+
+# Optional
+export OR_EKS_EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL_ID=replace-with-a-random-value
+export OR_EKS_EXTERNAL_DNS_IRSA_ROLE_NAME=openremote-openremote-test-eu-west-1-external-dns
+export OR_EKS_EXTERNAL_DNS_CHART_VERSION=1.21.1
+export OR_EKS_EXTERNAL_DNS_IMAGE_TAG=v0.22.0
+```
+
+The hosted-zone ID, domain, assumed role ARN, and owner ID form one atomic
+configuration: if any is supplied, all four are required. Keep the owner ID
+stable and unique among every ExternalDNS instance that can access the zone.
+Changing it after records exist abandons the old TXT ownership records.
+
 Command-line options override environment variables. Run
 `kubernetes/or-eks-cluster --help` for the complete command reference.
 
@@ -57,10 +79,10 @@ kubernetes/or-eks-cluster status --name openremote-test
 
 `apply` currently enables NetworkPolicy enforcement in the existing managed
 VPC CNI configuration, reconciles the AWS Load Balancer Controller and its
-CRDs, applies the shared `openremote-alb` IngressClass, and applies the
-`openremote-ebs` StorageClass used by OpenRemote stack PVCs. It intentionally
-does not attempt to mutate node-group infrastructure; that reconciliation will
-be implemented by the future CloudFormation cluster definition.
+CRDs, applies the shared `openremote-alb` IngressClass and `openremote-ebs`
+StorageClass, and reconciles ExternalDNS when configured. It intentionally does
+not attempt to mutate node-group infrastructure; that reconciliation will be
+implemented by the future CloudFormation cluster definition.
 
 ```bash
 kubernetes/or-eks-cluster apply --name openremote-test
@@ -95,13 +117,166 @@ the Amazon VPC CNI. Its namespace selector accepts only namespaces labeled
 port 443 as the SSL redirect destination for every group member.
 
 The class defines shared transport behavior only. Stack-specific hostname,
-route, and certificate references are namespaced resources managed by
-`or-stack`. ACM certificate creation and Route 53 records remain outside both
-scripts. The certificate must be in the ALB's account and region, while its DNS
-validation records and the stack hostnames may be managed from another AWS
-account. See the controller's
+route, certificate, and optional DNS intent are namespaced resources managed by
+`or-stack`. ACM certificate creation remains outside both scripts. The
+certificate must be in the ALB's account and region, while its DNS validation
+records and stack hostnames may be hosted in another AWS account. See the
+controller's
 [IngressClass documentation](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/)
 for the enforced group and namespace-selector behavior.
+
+## Automatic Route 53 records
+
+The optional managed ExternalDNS installation is cluster-scoped. It watches
+both `Ingress` and `Service` resources but filters them by
+`openremote.io/managed-dns=true`, uses only public Route 53 zones, and is
+restricted to the configured zone ID and domain. It uses TXT ownership with a
+cluster-unique owner ID and the `sync` policy, so deleting a source removes its
+owned record but not another controller's or an operator's records. The chart
+and image are pinned independently; the current defaults are chart `1.21.1`
+and ExternalDNS `v0.22.0`.
+
+`or-stack apply --dns external-dns` supplies the selection label and the GA
+`external-dns.kubernetes.io/hostname` annotation. In ingress mode they are on
+the stack's one proxy Ingress. In HAProxy mode they are on the proxy
+LoadBalancer Service. No Manager, Keycloak, metrics Service, or private gateway
+Service declares the same hostname.
+
+### Cross-account IAM bootstrap
+
+Two short-lived credential chains remain separate:
+
+```text
+ExternalDNS Pod -> cluster-account IRSA role -> DNS-account Route 53 role
+```
+
+The cluster role may call only `sts:AssumeRole` on the configured DNS role. The
+DNS role may change only `A`, `AAAA`, `CNAME`, and `TXT` records in one hosted
+zone and only at or below one DNS suffix. No static AWS credentials are stored
+in Kubernetes.
+
+Create the DNS-account role with
+[`external-dns-route53-role.yaml`](external-dns-route53-role.yaml). The role's
+trust policy names the deterministic cluster role through an ARN condition, so
+this CloudFormation stack can be deployed before the EKS cluster or IRSA role
+exists. For example:
+
+```bash
+export CLUSTER_NAME=openremote-test
+export CLUSTER_REGION=eu-west-1
+export CLUSTER_AWS_PROFILE=or
+export DNS_AWS_PROFILE=dns
+export DNS_ZONE_ID=Z0123456789
+export DNS_DOMAIN=example.com
+export EXTERNAL_DNS_EXTERNAL_ID=replace-with-a-random-value
+export EXTERNAL_DNS_IAM_STACK=openremote-test-external-dns
+
+export CLUSTER_ACCOUNT_ID="$(aws sts get-caller-identity \
+  --profile "$CLUSTER_AWS_PROFILE" \
+  --query Account \
+  --output text)"
+export EXTERNAL_DNS_IRSA_ROLE_NAME="openremote-${CLUSTER_NAME}-${CLUSTER_REGION}-external-dns"
+
+aws cloudformation deploy \
+  --profile "$DNS_AWS_PROFILE" \
+  --region "$CLUSTER_REGION" \
+  --stack-name "$EXTERNAL_DNS_IAM_STACK" \
+  --template-file external-dns-route53-role.yaml \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides \
+    HostedZoneId="$DNS_ZONE_ID" \
+    DomainName="$DNS_DOMAIN" \
+    ClusterAccountId="$CLUSTER_ACCOUNT_ID" \
+    ClusterExternalDNSRoleName="$EXTERNAL_DNS_IRSA_ROLE_NAME" \
+    ExternalId="$EXTERNAL_DNS_EXTERNAL_ID"
+
+export EXTERNAL_DNS_ROLE_ARN="$(aws cloudformation describe-stacks \
+  --profile "$DNS_AWS_PROFILE" \
+  --region "$CLUSTER_REGION" \
+  --stack-name "$EXTERNAL_DNS_IAM_STACK" \
+  --query 'Stacks[0].Outputs[?OutputKey==`RoleArn`].OutputValue | [0]' \
+  --output text)"
+```
+
+Run those commands from `kubernetes/cluster/eks`, or pass an absolute template
+path. Supplying `RoleName` to the template is optional. If no external ID is
+wanted, omit `ExternalId` from the parameter overrides and from the cluster
+command.
+
+Configure a new or existing cluster with the same source role name:
+
+```bash
+../../or-eks-cluster apply \
+  --name "$CLUSTER_NAME" \
+  --region "$CLUSTER_REGION" \
+  --profile "$CLUSTER_AWS_PROFILE" \
+  --external-dns-zone-id "$DNS_ZONE_ID" \
+  --external-dns-domain "$DNS_DOMAIN" \
+  --external-dns-role-arn "$EXTERNAL_DNS_ROLE_ARN" \
+  --external-dns-external-id "$EXTERNAL_DNS_EXTERNAL_ID" \
+  --external-dns-owner-id "${CLUSTER_ACCOUNT_ID}-${CLUSTER_NAME}-${CLUSTER_REGION}" \
+  --external-dns-irsa-role-name "$EXTERNAL_DNS_IRSA_ROLE_NAME"
+```
+
+Use `create` instead of `apply` when the cluster does not exist. The DNS-account
+CloudFormation stack must already exist so ExternalDNS can assume its output
+role when Helm waits for the Deployment. `or-eks-cluster` creates or updates
+the cluster-side role and `kube-system/external-dns` ServiceAccount through
+eksctl, then installs the controller.
+
+For a controller managed outside this command, pass `--skip-external-dns`.
+`or-stack --dns external-dns` remains usable, provided that controller watches
+Ingresses and Services, selects `openremote.io/managed-dns=true`, uses the GA
+annotation prefix, and has a safe ownership registry. The skip option also
+prevents `or-eks-cluster destroy` from explicitly uninstalling that Helm
+release.
+
+### Fresh records and safe migration
+
+For a new hostname, apply the stack with DNS ownership enabled:
+
+```bash
+../../or-stack apply \
+  --name stack-a \
+  --kube-context "${CLUSTER_NAME}@${CLUSTER_REGION}" \
+  --target eks \
+  --hostname stack-a.example.com \
+  --dns external-dns
+```
+
+ExternalDNS waits for the ALB or NLB hostname in resource status and then
+creates the Route 53 alias and its TXT ownership record.
+
+ExternalDNS does not silently adopt a manually created record. Migrate existing
+records with this dry-run-first sequence:
+
+1. Reconcile the cluster using the complete DNS configuration plus
+   `--external-dns-dry-run`.
+2. Reapply each intended stack with `--dns external-dns`.
+3. Inspect the proposed changes with `kubectl --namespace kube-system logs
+   deployment/openremote-external-dns`.
+4. Capture the exact current record values, then delete only the manually
+   managed `A`, `AAAA`, or `CNAME` records for those stack hostnames. Do not
+   delete ACM validation records or unrelated TXT records.
+5. While still in dry-run, confirm that the logs propose creating the expected
+   alias and TXT ownership records.
+6. Run `or-eks-cluster apply` again with the same DNS configuration and without
+   `--external-dns-dry-run`.
+7. Verify the new alias and TXT records in Route 53 and test the endpoint.
+
+Removing `--dns external-dns`, uninstalling a stack, or destroying it removes
+the source resource. The controller's event-triggered sync then removes only
+records carrying its owner ID. Wait for the alias and TXT record to disappear
+before shutting down the cluster or creating a manual replacement. The
+DNS-account CloudFormation stack is deliberately not deleted with the cluster;
+it can be retained for a recreated cluster using the same source role name, or
+deleted explicitly in the DNS account after all managed records are gone.
+
+`or-eks-cluster status` reports the ExternalDNS Helm health, TXT owner ID,
+dry-run state, and IRSA role. The controller's AWS provider and TXT registry are
+documented in the upstream
+[AWS tutorial](https://kubernetes-sigs.github.io/external-dns/latest/docs/tutorials/aws/)
+and [registry documentation](https://kubernetes-sigs.github.io/external-dns/latest/docs/registry/registry/).
 
 Cluster destruction requires an exact-name confirmation and is refused while
 Ingresses, LoadBalancer Services, PVCs, or non-system Pods remain:
@@ -117,6 +292,11 @@ draining the node group. This prevents replicated EKS system add-ons such as
 CoreDNS, the EBS CSI controller, and metrics-server from blocking deletion once
 all nodes have been cordoned. The bypass does not weaken the preflight for
 OpenRemote stacks or other non-system workloads.
+
+When the OpenRemote-managed ExternalDNS release exists, the preflight therefore
+requires its Ingress and LoadBalancer Service sources to be gone before the
+script uninstalls the controller. Pass `--skip-external-dns` only when its
+lifecycle belongs to another operator.
 
 Remove OpenRemote stacks and make an explicit data-retention decision before
 destroying their cluster. `or-stack uninstall` preserves a stack's namespace,

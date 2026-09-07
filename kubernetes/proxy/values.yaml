@@ -88,6 +88,13 @@ ingress:
   pathType: Prefix
   tls: []
 
+# Declare the public hostname to an ExternalDNS controller. or-stack enables
+# this only on the single public resource for the selected exposure mode:
+# the Ingress in ingress mode or the LoadBalancer Service in HAProxy mode.
+dns:
+  enabled: false
+  hostname: ""
+
 # Persist the proxy's /deployment directory, which contains the Certbot account,
 # generated certificates, and renewal state. Set existingClaim to use a PVC
 # managed outside this chart.

@@ -154,6 +154,8 @@ rendered_eks_gateway="$(helm template proxy "$PROXY_CHART" \
   --set-string or.keycloakHost=keycloak.stack-a.svc.cluster.local \
   --set-string or.nameserver=10.100.0.10:53 \
   --set-string ingress.hostname=stack-a.example.com \
+  --set dns.enabled=true \
+  --set-string dns.hostname=stack-a.example.com \
   --set-string "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn=$TEST_CERTIFICATE_ARN")"
 
 grep -F -- 'ingressClassName: openremote-alb' <<< "$rendered_eks_gateway" >/dev/null || fail \
@@ -173,6 +175,13 @@ grep -F -- 'name: proxy' <<< "$rendered_eks_gateway" >/dev/null || fail \
   "EKS gateway Ingress does not route to the proxy Service"
 [ "$(grep -c '^kind: Ingress$' <<< "$rendered_eks_gateway")" -eq 1 ] || fail \
   "EKS gateway did not render exactly one Ingress"
+[ "$(grep -c 'external-dns.kubernetes.io/hostname: "stack-a.example.com"' <<< "$rendered_eks_gateway")" -eq 1 ] || fail \
+  "Ingress DNS intent was not declared exactly once"
+[ "$(grep -c 'openremote.io/managed-dns: "true"' <<< "$rendered_eks_gateway")" -eq 1 ] || fail \
+  "Ingress DNS selection label was not declared exactly once"
+grep -A12 '^kind: Ingress$' <<< "$rendered_eks_gateway" | \
+  grep -F -- 'openremote.io/managed-dns: "true"' >/dev/null || fail \
+    "Ingress DNS intent is missing its controller selection label"
 grep -F -- 'image: "openremote/proxy:3.2.19.0"' <<< "$rendered_eks_gateway" >/dev/null || fail \
   "Ingress gateway does not use the expected proxy image"
 grep -A1 -F -- '- name: HAPROXY_CONFIG' <<< "$rendered_eks_gateway" | \
@@ -223,7 +232,9 @@ fi
 rendered_eks_proxy="$(helm template proxy "$PROXY_CHART" \
   --namespace stack-eks \
   --values "$HAPROXY_PROXY_VALUES" \
-  --values "$EKS_HAPROXY_PROXY_VALUES")"
+  --values "$EKS_HAPROXY_PROXY_VALUES" \
+  --set dns.enabled=true \
+  --set-string dns.hostname=stack-eks.example.com)"
 grep -F -- 'storageClassName: "openremote-ebs"' <<< "$rendered_eks_proxy" >/dev/null || fail \
   "EKS HAProxy certificate state does not use openremote-ebs"
 grep -F -- 'service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip' \
@@ -232,6 +243,13 @@ grep -F -- 'service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip' \
 if grep -F -- 'aws-load-balancer-internal' <<< "$rendered_eks_proxy" >/dev/null; then
   fail "EKS HAProxy unexpectedly creates a second metrics LoadBalancer"
 fi
+[ "$(grep -c 'external-dns.kubernetes.io/hostname: "stack-eks.example.com"' <<< "$rendered_eks_proxy")" -eq 1 ] || fail \
+  "HAProxy Service DNS intent was not declared exactly once"
+[ "$(grep -c 'openremote.io/managed-dns: "true"' <<< "$rendered_eks_proxy")" -eq 1 ] || fail \
+  "HAProxy Service DNS selection label was not declared exactly once"
+grep -A15 '^kind: Service$' <<< "$rendered_eks_proxy" | \
+  grep -F -- 'openremote.io/managed-dns: "true"' >/dev/null || fail \
+    "HAProxy Service DNS intent is missing its controller selection label"
 
 rendered_external_cert="$(helm template proxy "$PROXY_CHART" \
   --namespace stack-cert \

@@ -13,6 +13,10 @@ DEFAULT_INGRESS_CLASS_FILE="$KUBERNETES_DIR/cluster/eks/ingress-class.yaml"
 DEFAULT_AWS_REGION="eu-west-1"
 DEFAULT_AWS_PROFILE="or"
 DEFAULT_LOAD_BALANCER_CONTROLLER_CHART_VERSION="1.14.0"
+DEFAULT_EXTERNAL_DNS_CHART_VERSION="1.21.1"
+DEFAULT_EXTERNAL_DNS_IMAGE_TAG="v0.22.0"
+EXTERNAL_DNS_RELEASE_NAME="openremote-external-dns"
+EXTERNAL_DNS_SERVICE_ACCOUNT_NAME="external-dns"
 
 COMMAND=""
 CLUSTER_NAME="${OR_EKS_CLUSTER_NAME:-}"
@@ -21,9 +25,20 @@ AWS_PROFILE_NAME="${OR_EKS_AWS_PROFILE:-${AWS_PROFILE:-$DEFAULT_AWS_PROFILE}}"
 CONFIG_FILE="${OR_EKS_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
 KUBE_CONTEXT="${OR_EKS_KUBE_CONTEXT:-}"
 LOAD_BALANCER_CONTROLLER_CHART_VERSION="${OR_EKS_LOAD_BALANCER_CONTROLLER_CHART_VERSION:-$DEFAULT_LOAD_BALANCER_CONTROLLER_CHART_VERSION}"
+EXTERNAL_DNS_CHART_VERSION="${OR_EKS_EXTERNAL_DNS_CHART_VERSION:-$DEFAULT_EXTERNAL_DNS_CHART_VERSION}"
+EXTERNAL_DNS_IMAGE_TAG="${OR_EKS_EXTERNAL_DNS_IMAGE_TAG:-$DEFAULT_EXTERNAL_DNS_IMAGE_TAG}"
+EXTERNAL_DNS_HOSTED_ZONE_ID="${OR_EKS_EXTERNAL_DNS_HOSTED_ZONE_ID:-}"
+EXTERNAL_DNS_DOMAIN="${OR_EKS_EXTERNAL_DNS_DOMAIN:-}"
+EXTERNAL_DNS_ASSUME_ROLE_ARN="${OR_EKS_EXTERNAL_DNS_ASSUME_ROLE_ARN:-}"
+EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL_ID="${OR_EKS_EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL_ID:-}"
+EXTERNAL_DNS_OWNER_ID="${OR_EKS_EXTERNAL_DNS_OWNER_ID:-}"
+EXTERNAL_DNS_IRSA_ROLE_NAME="${OR_EKS_EXTERNAL_DNS_IRSA_ROLE_NAME:-}"
+EXTERNAL_DNS_DRY_RUN="${OR_EKS_EXTERNAL_DNS_DRY_RUN:-false}"
 CONFIRM_CLUSTER_NAME=""
 MANAGE_LOAD_BALANCER_CONTROLLER=true
+MANAGE_EXTERNAL_DNS=true
 RENDERED_CONFIG_FILE=""
+EXTERNAL_DNS_IAM_CONFIG_FILE=""
 
 usage() {
   cat <<'EOF'
@@ -55,12 +70,44 @@ Options:
                       OR_EKS_LOAD_BALANCER_CONTROLLER_CHART_VERSION.
   --skip-load-balancer-controller
                       Do not install or reconcile the controller.
+  --external-dns-zone-id <id>
+                      Public Route 53 hosted-zone ID. Env:
+                      OR_EKS_EXTERNAL_DNS_HOSTED_ZONE_ID.
+  --external-dns-domain <domain>
+                      DNS suffix managed in that zone. Env:
+                      OR_EKS_EXTERNAL_DNS_DOMAIN.
+  --external-dns-role-arn <arn>
+                      DNS-account role for ExternalDNS to assume. Env:
+                      OR_EKS_EXTERNAL_DNS_ASSUME_ROLE_ARN.
+  --external-dns-external-id <id>
+                      Optional external ID required by the DNS-account role.
+                      Env: OR_EKS_EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL_ID.
+  --external-dns-owner-id <id>
+                      Stable, cluster-unique TXT registry owner. Env:
+                      OR_EKS_EXTERNAL_DNS_OWNER_ID.
+  --external-dns-irsa-role-name <name>
+                      Cluster-account IRSA role name. Defaults to
+                      openremote-<cluster>-<region>-external-dns. Env:
+                      OR_EKS_EXTERNAL_DNS_IRSA_ROLE_NAME.
+  --external-dns-chart-version <version>
+                      Helm chart version. Env:
+                      OR_EKS_EXTERNAL_DNS_CHART_VERSION. Default: 1.21.1.
+  --external-dns-image-tag <tag>
+                      ExternalDNS image tag. Env:
+                      OR_EKS_EXTERNAL_DNS_IMAGE_TAG. Default: v0.22.0.
+  --external-dns-dry-run
+                      Report desired DNS changes without applying them.
+                      Env: OR_EKS_EXTERNAL_DNS_DRY_RUN.
+  --skip-external-dns
+                      Do not install, reconcile, or uninstall ExternalDNS;
+                      use this for a bring-your-own controller.
   --confirm <name>    Required exact cluster name for destroy.
   -h, --help          Show this help.
 
 The command manages only cluster-scoped infrastructure and add-ons. It never
-installs or removes an OpenRemote stack, stack namespace, certificate, DNS
-record, or stack data volume.
+installs or removes an OpenRemote stack, stack namespace, certificate, or stack
+data volume. Its optional ExternalDNS add-on reconciles only explicitly labeled
+stack endpoints.
 EOF
 }
 
@@ -80,6 +127,9 @@ die() {
 cleanup() {
   if [ -n "$RENDERED_CONFIG_FILE" ] && [ -f "$RENDERED_CONFIG_FILE" ]; then
     rm -f "$RENDERED_CONFIG_FILE"
+  fi
+  if [ -n "$EXTERNAL_DNS_IAM_CONFIG_FILE" ] && [ -f "$EXTERNAL_DNS_IAM_CONFIG_FILE" ]; then
+    rm -f "$EXTERNAL_DNS_IAM_CONFIG_FILE"
   fi
 }
 
@@ -161,6 +211,54 @@ parse_arguments() {
         MANAGE_LOAD_BALANCER_CONTROLLER=false
         shift
         ;;
+      --external-dns-zone-id)
+        [ "$#" -ge 2 ] || die "Option --external-dns-zone-id requires a value."
+        EXTERNAL_DNS_HOSTED_ZONE_ID="$2"
+        shift 2
+        ;;
+      --external-dns-domain)
+        [ "$#" -ge 2 ] || die "Option --external-dns-domain requires a value."
+        EXTERNAL_DNS_DOMAIN="$2"
+        shift 2
+        ;;
+      --external-dns-role-arn)
+        [ "$#" -ge 2 ] || die "Option --external-dns-role-arn requires a value."
+        EXTERNAL_DNS_ASSUME_ROLE_ARN="$2"
+        shift 2
+        ;;
+      --external-dns-external-id)
+        [ "$#" -ge 2 ] || die "Option --external-dns-external-id requires a value."
+        EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL_ID="$2"
+        shift 2
+        ;;
+      --external-dns-owner-id)
+        [ "$#" -ge 2 ] || die "Option --external-dns-owner-id requires a value."
+        EXTERNAL_DNS_OWNER_ID="$2"
+        shift 2
+        ;;
+      --external-dns-irsa-role-name)
+        [ "$#" -ge 2 ] || die "Option --external-dns-irsa-role-name requires a value."
+        EXTERNAL_DNS_IRSA_ROLE_NAME="$2"
+        shift 2
+        ;;
+      --external-dns-chart-version)
+        [ "$#" -ge 2 ] || die "Option --external-dns-chart-version requires a value."
+        EXTERNAL_DNS_CHART_VERSION="$2"
+        shift 2
+        ;;
+      --external-dns-image-tag)
+        [ "$#" -ge 2 ] || die "Option --external-dns-image-tag requires a value."
+        EXTERNAL_DNS_IMAGE_TAG="$2"
+        shift 2
+        ;;
+      --external-dns-dry-run)
+        EXTERNAL_DNS_DRY_RUN=true
+        shift
+        ;;
+      --skip-external-dns)
+        MANAGE_EXTERNAL_DNS=false
+        shift
+        ;;
       --confirm)
         [ "$#" -ge 2 ] || die "Option --confirm requires a value."
         CONFIRM_CLUSTER_NAME="$2"
@@ -181,6 +279,63 @@ parse_arguments() {
   if [ -z "$KUBE_CONTEXT" ]; then
     KUBE_CONTEXT="${CLUSTER_NAME}@${AWS_REGION_NAME}"
   fi
+
+  EXTERNAL_DNS_HOSTED_ZONE_ID="${EXTERNAL_DNS_HOSTED_ZONE_ID#/hostedzone/}"
+  EXTERNAL_DNS_DOMAIN="${EXTERNAL_DNS_DOMAIN%.}"
+  if [ -z "$EXTERNAL_DNS_IRSA_ROLE_NAME" ]; then
+    EXTERNAL_DNS_IRSA_ROLE_NAME="openremote-${CLUSTER_NAME}-${AWS_REGION_NAME}-external-dns"
+  fi
+}
+
+external_dns_configuration_present() {
+  [ -n "$EXTERNAL_DNS_HOSTED_ZONE_ID" ] || \
+    [ -n "$EXTERNAL_DNS_DOMAIN" ] || \
+    [ -n "$EXTERNAL_DNS_ASSUME_ROLE_ARN" ] || \
+    [ -n "$EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL_ID" ] || \
+    [ -n "$EXTERNAL_DNS_OWNER_ID" ] || \
+    [ "$EXTERNAL_DNS_DRY_RUN" = true ]
+}
+
+validate_external_dns_configuration() {
+  case "$EXTERNAL_DNS_DRY_RUN" in
+    true|false)
+      ;;
+    *)
+      die "OR_EKS_EXTERNAL_DNS_DRY_RUN must be true or false."
+      ;;
+  esac
+
+  if [ "$MANAGE_EXTERNAL_DNS" != true ]; then
+    return
+  fi
+  if ! external_dns_configuration_present; then
+    return
+  fi
+
+  [ -n "$EXTERNAL_DNS_HOSTED_ZONE_ID" ] || die \
+    "ExternalDNS requires --external-dns-zone-id."
+  [ -n "$EXTERNAL_DNS_DOMAIN" ] || die \
+    "ExternalDNS requires --external-dns-domain."
+  [ -n "$EXTERNAL_DNS_ASSUME_ROLE_ARN" ] || die \
+    "ExternalDNS requires --external-dns-role-arn."
+  [ -n "$EXTERNAL_DNS_OWNER_ID" ] || die \
+    "ExternalDNS requires --external-dns-owner-id."
+  [ -n "$EXTERNAL_DNS_CHART_VERSION" ] || die \
+    "A pinned ExternalDNS chart version is required."
+  [ -n "$EXTERNAL_DNS_IMAGE_TAG" ] || die \
+    "A pinned ExternalDNS image tag is required."
+
+  [[ "$EXTERNAL_DNS_HOSTED_ZONE_ID" =~ ^Z[A-Z0-9]+$ ]] || die \
+    "ExternalDNS hosted-zone ID must be a Route 53 ID such as Z0123456789."
+  [[ "$EXTERNAL_DNS_DOMAIN" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$ ]] || die \
+    "ExternalDNS domain must be a lowercase DNS suffix without a trailing dot."
+  [[ "$EXTERNAL_DNS_ASSUME_ROLE_ARN" =~ ^arn:[^:]+:iam::[0-9]{12}:role/[A-Za-z0-9_+=,.@/-]+$ ]] || die \
+    "ExternalDNS role ARN must be a valid IAM role ARN."
+  [[ "$EXTERNAL_DNS_OWNER_ID" =~ ^[A-Za-z0-9._-]+$ ]] || die \
+    "ExternalDNS owner ID may contain only letters, numbers, dots, underscores, and hyphens."
+  [ "${#EXTERNAL_DNS_IRSA_ROLE_NAME}" -le 64 ] && \
+    [[ "$EXTERNAL_DNS_IRSA_ROLE_NAME" =~ ^[A-Za-z0-9_+=,.@-]+$ ]] || die \
+      "ExternalDNS IRSA role name must be a valid IAM role name of at most 64 characters."
 }
 
 cluster_exists() {
@@ -315,6 +470,145 @@ reconcile_load_balancer_controller() {
 
   log "Reconciling the shared OpenRemote ALB IngressClass."
   kubectl --context "$KUBE_CONTEXT" apply -f "$DEFAULT_INGRESS_CLASS_FILE"
+}
+
+render_external_dns_iam_config() {
+  if [ -n "$EXTERNAL_DNS_IAM_CONFIG_FILE" ] && [ -f "$EXTERNAL_DNS_IAM_CONFIG_FILE" ]; then
+    rm -f "$EXTERNAL_DNS_IAM_CONFIG_FILE"
+  fi
+  EXTERNAL_DNS_IAM_CONFIG_FILE="$(mktemp "${TMPDIR:-/tmp}/or-eks-external-dns-iam.XXXXXX")"
+  cat > "$EXTERNAL_DNS_IAM_CONFIG_FILE" <<EOF
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: "$CLUSTER_NAME"
+  region: "$AWS_REGION_NAME"
+
+iam:
+  withOIDC: true
+  serviceAccounts:
+    - metadata:
+        name: $EXTERNAL_DNS_SERVICE_ACCOUNT_NAME
+        namespace: kube-system
+      roleName: "$EXTERNAL_DNS_IRSA_ROLE_NAME"
+      attachPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Resource: "$EXTERNAL_DNS_ASSUME_ROLE_ARN"
+EOF
+}
+
+reconcile_external_dns_iam_service_account() {
+  local iam_service_accounts
+  local get_status
+  local service_account_role_arn
+
+  require_command eksctl
+  require_command jq
+  require_command kubectl
+  require_kube_context
+  render_external_dns_iam_config
+
+  set +e
+  iam_service_accounts="$(eksctl_with_profile get iamserviceaccount \
+    --cluster "$CLUSTER_NAME" \
+    --region "$AWS_REGION_NAME" \
+    --namespace kube-system \
+    --name "$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME" \
+    --output json 2>&1)"
+  get_status=$?
+  set -e
+
+  if [ "$get_status" -ne 0 ]; then
+    case "$iam_service_accounts" in
+      *"no iamserviceaccounts"*) iam_service_accounts='[]' ;;
+      *) die "Unable to inspect the ExternalDNS IAM service account: $iam_service_accounts" ;;
+    esac
+  fi
+
+  if jq -e 'type == "array" and length > 0' <<< "$iam_service_accounts" >/dev/null; then
+    log "Reconciling the ExternalDNS IRSA role '$EXTERNAL_DNS_IRSA_ROLE_NAME'."
+    eksctl_with_profile update iamserviceaccount \
+      --config-file "$EXTERNAL_DNS_IAM_CONFIG_FILE" \
+      --include "kube-system/$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME" \
+      --approve
+  else
+    log "Creating the ExternalDNS IRSA role '$EXTERNAL_DNS_IRSA_ROLE_NAME'."
+    eksctl_with_profile create iamserviceaccount \
+      --config-file "$EXTERNAL_DNS_IAM_CONFIG_FILE" \
+      --include "kube-system/$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME" \
+      --override-existing-serviceaccounts \
+      --approve
+  fi
+
+  if ! service_account_role_arn="$(kubectl --context "$KUBE_CONTEXT" \
+    --namespace kube-system \
+    get serviceaccount "$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME" \
+    -o 'jsonpath={.metadata.annotations.eks\.amazonaws\.com/role-arn}')"; then
+    die "Unable to inspect the ExternalDNS ServiceAccount after IRSA reconciliation."
+  fi
+  [ -n "$service_account_role_arn" ] || die \
+    "ServiceAccount kube-system/$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME has no IRSA role annotation."
+}
+
+reconcile_external_dns() {
+  local helm_args
+
+  if [ "$MANAGE_EXTERNAL_DNS" != true ]; then
+    log "Skipping ExternalDNS reconciliation."
+    return
+  fi
+  if ! external_dns_configuration_present; then
+    log "ExternalDNS is not configured; skipping this optional add-on."
+    return
+  fi
+
+  require_command helm
+  reconcile_external_dns_iam_service_account
+
+  log "Refreshing the ExternalDNS Helm repository."
+  helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/ \
+    --force-update >/dev/null
+  helm repo update external-dns >/dev/null
+
+  helm_args=(
+    upgrade --install "$EXTERNAL_DNS_RELEASE_NAME" external-dns/external-dns
+    --kube-context "$KUBE_CONTEXT"
+    --namespace kube-system
+    --version "$EXTERNAL_DNS_CHART_VERSION"
+    --set-string "image.tag=$EXTERNAL_DNS_IMAGE_TAG"
+    --set provider.name=aws
+    --set 'sources[0]=service'
+    --set 'sources[1]=ingress'
+    --set policy=sync
+    --set registry=txt
+    --set-string "txtOwnerId=$EXTERNAL_DNS_OWNER_ID"
+    --set-string 'labelFilter=openremote.io/managed-dns=true'
+    --set triggerLoopOnEvent=true
+    --set serviceAccount.create=false
+    --set "serviceAccount.name=$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME"
+    --set extraArgs.aws-zone-type=public
+    --set-string "extraArgs.zone-id-filter=$EXTERNAL_DNS_HOSTED_ZONE_ID"
+    --set-string "domainFilters[0]=$EXTERNAL_DNS_DOMAIN"
+    --set-string "extraArgs.aws-assume-role=$EXTERNAL_DNS_ASSUME_ROLE_ARN"
+    --wait
+    --timeout 10m
+  )
+  if [ -n "$EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL_ID" ]; then
+    helm_args+=(--set-string \
+      "extraArgs.aws-assume-role-external-id=$EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL_ID")
+  fi
+  if [ "$EXTERNAL_DNS_DRY_RUN" = true ]; then
+    helm_args+=(--set extraArgs.dry-run=true)
+    warn "ExternalDNS dry-run is enabled; DNS changes will only be logged."
+  fi
+
+  log "Reconciling ExternalDNS chart $EXTERNAL_DNS_CHART_VERSION with image $EXTERNAL_DNS_IMAGE_TAG."
+  helm "${helm_args[@]}"
 }
 
 reconcile_storage_class() {
@@ -466,6 +760,7 @@ create_cluster() {
   require_command aws
   require_command eksctl
   require_command kubectl
+  validate_external_dns_configuration
   render_cluster_config
 
   if cluster_exists; then
@@ -478,6 +773,7 @@ create_cluster() {
   reconcile_network_policy_support
   reconcile_storage_class
   reconcile_load_balancer_controller
+  reconcile_external_dns
   log "EKS cluster '$CLUSTER_NAME' is ready."
 }
 
@@ -487,6 +783,7 @@ apply_cluster() {
 
   require_command aws
   require_command kubectl
+  validate_external_dns_configuration
   require_existing_cluster
   render_cluster_config
 
@@ -499,7 +796,51 @@ apply_cluster() {
   reconcile_network_policy_support
   reconcile_storage_class
   reconcile_load_balancer_controller
+  reconcile_external_dns
   log "Shared cluster resources are reconciled. Node-group infrastructure updates remain outside apply until the cluster definition moves to CloudFormation."
+}
+
+show_external_dns_status() {
+  local dry_run=false
+  local external_dns_args
+  local owner_id=""
+  local service_account_role_arn=""
+
+  log "ExternalDNS"
+  if ! helm status "$EXTERNAL_DNS_RELEASE_NAME" \
+      --kube-context "$KUBE_CONTEXT" \
+      --namespace kube-system >/dev/null 2>&1; then
+    log "Optional OpenRemote-managed ExternalDNS add-on is not installed."
+    return
+  fi
+  helm status "$EXTERNAL_DNS_RELEASE_NAME" \
+    --kube-context "$KUBE_CONTEXT" \
+    --namespace kube-system
+  kubectl --context "$KUBE_CONTEXT" \
+    --namespace kube-system \
+    get deployments,pods \
+    --selector "app.kubernetes.io/instance=$EXTERNAL_DNS_RELEASE_NAME" \
+    -o wide
+
+  if external_dns_args="$(kubectl --context "$KUBE_CONTEXT" \
+      --namespace kube-system \
+      get deployment "$EXTERNAL_DNS_RELEASE_NAME" \
+      -o 'go-template={{range (index .spec.template.spec.containers 0).args}}{{println .}}{{end}}' \
+      2>/dev/null)"; then
+    owner_id="$(sed -n 's/^--txt-owner-id=//p' <<< "$external_dns_args" | head -n 1)"
+    if grep -Eq '^--dry-run(=true)?$' <<< "$external_dns_args"; then
+      dry_run=true
+    fi
+  fi
+  service_account_role_arn="$(kubectl --context "$KUBE_CONTEXT" \
+    --namespace kube-system \
+    get serviceaccount "$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME" \
+    -o 'jsonpath={.metadata.annotations.eks\.amazonaws\.com/role-arn}' \
+    2>/dev/null || true)"
+
+  printf 'ExternalDNS TXT owner ID: %s\n' "${owner_id:-unknown}"
+  printf 'ExternalDNS dry run: %s\n' "$dry_run"
+  printf 'ExternalDNS IRSA role: %s\n' "${service_account_role_arn:-unknown}"
 }
 
 show_cluster_status() {
@@ -571,6 +912,8 @@ show_cluster_status() {
         warn "IngressClassParams 'openremote-alb' is not installed."
       fi
     fi
+
+    show_external_dns_status
   else
     warn "Kubeconfig context '$KUBE_CONTEXT' is unavailable; Kubernetes-side status was skipped."
   fi
@@ -604,6 +947,19 @@ destroy_preflight() {
   fi
 }
 
+uninstall_external_dns() {
+  if [ "$MANAGE_EXTERNAL_DNS" = true ] && \
+     helm status "$EXTERNAL_DNS_RELEASE_NAME" \
+       --kube-context "$KUBE_CONTEXT" \
+       --namespace kube-system >/dev/null 2>&1; then
+    log "Uninstalling ExternalDNS after confirming that no public stack endpoints remain."
+    helm uninstall "$EXTERNAL_DNS_RELEASE_NAME" \
+      --kube-context "$KUBE_CONTEXT" \
+      --namespace kube-system \
+      --wait
+  fi
+}
+
 destroy_cluster() {
   require_command aws
   require_command eksctl
@@ -616,6 +972,7 @@ destroy_cluster() {
     "Destroy requires --confirm '$CLUSTER_NAME'."
 
   destroy_preflight
+  uninstall_external_dns
 
   if [ "$MANAGE_LOAD_BALANCER_CONTROLLER" = true ] && \
      helm status aws-load-balancer-controller \
