@@ -45,6 +45,7 @@ import "@openremote/or-components/or-ace-editor";
 import moment from "moment";
 import type { OrAceEditor } from "@openremote/or-components/or-ace-editor";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { isAxiosError } from "@openremote/rest";
 
 export function pageGatewayProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
   return {
@@ -397,6 +398,9 @@ export class PageGateway extends Page<AppStateKeyed> {
         <or-vaadin-text-field
           id="gateway-clientsecret"
           required
+          minlength="36"
+          maxlength="36"
+          helper-text=${i18next.t("gateway.clientSecretHelper")}
           ?disabled=${disabled}
           value=${connection?.clientSecret}
           @change=${(ev: Event) => this._setConnectionProperty("clientSecret", (ev.currentTarget as HTMLInputElement).value)}
@@ -687,15 +691,38 @@ export class PageGateway extends Page<AppStateKeyed> {
         if (response.status === 204) {
           this._loadData();
         } else {
-          showSnackbar(undefined, i18next.t("errorOccurred"));
+          showSnackbar(undefined, this._saveErrorMessage(response.statusText));
         }
       })
-      .catch(() => {
-        showSnackbar(undefined, i18next.t("errorOccurred"));
+      .catch((e) => {
+        showSnackbar(undefined, this._saveErrorMessage(undefined, e));
       })
       .finally(() => {
         this._loading = false;
       });
+  }
+
+  protected _saveErrorMessage(statusText?: string, error?: unknown): string {
+    if (isAxiosError(error)) {
+      const data = error.response?.data as unknown;
+      if (typeof data === "string" && data.trim()) {
+        return data;
+      }
+      if (data && typeof data === "object") {
+        const body = data as { message?: string; error?: string; exception?: string };
+        const detail = body.message || body.error || body.exception;
+        if (typeof detail === "string" && detail.trim()) {
+          return detail;
+        }
+      }
+      if (error.response?.statusText) {
+        return error.response.statusText;
+      }
+    }
+    if (statusText && statusText.trim()) {
+      return statusText;
+    }
+    return i18next.t("errorOccurred");
   }
 
   protected _setConnection(connection: GatewayConnection) {
@@ -746,6 +773,10 @@ export class PageGateway extends Page<AppStateKeyed> {
     }
     if (!this._connection.clientSecret) {
       console.warn("Interconnect form can't be submitted: Client secret must be set.");
+      return false;
+    }
+    if (this._connection.clientSecret.length !== 36) {
+      console.warn("Interconnect form can't be submitted: Client secret must be 36 characters.");
       return false;
     }
     return true;
