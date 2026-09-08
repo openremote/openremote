@@ -1554,7 +1554,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     and: "the building user then retrieves the list of tunnels for the fake gateway ID"
     def activeTunnels = gatewayResource.getGatewayActiveTunnelInfos(null, managerTestSetup.realmBuildingName, "fake-gateway-id")
 
-    then: "the smart city user should not be able to see any tunnels for the fake gateway ID in the building realm"
+    then: "the building user should not be able to see any tunnels for the fake gateway ID in the smart city realm"
     assert activeTunnels.length == 0
 
     cleanup: "the fake tunnel is removed"

@@ -188,8 +188,11 @@ public class GatewayConnector {
       this.sessionId.set(null);
     }
 
-    requestDisconnect.run();
+    if (requestDisconnect != null) {
+      requestDisconnect.run();
+    }
     requestDisconnect = null;
+
     LOG.info("Disconnected: " + getGatewayIdString());
     if (syncProcessorFuture != null) {
       LOG.finest("Aborting active sync process: " + getGatewayIdString());
