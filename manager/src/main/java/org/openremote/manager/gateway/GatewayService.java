@@ -810,7 +810,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     String gatewayId = getGatewayIdFromClientId(gatewayClientId);
     GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
-
     // If a client is trying to cross realm boundaries do nothing
     if (connector != null && !Objects.equals(realm, connector.getRealm())) {
       LOG.warning("Gateway disconnected with incorrect realm: GatewayID=" + gatewayId);
