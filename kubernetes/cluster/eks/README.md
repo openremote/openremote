@@ -8,9 +8,10 @@ stack data volumes. ExternalDNS changes records only for stack resources that
 explicitly opt in.
 
 After the shared cluster is ready, use `kubernetes/or-eks-stack` for the normal
-HAProxy stack workflow with managed ExternalDNS. It delegates namespaced
-resources to `kubernetes/or-stack`, which remains the portable and low-level
-interface.
+stack workflow with managed ExternalDNS. HAProxy is the default; explicit
+Ingress validates an existing ACM certificate before using the shared ALB. The
+facade delegates namespaced resources to `kubernetes/or-stack`, which remains
+the portable and low-level interface.
 
 The current implementation uses the existing `kubernetes/cluster.yaml`
 `eksctl` configuration. This boundary is intended to remain stable when EKS
@@ -120,10 +121,12 @@ port 443 as the SSL redirect destination for every group member.
 
 The class defines shared transport behavior only. Stack-specific hostname,
 route, certificate, and optional DNS intent are namespaced resources managed by
-`or-stack`. ACM certificate creation remains outside both scripts. The
-certificate must be in the ALB's account and region, while its DNS validation
-records and stack hostnames may be hosted in another AWS account. See the
-controller's
+`or-stack`. In `existing` mode, `or-eks-stack` verifies that the ACM certificate
+is issued, belongs to the ALB's account and region, covers the hostname, and is
+not tagged as stack-managed. It records the user-owned selection but never
+modifies or deletes the certificate. ACM certificate creation is still outside
+the current scripts, and its DNS validation records and stack hostnames may be
+hosted in another AWS account. See the controller's
 [IngressClass documentation](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/)
 for the enforced group and namespace-selector behavior.
 
@@ -147,7 +150,8 @@ Service declares the same hostname.
 The higher-level `or-eks-stack apply` command validates this managed release,
 rejects dry-run mode or a domain filter that does not cover the requested
 hostname, delegates the source-resource creation to `or-stack`, and waits for
-the current load balancer and record to converge before triggering ACME.
+the current load balancer and record to converge. It then triggers ACME for
+HAProxy or verifies the existing ACM-backed HTTPS listener for Ingress.
 
 ### Cross-account IAM bootstrap
 
@@ -254,10 +258,25 @@ For a new HAProxy hostname, use the AWS-aware facade:
 ExternalDNS waits for the ALB or NLB hostname in resource status and then
 creates the Route 53 alias and its TXT ownership record.
 
-Use `or-stack apply --dns external-dns` directly for the explicit Ingress
-workflow or when another orchestrator owns endpoint readiness. The first
-`or-eks-stack` increment deliberately supports only HAProxy; automatic ACM
-certificate selection and creation follow in the next increment.
+For Ingress with an existing certificate, use:
+
+```bash
+../../or-eks-stack apply \
+  --name stack-a \
+  --cluster "$CLUSTER_NAME" \
+  --region "$CLUSTER_REGION" \
+  --profile "$CLUSTER_AWS_PROFILE" \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode existing \
+  --certificate-arn <acm-certificate-arn>
+```
+
+The ARN is stored with mode `existing` on the namespace for status and future
+lifecycle decisions. It remains user-owned and is never deleted by stack
+uninstall or destroy. Use `or-stack apply --dns external-dns` directly when
+another orchestrator owns endpoint readiness. Automatic shared certificate
+selection and managed certificate creation follow in later increments.
 
 ExternalDNS does not silently adopt a manually created record. Migrate existing
 records with this dry-run-first sequence:

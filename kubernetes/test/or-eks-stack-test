@@ -8,6 +8,9 @@ TEST_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/or-eks-stack-test.XXXXXX")"
 CALL_LOG="$TEST_TEMP_DIR/calls.log"
 CURL_COUNT_FILE="$TEST_TEMP_DIR/curl-count"
 TEST_CLUSTER_ENDPOINT="https://test-cluster.eks.example.com"
+TEST_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"
+DEFAULT_CERTIFICATE_JSON='{"Certificate":{"Status":"ISSUED","DomainName":"example.com","SubjectAlternativeNames":["example.com","*.example.com"]}}'
+DEFAULT_CERTIFICATE_TAGS='{"Tags":[]}'
 DEFAULT_EXTERNAL_DNS_ARGS=$'--source=service\n--source=ingress\n--policy=sync\n--registry=txt\n--txt-owner-id=test-cluster-eu-west-1\n--label-filter=openremote.io/managed-dns=true\n--domain-filter=example.com'
 
 cleanup_test() {
@@ -73,13 +76,15 @@ reset_test() {
   KUBE_CONTEXT=""
   EXPOSURE="haproxy"
   HOSTNAME_VALUE=""
+  CERTIFICATE_MODE=""
+  CERTIFICATE_ARN=""
   VALUES_DIR=""
   TIMEOUT="20m"
   HTTP_PORT="80"
   HTTPS_PORT="443"
   CONFIRM_STACK_NAME=""
   OR_STACK_COMMAND="$KUBERNETES_DIR/or-stack"
-  NLB_ADDRESS=""
+  LOAD_BALANCER_ADDRESS=""
 }
 
 require_command() {
@@ -94,6 +99,26 @@ aws_eks() {
       ;;
     *" cluster.endpoint "*)
       printf '%s\n' "$TEST_CLUSTER_ENDPOINT"
+      ;;
+  esac
+}
+
+aws_sts() {
+  log_call aws-sts "$@"
+  printf '%s\n' "${OR_EKS_STACK_TEST_ACCOUNT_ID:-123456789012}"
+}
+
+aws_acm() {
+  log_call aws-acm "$@"
+  case " $* " in
+    *" list-tags-for-certificate "*)
+      printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_TAGS-$DEFAULT_CERTIFICATE_TAGS}"
+      ;;
+    *" Certificate.Status "*)
+      printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_STATUS:-ISSUED}"
+      ;;
+    *" describe-certificate "*)
+      printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_JSON-$DEFAULT_CERTIFICATE_JSON}"
       ;;
   esac
 }
@@ -119,6 +144,12 @@ kubectl() {
     *" get namespace kube-system "*)
       [ "${OR_EKS_STACK_TEST_CONTEXT_REACHABLE:-true}" = "true" ]
       ;;
+    *" get namespace stack-a "*"certificate-mode"*)
+      printf '%s' "${OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE:-acme}"
+      ;;
+    *" get namespace stack-a "*"certificate-arn"*)
+      printf '%s' "${OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN:-}"
+      ;;
     *" rollout status deployment/openremote-external-dns "*)
       [ "${OR_EKS_STACK_TEST_EXTERNAL_DNS_ROLLOUT_READY:-true}" = "true" ]
       ;;
@@ -130,6 +161,9 @@ kubectl() {
       ;;
     *" get service proxy "*)
       printf '%s' "${OR_EKS_STACK_TEST_NLB_ADDRESS:-test-nlb.elb.eu-west-1.amazonaws.com}"
+      ;;
+    *" get ingress proxy "*)
+      printf '%s' "${OR_EKS_STACK_TEST_ALB_ADDRESS:-test-alb.elb.eu-west-1.amazonaws.com}"
       ;;
     *" exec deployment/proxy "*)
       [ "${OR_EKS_STACK_TEST_ACME_SUCCESS:-true}" = "true" ]
@@ -145,6 +179,9 @@ dig() {
       ;;
     test-nlb.elb.eu-west-1.amazonaws.com)
       printf '%s\n' "${OR_EKS_STACK_TEST_NLB_RESOLVED_ADDRESS:-192.0.2.10}"
+      ;;
+    test-alb.elb.eu-west-1.amazonaws.com)
+      printf '%s\n' "${OR_EKS_STACK_TEST_ALB_RESOLVED_ADDRESS:-192.0.2.10}"
       ;;
   esac
 }
@@ -195,7 +232,8 @@ test_apply() {
   assert_contains $'helm\tstatus\topenremote-external-dns\t--kube-context\ttest-cluster@eu-west-1\t--namespace\tkube-system'
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\trollout\tstatus\tdeployment/openremote-external-dns'
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\tget\tserviceaccount\texternal-dns'
-  assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\thaproxy\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--http-port\t80\t--https-port\t8443\t--timeout\t20m\t--values-dir\t'"$values_dir"
+  assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\thaproxy\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--timeout\t20m\t--http-port\t80\t--https-port\t8443\t--values-dir\t'"$values_dir"
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tnamespace\tstack-a\topenremote.io/certificate-mode=acme\t--overwrite'
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tget\tservice\tproxy'
   assert_contains $'dig\t+short\tstack-a.example.com\tA'
   assert_contains $'dig\t+short\ttest-nlb.elb.eu-west-1.amazonaws.com\tA'
@@ -212,6 +250,35 @@ test_apply() {
     "Apply did not report the canonical Manager URL"
 }
 
+test_ingress_existing_certificate_apply() {
+  local output
+
+  output="$(run_eks_stack apply \
+    --name stack-a \
+    --cluster test-cluster \
+    --hostname stack-a.example.com \
+    --profile '' \
+    --exposure ingress \
+    --certificate-mode existing \
+    --certificate-arn "$TEST_CERTIFICATE_ARN")"
+
+  assert_contains $'aws-sts\tget-caller-identity\t--query\tAccount\t--output\ttext'
+  assert_contains $'aws-acm\tdescribe-certificate\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"$'\t--output\tjson'
+  assert_contains $'aws-acm\tlist-tags-for-certificate\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"$'\t--output\tjson'
+  assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\tingress\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--timeout\t20m\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tnamespace\tstack-a\topenremote.io/certificate-mode=existing\topenremote.io/certificate-arn='"$TEST_CERTIFICATE_ARN"$'\t--overwrite'
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tget\tingress\tproxy'
+  assert_contains $'dig\t+short\ttest-alb.elb.eu-west-1.amazonaws.com\tA'
+  assert_contains 'https://stack-a.example.com/manager/'
+  assert_not_contains $'exec\tdeployment/proxy'
+  assert_before $'aws-acm\tdescribe-certificate' $'or-stack\tapply'
+  assert_before $'or-stack\tapply' $'get\tingress\tproxy'
+  grep -F -- "Validated user-owned ACM certificate '$TEST_CERTIFICATE_ARN'" \
+    <<< "$output" >/dev/null || fail "Apply did not report ACM validation"
+  grep -F -- "The shared ALB is 'test-alb.elb.eu-west-1.amazonaws.com'" \
+    <<< "$output" >/dev/null || fail "Apply did not report shared ALB readiness"
+}
+
 test_apply_reuses_valid_certificate() {
   OR_EKS_STACK_TEST_HTTPS_READY_IMMEDIATELY=true \
     run_eks_stack apply \
@@ -226,8 +293,19 @@ test_apply_reuses_valid_certificate() {
 }
 
 test_lifecycle_delegation() {
-  run_eks_stack status --name stack-a --cluster test-cluster --profile '' >/dev/null
+  local status_output
+
+  status_output="$(OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+    OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+    run_eks_stack status --name stack-a --cluster test-cluster --profile '')"
   assert_contains $'or-stack\tstatus\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1'
+  assert_contains $'aws-acm\tdescribe-certificate\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"$'\t--query\tCertificate.Status\t--output\ttext'
+  grep -Fx -- 'Certificate mode: existing' <<< "$status_output" >/dev/null || fail \
+    "Status did not report the recorded certificate mode"
+  grep -Fx -- "Certificate ARN: $TEST_CERTIFICATE_ARN" <<< "$status_output" >/dev/null || fail \
+    "Status did not report the recorded certificate ARN"
+  grep -Fx -- 'Certificate status: ISSUED' <<< "$status_output" >/dev/null || fail \
+    "Status did not report the current ACM certificate status"
 
   run_eks_stack credentials --name stack-a --cluster test-cluster --profile '' >/dev/null
   assert_contains $'or-stack\tcredentials\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1'
@@ -235,16 +313,31 @@ test_lifecycle_delegation() {
   run_eks_stack uninstall --name stack-a --cluster test-cluster \
     --profile '' --timeout 15m >/dev/null
   assert_contains $'or-stack\tuninstall\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--timeout\t15m'
+  assert_not_contains 'delete-certificate'
 
   run_eks_stack destroy --name stack-a --cluster test-cluster \
     --profile '' --confirm stack-a --timeout 15m >/dev/null
   assert_contains $'or-stack\tdestroy\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--confirm\tstack-a\t--timeout\t15m'
+  assert_not_contains 'delete-certificate'
 }
 
 test_validation() {
   if (run_eks_stack apply --name stack-a --cluster test-cluster \
       --hostname stack-a.example.com --exposure ingress) >/dev/null 2>&1; then
-    fail "Ingress exposure was accepted before ACM automation exists"
+    fail "Ingress exposure accepted a missing certificate mode"
+  fi
+
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress \
+      --certificate-mode existing) >/dev/null 2>&1; then
+    fail "Existing certificate mode accepted a missing ARN"
+  fi
+
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress \
+      --certificate-mode managed --certificate-arn "$TEST_CERTIFICATE_ARN") \
+      >/dev/null 2>&1; then
+    fail "Unimplemented managed certificate mode was accepted"
   fi
 
   if (run_eks_stack apply --name stack-a --cluster test-cluster) >/dev/null 2>&1; then
@@ -294,6 +387,51 @@ test_validation() {
     fail "ExternalDNS without an IRSA role was accepted"
   fi
 
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress \
+      --certificate-mode existing \
+      --certificate-arn arn:aws:acm:us-east-1:123456789012:certificate/test) \
+      >/dev/null 2>&1; then
+    fail "An ACM certificate from another region was accepted"
+  fi
+  assert_not_contains $'or-stack\tapply'
+
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress \
+      --certificate-mode existing \
+      --certificate-arn arn:aws:acm:eu-west-1:210987654321:certificate/test) \
+      >/dev/null 2>&1; then
+    fail "An ACM certificate from another account was accepted"
+  fi
+  assert_not_contains $'or-stack\tapply'
+
+  if (OR_EKS_STACK_TEST_CERTIFICATE_JSON='{"Certificate":{"Status":"PENDING_VALIDATION","DomainName":"*.example.com","SubjectAlternativeNames":["*.example.com"]}}' \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com --exposure ingress \
+        --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN") \
+      >/dev/null 2>&1; then
+    fail "A non-issued ACM certificate was accepted"
+  fi
+  assert_not_contains $'or-stack\tapply'
+
+  if (OR_EKS_STACK_TEST_CERTIFICATE_JSON='{"Certificate":{"Status":"ISSUED","DomainName":"*.example.com","SubjectAlternativeNames":["*.example.com"]}}' \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname nested.stack-a.example.com --exposure ingress \
+        --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN") \
+      >/dev/null 2>&1; then
+    fail "A one-level wildcard covered a multi-level hostname"
+  fi
+  assert_not_contains $'or-stack\tapply'
+
+  if (OR_EKS_STACK_TEST_CERTIFICATE_TAGS='{"Tags":[{"Key":"openremote.io/managed-by","Value":"or-eks-stack"}]}' \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com --exposure ingress \
+        --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN") \
+      >/dev/null 2>&1; then
+    fail "A stack-managed ACM certificate was accepted in existing mode"
+  fi
+  assert_not_contains $'or-stack\tapply'
+
   if addresses_intersect '192.0.2.10' '198.51.100.20'; then
     fail "Unrelated stale and current load-balancer addresses matched"
   fi
@@ -302,6 +440,7 @@ test_validation() {
 }
 
 test_apply
+test_ingress_existing_certificate_apply
 test_apply_reuses_valid_certificate
 test_lifecycle_delegation
 test_validation

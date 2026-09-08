@@ -14,9 +14,11 @@ OpenRemote stack. See [`cluster/eks/README.md`](cluster/eks/README.md) for its
 configuration and safety model.
 
 [`or-eks-stack`](or-eks-stack) is the normal stack command for an EKS cluster
-with OpenRemote-managed ExternalDNS. Its default HAProxy workflow delegates
-the Kubernetes installation to `or-stack`, then waits for the stack NLB, DNS,
-ACME certificate, and trusted Manager HTTPS endpoint.
+with OpenRemote-managed ExternalDNS. Its default HAProxy workflow coordinates
+the stack NLB and ACME certificate. Its explicit Ingress workflow validates an
+existing user-owned ACM certificate and coordinates the shared ALB. Both
+delegate the Kubernetes installation to `or-stack`, wait for DNS to point at
+the current load balancer, and verify the trusted Manager HTTPS endpoint.
 
 The `eks-setup*.sh` and `eks-cleanup*.sh` scripts below are the legacy combined
 cluster-and-stack workflow. They will be split further as part of multi-stack
@@ -79,8 +81,8 @@ checks that its domain filter covers the requested hostname. The managed Route
 [`cluster/eks/README.md`](cluster/eks/README.md).
 
 The portable `or-stack` command remains the lower-level interface for custom
-DNS ownership, internal-only stacks, local Kubernetes, and the current Ingress
-workflow. For example, omit DNS automation on EKS with:
+DNS ownership, internal-only stacks, local Kubernetes, and custom orchestration.
+For example, omit DNS automation on EKS with:
 
 ```bash
 ./or-stack apply \
@@ -164,22 +166,31 @@ Ingress, ALB, or NLB.
 #### Shared HTTPS routing with Ingress
 
 Select Ingress explicitly to route web traffic through the shared OpenRemote
-ALB and a private gateway in each stack namespace:
+ALB and a private gateway in each stack namespace. The facade currently
+accepts an existing user-owned certificate:
 
 ```bash
-./or-stack apply \
+./or-eks-stack apply \
   --name stack-a \
-  --kube-context <cluster-name>@eu-west-1 \
-  --target eks \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --profile <aws-profile> \
   --exposure ingress \
   --hostname stack-a.example.com \
-  --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example \
-  --dns external-dns
+  --certificate-mode existing \
+  --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example
 ```
 
+Before changing the stack, `or-eks-stack` verifies that the ACM ARN belongs to
+the EKS account and region, the certificate has status `ISSUED`, and an exact
+name or one-level wildcard covers the requested hostname. It also rejects the
+future `openremote.io/managed-by=or-eks-stack` ownership tag in `existing`
+mode. The certificate remains user-owned: apply only references it, while
+uninstall and destroy never modify or delete it. The selected mode and ARN are
+recorded as namespace annotations and reported by `or-eks-stack status`.
+
 Ingress mode additionally validates the shared `openremote-alb` IngressClass
-and its enforced HTTPS redirect. The ACM certificate must be issued in the same
-AWS account and region as the ALB; its DNS validation can be hosted in another
+and its enforced HTTPS redirect. ACM DNS validation can be hosted in another
 account.
 
 `or-eks-cluster` creates an `openremote-alb` IngressClass backed by an AWS Load
@@ -227,12 +238,16 @@ kubectl --context <cluster-name>@eu-west-1 \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 ```
 
-With `--dns external-dns`, the stack Ingress declares its hostname and the
-cluster controller creates the record that points to the ALB. Without that
-option, create the record externally. The EKS target configures listeners on
-ports 80 and 443, while `or-stack` adds the certificate supplied through
-`--certificate-arn` to the stack's proxy Ingress. It deliberately does not call
-Route 53 itself or create ACM certificates.
+The stack Ingress declares its hostname and the cluster controller creates the
+record that points to the ALB. The facade waits for the Ingress to publish its
+ALB hostname, confirms that public DNS resolves to that current ALB, and then
+verifies the trusted `/manager/` endpoint. The EKS target configures listeners
+on ports 80 and 443, while `or-stack` adds the validated certificate supplied
+through `--certificate-arn` to the stack's proxy Ingress.
+
+Use `or-stack --exposure ingress` directly when DNS or endpoint readiness is
+managed elsewhere. The portable command accepts the ARN but deliberately does
+not inspect ACM or call Route 53.
 
 Certificate annotations are merged across the shared IngressGroup, allowing
 the ALB to use SNI when stacks use different certificates. A wildcard
@@ -308,10 +323,9 @@ cluster. Once that cluster-level preflight succeeds, `or-eks-cluster` bypasses
 system PodDisruptionBudgets during the final node drain so EKS add-ons cannot
 leave cluster deletion waiting indefinitely.
 
-This first `or-eks-stack` increment supports HAProxy apply only. Ingress still
-uses `or-stack --exposure ingress` with an existing ACM certificate ARN. ACM
-certificate discovery and the `existing`, `shared`, and `managed` certificate
-modes are the next facade increment.
+Ingress currently supports `existing` certificate mode. Shared certificate
+discovery and stack-owned `managed` ACM certificate creation, DNS validation,
+and deletion remain the next facade increments.
 
 #### PosgreSQL data directory
 

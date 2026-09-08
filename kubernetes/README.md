@@ -18,9 +18,10 @@ was used during local testing).
 This README file covers deployment on a local machine, for information on deploying into an EKS cluster on AWS, see README-AWS.md
 
 For EKS with the OpenRemote-managed ExternalDNS controller, use
-[`or-eks-stack`](or-eks-stack) for the default end-to-end HAProxy workflow. It
-keeps `or-stack` portable while coordinating the EKS NLB, Route 53 record,
-HAProxy ACME certificate, and HTTPS readiness.
+[`or-eks-stack`](or-eks-stack) for the end-to-end workflow. It keeps `or-stack`
+portable while coordinating load balancer, Route 53, certificate, and HTTPS
+readiness. HAProxy with ACME remains the default; explicit Ingress currently
+accepts a validated existing ACM certificate.
 
 ## Namespaced stack management
 

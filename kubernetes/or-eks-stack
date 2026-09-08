@@ -14,6 +14,10 @@ DEFAULT_AWS_PROFILE="or"
 DEFAULT_TIMEOUT="20m"
 EXTERNAL_DNS_RELEASE_NAME="openremote-external-dns"
 EXTERNAL_DNS_SERVICE_ACCOUNT_NAME="external-dns"
+CERTIFICATE_MANAGED_BY_TAG_KEY="openremote.io/managed-by"
+CERTIFICATE_MANAGED_BY_TAG_VALUE="or-eks-stack"
+CERTIFICATE_MODE_ANNOTATION="openremote.io/certificate-mode"
+CERTIFICATE_ARN_ANNOTATION="openremote.io/certificate-arn"
 
 COMMAND=""
 STACK_NAME="${OR_EKS_STACK_NAME:-}"
@@ -23,13 +27,15 @@ AWS_PROFILE_NAME="${OR_EKS_STACK_AWS_PROFILE:-${AWS_PROFILE:-$DEFAULT_AWS_PROFIL
 KUBE_CONTEXT="${OR_EKS_STACK_KUBE_CONTEXT:-}"
 EXPOSURE="${OR_EKS_STACK_EXPOSURE:-haproxy}"
 HOSTNAME_VALUE="${OR_EKS_STACK_HOSTNAME:-}"
+CERTIFICATE_MODE="${OR_EKS_STACK_CERTIFICATE_MODE:-}"
+CERTIFICATE_ARN="${OR_EKS_STACK_CERTIFICATE_ARN:-}"
 VALUES_DIR="${OR_EKS_STACK_VALUES_DIR:-}"
 TIMEOUT="${OR_EKS_STACK_TIMEOUT:-$DEFAULT_TIMEOUT}"
 HTTP_PORT="${OR_EKS_STACK_HTTP_PORT:-80}"
 HTTPS_PORT="${OR_EKS_STACK_HTTPS_PORT:-443}"
 CONFIRM_STACK_NAME=""
 OR_STACK_COMMAND="${OR_EKS_STACK_OR_STACK:-$SCRIPT_DIR/or-stack}"
-NLB_ADDRESS=""
+LOAD_BALANCER_ADDRESS=""
 
 usage() {
   cat <<'EOF'
@@ -43,8 +49,8 @@ Usage:
   or-eks-stack destroy --name <name> --cluster <cluster> --confirm <name> [options]
 
 Commands:
-  apply                 Install or upgrade the stack, wait for its NLB and DNS,
-                        trigger HAProxy ACME issuance, and verify trusted HTTPS.
+  apply                 Install or upgrade the stack, wait for its load balancer
+                        and DNS, resolve TLS, and verify trusted HTTPS.
   status                Show the stack's Kubernetes status.
   credentials           Show the Manager administrator login credentials.
   uninstall             Remove workloads while retaining namespace, credentials,
@@ -61,15 +67,22 @@ Options:
                         credentials. Env: OR_EKS_STACK_AWS_PROFILE. Default: or.
   --kube-context <c>    Kubernetes context. Defaults to <cluster>@<region>.
                         Env: OR_EKS_STACK_KUBE_CONTEXT.
-  --exposure <mode>     Public exposure. This first increment supports only
-                        haproxy. Env: OR_EKS_STACK_EXPOSURE. Default: haproxy.
+  --exposure <mode>     Public exposure: haproxy or ingress. Env:
+                        OR_EKS_STACK_EXPOSURE. Default: haproxy.
   --hostname <host>     Public, ExternalDNS-managed hostname. Required by apply.
                         Env: OR_EKS_STACK_HOSTNAME.
+  --certificate-mode <mode>
+                        Certificate ownership mode for Ingress. This increment
+                        supports existing. Env:
+                        OR_EKS_STACK_CERTIFICATE_MODE.
+  --certificate-arn <arn>
+                        Existing ACM certificate ARN for Ingress. Env:
+                        OR_EKS_STACK_CERTIFICATE_ARN.
   --http-port <port>    Public HAProxy Service HTTP port. Env:
-                        OR_EKS_STACK_HTTP_PORT. Must remain 80 for automated
-                        HTTP-01 certificate issuance.
+                        OR_EKS_STACK_HTTP_PORT. HAProxy only; must remain 80 for
+                        automated HTTP-01 certificate issuance.
   --https-port <port>   Public HAProxy Service HTTPS port. Env:
-                        OR_EKS_STACK_HTTPS_PORT. Default: 443.
+                        OR_EKS_STACK_HTTPS_PORT. HAProxy only; default: 443.
   --values-dir <path>   Optional per-component values directory passed to
                         or-stack. Env: OR_EKS_STACK_VALUES_DIR.
   --timeout <duration>  Timeout used by Helm and each endpoint readiness phase.
@@ -81,17 +94,21 @@ Options:
 This is an AWS-aware facade over or-stack. It requires the OpenRemote-managed
 ExternalDNS release installed by or-eks-cluster, with active Route 53 writes
 for the requested hostname. The portable or-stack command remains available
-for local clusters, unmanaged DNS, internal-only stacks, and the current
-low-level EKS Ingress workflow.
+for local clusters, unmanaged DNS, and internal-only stacks.
 
-Ingress certificate discovery and ACM lifecycle automation are intentionally
-deferred to the next increment; use or-stack directly with an existing ACM ARN
-until those certificate modes are implemented here.
+Ingress currently requires certificate mode existing and an explicit ACM ARN.
+The certificate is validated but remains user-owned and is never changed or
+deleted by stack lifecycle operations. Shared certificate discovery and
+managed ACM certificate creation are intentionally deferred.
 EOF
 }
 
 log() {
   printf '[or-eks-stack] %s\n' "$*"
+}
+
+warn() {
+  printf '[or-eks-stack] WARNING: %s\n' "$*" >&2
 }
 
 die() {
@@ -104,12 +121,24 @@ require_command() {
     "Required command '$1' was not found in PATH."
 }
 
-aws_eks() {
+aws_cli() {
   if [ -n "$AWS_PROFILE_NAME" ]; then
-    aws eks "$@" --region "$AWS_REGION_NAME" --profile "$AWS_PROFILE_NAME"
+    aws "$@" --region "$AWS_REGION_NAME" --profile "$AWS_PROFILE_NAME"
   else
-    aws eks "$@" --region "$AWS_REGION_NAME"
+    aws "$@" --region "$AWS_REGION_NAME"
   fi
+}
+
+aws_eks() {
+  aws_cli eks "$@"
+}
+
+aws_acm() {
+  aws_cli acm "$@"
+}
+
+aws_sts() {
+  aws_cli sts "$@"
 }
 
 run_or_stack() {
@@ -171,6 +200,16 @@ parse_arguments() {
       --hostname)
         [ "$#" -ge 2 ] || die "Option --hostname requires a value."
         HOSTNAME_VALUE="$2"
+        shift 2
+        ;;
+      --certificate-mode)
+        [ "$#" -ge 2 ] || die "Option --certificate-mode requires a value."
+        CERTIFICATE_MODE="$2"
+        shift 2
+        ;;
+      --certificate-arn)
+        [ "$#" -ge 2 ] || die "Option --certificate-arn requires a value."
+        CERTIFICATE_ARN="$2"
         shift 2
         ;;
       --http-port)
@@ -289,15 +328,37 @@ validate_hostname() {
 }
 
 validate_apply_options() {
-  [ "$EXPOSURE" = "haproxy" ] || die \
-    "This first or-eks-stack increment supports only HAProxy exposure. Use or-stack directly for Ingress until ACM automation is implemented."
   validate_hostname
-  validate_port "$HTTP_PORT" "HTTP"
-  validate_port "$HTTPS_PORT" "HTTPS"
-  [ "$HTTP_PORT" != "$HTTPS_PORT" ] || die \
-    "HAProxy HTTP and HTTPS ports must be different."
-  [ "$HTTP_PORT" = "80" ] || die \
-    "The automated HAProxy ACME workflow requires public HTTP port 80. Use or-stack directly for a custom HTTP port."
+
+  case "$EXPOSURE" in
+    haproxy)
+      [ -z "$CERTIFICATE_MODE" ] || die \
+        "Option --certificate-mode is only valid with Ingress exposure."
+      [ -z "$CERTIFICATE_ARN" ] || die \
+        "Option --certificate-arn is only valid with Ingress exposure."
+      validate_port "$HTTP_PORT" "HTTP"
+      validate_port "$HTTPS_PORT" "HTTPS"
+      [ "$HTTP_PORT" != "$HTTPS_PORT" ] || die \
+        "HAProxy HTTP and HTTPS ports must be different."
+      [ "$HTTP_PORT" = "80" ] || die \
+        "The automated HAProxy ACME workflow requires public HTTP port 80. Use or-stack directly for a custom HTTP port."
+      ;;
+    ingress)
+      [ "$CERTIFICATE_MODE" = "existing" ] || die \
+        "Ingress currently requires --certificate-mode existing; shared and managed modes are not implemented yet."
+      [ -n "$CERTIFICATE_ARN" ] || die \
+        "Ingress with certificate mode existing requires --certificate-arn."
+      if [[ ! "$CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:[a-z0-9-]+:[0-9]{12}:certificate/[A-Za-z0-9-]+$ ]]; then
+        die "Certificate ARN must be a valid ACM certificate ARN."
+      fi
+      [ "$HTTP_PORT" = "80" ] && [ "$HTTPS_PORT" = "443" ] || die \
+        "Options --http-port and --https-port are only configurable with HAProxy exposure."
+      ;;
+    *)
+      die "Unsupported exposure '$EXPOSURE'; expected haproxy or ingress."
+      ;;
+  esac
+
   if [ -n "$VALUES_DIR" ] && [ ! -d "$VALUES_DIR" ]; then
     die "Values directory '$VALUES_DIR' does not exist."
   fi
@@ -414,7 +475,11 @@ require_managed_external_dns() {
     -o 'go-template={{range (index .spec.template.spec.containers 0).args}}{{println .}}{{end}}')" || die \
       "Unable to inspect the ExternalDNS deployment."
 
-  require_external_dns_argument "$external_dns_args" "--source=service"
+  if [ "$EXPOSURE" = "ingress" ]; then
+    require_external_dns_argument "$external_dns_args" "--source=ingress"
+  else
+    require_external_dns_argument "$external_dns_args" "--source=service"
+  fi
   require_external_dns_argument "$external_dns_args" "--policy=sync"
   require_external_dns_argument "$external_dns_args" "--registry=txt"
   require_external_dns_argument "$external_dns_args" \
@@ -445,20 +510,115 @@ require_managed_external_dns() {
     "ExternalDNS ServiceAccount kube-system/$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME has no IRSA role annotation."
 }
 
+certificate_name_covers_hostname() {
+  local certificate_name
+  local wildcard_suffix
+
+  certificate_name="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  certificate_name="${certificate_name%.}"
+  if [ "$certificate_name" = "$HOSTNAME_VALUE" ]; then
+    return 0
+  fi
+
+  case "$certificate_name" in
+    \*.*)
+      wildcard_suffix="${certificate_name#*.}"
+      [ "${HOSTNAME_VALUE#*.}" = "$wildcard_suffix" ]
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+require_existing_acm_certificate() {
+  local certificate_account
+  local certificate_json
+  local certificate_name
+  local certificate_region
+  local certificate_status
+  local certificate_tags
+  local current_account
+  local describe_status
+  local hostname_covered=false
+  local tags_status
+
+  if [[ ! "$CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:([^:]+):([0-9]{12}):certificate/[A-Za-z0-9-]+$ ]]; then
+    die "Certificate ARN must be a valid ACM certificate ARN."
+  fi
+  certificate_region="${BASH_REMATCH[1]}"
+  certificate_account="${BASH_REMATCH[2]}"
+
+  [ "$certificate_region" = "$AWS_REGION_NAME" ] || die \
+    "Certificate '$CERTIFICATE_ARN' is in region '$certificate_region', but cluster '$CLUSTER_NAME' is in '$AWS_REGION_NAME'."
+  current_account="$(aws_sts get-caller-identity --query Account --output text)" || die \
+    "Unable to determine the EKS AWS account."
+  [ "$certificate_account" = "$current_account" ] || die \
+    "Certificate '$CERTIFICATE_ARN' belongs to account '$certificate_account', but the EKS account is '$current_account'."
+
+  set +e
+  certificate_json="$(aws_acm describe-certificate \
+    --certificate-arn "$CERTIFICATE_ARN" \
+    --output json 2>&1)"
+  describe_status=$?
+  set -e
+  [ "$describe_status" -eq 0 ] || die \
+    "Unable to describe existing ACM certificate '$CERTIFICATE_ARN': $certificate_json"
+
+  certificate_status="$(jq -r '.Certificate.Status // empty' \
+    <<< "$certificate_json")" || die \
+      "Unable to read existing ACM certificate metadata."
+  [ "$certificate_status" = "ISSUED" ] || die \
+    "Existing ACM certificate '$CERTIFICATE_ARN' is '$certificate_status', not ISSUED."
+
+  while IFS= read -r certificate_name; do
+    [ -n "$certificate_name" ] || continue
+    if certificate_name_covers_hostname "$certificate_name"; then
+      hostname_covered=true
+      break
+    fi
+  done < <(jq -r \
+    '[.Certificate.DomainName, .Certificate.SubjectAlternativeNames[]?] | unique[] | select(. != null)' \
+    <<< "$certificate_json")
+  [ "$hostname_covered" = true ] || die \
+    "Existing ACM certificate '$CERTIFICATE_ARN' does not cover '$HOSTNAME_VALUE'."
+
+  set +e
+  certificate_tags="$(aws_acm list-tags-for-certificate \
+    --certificate-arn "$CERTIFICATE_ARN" \
+    --output json 2>&1)"
+  tags_status=$?
+  set -e
+  [ "$tags_status" -eq 0 ] || die \
+    "Unable to inspect ownership tags on existing ACM certificate '$CERTIFICATE_ARN': $certificate_tags"
+  if jq -e \
+      --arg key "$CERTIFICATE_MANAGED_BY_TAG_KEY" \
+      --arg value "$CERTIFICATE_MANAGED_BY_TAG_VALUE" \
+      '.Tags[]? | select(.Key == $key and .Value == $value)' \
+      <<< "$certificate_tags" >/dev/null; then
+    die "Certificate '$CERTIFICATE_ARN' is marked as managed by or-eks-stack and cannot be used in existing mode."
+  fi
+
+  log "Validated user-owned ACM certificate '$CERTIFICATE_ARN' for '$HOSTNAME_VALUE'."
+}
+
 apply_portable_stack() {
   local stack_args=(
     apply
     --name "$STACK_NAME"
     --kube-context "$KUBE_CONTEXT"
     --target eks
-    --exposure haproxy
+    --exposure "$EXPOSURE"
     --dns external-dns
     --hostname "$HOSTNAME_VALUE"
-    --http-port "$HTTP_PORT"
-    --https-port "$HTTPS_PORT"
     --timeout "$TIMEOUT"
   )
 
+  if [ "$EXPOSURE" = "haproxy" ]; then
+    stack_args+=(--http-port "$HTTP_PORT" --https-port "$HTTPS_PORT")
+  else
+    stack_args+=(--certificate-arn "$CERTIFICATE_ARN")
+  fi
   if [ -n "$VALUES_DIR" ]; then
     stack_args+=(--values-dir "$VALUES_DIR")
   fi
@@ -466,38 +626,63 @@ apply_portable_stack() {
   run_or_stack "${stack_args[@]}"
 }
 
-wait_for_nlb() {
+record_certificate_configuration() {
+  local certificate_mode=acme
+
+  if [ "$EXPOSURE" = "ingress" ]; then
+    certificate_mode="$CERTIFICATE_MODE"
+    kubectl --context "$KUBE_CONTEXT" annotate namespace "$STACK_NAME" \
+      "$CERTIFICATE_MODE_ANNOTATION=$certificate_mode" \
+      "$CERTIFICATE_ARN_ANNOTATION=$CERTIFICATE_ARN" \
+      --overwrite >/dev/null
+  else
+    kubectl --context "$KUBE_CONTEXT" annotate namespace "$STACK_NAME" \
+      "$CERTIFICATE_MODE_ANNOTATION=$certificate_mode" \
+      --overwrite >/dev/null
+  fi
+}
+
+wait_for_load_balancer() {
   local deadline
+  local load_balancer_kind
   local next_notice
   local now
+  local resource_kind
   local timeout_seconds
 
+  if [ "$EXPOSURE" = "ingress" ]; then
+    load_balancer_kind="shared ALB"
+    resource_kind="ingress"
+  else
+    load_balancer_kind="stack NLB"
+    resource_kind="service"
+  fi
   timeout_seconds="$(duration_seconds "$TIMEOUT")"
   now="$(date +%s)"
   deadline="$((now + timeout_seconds))"
   next_notice="$((now + 30))"
-  NLB_ADDRESS=""
-  log "Waiting for the stack NLB address."
+  LOAD_BALANCER_ADDRESS=""
+  log "Waiting for the $load_balancer_kind address."
 
   while [ "$now" -lt "$deadline" ]; do
-    NLB_ADDRESS="$(kubectl --context "$KUBE_CONTEXT" \
+    LOAD_BALANCER_ADDRESS="$(kubectl --context "$KUBE_CONTEXT" \
       --namespace "$STACK_NAME" \
-      get service proxy \
+      get "$resource_kind" proxy \
       -o 'jsonpath={.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}' \
       2>/dev/null || true)"
-    if [ -n "$NLB_ADDRESS" ]; then
-      log "Stack NLB is '$NLB_ADDRESS'."
+    if [ -n "$LOAD_BALANCER_ADDRESS" ]; then
+      log "The $load_balancer_kind is '$LOAD_BALANCER_ADDRESS'."
       return
     fi
     if [ "$now" -ge "$next_notice" ]; then
-      log "The stack NLB address is still pending."
+      log "The $load_balancer_kind address is still pending."
       next_notice="$((now + 30))"
     fi
     sleep 5
     now="$(date +%s)"
   done
 
-  die "The proxy Service did not receive an NLB address within '$TIMEOUT'; inspect service '$STACK_NAME/proxy' and the AWS Load Balancer Controller."
+  die "The proxy $resource_kind did not receive a $load_balancer_kind address within '$TIMEOUT'; inspect '$STACK_NAME/proxy' and the AWS Load Balancer Controller."
 }
 
 resolve_addresses() {
@@ -526,8 +711,8 @@ addresses_intersect() {
 wait_for_dns() {
   local deadline
   local hostname_addresses
-  local nlb_address="$1"
-  local nlb_addresses
+  local load_balancer_address="$1"
+  local load_balancer_addresses
   local next_notice
   local now
   local timeout_seconds
@@ -536,20 +721,20 @@ wait_for_dns() {
   now="$(date +%s)"
   deadline="$((now + timeout_seconds))"
   next_notice="$((now + 30))"
-  log "Waiting for '$HOSTNAME_VALUE' to resolve to the stack NLB '$nlb_address'."
+  log "Waiting for '$HOSTNAME_VALUE' to resolve to the current load balancer '$load_balancer_address'."
 
   while [ "$now" -lt "$deadline" ]; do
     hostname_addresses="$(resolve_addresses "$HOSTNAME_VALUE")"
-    if [[ "$nlb_address" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || \
-       [[ "$nlb_address" == *:* ]]; then
-      nlb_addresses="$nlb_address"
+    if [[ "$load_balancer_address" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || \
+       [[ "$load_balancer_address" == *:* ]]; then
+      load_balancer_addresses="$load_balancer_address"
     else
-      nlb_addresses="$(resolve_addresses "$nlb_address")"
+      load_balancer_addresses="$(resolve_addresses "$load_balancer_address")"
     fi
 
-    if [ -n "$hostname_addresses" ] && [ -n "$nlb_addresses" ] && \
-       addresses_intersect "$hostname_addresses" "$nlb_addresses"; then
-      log "DNS now resolves to the current stack NLB."
+    if [ -n "$hostname_addresses" ] && [ -n "$load_balancer_addresses" ] && \
+       addresses_intersect "$hostname_addresses" "$load_balancer_addresses"; then
+      log "DNS now resolves to the current load balancer."
       return
     fi
     if [ "$now" -ge "$next_notice" ]; then
@@ -560,12 +745,12 @@ wait_for_dns() {
     now="$(date +%s)"
   done
 
-  die "DNS '$HOSTNAME_VALUE' did not resolve to the current stack NLB within '$TIMEOUT'. Inspect deployment/$EXTERNAL_DNS_RELEASE_NAME logs and allow for resolver negative caching before retrying."
+  die "DNS '$HOSTNAME_VALUE' did not resolve to the current load balancer within '$TIMEOUT'. Inspect deployment/$EXTERNAL_DNS_RELEASE_NAME logs and allow for resolver negative caching before retrying."
 }
 
 public_manager_url() {
   printf 'https://%s' "$HOSTNAME_VALUE"
-  if [ "$HTTPS_PORT" != "443" ]; then
+  if [ "$EXPOSURE" = "haproxy" ] && [ "$HTTPS_PORT" != "443" ]; then
     printf ':%s' "$HTTPS_PORT"
   fi
   printf '/manager/'
@@ -620,6 +805,9 @@ wait_for_https() {
     now="$(date +%s)"
   done
 
+  if [ "$EXPOSURE" = "ingress" ]; then
+    die "Trusted HTTPS did not become ready at '$endpoint_url' within '$TIMEOUT'. Inspect ingress '$STACK_NAME/proxy', the shared ALB, and its ACM listener certificate."
+  fi
   die "Trusted HTTPS did not become ready at '$endpoint_url' within '$TIMEOUT'. Inspect deployment/proxy logs and its persisted certificate state."
 }
 
@@ -631,16 +819,25 @@ apply_stack() {
   require_command curl
   [ -x "$OR_STACK_COMMAND" ] || die \
     "Portable stack command '$OR_STACK_COMMAND' is missing or not executable."
+  if [ "$EXPOSURE" = "ingress" ]; then
+    require_command jq
+  fi
 
   require_eks_target
   require_managed_external_dns
+  if [ "$EXPOSURE" = "ingress" ]; then
+    require_existing_acm_certificate
+  fi
   apply_portable_stack
+  record_certificate_configuration
 
-  wait_for_nlb
-  wait_for_dns "$NLB_ADDRESS"
+  wait_for_load_balancer
+  wait_for_dns "$LOAD_BALANCER_ADDRESS"
   endpoint_url="$(public_manager_url)"
 
-  if endpoint_is_ready "$endpoint_url" 2>/dev/null; then
+  if [ "$EXPOSURE" = "ingress" ]; then
+    wait_for_https "$endpoint_url"
+  elif endpoint_is_ready "$endpoint_url" 2>/dev/null; then
     log "HAProxy already presents a trusted certificate for '$HOSTNAME_VALUE'."
   else
     trigger_acme
@@ -660,6 +857,36 @@ apply_stack() {
   printf '\n'
 }
 
+show_certificate_configuration() {
+  local certificate_arn
+  local certificate_mode
+  local certificate_status
+
+  certificate_mode="$(kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    -o 'go-template={{index .metadata.annotations "openremote.io/certificate-mode"}}' \
+    2>/dev/null || true)"
+  certificate_arn="$(kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    -o 'go-template={{index .metadata.annotations "openremote.io/certificate-arn"}}' \
+    2>/dev/null || true)"
+
+  log "Certificate ownership"
+  printf 'Certificate mode: %s\n' "${certificate_mode:-unrecorded}"
+  if [ -n "$certificate_arn" ]; then
+    printf 'Certificate ARN: %s\n' "$certificate_arn"
+  fi
+
+  if [ "$certificate_mode" = "existing" ] && [ -n "$certificate_arn" ]; then
+    if certificate_status="$(aws_acm describe-certificate \
+        --certificate-arn "$certificate_arn" \
+        --query 'Certificate.Status' \
+        --output text 2>/dev/null)"; then
+      printf 'Certificate status: %s\n' "$certificate_status"
+    else
+      warn "Unable to read the current status of existing ACM certificate '$certificate_arn'."
+    fi
+  fi
+}
+
 delegate_stack_command() {
   local stack_args=(
     "$COMMAND"
@@ -677,6 +904,9 @@ delegate_stack_command() {
   esac
 
   run_or_stack "${stack_args[@]}"
+  if [ "$COMMAND" = "status" ]; then
+    show_certificate_configuration
+  fi
 }
 
 main() {
