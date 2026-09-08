@@ -17,6 +17,7 @@ DEFAULT_EXTERNAL_DNS_CHART_VERSION="1.21.1"
 DEFAULT_EXTERNAL_DNS_IMAGE_TAG="v0.22.0"
 EXTERNAL_DNS_RELEASE_NAME="openremote-external-dns"
 EXTERNAL_DNS_SERVICE_ACCOUNT_NAME="external-dns"
+SHARED_CERTIFICATE_ARN_ANNOTATION="openremote.io/shared-certificate-arn"
 
 COMMAND=""
 CLUSTER_NAME="${OR_EKS_CLUSTER_NAME:-}"
@@ -34,9 +35,11 @@ EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL_ID="${OR_EKS_EXTERNAL_DNS_ASSUME_ROLE_EXTERNAL
 EXTERNAL_DNS_OWNER_ID="${OR_EKS_EXTERNAL_DNS_OWNER_ID:-}"
 EXTERNAL_DNS_IRSA_ROLE_NAME="${OR_EKS_EXTERNAL_DNS_IRSA_ROLE_NAME:-}"
 EXTERNAL_DNS_DRY_RUN="${OR_EKS_EXTERNAL_DNS_DRY_RUN:-false}"
+SHARED_CERTIFICATE_ARN="${OR_EKS_SHARED_CERTIFICATE_ARN:-}"
 CONFIRM_CLUSTER_NAME=""
 MANAGE_LOAD_BALANCER_CONTROLLER=true
 MANAGE_EXTERNAL_DNS=true
+CLEAR_SHARED_CERTIFICATE=false
 RENDERED_CONFIG_FILE=""
 EXTERNAL_DNS_IAM_CONFIG_FILE=""
 
@@ -70,6 +73,13 @@ Options:
                       OR_EKS_LOAD_BALANCER_CONTROLLER_CHART_VERSION.
   --skip-load-balancer-controller
                       Do not install or reconcile the controller.
+  --shared-certificate-arn <arn>
+                      Record an externally managed ACM certificate as the
+                      cluster's shared Ingress certificate. Env:
+                      OR_EKS_SHARED_CERTIFICATE_ARN.
+  --clear-shared-certificate
+                      Remove the configured shared certificate reference.
+                      The ACM certificate itself is never modified or deleted.
   --external-dns-zone-id <id>
                       Public Route 53 hosted-zone ID. Env:
                       OR_EKS_EXTERNAL_DNS_HOSTED_ZONE_ID.
@@ -106,8 +116,9 @@ Options:
 
 The command manages only cluster-scoped infrastructure and add-ons. It never
 installs or removes an OpenRemote stack, stack namespace, certificate, or stack
-data volume. Its optional ExternalDNS add-on reconciles only explicitly labeled
-stack endpoints.
+data volume. A shared certificate ARN is configuration only; the certificate
+remains externally managed. Its optional ExternalDNS add-on reconciles only
+explicitly labeled stack endpoints.
 EOF
 }
 
@@ -211,6 +222,15 @@ parse_arguments() {
         MANAGE_LOAD_BALANCER_CONTROLLER=false
         shift
         ;;
+      --shared-certificate-arn)
+        [ "$#" -ge 2 ] || die "Option --shared-certificate-arn requires a value."
+        SHARED_CERTIFICATE_ARN="$2"
+        shift 2
+        ;;
+      --clear-shared-certificate)
+        CLEAR_SHARED_CERTIFICATE=true
+        shift
+        ;;
       --external-dns-zone-id)
         [ "$#" -ge 2 ] || die "Option --external-dns-zone-id requires a value."
         EXTERNAL_DNS_HOSTED_ZONE_ID="$2"
@@ -285,6 +305,24 @@ parse_arguments() {
   if [ -z "$EXTERNAL_DNS_IRSA_ROLE_NAME" ]; then
     EXTERNAL_DNS_IRSA_ROLE_NAME="openremote-${CLUSTER_NAME}-${AWS_REGION_NAME}-external-dns"
   fi
+}
+
+validate_shared_certificate_configuration() {
+  if [ -n "$SHARED_CERTIFICATE_ARN" ] && [ "$CLEAR_SHARED_CERTIFICATE" = true ]; then
+    die "Options --shared-certificate-arn and --clear-shared-certificate cannot be used together."
+  fi
+  if { [ -n "$SHARED_CERTIFICATE_ARN" ] || [ "$CLEAR_SHARED_CERTIFICATE" = true ]; } && \
+     [ "$MANAGE_LOAD_BALANCER_CONTROLLER" != true ]; then
+    die "Shared certificate configuration requires management of the openremote-alb IngressClass."
+  fi
+  if [ -z "$SHARED_CERTIFICATE_ARN" ]; then
+    return
+  fi
+  if [[ ! "$SHARED_CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:([a-z0-9-]+):[0-9]{12}:certificate/[A-Za-z0-9-]+$ ]]; then
+    die "Shared certificate ARN must be a valid ACM certificate ARN."
+  fi
+  [ "${BASH_REMATCH[1]}" = "$AWS_REGION_NAME" ] || die \
+    "Shared certificate '$SHARED_CERTIFICATE_ARN' is not in cluster region '$AWS_REGION_NAME'."
 }
 
 external_dns_configuration_present() {
@@ -425,6 +463,8 @@ require_kube_context() {
 }
 
 reconcile_load_balancer_controller() {
+  local deployed_shared_certificate_arn
+
   if [ "$MANAGE_LOAD_BALANCER_CONTROLLER" != true ]; then
     log "Skipping AWS Load Balancer Controller reconciliation."
     return
@@ -470,6 +510,25 @@ reconcile_load_balancer_controller() {
 
   log "Reconciling the shared OpenRemote ALB IngressClass."
   kubectl --context "$KUBE_CONTEXT" apply -f "$DEFAULT_INGRESS_CLASS_FILE"
+
+  if [ -n "$SHARED_CERTIFICATE_ARN" ]; then
+    log "Recording the externally managed shared ACM certificate."
+    kubectl --context "$KUBE_CONTEXT" annotate ingressclass openremote-alb \
+      "$SHARED_CERTIFICATE_ARN_ANNOTATION=$SHARED_CERTIFICATE_ARN" \
+      --overwrite >/dev/null
+  elif [ "$CLEAR_SHARED_CERTIFICATE" = true ]; then
+    deployed_shared_certificate_arn="$(kubectl --context "$KUBE_CONTEXT" \
+      get ingressclass openremote-alb \
+      -o "go-template={{with index .metadata.annotations \"$SHARED_CERTIFICATE_ARN_ANNOTATION\"}}{{.}}{{end}}")" || die \
+        "Unable to inspect the shared ACM certificate configuration."
+    if [ -n "$deployed_shared_certificate_arn" ]; then
+      log "Removing the shared ACM certificate reference."
+      kubectl --context "$KUBE_CONTEXT" annotate ingressclass openremote-alb \
+        "$SHARED_CERTIFICATE_ARN_ANNOTATION-" >/dev/null
+    else
+      log "No shared ACM certificate reference is configured."
+    fi
+  fi
 }
 
 render_external_dns_iam_config() {
@@ -760,6 +819,7 @@ create_cluster() {
   require_command aws
   require_command eksctl
   require_command kubectl
+  validate_shared_certificate_configuration
   validate_external_dns_configuration
   render_cluster_config
 
@@ -783,6 +843,7 @@ apply_cluster() {
 
   require_command aws
   require_command kubectl
+  validate_shared_certificate_configuration
   validate_external_dns_configuration
   require_existing_cluster
   render_cluster_config
@@ -841,6 +902,17 @@ show_external_dns_status() {
   printf 'ExternalDNS TXT owner ID: %s\n' "${owner_id:-unknown}"
   printf 'ExternalDNS dry run: %s\n' "$dry_run"
   printf 'ExternalDNS IRSA role: %s\n' "${service_account_role_arn:-unknown}"
+}
+
+show_shared_certificate_status() {
+  local shared_certificate_arn
+
+  shared_certificate_arn="$(kubectl --context "$KUBE_CONTEXT" \
+    get ingressclass openremote-alb \
+    -o "go-template={{with index .metadata.annotations \"$SHARED_CERTIFICATE_ARN_ANNOTATION\"}}{{.}}{{end}}" \
+    2>/dev/null || true)"
+  printf 'Shared ACM certificate ARN: %s\n' \
+    "${shared_certificate_arn:-not configured}"
 }
 
 show_cluster_status() {
@@ -907,9 +979,12 @@ show_cluster_status() {
       log "Shared OpenRemote ALB IngressClass"
       if ! kubectl --context "$KUBE_CONTEXT" get ingressclass openremote-alb; then
         warn "IngressClass 'openremote-alb' is not installed."
-      elif ! kubectl --context "$KUBE_CONTEXT" get \
-        ingressclassparams.elbv2.k8s.aws openremote-alb; then
-        warn "IngressClassParams 'openremote-alb' is not installed."
+      else
+        show_shared_certificate_status
+        if ! kubectl --context "$KUBE_CONTEXT" get \
+          ingressclassparams.elbv2.k8s.aws openremote-alb; then
+          warn "IngressClassParams 'openremote-alb' is not installed."
+        fi
       fi
     fi
 

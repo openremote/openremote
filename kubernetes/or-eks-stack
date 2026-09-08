@@ -18,6 +18,7 @@ CERTIFICATE_MANAGED_BY_TAG_KEY="openremote.io/managed-by"
 CERTIFICATE_MANAGED_BY_TAG_VALUE="or-eks-stack"
 CERTIFICATE_MODE_ANNOTATION="openremote.io/certificate-mode"
 CERTIFICATE_ARN_ANNOTATION="openremote.io/certificate-arn"
+SHARED_CERTIFICATE_ARN_ANNOTATION="openremote.io/shared-certificate-arn"
 
 COMMAND=""
 STACK_NAME="${OR_EKS_STACK_NAME:-}"
@@ -72,12 +73,13 @@ Options:
   --hostname <host>     Public, ExternalDNS-managed hostname. Required by apply.
                         Env: OR_EKS_STACK_HOSTNAME.
   --certificate-mode <mode>
-                        Certificate ownership mode for Ingress. This increment
-                        supports existing. Env:
-                        OR_EKS_STACK_CERTIFICATE_MODE.
+                        Certificate ownership mode for Ingress: existing or
+                        shared. When omitted, a configured shared certificate
+                        is selected. Env: OR_EKS_STACK_CERTIFICATE_MODE.
   --certificate-arn <arn>
-                        Existing ACM certificate ARN for Ingress. Env:
-                        OR_EKS_STACK_CERTIFICATE_ARN.
+                        Existing ACM certificate ARN for mode existing. Env:
+                        OR_EKS_STACK_CERTIFICATE_ARN. Mode shared reads the ARN
+                        from the cluster's openremote-alb IngressClass.
   --http-port <port>    Public HAProxy Service HTTP port. Env:
                         OR_EKS_STACK_HTTP_PORT. HAProxy only; must remain 80 for
                         automated HTTP-01 certificate issuance.
@@ -96,10 +98,10 @@ ExternalDNS release installed by or-eks-cluster, with active Route 53 writes
 for the requested hostname. The portable or-stack command remains available
 for local clusters, unmanaged DNS, and internal-only stacks.
 
-Ingress currently requires certificate mode existing and an explicit ACM ARN.
-The certificate is validated but remains user-owned and is never changed or
-deleted by stack lifecycle operations. Shared certificate discovery and
-managed ACM certificate creation are intentionally deferred.
+Ingress accepts an explicit existing ACM ARN or the externally managed shared
+certificate configured by or-eks-cluster. Both are validated and are never
+changed or deleted by stack lifecycle operations. Managed ACM certificate
+creation is intentionally deferred.
 EOF
 }
 
@@ -344,13 +346,22 @@ validate_apply_options() {
         "The automated HAProxy ACME workflow requires public HTTP port 80. Use or-stack directly for a custom HTTP port."
       ;;
     ingress)
-      [ "$CERTIFICATE_MODE" = "existing" ] || die \
-        "Ingress currently requires --certificate-mode existing; shared and managed modes are not implemented yet."
-      [ -n "$CERTIFICATE_ARN" ] || die \
-        "Ingress with certificate mode existing requires --certificate-arn."
-      if [[ ! "$CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:[a-z0-9-]+:[0-9]{12}:certificate/[A-Za-z0-9-]+$ ]]; then
-        die "Certificate ARN must be a valid ACM certificate ARN."
-      fi
+      case "$CERTIFICATE_MODE" in
+        existing)
+          [ -n "$CERTIFICATE_ARN" ] || die \
+            "Ingress with certificate mode existing requires --certificate-arn."
+          if [[ ! "$CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:[a-z0-9-]+:[0-9]{12}:certificate/[A-Za-z0-9-]+$ ]]; then
+            die "Certificate ARN must be a valid ACM certificate ARN."
+          fi
+          ;;
+        shared|"")
+          [ -z "$CERTIFICATE_ARN" ] || die \
+            "Option --certificate-arn requires --certificate-mode existing; shared mode uses the cluster configuration."
+          ;;
+        *)
+          die "Unsupported Ingress certificate mode '$CERTIFICATE_MODE'; expected existing or shared. Managed mode is not implemented yet."
+          ;;
+      esac
       [ "$HTTP_PORT" = "80" ] && [ "$HTTPS_PORT" = "443" ] || die \
         "Options --http-port and --https-port are only configurable with HAProxy exposure."
       ;;
@@ -510,6 +521,27 @@ require_managed_external_dns() {
     "ExternalDNS ServiceAccount kube-system/$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME has no IRSA role annotation."
 }
 
+resolve_ingress_certificate() {
+  local shared_certificate_arn
+
+  if [ "$CERTIFICATE_MODE" = "existing" ]; then
+    return
+  fi
+
+  if ! shared_certificate_arn="$(kubectl --context "$KUBE_CONTEXT" \
+      get ingressclass openremote-alb \
+      -o "go-template={{with index .metadata.annotations \"$SHARED_CERTIFICATE_ARN_ANNOTATION\"}}{{.}}{{end}}" \
+      2>/dev/null)"; then
+    die "Unable to inspect shared certificate configuration on IngressClass 'openremote-alb'."
+  fi
+  [ -n "$shared_certificate_arn" ] || die \
+    "Ingress has no certificate selection. Configure the cluster with or-eks-cluster --shared-certificate-arn, or use --certificate-mode existing with --certificate-arn."
+
+  CERTIFICATE_MODE=shared
+  CERTIFICATE_ARN="$shared_certificate_arn"
+  log "Selected the cluster's shared ACM certificate '$CERTIFICATE_ARN'."
+}
+
 certificate_name_covers_hostname() {
   local certificate_name
   local wildcard_suffix
@@ -531,7 +563,7 @@ certificate_name_covers_hostname() {
   esac
 }
 
-require_existing_acm_certificate() {
+require_selected_acm_certificate() {
   local certificate_account
   local certificate_json
   local certificate_name
@@ -563,13 +595,13 @@ require_existing_acm_certificate() {
   describe_status=$?
   set -e
   [ "$describe_status" -eq 0 ] || die \
-    "Unable to describe existing ACM certificate '$CERTIFICATE_ARN': $certificate_json"
+    "Unable to describe $CERTIFICATE_MODE ACM certificate '$CERTIFICATE_ARN': $certificate_json"
 
   certificate_status="$(jq -r '.Certificate.Status // empty' \
     <<< "$certificate_json")" || die \
-      "Unable to read existing ACM certificate metadata."
+      "Unable to read $CERTIFICATE_MODE ACM certificate metadata."
   [ "$certificate_status" = "ISSUED" ] || die \
-    "Existing ACM certificate '$CERTIFICATE_ARN' is '$certificate_status', not ISSUED."
+    "The $CERTIFICATE_MODE ACM certificate '$CERTIFICATE_ARN' is '$certificate_status', not ISSUED."
 
   while IFS= read -r certificate_name; do
     [ -n "$certificate_name" ] || continue
@@ -581,7 +613,7 @@ require_existing_acm_certificate() {
     '[.Certificate.DomainName, .Certificate.SubjectAlternativeNames[]?] | unique[] | select(. != null)' \
     <<< "$certificate_json")
   [ "$hostname_covered" = true ] || die \
-    "Existing ACM certificate '$CERTIFICATE_ARN' does not cover '$HOSTNAME_VALUE'."
+    "The $CERTIFICATE_MODE ACM certificate '$CERTIFICATE_ARN' does not cover '$HOSTNAME_VALUE'."
 
   set +e
   certificate_tags="$(aws_acm list-tags-for-certificate \
@@ -590,16 +622,20 @@ require_existing_acm_certificate() {
   tags_status=$?
   set -e
   [ "$tags_status" -eq 0 ] || die \
-    "Unable to inspect ownership tags on existing ACM certificate '$CERTIFICATE_ARN': $certificate_tags"
+    "Unable to inspect ownership tags on $CERTIFICATE_MODE ACM certificate '$CERTIFICATE_ARN': $certificate_tags"
   if jq -e \
       --arg key "$CERTIFICATE_MANAGED_BY_TAG_KEY" \
       --arg value "$CERTIFICATE_MANAGED_BY_TAG_VALUE" \
       '.Tags[]? | select(.Key == $key and .Value == $value)' \
       <<< "$certificate_tags" >/dev/null; then
-    die "Certificate '$CERTIFICATE_ARN' is marked as managed by or-eks-stack and cannot be used in existing mode."
+    die "Certificate '$CERTIFICATE_ARN' is marked as managed by or-eks-stack and cannot be used in $CERTIFICATE_MODE mode."
   fi
 
-  log "Validated user-owned ACM certificate '$CERTIFICATE_ARN' for '$HOSTNAME_VALUE'."
+  if [ "$CERTIFICATE_MODE" = "shared" ]; then
+    log "Validated externally managed shared ACM certificate '$CERTIFICATE_ARN' for '$HOSTNAME_VALUE'."
+  else
+    log "Validated user-owned ACM certificate '$CERTIFICATE_ARN' for '$HOSTNAME_VALUE'."
+  fi
 }
 
 apply_portable_stack() {
@@ -826,7 +862,8 @@ apply_stack() {
   require_eks_target
   require_managed_external_dns
   if [ "$EXPOSURE" = "ingress" ]; then
-    require_existing_acm_certificate
+    resolve_ingress_certificate
+    require_selected_acm_certificate
   fi
   apply_portable_stack
   record_certificate_configuration
@@ -863,10 +900,10 @@ show_certificate_configuration() {
   local certificate_status
 
   certificate_mode="$(kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
-    -o 'go-template={{index .metadata.annotations "openremote.io/certificate-mode"}}' \
+    -o 'go-template={{with index .metadata.annotations "openremote.io/certificate-mode"}}{{.}}{{end}}' \
     2>/dev/null || true)"
   certificate_arn="$(kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
-    -o 'go-template={{index .metadata.annotations "openremote.io/certificate-arn"}}' \
+    -o 'go-template={{with index .metadata.annotations "openremote.io/certificate-arn"}}{{.}}{{end}}' \
     2>/dev/null || true)"
 
   log "Certificate ownership"
@@ -875,14 +912,15 @@ show_certificate_configuration() {
     printf 'Certificate ARN: %s\n' "$certificate_arn"
   fi
 
-  if [ "$certificate_mode" = "existing" ] && [ -n "$certificate_arn" ]; then
+  if { [ "$certificate_mode" = "existing" ] || [ "$certificate_mode" = "shared" ]; } && \
+     [ -n "$certificate_arn" ]; then
     if certificate_status="$(aws_acm describe-certificate \
         --certificate-arn "$certificate_arn" \
         --query 'Certificate.Status' \
         --output text 2>/dev/null)"; then
       printf 'Certificate status: %s\n' "$certificate_status"
     else
-      warn "Unable to read the current status of existing ACM certificate '$certificate_arn'."
+      warn "Unable to read the current status of $certificate_mode ACM certificate '$certificate_arn'."
     fi
   fi
 }

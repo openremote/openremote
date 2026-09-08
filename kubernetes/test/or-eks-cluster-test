@@ -8,6 +8,7 @@ TEST_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/or-eks-cluster-test.XXXXXX")"
 CALL_LOG="$TEST_TEMP_DIR/calls.log"
 IAM_CONFIG_LOG="$TEST_TEMP_DIR/iam-config.log"
 TEST_CNI_ROLE_ARN="arn:aws:iam::123456789012:role/test-vpc-cni"
+TEST_SHARED_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"
 TEST_DEFAULT_VPC_CNI_CONFIGURATION='{}'
 EXTERNAL_DNS_ROUTE53_ROLE_TEMPLATE="$KUBERNETES_DIR/cluster/eks/external-dns-route53-role.yaml"
 
@@ -102,6 +103,9 @@ helm() {
 kubectl() {
   log_call kubectl "$@"
   case " $* " in
+    *" get ingressclass openremote-alb "*"go-template"*)
+      printf '%s' "${OR_EKS_TEST_SHARED_CERTIFICATE_ARN-$TEST_SHARED_CERTIFICATE_ARN}"
+      ;;
     *" get serviceaccount external-dns "*)
       printf '%s' "${OR_EKS_TEST_EXTERNAL_DNS_IRSA_ROLE_ARN:-arn:aws:iam::123456789012:role/openremote-test-cluster-eu-west-1-external-dns}"
       ;;
@@ -152,6 +156,24 @@ KUBE_CONTEXT=test-cluster@eu-west-1
 
 set_external_dns_test_configuration
 validate_external_dns_configuration
+
+SHARED_CERTIFICATE_ARN="$TEST_SHARED_CERTIFICATE_ARN"
+CLEAR_SHARED_CERTIFICATE=false
+MANAGE_LOAD_BALANCER_CONTROLLER=true
+validate_shared_certificate_configuration
+
+if (SHARED_CERTIFICATE_ARN="arn:aws:acm:us-east-1:123456789012:certificate/test" \
+    validate_shared_certificate_configuration) >/dev/null 2>&1; then
+  fail "A shared certificate from another region was accepted"
+fi
+if (CLEAR_SHARED_CERTIFICATE=true \
+    validate_shared_certificate_configuration) >/dev/null 2>&1; then
+  fail "Setting and clearing the shared certificate together was accepted"
+fi
+if (MANAGE_LOAD_BALANCER_CONTROLLER=false \
+    validate_shared_certificate_configuration) >/dev/null 2>&1; then
+  fail "Shared certificate configuration was accepted while skipping its IngressClass"
+fi
 
 : > "$CALL_LOG"
 : > "$IAM_CONFIG_LOG"
@@ -239,6 +261,7 @@ reconcile_load_balancer_controller
 assert_contains $'helm\tupgrade\t--install\taws-load-balancer-controller'
 assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\twait\t--for=condition=Established\tcustomresourcedefinition/ingressclassparams.elbv2.k8s.aws'
 assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tapply\t-f\t'"$DEFAULT_INGRESS_CLASS_FILE"
+assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tingressclass\topenremote-alb\topenremote.io/shared-certificate-arn='"$TEST_SHARED_CERTIFICATE_ARN"$'\t--overwrite'
 
 grep -F -- 'name: openremote-stacks' "$DEFAULT_INGRESS_CLASS_FILE" >/dev/null || fail \
   "Shared ALB group is missing from the IngressClass manifest"
@@ -250,8 +273,32 @@ grep -F -- 'sslRedirectPort: "443"' "$DEFAULT_INGRESS_CLASS_FILE" >/dev/null || 
   "Shared ALB IngressClass does not enforce HTTPS redirection"
 
 : > "$CALL_LOG"
-MANAGE_LOAD_BALANCER_CONTROLLER=false reconcile_load_balancer_controller
+SHARED_CERTIFICATE_ARN= CLEAR_SHARED_CERTIFICATE=true reconcile_load_balancer_controller
+assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tingressclass\topenremote-alb\topenremote.io/shared-certificate-arn-'
+
+: > "$CALL_LOG"
+OR_EKS_TEST_SHARED_CERTIFICATE_ARN= SHARED_CERTIFICATE_ARN= \
+  CLEAR_SHARED_CERTIFICATE=true reconcile_load_balancer_controller
+assert_not_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tingressclass\topenremote-alb\topenremote.io/shared-certificate-arn-'
+
+: > "$CALL_LOG"
+SHARED_CERTIFICATE_ARN= CLEAR_SHARED_CERTIFICATE=false reconcile_load_balancer_controller
+assert_not_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tingressclass'
+
+: > "$CALL_LOG"
+SHARED_CERTIFICATE_ARN= CLEAR_SHARED_CERTIFICATE=false \
+  MANAGE_LOAD_BALANCER_CONTROLLER=false reconcile_load_balancer_controller
 assert_not_contains $'helm\tupgrade'
+
+shared_certificate_status_output="$(show_shared_certificate_status)"
+grep -Fx -- "Shared ACM certificate ARN: $TEST_SHARED_CERTIFICATE_ARN" \
+  <<< "$shared_certificate_status_output" >/dev/null || fail \
+    "Cluster status did not report its shared certificate ARN"
+shared_certificate_status_output="$(OR_EKS_TEST_SHARED_CERTIFICATE_ARN= \
+  show_shared_certificate_status)"
+grep -Fx -- 'Shared ACM certificate ARN: not configured' \
+  <<< "$shared_certificate_status_output" >/dev/null || fail \
+    "Cluster status did not report missing shared certificate configuration"
 
 : > "$CALL_LOG"
 OR_EKS_TEST_VPC_CNI_CONFIGURATION='{"env":{"WARM_IP_TARGET":"2"}}' \

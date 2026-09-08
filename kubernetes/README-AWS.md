@@ -16,9 +16,10 @@ configuration and safety model.
 [`or-eks-stack`](or-eks-stack) is the normal stack command for an EKS cluster
 with OpenRemote-managed ExternalDNS. Its default HAProxy workflow coordinates
 the stack NLB and ACME certificate. Its explicit Ingress workflow validates an
-existing user-owned ACM certificate and coordinates the shared ALB. Both
-delegate the Kubernetes installation to `or-stack`, wait for DNS to point at
-the current load balancer, and verify the trusted Manager HTTPS endpoint.
+existing user-owned or cluster-configured shared ACM certificate and
+coordinates the shared ALB. Both delegate the Kubernetes installation to
+`or-stack`, wait for DNS to point at the current load balancer, and verify the
+trusted Manager HTTPS endpoint.
 
 The `eks-setup*.sh` and `eks-cleanup*.sh` scripts below are the legacy combined
 cluster-and-stack workflow. They will be split further as part of multi-stack
@@ -166,8 +167,8 @@ Ingress, ALB, or NLB.
 #### Shared HTTPS routing with Ingress
 
 Select Ingress explicitly to route web traffic through the shared OpenRemote
-ALB and a private gateway in each stack namespace. The facade currently
-accepts an existing user-owned certificate:
+ALB and a private gateway in each stack namespace. An explicit existing
+user-owned certificate remains available:
 
 ```bash
 ./or-eks-stack apply \
@@ -188,6 +189,41 @@ future `openremote.io/managed-by=or-eks-stack` ownership tag in `existing`
 mode. The certificate remains user-owned: apply only references it, while
 uninstall and destroy never modify or delete it. The selected mode and ARN are
 recorded as namespace annotations and reported by `or-eks-stack status`.
+
+An externally managed certificate intended for multiple stacks can instead be
+recorded once as cluster configuration:
+
+```bash
+./or-eks-cluster apply \
+  --name <cluster-name> \
+  --region eu-west-1 \
+  --profile <aws-profile> \
+  --shared-certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example
+```
+
+The option only records the ARN on the `openremote-alb` IngressClass; it does
+not create, tag, renew, or delete the certificate. Omitting the option on a
+later cluster apply preserves the existing reference. Remove the reference,
+without touching ACM, with `--clear-shared-certificate`.
+
+Stacks then select it without repeating the ARN:
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --profile <aws-profile> \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode shared
+```
+
+Mode `shared` may be omitted because it is the automatic Ingress fallback when
+the cluster has a shared ARN. Each stack still validates the resolved
+certificate's account, region, `ISSUED` status, hostname coverage, and
+ownership before making stack changes. Its namespace records mode `shared` and
+the resolved ARN. Uninstall and destroy never modify or delete it.
 
 Ingress mode additionally validates the shared `openremote-alb` IngressClass
 and its enforced HTTPS redirect. ACM DNS validation can be hosted in another
@@ -323,9 +359,9 @@ cluster. Once that cluster-level preflight succeeds, `or-eks-cluster` bypasses
 system PodDisruptionBudgets during the final node drain so EKS add-ons cannot
 leave cluster deletion waiting indefinitely.
 
-Ingress currently supports `existing` certificate mode. Shared certificate
-discovery and stack-owned `managed` ACM certificate creation, DNS validation,
-and deletion remain the next facade increments.
+Ingress currently supports `existing` and cluster-configured `shared`
+certificate modes. Stack-owned `managed` ACM certificate creation, DNS
+validation, and deletion remain the next facade increment.
 
 #### PosgreSQL data directory
 

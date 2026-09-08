@@ -133,6 +133,9 @@ kubectl() {
   local arguments=" $* "
 
   case "$arguments" in
+    *" get ingressclass openremote-alb "*"shared-certificate-arn"*)
+      printf '%s' "${OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN-}"
+      ;;
     *" config get-contexts "*)
       if [ "${OR_EKS_STACK_TEST_CONTEXT_EXISTS:-true}" = "true" ]; then
         printf '%s\n' "${KUBE_CONTEXT:-test-cluster@eu-west-1}"
@@ -279,6 +282,39 @@ test_ingress_existing_certificate_apply() {
     <<< "$output" >/dev/null || fail "Apply did not report shared ALB readiness"
 }
 
+test_ingress_shared_certificate_apply() {
+  local output
+
+  output="$(OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+    run_eks_stack apply \
+      --name stack-a \
+      --cluster test-cluster \
+      --hostname stack-a.example.com \
+      --profile '' \
+      --exposure ingress \
+      --certificate-mode shared)"
+
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tget\tingressclass\topenremote-alb\t-o\tgo-template={{with index .metadata.annotations "openremote.io/shared-certificate-arn"}}{{.}}{{end}}'
+  assert_contains $'aws-acm\tdescribe-certificate\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"$'\t--output\tjson'
+  assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\tingress\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--timeout\t20m\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tnamespace\tstack-a\topenremote.io/certificate-mode=shared\topenremote.io/certificate-arn='"$TEST_CERTIFICATE_ARN"$'\t--overwrite'
+  assert_before $'get\tingressclass\topenremote-alb' $'aws-acm\tdescribe-certificate'
+  assert_before $'aws-acm\tdescribe-certificate' $'or-stack\tapply'
+  grep -F -- "Selected the cluster's shared ACM certificate '$TEST_CERTIFICATE_ARN'" \
+    <<< "$output" >/dev/null || fail "Apply did not report shared certificate selection"
+  grep -F -- "Validated externally managed shared ACM certificate '$TEST_CERTIFICATE_ARN'" \
+    <<< "$output" >/dev/null || fail "Apply did not report shared certificate validation"
+
+  OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+    run_eks_stack apply \
+      --name stack-a \
+      --cluster test-cluster \
+      --hostname stack-a.example.com \
+      --profile '' \
+      --exposure ingress >/dev/null
+  assert_contains $'openremote.io/certificate-mode=shared'
+}
+
 test_apply_reuses_valid_certificate() {
   OR_EKS_STACK_TEST_HTTPS_READY_IMMEDIATELY=true \
     run_eks_stack apply \
@@ -307,6 +343,14 @@ test_lifecycle_delegation() {
   grep -Fx -- 'Certificate status: ISSUED' <<< "$status_output" >/dev/null || fail \
     "Status did not report the current ACM certificate status"
 
+  status_output="$(OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=shared \
+    OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+    run_eks_stack status --name stack-a --cluster test-cluster --profile '')"
+  grep -Fx -- 'Certificate mode: shared' <<< "$status_output" >/dev/null || fail \
+    "Status did not report shared certificate ownership"
+  grep -Fx -- 'Certificate status: ISSUED' <<< "$status_output" >/dev/null || fail \
+    "Status did not report the shared ACM certificate status"
+
   run_eks_stack credentials --name stack-a --cluster test-cluster --profile '' >/dev/null
   assert_contains $'or-stack\tcredentials\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1'
 
@@ -324,8 +368,9 @@ test_lifecycle_delegation() {
 test_validation() {
   if (run_eks_stack apply --name stack-a --cluster test-cluster \
       --hostname stack-a.example.com --exposure ingress) >/dev/null 2>&1; then
-    fail "Ingress exposure accepted a missing certificate mode"
+    fail "Ingress exposure succeeded without a shared or existing certificate"
   fi
+  assert_not_contains $'or-stack\tapply'
 
   if (run_eks_stack apply --name stack-a --cluster test-cluster \
       --hostname stack-a.example.com --exposure ingress \
@@ -338,6 +383,14 @@ test_validation() {
       --certificate-mode managed --certificate-arn "$TEST_CERTIFICATE_ARN") \
       >/dev/null 2>&1; then
     fail "Unimplemented managed certificate mode was accepted"
+  fi
+
+  if (OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com --exposure ingress \
+        --certificate-mode shared --certificate-arn "$TEST_CERTIFICATE_ARN") \
+      >/dev/null 2>&1; then
+    fail "Shared certificate mode accepted a per-stack certificate ARN"
   fi
 
   if (run_eks_stack apply --name stack-a --cluster test-cluster) >/dev/null 2>&1; then
@@ -432,6 +485,15 @@ test_validation() {
   fi
   assert_not_contains $'or-stack\tapply'
 
+  if (OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+      OR_EKS_STACK_TEST_CERTIFICATE_TAGS='{"Tags":[{"Key":"openremote.io/managed-by","Value":"or-eks-stack"}]}' \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com --exposure ingress \
+        --certificate-mode shared) >/dev/null 2>&1; then
+    fail "A stack-managed ACM certificate was accepted in shared mode"
+  fi
+  assert_not_contains $'or-stack\tapply'
+
   if addresses_intersect '192.0.2.10' '198.51.100.20'; then
     fail "Unrelated stale and current load-balancer addresses matched"
   fi
@@ -441,6 +503,7 @@ test_validation() {
 
 test_apply
 test_ingress_existing_certificate_apply
+test_ingress_shared_certificate_apply
 test_apply_reuses_valid_certificate
 test_lifecycle_delegation
 test_validation

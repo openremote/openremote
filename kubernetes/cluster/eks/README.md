@@ -9,9 +9,9 @@ explicitly opt in.
 
 After the shared cluster is ready, use `kubernetes/or-eks-stack` for the normal
 stack workflow with managed ExternalDNS. HAProxy is the default; explicit
-Ingress validates an existing ACM certificate before using the shared ALB. The
-facade delegates namespaced resources to `kubernetes/or-stack`, which remains
-the portable and low-level interface.
+Ingress validates an existing or cluster-configured shared ACM certificate
+before using the shared ALB. The facade delegates namespaced resources to
+`kubernetes/or-stack`, which remains the portable and low-level interface.
 
 The current implementation uses the existing `kubernetes/cluster.yaml`
 `eksctl` configuration. This boundary is intended to remain stable when EKS
@@ -34,6 +34,7 @@ Optional settings are:
 export OR_EKS_CONFIG_FILE=/path/to/cluster.yaml
 export OR_EKS_KUBE_CONTEXT=openremote-test@eu-west-1
 export OR_EKS_LOAD_BALANCER_CONTROLLER_CHART_VERSION=1.14.0
+export OR_EKS_SHARED_CERTIFICATE_ARN=arn:aws:acm:eu-west-1:210987654321:certificate/example
 ```
 
 ExternalDNS is disabled when no DNS configuration is supplied. Its complete
@@ -91,6 +92,12 @@ implemented by the future CloudFormation cluster definition.
 kubernetes/or-eks-cluster apply --name openremote-test
 ```
 
+Supplying `--shared-certificate-arn` during create or apply records an
+externally managed ACM certificate on `openremote-alb`. Later applies that omit
+the option preserve the reference. `--clear-shared-certificate` removes only
+the reference; neither command changes or deletes the certificate. Cluster
+status reports the currently deployed value.
+
 The VPC CNI configuration update retains other configuration keys and does not
 change the installed add-on version. If that version does not support native
 NetworkPolicy, `apply` stops and asks for an explicit add-on update rather than
@@ -119,14 +126,15 @@ the Amazon VPC CNI. Its namespace selector accepts only namespaces labeled
 `app.kubernetes.io/part-of=openremote`; `or-stack` owns that label. It enforces
 port 443 as the SSL redirect destination for every group member.
 
-The class defines shared transport behavior only. Stack-specific hostname,
-route, certificate, and optional DNS intent are namespaced resources managed by
-`or-stack`. In `existing` mode, `or-eks-stack` verifies that the ACM certificate
-is issued, belongs to the ALB's account and region, covers the hostname, and is
-not tagged as stack-managed. It records the user-owned selection but never
-modifies or deletes the certificate. ACM certificate creation is still outside
-the current scripts, and its DNS validation records and stack hostnames may be
-hosted in another AWS account. See the controller's
+The class defines shared transport behavior and can carry the optional shared
+certificate ARN. Stack-specific hostname, route, resolved certificate, and DNS
+intent remain namespaced resources managed by `or-stack`. In `existing` and
+`shared` modes, `or-eks-stack` verifies that the ACM certificate is issued,
+belongs to the ALB's account and region, covers the hostname, and is not tagged
+as stack-managed. It records the resolved selection but never modifies or
+deletes the certificate. ACM certificate creation is still outside the current
+scripts, and its DNS validation records and stack hostnames may be hosted in
+another AWS account. See the controller's
 [IngressClass documentation](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/)
 for the enforced group and namespace-selector behavior.
 
@@ -151,7 +159,7 @@ The higher-level `or-eks-stack apply` command validates this managed release,
 rejects dry-run mode or a domain filter that does not cover the requested
 hostname, delegates the source-resource creation to `or-stack`, and waits for
 the current load balancer and record to converge. It then triggers ACME for
-HAProxy or verifies the existing ACM-backed HTTPS listener for Ingress.
+HAProxy or verifies the selected ACM-backed HTTPS listener for Ingress.
 
 ### Cross-account IAM bootstrap
 
@@ -274,9 +282,33 @@ For Ingress with an existing certificate, use:
 
 The ARN is stored with mode `existing` on the namespace for status and future
 lifecycle decisions. It remains user-owned and is never deleted by stack
-uninstall or destroy. Use `or-stack apply --dns external-dns` directly when
-another orchestrator owns endpoint readiness. Automatic shared certificate
-selection and managed certificate creation follow in later increments.
+uninstall or destroy.
+
+To configure and use one externally managed certificate across stacks:
+
+```bash
+../../or-eks-cluster apply \
+  --name "$CLUSTER_NAME" \
+  --region "$CLUSTER_REGION" \
+  --profile "$CLUSTER_AWS_PROFILE" \
+  --shared-certificate-arn <acm-certificate-arn>
+
+../../or-eks-stack apply \
+  --name stack-a \
+  --cluster "$CLUSTER_NAME" \
+  --region "$CLUSTER_REGION" \
+  --profile "$CLUSTER_AWS_PROFILE" \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode shared
+```
+
+The stack certificate mode may be omitted: Ingress automatically selects the
+configured shared certificate when there is no explicit existing selection.
+The stack validates coverage and records the resolved ARN, but neither cluster
+nor stack destruction deletes it. Use `or-stack apply --dns external-dns`
+directly when another orchestrator owns endpoint readiness. Managed certificate
+creation follows in a later increment.
 
 ExternalDNS does not silently adopt a manually created record. Migrate existing
 records with this dry-run-first sequence:

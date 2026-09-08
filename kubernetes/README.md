@@ -21,7 +21,8 @@ For EKS with the OpenRemote-managed ExternalDNS controller, use
 [`or-eks-stack`](or-eks-stack) for the end-to-end workflow. It keeps `or-stack`
 portable while coordinating load balancer, Route 53, certificate, and HTTPS
 readiness. HAProxy with ACME remains the default; explicit Ingress currently
-accepts a validated existing ACM certificate.
+accepts either a validated existing ACM certificate or the externally managed
+shared certificate configured on the EKS cluster.
 
 ## Namespaced stack management
 
