@@ -24,6 +24,7 @@ import { i18next } from "@openremote/or-translate";
 import manager, { Util } from "@openremote/core";
 import {
   type Asset,
+  ClientRole,
   type EmailNotificationMessage,
   type Notification,
   NotificationTargetType,
@@ -227,16 +228,16 @@ export class OrNotificationForm extends OrElement {
       return;
     }
 
-    const canReadAssets = manager.hasRole("read:assets") || manager.hasRole("read:admin");
+    const canReadAssets = manager.hasRole(ClientRole.READ_ASSETS) || manager.hasRole(ClientRole.READ_ADMIN);
 
     const promises = [];
     if (canReadAssets) {
       promises.push(this._loadAssets());
     }
-    if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
+    if (manager.hasRole(ClientRole.READ_USERS) || manager.hasRole(ClientRole.READ_ADMIN)) {
       promises.push(this._loadUsers());
     }
-    if (manager.hasRole("read:admin")) {
+    if (manager.hasRole(ClientRole.READ_ADMIN)) {
       promises.push(this._loadRealms());
     }
     await Promise.all(promises);
@@ -274,7 +275,7 @@ export class OrNotificationForm extends OrElement {
   /** Users are the default recipient type; falls back to assets for callers not allowed to pick users. */
   protected _defaultTargetType(): NotificationTargetType {
     const canSelectUsers =
-      !manager.isRestrictedUser() && (manager.hasRole("read:users") || manager.hasRole("read:admin"));
+      !manager.isRestrictedUser() && (manager.hasRole(ClientRole.READ_USERS) || manager.hasRole(ClientRole.READ_ADMIN));
     return canSelectUsers ? NotificationTargetType.USER : NotificationTargetType.ASSET;
   }
 
@@ -289,7 +290,7 @@ export class OrNotificationForm extends OrElement {
   }
 
   protected async _loadUsers(): Promise<User[]> {
-    if (!manager.hasRole("read:users") && !manager.hasRole("read:admin")) {
+    if (!manager.hasRole(ClientRole.READ_USERS) && !manager.hasRole(ClientRole.READ_ADMIN)) {
       return [];
     }
     try {
@@ -307,7 +308,7 @@ export class OrNotificationForm extends OrElement {
   }
 
   protected async _loadAssets(): Promise<Asset[]> {
-    if (!manager.hasRole("read:assets") && !manager.hasRole("read:admin")) {
+    if (!manager.hasRole(ClientRole.READ_ASSETS) && !manager.hasRole(ClientRole.READ_ADMIN)) {
       return [];
     }
     try {
@@ -475,7 +476,7 @@ export class OrNotificationForm extends OrElement {
   protected _renderPropertiesContainer() {
     if (!this.notification) return "";
 
-    const canReadUsers = manager.hasRole("read:users") || manager.hasRole("read:admin");
+    const canReadUsers = manager.hasRole(ClientRole.READ_USERS) || manager.hasRole(ClientRole.READ_ADMIN);
     const source =
       canReadUsers && this.notification.sourceId
         ? `${this._normalizeValue(this.notification.source)}, ${this.notification.sourceId}`
@@ -501,9 +502,9 @@ export class OrNotificationForm extends OrElement {
   protected _renderTargetContainer(inputDisabled: boolean) {
     if (inputDisabled) {
       const canSeeTargetId =
-        manager.hasRole("read:admin") ||
-        (this._targetType === NotificationTargetType.USER && manager.hasRole("read:users")) ||
-        (this._targetType === NotificationTargetType.ASSET && manager.hasRole("read:assets"));
+        manager.hasRole(ClientRole.READ_ADMIN) ||
+        (this._targetType === NotificationTargetType.USER && manager.hasRole(ClientRole.READ_USERS)) ||
+        (this._targetType === NotificationTargetType.ASSET && manager.hasRole(ClientRole.READ_ASSETS));
       const targetDisplay = canSeeTargetId ? this._normalizeValue(this._targets[0]) : "-";
       return html`
         <div class="targetContainer">
@@ -515,13 +516,16 @@ export class OrNotificationForm extends OrElement {
     }
 
     const allowedTargetTypes: SelectItem[] = [];
-    if (manager.hasRole("read:assets") || manager.hasRole("read:admin")) {
+    if (manager.hasRole(ClientRole.READ_ASSETS) || manager.hasRole(ClientRole.READ_ADMIN)) {
       allowedTargetTypes.push({
         label: i18next.t("notifications.targetTypes.ASSET"),
         value: NotificationTargetType.ASSET,
       });
     }
-    if (!manager.isRestrictedUser() && (manager.hasRole("read:users") || manager.hasRole("read:admin"))) {
+    if (
+      !manager.isRestrictedUser() &&
+      (manager.hasRole(ClientRole.READ_USERS) || manager.hasRole(ClientRole.READ_ADMIN))
+    ) {
       allowedTargetTypes.unshift({
         label: i18next.t("notifications.targetTypes.USER"),
         value: NotificationTargetType.USER,

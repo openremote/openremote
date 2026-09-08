@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { manager } from "@openremote/core";
+import { ClientRole } from "@openremote/model";
 import type { AppStateKeyed, HeaderItem, OrApp } from "@openremote/or-app";
 import type { AnyAction } from "@reduxjs/toolkit";
 import { getMapRoute, getNotificationsRoute } from "./routes";
@@ -45,7 +46,7 @@ export function headerItemServices<S extends AppStateKeyed, A extends AnyAction>
     value: "services",
     href: "services",
     text: "services",
-    roles: ["read:services"],
+    roles: [ClientRole.READ_SERVICES],
   };
 }
 
@@ -75,7 +76,7 @@ export function headerItemGatewayConnection<S extends AppStateKeyed, A extends A
     value: "gateway",
     href: "gateway",
     text: "gatewayConnection",
-    roles: ["write:admin", "read:admin"],
+    roles: [ClientRole.WRITE_ADMIN, ClientRole.READ_ADMIN],
   };
 }
 
@@ -85,7 +86,7 @@ export function headerItemGatewayTunnel<S extends AppStateKeyed, A extends AnyAc
     value: "gateway-tunnel",
     href: "gateway-tunnel",
     text: "gatewayTunnel",
-    roles: ["write:admin", "read:admin"],
+    roles: [ClientRole.WRITE_ADMIN, ClientRole.READ_ADMIN],
   };
 }
 
@@ -118,7 +119,7 @@ export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orA
     href: "logs",
     text: "logs",
     hideMobile: true,
-    roles: ["write:logs", "read:logs"],
+    roles: [ClientRole.WRITE_LOGS, ClientRole.READ_LOGS],
   };
 }
 
@@ -128,7 +129,7 @@ export function headerItemNotifications<S extends AppStateKeyed, A extends AnyAc
     value: "notifications",
     href: getNotificationsRoute(),
     text: "notification_other",
-    roles: ["read:notifications"],
+    roles: [ClientRole.READ_NOTIFICATIONS],
   };
 }
 
@@ -138,7 +139,7 @@ export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(
     value: "account",
     href: "account",
     text: "account",
-    roles: ["write:user"],
+    roles: [ClientRole.WRITE_USER],
   };
 }
 export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
@@ -147,7 +148,7 @@ export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(or
     value: "users",
     href: "users",
     text: "user_plural",
-    roles: ["read:admin", "write:admin"],
+    roles: [ClientRole.READ_ADMIN, ClientRole.WRITE_ADMIN],
   };
 }
 export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
@@ -156,7 +157,7 @@ export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(or
     value: "roles",
     href: "roles",
     text: "role_plural",
-    roles: ["read:admin", "write:admin"],
+    roles: [ClientRole.READ_ADMIN, ClientRole.WRITE_ADMIN],
   };
 }
 export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
@@ -175,7 +176,7 @@ export function headerItemExport<S extends AppStateKeyed, A extends AnyAction>(o
     value: "export",
     href: "data-export",
     text: "dataExport",
-    roles: ["read:assets"],
+    roles: [ClientRole.READ_ASSETS],
   };
 }
 

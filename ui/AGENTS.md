@@ -12,9 +12,11 @@ Anything a package references relative to its own emitted files must survive the
 
 Three outputs stay outside `build/` on purpose. `ui/app/shared/fonts` is packaged by a `generateSources` task that copies the project dir minus `build/**`. `ui/app/shared/cache` is a checksum-keyed download that `clean` would force to re-download. The generated `model.ts` and `restclient.ts` are sources rather than artifacts, so they stay under `rootDir`.
 
-## Generated model types
+## Generated model
 
-`ui/component/model/src/model.ts` is generated from the Java backend by typescript-generator. Do not edit it by hand. When a TypeScript type mirrors a backend class, import it from `@openremote/model` instead of redeclaring a local interface. Regenerate it from the backend rather than patching the output.
+`ui/component/model/src/model.ts` is generated from the Java backend by typescript-generator and holds enums and constants as well as types. Do not edit it by hand. Anything mirroring a backend class or enum comes from `@openremote/model`, so import it rather than redeclaring an interface or hardcoding a member's value, e.g. `manager.hasRole(ClientRole.READ_ASSETS)` over the `"read:assets"` string.
+
+A member you expect being absent means the file is stale, not that the value has to be written by hand. Regenerate with `./gradlew :ui:component:model:generateTypeScript`. The file is gitignored and the build regenerates it, so this never shows up in a diff.
 
 ## Base element
 
