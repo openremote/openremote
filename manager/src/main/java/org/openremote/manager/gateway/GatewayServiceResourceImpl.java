@@ -21,6 +21,7 @@ package org.openremote.manager.gateway;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import java.util.stream.Stream;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -56,13 +57,18 @@ public class GatewayServiceResourceImpl extends ManagerWebResource
       throw new WebApplicationException(Response.Status.FORBIDDEN);
     }
 
+    Stream<GatewayTunnelInfo> tunnels =
+        this.gatewayService.getTunnelInfos().stream()
+            .filter(tunnel -> tunnel.getRealm().equals(realm));
+
+    // A restricted user only sees tunnels for the gateways linked to them
     if (isRestrictedUser()) {
-      throw new WebApplicationException(Response.Status.FORBIDDEN);
+      String userId = getUserId();
+      tunnels =
+          tunnels.filter(tunnel -> assetStorageService.isUserAsset(userId, tunnel.getGatewayId()));
     }
 
-    return this.gatewayService.getTunnelInfos().stream()
-        .filter(tunnel -> tunnel.getRealm().equals(realm))
-        .toArray(GatewayTunnelInfo[]::new);
+    return tunnels.toArray(GatewayTunnelInfo[]::new);
   }
 
   @Override
