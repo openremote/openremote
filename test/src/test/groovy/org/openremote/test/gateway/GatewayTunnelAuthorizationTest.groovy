@@ -88,21 +88,21 @@ class GatewayTunnelAuthorizationTest extends Specification implements ManagerCon
     // privileged account the API will accept, and it is not a restricted user.
     def accessToken = authenticate(container, buildingRealm, KEYCLOAK_CLIENT_ID, "testuser2", "testuser2")
     noRoleTunnelResource = getClientApiTarget(serverUri(serverPort), buildingRealm, accessToken)
-      .proxy(GatewayServiceResource.class)
+            .proxy(GatewayServiceResource.class)
 
     linkedGatewayId = assetStorageService.merge(
-      new ThingAsset("Linked gateway").setRealm(buildingRealm)).id
+            new ThingAsset("Linked gateway").setRealm(buildingRealm)).id
     unlinkedGatewayId = assetStorageService.merge(
-      new ThingAsset("Unlinked gateway").setRealm(buildingRealm)).id
+            new ThingAsset("Unlinked gateway").setRealm(buildingRealm)).id
 
     restrictedTunnelResource = tunnelResourceFor(
-      container, assetStorageService, "tunnelrestricted", true, linkedGatewayId)
+            container, assetStorageService, "tunnelrestricted", true, linkedGatewayId)
     tunnelReaderResource = tunnelResourceFor(
-      container, assetStorageService, "tunnelreader", false, null)
+            container, assetStorageService, "tunnelreader", false, null)
 
     [linkedGatewayId, unlinkedGatewayId].each { gatewayId ->
       def tunnel = new GatewayTunnelInfo(
-        buildingRealm, gatewayId, GatewayTunnelInfo.Type.HTTPS, "localhost", 443)
+      buildingRealm, gatewayId, GatewayTunnelInfo.Type.HTTPS, "localhost", 443)
       gatewayService.@tunnelInfos.put(tunnel.id, tunnel)
     }
   }
@@ -121,31 +121,31 @@ class GatewayTunnelAuthorizationTest extends Specification implements ManagerCon
 
   /** Creates a user holding read:tunnels and returns the tunnel resource authenticated as them. */
   private GatewayServiceResource tunnelResourceFor(
-    container, AssetStorageService assetStorageService, String username, boolean restricted,
-    String linkedAssetId) {
+          container, AssetStorageService assetStorageService, String username, boolean restricted,
+          String linkedAssetId) {
 
     def user = identityProvider.createUpdateUser(
-      buildingRealm, new User().setUsername(username).setEnabled(true), username, true)
+            buildingRealm, new User().setUsername(username).setEnabled(true), username, true)
     createdUserIds << user.id
 
     identityProvider.updateUserClientRoles(
-      buildingRealm, user.id, KEYCLOAK_CLIENT_ID, READ_TUNNELS_ROLE)
+            buildingRealm, user.id, KEYCLOAK_CLIENT_ID, READ_TUNNELS_ROLE)
 
     if (restricted) {
       identityProvider.updateUserRealmRoles(
-        buildingRealm,
-        user.id,
-        identityProvider.addUserRealmRoles(buildingRealm, user.id, RESTRICTED_USER_REALM_ROLE))
+              buildingRealm,
+              user.id,
+              identityProvider.addUserRealmRoles(buildingRealm, user.id, RESTRICTED_USER_REALM_ROLE))
     }
 
     if (linkedAssetId != null) {
       assetStorageService.storeUserAssetLinks(
-        [new UserAssetLink(buildingRealm, user.id, linkedAssetId)])
+              [new UserAssetLink(buildingRealm, user.id, linkedAssetId)])
     }
 
     def accessToken = authenticate(container, buildingRealm, KEYCLOAK_CLIENT_ID, username, username)
     return getClientApiTarget(serverUri(serverPort), buildingRealm, accessToken)
-      .proxy(GatewayServiceResource.class)
+            .proxy(GatewayServiceResource.class)
   }
 
   def "A user holding no tunnel role cannot list a gateway's tunnels"() {
@@ -172,11 +172,11 @@ class GatewayTunnelAuthorizationTest extends Specification implements ManagerCon
 
     when: "a user with no administrative role opens a tunnel to a host on the gateway's network"
     noRoleTunnelResource.startTunnel(new GatewayTunnelInfo(
-      buildingRealm,
-      "somegatewayid",
-      GatewayTunnelInfo.Type.TCP,
-      "169.254.169.254",
-      80))
+                    buildingRealm,
+                    "somegatewayid",
+                    GatewayTunnelInfo.Type.TCP,
+                    "169.254.169.254",
+                    80))
 
     then: "the request is refused before the gateway is ever consulted"
     WebApplicationException ex = thrown()
