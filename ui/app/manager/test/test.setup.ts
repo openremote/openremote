@@ -19,7 +19,6 @@
 import { expect } from "@openremote/test";
 import { adminStatePath, test as setup, userStatePath } from "./fixtures/manager";
 import { users } from "./fixtures/data/users";
-import permissions from "./fixtures/data/permissions";
 
 const { admin, smartcity } = users;
 
@@ -81,7 +80,7 @@ setup.describe(async () => {
    * @and Navigated to the "Users" page
    * @and Added a new user "smartcity"
    * @then The user "smartcity" should be visible
-   * @and All default permissions should be selected
+   * @and All default roles should be selected
    */
   setup(`Add user called "smartcity"`, async ({ page, manager, usersPage }) => {
     const { username, password } = smartcity;
@@ -92,7 +91,7 @@ setup.describe(async () => {
     await usersPage.addUser(username, password);
     await expect(page.getByRole("cell", { name: "smartcity" })).toHaveCount(1);
     await page.getByRole("cell", { name: "smartcity" }).click();
-    await usersPage.toHavePermissions(...permissions);
+    await usersPage.toHaveAllRoles();
   });
 });
 

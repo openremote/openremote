@@ -18,10 +18,11 @@
  */
 import { type BasePage, type Locator, type Page, type Shared, expect } from "@openremote/test";
 import type { Manager } from "../manager";
-import permissions from "../data/permissions";
 import type { UserModel } from "../../../src/pages/page-users";
 
 export class UsersPage implements BasePage {
+  private _allRoles?: string[];
+
   constructor(
     private readonly page: Page,
     private readonly shared: Shared,
@@ -37,45 +38,65 @@ export class UsersPage implements BasePage {
   }
 
   /**
-   * Get permission locator by name.
-   * @param permission The permission name
+   * Get role checkbox locator by name.
+   * @param role The role name
    */
-  getPermission(permission: string): Locator {
-    return this.page.getByRole("checkbox", { name: permission });
+  getRole(role: string): Locator {
+    return this.page.getByRole("checkbox", { name: role });
   }
 
   /**
-   * Toggle roles when configuring a user.
-   * @param roles The roles to toggle
+   * Toggle composite roles when configuring a user. These select the roles asserted by
+   * {@link toHaveRoles}, they are not roles in their own right.
+   * @param composites The composite roles to toggle
    */
-  async toggleUserRoles(...roles: string[]) {
+  async toggleCompositeRoles(...composites: string[]) {
     const roleSelector = this.page.locator("or-vaadin-multi-select-combo-box", { hasText: "Manager roles" });
     await roleSelector.click();
-    for (const role of roles) {
-      await this.page.getByRole("option", { name: role }).click();
+    for (const composite of composites) {
+      await this.page.getByRole("option", { name: composite }).click();
     }
     await roleSelector.locator("#toggleButton").click();
   }
 
   /**
-   * Assert selected permissions.
-   * @param perms The permissions expected to be checked
+   * Every role the current realm offers, read from the manager so that a role added to the backend
+   * is asserted without this fixture being updated. Composite roles are excluded; they select
+   * roles rather than being one.
    */
-  async toHavePermissions(...perms: string[]) {
-    for (const permisison of perms) {
-      await expect(this.getPermission(permisison)).toBeChecked();
-      await expect(this.getPermission(permisison)).toBeDisabled();
+  private async getAllRoles(): Promise<string[]> {
+    if (!this._allRoles) {
+      const roles = await this.manager.getClientRoles();
+      this._allRoles = (roles ?? []).filter((role) => !role.composite).map((role) => role.name!);
     }
-    for (const permisison of permissions.filter((p) => !perms.includes(p))) {
-      await expect(this.getPermission(permisison)).not.toBeChecked();
-      await expect(this.getPermission(permisison)).not.toBeDisabled();
+    return this._allRoles;
+  }
+
+  /**
+   * Assert selected roles, and that every other role is unselected.
+   * @param roles The roles expected to be checked
+   */
+  async toHaveRoles(...roles: string[]) {
+    for (const role of roles) {
+      await expect(this.getRole(role)).toBeChecked();
+      await expect(this.getRole(role)).toBeDisabled();
     }
+    const all = await this.getAllRoles();
+    for (const role of all.filter((r) => !roles.includes(r))) {
+      await expect(this.getRole(role)).not.toBeChecked();
+      await expect(this.getRole(role)).not.toBeDisabled();
+    }
+  }
+
+  /** Assert that every role the realm offers is selected. */
+  async toHaveAllRoles() {
+    await this.toHaveRoles(...(await this.getAllRoles()));
   }
 
   /**
    * Create a user with read and write access for the current realm.
    *
-   * Internally checks whether the permissions are correctly set and
+   * Internally checks whether the roles are correctly set and
    * registers the user for cleanup.
    *
    * @param username The users' username
@@ -94,8 +115,8 @@ export class UsersPage implements BasePage {
     if (tag) {
       await this.page.getByLabel("Tag", { exact: true }).fill(tag);
     }
-    await this.toggleUserRoles("Read", "Write");
-    await this.toHavePermissions(...permissions);
+    await this.toggleCompositeRoles("Read", "Write");
+    await this.toHaveAllRoles();
     await this.shared.interceptResponse<UserModel>(`user/${this.manager.realm}/users`, (user) => {
       if (user) this.manager.user = user;
     });
@@ -118,8 +139,8 @@ export class UsersPage implements BasePage {
     if (tag) {
       await this.page.getByLabel("Tag").fill(tag);
     }
-    await this.toggleUserRoles("Read", "Write");
-    await this.toHavePermissions(...permissions);
+    await this.toggleCompositeRoles("Read", "Write");
+    await this.toHaveAllRoles();
     await this.shared.interceptResponse<UserModel>(`user/${this.manager.realm}/users`, (user) => {
       if (user) this.manager.user = user;
     });

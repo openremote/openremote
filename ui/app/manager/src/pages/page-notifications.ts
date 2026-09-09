@@ -22,6 +22,7 @@ import { type AppStateKeyed, Page, type PageProvider } from "@openremote/or-app"
 import type { Store } from "@reduxjs/toolkit";
 import {
   type Asset,
+  ClientRole,
   type Notification,
   NotificationSource,
   NotificationTargetType,
@@ -154,11 +155,11 @@ export class NotificationService {
   }
 
   hasUserReadPermissions(): boolean {
-    return manager.hasRole("read:users") || manager.hasRole("read:admin");
+    return manager.hasRole(ClientRole.READ_USERS) || manager.hasRole(ClientRole.READ_ADMIN);
   }
 
   hasAssetReadPermissions(): boolean {
-    return manager.hasRole("read:assets") || manager.hasRole("read:admin");
+    return manager.hasRole(ClientRole.READ_ASSETS) || manager.hasRole(ClientRole.READ_ADMIN);
   }
 
   public getDefaultTimeRange(): { fromDate: number; toDate: number } {
@@ -485,9 +486,11 @@ export class PageNotifications extends Page<AppStateKeyed> {
   }
 
   protected render() {
-    const writeNotifications = manager.hasRole("write:notifications");
+    const writeNotifications = manager.hasRole(ClientRole.WRITE_NOTIFICATIONS);
     const hasRecipientType =
-      manager.hasRole("read:admin") || manager.hasRole("read:assets") || manager.hasRole("read:users");
+      manager.hasRole(ClientRole.READ_ADMIN) ||
+      manager.hasRole(ClientRole.READ_ASSETS) ||
+      manager.hasRole(ClientRole.READ_USERS);
 
     return html`
       <div id="wrapper">
