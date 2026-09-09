@@ -40,6 +40,7 @@ usage() {
 Manage an OpenRemote stack in its own Kubernetes namespace.
 
 Usage:
+  or-stack prepare --name <name> --kube-context <context> --target <local|eks> [options]
   or-stack apply --name <name> --kube-context <context> --target <local|eks> [options]
   or-stack status --name <name> --kube-context <context>
   or-stack credentials --name <name> --kube-context <context>
@@ -47,6 +48,8 @@ Usage:
   or-stack destroy --name <name> --kube-context <context> --confirm <name> [options]
 
 Commands:
+  prepare               Create or verify the owned stack namespace without
+                        installing any workloads.
   apply                 Create the stack namespace and install or upgrade the
                         internal OpenRemote components.
   status                Show releases and namespaced stack resources.
@@ -60,7 +63,7 @@ Options:
   --name <name>         Stack name and Kubernetes namespace. Env: OR_STACK_NAME.
   --kube-context <c>    Kubernetes context to target. Env: OR_STACK_KUBE_CONTEXT.
   --target <target>     Target profile: local or eks. Env: OR_STACK_TARGET.
-                        Required by apply.
+                        Required by prepare and apply.
   --exposure <mode>     Public exposure: haproxy, ingress, or none. Env:
                         OR_STACK_EXPOSURE. Default: haproxy for every target.
   --dns <mode>          DNS ownership: none or external-dns. Env: OR_STACK_DNS.
@@ -89,11 +92,13 @@ The stack name is also its namespace. Helm release names remain stable within
 that namespace so component service discovery continues to use the names
 postgresql, keycloak, and manager.
 
-The uninstall command retains chart-managed credentials and data and leaves the
-stack namespace in place. The destroy command is the explicit data-purge
-operation and deletes every resource in the stack namespace. Lifecycle and
-credential commands refuse namespaces without the matching openremote.io/stack
-label.
+The prepare command only establishes namespace ownership and records the
+target, exposure, and DNS choices. It is idempotent and refuses to adopt an
+unrelated namespace. The uninstall command retains chart-managed credentials
+and data and leaves the stack namespace in place. The destroy command is the
+explicit data-purge operation and deletes every resource in the stack
+namespace. Lifecycle and credential commands refuse namespaces without the
+matching openremote.io/stack label.
 
 HAProxy is the default exposure for local and EKS targets. On EKS it creates a
 per-stack internet-facing NLB; locally it uses the cluster's LoadBalancer
@@ -130,7 +135,7 @@ parse_arguments() {
       usage
       exit 0
       ;;
-    apply|status|credentials|uninstall|destroy)
+    prepare|apply|status|credentials|uninstall|destroy)
       COMMAND="$1"
       shift
       ;;
@@ -284,6 +289,16 @@ validate_apply_options() {
   fi
 }
 
+validate_prepare_options() {
+  validate_target
+  validate_exposure
+  validate_dns_mode
+
+  if [ "$DNS_MODE" = "external-dns" ] && [ "$EXPOSURE" = "none" ]; then
+    die "ExternalDNS ownership requires haproxy or ingress exposure."
+  fi
+}
+
 validate_port() {
   local port="$1"
   local name="$2"
@@ -304,7 +319,7 @@ validate_destroy_options() {
 }
 
 validate_target() {
-  [ -n "$TARGET" ] || die "A target is required for apply; use --target local or --target eks."
+  [ -n "$TARGET" ] || die "A target is required for prepare and apply; use --target local or --target eks."
 
   case "$TARGET" in
     local|eks)
@@ -399,6 +414,15 @@ ensure_namespace() {
     "openremote.io/exposure=$EXPOSURE" \
     "openremote.io/dns=$DNS_MODE" \
     --overwrite >/dev/null
+}
+
+prepare_stack() {
+  require_command kubectl
+  require_kube_context
+  ensure_namespace
+
+  log "Stack namespace '$STACK_NAME' is prepared in context '$KUBE_CONTEXT'."
+  log "No Helm releases or workloads were installed."
 }
 
 require_stack_namespace() {
@@ -803,6 +827,10 @@ main() {
   fi
 
   case "$COMMAND" in
+    prepare)
+      validate_prepare_options
+      prepare_stack
+      ;;
     apply)
       validate_apply_options
       apply_stack

@@ -75,6 +75,45 @@ run_stack() {
     "$OR_STACK" "$@"
 }
 
+test_prepare() {
+  local output
+
+  reset_log
+  output="$(OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack prepare \
+    --name stack-prepared \
+    --kube-context test-context \
+    --target eks \
+    --exposure ingress \
+    --dns external-dns)"
+
+  assert_contains $'kubectl\t--context\ttest-context\tcreate\tnamespace\tstack-prepared'
+  assert_contains $'kubectl\t--context\ttest-context\tlabel\tnamespace\tstack-prepared'
+  assert_contains $'openremote.io/stack=stack-prepared'
+  assert_contains $'openremote.io/target=eks'
+  assert_contains $'openremote.io/exposure=ingress'
+  assert_contains $'openremote.io/dns=external-dns'
+  assert_not_contains $'helm\t'
+  assert_not_contains $'get\tstorageclass'
+  assert_not_contains $'get\tservice\tkube-dns'
+  grep -Fx -- '[or-stack] No Helm releases or workloads were installed.' \
+    <<< "$output" >/dev/null || fail "Prepare did not report its namespace-only behavior"
+
+  reset_log
+  OR_STACK_TEST_NAMESPACE_EXISTS=true \
+  OR_STACK_TEST_TARGET_LABEL=eks \
+  OR_STACK_TEST_EXPOSURE_LABEL=ingress \
+    run_stack prepare \
+      --name stack-prepared \
+      --kube-context test-context \
+      --target eks \
+      --exposure ingress \
+      --dns external-dns >/dev/null
+
+  assert_not_contains $'create\tnamespace\tstack-prepared'
+  assert_contains $'label\tnamespace\tstack-prepared'
+  assert_not_contains $'helm\t'
+}
+
 test_local_apply() {
   local output
   local values_dir="$TEST_TEMP_DIR/values"
@@ -309,6 +348,24 @@ test_destroy() {
 
 test_lifecycle_safety() {
   reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true OR_STACK_TEST_NAMESPACE_LABEL= run_stack prepare \
+    --name stack-a --kube-context test-context --target local >/dev/null 2>&1; then
+    fail "Prepare adopted an unlabeled namespace"
+  fi
+  assert_not_contains $'label\tnamespace\tstack-a'
+  assert_not_contains $'helm\t'
+
+  reset_log
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true \
+    OR_STACK_TEST_TARGET_LABEL=eks \
+    OR_STACK_TEST_EXPOSURE_LABEL=haproxy \
+    run_stack prepare --name stack-a --kube-context test-context --target local \
+      >/dev/null 2>&1; then
+    fail "Prepare changed an existing stack's target"
+  fi
+  assert_not_contains $'label\tnamespace\tstack-a'
+
+  reset_log
   if OR_STACK_TEST_NAMESPACE_EXISTS=true OR_STACK_TEST_NAMESPACE_LABEL= run_stack apply \
     --name stack-a --kube-context test-context --target local >/dev/null 2>&1; then
     fail "Apply adopted an unlabeled namespace"
@@ -414,6 +471,15 @@ test_lifecycle_safety() {
 }
 
 test_validation() {
+  if run_stack prepare --name stack-a --kube-context test-context >/dev/null 2>&1; then
+    fail "Prepare accepted a missing target"
+  fi
+
+  if run_stack prepare --name stack-a --kube-context test-context --target local \
+    --exposure none --dns external-dns >/dev/null 2>&1; then
+    fail "Prepare accepted ExternalDNS ownership without a public endpoint"
+  fi
+
   if run_stack apply --name default --kube-context test-context --target local >/dev/null 2>&1; then
     fail "Reserved namespace was accepted"
   fi
@@ -541,6 +607,7 @@ test_validation() {
       --hostname stack-legacy-agent.example.com >/dev/null
 }
 
+test_prepare
 test_local_apply
 test_local_ingress_apply
 test_eks_apply

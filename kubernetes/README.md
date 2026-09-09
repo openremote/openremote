@@ -32,13 +32,34 @@ The Helm release names remain `or-setup`, `postgresql`, `keycloak`, and
 component service names therefore continue to work while namespaced resources
 and persistent data remain independent.
 
-The stack command provides apply, inspection, credential retrieval, uninstall,
-and explicit destruction operations. Target platform and public exposure are
-separate choices. `--target` selects local or EKS storage and cluster
-requirements; `--exposure` selects `haproxy`, `ingress`, or `none`. HAProxy is
-the default exposure for both targets. DNS ownership is a separate, portable
-choice: `--dns external-dns` declares the hostname to a compatible cluster
-controller, while the default `--dns none` leaves it externally managed.
+The stack command provides namespace preparation, apply, inspection, credential
+retrieval, uninstall, and explicit destruction operations. Target platform and
+public exposure are separate choices. `--target` selects local or EKS storage
+and cluster requirements; `--exposure` selects `haproxy`, `ingress`, or `none`.
+HAProxy is the default exposure for both targets. DNS ownership is a separate,
+portable choice: `--dns external-dns` declares the hostname to a compatible
+cluster controller, while the default `--dns none` leaves it externally
+managed.
+
+An AWS-aware orchestrator can reserve and verify namespace ownership before it
+creates external resources:
+
+```bash
+./or-stack prepare \
+  --name stack-a \
+  --kube-context cluster@eu-west-1 \
+  --target eks \
+  --exposure ingress \
+  --dns external-dns
+```
+
+`prepare` creates only the namespace and its OpenRemote ownership/configuration
+labels. It installs no Helm release, workload, Service, Ingress, Secret, or
+PVC, and it performs no AWS or cluster-capability checks. Repeating it is safe
+when the namespace has the matching stack label, target, and exposure. It
+refuses an unrelated namespace or an attempt to change the stored target or
+exposure. Normal users can go straight to `apply`; this separate operation is
+primarily a lifecycle building block for higher-level tooling.
 
 To install or upgrade a local stack using the current Docker Desktop, kind, or
 kubeadm context:
@@ -275,7 +296,11 @@ GA `external-dns.kubernetes.io/hostname` annotation and the
 - the proxy `LoadBalancer` Service for HAProxy exposure.
 
 The cluster's ExternalDNS installation must watch `Ingress` and `Service`
-sources and select that label. The managed EKS setup is documented in
+sources and select that label. A higher-level orchestrator may also use
+namespaced `DNSEndpoint` resources for records that do not derive their target
+from an Ingress or Service, such as future ACM validation CNAMEs. The managed
+EKS setup reconciles that CRD and source, but `or-stack` itself does not create
+such records. The managed EKS setup is documented in
 [`cluster/eks/README.md`](cluster/eks/README.md). A bring-your-own controller on
 another Kubernetes platform can use the same contract. ExternalDNS `0.22` or
 later understands the GA annotation prefix by default; an older controller

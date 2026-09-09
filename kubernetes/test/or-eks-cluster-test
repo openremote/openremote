@@ -28,13 +28,12 @@ fail() {
 }
 
 log_call() {
-  local command="$1"
+  local line="$1"
   shift
-  printf '%s' "$command" >> "$CALL_LOG"
   for argument in "$@"; do
-    printf '\t%s' "$argument" >> "$CALL_LOG"
+    line+=$'\t'"$argument"
   done
-  printf '\n' >> "$CALL_LOG"
+  printf '%s\n' "$line" >> "$CALL_LOG"
 }
 
 require_command() {
@@ -103,6 +102,11 @@ helm() {
 kubectl() {
   log_call kubectl "$@"
   case " $* " in
+    *" apply -f - "*)
+      while IFS= read -r _; do
+        :
+      done
+      ;;
     *" get ingressclass openremote-alb "*"go-template"*)
       printf '%s' "${OR_EKS_TEST_SHARED_CERTIFICATE_ARN-$TEST_SHARED_CERTIFICATE_ARN}"
       ;;
@@ -110,8 +114,14 @@ kubectl() {
       printf '%s' "${OR_EKS_TEST_EXTERNAL_DNS_IRSA_ROLE_ARN:-arn:aws:iam::123456789012:role/openremote-test-cluster-eu-west-1-external-dns}"
       ;;
     *" get deployment openremote-external-dns "*)
-      printf '%s\n' '--source=service' '--source=ingress' \
-        '--txt-owner-id=test-cluster-eu-west-1' '--dry-run'
+      printf '%s\n' "${OR_EKS_TEST_EXTERNAL_DNS_ARGS:---source=service
+--source=ingress
+--source=crd
+--txt-owner-id=test-cluster-eu-west-1
+--dry-run}"
+      ;;
+    *" get customresourcedefinition/dnsendpoints.externaldns.k8s.io "*)
+      [ "${OR_EKS_TEST_DNS_ENDPOINT_CRD:-true}" = "true" ]
       ;;
     *" get serviceaccount aws-node "*)
       printf '%s' "${OR_EKS_TEST_SERVICE_ACCOUNT_ROLE_ARN-$TEST_CNI_ROLE_ARN}"
@@ -182,8 +192,11 @@ assert_contains $'eksctl\tget\tiamserviceaccount'
 assert_contains $'eksctl\tcreate\tiamserviceaccount'
 assert_contains $'--include\tkube-system/external-dns'
 assert_contains $'helm\tupgrade\t--install\topenremote-external-dns\texternal-dns/external-dns'
+assert_contains $'helm\tshow\tcrds\texternal-dns/external-dns\t--version\t1.21.1'
+assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\twait\t--for=condition=Established\tcustomresourcedefinition/dnsendpoints.externaldns.k8s.io\t--timeout\t2m'
 assert_contains $'--version\t1.21.1'
 assert_contains $'image.tag=v0.22.0'
+assert_contains $'sources[2]=crd'
 assert_contains $'policy=sync'
 assert_contains $'registry=txt'
 assert_contains $'txtOwnerId=test-cluster-eu-west-1'
@@ -247,6 +260,22 @@ grep -Fx -- 'ExternalDNS TXT owner ID: test-cluster-eu-west-1' \
     "ExternalDNS status did not report the deployed TXT owner ID"
 grep -Fx -- 'ExternalDNS dry run: true' <<< "$external_dns_status_output" >/dev/null || fail \
   "ExternalDNS status did not report dry-run mode"
+grep -Fx -- 'ExternalDNS DNSEndpoint CRD installed: true' \
+  <<< "$external_dns_status_output" >/dev/null || fail \
+    "ExternalDNS status did not report the DNSEndpoint CRD"
+grep -Fx -- 'ExternalDNS DNSEndpoint source enabled: true' \
+  <<< "$external_dns_status_output" >/dev/null || fail \
+    "ExternalDNS status did not report the CRD source"
+
+external_dns_status_output="$(OR_EKS_TEST_DNS_ENDPOINT_CRD=false \
+  OR_EKS_TEST_EXTERNAL_DNS_ARGS=$'--source=service\n--source=ingress' \
+  show_external_dns_status)"
+grep -Fx -- 'ExternalDNS DNSEndpoint CRD installed: false' \
+  <<< "$external_dns_status_output" >/dev/null || fail \
+    "ExternalDNS status did not report a missing DNSEndpoint CRD"
+grep -Fx -- 'ExternalDNS DNSEndpoint source enabled: false' \
+  <<< "$external_dns_status_output" >/dev/null || fail \
+    "ExternalDNS status did not report a disabled CRD source"
 
 : > "$CALL_LOG"
 MANAGE_EXTERNAL_DNS=true uninstall_external_dns

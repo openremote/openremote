@@ -17,6 +17,7 @@ DEFAULT_EXTERNAL_DNS_CHART_VERSION="1.21.1"
 DEFAULT_EXTERNAL_DNS_IMAGE_TAG="v0.22.0"
 EXTERNAL_DNS_RELEASE_NAME="openremote-external-dns"
 EXTERNAL_DNS_SERVICE_ACCOUNT_NAME="external-dns"
+EXTERNAL_DNS_ENDPOINT_CRD="dnsendpoints.externaldns.k8s.io"
 SHARED_CERTIFICATE_ARN_ANNOTATION="openremote.io/shared-certificate-arn"
 
 COMMAND=""
@@ -634,6 +635,15 @@ reconcile_external_dns() {
     --force-update >/dev/null
   helm repo update external-dns >/dev/null
 
+  log "Reconciling the ExternalDNS DNSEndpoint CRD."
+  helm show crds external-dns/external-dns \
+    --version "$EXTERNAL_DNS_CHART_VERSION" | \
+    kubectl --context "$KUBE_CONTEXT" apply -f - >/dev/null
+  kubectl --context "$KUBE_CONTEXT" wait \
+    --for=condition=Established \
+    "customresourcedefinition/$EXTERNAL_DNS_ENDPOINT_CRD" \
+    --timeout 2m >/dev/null
+
   helm_args=(
     upgrade --install "$EXTERNAL_DNS_RELEASE_NAME" external-dns/external-dns
     --kube-context "$KUBE_CONTEXT"
@@ -643,6 +653,7 @@ reconcile_external_dns() {
     --set provider.name=aws
     --set 'sources[0]=service'
     --set 'sources[1]=ingress'
+    --set 'sources[2]=crd'
     --set policy=sync
     --set registry=txt
     --set-string "txtOwnerId=$EXTERNAL_DNS_OWNER_ID"
@@ -862,6 +873,8 @@ apply_cluster() {
 }
 
 show_external_dns_status() {
+  local crd_installed=false
+  local crd_source_enabled=false
   local dry_run=false
   local external_dns_args
   local owner_id=""
@@ -892,6 +905,13 @@ show_external_dns_status() {
     if grep -Eq '^--dry-run(=true)?$' <<< "$external_dns_args"; then
       dry_run=true
     fi
+    if grep -Fx -- '--source=crd' <<< "$external_dns_args" >/dev/null; then
+      crd_source_enabled=true
+    fi
+  fi
+  if kubectl --context "$KUBE_CONTEXT" get \
+      "customresourcedefinition/$EXTERNAL_DNS_ENDPOINT_CRD" >/dev/null 2>&1; then
+    crd_installed=true
   fi
   service_account_role_arn="$(kubectl --context "$KUBE_CONTEXT" \
     --namespace kube-system \
@@ -902,6 +922,8 @@ show_external_dns_status() {
   printf 'ExternalDNS TXT owner ID: %s\n' "${owner_id:-unknown}"
   printf 'ExternalDNS dry run: %s\n' "$dry_run"
   printf 'ExternalDNS IRSA role: %s\n' "${service_account_role_arn:-unknown}"
+  printf 'ExternalDNS DNSEndpoint CRD installed: %s\n' "$crd_installed"
+  printf 'ExternalDNS DNSEndpoint source enabled: %s\n' "$crd_source_enabled"
 }
 
 show_shared_certificate_status() {

@@ -141,13 +141,22 @@ for the enforced group and namespace-selector behavior.
 ## Automatic Route 53 records
 
 The optional managed ExternalDNS installation is cluster-scoped. It watches
-both `Ingress` and `Service` resources but filters them by
-`openremote.io/managed-dns=true`, uses only public Route 53 zones, and is
-restricted to the configured zone ID and domain. It uses TXT ownership with a
-cluster-unique owner ID and the `sync` policy, so deleting a source removes its
-owned record but not another controller's or an operator's records. The chart
-and image are pinned independently; the current defaults are chart `1.21.1`
-and ExternalDNS `v0.22.0`.
+`Ingress`, `Service`, and namespaced `DNSEndpoint` resources, but filters all
+of them by `openremote.io/managed-dns=true`. It uses only public Route 53 zones
+and is restricted to the configured zone ID and domain. It uses TXT ownership
+with a cluster-unique owner ID and the `sync` policy, so deleting a source
+removes its owned record but not another controller's or an operator's records.
+The chart and image are pinned independently; the current defaults are chart
+`1.21.1` and ExternalDNS `v0.22.0`.
+
+Cluster reconciliation explicitly applies the pinned chart's `DNSEndpoint`
+CRD before installing ExternalDNS and waits for it to become established. The
+chart grants the controller read/watch access to `DNSEndpoint` objects and
+status-update access when its `crd` source is enabled. This is the foundation
+for representing future managed ACM validation CNAMEs as resources in the
+owning stack namespace; this increment does not request certificates or create
+those records yet. Cluster status reports whether both the CRD and source are
+active.
 
 `or-stack apply --dns external-dns` supplies the selection label and the GA
 `external-dns.kubernetes.io/hostname` annotation. In ingress mode they are on
