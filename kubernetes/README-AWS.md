@@ -250,15 +250,22 @@ installation starts only after ACM reports `ISSUED`.
 
 The AWS identity selected by `--profile` needs `acm:RequestCertificate`,
 `acm:ListCertificates`, `acm:DescribeCertificate`, and
-`acm:ListTagsForCertificate` in the EKS account, in addition to the EKS access
-already required by the facade. Route 53 write permission remains confined to
-the ExternalDNS roles; `or-eks-stack` does not use DNS-account credentials.
+`acm:ListTagsForCertificate` in the EKS account. It also needs
+`acm:DeleteCertificate` when destroying a managed-certificate stack, in
+addition to the EKS access already required by the facade. Route 53 write
+permission remains confined to the ExternalDNS roles; `or-eks-stack` does not
+use DNS-account credentials.
 
 The CNAME resource and certificate are retained during `uninstall` so ACM can
-renew the certificate and a later apply can reuse it. Managed stack destruction
-is blocked in this increment; coordinated DNS and ACM deletion follows in the
-next lifecycle increment. Existing and shared certificate destruction remains
-unchanged.
+renew the certificate and a later apply can reuse it. For a managed certificate,
+`destroy` validates the namespace, Ingress, validation `DNSEndpoint`, and exact
+ACM ownership tags before deleting anything. It then removes the Ingress, waits
+for the public hostname to disappear from authoritative DNS and for ACM to
+report that the certificate is detached, destroys the namespace, waits for the
+validation CNAME to disappear, and deletes the certificate. A failed or
+interrupted destroy can be retried: the facade can recover the certificate from
+its cluster and stack tags even after the namespace is gone. Existing and
+shared certificates are never deleted by stack destruction.
 
 Ingress mode additionally validates the shared `openremote-alb` IngressClass
 and its enforced HTTPS redirect. ACM DNS validation can be hosted in another
@@ -389,17 +396,17 @@ provisioned EBS volumes with:
 ```
 
 The destroy command requires the matching stack namespace label and waits for
-the `Delete` reclaim policy to remove the stack's PersistentVolumes. It
-currently refuses a stack with a `managed` certificate so the retained
-validation CNAME and certificate cannot be orphaned. Perform supported stack
+the `Delete` reclaim policy to remove the stack's PersistentVolumes. For a
+stack-owned managed certificate it also performs the ordered DNS and ACM
+cleanup described above. The command refuses destructive cleanup if certificate
+or DNS ownership is absent, mismatched, or ambiguous. Perform supported stack
 cleanup before asking `or-eks-cluster` to destroy an otherwise empty cluster.
 Once that cluster-level preflight succeeds, `or-eks-cluster` bypasses system
 PodDisruptionBudgets during the final node drain so EKS add-ons cannot leave
 cluster deletion waiting indefinitely.
 
 Ingress supports `existing`, cluster-configured `shared`, and stack-owned
-`managed` certificate modes. Managed ACM deletion remains the next facade
-increment.
+`managed` certificate modes.
 
 #### PosgreSQL data directory
 

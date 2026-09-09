@@ -8,6 +8,9 @@ TEST_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/or-eks-stack-test.XXXXXX")"
 CALL_LOG="$TEST_TEMP_DIR/calls.log"
 CURL_COUNT_FILE="$TEST_TEMP_DIR/curl-count"
 DNS_ENDPOINT_LOG="$TEST_TEMP_DIR/dns-endpoint.json"
+CERTIFICATE_DELETED_FILE="$TEST_TEMP_DIR/certificate-deleted"
+INGRESS_DELETED_FILE="$TEST_TEMP_DIR/ingress-deleted"
+NAMESPACE_DELETED_FILE="$TEST_TEMP_DIR/namespace-deleted"
 TEST_CLUSTER_ENDPOINT="https://test-cluster.eks.example.com"
 TEST_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"
 TEST_SECOND_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/second-certificate"
@@ -16,7 +19,8 @@ DEFAULT_CERTIFICATE_TAGS='{"Tags":[]}'
 DEFAULT_CERTIFICATE_LIST='{"CertificateSummaryList":[]}'
 MANAGED_CERTIFICATE_JSON='{"Certificate":{"Status":"PENDING_VALIDATION","DomainName":"stack-a.example.com","SubjectAlternativeNames":["stack-a.example.com"],"DomainValidationOptions":[{"DomainName":"stack-a.example.com","ValidationMethod":"DNS","ResourceRecord":{"Name":"_validation.stack-a.example.com.","Type":"CNAME","Value":"_target.acm-validations.aws."}}]}}'
 MANAGED_CERTIFICATE_TAGS='{"Tags":[{"Key":"openremote.io/managed-by","Value":"or-eks-stack"},{"Key":"openremote.io/cluster","Value":"test-cluster"},{"Key":"openremote.io/stack","Value":"stack-a"},{"Key":"openremote.io/hostname","Value":"stack-a.example.com"}]}'
-DEFAULT_DNS_ENDPOINT_JSON='{"metadata":{"labels":{"app.kubernetes.io/managed-by":"or-eks-stack"},"annotations":{"openremote.io/certificate-arn":"arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"}}}'
+DEFAULT_DNS_ENDPOINT_JSON='{"metadata":{"labels":{"app.kubernetes.io/managed-by":"or-eks-stack","openremote.io/managed-dns":"true"},"annotations":{"openremote.io/certificate-arn":"arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"}},"spec":{"endpoints":[{"dnsName":"_validation.stack-a.example.com.","recordType":"CNAME","recordTTL":300,"targets":["_target.acm-validations.aws."]}]}}'
+DEFAULT_INGRESS_JSON='{"metadata":{"labels":{"openremote.io/managed-dns":"true"},"annotations":{"external-dns.kubernetes.io/hostname":"stack-a.example.com","alb.ingress.kubernetes.io/certificate-arn":"arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"}},"spec":{"rules":[{"host":"stack-a.example.com"}]}}'
 DEFAULT_EXTERNAL_DNS_ARGS=$'--source=service\n--source=ingress\n--source=crd\n--policy=sync\n--registry=txt\n--txt-owner-id=test-cluster-eu-west-1\n--label-filter=openremote.io/managed-dns=true\n--domain-filter=example.com'
 
 cleanup_test() {
@@ -74,6 +78,8 @@ assert_before() {
 reset_test() {
   : > "$CALL_LOG"
   : > "$DNS_ENDPOINT_LOG"
+  rm -f "$CERTIFICATE_DELETED_FILE" "$INGRESS_DELETED_FILE" \
+    "$NAMESPACE_DELETED_FILE"
   printf '0\n' > "$CURL_COUNT_FILE"
   COMMAND=""
   STACK_NAME=""
@@ -94,6 +100,14 @@ reset_test() {
   LOAD_BALANCER_ADDRESS=""
   EXTERNAL_DNS_ARGS=""
   CERTIFICATE_JSON=""
+  CERTIFICATE_EXISTS=false
+  STACK_NAMESPACE_EXISTS=false
+  VALIDATION_DNS_RECORDS=""
+  MANAGED_DNS_DOMAIN=""
+  AUTHORITATIVE_NAME_SERVERS=""
+  STACK_INGRESS_JSON=""
+  VALIDATION_DNS_ENDPOINT_EXISTS=false
+  MANAGED_CERTIFICATE_DESTROY=false
 }
 
 require_command() {
@@ -120,6 +134,9 @@ aws_sts() {
 aws_acm() {
   log_call aws-acm "$@"
   case " $* " in
+    *" delete-certificate "*)
+      : > "$CERTIFICATE_DELETED_FILE"
+      ;;
     *" list-certificates "*)
       printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_LIST-$DEFAULT_CERTIFICATE_LIST}"
       ;;
@@ -130,9 +147,17 @@ aws_acm() {
       printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_TAGS-$DEFAULT_CERTIFICATE_TAGS}"
       ;;
     *" Certificate.Status "*)
+      if [ -f "$CERTIFICATE_DELETED_FILE" ]; then
+        printf '%s\n' 'ResourceNotFoundException' >&2
+        return 1
+      fi
       printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_STATUS:-ISSUED}"
       ;;
     *" describe-certificate "*)
+      if [ -f "$CERTIFICATE_DELETED_FILE" ]; then
+        printf '%s\n' 'ResourceNotFoundException' >&2
+        return 1
+      fi
       printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_JSON-$DEFAULT_CERTIFICATE_JSON}"
       ;;
   esac
@@ -169,6 +194,15 @@ kubectl() {
     *" get namespace stack-a "*"certificate-arn"*)
       printf '%s' "${OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN:-}"
       ;;
+    *" get namespace stack-a "*"openremote.io/hostname"*)
+      printf '%s' "${OR_EKS_STACK_TEST_RECORDED_HOSTNAME:-}"
+      ;;
+    *" get namespace stack-a "*"openremote.io/stack"*)
+      if [ "${OR_EKS_STACK_TEST_NAMESPACE_EXISTS:-true}" = "true" ] && \
+         [ ! -f "$NAMESPACE_DELETED_FILE" ]; then
+        printf 'stack-a|%s' "${OR_EKS_STACK_TEST_NAMESPACE_STACK_LABEL:-stack-a}"
+      fi
+      ;;
     *" rollout status deployment/openremote-external-dns "*)
       [ "${OR_EKS_STACK_TEST_EXTERNAL_DNS_ROLLOUT_READY:-true}" = "true" ]
       ;;
@@ -186,7 +220,13 @@ kubectl() {
       printf '%s' "${OR_EKS_STACK_TEST_EXTERNAL_DNS_ROLE_ARN-arn:aws:iam::123456789012:role/openremote-external-dns}"
       ;;
     *" get dnsendpoint acm-validation "*)
-      [ "${OR_EKS_STACK_TEST_DNS_ENDPOINT_EXISTS:-false}" = "true" ] || return 1
+      if [ -f "$NAMESPACE_DELETED_FILE" ]; then
+        return 0
+      fi
+      if [ "${OR_EKS_STACK_TEST_DNS_ENDPOINT_EXISTS:-false}" != "true" ]; then
+        [[ "$arguments" == *" --ignore-not-found "* ]] && return 0
+        return 1
+      fi
       printf '%s\n' "${OR_EKS_STACK_TEST_DNS_ENDPOINT_JSON-$DEFAULT_DNS_ENDPOINT_JSON}"
       ;;
     *" apply -f - "*)
@@ -195,6 +235,16 @@ kubectl() {
       ;;
     *" get service proxy "*)
       printf '%s' "${OR_EKS_STACK_TEST_NLB_ADDRESS:-test-nlb.elb.eu-west-1.amazonaws.com}"
+      ;;
+    *" get ingress proxy "*" -o json "*)
+      if [ "${OR_EKS_STACK_TEST_INGRESS_EXISTS:-false}" = "true" ] && \
+         [ ! -f "$INGRESS_DELETED_FILE" ] && \
+         [ ! -f "$NAMESPACE_DELETED_FILE" ]; then
+        printf '%s\n' "${OR_EKS_STACK_TEST_INGRESS_JSON-$DEFAULT_INGRESS_JSON}"
+      fi
+      ;;
+    *" delete ingress proxy "*)
+      : > "$INGRESS_DELETED_FILE"
       ;;
     *" get ingress proxy "*)
       printf '%s' "${OR_EKS_STACK_TEST_ALB_ADDRESS:-test-alb.elb.eu-west-1.amazonaws.com}"
@@ -206,10 +256,39 @@ kubectl() {
 }
 
 dig() {
+  local argument
+  local authoritative=false
+  local dns_name=""
+  local record_type=""
+
   log_call dig "$@"
-  case "${2:-}" in
+  for argument in "$@"; do
+    case "$argument" in
+      @*) authoritative=true ;;
+      A|AAAA|CNAME|NS) record_type="$argument" ;;
+      +*) ;;
+      *) dns_name="$argument" ;;
+    esac
+  done
+
+  if [ "$record_type" = "NS" ]; then
+    [ "$dns_name" = "example.com" ] && printf '%s\n' 'ns-1.example.net.'
+    return
+  fi
+
+  case "$dns_name" in
     stack-a.example.com)
-      printf '%s\n' "${OR_EKS_STACK_TEST_HOST_ADDRESS:-192.0.2.10}"
+      if [ "$authoritative" = false ] || \
+         { [ "${OR_EKS_STACK_TEST_NAMESPACE_EXISTS:-true}" = "true" ] && \
+           [ ! -f "$INGRESS_DELETED_FILE" ]; }; then
+        printf '%s\n' "${OR_EKS_STACK_TEST_HOST_ADDRESS:-192.0.2.10}"
+      fi
+      ;;
+    _validation.stack-a.example.com|_validation.stack-a.example.com.)
+      if [ "${OR_EKS_STACK_TEST_NAMESPACE_EXISTS:-true}" = "true" ] && \
+         [ ! -f "$NAMESPACE_DELETED_FILE" ]; then
+        printf '%s\n' '_target.acm-validations.aws.'
+      fi
       ;;
     test-nlb.elb.eu-west-1.amazonaws.com)
       printf '%s\n' "${OR_EKS_STACK_TEST_NLB_RESOLVED_ADDRESS:-192.0.2.10}"
@@ -239,6 +318,9 @@ sleep() {
 
 run_or_stack() {
   log_call or-stack "$@"
+  if [ "${1:-}" = "destroy" ]; then
+    : > "$NAMESPACE_DELETED_FILE"
+  fi
 }
 
 run_eks_stack() {
@@ -267,7 +349,7 @@ test_apply() {
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\trollout\tstatus\tdeployment/openremote-external-dns'
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\tget\tserviceaccount\texternal-dns'
   assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\thaproxy\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--timeout\t20m\t--http-port\t80\t--https-port\t8443\t--values-dir\t'"$values_dir"
-  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tnamespace\tstack-a\topenremote.io/certificate-mode=acme\t--overwrite'
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tnamespace\tstack-a\topenremote.io/certificate-mode=acme\topenremote.io/hostname=stack-a.example.com\t--overwrite'
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tget\tservice\tproxy'
   assert_contains $'dig\t+short\tstack-a.example.com\tA'
   assert_contains $'dig\t+short\ttest-nlb.elb.eu-west-1.amazonaws.com\tA'
@@ -300,7 +382,7 @@ test_ingress_existing_certificate_apply() {
   assert_contains $'aws-acm\tdescribe-certificate\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"$'\t--output\tjson'
   assert_contains $'aws-acm\tlist-tags-for-certificate\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"$'\t--output\tjson'
   assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\tingress\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--timeout\t20m\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"
-  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tnamespace\tstack-a\topenremote.io/certificate-mode=existing\topenremote.io/certificate-arn='"$TEST_CERTIFICATE_ARN"$'\t--overwrite'
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tnamespace\tstack-a\topenremote.io/certificate-mode=existing\topenremote.io/certificate-arn='"$TEST_CERTIFICATE_ARN"$'\topenremote.io/hostname=stack-a.example.com\t--overwrite'
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tget\tingress\tproxy'
   assert_contains $'dig\t+short\ttest-alb.elb.eu-west-1.amazonaws.com\tA'
   assert_contains 'https://stack-a.example.com/manager/'
@@ -328,7 +410,7 @@ test_ingress_shared_certificate_apply() {
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tget\tingressclass\topenremote-alb\t-o\tgo-template={{with index .metadata.annotations "openremote.io/shared-certificate-arn"}}{{.}}{{end}}'
   assert_contains $'aws-acm\tdescribe-certificate\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"$'\t--output\tjson'
   assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\tingress\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--timeout\t20m\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"
-  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tnamespace\tstack-a\topenremote.io/certificate-mode=shared\topenremote.io/certificate-arn='"$TEST_CERTIFICATE_ARN"$'\t--overwrite'
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tnamespace\tstack-a\topenremote.io/certificate-mode=shared\topenremote.io/certificate-arn='"$TEST_CERTIFICATE_ARN"$'\topenremote.io/hostname=stack-a.example.com\t--overwrite'
   assert_before $'get\tingressclass\topenremote-alb' $'aws-acm\tdescribe-certificate'
   assert_before $'aws-acm\tdescribe-certificate' $'or-stack\tapply'
   grep -F -- "Selected the cluster's shared ACM certificate '$TEST_CERTIFICATE_ARN'" \
@@ -569,21 +651,125 @@ test_lifecycle_delegation() {
   assert_contains $'or-stack\tdestroy\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--confirm\tstack-a\t--timeout\t15m'
   assert_not_contains 'delete-certificate'
 
-  if (OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=managed \
+}
+
+test_managed_destroy() {
+  local managed_certificate_list
+  local output
+  local status
+
+  managed_certificate_list="{\"CertificateSummaryList\":[{\"CertificateArn\":\"$TEST_CERTIFICATE_ARN\",\"DomainName\":\"stack-a.example.com\"}]}"
+  set +e
+  output="$(OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=managed \
+    OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+    OR_EKS_STACK_TEST_CERTIFICATE_LIST="$managed_certificate_list" \
+    OR_EKS_STACK_TEST_CERTIFICATE_TAGS="$MANAGED_CERTIFICATE_TAGS" \
+    OR_EKS_STACK_TEST_CERTIFICATE_JSON="$MANAGED_CERTIFICATE_JSON" \
+    OR_EKS_STACK_TEST_DNS_ENDPOINT_EXISTS=true \
+    OR_EKS_STACK_TEST_INGRESS_EXISTS=true \
+    run_eks_stack destroy --name stack-a --cluster test-cluster \
+      --profile '' --confirm stack-a --timeout 15m 2>&1)"
+  status=$?
+  set -e
+  [ "$status" -eq 0 ] || fail \
+    "Managed destroy failed unexpectedly: $output"
+
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tget\tnamespace\tstack-a\t--ignore-not-found'
+  assert_contains $'aws-acm\tlist-certificates'
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tdelete\tingress\tproxy\t--wait=true\t--timeout\t15m'
+  assert_contains $'dig\t+time=5\t+tries=2\t+short\texample.com\tNS'
+  assert_contains $'dig\t+time=3\t+tries=1\t+short\t@ns-1.example.net.\tstack-a.example.com\tA'
+  assert_contains $'or-stack\tdestroy\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--confirm\tstack-a\t--timeout\t15m'
+  assert_contains $'dig\t+time=3\t+tries=1\t+short\t@ns-1.example.net.\t_validation.stack-a.example.com.\tCNAME'
+  assert_contains $'aws-acm\tdelete-certificate\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"
+  assert_before $'delete\tingress\tproxy' $'stack-a.example.com\tA'
+  assert_before $'stack-a.example.com\tA' $'or-stack\tdestroy'
+  assert_before $'or-stack\tdestroy' $'_validation.stack-a.example.com.\tCNAME'
+  assert_before $'_validation.stack-a.example.com.\tCNAME' $'aws-acm\tdelete-certificate'
+  grep -F -- "Stack 'stack-a' and its managed external certificate resources are destroyed." \
+    <<< "$output" >/dev/null || fail \
+      "Managed destroy did not report complete external cleanup"
+
+  set +e
+  output="$(OR_EKS_STACK_TEST_NAMESPACE_EXISTS=false \
+    OR_EKS_STACK_TEST_CERTIFICATE_LIST="$managed_certificate_list" \
+    OR_EKS_STACK_TEST_CERTIFICATE_TAGS="$MANAGED_CERTIFICATE_TAGS" \
+    OR_EKS_STACK_TEST_CERTIFICATE_JSON="$MANAGED_CERTIFICATE_JSON" \
+      run_eks_stack destroy --name stack-a --cluster test-cluster \
+        --profile '' --confirm stack-a --timeout 15m 2>&1)"
+  status=$?
+  set -e
+  [ "$status" -eq 0 ] || fail \
+    "Managed destroy recovery failed unexpectedly: $output"
+  assert_not_contains $'or-stack\tdestroy'
+  assert_contains $'aws-acm\tdelete-certificate'
+}
+
+test_managed_destroy_safety() {
+  local managed_certificate_list
+
+  managed_certificate_list="{\"CertificateSummaryList\":[{\"CertificateArn\":\"$TEST_CERTIFICATE_ARN\",\"DomainName\":\"stack-a.example.com\"}]}"
+
+  if (OR_EKS_STACK_TEST_NAMESPACE_STACK_LABEL=someone-else \
       run_eks_stack destroy --name stack-a --cluster test-cluster \
         --profile '' --confirm stack-a --timeout 15m) >/dev/null 2>&1; then
-    fail "Destroy accepted a stack-managed certificate without its cleanup workflow"
+    fail "Managed destroy accepted a namespace without matching stack ownership"
   fi
+  assert_not_contains $'aws-acm\tlist-certificates'
+  assert_not_contains $'delete\tingress\tproxy'
   assert_not_contains $'or-stack\tdestroy'
+  assert_not_contains $'delete-certificate'
 
-  if (OR_EKS_STACK_TEST_CERTIFICATE_LIST="{\"CertificateSummaryList\":[{\"CertificateArn\":\"$TEST_CERTIFICATE_ARN\",\"DomainName\":\"stack-a.example.com\"}]}" \
+  if (OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=managed \
+      OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+      run_eks_stack destroy --name stack-a --cluster test-cluster \
+        --profile '' --confirm stack-a --timeout 15m) >/dev/null 2>&1; then
+    fail "Managed destroy accepted a certificate without exact ownership tags"
+  fi
+  assert_not_contains $'delete\tingress\tproxy'
+  assert_not_contains $'or-stack\tdestroy'
+  assert_not_contains $'delete-certificate'
+
+  if (OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=managed \
+      OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+      OR_EKS_STACK_TEST_CERTIFICATE_LIST="$managed_certificate_list" \
+      OR_EKS_STACK_TEST_CERTIFICATE_TAGS="$MANAGED_CERTIFICATE_TAGS" \
+      OR_EKS_STACK_TEST_CERTIFICATE_JSON="$MANAGED_CERTIFICATE_JSON" \
+      OR_EKS_STACK_TEST_DNS_ENDPOINT_EXISTS=true \
+      OR_EKS_STACK_TEST_DNS_ENDPOINT_JSON='{"metadata":{"labels":{"app.kubernetes.io/managed-by":"someone-else","openremote.io/managed-dns":"true"},"annotations":{"openremote.io/certificate-arn":"arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"}},"spec":{"endpoints":[]}}' \
+      run_eks_stack destroy --name stack-a --cluster test-cluster \
+        --profile '' --confirm stack-a --timeout 15m) >/dev/null 2>&1; then
+    fail "Managed destroy accepted an unowned validation DNSEndpoint"
+  fi
+  assert_not_contains $'delete\tingress\tproxy'
+  assert_not_contains $'or-stack\tdestroy'
+  assert_not_contains $'delete-certificate'
+
+  if (OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=managed \
+      OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+      OR_EKS_STACK_TEST_CERTIFICATE_LIST="$managed_certificate_list" \
+      OR_EKS_STACK_TEST_CERTIFICATE_TAGS="$MANAGED_CERTIFICATE_TAGS" \
+      OR_EKS_STACK_TEST_CERTIFICATE_JSON="$MANAGED_CERTIFICATE_JSON" \
+      OR_EKS_STACK_TEST_DNS_ENDPOINT_EXISTS=true \
+      OR_EKS_STACK_TEST_INGRESS_EXISTS=true \
+      OR_EKS_STACK_TEST_INGRESS_JSON='{"metadata":{"labels":{"openremote.io/managed-dns":"true"},"annotations":{"external-dns.kubernetes.io/hostname":"stack-a.example.com","alb.ingress.kubernetes.io/certificate-arn":"arn:aws:acm:eu-west-1:123456789012:certificate/someone-elses-certificate"}},"spec":{"rules":[{"host":"stack-a.example.com"}]}}' \
+      run_eks_stack destroy --name stack-a --cluster test-cluster \
+        --profile '' --confirm stack-a --timeout 15m) >/dev/null 2>&1; then
+    fail "Managed destroy accepted an Ingress using another certificate"
+  fi
+  assert_not_contains $'delete\tingress\tproxy'
+  assert_not_contains $'or-stack\tdestroy'
+  assert_not_contains $'delete-certificate'
+
+  if (OR_EKS_STACK_TEST_CERTIFICATE_LIST="{\"CertificateSummaryList\":[{\"CertificateArn\":\"$TEST_CERTIFICATE_ARN\"},{\"CertificateArn\":\"$TEST_SECOND_CERTIFICATE_ARN\"}]}" \
       OR_EKS_STACK_TEST_CERTIFICATE_TAGS="$MANAGED_CERTIFICATE_TAGS" \
       run_eks_stack destroy --name stack-a --cluster test-cluster \
         --profile '' --confirm stack-a --timeout 15m) >/dev/null 2>&1; then
-    fail "Destroy accepted a tagged managed certificate missing from namespace metadata"
+    fail "Managed destroy selected one of multiple tagged certificates"
   fi
-  assert_contains $'aws-acm\tlist-certificates'
+  assert_not_contains $'delete\tingress\tproxy'
   assert_not_contains $'or-stack\tdestroy'
+  assert_not_contains $'delete-certificate'
 }
 
 test_validation() {
@@ -739,6 +925,8 @@ test_ingress_managed_certificate_apply
 test_managed_certificate_reuse_and_safety
 test_apply_reuses_valid_certificate
 test_lifecycle_delegation
+test_managed_destroy
+test_managed_destroy_safety
 test_validation
 
 printf 'or-eks-stack tests passed\n'

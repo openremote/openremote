@@ -342,14 +342,24 @@ resource.
 
 The facade's EKS-account identity needs `acm:RequestCertificate`,
 `acm:ListCertificates`, `acm:DescribeCertificate`, and
-`acm:ListTagsForCertificate`. It never assumes the DNS-account role directly;
-the restricted ExternalDNS role publishes the validation records.
+`acm:ListTagsForCertificate`. Destroying a managed-certificate stack also needs
+`acm:DeleteCertificate`. It never assumes the DNS-account role directly; the
+restricted ExternalDNS role publishes and removes the validation records.
 
 The validation resource remains present through ordinary uninstall because ACM
-needs its CNAMEs for managed renewal. This increment deliberately refuses to
-destroy a stack that owns a managed certificate. Automated removal of the DNS
-record followed by ACM certificate deletion is the next lifecycle increment;
-until then, use `uninstall` when testing managed mode.
+needs its CNAMEs for managed renewal. Managed stack destruction validates exact
+ownership before making changes, removes the stack Ingress, and checks
+authoritative DNS until the public hostname is gone. It waits for ACM to report
+that the certificate is no longer attached, destroys the namespace and its
+validation `DNSEndpoint`, verifies that every validation CNAME is gone, then
+deletes the certificate. Existing and shared certificates remain external to
+the stack lifecycle and are never deleted.
+
+The operation is deliberately retryable. If it stops after namespace deletion,
+the next `destroy` can recover the one certificate carrying the exact cluster
+and stack tags and finish external cleanup. Ambiguous certificates or
+mismatched namespace, Ingress, DNS, hostname, or certificate ownership stop the
+operation instead of selecting a resource to delete.
 
 ExternalDNS does not silently adopt a manually created record. Migrate existing
 records with this dry-run-first sequence:
@@ -371,12 +381,13 @@ records with this dry-run-first sequence:
 Removing `--dns external-dns`, uninstalling a stack, or destroying it removes
 the Ingress or Service that sources the stack's public hostname. The
 controller's event-triggered sync then removes only records carrying its owner
-ID. A managed certificate's separate validation `DNSEndpoint` is retained as
-described above. Wait for the public alias and TXT record to disappear before
-shutting down the cluster or creating a manual replacement. The DNS-account
-CloudFormation stack is deliberately not deleted with the cluster; it can be
-retained for a recreated cluster using the same source role name, or deleted
-explicitly in the DNS account after all managed records are gone.
+ID. A managed certificate's separate validation `DNSEndpoint` is retained by
+uninstall and removed by destroy as described above. Wait for the public alias
+and TXT record to disappear before shutting down the cluster or creating a
+manual replacement. The DNS-account CloudFormation stack is deliberately not
+deleted with the cluster; it can be retained for a recreated cluster using the
+same source role name, or deleted explicitly in the DNS account after all
+managed records are gone.
 
 `or-eks-cluster status` reports the ExternalDNS Helm health, TXT owner ID,
 dry-run state, and IRSA role. The controller's AWS provider and TXT registry are

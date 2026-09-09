@@ -21,6 +21,7 @@ CERTIFICATE_STACK_TAG_KEY="openremote.io/stack"
 CERTIFICATE_HOSTNAME_TAG_KEY="openremote.io/hostname"
 CERTIFICATE_MODE_ANNOTATION="openremote.io/certificate-mode"
 CERTIFICATE_ARN_ANNOTATION="openremote.io/certificate-arn"
+HOSTNAME_ANNOTATION="openremote.io/hostname"
 SHARED_CERTIFICATE_ARN_ANNOTATION="openremote.io/shared-certificate-arn"
 ACM_VALIDATION_DNS_ENDPOINT_NAME="acm-validation"
 
@@ -43,6 +44,14 @@ OR_STACK_COMMAND="${OR_EKS_STACK_OR_STACK:-$SCRIPT_DIR/or-stack}"
 LOAD_BALANCER_ADDRESS=""
 EXTERNAL_DNS_ARGS=""
 CERTIFICATE_JSON=""
+CERTIFICATE_EXISTS=false
+STACK_NAMESPACE_EXISTS=false
+VALIDATION_DNS_RECORDS=""
+MANAGED_DNS_DOMAIN=""
+AUTHORITATIVE_NAME_SERVERS=""
+STACK_INGRESS_JSON=""
+VALIDATION_DNS_ENDPOINT_EXISTS=false
+MANAGED_CERTIFICATE_DESTROY=false
 
 usage() {
   cat <<'EOF'
@@ -109,8 +118,9 @@ for local clusters, unmanaged DNS, and internal-only stacks.
 Ingress accepts an explicit existing ACM ARN, the externally managed shared
 certificate configured by or-eks-cluster, or a stack-owned managed certificate.
 Managed mode requests or reuses an exact-hostname ACM certificate and retains
-its namespaced DNS-validation record through uninstall. Managed certificate
-destruction is intentionally blocked until its deletion workflow is added.
+its namespaced DNS-validation record through uninstall. Destroy removes the
+stack route and namespace, waits for its public and validation DNS records to
+disappear, then deletes only the exactly owned ACM certificate.
 EOF
 }
 
@@ -813,6 +823,34 @@ stack_certificate_arn() {
     -o 'go-template={{with index .metadata.annotations "openremote.io/certificate-arn"}}{{.}}{{end}}'
 }
 
+stack_hostname() {
+  kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    -o 'go-template={{with index .metadata.annotations "openremote.io/hostname"}}{{.}}{{end}}'
+}
+
+inspect_stack_namespace_for_destroy() {
+  local namespace_identity
+  local namespace_name
+  local stack_label
+
+  namespace_identity="$(kubectl --context "$KUBE_CONTEXT" \
+    get namespace "$STACK_NAME" \
+    --ignore-not-found \
+    -o 'go-template={{.metadata.name}}|{{with index .metadata.labels "openremote.io/stack"}}{{.}}{{end}}')" || die \
+      "Unable to inspect namespace '$STACK_NAME' before destroy."
+  if [ -z "$namespace_identity" ]; then
+    STACK_NAMESPACE_EXISTS=false
+    return
+  fi
+
+  IFS='|' read -r namespace_name stack_label <<< "$namespace_identity"
+  [ "$namespace_name" = "$STACK_NAME" ] || die \
+    "Unable to identify namespace '$STACK_NAME' before destroy."
+  [ "$stack_label" = "$STACK_NAME" ] || die \
+    "Namespace '$STACK_NAME' does not have the matching openremote.io/stack label; refusing to modify it."
+  STACK_NAMESPACE_EXISTS=true
+}
+
 prepare_portable_stack() {
   run_or_stack prepare \
     --name "$STACK_NAME" \
@@ -847,10 +885,12 @@ resolve_managed_certificate() {
   record_certificate_configuration
 }
 
-managed_certificate_exists_for_stack() {
+discover_managed_certificate_for_destroy() {
   local certificate_arn
+  local certificate_count=0
   local certificate_list
   local certificate_tags
+  local discovered_certificate_arn=""
 
   certificate_list="$(aws_acm list-certificates \
     --certificate-statuses \
@@ -865,11 +905,253 @@ managed_certificate_exists_for_stack() {
       --output json)" || die \
         "Unable to inspect ownership tags on ACM certificate '$certificate_arn'."
     if managed_certificate_tags_match_stack "$certificate_tags"; then
-      return 0
+      certificate_count="$((certificate_count + 1))"
+      discovered_certificate_arn="$certificate_arn"
     fi
   done < <(jq -r '.CertificateSummaryList[]?.CertificateArn' \
     <<< "$certificate_list")
-  return 1
+
+  [ "$certificate_count" -le 1 ] || die \
+    "Found $certificate_count managed ACM certificates for stack '$STACK_NAME'; refusing destructive cleanup."
+  if [ "$certificate_count" -eq 1 ]; then
+    printf '%s\n' "$discovered_certificate_arn"
+  fi
+}
+
+load_managed_certificate_for_destroy() {
+  local certificate_domain
+  local certificate_json
+  local certificate_tags
+  local describe_status
+  local tagged_hostname
+
+  set +e
+  certificate_json="$(aws_acm describe-certificate \
+    --certificate-arn "$CERTIFICATE_ARN" \
+    --output json 2>&1)"
+  describe_status=$?
+  set -e
+  if [ "$describe_status" -ne 0 ]; then
+    case "$certificate_json" in
+      *ResourceNotFoundException*)
+        CERTIFICATE_EXISTS=false
+        CERTIFICATE_JSON=""
+        return
+        ;;
+      *)
+        die "Unable to describe managed ACM certificate '$CERTIFICATE_ARN' before destroy: $certificate_json"
+        ;;
+    esac
+  fi
+
+  certificate_tags="$(aws_acm list-tags-for-certificate \
+    --certificate-arn "$CERTIFICATE_ARN" \
+    --output json)" || die \
+      "Unable to inspect ownership tags on managed certificate '$CERTIFICATE_ARN'."
+  managed_certificate_tags_match_stack "$certificate_tags" || die \
+    "Certificate '$CERTIFICATE_ARN' does not carry the exact managed ownership tags for stack '$STACK_NAME'."
+  tagged_hostname="$(jq -r \
+    --arg key "$CERTIFICATE_HOSTNAME_TAG_KEY" \
+    '[.Tags[]? | select(.Key == $key) | .Value] |
+     if length == 1 then .[0] else empty end' \
+    <<< "$certificate_tags")" || die \
+      "Unable to read the managed hostname tag from certificate '$CERTIFICATE_ARN'."
+  [ -n "$tagged_hostname" ] || die \
+    "Certificate '$CERTIFICATE_ARN' does not have exactly one managed hostname tag."
+  if [ -n "$HOSTNAME_VALUE" ] && [ "$HOSTNAME_VALUE" != "$tagged_hostname" ]; then
+    die "Namespace '$STACK_NAME' records hostname '$HOSTNAME_VALUE', but its managed certificate records '$tagged_hostname'."
+  fi
+  HOSTNAME_VALUE="$tagged_hostname"
+  validate_hostname
+
+  certificate_domain="$(jq -r '.Certificate.DomainName // empty | ascii_downcase' \
+    <<< "$certificate_json")" || die \
+      "Unable to read the domain of managed certificate '$CERTIFICATE_ARN'."
+  [ "${certificate_domain%.}" = "$HOSTNAME_VALUE" ] || die \
+    "Managed certificate '$CERTIFICATE_ARN' is for '$certificate_domain', not '$HOSTNAME_VALUE'."
+
+  require_managed_certificate_ownership
+  CERTIFICATE_EXISTS=true
+  CERTIFICATE_JSON="$certificate_json"
+}
+
+capture_stack_ingress_for_destroy() {
+  STACK_INGRESS_JSON=""
+  [ "$STACK_NAMESPACE_EXISTS" = true ] || return 0
+
+  STACK_INGRESS_JSON="$(kubectl --context "$KUBE_CONTEXT" \
+    --namespace "$STACK_NAME" \
+    get ingress proxy \
+    --ignore-not-found \
+    -o json)" || die \
+      "Unable to inspect Ingress '$STACK_NAME/proxy' before destroy."
+}
+
+resolve_managed_certificate_for_destroy() {
+  local discovered_certificate_arn=""
+  local ingress_hostname=""
+  local recorded_certificate_arn=""
+  local recorded_certificate_mode=""
+  local recorded_hostname=""
+
+  MANAGED_CERTIFICATE_DESTROY=false
+
+  if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
+    recorded_certificate_mode="$(stack_certificate_mode)" || die \
+      "Unable to read certificate mode from namespace '$STACK_NAME'."
+    recorded_certificate_arn="$(stack_certificate_arn)" || die \
+      "Unable to read certificate ARN from namespace '$STACK_NAME'."
+    recorded_hostname="$(stack_hostname)" || die \
+      "Unable to read hostname from namespace '$STACK_NAME'."
+    HOSTNAME_VALUE="$recorded_hostname"
+  fi
+
+  if ! discovered_certificate_arn="$(discover_managed_certificate_for_destroy)"; then
+    die "Unable to safely discover a unique managed ACM certificate for stack '$STACK_NAME'."
+  fi
+  if [ "$recorded_certificate_mode" = "managed" ]; then
+    if [ -n "$recorded_certificate_arn" ] && \
+       [ -n "$discovered_certificate_arn" ] && \
+       [ "$recorded_certificate_arn" != "$discovered_certificate_arn" ]; then
+      die "Namespace '$STACK_NAME' records managed certificate '$recorded_certificate_arn', but ownership tags identify '$discovered_certificate_arn'."
+    fi
+    CERTIFICATE_ARN="${recorded_certificate_arn:-$discovered_certificate_arn}"
+    [ -n "$CERTIFICATE_ARN" ] || die \
+      "Namespace '$STACK_NAME' records managed certificate mode without a certificate ARN or uniquely tagged certificate."
+  elif [ -n "$discovered_certificate_arn" ]; then
+    CERTIFICATE_ARN="$discovered_certificate_arn"
+    log "Recovered tagged managed ACM certificate '$CERTIFICATE_ARN' for stack '$STACK_NAME'."
+  else
+    return 0
+  fi
+
+  load_managed_certificate_for_destroy
+  if [ "$CERTIFICATE_EXISTS" = false ] && [ -z "$HOSTNAME_VALUE" ] && \
+     [ -n "$STACK_INGRESS_JSON" ]; then
+    ingress_hostname="$(jq -r \
+      '.metadata.annotations["external-dns.alpha.kubernetes.io/hostname"] //
+       .metadata.annotations["external-dns.kubernetes.io/hostname"] //
+       .spec.rules[0].host // empty' <<< "$STACK_INGRESS_JSON")" || die \
+        "Unable to read the hostname from Ingress '$STACK_NAME/proxy'."
+    HOSTNAME_VALUE="${ingress_hostname%,}"
+  fi
+  [ -n "$HOSTNAME_VALUE" ] || die \
+    "Unable to recover the managed hostname for stack '$STACK_NAME'; refusing destructive cleanup."
+  validate_hostname
+  MANAGED_CERTIFICATE_DESTROY=true
+}
+
+validate_stack_ingress_for_managed_destroy() {
+  local ingress_certificate_arn
+  local ingress_hostname
+  local managed_dns_label
+
+  [ -n "$STACK_INGRESS_JSON" ] || return 0
+
+  managed_dns_label="$(jq -r \
+    '.metadata.labels["openremote.io/managed-dns"] // empty' \
+    <<< "$STACK_INGRESS_JSON")"
+  ingress_hostname="$(jq -r \
+    '.metadata.annotations["external-dns.alpha.kubernetes.io/hostname"] //
+     .metadata.annotations["external-dns.kubernetes.io/hostname"] //
+     .spec.rules[0].host // empty' <<< "$STACK_INGRESS_JSON")"
+  ingress_certificate_arn="$(jq -r \
+    '.metadata.annotations["alb.ingress.kubernetes.io/certificate-arn"] // empty' \
+    <<< "$STACK_INGRESS_JSON")"
+
+  [ "$managed_dns_label" = "true" ] || die \
+    "Ingress '$STACK_NAME/proxy' is not marked for OpenRemote-managed DNS; refusing to delete it."
+  [ "${ingress_hostname%,}" = "$HOSTNAME_VALUE" ] || die \
+    "Ingress '$STACK_NAME/proxy' records hostname '$ingress_hostname', not '$HOSTNAME_VALUE'."
+  [ "$ingress_certificate_arn" = "$CERTIFICATE_ARN" ] || die \
+    "Ingress '$STACK_NAME/proxy' uses certificate '$ingress_certificate_arn', not owned certificate '$CERTIFICATE_ARN'."
+}
+
+capture_validation_dns_records_for_destroy() {
+  local certificate_records_json='[]'
+  local endpoint_certificate_arn
+  local endpoint_managed_by
+  local endpoint_managed_dns
+  local endpoint_records_json='[]'
+  local validation_endpoint=""
+
+  VALIDATION_DNS_ENDPOINT_EXISTS=false
+  VALIDATION_DNS_RECORDS=""
+  if [ "$CERTIFICATE_EXISTS" = true ]; then
+    certificate_records_json="$(jq -c \
+      '[.Certificate.DomainValidationOptions[]?.ResourceRecord |
+        select((.Name // "") != "" and (.Type // "") != "" and
+               (.Value // "") != "") | {
+          dnsName: .Name,
+          recordType: .Type,
+          targets: [.Value]
+        }] | unique_by(.dnsName, .recordType, .targets[0]) |
+        sort_by(.dnsName, .recordType, .targets[0])' \
+      <<< "$CERTIFICATE_JSON")" || die \
+        "Unable to read validation records from managed certificate '$CERTIFICATE_ARN'."
+  fi
+
+  if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
+    validation_endpoint="$(kubectl --context "$KUBE_CONTEXT" \
+      --namespace "$STACK_NAME" \
+      get dnsendpoint "$ACM_VALIDATION_DNS_ENDPOINT_NAME" \
+      --ignore-not-found \
+      -o json)" || die \
+        "Unable to inspect DNSEndpoint '$STACK_NAME/$ACM_VALIDATION_DNS_ENDPOINT_NAME' before destroy."
+  fi
+
+  if [ -n "$validation_endpoint" ]; then
+    VALIDATION_DNS_ENDPOINT_EXISTS=true
+    endpoint_managed_by="$(jq -r \
+      '.metadata.labels["app.kubernetes.io/managed-by"] // empty' \
+      <<< "$validation_endpoint")"
+    endpoint_managed_dns="$(jq -r \
+      '.metadata.labels["openremote.io/managed-dns"] // empty' \
+      <<< "$validation_endpoint")"
+    endpoint_certificate_arn="$(jq -r \
+      '.metadata.annotations["openremote.io/certificate-arn"] // empty' \
+      <<< "$validation_endpoint")"
+    [ "$endpoint_managed_by" = "$CERTIFICATE_MANAGED_BY_TAG_VALUE" ] && \
+      [ "$endpoint_managed_dns" = "true" ] && \
+      [ "$endpoint_certificate_arn" = "$CERTIFICATE_ARN" ] || die \
+        "DNSEndpoint '$STACK_NAME/$ACM_VALIDATION_DNS_ENDPOINT_NAME' does not exactly match managed certificate '$CERTIFICATE_ARN'; refusing to delete it."
+
+    endpoint_records_json="$(jq -c \
+      '[.spec.endpoints[]? | {
+        dnsName: (.dnsName // ""),
+        recordType: (.recordType // ""),
+        targets: ((.targets // []) | sort)
+      }] | unique_by(.dnsName, .recordType, .targets[0]) |
+      sort_by(.dnsName, .recordType, .targets[0])' \
+      <<< "$validation_endpoint")" || die \
+        "Unable to read records from DNSEndpoint '$STACK_NAME/$ACM_VALIDATION_DNS_ENDPOINT_NAME'."
+    [ "$(jq 'length' <<< "$endpoint_records_json")" -gt 0 ] || die \
+      "DNSEndpoint '$STACK_NAME/$ACM_VALIDATION_DNS_ENDPOINT_NAME' has no validation records."
+    if [ "$CERTIFICATE_EXISTS" = true ] && \
+       [ "$endpoint_records_json" != "$certificate_records_json" ]; then
+      die "DNSEndpoint '$STACK_NAME/$ACM_VALIDATION_DNS_ENDPOINT_NAME' does not contain exactly the records returned by ACM; refusing destructive cleanup."
+    fi
+  elif [ "$CERTIFICATE_EXISTS" = false ]; then
+    die "Managed certificate '$CERTIFICATE_ARN' and its validation DNSEndpoint are both absent; validation-record ownership cannot be verified."
+  fi
+
+  if [ "$VALIDATION_DNS_ENDPOINT_EXISTS" = true ]; then
+    VALIDATION_DNS_RECORDS="$(jq -r \
+      '.[] | [.dnsName, .recordType] | @tsv' \
+      <<< "$endpoint_records_json")"
+  else
+    VALIDATION_DNS_RECORDS="$(jq -r \
+      '.[] | [.dnsName, .recordType] | @tsv' \
+      <<< "$certificate_records_json")"
+  fi
+
+  while IFS=$'\t' read -r record_name record_type; do
+    [ -n "$record_name" ] || continue
+    [ "$record_type" = "CNAME" ] || die \
+      "Managed validation record '$record_name' has unsupported type '$record_type'."
+    validation_record_is_in_managed_domain "$record_name" || die \
+      "Managed validation record '$record_name' is outside the configured ExternalDNS domains."
+  done <<< "$VALIDATION_DNS_RECORDS"
 }
 
 require_actionable_managed_certificate_status() {
@@ -1103,10 +1385,12 @@ record_certificate_configuration() {
     kubectl --context "$KUBE_CONTEXT" annotate namespace "$STACK_NAME" \
       "$CERTIFICATE_MODE_ANNOTATION=$certificate_mode" \
       "$CERTIFICATE_ARN_ANNOTATION=$CERTIFICATE_ARN" \
+      "$HOSTNAME_ANNOTATION=$HOSTNAME_VALUE" \
       --overwrite >/dev/null
   else
     kubectl --context "$KUBE_CONTEXT" annotate namespace "$STACK_NAME" \
       "$CERTIFICATE_MODE_ANNOTATION=$certificate_mode" \
+      "$HOSTNAME_ANNOTATION=$HOSTNAME_VALUE" \
       --overwrite >/dev/null
   fi
 }
@@ -1215,6 +1499,252 @@ wait_for_dns() {
   done
 
   die "DNS '$HOSTNAME_VALUE' did not resolve to the current load balancer within '$TIMEOUT'. Inspect deployment/$EXTERNAL_DNS_RELEASE_NAME logs and allow for resolver negative caching before retrying."
+}
+
+select_managed_dns_domain() {
+  local domain_filter
+
+  MANAGED_DNS_DOMAIN=""
+  while IFS= read -r domain_filter; do
+    domain_filter="${domain_filter%.}"
+    [ -n "$domain_filter" ] || continue
+    if dns_name_is_covered "$HOSTNAME_VALUE" "$domain_filter" && \
+       [ "${#domain_filter}" -gt "${#MANAGED_DNS_DOMAIN}" ]; then
+      MANAGED_DNS_DOMAIN="$domain_filter"
+    fi
+  done < <(sed -n 's/^--domain-filter=//p' <<< "$EXTERNAL_DNS_ARGS")
+
+  [ -n "$MANAGED_DNS_DOMAIN" ] || die \
+    "Unable to select an ExternalDNS domain for '$HOSTNAME_VALUE'."
+}
+
+discover_authoritative_name_servers() {
+  local candidate_domain="$MANAGED_DNS_DOMAIN"
+  local name_servers
+
+  AUTHORITATIVE_NAME_SERVERS=""
+  while [[ "$candidate_domain" == *.* ]]; do
+    name_servers="$(dig +time=5 +tries=2 +short "$candidate_domain" NS)" || die \
+      "Unable to discover authoritative name servers for '$candidate_domain'."
+    name_servers="$(awk \
+      '/^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\.?$/ { print }' \
+      <<< "$name_servers" | sort -u)"
+    if [ -n "$name_servers" ]; then
+      AUTHORITATIVE_NAME_SERVERS="$name_servers"
+      MANAGED_DNS_DOMAIN="$candidate_domain"
+      log "Using authoritative DNS for '$MANAGED_DNS_DOMAIN' while verifying record removal."
+      return
+    fi
+    candidate_domain="${candidate_domain#*.}"
+  done
+
+  die "Unable to find authoritative name servers for managed DNS domain '$MANAGED_DNS_DOMAIN'."
+}
+
+authoritative_dns_record_exists() {
+  local answer
+  local name_server
+  local query_status
+  local query_failed=false
+  local record_name="$1"
+  local record_type="$2"
+
+  while IFS= read -r name_server; do
+    [ -n "$name_server" ] || continue
+    set +e
+    answer="$(dig +time=3 +tries=1 +short \
+      "@$name_server" "$record_name" "$record_type" 2>/dev/null)"
+    query_status=$?
+    set -e
+    if [ "$query_status" -ne 0 ]; then
+      query_failed=true
+      continue
+    fi
+    if [ -n "$answer" ]; then
+      return 0
+    fi
+  done <<< "$AUTHORITATIVE_NAME_SERVERS"
+
+  [ "$query_failed" = false ] || return 2
+  return 1
+}
+
+wait_for_dns_records_removed() {
+  local deadline
+  local description="$1"
+  local next_notice
+  local now
+  local query_status
+  local record_name
+  local record_type
+  local records="$2"
+  local records_remain
+  local timeout_seconds
+
+  [ -n "$records" ] || return 0
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  log "Waiting for $description DNS records to be removed."
+
+  while [ "$now" -lt "$deadline" ]; do
+    records_remain=false
+    while IFS=$'\t' read -r record_name record_type; do
+      [ -n "$record_name" ] || continue
+      if authoritative_dns_record_exists "$record_name" "$record_type"; then
+        query_status=0
+      else
+        query_status=$?
+      fi
+      if [ "$query_status" -ne 1 ]; then
+        records_remain=true
+        break
+      fi
+    done <<< "$records"
+
+    if [ "$records_remain" = false ]; then
+      log "The $description DNS records are removed."
+      return
+    fi
+    if [ "$now" -ge "$next_notice" ]; then
+      log "The $description DNS records are still present or could not be verified."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "The $description DNS records were not confirmed removed within '$TIMEOUT'. External resources were retained so destroy can be retried safely."
+}
+
+remove_managed_stack_ingress() {
+  if [ -z "$STACK_INGRESS_JSON" ]; then
+    log "Ingress '$STACK_NAME/proxy' is already absent."
+    return
+  fi
+
+  log "Deleting Ingress '$STACK_NAME/proxy' before managed certificate cleanup."
+  kubectl --context "$KUBE_CONTEXT" \
+    --namespace "$STACK_NAME" \
+    delete ingress proxy \
+    --wait=true \
+    --timeout "$TIMEOUT" || die \
+      "Unable to delete Ingress '$STACK_NAME/proxy'."
+  STACK_INGRESS_JSON=""
+}
+
+wait_for_managed_certificate_detachment() {
+  local certificate_json
+  local deadline
+  local describe_status
+  local in_use_count
+  local last_error=""
+  local next_notice
+  local now
+  local timeout_seconds
+
+  [ "$CERTIFICATE_EXISTS" = true ] || return 0
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  log "Waiting for managed ACM certificate '$CERTIFICATE_ARN' to be detached."
+
+  while [ "$now" -lt "$deadline" ]; do
+    set +e
+    certificate_json="$(aws_acm describe-certificate \
+      --certificate-arn "$CERTIFICATE_ARN" \
+      --output json 2>&1)"
+    describe_status=$?
+    set -e
+    if [ "$describe_status" -eq 0 ]; then
+      in_use_count="$(jq -r '.Certificate.InUseBy // [] | length' \
+        <<< "$certificate_json")" || die \
+          "Unable to read attachment state for managed certificate '$CERTIFICATE_ARN'."
+      if [ "$in_use_count" -eq 0 ]; then
+        CERTIFICATE_JSON="$certificate_json"
+        log "Managed ACM certificate '$CERTIFICATE_ARN' is detached."
+        return
+      fi
+      last_error="certificate is still attached to $in_use_count AWS resource(s)"
+    elif [[ "$certificate_json" == *ResourceNotFoundException* ]]; then
+      CERTIFICATE_EXISTS=false
+      CERTIFICATE_JSON=""
+      log "Managed ACM certificate '$CERTIFICATE_ARN' is already absent."
+      return
+    else
+      last_error="$certificate_json"
+    fi
+
+    if [ "$now" -ge "$next_notice" ]; then
+      log "Managed ACM certificate detachment is still pending."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "Managed ACM certificate '$CERTIFICATE_ARN' did not detach within '$TIMEOUT': $last_error"
+}
+
+delete_managed_certificate() {
+  local delete_output
+  local delete_status
+  local describe_output
+  local describe_status
+  local deadline
+  local next_notice
+  local now
+  local timeout_seconds
+
+  [ "$CERTIFICATE_EXISTS" = true ] || return 0
+  require_managed_certificate_ownership
+  log "Deleting managed ACM certificate '$CERTIFICATE_ARN'."
+  set +e
+  delete_output="$(aws_acm delete-certificate \
+    --certificate-arn "$CERTIFICATE_ARN" 2>&1)"
+  delete_status=$?
+  set -e
+  if [ "$delete_status" -ne 0 ]; then
+    case "$delete_output" in
+      *ResourceNotFoundException*)
+        CERTIFICATE_EXISTS=false
+        log "Managed ACM certificate '$CERTIFICATE_ARN' is already absent."
+        return
+        ;;
+      *)
+        die "Unable to delete managed ACM certificate '$CERTIFICATE_ARN': $delete_output"
+        ;;
+    esac
+  fi
+
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  while [ "$now" -lt "$deadline" ]; do
+    set +e
+    describe_output="$(aws_acm describe-certificate \
+      --certificate-arn "$CERTIFICATE_ARN" \
+      --output json 2>&1)"
+    describe_status=$?
+    set -e
+    if [ "$describe_status" -ne 0 ] && \
+       [[ "$describe_output" == *ResourceNotFoundException* ]]; then
+      CERTIFICATE_EXISTS=false
+      log "Managed ACM certificate '$CERTIFICATE_ARN' was deleted."
+      return
+    fi
+    if [ "$now" -ge "$next_notice" ]; then
+      log "Managed ACM certificate deletion is still propagating."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "Deletion of managed ACM certificate '$CERTIFICATE_ARN' was not confirmed within '$TIMEOUT'."
 }
 
 public_manager_url() {
@@ -1367,6 +1897,59 @@ show_certificate_configuration() {
   fi
 }
 
+destroy_stack_with_managed_resources() {
+  local public_dns_records
+  local record_name
+  local record_type
+
+  require_command dig
+  require_command helm
+  require_command jq
+  inspect_stack_namespace_for_destroy
+  capture_stack_ingress_for_destroy
+
+  resolve_managed_certificate_for_destroy
+  if [ "$MANAGED_CERTIFICATE_DESTROY" = false ]; then
+    [ "$STACK_NAMESPACE_EXISTS" = true ] || die \
+      "Stack namespace '$STACK_NAME' does not exist and no managed ACM certificate is tagged for this stack."
+    run_or_stack "$@"
+    return
+  fi
+
+  CERTIFICATE_MODE=managed
+  EXPOSURE=ingress
+  require_managed_external_dns
+  validate_stack_ingress_for_managed_destroy
+  capture_validation_dns_records_for_destroy
+  select_managed_dns_domain
+  while IFS=$'\t' read -r record_name record_type; do
+    [ -n "$record_name" ] || continue
+    dns_name_is_covered "$record_name" "$MANAGED_DNS_DOMAIN" || die \
+      "Validation record '$record_name' is not inside authoritative DNS domain '$MANAGED_DNS_DOMAIN'."
+  done <<< "$VALIDATION_DNS_RECORDS"
+  discover_authoritative_name_servers
+
+  remove_managed_stack_ingress
+  public_dns_records="$(printf '%s\t%s\n' \
+    "$HOSTNAME_VALUE" A \
+    "$HOSTNAME_VALUE" AAAA \
+    "$HOSTNAME_VALUE" CNAME)"
+  wait_for_dns_records_removed "stack hostname '$HOSTNAME_VALUE'" \
+    "$public_dns_records"
+  wait_for_managed_certificate_detachment
+
+  if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
+    run_or_stack "$@"
+    STACK_NAMESPACE_EXISTS=false
+  else
+    log "Stack namespace '$STACK_NAME' is already absent; continuing external cleanup."
+  fi
+
+  wait_for_dns_records_removed "ACM validation" "$VALIDATION_DNS_RECORDS"
+  delete_managed_certificate
+  log "Stack '$STACK_NAME' and its managed external certificate resources are destroyed."
+}
+
 delegate_stack_command() {
   local stack_args=(
     "$COMMAND"
@@ -1384,11 +1967,8 @@ delegate_stack_command() {
   esac
 
   if [ "$COMMAND" = "destroy" ]; then
-    require_command jq
-    if [ "$(stack_certificate_mode 2>/dev/null || true)" = "managed" ] || \
-       managed_certificate_exists_for_stack; then
-      die "Destroying a stack-managed ACM certificate is not implemented in this increment; use uninstall to retain it and its validation record."
-    fi
+    destroy_stack_with_managed_resources "${stack_args[@]}"
+    return
   fi
 
   run_or_stack "${stack_args[@]}"
