@@ -1563,6 +1563,113 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     }
   }
 
+  def "Verify gateway websocket cannot write attributes outside gateway realm"() {
+    given: "some polling conditions and services from the container"
+    def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+    def assetProcessingService = container.getService(AssetProcessingService.class)
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def gatewayService = container.getService(GatewayService.class)
+    def gatewayClientService = container.getService(GatewayClientService.class)
+    def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+
+    and: "a target asset exists in another realm"
+    def crossRealmTarget = new ThingAsset("Cross realm target")
+            .setRealm(managerTestSetup.realmCityName)
+            .addAttributes(new Attribute<>("test", TEXT, "original"))
+    crossRealmTarget = assetStorageService.merge(crossRealmTarget)
+
+    when: "a gateway is provisioned in the building realm and the city realm"
+    GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Attacker controlled gateway")
+            .setRealm(managerTestSetup.realmBuildingName))
+    GatewayAsset cityGateway = assetStorageService.merge(new GatewayAsset("Cross realm gateway")
+            .setRealm(managerTestSetup.realmCityName))
+
+    then: "the gateway service account credentials are stored on the gateway assets"
+    conditions.eventually {
+      gateway = assetStorageService.find(gateway.getId(), true) as GatewayAsset
+      cityGateway = assetStorageService.find(cityGateway.getId(), true) as GatewayAsset
+      assert !isNullOrEmpty(gateway.getClientId().orElse(null))
+      assert !isNullOrEmpty(gateway.getClientSecret().orElse(null))
+      assert !isNullOrEmpty(cityGateway.getClientId().orElse(null))
+      assert !isNullOrEmpty(cityGateway.getClientSecret().orElse(null))
+    }
+
+    when: "a gateway client connector is created to connect the city realm to the building realm gateway"
+    def gatewayConnection = new GatewayConnection(
+            managerTestSetup.realmCityName,
+            "127.0.0.1",
+            serverPort,
+            managerTestSetup.realmBuildingName,
+            gateway.getClientId().orElse(""),
+            gateway.getClientSecret().orElse(""),
+            false,
+            null,
+            Map.of("test", new GatewayAssetSyncRule()),
+            false
+            )
+    gatewayClientService.setConnection(gatewayConnection)
+
+    then: "the gateway client connector should be created"
+    conditions.eventually {
+      assert gatewayClientService.connectionRealmMap.get(managerTestSetup.realmCityName) != null
+    }
+
+    and: "the gateway initial sync should complete"
+    conditions.eventually {
+      def connector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
+      assert connector != null
+      assert connector.connected
+      assert !connector.initialSyncInProgress
+    }
+
+    and: "the gateway asset connection status should become connected"
+    conditions.eventually {
+      gateway = assetStorageService.find(gateway.getId(), true) as GatewayAsset
+      assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+    }
+
+    when: "the gateway sends an attribute event using the mapped ID of the cross-realm target"
+    def mappedTargetId = mapAssetId(gateway.id, crossRealmTarget.id, true)
+
+    gatewayClientService.connectionRealmMap
+            .get(managerTestSetup.realmCityName)
+            .sendCentralManagerMessage(new AttributeEvent(mappedTargetId, "test", "crossRealmWrite"))
+
+    then: "the cross-realm target asset must not be modified after some time"
+    new PollingConditions(initialDelay: 5).eventually {
+      def reloadedTarget = assetStorageService.find(crossRealmTarget.id, true)
+      assert reloadedTarget != null
+      assert reloadedTarget.getAttribute("test").flatMap {
+        it.getValue()
+      }.orElse(null) == "original"
+    }
+
+    when: "the gateway sends an attribute event using the mapped ID of a cross realm gateway asset to update the client secret"
+    def mappedGatewayId = mapAssetId(gateway.id, cityGateway.id, true)
+
+    gatewayClientService.connectionRealmMap
+            .get(managerTestSetup.realmCityName)
+            .sendCentralManagerMessage(new AttributeEvent(mappedGatewayId, GatewayAsset.CLIENT_SECRET, UUID.randomUUID().toString()))
+
+    then: "the update should not occur"
+    new PollingConditions(initialDelay: 5).eventually {
+      def reloadedTarget = assetStorageService.find(cityGateway.id, true) as GatewayAsset
+      assert reloadedTarget != null
+      assert reloadedTarget.getClientSecret().orElse(null) == cityGateway.getClientSecret().orElse(null)
+    }
+
+    cleanup: "cleanup created assets and websocket client"
+    if (gatewayClientService != null) {
+      gatewayClientService.deleteConnections([managerTestSetup.realmCityName])
+    }
+    if (gateway != null) {
+      assetStorageService.delete([gateway.id])
+    }
+    if (crossRealmTarget != null) {
+      assetStorageService.delete([crossRealmTarget.id])
+    }
+  }
+
   /**
    * This test requires a manager instance with tunnelling configured, so is manual for now unfortunately.
    * Change the test url and key path to match the instance to connect to.
