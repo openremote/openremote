@@ -1017,6 +1017,8 @@ show_cluster_status() {
 }
 
 destroy_preflight() {
+  local dns_endpoint_count=0
+  local dns_endpoint_crd
   local ingress_count
   local load_balancer_service_count
   local pvc_count
@@ -1030,16 +1032,26 @@ destroy_preflight() {
   pvc_count="$(kubectl --context "$KUBE_CONTEXT" get persistentvolumeclaims --all-namespaces -o json | jq '.items | length')"
   workload_pod_count="$(kubectl --context "$KUBE_CONTEXT" get pods --all-namespaces -o json | jq \
     '[.items[] | select(.metadata.namespace != "kube-system" and .metadata.namespace != "kube-public" and .metadata.namespace != "kube-node-lease")] | length')"
+  dns_endpoint_crd="$(kubectl --context "$KUBE_CONTEXT" get \
+    customresourcedefinition/dnsendpoints.externaldns.k8s.io \
+    --ignore-not-found -o name)" || die \
+      "Unable to determine whether DNSEndpoint resources exist before cluster destruction."
+  if [ -n "$dns_endpoint_crd" ]; then
+    dns_endpoint_count="$(kubectl --context "$KUBE_CONTEXT" get dnsendpoints \
+      --all-namespaces -o json | jq '.items | length')"
+  fi
 
   if [ "$ingress_count" -gt 0 ] || \
      [ "$load_balancer_service_count" -gt 0 ] || \
      [ "$pvc_count" -gt 0 ] || \
-     [ "$workload_pod_count" -gt 0 ]; then
+     [ "$workload_pod_count" -gt 0 ] || \
+     [ "$dns_endpoint_count" -gt 0 ]; then
     warn "Cluster destruction is blocked while stack or user resources remain:"
     printf '  Ingresses: %s\n' "$ingress_count" >&2
     printf '  LoadBalancer Services: %s\n' "$load_balancer_service_count" >&2
     printf '  PersistentVolumeClaims: %s\n' "$pvc_count" >&2
     printf '  Non-system Pods: %s\n' "$workload_pod_count" >&2
+    printf '  DNSEndpoints: %s\n' "$dns_endpoint_count" >&2
     die "Remove stacks and preserve or purge their data explicitly before destroying the cluster."
   fi
 }

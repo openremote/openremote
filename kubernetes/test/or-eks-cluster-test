@@ -10,6 +10,7 @@ IAM_CONFIG_LOG="$TEST_TEMP_DIR/iam-config.log"
 TEST_CNI_ROLE_ARN="arn:aws:iam::123456789012:role/test-vpc-cni"
 TEST_SHARED_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"
 TEST_DEFAULT_VPC_CNI_CONFIGURATION='{}'
+TEST_EMPTY_RESOURCE_LIST='{"items":[]}'
 EXTERNAL_DNS_ROUTE53_ROLE_TEMPLATE="$KUBERNETES_DIR/cluster/eks/external-dns-route53-role.yaml"
 
 cleanup_test() {
@@ -121,7 +122,26 @@ kubectl() {
 --dry-run}"
       ;;
     *" get customresourcedefinition/dnsendpoints.externaldns.k8s.io "*)
-      [ "${OR_EKS_TEST_DNS_ENDPOINT_CRD:-true}" = "true" ]
+      if [ "${OR_EKS_TEST_DNS_ENDPOINT_CRD:-true}" = "true" ]; then
+        printf '%s\n' 'customresourcedefinition.apiextensions.k8s.io/dnsendpoints.externaldns.k8s.io'
+      elif [[ " $* " != *" --ignore-not-found "* ]]; then
+        return 1
+      fi
+      ;;
+    *" get ingress --all-namespaces "*)
+      printf '%s\n' "${OR_EKS_TEST_INGRESSES-$TEST_EMPTY_RESOURCE_LIST}"
+      ;;
+    *" get services --all-namespaces "*)
+      printf '%s\n' "${OR_EKS_TEST_SERVICES-$TEST_EMPTY_RESOURCE_LIST}"
+      ;;
+    *" get persistentvolumeclaims --all-namespaces "*)
+      printf '%s\n' "${OR_EKS_TEST_PVCS-$TEST_EMPTY_RESOURCE_LIST}"
+      ;;
+    *" get pods --all-namespaces "*)
+      printf '%s\n' "${OR_EKS_TEST_PODS-$TEST_EMPTY_RESOURCE_LIST}"
+      ;;
+    *" get dnsendpoints --all-namespaces "*)
+      printf '%s\n' "${OR_EKS_TEST_DNS_ENDPOINTS-$TEST_EMPTY_RESOURCE_LIST}"
       ;;
     *" get serviceaccount aws-node "*)
       printf '%s' "${OR_EKS_TEST_SERVICE_ACCOUNT_ROLE_ARN-$TEST_CNI_ROLE_ARN}"
@@ -276,6 +296,21 @@ grep -Fx -- 'ExternalDNS DNSEndpoint CRD installed: false' \
 grep -Fx -- 'ExternalDNS DNSEndpoint source enabled: false' \
   <<< "$external_dns_status_output" >/dev/null || fail \
     "ExternalDNS status did not report a disabled CRD source"
+
+: > "$CALL_LOG"
+destroy_preflight
+assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tget\tdnsendpoints\t--all-namespaces\t-o\tjson'
+
+: > "$CALL_LOG"
+set +e
+destroy_failure="$(OR_EKS_TEST_DNS_ENDPOINTS='{"items":[{"metadata":{"namespace":"stack-a","name":"acm-validation"}}]}' \
+  destroy_preflight 2>&1)"
+destroy_status=$?
+set -e
+[ "$destroy_status" -ne 0 ] || fail \
+  "Cluster destruction preflight accepted a retained DNSEndpoint"
+grep -Fx -- '  DNSEndpoints: 1' <<< "$destroy_failure" >/dev/null || fail \
+  "Cluster destruction preflight did not report the retained DNSEndpoint"
 
 : > "$CALL_LOG"
 MANAGE_EXTERNAL_DNS=true uninstall_external_dns

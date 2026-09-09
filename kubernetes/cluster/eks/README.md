@@ -9,9 +9,10 @@ explicitly opt in.
 
 After the shared cluster is ready, use `kubernetes/or-eks-stack` for the normal
 stack workflow with managed ExternalDNS. HAProxy is the default; explicit
-Ingress validates an existing or cluster-configured shared ACM certificate
-before using the shared ALB. The facade delegates namespaced resources to
-`kubernetes/or-stack`, which remains the portable and low-level interface.
+Ingress validates an existing or cluster-configured shared ACM certificate, or
+creates a stack-owned certificate, before using the shared ALB. The facade
+delegates namespaced resources to `kubernetes/or-stack`, which remains the
+portable and low-level interface.
 
 The current implementation uses the existing `kubernetes/cluster.yaml`
 `eksctl` configuration. This boundary is intended to remain stable when EKS
@@ -128,13 +129,12 @@ port 443 as the SSL redirect destination for every group member.
 
 The class defines shared transport behavior and can carry the optional shared
 certificate ARN. Stack-specific hostname, route, resolved certificate, and DNS
-intent remain namespaced resources managed by `or-stack`. In `existing` and
-`shared` modes, `or-eks-stack` verifies that the ACM certificate is issued,
-belongs to the ALB's account and region, covers the hostname, and is not tagged
-as stack-managed. It records the resolved selection but never modifies or
-deletes the certificate. ACM certificate creation is still outside the current
-scripts, and its DNS validation records and stack hostnames may be hosted in
-another AWS account. See the controller's
+intent remain namespaced resources. In `existing` and `shared` modes,
+`or-eks-stack` verifies that the ACM certificate is issued, belongs to the
+ALB's account and region, covers the hostname, and is not tagged as
+stack-managed. In `managed` mode it owns one exact-hostname ACM certificate and
+its namespaced validation record. DNS validation records and stack hostnames
+may be hosted in another AWS account. See the controller's
 [IngressClass documentation](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/)
 for the enforced group and namespace-selector behavior.
 
@@ -152,10 +152,9 @@ The chart and image are pinned independently; the current defaults are chart
 Cluster reconciliation explicitly applies the pinned chart's `DNSEndpoint`
 CRD before installing ExternalDNS and waits for it to become established. The
 chart grants the controller read/watch access to `DNSEndpoint` objects and
-status-update access when its `crd` source is enabled. This is the foundation
-for representing future managed ACM validation CNAMEs as resources in the
-owning stack namespace; this increment does not request certificates or create
-those records yet. Cluster status reports whether both the CRD and source are
+status-update access when its `crd` source is enabled. `or-eks-stack`
+represents managed ACM validation CNAMEs through this resource in the owning
+stack namespace. Cluster status reports whether both the CRD and source are
 active.
 
 `or-stack apply --dns external-dns` supplies the selection label and the GA
@@ -316,8 +315,41 @@ The stack certificate mode may be omitted: Ingress automatically selects the
 configured shared certificate when there is no explicit existing selection.
 The stack validates coverage and records the resolved ARN, but neither cluster
 nor stack destruction deletes it. Use `or-stack apply --dns external-dns`
-directly when another orchestrator owns endpoint readiness. Managed certificate
-creation follows in a later increment.
+directly when another orchestrator owns endpoint readiness.
+
+When there is no configured shared certificate, Ingress automatically selects
+managed mode. It can also be selected explicitly:
+
+```bash
+../../or-eks-stack apply \
+  --name stack-a \
+  --cluster "$CLUSTER_NAME" \
+  --region "$CLUSTER_REGION" \
+  --profile "$CLUSTER_AWS_PROFILE" \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode managed
+```
+
+The facade first prepares the owned namespace without installing workloads. It
+then reuses the ARN recorded there, discovers a uniquely tagged certificate,
+or requests a new DNS-validated certificate. Certificates carry exact
+`managed-by`, cluster, stack, and hostname tags. The ACM CNAMEs are stored in
+the stack's `acm-validation` `DNSEndpoint`, allowing the cross-account
+ExternalDNS role to publish them. The facade waits for `ISSUED` before passing
+the ARN to `or-stack`; retrying the command reuses the same certificate and DNS
+resource.
+
+The facade's EKS-account identity needs `acm:RequestCertificate`,
+`acm:ListCertificates`, `acm:DescribeCertificate`, and
+`acm:ListTagsForCertificate`. It never assumes the DNS-account role directly;
+the restricted ExternalDNS role publishes the validation records.
+
+The validation resource remains present through ordinary uninstall because ACM
+needs its CNAMEs for managed renewal. This increment deliberately refuses to
+destroy a stack that owns a managed certificate. Automated removal of the DNS
+record followed by ACM certificate deletion is the next lifecycle increment;
+until then, use `uninstall` when testing managed mode.
 
 ExternalDNS does not silently adopt a manually created record. Migrate existing
 records with this dry-run-first sequence:
@@ -337,12 +369,14 @@ records with this dry-run-first sequence:
 7. Verify the new alias and TXT records in Route 53 and test the endpoint.
 
 Removing `--dns external-dns`, uninstalling a stack, or destroying it removes
-the source resource. The controller's event-triggered sync then removes only
-records carrying its owner ID. Wait for the alias and TXT record to disappear
-before shutting down the cluster or creating a manual replacement. The
-DNS-account CloudFormation stack is deliberately not deleted with the cluster;
-it can be retained for a recreated cluster using the same source role name, or
-deleted explicitly in the DNS account after all managed records are gone.
+the Ingress or Service that sources the stack's public hostname. The
+controller's event-triggered sync then removes only records carrying its owner
+ID. A managed certificate's separate validation `DNSEndpoint` is retained as
+described above. Wait for the public alias and TXT record to disappear before
+shutting down the cluster or creating a manual replacement. The DNS-account
+CloudFormation stack is deliberately not deleted with the cluster; it can be
+retained for a recreated cluster using the same source role name, or deleted
+explicitly in the DNS account after all managed records are gone.
 
 `or-eks-cluster status` reports the ExternalDNS Helm health, TXT owner ID,
 dry-run state, and IRSA role. The controller's AWS provider and TXT registry are
@@ -351,7 +385,8 @@ documented in the upstream
 and [registry documentation](https://kubernetes-sigs.github.io/external-dns/latest/docs/registry/registry/).
 
 Cluster destruction requires an exact-name confirmation and is refused while
-Ingresses, LoadBalancer Services, PVCs, or non-system Pods remain:
+Ingresses, LoadBalancer Services, PVCs, non-system Pods, or namespaced
+`DNSEndpoint` resources remain:
 
 ```bash
 kubernetes/or-eks-cluster destroy \

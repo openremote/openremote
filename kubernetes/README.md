@@ -21,8 +21,9 @@ For EKS with the OpenRemote-managed ExternalDNS controller, use
 [`or-eks-stack`](or-eks-stack) for the end-to-end workflow. It keeps `or-stack`
 portable while coordinating load balancer, Route 53, certificate, and HTTPS
 readiness. HAProxy with ACME remains the default; explicit Ingress currently
-accepts either a validated existing ACM certificate or the externally managed
-shared certificate configured on the EKS cluster.
+accepts a validated existing ACM certificate, the externally managed shared
+certificate configured on the EKS cluster, or a stack-owned managed ACM
+certificate.
 
 ## Namespaced stack management
 
@@ -298,9 +299,9 @@ GA `external-dns.kubernetes.io/hostname` annotation and the
 The cluster's ExternalDNS installation must watch `Ingress` and `Service`
 sources and select that label. A higher-level orchestrator may also use
 namespaced `DNSEndpoint` resources for records that do not derive their target
-from an Ingress or Service, such as future ACM validation CNAMEs. The managed
-EKS setup reconciles that CRD and source, but `or-stack` itself does not create
-such records. The managed EKS setup is documented in
+from an Ingress or Service, such as ACM validation CNAMEs. The managed EKS
+facade uses that contract for stack-owned certificates, but `or-stack` itself
+does not create such records. The managed EKS setup is documented in
 [`cluster/eks/README.md`](cluster/eks/README.md). A bring-your-own controller on
 another Kubernetes platform can use the same contract. ExternalDNS `0.22` or
 later understands the GA annotation prefix by default; an older controller

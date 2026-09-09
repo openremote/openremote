@@ -16,10 +16,11 @@ configuration and safety model.
 [`or-eks-stack`](or-eks-stack) is the normal stack command for an EKS cluster
 with OpenRemote-managed ExternalDNS. Its default HAProxy workflow coordinates
 the stack NLB and ACME certificate. Its explicit Ingress workflow validates an
-existing user-owned or cluster-configured shared ACM certificate and
-coordinates the shared ALB. Both delegate the Kubernetes installation to
-`or-stack`, wait for DNS to point at the current load balancer, and verify the
-trusted Manager HTTPS endpoint.
+existing user-owned or cluster-configured shared ACM certificate, or creates
+and retains a stack-owned managed ACM certificate, and coordinates the shared
+ALB. Both delegate the Kubernetes installation to `or-stack`, wait for DNS to
+point at the current load balancer, and verify the trusted Manager HTTPS
+endpoint.
 
 The `eks-setup*.sh` and `eks-cleanup*.sh` scripts below are the legacy combined
 cluster-and-stack workflow. They will be split further as part of multi-stack
@@ -225,6 +226,40 @@ certificate's account, region, `ISSUED` status, hostname coverage, and
 ownership before making stack changes. Its namespace records mode `shared` and
 the resolved ARN. Uninstall and destroy never modify or delete it.
 
+If the cluster has no shared certificate, omitted mode falls back to a
+stack-owned managed certificate. Select it explicitly with:
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --profile <aws-profile> \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode managed
+```
+
+Managed mode prepares the namespace first, then reuses its recorded ARN,
+discovers a uniquely tagged certificate, or requests a new DNS-validated ACM
+certificate. It stores every ACM validation CNAME in the namespace's
+`acm-validation` `DNSEndpoint`; the cluster ExternalDNS controller publishes
+those records through its restricted cross-account role. Certificate tags bind
+ownership to `or-eks-stack`, the cluster, stack, and exact hostname. Workload
+installation starts only after ACM reports `ISSUED`.
+
+The AWS identity selected by `--profile` needs `acm:RequestCertificate`,
+`acm:ListCertificates`, `acm:DescribeCertificate`, and
+`acm:ListTagsForCertificate` in the EKS account, in addition to the EKS access
+already required by the facade. Route 53 write permission remains confined to
+the ExternalDNS roles; `or-eks-stack` does not use DNS-account credentials.
+
+The CNAME resource and certificate are retained during `uninstall` so ACM can
+renew the certificate and a later apply can reuse it. Managed stack destruction
+is blocked in this increment; coordinated DNS and ACM deletion follows in the
+next lifecycle increment. Existing and shared certificate destruction remains
+unchanged.
+
 Ingress mode additionally validates the shared `openremote-alb` IngressClass
 and its enforced HTTPS redirect. ACM DNS validation can be hosted in another
 account.
@@ -339,9 +374,10 @@ Reapplying the stack with the same target and exposure reuses its retained
 Secret and data PVCs. HAProxy exposure also reuses its retained certificate
 PVC; Ingress gateways have no certificate PVC because TLS terminates at the
 ALB. The selected target and exposure are stored as namespace labels; changing
-either is rejected until a deliberate migration workflow is implemented. To
+either is rejected until a deliberate migration workflow is implemented. For
+HAProxy and Ingress stacks using an `existing` or `shared` certificate,
 explicitly delete the stack namespace, credentials, PVCs, and dynamically
-provisioned EBS volumes instead:
+provisioned EBS volumes with:
 
 ```bash
 ./or-eks-stack destroy \
@@ -353,15 +389,17 @@ provisioned EBS volumes instead:
 ```
 
 The destroy command requires the matching stack namespace label and waits for
-the `Delete` reclaim policy to remove the stack's PersistentVolumes. Perform
-this cleanup before asking `or-eks-cluster` to destroy an otherwise empty
-cluster. Once that cluster-level preflight succeeds, `or-eks-cluster` bypasses
-system PodDisruptionBudgets during the final node drain so EKS add-ons cannot
-leave cluster deletion waiting indefinitely.
+the `Delete` reclaim policy to remove the stack's PersistentVolumes. It
+currently refuses a stack with a `managed` certificate so the retained
+validation CNAME and certificate cannot be orphaned. Perform supported stack
+cleanup before asking `or-eks-cluster` to destroy an otherwise empty cluster.
+Once that cluster-level preflight succeeds, `or-eks-cluster` bypasses system
+PodDisruptionBudgets during the final node drain so EKS add-ons cannot leave
+cluster deletion waiting indefinitely.
 
-Ingress currently supports `existing` and cluster-configured `shared`
-certificate modes. Stack-owned `managed` ACM certificate creation, DNS
-validation, and deletion remain the next facade increment.
+Ingress supports `existing`, cluster-configured `shared`, and stack-owned
+`managed` certificate modes. Managed ACM deletion remains the next facade
+increment.
 
 #### PosgreSQL data directory
 
