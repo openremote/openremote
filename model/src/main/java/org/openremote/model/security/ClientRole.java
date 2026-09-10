@@ -50,7 +50,7 @@ public enum ClientRole {
   WRITE_NOTIFICATIONS(Constants.WRITE_NOTIFICATIONS_ROLE, "Write notification data"),
   WRITE_TUNNELS(
       Constants.WRITE_TUNNELS_ROLE,
-      "Open and close gateway tunnels (NOTE: reaches hosts on the gateway's own network!)"),
+      "Open and close gateway tunnels"),
 
   READ(
       "read",
