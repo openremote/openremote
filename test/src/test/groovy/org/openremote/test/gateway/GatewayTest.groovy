@@ -51,8 +51,6 @@ import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.gateway.*
 import org.openremote.model.geo.GeoJSONPoint
-import org.openremote.model.notification.AbstractNotificationMessage
-import org.openremote.model.notification.Notification
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.security.User
@@ -63,7 +61,6 @@ import org.openremote.model.value.ValueFormat
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
-import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -87,7 +84,6 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty
 import static org.openremote.model.value.MetaItemType.*
 import static org.openremote.model.value.ValueType.*
 
-// TODO: Add tests for each supported version of the gateway API
 class GatewayTest extends Specification implements ManagerContainerTrait {
 
   def setupSpec() {
