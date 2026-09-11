@@ -73,6 +73,10 @@ Persistent data is stored in a PostgreSQL DB which is stored in the `openremote_
 Note that historical attribute data is purged daily based on value of `OR_DATA_POINTS_MAX_AGE_DAYS`; this value can also be overridden for individual attributes by using the `dataPointsMaxAgeDays` configuration item.
 See the [Developer Guide](https://docs.openremote.io/docs/developer-guide/useful-commands-and-queries/#backuprestore-openremote-db) for details on making backups of the database.
 
+## OpenTelemetry tracing
+
+The manager distribution and container image support OpenTelemetry tracing. See [Traces](https://docs.openremote.io/docs/user-guide/observability/traces) for more information.
+
 ## Contributing to OpenRemote
 
 For information and how to set up a development environment, see the [Developer Guide](https://docs.openremote.io/docs/category/developer-guide).
