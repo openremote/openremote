@@ -28,7 +28,7 @@ import org.openremote.model.security.ClientRole;
  * and why this must stay a Java migration.
  *
  * <p>Users provisioned with individual roles rather than a composite do not gain these, so accounts
- * that used the tunnel endpoints without holding {@code read}/{@code write} need them assigning.
+ * that used the tunnel endpoints without holding {@code read}/{@code write} need them assigned.
  */
 public class V20260903_1000__AddTunnelRoles extends AbstractKeycloakRolesMigration {
 
