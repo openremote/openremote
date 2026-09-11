@@ -471,11 +471,17 @@ public class GatewayConnector {
 
   /**
    * Explicitly check event type and authorise accordingly don't blindly accept events from gateway
-   * clients as they may be malicious
+   * clients as they may be malicious - every event type added to {@link #eventConsumerMap} should be handled
    */
   protected SharedEvent authoriseGatewayEvent(SharedEvent event) {
     // Gateway capabilities response events are always authorised
-    if (event instanceof GatewayCapabilitiesResponseEvent capabilitiesResponseEvent) {
+    if (event instanceof GatewayCapabilitiesResponseEvent) {
+      return event;
+    }
+
+    // Gateway tunnel start/stop response events are always authorised
+    if (event instanceof GatewayTunnelStartResponseEvent
+        || event instanceof GatewayTunnelStopResponseEvent) {
       return event;
     }
 
