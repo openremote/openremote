@@ -116,7 +116,7 @@ abstract class AbstractGatewayCompatibilityTest extends Specification implements
     return event
   }
 
-  protected static void synchronizeCompatibilityAsset(WebsocketIOClient client, List<SharedEvent> receivedEvents) {
+  protected static void synchronizeAssets(WebsocketIOClient client, List<SharedEvent> receivedEvents) {
     client.sendMessage(SharedEvent.MESSAGE_PREFIX + INITIAL_ASSETS_JSON)
     def batchRequest = awaitGatewayEvent(receivedEvents, ReadAssetsEvent, "BATCH0")
     assert batchRequest.assetQuery.ids.toList() == ["0123456789ABCDEFGHIJKL"]
@@ -128,7 +128,7 @@ abstract class AbstractGatewayCompatibilityTest extends Specification implements
     def initStart = awaitGatewayEvent(receivedEvents, GatewayInitStartEvent)
     assert initStart.version == VersionInfo.getGatewayApiVersion()
     assert initStart.activeTunnels == null
-    synchronizeCompatibilityAsset(client, receivedEvents)
+    synchronizeAssets(client, receivedEvents)
     awaitGatewayEvent(receivedEvents, GatewayCapabilitiesRequestEvent)
     assert !receivedEvents.any { it instanceof ReadAssetsEvent && it.messageID == "INITIAL" }
     client.sendMessage(SharedEvent.MESSAGE_PREFIX + capabilitiesJson)

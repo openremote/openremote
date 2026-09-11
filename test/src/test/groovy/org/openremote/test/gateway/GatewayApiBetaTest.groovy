@@ -47,8 +47,8 @@ class GatewayApiBetaTest extends AbstractGatewayCompatibilityTest {
     initialRequest.assetQuery != null
     !receivedEvents.any { it instanceof GatewayCapabilitiesRequestEvent }
 
-    when: "it replies with historical initial and batch asset responses"
-    synchronizeCompatibilityAsset(client, receivedEvents)
+    when: "assets are synchronized"
+    synchronizeAssets(client, receivedEvents)
 
     then: "the manager requests capabilities after synchronization"
     awaitGatewayEvent(receivedEvents, GatewayCapabilitiesRequestEvent)
