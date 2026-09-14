@@ -29,6 +29,7 @@ services:
     extends:
       file: deploy.yml
       service: postgresql
+    # No volume is mapped at all with this configuration, DB is ephemeral
     # Access directly if needed on localhost
     ports:
       - "5432:5432"
