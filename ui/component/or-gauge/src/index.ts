@@ -22,7 +22,7 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { type Asset, AssetModelUtil, type Attribute, type AttributeRef } from "@openremote/model";
 // The runtime package is gaugeJS, its types ship separately as @types/gaugejs.
 import { Gauge } from "gaugeJS";
-import type { GaugeOptions } from "gaugejs";
+import type { GaugeOptions } from "gaugeJS";
 import manager, { Util } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import debounce from "lodash.debounce";
