@@ -129,6 +129,9 @@ Managed mode requests or reuses an exact-hostname ACM certificate and retains
 its namespaced DNS-validation record through uninstall. Destroy removes the
 stack route and namespace, waits for its public and validation DNS records to
 disappear, then deletes only the exactly owned ACM certificate.
+Managed mode requires exclusive use of the certificate and its validation
+records by this stack. Other certificates must not depend on those records;
+this deployment requirement is not established by the script's ownership checks.
 EOF
 }
 
@@ -1978,6 +1981,10 @@ destroy_stack_with_managed_resources() {
     "$public_dns_records"
   wait_for_managed_certificate_detachment
 
+  # Managed mode assumes the certificate and its validation CNAMEs are exclusive
+  # to this stack. ACM can reuse a CNAME for other certificates; ownership tags
+  # do not prove DNS-record exclusivity. Under this deployment requirement,
+  # deleting the namespace lets ExternalDNS remove the validation records too.
   if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
     run_or_stack "$@"
     STACK_NAMESPACE_EXISTS=false

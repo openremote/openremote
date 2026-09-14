@@ -265,6 +265,14 @@ those records through its restricted cross-account role. Certificate tags bind
 ownership to `or-eks-stack`, the cluster, stack, and exact hostname. Workload
 installation starts only after ACM reports `ISSUED`.
 
+Managed mode assumes that both the certificate and its ACM DNS validation
+records are exclusive to the stack. Other resources must not use the certificate,
+and other certificates must not depend on its validation records. ACM can reuse
+a validation CNAME for separate certificates, including certificates in other
+regions of the same AWS account. This exclusivity is a deployment requirement;
+the script's ownership checks do not establish it. Destroying the stack removes
+both its certificate and validation records.
+
 The AWS identity selected by `--profile` needs `acm:RequestCertificate`,
 `acm:ListCertificates`, `acm:DescribeCertificate`, and
 `acm:ListTagsForCertificate` in the EKS account. It also needs
