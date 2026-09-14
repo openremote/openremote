@@ -724,9 +724,6 @@ jobs:
         run: |
           composeProfile='profile/dev-testing.yml'
 
-          # Make temp dir and set mask to 777 as docker seems to run as root
-          mkdir -pm 777 tmp
-
           # Define cleanup command
           echo "cleanup=docker compose -f $composeProfile down -v" >> $GITHUB_OUTPUT
 
@@ -813,9 +810,6 @@ jobs:
         if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: |
           composeProfile='profile/dev-testing.yml'
-
-          # Make temp dir and set mask to 777 as docker seems to run as root
-          mkdir -pm 777 tmp
 
           # Define cleanup command
           echo "cleanup=docker compose -f $composeProfile down -v" >> $GITHUB_OUTPUT
