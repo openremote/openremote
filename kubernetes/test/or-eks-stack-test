@@ -24,6 +24,8 @@ MANAGED_CERTIFICATE_TAGS='{"Tags":[{"Key":"openremote.io/managed-by","Value":"or
 DEFAULT_DNS_ENDPOINT_JSON='{"metadata":{"labels":{"app.kubernetes.io/managed-by":"or-eks-stack","openremote.io/managed-dns":"true"},"annotations":{"openremote.io/certificate-arn":"arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"}},"spec":{"endpoints":[{"dnsName":"_validation.stack-a.example.com.","recordType":"CNAME","recordTTL":300,"targets":["_target.acm-validations.aws."]}]}}'
 DEFAULT_INGRESS_JSON='{"metadata":{"labels":{"openremote.io/managed-dns":"true"},"annotations":{"external-dns.kubernetes.io/hostname":"stack-a.example.com","alb.ingress.kubernetes.io/certificate-arn":"arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"}},"spec":{"rules":[{"host":"stack-a.example.com"}]}}'
 DEFAULT_EXTERNAL_DNS_ARGS=$'--source=service\n--source=ingress\n--source=crd\n--policy=sync\n--registry=txt\n--txt-owner-id=test-cluster-eu-west-1\n--label-filter=openremote.io/managed-dns=true\n--domain-filter=example.com'
+DEFAULT_HOSTNAME_REGISTRY_JSON="$(jq -cn '{metadata:{resourceVersion:"1",labels:{"app.kubernetes.io/managed-by":"or-stack"}},
+  data:{"stack-a.example.com":({namespace:"stack-a",namespaceUID:"uid-stack-a",target:"eks",dns:"external-dns",exposure:"ingress"}|tojson)}}')"
 
 cleanup_test() {
   rm -rf "$TEST_TEMP_DIR"
@@ -214,7 +216,7 @@ kubectl() {
         <<< "$certificate_namespace" > "$CERTIFICATE_NAMESPACE_FILE"
       ;;
     *" get configmap openremote-hostnames "*)
-      printf '%s' "${OR_EKS_STACK_TEST_REGISTRY_JSON:-}"
+      printf '%s' "${OR_EKS_STACK_TEST_REGISTRY_JSON-$DEFAULT_HOSTNAME_REGISTRY_JSON}"
       ;;
     *" get ingressclass openremote-alb "*"shared-certificate-arn"*)
       printf '%s' "${OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN-}"
@@ -1041,6 +1043,50 @@ test_hostname_reservation_lifecycle() {
   assert_before $'aws-acm\tdelete-certificate' $'or-stack\trelease-hostname'
 }
 
+test_destroy_requires_current_metadata() {
+  local mode failure_output ingress_json
+  for mode in acme existing shared managed; do
+    if failure_output="$(OR_EKS_STACK_TEST_REGISTRY_JSON='' \
+      OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE="$mode" \
+      OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+      run_eks_stack destroy --name stack-a --cluster test-cluster --confirm stack-a 2>&1)"; then
+      fail "Destroy accepted $mode mode without a hostname reservation"
+    fi
+    grep -F 'has no hostname reservation' <<< "$failure_output" >/dev/null || fail "$failure_output"
+    assert_not_contains $'aws-acm\t'
+    assert_not_contains $'or-stack\tdestroy'
+    assert_not_contains $'delete\tingress'
+    assert_not_contains $'or-stack\trelease-hostname'
+  done
+
+  if (OR_EKS_STACK_TEST_REGISTRY_JSON='' OR_EKS_STACK_TEST_NAMESPACE_EXISTS=false \
+    run_eks_stack destroy --name stack-a --cluster test-cluster --confirm stack-a) >/dev/null 2>&1; then
+    fail "Destroy recovered external resources without retained hostname ownership"
+  fi
+  assert_not_contains $'aws-acm\t'
+
+  if failure_output="$(OR_EKS_STACK_TEST_RECORDED_HOSTNAME=another.example.com \
+    run_eks_stack destroy --name stack-a --cluster test-cluster --confirm stack-a 2>&1)"; then
+    fail "Destroy accepted namespace hostname metadata that conflicts with the reservation"
+  fi
+  grep -F "but reserves 'stack-a.example.com'" <<< "$failure_output" >/dev/null || fail "$failure_output"
+  assert_not_contains $'or-stack\tdestroy'
+
+  ingress_json="$(jq '.metadata.annotations["external-dns.alpha.kubernetes.io/hostname"] =
+    .metadata.annotations["external-dns.kubernetes.io/hostname"] |
+    del(.metadata.annotations["external-dns.kubernetes.io/hostname"])' <<< "$DEFAULT_INGRESS_JSON")"
+  if (OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=managed \
+    OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+    OR_EKS_STACK_TEST_CERTIFICATE_TAGS="$MANAGED_CERTIFICATE_TAGS" \
+    OR_EKS_STACK_TEST_CERTIFICATE_JSON="$MANAGED_CERTIFICATE_JSON" \
+    OR_EKS_STACK_TEST_INGRESS_EXISTS=true OR_EKS_STACK_TEST_INGRESS_JSON="$ingress_json" \
+      run_eks_stack destroy --name stack-a --cluster test-cluster --confirm stack-a) >/dev/null 2>&1; then
+    fail "Destroy accepted a stack Ingress without its required GA hostname annotation"
+  fi
+  assert_not_contains $'delete\tingress'
+  assert_not_contains $'or-stack\tdestroy'
+}
+
 test_persistent_certificate_modes() {
   local recorded_mode recorded_arn requested_mode failure_output registry
   local mode_args=()
@@ -1197,6 +1243,7 @@ test_managed_destroy_safety
 test_validation
 
 test_hostname_reservation_lifecycle
+test_destroy_requires_current_metadata
 test_persistent_certificate_modes
 
 printf 'or-eks-stack tests passed\n'

@@ -59,7 +59,7 @@ reservation after the namespace has gone. Outstanding reservations block cluster
 destruction.
 
 See [exclusive public hostnames](README.md#exclusive-public-hostnames) for the
-reason, registry permissions, adoption of existing stacks, and explicit recovery
+reason, registry permissions, required stack metadata, and explicit recovery
 when external cleanup is performed manually. The registry is cluster-local;
 coordination with other clusters and manually managed DNS remains external.
 
@@ -349,7 +349,7 @@ additional NLB per ingress stack, while HAProxy exposure will reuse its existing
 per-stack NLB.
 
 Only namespaces carrying `app.kubernetes.io/part-of=openremote` may use this
-class. `or-stack` applies that label when it creates or adopts a valid stack
+class. `or-stack` applies that label when it creates or reapplies a valid stack
 namespace. This cluster-side restriction prevents unrelated namespaces from
 joining the shared ALB merely by naming its group.
 

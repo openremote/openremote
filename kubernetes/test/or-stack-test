@@ -449,27 +449,25 @@ test_lifecycle_safety() {
   reset_log
   if OR_STACK_TEST_NAMESPACE_EXISTS=true \
     OR_STACK_TEST_TARGET_LABEL= \
-    OR_STACK_TEST_EXPOSURE_LABEL= \
-    OR_STACK_TEST_MANAGER_INGRESS_EXISTS=true \
+    OR_STACK_TEST_EXPOSURE_LABEL=haproxy \
     run_stack apply --name stack-a --kube-context test-context --target eks \
       --hostname stack-a.example.com >/dev/null 2>&1; then
-    fail "Apply converted an unlabeled legacy ingress stack to HAProxy"
+    fail "Apply accepted a stack with missing target metadata"
   fi
   assert_not_contains $'label\tnamespace\tstack-a'
   assert_not_contains $'helm\tupgrade'
 
   reset_log
-  OR_STACK_TEST_NAMESPACE_EXISTS=true \
-  OR_STACK_TEST_TARGET_LABEL= \
-  OR_STACK_TEST_EXPOSURE_LABEL= \
-  OR_STACK_TEST_MANAGER_INGRESS_EXISTS=true \
-  run_stack apply --name stack-a --kube-context test-context --target eks \
-    --exposure ingress \
-    --hostname stack-a.example.com \
-    --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null
-  assert_contains $'openremote.io/target=eks'
-  assert_contains $'openremote.io/exposure=ingress'
-  assert_contains $'helm\tupgrade\t--install\tmanager'
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true \
+    OR_STACK_TEST_TARGET_LABEL=eks \
+    OR_STACK_TEST_EXPOSURE_LABEL= \
+    run_stack apply --name stack-a --kube-context test-context --target eks \
+      --exposure ingress --hostname stack-a.example.com \
+      --certificate-arn "$TEST_CERTIFICATE_ARN" >/dev/null 2>&1; then
+    fail "Apply accepted a stack with missing exposure metadata"
+  fi
+  assert_not_contains $'label\tnamespace\tstack-a'
+  assert_not_contains $'helm\tupgrade'
 }
 
 test_validation() {
@@ -605,8 +603,8 @@ test_validation() {
   OR_STACK_TEST_TARGET_LABEL=eks \
   OR_STACK_TEST_EXPOSURE_LABEL=haproxy \
   OR_STACK_TEST_EKS_CNI_CONTAINERS='aws-node aws-network-policy-agent' \
-    run_stack apply --name stack-legacy-agent --kube-context test-context --target eks \
-      --hostname stack-legacy-agent.example.com >/dev/null
+    run_stack apply --name stack-alternate-agent --kube-context test-context --target eks \
+      --hostname stack-alternate-agent.example.com >/dev/null
 }
 
 test_prepare

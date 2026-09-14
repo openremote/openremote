@@ -71,8 +71,9 @@ check_existing_hostname_routes() {
   local allowed_namespace="$2"
   local routes
   local conflict
-  # Read both annotation prefixes to protect installations predating ExternalDNS
-  # v0.22. Ingress rules matter even when DNS is maintained outside Kubernetes.
+  # Inspect routes from any cluster workload, including external tools using
+  # either annotation prefix. This is conflict detection, not stack adoption.
+  # Ingress rules matter even when DNS is maintained outside Kubernetes.
   routes="$(kubectl --context "$KUBE_CONTEXT" get ingress,services --all-namespaces -o json)" || die \
     "Unable to inspect existing public routes before reserving '$hostname'."
   conflict="$(jq -r --arg host "$hostname" --arg allowed "$allowed_namespace" '
@@ -88,27 +89,11 @@ check_existing_hostname_routes() {
     <<< "$routes")" || die "Unable to parse existing hostname declarations."
   [ -z "$conflict" ] || die \
     "Hostname '$hostname' conflicts with existing routing: $conflict"
-
-  if [ -n "$allowed_namespace" ]; then
-    # Existing portable stacks did not record a hostname on their namespace.
-    # Recover it from their proxy (or legacy Manager ingress) before allowing
-    # the first reserved apply.
-    conflict="$(jq -r --arg host "$hostname" --arg allowed "$allowed_namespace" '
-      .items[] | select(.metadata.namespace == $allowed and
-        (.metadata.name == "proxy" or (.kind == "Ingress" and .metadata.name == "manager"))) |
-      ((.spec.rules[]?.host // empty),
-       ((.metadata.annotations["external-dns.kubernetes.io/hostname"] //
-         .metadata.annotations["external-dns.alpha.kubernetes.io/hostname"] // "") | split(",")[])) |
-      ascii_downcase | gsub("^\\s+|\\s+$"; "") | rtrimstr(".") |
-      select(length > 0 and . != $host)' <<< "$routes")" || die "Unable to inspect the stack's existing hostname."
-    [ -z "$conflict" ] || die \
-      "Stack '$STACK_NAME' already routes hostname '$conflict'; hostname changes require explicit migration."
-  fi
 }
 
 reserve_stack_hostname() {
   local namespace_json namespace_uid recorded_hostname namespaces conflict registry owner replacement attempt
-  local previously_reserved proxy_json
+  local previously_reserved
   require_command jq
   namespace_json="$(kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" -o json)" || die \
     "Unable to inspect namespace identity before reserving its hostname."
@@ -121,34 +106,23 @@ reserve_stack_hostname() {
       { [ "$TARGET" = local ] && [ "$EXPOSURE" = haproxy ] && [ "$DNS_MODE" = none ]; }; }; then
     # The registry write may have succeeded before namespace annotation failed.
     # Changing to internal/local exposure must not bypass that retained claim.
-    previously_reserved="$(stack_hostname_reservation)" || die "Unable to inspect retained hostname ownership."
+    previously_reserved="$(stack_hostname_reservation | jq -r '.hostname // empty')" || die "Unable to inspect retained hostname ownership."
     [ -n "$previously_reserved" ] || return 0
   fi
   namespace_uid="$(jq -er --arg stack "$STACK_NAME" '
     select(.metadata.labels["openremote.io/stack"] == $stack) |
     .metadata.uid | select(type == "string" and length > 0)' <<< "$namespace_json")" || die \
       "The stack namespace has no verifiable identity."
-  recorded_hostname="$(jq -r '.metadata.annotations["openremote.io/reserved-hostname"] //
-    .metadata.annotations["openremote.io/hostname"] // empty' <<< "$namespace_json")"
+  recorded_hostname="$previously_reserved"
   [ -z "$recorded_hostname" ] || [ "$recorded_hostname" = "$HOSTNAME_VALUE" ] || die \
     "Stack '$STACK_NAME' reserves '$recorded_hostname'; hostname changes require explicit migration."
-
-  proxy_json="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
-    get deployment proxy --ignore-not-found -o json)" || die "Unable to inspect the existing proxy hostname."
-  if [ -n "$proxy_json" ]; then
-    recorded_hostname="$(jq -r '[.spec.template.spec.containers[]?.env[]? |
-      select(.name == "DOMAINNAME") | .value // empty] | unique | join(",")' <<< "$proxy_json")" || die \
-        "Unable to read the existing proxy hostname."
-    [ -z "$recorded_hostname" ] || [ "$recorded_hostname" = "$HOSTNAME_VALUE" ] || die \
-      "The existing proxy uses '$recorded_hostname'; hostname changes require explicit migration."
-  fi
 
   namespaces="$(kubectl --context "$KUBE_CONTEXT" get namespaces -o json)" || die \
     "Unable to inspect existing stack hostname ownership."
   conflict="$(jq -r --arg host "$HOSTNAME_VALUE" --arg stack "$STACK_NAME" '
     .items[] | select(.metadata.name != $stack) |
-    select((.metadata.annotations["openremote.io/reserved-hostname"] //
-      .metadata.annotations["openremote.io/hostname"] // "" | ascii_downcase | rtrimstr(".")) == $host) |
+    select((.metadata.annotations["openremote.io/reserved-hostname"] // "" |
+      ascii_downcase | rtrimstr(".")) == $host) |
     .metadata.name' <<< "$namespaces")" || die "Unable to parse namespace hostname ownership."
   [ -z "$conflict" ] || die "Hostname '$HOSTNAME_VALUE' is already recorded by stack '$conflict'."
   check_existing_hostname_routes "$HOSTNAME_VALUE" "$STACK_NAME"

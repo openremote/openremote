@@ -141,7 +141,7 @@ class HostnameReservationsTest(unittest.TestCase):
         self.success(self.command(*args, "--dns", "external-dns"))
         # The stub has no reserved-hostname annotation, modelling an interrupted
         # apply after the registry write but before the annotation was recorded.
-        self.failure(self.apply(host="other.example.com", target="local"), "conflicting reservation")
+        self.failure(self.apply(host="other.example.com", target="local"), "hostname changes")
         self.success(self.command(*args, "--dns", "none"))
         self.assertEqual(self.claims()["a.example.com"]["dns"], "external-dns")
         self.success(self.command("destroy", "--name", "stack-a", "--confirm", "stack-a",
@@ -155,32 +155,23 @@ class HostnameReservationsTest(unittest.TestCase):
             ("Service", {}, {"external-dns.alpha.kubernetes.io/hostname": "other.example.com, A.EXAMPLE.COM."}),
             ("Service", {}, {"external-dns.kubernetes.io/hostname": "a.example.com"}),
         ]:
-            routes = json.dumps({"items": [{"kind": kind, "metadata": {"namespace": "legacy", "name": "proxy", "annotations": annotations}, "spec": spec}]})
+            routes = json.dumps({"items": [{"kind": kind, "metadata": {"namespace": "another-workload", "name": "proxy", "annotations": annotations}, "spec": spec}]})
             self.failure(self.apply(OR_STACK_TEST_ROUTES_JSON=routes), "existing routing")
         self.assertFalse(self.registry.exists())
         self.success(self.apply())
         self.failure(self.command("release-hostname", "--name", "stack-a", "--hostname", "a.example.com", "--confirm", "stack-a", OR_STACK_TEST_ROUTES_JSON=routes), "existing routing")
 
-    def test_backfill_existing_stack_and_reject_hostname_change(self):
-        for name in ("proxy", "manager"):
-            with self.subTest(name=name):
-                routes = json.dumps({"items": [{"kind": "Ingress", "metadata": {"namespace": "stack-a", "name": name}, "spec": {"rules": [{"host": "a.example.com"}]}}]})
-                self.failure(self.apply(host="b.example.com", OR_STACK_TEST_ROUTES_JSON=routes), "hostname changes")
-                self.success(self.apply(OR_STACK_TEST_ROUTES_JSON=routes))
-
-    def test_backfill_proxy_without_external_dns_annotations(self):
-        proxy = json.dumps({"spec": {"template": {"spec": {"containers": [
-            {"env": [{"name": "DOMAINNAME", "value": "a.example.com"}]}]}}}})
-        self.failure(self.apply(host="b.example.com", OR_STACK_TEST_PROXY_JSON=proxy), "hostname changes")
-        self.success(self.apply(OR_STACK_TEST_PROXY_JSON=proxy))
+    def test_namespace_reservation_rejects_hostname_change(self):
+        self.failure(self.apply(host="b.example.com", OR_STACK_TEST_RESERVED_HOSTNAME="a.example.com"), "hostname changes")
+        self.assertFalse(self.registry.exists())
 
     def test_unrelated_wildcard_does_not_block_claim(self):
-        routes = json.dumps({"items": [{"kind": "Ingress", "metadata": {"namespace": "legacy", "name": "proxy"},
+        routes = json.dumps({"items": [{"kind": "Ingress", "metadata": {"namespace": "another-workload", "name": "proxy"},
                                        "spec": {"rules": [{"host": "*.other.example.com"}]}}]})
         self.success(self.apply(OR_STACK_TEST_ROUTES_JSON=routes))
 
-    def test_retained_legacy_namespace_blocks_claim(self):
-        namespaces = json.dumps({"items": [{"metadata": {"name": "legacy", "annotations": {"openremote.io/hostname": "a.example.com"}}}]})
+    def test_another_namespaces_reservation_blocks_claim(self):
+        namespaces = json.dumps({"items": [{"metadata": {"name": "stack-b", "annotations": {"openremote.io/reserved-hostname": "a.example.com"}}}]})
         self.failure(self.apply(OR_STACK_TEST_NAMESPACES_JSON=namespaces), "already recorded")
 
     def test_api_errors_fail_closed_before_helm(self):

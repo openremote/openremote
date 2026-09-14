@@ -274,21 +274,21 @@ namespace UID and hostname is safe. Changing the hostname or recreating a
 namespace under the same name does not transfer ownership.
 
 Stack operators need `jq`, permission to get/create/update that ConfigMap,
-cluster-wide read access to namespaces, Ingresses and Services, and read access
-to their own proxy Deployment, in addition to the usual stack lifecycle
-permissions. Kubernetes RBAC cannot restrict `create` by resource name; an
+and cluster-wide read access to namespaces, Ingresses and Services, in addition
+to the usual stack lifecycle permissions. Kubernetes RBAC cannot restrict
+`create` by resource name; an
 administrator can pre-create the empty registry with label
 `app.kubernetes.io/managed-by: or-stack` and `data: {}` so operators need only
 `get` and `update` on this named ConfigMap. The scripts refuse an unlabelled or
 malformed registry. Protect registry write access as deployment authority.
 
-For stacks created before reservations were introduced, rerun `apply` with the
-original hostname (or `prepare --hostname ...`). The scripts inspect existing
-namespace hostname annotations, Ingress rules, both ExternalDNS hostname
-annotation prefixes, and the stack's proxy configuration. An unambiguous owner
-can establish a reservation; conflicts require resolving the existing routes
-first. A previously uninstalled portable stack might have no remaining hostname
-metadata: explicitly reserve its original hostname before deploying other stacks.
+The lifecycle scripts support stacks created with the current metadata and
+reservation format. There is no adoption or migration path for older stack
+layouts: target and exposure come from namespace labels, and hostname ownership
+comes from the reservation and its namespace annotation. Missing target or
+exposure labels are treated as inconsistent state, not inferred from workloads.
+The scripts still inspect other namespaces' reservations and existing Ingress
+rules and ExternalDNS annotations to avoid conflicting with other workloads.
 These checks coordinate these scripts; they are not an admission policy against
 manually created conflicting resources or arbitrary additional hostnames in
 custom chart overrides. Reservations are scoped to one Kubernetes cluster.
@@ -300,6 +300,12 @@ reservation's DNS cleanup requirement. `or-eks-stack destroy` releases a reserva
 after namespace and external cleanup; an interrupted cleanup can be retried even
 when only the reservation remains. `or-eks-cluster destroy` refuses outstanding
 reservations so their ownership and recovery information are not lost.
+
+`or-eks-stack destroy` requires a hostname reservation in every certificate
+mode. Missing reservations stop destruction before resources are changed;
+inspect the stack and registry rather than bypassing DNS cleanup. A namespace
+left by a failed preparation that never acquired a reservation can be inspected
+and removed with the portable `or-stack destroy` command.
 
 Portable `or-stack destroy` releases local Ingress reservations with unmanaged
 DNS after Kubernetes cleanup. For EKS or ExternalDNS workflows it retains the
@@ -385,8 +391,8 @@ facade uses that contract for stack-owned certificates, but `or-stack` itself
 does not create such records. The managed EKS setup is documented in
 [`cluster/eks/README.md`](cluster/eks/README.md). A bring-your-own controller on
 another Kubernetes platform can use the same contract. ExternalDNS `0.22` or
-later understands the GA annotation prefix by default; an older controller
-must be configured with the matching annotation prefix.
+later understands the GA annotation prefix by default; a bring-your-own
+controller must support that prefix.
 
 DNS ownership requires public exposure and a fully qualified, non-local
 hostname. For example:

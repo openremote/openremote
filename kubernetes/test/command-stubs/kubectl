@@ -30,10 +30,6 @@ case "$arguments" in
     printf '%s\n' "${OR_STACK_TEST_ROUTES_JSON:-$EMPTY_RESOURCE_LIST}"
     exit 0
     ;;
-  *" get deployment proxy --ignore-not-found -o json "*)
-    printf '%s' "${OR_STACK_TEST_PROXY_JSON:-}"
-    exit 0
-    ;;
   *" get namespace "*" -o json "*)
     if [ -n "${OR_STACK_TEST_NAMESPACE_JSON:-}" ]; then
       printf '%s\n' "$OR_STACK_TEST_NAMESPACE_JSON"
@@ -48,10 +44,8 @@ case "$arguments" in
       previous_argument="$argument"
     done
     jq -cn --arg name "$namespace_name" --arg uid "${OR_STACK_TEST_NAMESPACE_UID:-uid-$namespace_name}" \
-      --arg host "${OR_STACK_TEST_RECORDED_HOSTNAME:-}" \
       --arg reserved "${OR_STACK_TEST_RESERVED_HOSTNAME:-}" \
       '{metadata:{name:$name,uid:$uid,labels:{"openremote.io/stack":$name}}} |
-        if $host != "" then .metadata.annotations["openremote.io/hostname"]=$host else . end |
         if $reserved != "" then .metadata.annotations["openremote.io/reserved-hostname"]=$reserved else . end'
     exit 0
     ;;
@@ -104,9 +98,6 @@ case "$arguments" in
       exit 0
     fi
     exit 1
-    ;;
-  *" get ingress manager "*)
-    [ "${OR_STACK_TEST_MANAGER_INGRESS_EXISTS:-false}" = "true" ]
     ;;
   *" get storageclass openremote-ebs "*)
     [ "${OR_STACK_TEST_EKS_STORAGE:-true}" = "true" ]

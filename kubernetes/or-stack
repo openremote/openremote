@@ -414,17 +414,14 @@ ensure_namespace() {
       "Namespace '$STACK_NAME' already exists without the matching openremote.io/stack label; refusing to adopt it."
 
     stored_target="$(stack_namespace_target)"
-    if [ -n "$stored_target" ] && [ "$stored_target" != "$TARGET" ]; then
+    [ -n "$stored_target" ] || die "Stack '$STACK_NAME' has no recorded target; inspect its namespace metadata before continuing."
+    if [ "$stored_target" != "$TARGET" ]; then
       die "Stack '$STACK_NAME' uses target '$stored_target'; refusing to change it to '$TARGET'."
     fi
 
     stored_exposure="$(stack_namespace_exposure)"
-    if [ -z "$stored_exposure" ] && kubectl --context "$KUBE_CONTEXT" \
-      --namespace "$STACK_NAME" get ingress manager >/dev/null 2>&1; then
-      stored_exposure=ingress
-      log "Detected ingress exposure for existing stack '$STACK_NAME'."
-    fi
-    if [ -n "$stored_exposure" ] && [ "$stored_exposure" != "$EXPOSURE" ]; then
+    [ -n "$stored_exposure" ] || die "Stack '$STACK_NAME' has no recorded exposure; inspect its namespace metadata before continuing."
+    if [ "$stored_exposure" != "$EXPOSURE" ]; then
       die "Stack '$STACK_NAME' uses exposure '$stored_exposure'; refusing to change it to '$EXPOSURE'."
     fi
     log "Using namespace '$STACK_NAME'."
