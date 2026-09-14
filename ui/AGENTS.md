@@ -34,6 +34,8 @@ New packages under `ui/component/` are picked up automatically by the yarn works
 
 Vaadin-based components live in `ui/component/or-vaadin-components/src/` as thin wrappers that extend a Vaadin class and re-register it under an `or-vaadin-<name>` tag, e.g. `export class OrVaadinX extends (X as new () => X & LitElement)` with `@customElement("or-vaadin-x")`. Keep all `@vaadin/*` dependency versions aligned.
 
+The date and time picker wrappers set their `i18n` themselves: the date order, clock and first day of the week follow the browser locale, so users keep their regional format, while month and weekday names and button labels follow the app language and update when it changes. Do not set `i18n` on them from outside.
+
 ### Styling the component's shadow-DOM internals
 
 Pick the approach by how much of the base component you need to keep. The base + Lumo styles are keyed off the element's `static get is()`, so a wrapper that does _not_ override `is` still reports the base tag (e.g. `vaadin-checkbox-group`) and inherits the full base + Lumo theme.
@@ -75,6 +77,7 @@ Stories call `getORStorybookHelpers(tagName)` (from `ui/component/storybook-util
 
 - **Avoid Redundant Actions:** Do not create methods in fixtures that simply wrap native Playwright actions (e.g., `click()`, `getByRole()`, `expect()`). Use native Playwright actions directly in the tests where possible.
 - **Provide Locators:** Provide fixture methods for locators with non-standard or complex paths (e.g., reliant on specific DOM structures) so others can reuse the correct locators across tests.
+- **Data Fixtures:** Keep test data, such as assets, schemas or complex structures, in `test/fixtures/data/` rather than in the test file.
 
 ### App tests
 
@@ -86,8 +89,9 @@ Stories call `getORStorybookHelpers(tagName)` (from `ui/component/storybook-util
 ### Component testing
 
 - **Location:** Define tests in `ui/component/<component-name>/test/`. Define fixtures in `ui/component/<component-name>/test/fixtures/`.
+- **One `ct`:** The package's `test/fixtures/index.ts` exports a single `ct` with all its fixtures registered and re-exports `expect`, and tests import both from `./fixtures`. Settings that differ per test go through that `ct` instead of additional exported test objects. Options that Playwright only takes per file or describe block, such as `locale`, can be set per test by overriding the fixture to read a test annotation.
 
-Component tests use Playwright component testing (`@sand4rt/experimental-ct-web`). They live in each package's `test/*.test.ts`, import `{ ct, expect }` from `@openremote/test`, and `mount(ComponentClass, { props, slots, on })`. Run them with `npm test` in the package (which does `tsc -b && playwright test`). CI runs `./gradlew -p ui/component npmTest`, which only executes packages that register an `npmTest` task, so when adding the first test to a package also register `npmTest` in its `build.gradle` file; copy the tasks from a sibling package. Prefer web-first, role-based assertions (`getByRole("checkbox", { name }).toBeChecked()`, `toHaveCount(...)`) over poking at JS properties (`toHaveJSProperty`) or internal locators. Some important quirks to know about:
+Component tests use Playwright component testing (`@sand4rt/experimental-ct-web`). They live in each package's `test/*.test.ts`, import `{ ct, expect }` from the package's `./fixtures` (or from `@openremote/test` when the package has no fixtures), and `mount(ComponentClass, { props, slots, on })`. Run them with `npm test` in the package (which does `tsc -b && playwright test`). CI runs `./gradlew -p ui/component npmTest`, which only executes packages that register an `npmTest` task, so when adding the first test to a package also register `npmTest` in its `build.gradle` file; copy the tasks from a sibling package. Prefer web-first, role-based assertions (`getByRole("checkbox", { name }).toBeChecked()`, `toHaveCount(...)`) over poking at JS properties (`toHaveJSProperty`) or internal locators. Some important quirks to know about:
 
 - **Custom elements used as slotted/appended children must be eagerly registered.** Playwright CT turns each imported component into a _lazy_ dynamic import that only runs when that component is `mount()`ed, so a child element that is never mounted itself (e.g. `or-vaadin-toggle` slotted inside `or-vaadin-toggle-group`) never gets `customElements.define`d and stays an inert, unupgraded tag that appends to the DOM but does not render. Declare such components in the test itself via `mount(..., { hooksConfig: { components: [OrVaadinToggle] } })`; the `beforeMount` hook in `ui/test/playwright/index.js` resolves their import refs, which runs their modules and registers them before the mount.
 - **Use only one `mount()` call per test.** Multiple mounts do not resolve to separate locator paths and can hang until the test times out on a strict mode violation.

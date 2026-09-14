@@ -19,17 +19,17 @@
 // Plain JS on purpose: the component-test bundle compiles .ts files against ui/test's tsconfig
 // (rootDir ui/test), so TS component sources outside that dir fail the build.
 import { html, LitElement } from "lit";
+import { AssetModelUtil } from "@openremote/model";
 import { getValueHolderInputTemplateProvider } from "@openremote/or-vaadin-components/value-input-provider";
 
 /**
- * Renders the input for an attribute of `valueType` the way or-attribute-input does: the provider is built once
- * per descriptor and its template is re-rendered with the current value. Every value the input reports is
- * re-dispatched as a `value-change` event carrying it as the detail.
+ * Renders the input for a ThingAsset attribute of `valueType` the way or-attribute-input does: the descriptors are
+ * resolved from the asset model, the provider is built once per attribute and its template is re-rendered with the
+ * current value. Every value the input reports is re-dispatched as a `value-change` event carrying it as the detail.
  */
 export class ValueInputProviderHarness extends LitElement {
   static properties = {
     valueType: { type: String },
-    jsonType: { type: String },
     value: {},
     constraints: { type: Array },
     format: { type: Object },
@@ -40,11 +40,17 @@ export class ValueInputProviderHarness extends LitElement {
       const meta = {};
       if (this.constraints) meta.constraints = this.constraints;
       if (this.format) meta.format = this.format;
+      const attribute = { name: "attribute", type: this.valueType, meta };
+      const [attributeDescriptor, valueDescriptor] = AssetModelUtil.getAttributeAndValueDescriptors(
+        "ThingAsset",
+        attribute.name,
+        attribute
+      );
       this._provider = getValueHolderInputTemplateProvider(
-        "TestAsset",
-        { name: "attribute", type: this.valueType, meta },
-        undefined,
-        { name: this.valueType, jsonType: this.jsonType ?? "number" },
+        "ThingAsset",
+        attribute,
+        attributeDescriptor,
+        valueDescriptor,
         (value) => this.dispatchEvent(new CustomEvent("value-change", { detail: value })),
         { label: "Attribute" }
       );
