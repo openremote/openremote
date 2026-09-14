@@ -311,14 +311,17 @@ To configure and use one externally managed certificate across stacks:
   --certificate-mode shared
 ```
 
-The stack certificate mode may be omitted: Ingress automatically selects the
-configured shared certificate when there is no explicit existing selection.
+On first selection, the stack certificate mode may be omitted: Ingress selects
+the configured shared certificate. Later applies preserve the recorded mode;
+adding or removing the cluster's shared certificate configuration does not
+change another stack's certificate ownership mode. In-place mode migration is
+not supported; see [certificate lifecycle](../../README-AWS.md#shared-https-routing-with-ingress).
 The stack validates coverage and records the resolved ARN, but neither cluster
 nor stack destruction deletes it. Use `or-stack apply --dns external-dns`
 directly when another orchestrator owns endpoint readiness.
 
-When there is no configured shared certificate, Ingress automatically selects
-managed mode. It can also be selected explicitly:
+When there is no configured shared certificate on first selection, Ingress
+selects managed mode. It can also be selected explicitly:
 
 ```bash
 ../../or-eks-stack apply \

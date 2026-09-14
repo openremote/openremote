@@ -91,12 +91,14 @@ Options:
                         Env: OR_EKS_STACK_HOSTNAME.
   --certificate-mode <mode>
                         Certificate ownership mode for Ingress: existing,
-                        shared, or managed. When omitted, a configured shared
-                        certificate is selected, otherwise a managed
-                        certificate is created. Env:
+                        shared, or managed. Reapply preserves the recorded mode.
+                        On first selection, omission chooses a configured shared
+                        certificate, otherwise managed. In-place mode migration
+                        is not supported. Env:
                         OR_EKS_STACK_CERTIFICATE_MODE.
   --certificate-arn <arn>
-                        Existing ACM certificate ARN for mode existing. Env:
+                        Existing ACM ARN for mode existing; reapply can omit it
+                        to reuse the recorded ARN. Env:
                         OR_EKS_STACK_CERTIFICATE_ARN. Mode shared reads the ARN
                         from the cluster's openremote-alb IngressClass.
   --http-port <port>    Public HAProxy Service HTTP port. Env:
@@ -132,6 +134,9 @@ disappear, then deletes only the exactly owned ACM certificate.
 Managed mode requires exclusive use of the certificate and its validation
 records by this stack. Other certificates must not depend on those records;
 this deployment requirement is not established by the script's ownership checks.
+The first certificate mode is retained across failed applies and uninstall.
+Changing mode requires destroying and recreating the stack; back up any data
+to retain first. Certificate rotation within existing or shared mode is supported.
 EOF
 }
 
@@ -379,9 +384,9 @@ validate_apply_options() {
     ingress)
       case "$CERTIFICATE_MODE" in
         existing)
-          [ -n "$CERTIFICATE_ARN" ] || die \
-            "Ingress with certificate mode existing requires --certificate-arn."
-          if [[ ! "$CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:[a-z0-9-]+:[0-9]{12}:certificate/[A-Za-z0-9-]+$ ]]; then
+          # An existing stack may reuse its recorded ARN; resolve it after
+          # reading namespace metadata, before validating the certificate.
+          if [ -n "$CERTIFICATE_ARN" ] && [[ ! "$CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:[a-z0-9-]+:[0-9]{12}:certificate/[A-Za-z0-9-]+$ ]]; then
             die "Certificate ARN must be a valid ACM certificate ARN."
           fi
           ;;
@@ -566,18 +571,50 @@ require_managed_external_dns() {
   EXTERNAL_DNS_ARGS="$external_dns_args"
 }
 
+read_certificate_namespace() {
+  local namespace_json
+  namespace_json="$(kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    --ignore-not-found -o json)" || die "Unable to read the stack's certificate configuration."
+  if [ -n "$namespace_json" ]; then
+    jq -e --arg stack "$STACK_NAME" '.metadata.labels["openremote.io/stack"] == $stack' \
+      <<< "$namespace_json" >/dev/null || die \
+        "Namespace '$STACK_NAME' is not owned by this stack; refusing to use its certificate configuration."
+  fi
+  printf '%s\n' "$namespace_json"
+}
+
 resolve_ingress_certificate() {
-  local shared_certificate_arn
+  local shared_certificate_arn namespace_json recorded_mode recorded_arn
+
+  namespace_json="$(read_certificate_namespace)" || die "Unable to resolve the stack's certificate mode."
+  recorded_mode="$(jq -r '.metadata.annotations["openremote.io/certificate-mode"] // empty' <<< "$namespace_json")"
+  recorded_arn="$(jq -r '.metadata.annotations["openremote.io/certificate-arn"] // empty' <<< "$namespace_json")"
+  if [ -n "$recorded_mode" ]; then
+    case "$recorded_mode" in
+      existing|shared|managed) ;;
+      *) die "Stack '$STACK_NAME' records incompatible certificate mode '$recorded_mode'." ;;
+    esac
+    [ -z "$CERTIFICATE_MODE" ] || [ "$CERTIFICATE_MODE" = "$recorded_mode" ] || die \
+      "Stack '$STACK_NAME' uses certificate mode '$recorded_mode'; in-place certificate mode migration to '$CERTIFICATE_MODE' is not supported."
+    # Cluster defaults apply only to first selection. Re-evaluating them on
+    # reapply can abandon a managed certificate and make destroy inconsistent.
+    CERTIFICATE_MODE="$recorded_mode"
+  fi
 
   case "$CERTIFICATE_MODE" in
-    existing|managed)
+    existing)
+      CERTIFICATE_ARN="${CERTIFICATE_ARN:-$recorded_arn}"
+      [ -n "$CERTIFICATE_ARN" ] || die "Ingress with certificate mode existing requires --certificate-arn on first apply."
+      return
+      ;;
+    managed)
       return
       ;;
   esac
 
   if ! shared_certificate_arn="$(kubectl --context "$KUBE_CONTEXT" \
       get ingressclass openremote-alb \
-      -o "go-template={{with index .metadata.annotations \"$SHARED_CERTIFICATE_ARN_ANNOTATION\"}}{{.}}{{end}}" \
+      -o "go-template={{with .metadata.annotations}}{{with index . \"$SHARED_CERTIFICATE_ARN_ANNOTATION\"}}{{.}}{{end}}{{end}}" \
       2>/dev/null)"; then
     die "Unable to inspect shared certificate configuration on IngressClass 'openremote-alb'."
   fi
@@ -593,6 +630,30 @@ resolve_ingress_certificate() {
   CERTIFICATE_MODE=shared
   CERTIFICATE_ARN="$shared_certificate_arn"
   log "Selected the cluster's shared ACM certificate '$CERTIFICATE_ARN'."
+}
+
+record_initial_certificate_mode() {
+  local namespace_json recorded_mode resource_version
+  local annotations=("$CERTIFICATE_MODE_ANNOTATION=$CERTIFICATE_MODE")
+  namespace_json="$(read_certificate_namespace)" || die "Unable to record the stack's certificate mode."
+  [ -n "$namespace_json" ] || die "Prepared namespace '$STACK_NAME' is missing; unable to record certificate mode."
+  recorded_mode="$(jq -r '.metadata.annotations["openremote.io/certificate-mode"] // empty' <<< "$namespace_json")"
+  if [ -n "$recorded_mode" ]; then
+    [ "$recorded_mode" = "$CERTIFICATE_MODE" ] || die \
+      "Stack '$STACK_NAME' now uses certificate mode '$recorded_mode'; in-place certificate mode migration is not supported. Retry apply with that mode."
+    return
+  fi
+  resource_version="$(jq -er '.metadata.resourceVersion | select(type == "string" and length > 0)' \
+    <<< "$namespace_json")" || die "Unable to verify namespace version before recording certificate mode."
+  if [ "$CERTIFICATE_MODE" = existing ] || [ "$CERTIFICATE_MODE" = shared ]; then
+    annotations+=("$CERTIFICATE_ARN_ANNOTATION=$CERTIFICATE_ARN")
+  fi
+  # Pin the mode before ACM requests or Helm. The conditional write prevents
+  # two initial applies from choosing different modes. Retain it after failure;
+  # managed mode without an ARN resumes through existing tagged-ACM discovery.
+  kubectl --context "$KUBE_CONTEXT" annotate namespace "$STACK_NAME" \
+    "${annotations[@]}" --overwrite --resource-version="$resource_version" >/dev/null || die \
+      "Unable to record certificate mode; the namespace may have changed concurrently. Retry apply."
 }
 
 certificate_name_covers_hostname() {
@@ -877,14 +938,9 @@ resolve_managed_certificate() {
   local recorded_certificate_arn
   local recorded_certificate_mode
 
-  [ "${#HOSTNAME_VALUE}" -le 64 ] || die \
-    "Managed ACM mode currently requires a hostname of at most 64 characters; use an existing or shared certificate for a longer name."
-
-  recorded_certificate_mode="$(stack_certificate_mode 2>/dev/null || true)"
-  recorded_certificate_arn="$(stack_certificate_arn 2>/dev/null || true)"
-  if [ "$recorded_certificate_mode" = "managed" ]; then
-    [ -n "$recorded_certificate_arn" ] || die \
-      "Stack '$STACK_NAME' records managed certificate mode without a certificate ARN."
+  recorded_certificate_mode="$(stack_certificate_mode)" || die "Unable to read the recorded certificate mode."
+  recorded_certificate_arn="$(stack_certificate_arn)" || die "Unable to read the recorded certificate ARN."
+  if [ "$recorded_certificate_mode" = "managed" ] && [ -n "$recorded_certificate_arn" ]; then
     CERTIFICATE_ARN="$recorded_certificate_arn"
     log "Reusing the managed ACM certificate recorded by stack '$STACK_NAME'."
   else
@@ -1002,6 +1058,7 @@ capture_stack_ingress_for_destroy() {
 
 resolve_managed_certificate_for_destroy() {
   local discovered_certificate_arn=""
+  local validation_endpoint
   local ingress_hostname=""
   local recorded_certificate_arn=""
   local recorded_certificate_mode=""
@@ -1029,8 +1086,17 @@ resolve_managed_certificate_for_destroy() {
       die "Namespace '$STACK_NAME' records managed certificate '$recorded_certificate_arn', but ownership tags identify '$discovered_certificate_arn'."
     fi
     CERTIFICATE_ARN="${recorded_certificate_arn:-$discovered_certificate_arn}"
-    [ -n "$CERTIFICATE_ARN" ] || die \
-      "Namespace '$STACK_NAME' records managed certificate mode without a certificate ARN or uniquely tagged certificate."
+    if [ -z "$CERTIFICATE_ARN" ]; then
+      # First apply may have stopped after recording mode but before requesting
+      # ACM. With no tagged certificate or validation resource, ordinary stack
+      # cleanup is sufficient; do not strand the namespace and hostname claim.
+      validation_endpoint="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+        get dnsendpoint "$ACM_VALIDATION_DNS_ENDPOINT_NAME" --ignore-not-found -o json)" || die \
+          "Unable to inspect validation resources for the incomplete managed certificate configuration."
+      [ -z "$validation_endpoint" ] || die \
+        "Stack '$STACK_NAME' has validation resources without an identifiable managed certificate; refusing destructive cleanup."
+      return 0
+    fi
   elif [ -n "$discovered_certificate_arn" ]; then
     CERTIFICATE_ARN="$discovered_certificate_arn"
     log "Recovered tagged managed ACM certificate '$CERTIFICATE_ARN' for stack '$STACK_NAME'."
@@ -1843,6 +1909,11 @@ apply_stack() {
   require_eks_target
   if [ "$EXPOSURE" = "ingress" ]; then
     resolve_ingress_certificate
+    if [ "$CERTIFICATE_MODE" = managed ]; then
+      require_command cksum
+      [ "${#HOSTNAME_VALUE}" -le 64 ] || die \
+        "Managed ACM mode currently requires a hostname of at most 64 characters; use an existing or shared certificate for a longer name."
+    fi
   fi
   require_managed_external_dns
   if [ "$EXPOSURE" = "ingress" ] && [ "$CERTIFICATE_MODE" != "managed" ]; then
@@ -1851,8 +1922,10 @@ apply_stack() {
   # Reserve before ACM requests as well as before Helm, so a losing concurrent
   # apply cannot issue certificates or install a competing public endpoint.
   prepare_portable_stack || die "Namespace preparation or hostname reservation failed; no workloads were installed."
+  if [ "$EXPOSURE" = "ingress" ]; then
+    record_initial_certificate_mode
+  fi
   if [ "$CERTIFICATE_MODE" = "managed" ]; then
-    require_command cksum
     resolve_managed_certificate
     wait_for_managed_certificate_validation_records
     apply_managed_certificate_validation_records

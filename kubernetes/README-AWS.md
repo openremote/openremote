@@ -237,14 +237,14 @@ Stacks then select it without repeating the ARN:
   --certificate-mode shared
 ```
 
-Mode `shared` may be omitted because it is the automatic Ingress fallback when
-the cluster has a shared ARN. Each stack still validates the resolved
-certificate's account, region, `ISSUED` status, hostname coverage, and
+On first selection, mode `shared` may be omitted because it is the automatic
+Ingress fallback when the cluster has a shared ARN. Each stack still validates
+the resolved certificate's account, region, `ISSUED` status, hostname coverage, and
 ownership before making stack changes. Its namespace records mode `shared` and
 the resolved ARN. Uninstall and destroy never modify or delete it.
 
-If the cluster has no shared certificate, omitted mode falls back to a
-stack-owned managed certificate. Select it explicitly with:
+On first selection, if the cluster has no shared certificate, omitted mode falls
+back to a stack-owned managed certificate. Select it explicitly with:
 
 ```bash
 ./or-eks-stack apply \
@@ -257,8 +257,30 @@ stack-owned managed certificate. Select it explicitly with:
   --certificate-mode managed
 ```
 
-Managed mode prepares the namespace first, then reuses its recorded ARN,
-discovers a uniquely tagged certificate, or requests a new DNS-validated ACM
+Certificate mode is a persistent stack setting. When omitted on later applies,
+the recorded mode is reused, even if the cluster's shared certificate configuration
+has changed. An explicit different mode is rejected before modifying resources.
+A stack recorded as `shared` fails clearly if the cluster's shared certificate
+configuration is removed; it does not fall back to `managed`.
+
+In-place certificate mode migration is not supported. To change modes, back up
+any data you need to retain, destroy the stack and finish its cleanup, then
+recreate it in the desired mode. This avoids abandoning a managed certificate
+and its validation records while the Ingress switches to another certificate.
+
+Certificate rotation within a mode remains supported. Mode `existing` reuses
+its recorded ARN when omitted; supply `--certificate-mode existing` and a new
+`--certificate-arn` to replace it. Mode `shared` uses the cluster's current shared
+ARN on each apply. Mode `managed` reuses its owned certificate.
+
+The initial mode is recorded before ACM requests or workload installation and
+retained across failed applies and uninstall. A conditional namespace update
+prevents concurrent first applies from choosing different modes; if the update
+conflicts, retry apply. An interrupted managed apply without a recorded ARN
+resumes by discovering its tagged certificate or requesting one if none exists.
+
+Managed mode prepares the namespace and records the mode first, then reuses its
+recorded ARN, discovers a uniquely tagged certificate, or requests a new DNS-validated ACM
 certificate. It stores every ACM validation CNAME in the namespace's
 `acm-validation` `DNSEndpoint`; the cluster ExternalDNS controller publishes
 those records through its restricted cross-account role. Certificate tags bind

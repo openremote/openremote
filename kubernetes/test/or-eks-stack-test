@@ -11,6 +11,8 @@ DNS_ENDPOINT_LOG="$TEST_TEMP_DIR/dns-endpoint.json"
 CERTIFICATE_DELETED_FILE="$TEST_TEMP_DIR/certificate-deleted"
 INGRESS_DELETED_FILE="$TEST_TEMP_DIR/ingress-deleted"
 NAMESPACE_DELETED_FILE="$TEST_TEMP_DIR/namespace-deleted"
+NAMESPACE_PREPARED_FILE="$TEST_TEMP_DIR/namespace-prepared"
+CERTIFICATE_NAMESPACE_FILE="$TEST_TEMP_DIR/certificate-namespace.json"
 TEST_CLUSTER_ENDPOINT="https://test-cluster.eks.example.com"
 TEST_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"
 TEST_SECOND_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/second-certificate"
@@ -79,7 +81,7 @@ reset_test() {
   : > "$CALL_LOG"
   : > "$DNS_ENDPOINT_LOG"
   rm -f "$CERTIFICATE_DELETED_FILE" "$INGRESS_DELETED_FILE" \
-    "$NAMESPACE_DELETED_FILE"
+    "$NAMESPACE_DELETED_FILE" "$NAMESPACE_PREPARED_FILE" "$CERTIFICATE_NAMESPACE_FILE"
   printf '0\n' > "$CURL_COUNT_FILE"
   COMMAND=""
   STACK_NAME=""
@@ -141,6 +143,7 @@ aws_acm() {
       printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_LIST-$DEFAULT_CERTIFICATE_LIST}"
       ;;
     *" request-certificate "*)
+      [ "${OR_EKS_STACK_TEST_ACM_REQUEST_FAIL:-false}" = false ] || return 1
       printf '%s\n' "${OR_EKS_STACK_TEST_REQUESTED_CERTIFICATE_ARN:-$TEST_CERTIFICATE_ARN}"
       ;;
     *" list-tags-for-certificate "*)
@@ -174,8 +177,41 @@ kubectl() {
   local endpoint_manifest
 
   case "$arguments" in
-    *" get namespace stack-a -o json "*)
-      printf '%s\n' '{"metadata":{"uid":"uid-stack-a"}}'
+    *" get namespace stack-a"*" -o json "*)
+      [ "${OR_EKS_STACK_TEST_NAMESPACE_READ_SUCCESS:-true}" = true ] || return 1
+      if [ -f "$CERTIFICATE_NAMESPACE_FILE" ]; then
+        cat "$CERTIFICATE_NAMESPACE_FILE"
+      elif [ "${OR_EKS_STACK_TEST_NAMESPACE_EXISTS:-true}" = true ] || [ -f "$NAMESPACE_PREPARED_FILE" ]; then
+        jq -cn --arg mode "${OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE:-}" \
+          --arg arn "${OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN:-}" \
+          --arg owner "${OR_EKS_STACK_TEST_NAMESPACE_STACK_LABEL:-stack-a}" \
+          '{metadata:{name:"stack-a",uid:"uid-stack-a",resourceVersion:"1",labels:{"openremote.io/stack":$owner},
+            annotations:{"openremote.io/certificate-mode":$mode,"openremote.io/certificate-arn":$arn}}}'
+      fi
+      ;;
+    *" annotate namespace stack-a "*)
+      local certificate_namespace argument annotation_key annotation_value
+      certificate_namespace="$(kubectl --context "$KUBE_CONTEXT" get namespace stack-a -o json)" || return 1
+      for argument in "$@"; do
+        case "$argument" in
+          --resource-version=*)
+            if [ "${OR_EKS_STACK_TEST_MODE_CONFLICT:-false}" = true ] || \
+               [ "${argument#*=}" != "$(jq -r '.metadata.resourceVersion' <<< "$certificate_namespace")" ]; then
+              printf 'Error from server (Conflict): namespace has changed (requested %s, current %s)\n' \
+                "${argument#*=}" "$(jq -r '.metadata.resourceVersion' <<< "$certificate_namespace")" >&2
+              return 1
+            fi
+            ;;
+          openremote.io/*=*)
+            annotation_key="${argument%%=*}"
+            annotation_value="${argument#*=}"
+            certificate_namespace="$(jq --arg key "$annotation_key" --arg value "$annotation_value" \
+              '.metadata.annotations[$key]=$value' <<< "$certificate_namespace")"
+            ;;
+        esac
+      done
+      jq '.metadata.resourceVersion |= (tonumber + 1 | tostring)' \
+        <<< "$certificate_namespace" > "$CERTIFICATE_NAMESPACE_FILE"
       ;;
     *" get configmap openremote-hostnames "*)
       printf '%s' "${OR_EKS_STACK_TEST_REGISTRY_JSON:-}"
@@ -195,10 +231,18 @@ kubectl() {
       [ "${OR_EKS_STACK_TEST_CONTEXT_REACHABLE:-true}" = "true" ]
       ;;
     *" get namespace stack-a "*"certificate-mode"*)
-      printf '%s' "${OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE:-acme}"
+      if [ -f "$CERTIFICATE_NAMESPACE_FILE" ]; then
+        jq -r '.metadata.annotations["openremote.io/certificate-mode"] // empty' "$CERTIFICATE_NAMESPACE_FILE"
+      else
+        printf '%s' "${OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE:-acme}"
+      fi
       ;;
     *" get namespace stack-a "*"certificate-arn"*)
-      printf '%s' "${OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN:-}"
+      if [ -f "$CERTIFICATE_NAMESPACE_FILE" ]; then
+        jq -r '.metadata.annotations["openremote.io/certificate-arn"] // empty' "$CERTIFICATE_NAMESPACE_FILE"
+      else
+        printf '%s' "${OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN:-}"
+      fi
       ;;
     *" get namespace stack-a "*"openremote.io/hostname"*)
       printf '%s' "${OR_EKS_STACK_TEST_RECORDED_HOSTNAME:-}"
@@ -347,6 +391,9 @@ run_or_stack() {
   if [ "${1:-}" = "prepare" ] && [ "${OR_EKS_STACK_TEST_PREPARE_FAIL:-false}" = true ]; then
     return 1
   fi
+  if [ "${1:-}" = "prepare" ]; then
+    : > "$NAMESPACE_PREPARED_FILE"
+  fi
   if [ "${1:-}" = "destroy" ]; then
     : > "$NAMESPACE_DELETED_FILE"
   fi
@@ -436,7 +483,7 @@ test_ingress_shared_certificate_apply() {
       --exposure ingress \
       --certificate-mode shared)"
 
-  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tget\tingressclass\topenremote-alb\t-o\tgo-template={{with index .metadata.annotations "openremote.io/shared-certificate-arn"}}{{.}}{{end}}'
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tget\tingressclass\topenremote-alb\t-o\tgo-template={{with .metadata.annotations}}{{with index . "openremote.io/shared-certificate-arn"}}{{.}}{{end}}{{end}}'
   assert_contains $'aws-acm\tdescribe-certificate\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"$'\t--output\tjson'
   assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\tingress\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--timeout\t20m\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tnamespace\tstack-a\topenremote.io/certificate-mode=shared\topenremote.io/certificate-arn='"$TEST_CERTIFICATE_ARN"$'\topenremote.io/hostname=stack-a.example.com\t--overwrite'
@@ -482,7 +529,8 @@ test_ingress_managed_certificate_apply() {
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tapply\t-f\t-'
   assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\tingress\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--timeout\t20m\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"
   assert_before $'or-stack\tprepare' $'aws-acm\trequest-certificate'
-  assert_before $'aws-acm\trequest-certificate' $'annotate\tnamespace\tstack-a'
+  assert_before $'--resource-version=1' $'aws-acm\trequest-certificate'
+  assert_before $'aws-acm\trequest-certificate' $'openremote.io/certificate-mode=managed\topenremote.io/certificate-arn='
   assert_before $'annotate\tnamespace\tstack-a' $'--namespace\tstack-a\tapply\t-f\t-'
   assert_before $'--namespace\tstack-a\tapply\t-f\t-' $'or-stack\tapply'
 
@@ -993,6 +1041,149 @@ test_hostname_reservation_lifecycle() {
   assert_before $'aws-acm\tdelete-certificate' $'or-stack\trelease-hostname'
 }
 
+test_persistent_certificate_modes() {
+  local recorded_mode recorded_arn requested_mode failure_output registry
+  local mode_args=()
+
+  # First apply defaults to managed; adding a shared certificate must not
+  # change the persisted mode or ARN when the original command is repeated.
+  OR_EKS_STACK_TEST_NAMESPACE_EXISTS=false \
+  OR_EKS_STACK_TEST_CERTIFICATE_JSON="$MANAGED_CERTIFICATE_JSON" \
+  OR_EKS_STACK_TEST_CERTIFICATE_TAGS="$MANAGED_CERTIFICATE_TAGS" \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress >/dev/null
+  recorded_mode="$(jq -r '.metadata.annotations["openremote.io/certificate-mode"]' "$CERTIFICATE_NAMESPACE_FILE")"
+  recorded_arn="$(jq -r '.metadata.annotations["openremote.io/certificate-arn"]' "$CERTIFICATE_NAMESPACE_FILE")"
+  [ "$recorded_mode" = managed ] && [ "$recorded_arn" = "$TEST_CERTIFICATE_ARN" ] || fail "Initial managed mode was not recorded"
+
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE="$recorded_mode" \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$recorded_arn" \
+  OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_SECOND_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_CERTIFICATE_JSON="$MANAGED_CERTIFICATE_JSON" \
+  OR_EKS_STACK_TEST_CERTIFICATE_TAGS="$MANAGED_CERTIFICATE_TAGS" \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress >/dev/null
+  assert_not_contains $'get\tingressclass\topenremote-alb'
+  assert_not_contains $'aws-acm\trequest-certificate'
+  assert_contains $'--certificate-arn\t'"$TEST_CERTIFICATE_ARN"
+  jq -e '.metadata.annotations["openremote.io/certificate-mode"] == "managed"' \
+    "$CERTIFICATE_NAMESPACE_FILE" >/dev/null || fail "Reapply changed managed mode"
+  # A remains normally destroyable even while B is the cluster default.
+  OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_SECOND_CERTIFICATE_ARN" test_managed_destroy
+
+  for recorded_mode in managed existing shared; do
+    for requested_mode in managed existing shared; do
+      [ "$recorded_mode" != "$requested_mode" ] || continue
+      mode_args=(--certificate-mode "$requested_mode")
+      if [ "$requested_mode" = existing ]; then
+        mode_args+=(--certificate-arn "$TEST_SECOND_CERTIFICATE_ARN")
+      fi
+      if failure_output="$(OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE="$recorded_mode" \
+        OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+        OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_SECOND_CERTIFICATE_ARN" \
+          run_eks_stack apply --name stack-a --cluster test-cluster \
+            --hostname stack-a.example.com --exposure ingress "${mode_args[@]}" 2>&1)"; then
+        fail "Accepted mode migration from $recorded_mode to $requested_mode"
+      fi
+      grep -F 'in-place certificate mode migration' <<< "$failure_output" >/dev/null || fail "$failure_output"
+      assert_not_contains $'or-stack\tprepare'
+      assert_not_contains $'annotate\tnamespace'
+      assert_not_contains $'aws-acm\trequest-certificate'
+    done
+  done
+
+  # Existing mode can reuse its recorded ARN, or explicitly rotate within mode.
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_SECOND_CERTIFICATE_ARN" \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress >/dev/null
+  assert_contains $'--certificate-arn\t'"$TEST_CERTIFICATE_ARN"
+  assert_not_contains $'get\tingressclass\topenremote-alb'
+
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress \
+      --certificate-mode existing --certificate-arn "$TEST_SECOND_CERTIFICATE_ARN" >/dev/null
+  assert_contains $'--certificate-arn\t'"$TEST_SECOND_CERTIFICATE_ARN"
+  assert_not_contains $'aws-acm\trequest-certificate'
+
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=shared \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_SECOND_CERTIFICATE_ARN" \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress >/dev/null
+  assert_contains $'--certificate-arn\t'"$TEST_SECOND_CERTIFICATE_ARN"
+  assert_not_contains $'aws-acm\trequest-certificate'
+
+  if failure_output="$(OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=shared \
+    OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN='' \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com --exposure ingress 2>&1)"; then
+    fail "Shared mode fell back to managed after cluster configuration was removed"
+  fi
+  grep -F 'shared requires a certificate configured' <<< "$failure_output" >/dev/null || fail "$failure_output"
+  assert_not_contains $'or-stack\tprepare'
+  assert_not_contains $'aws-acm\trequest-certificate'
+
+  # Interruption between pinning the mode and recording the ACM ARN resumes
+  # using discovery, even if the cluster's default has changed meanwhile.
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=managed \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN='' \
+  OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_SECOND_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_CERTIFICATE_LIST="{\"CertificateSummaryList\":[{\"CertificateArn\":\"$TEST_CERTIFICATE_ARN\",\"DomainName\":\"stack-a.example.com\"}]}" \
+  OR_EKS_STACK_TEST_CERTIFICATE_JSON="$MANAGED_CERTIFICATE_JSON" \
+  OR_EKS_STACK_TEST_CERTIFICATE_TAGS="$MANAGED_CERTIFICATE_TAGS" \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress >/dev/null
+  assert_contains $'aws-acm\tlist-certificates'
+  assert_not_contains $'aws-acm\trequest-certificate'
+
+  if (OR_EKS_STACK_TEST_NAMESPACE_READ_SUCCESS=false \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress) >/dev/null 2>&1; then
+    fail "Namespace read error was treated as absent certificate metadata"
+  fi
+  assert_not_contains $'or-stack\tprepare'
+
+  if (OR_EKS_STACK_TEST_MODE_CONFLICT=true \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress --certificate-mode managed) >/dev/null 2>&1; then
+    fail "Mode reservation conflict did not stop apply"
+  fi
+  assert_contains '--resource-version=1'
+  assert_not_contains $'aws-acm\trequest-certificate'
+  assert_not_contains $'or-stack\tapply'
+
+  if (OR_EKS_STACK_TEST_ACM_REQUEST_FAIL=true \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress --certificate-mode managed) >/dev/null 2>&1; then
+    fail "Failed ACM request did not stop apply"
+  fi
+  jq -e '.metadata.annotations["openremote.io/certificate-mode"] == "managed" and
+    ((.metadata.annotations["openremote.io/certificate-arn"] // "") == "")' \
+    "$CERTIFICATE_NAMESPACE_FILE" >/dev/null || fail "Failed ACM request lost the initial mode"
+  assert_not_contains $'or-stack\tapply'
+
+  registry="$(jq -cn '{metadata:{resourceVersion:"1",labels:{"app.kubernetes.io/managed-by":"or-stack"}},
+    data:{"stack-a.example.com":({namespace:"stack-a",namespaceUID:"uid-stack-a",target:"eks",dns:"external-dns",exposure:"ingress"}|tojson)}}')"
+  OR_EKS_STACK_TEST_REGISTRY_JSON="$registry" \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=managed \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN='' \
+    run_eks_stack destroy --name stack-a --cluster test-cluster --confirm stack-a >/dev/null
+  assert_contains $'or-stack\tdestroy'
+  assert_contains $'or-stack\trelease-hostname'
+  assert_not_contains $'aws-acm\tdelete-certificate'
+
+  if (OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=managed \
+    OR_EKS_STACK_TEST_DNS_ENDPOINT_EXISTS=true \
+    run_eks_stack destroy --name stack-a --cluster test-cluster --confirm stack-a) >/dev/null 2>&1; then
+    fail "Destroy accepted validation records without an identifiable certificate"
+  fi
+  assert_not_contains $'or-stack\tdestroy'
+}
+
 
 test_apply
 test_ingress_existing_certificate_apply
@@ -1006,5 +1197,6 @@ test_managed_destroy_safety
 test_validation
 
 test_hostname_reservation_lifecycle
+test_persistent_certificate_modes
 
 printf 'or-eks-stack tests passed\n'
