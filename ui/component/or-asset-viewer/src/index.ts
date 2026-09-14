@@ -69,6 +69,7 @@ import { when } from "lit/directives/when.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 import type { OrVaadinCheckbox } from "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import type { OrVaadinInput } from "@openremote/or-vaadin-components/or-vaadin-input";
+import { OrVaadinDateTimePicker } from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import { getConfirmDialogContent, showConfirmDialog } from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 
 declare function require(name: string): any;
@@ -1050,6 +1051,7 @@ export function getPropertyTemplate(
       break;
     case "createdOn":
       type = InputType.DATETIME;
+      value = OrVaadinDateTimePicker.getLocalizedISOString(new Date(value));
       break;
     case "accessPublicRead":
       type = InputType.CHECKBOX;

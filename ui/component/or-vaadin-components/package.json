@@ -60,6 +60,7 @@
     "@vaadin/text-field": "~25.2.8",
     "@vaadin/time-picker": "~25.2.8",
     "@vaadin/vaadin-themable-mixin": "~25.2.8",
+    "i18next": "^21.5.3",
     "lit": "^3.3.1"
   },
   "publishConfig": {

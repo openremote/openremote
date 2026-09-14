@@ -16,73 +16,126 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { ct, expect } from "@openremote/test";
+import { ct, expect } from "./fixtures";
 
 import { ValueInputProviderHarness } from "./fixtures/value-input-provider-harness.js";
 
-// The picker shows local time, so the zone is pinned for the expected values.
-ct.use({ timezoneId: "Europe/Amsterdam" });
+// The picker shows local time in the format of the browser locale, so both are pinned for the expected values.
+ct.use({ timezoneId: "Europe/Amsterdam", locale: "en-US" });
 
-// 2026-01-02T10:30 in Europe/Amsterdam (UTC+1)
-const TIMESTAMP = Date.UTC(2026, 0, 2, 9, 30);
+/** Returns the timestamp of a local time on 2026-01-02 in Europe/Amsterdam (UTC+1). */
+function localTime(hours: number, minutes: number, seconds = 0, milliseconds = 0): number {
+  return Date.UTC(2026, 0, 2, hours - 1, minutes, seconds, milliseconds);
+}
 
-ct.describe("Date time input", () => {
-  ct("should show a timestamp as local date and time and write back a timestamp", async ({ mount }) => {
-    const values: unknown[] = [];
-    const component = await mount(ValueInputProviderHarness, {
-      props: { valueType: "timestamp", value: TIMESTAMP },
-      on: { "value-change": (value: unknown) => values.push(value) },
+// Every date and time value type (durations excluded), with the conversion of a timestamp to the JSON representation of
+// that type. WellknownValueTypes names are inlined to keep @openremote/model out of the Node test body.
+const DATE_TIME_VALUE_TYPES = [
+  { valueType: "timestamp", toValue: (timestamp: number) => timestamp },
+  { valueType: "timestampISO8601", toValue: (timestamp: number) => new Date(timestamp).toISOString() },
+  { valueType: "dateAndTime", toValue: (timestamp: number) => timestamp },
+];
+
+for (const { valueType, toValue } of DATE_TIME_VALUE_TYPES) {
+  ct.describe(`Date time input for ${valueType}`, () => {
+    ct(
+      "should show the value as local date and time and write back the edited value",
+      async ({ mount, vaadinDateTimePicker }) => {
+        const values: unknown[] = [];
+        const component = await mount(ValueInputProviderHarness, {
+          props: { valueType, value: toValue(localTime(10, 30)) },
+          on: { "value-change": (value: unknown) => values.push(value) },
+        });
+
+        const timeInput = vaadinDateTimePicker.getTimeInput(component);
+        await expect(vaadinDateTimePicker.getDateInput(component)).toHaveValue("01/02/2026");
+        await expect(timeInput).toHaveValue("10:30 AM");
+        await timeInput.fill("11:45 AM");
+        await timeInput.press("Enter");
+
+        // String types used to get a number written back, which fails their ISO 8601 pattern.
+        await expect.poll(() => values).toEqual([toValue(localTime(11, 45))]);
+      }
+    );
+
+    ct("should edit seconds when the value format shows seconds", async ({ mount, vaadinDateTimePicker }) => {
+      const values: unknown[] = [];
+      const component = await mount(ValueInputProviderHarness, {
+        props: { valueType, value: toValue(localTime(10, 30, 45, 123)), format: { second: "numeric" } },
+        on: { "value-change": (value: unknown) => values.push(value) },
+      });
+
+      const timeInput = vaadinDateTimePicker.getTimeInput(component);
+      await expect(timeInput).toHaveValue("10:30:45 AM");
+      await timeInput.fill("11:45:50 AM");
+      await timeInput.press("Enter");
+
+      await expect.poll(() => values).toEqual([toValue(localTime(11, 45, 50))]);
     });
 
-    const time = component.getByRole("combobox").last();
-    await expect(time).toHaveValue("10:30");
-    await time.fill("11:45");
-    await time.press("Enter");
+    ct(
+      "should edit milliseconds when the value format shows fractional seconds",
+      async ({ mount, vaadinDateTimePicker }) => {
+        const values: unknown[] = [];
+        const component = await mount(ValueInputProviderHarness, {
+          props: { valueType, value: toValue(localTime(10, 30, 45, 123)), format: { fractionalSecondDigits: 3 } },
+          on: { "value-change": (value: unknown) => values.push(value) },
+        });
 
-    await expect.poll(() => values).toEqual([Date.UTC(2026, 0, 2, 10, 45)]);
-  });
+        const timeInput = vaadinDateTimePicker.getTimeInput(component);
+        await expect(timeInput).toHaveValue("10:30:45.123 AM");
+        await timeInput.fill("11:45:50.456 AM");
+        await timeInput.press("Enter");
 
-  ct("should write back an ISO 8601 string for a string timestamp", async ({ mount }) => {
-    const values: unknown[] = [];
-    const component = await mount(ValueInputProviderHarness, {
-      props: { valueType: "timestampISO8601", jsonType: "string", value: "2026-01-02T09:30:00.000Z" },
-      on: { "value-change": (value: unknown) => values.push(value) },
+        await expect.poll(() => values).toEqual([toValue(localTime(11, 45, 50, 456))]);
+      }
+    );
+
+    ct("should write back null when the date and time are cleared", async ({ mount, vaadinDateTimePicker }) => {
+      const values: unknown[] = [];
+      const component = await mount(ValueInputProviderHarness, {
+        props: { valueType, value: toValue(localTime(10, 30)) },
+        on: { "value-change": (value: unknown) => values.push(value) },
+      });
+
+      const dateInput = vaadinDateTimePicker.getDateInput(component);
+      const timeInput = vaadinDateTimePicker.getTimeInput(component);
+      await dateInput.fill("");
+      await dateInput.press("Enter");
+      await timeInput.fill("");
+      await timeInput.press("Enter");
+
+      await expect.poll(() => values).toEqual([null]);
     });
 
-    const time = component.getByRole("combobox").last();
-    await expect(time).toHaveValue("10:30");
-    await time.fill("11:45");
-    await time.press("Enter");
+    ct(
+      "should render an empty picker for a value that is not a date and time",
+      async ({ mount, vaadinDateTimePicker }) => {
+        const component = await mount(ValueInputProviderHarness, {
+          props: { valueType, value: "10:30:00" },
+        });
 
-    // A number used to be written back, which fails the ISO 8601 pattern of the value type.
-    await expect.poll(() => values).toEqual(["2026-01-02T10:45:00.000Z"]);
+        // Rendering used to throw on the invalid date, leaving no input at all.
+        await expect(vaadinDateTimePicker.getDateInput(component)).toHaveValue("");
+        await expect(vaadinDateTimePicker.getTimeInput(component)).toHaveValue("");
+      }
+    );
+  });
+}
+
+ct("should edit seconds when the moment format shows seconds", async ({ mount, vaadinDateTimePicker }) => {
+  const component = await mount(ValueInputProviderHarness, {
+    props: { valueType: "timestamp", value: localTime(10, 30, 45), format: { momentJsFormat: "DD-MM-YYYY HH:mm:ss" } },
   });
 
-  ct("should write back null when the date and time are cleared", async ({ mount }) => {
-    const values: unknown[] = [];
-    const component = await mount(ValueInputProviderHarness, {
-      props: { valueType: "timestamp", value: TIMESTAMP },
-      on: { "value-change": (value: unknown) => values.push(value) },
-    });
+  await expect(vaadinDateTimePicker.getTimeInput(component)).toHaveValue("10:30:45 AM");
+});
 
-    const date = component.getByRole("combobox").first();
-    const time = component.getByRole("combobox").last();
-    await date.fill("");
-    await date.press("Enter");
-    await time.fill("");
-    await time.press("Enter");
-
-    await expect.poll(() => values).toEqual([null]);
+ct("should show a number formatted as a date in minutes", async ({ mount, vaadinDateTimePicker }) => {
+  const component = await mount(ValueInputProviderHarness, {
+    props: { valueType: "long", value: localTime(10, 30, 45), format: { asDate: true } },
   });
 
-  ct("should render an empty picker for a value that is not a date and time", async ({ mount }) => {
-    const component = await mount(ValueInputProviderHarness, {
-      props: { valueType: "timestampISO8601", jsonType: "string", value: "10:30:00" },
-    });
-
-    // Rendering used to throw on the invalid date, leaving no input at all.
-    await expect(component.getByRole("combobox")).toHaveCount(2);
-    await expect(component.getByRole("combobox").first()).toHaveValue("");
-    await expect(component.getByRole("combobox").last()).toHaveValue("");
-  });
+  // The whole-number step of the number input used to reach the picker, which then showed seconds.
+  await expect(vaadinDateTimePicker.getTimeInput(component)).toHaveValue("10:30 AM");
 });

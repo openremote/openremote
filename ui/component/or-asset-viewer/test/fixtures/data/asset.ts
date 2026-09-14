@@ -26,6 +26,8 @@ export const validAsset: Asset = {
   name: "Thing",
   realm: "master",
   type: "ThingAsset",
+  // 2026-01-02T10:30 in Europe/Amsterdam (UTC+1)
+  createdOn: Date.UTC(2026, 0, 2, 9, 30),
   attributes: { ...commonAttrs },
 };
 export const invalidAsset: Asset = {

@@ -20,6 +20,9 @@ import { ct, expect } from "@openremote/test";
 
 import { OrVaadinInput } from "@openremote/or-vaadin-components/or-vaadin-input";
 
+// The date time picker shows the format of the browser locale.
+ct.use({ locale: "en-US" });
+
 ct("should render a date time picker for the datetime-local type", async ({ mount }) => {
   const component = await mount(OrVaadinInput, { props: { type: "datetime-local" } });
 
@@ -40,11 +43,11 @@ ct("should expose the picked date and time as a local ISO string", async ({ moun
     },
   });
 
-  // Typed dates follow the picker's date format, so the date is set through the local ISO value instead.
+  // Typed dates follow the date format of the browser locale, so the date is set through the local ISO value instead.
   await component.evaluate((el: OrVaadinInput) => el.setAttribute("value", "2026-01-02T10:30"));
   const time = component.getByRole("combobox").last();
-  await expect(time).toHaveValue("10:30");
-  await time.fill("11:45");
+  await expect(time).toHaveValue("10:30 AM");
+  await time.fill("11:45 AM");
   await time.press("Enter");
 
   await expect.poll(() => component.evaluate((el: OrVaadinInput) => el.nativeValue)).toBe("2026-01-02T11:45");
