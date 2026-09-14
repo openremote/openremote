@@ -1025,12 +1025,34 @@ destroy_preflight() {
   local load_balancer_service_count
   local pvc_count
   local workload_pod_count
+  local stack_namespaces
+  local workload_controllers
+  local persistent_volumes
 
   require_kube_context
 
   hostname_registry="$(read_hostname_registry)" || die "Unable to inspect hostname reservations."
   [ "$(jq '(.data // {}) | length' <<< "$hostname_registry")" -eq 0 ] || die \
     "Hostname reservations remain; finish stack destroy or explicit external cleanup before destroying the cluster."
+
+  # Pods and PVCs alone do not prove that a cluster is empty: internal stacks
+  # need no hostname reservation, controllers can have zero Pods, and retained
+  # PVs can outlive their claims. Keep their metadata until cleanup is explicit.
+  stack_namespaces="$(kubectl --context "$KUBE_CONTEXT" get namespaces -o json | jq -r '
+    .items[] | select(.metadata.labels["openremote.io/stack"] != null or
+      .metadata.labels["app.kubernetes.io/part-of"] == "openremote") |
+    "  Namespace/" + .metadata.name')" || die \
+      "Unable to inspect OpenRemote namespaces before cluster destruction."
+  workload_controllers="$(kubectl --context "$KUBE_CONTEXT" get \
+    deployments,statefulsets,daemonsets,replicasets,replicationcontrollers,jobs,cronjobs \
+    --all-namespaces -o json | jq -r '
+    .items[] | select(.metadata.namespace != "kube-system" and
+      .metadata.namespace != "kube-public" and .metadata.namespace != "kube-node-lease") |
+    "  " + .kind + "/" + .metadata.namespace + "/" + .metadata.name')" || die \
+      "Unable to inspect workload controllers before cluster destruction."
+  persistent_volumes="$(kubectl --context "$KUBE_CONTEXT" get persistentvolumes -o json | jq -r '
+    .items[] | "  PersistentVolume/" + .metadata.name')" || die \
+      "Unable to inspect PersistentVolumes before cluster destruction."
 
   ingress_count="$(kubectl --context "$KUBE_CONTEXT" get ingress --all-namespaces -o json | jq '.items | length')"
   load_balancer_service_count="$(kubectl --context "$KUBE_CONTEXT" get services --all-namespaces -o json | jq \
@@ -1047,7 +1069,10 @@ destroy_preflight() {
       --all-namespaces -o json | jq '.items | length')"
   fi
 
-  if [ "$ingress_count" -gt 0 ] || \
+  if [ -n "$stack_namespaces" ] || \
+     [ -n "$workload_controllers" ] || \
+     [ -n "$persistent_volumes" ] || \
+     [ "$ingress_count" -gt 0 ] || \
      [ "$load_balancer_service_count" -gt 0 ] || \
      [ "$pvc_count" -gt 0 ] || \
      [ "$workload_pod_count" -gt 0 ] || \
@@ -1058,6 +1083,9 @@ destroy_preflight() {
     printf '  PersistentVolumeClaims: %s\n' "$pvc_count" >&2
     printf '  Non-system Pods: %s\n' "$workload_pod_count" >&2
     printf '  DNSEndpoints: %s\n' "$dns_endpoint_count" >&2
+    if [ -n "$stack_namespaces" ]; then printf '%s\n' "$stack_namespaces" >&2; fi
+    if [ -n "$workload_controllers" ]; then printf '%s\n' "$workload_controllers" >&2; fi
+    if [ -n "$persistent_volumes" ]; then printf '%s\n' "$persistent_volumes" >&2; fi
     die "Remove stacks and preserve or purge their data explicitly before destroying the cluster."
   fi
 }

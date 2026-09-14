@@ -399,8 +399,9 @@ documented in the upstream
 and [registry documentation](https://kubernetes-sigs.github.io/external-dns/latest/docs/registry/registry/).
 
 Cluster destruction requires an exact-name confirmation and is refused while
-Ingresses, LoadBalancer Services, PVCs, non-system Pods, or namespaced
-`DNSEndpoint` resources or hostname reservations remain:
+OpenRemote namespaces, Ingresses, LoadBalancer Services, PVCs, PersistentVolumes,
+non-system Pods or workload controllers, namespaced `DNSEndpoint` resources,
+or hostname reservations remain:
 
 ```bash
 kubernetes/or-eks-cluster destroy \
@@ -413,6 +414,21 @@ reservations. A reservation can outlive its namespace after interrupted external
 cleanup. Finish `or-eks-stack destroy` or the documented
 [manual hostname release](../../README.md#exclusive-public-hostnames) before
 retrying cluster destruction; do not discard the registry to bypass this check.
+
+The namespace check also protects internal stacks without public hostnames and
+interrupted preparations. Workload checks include Deployments, StatefulSets,
+DaemonSets, ReplicaSets, ReplicationControllers, Jobs, and CronJobs, even when
+they have no Pods. Controllers in `kube-system`, `kube-public`, and
+`kube-node-lease` are excluded, matching the Pod check. Empty unrelated
+namespaces do not block deletion.
+
+PersistentVolumes block deletion even after their PVCs have gone, so retained
+storage or incomplete cleanup cannot silently lose its Kubernetes metadata.
+The preflight lists blocking namespaces, controllers, and volumes. Inspect and
+resolve them before retrying; for retained storage, preserve the data and
+recovery information you need before removing its Kubernetes metadata. The
+preflight does not delete these resources or discover orphaned AWS resources
+that no longer have Kubernetes metadata.
 
 After this preflight succeeds, deletion bypasses PodDisruptionBudgets while
 draining the node group. This prevents replicated EKS system add-ons such as
@@ -442,4 +458,4 @@ The `openremote-ebs` StorageClass uses the standard EBS CSI driver, encrypted
 `gp3` volumes, and `WaitForFirstConsumer` binding. Its `Delete` reclaim policy
 removes the EBS volume when its PVC is explicitly deleted. The component charts
 retain their PVCs during an ordinary Helm uninstall, and cluster destruction is
-blocked while any PVC remains.
+blocked while any PVC or PersistentVolume remains.

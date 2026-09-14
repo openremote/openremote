@@ -102,6 +102,10 @@ helm() {
 
 kubectl() {
   log_call kubectl "$@"
+  if [ -n "${OR_EKS_TEST_FAILED_RESOURCE:-}" ] && \
+     [[ " $* " == *" get $OR_EKS_TEST_FAILED_RESOURCE "* ]]; then
+    return 1
+  fi
   case " $* " in
     *" get configmap openremote-hostnames "*)
       printf '%s' "${OR_EKS_TEST_REGISTRY_JSON:-}"
@@ -139,6 +143,15 @@ kubectl() {
       ;;
     *" get persistentvolumeclaims --all-namespaces "*)
       printf '%s\n' "${OR_EKS_TEST_PVCS-$TEST_EMPTY_RESOURCE_LIST}"
+      ;;
+    *" get namespaces -o json "*)
+      printf '%s\n' "${OR_EKS_TEST_NAMESPACES-$TEST_EMPTY_RESOURCE_LIST}"
+      ;;
+    *" get deployments,statefulsets,daemonsets,replicasets,replicationcontrollers,jobs,cronjobs --all-namespaces "*)
+      printf '%s\n' "${OR_EKS_TEST_WORKLOAD_CONTROLLERS-$TEST_EMPTY_RESOURCE_LIST}"
+      ;;
+    *" get persistentvolumes -o json "*)
+      printf '%s\n' "${OR_EKS_TEST_PVS-$TEST_EMPTY_RESOURCE_LIST}"
       ;;
     *" get pods --all-namespaces "*)
       printf '%s\n' "${OR_EKS_TEST_PODS-$TEST_EMPTY_RESOURCE_LIST}"
@@ -314,6 +327,66 @@ set -e
   "Cluster destruction preflight accepted a retained DNSEndpoint"
 grep -Fx -- '  DNSEndpoints: 1' <<< "$destroy_failure" >/dev/null || fail \
   "Cluster destruction preflight did not report the retained DNSEndpoint"
+
+assert_destroy_blocked() {
+  local fixture_variable="$1"
+  local fixture="$2"
+  local expected="$3"
+  local output
+  : > "$CALL_LOG"
+  if output="$(
+    export "$fixture_variable=$fixture"
+    require_existing_cluster() { :; }
+    CONFIRM_CLUSTER_NAME="$CLUSTER_NAME"
+    destroy_cluster 2>&1
+  )"; then
+    fail "Cluster destruction accepted $fixture_variable=$fixture"
+  fi
+  grep -F -- "$expected" <<< "$output" >/dev/null || fail \
+    "Cluster destruction did not report '$expected': $output"
+  assert_not_contains $'helm\tuninstall'
+  assert_not_contains $'eksctl\tdelete\tcluster'
+}
+
+# These fixtures have no reservations, Pods, PVCs, or public endpoints, so each
+# exercises state that the earlier resource counts alone could not detect.
+for stack_label in openremote.io/stack app.kubernetes.io/part-of; do
+  namespace_fixture="$(jq -cn --arg label "$stack_label" '
+    {items:[{metadata:{name:"retained-stack",labels:{($label):"openremote"}}}]}')"
+  assert_destroy_blocked OR_EKS_TEST_NAMESPACES "$namespace_fixture" 'Namespace/retained-stack'
+done
+
+for controller_kind in Deployment StatefulSet DaemonSet ReplicaSet ReplicationController Job CronJob; do
+  controller_fixture="$(jq -cn --arg kind "$controller_kind" '
+    {items:[{kind:$kind,metadata:{namespace:"user-workload",name:"idle"},
+      spec:{replicas:0,suspend:true}}]}')"
+  assert_destroy_blocked OR_EKS_TEST_WORKLOAD_CONTROLLERS "$controller_fixture" \
+    "$controller_kind/user-workload/idle"
+done
+
+assert_destroy_blocked OR_EKS_TEST_PVS \
+  '{"items":[{"metadata":{"name":"retained-data"},"spec":{"persistentVolumeReclaimPolicy":"Retain"},"status":{"phase":"Released"}}]}' \
+  'PersistentVolume/retained-data'
+
+for resource in namespaces deployments,statefulsets,daemonsets,replicasets,replicationcontrollers,jobs,cronjobs persistentvolumes; do
+  assert_destroy_blocked OR_EKS_TEST_FAILED_RESOURCE "$resource" 'Unable to inspect'
+done
+assert_destroy_blocked OR_EKS_TEST_PVS '{invalid-json' 'Unable to inspect PersistentVolumes'
+
+# Shared system controllers and empty unrelated namespaces must still permit
+# deletion once all stack state has been removed.
+: > "$CALL_LOG"
+(
+  require_existing_cluster() { :; }
+  CONFIRM_CLUSTER_NAME="$CLUSTER_NAME"
+  OR_EKS_TEST_NAMESPACES='{"items":[{"metadata":{"name":"default"}},{"metadata":{"name":"kube-system"}}]}'
+  OR_EKS_TEST_WORKLOAD_CONTROLLERS="$(jq -cn '{items:[
+    ["kube-system","kube-public","kube-node-lease"][] |
+    {kind:"Deployment",metadata:{namespace:.,name:"system-controller"}}]}')"
+  destroy_cluster
+)
+assert_contains $'helm\tuninstall\topenremote-external-dns'
+assert_contains $'eksctl\tdelete\tcluster'
 
 : > "$CALL_LOG"
 MANAGE_EXTERNAL_DNS=true uninstall_external_dns

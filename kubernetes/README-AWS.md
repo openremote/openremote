@@ -448,6 +448,10 @@ stack-owned managed certificate it also performs the ordered DNS and ACM
 cleanup described above. The command refuses destructive cleanup if certificate
 or DNS ownership is absent, mismatched, or ambiguous. Perform supported stack
 cleanup before asking `or-eks-cluster` to destroy an otherwise empty cluster.
+Cluster destruction also rejects remaining OpenRemote namespaces, non-system
+workload controllers (including those with no Pods), and PersistentVolumes
+whose claims have already gone. It lists these resources for explicit cleanup;
+see the [cluster lifecycle documentation](cluster/eks/README.md#lifecycle).
 Once that cluster-level preflight succeeds, `or-eks-cluster` bypasses system
 PodDisruptionBudgets during the final node drain so EKS add-ons cannot leave
 cluster deletion waiting indefinitely.
