@@ -9,6 +9,8 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+source "$SCRIPT_DIR/lib/hostname-reservations"
+
 DEFAULT_AWS_REGION="eu-west-1"
 DEFAULT_AWS_PROFILE="or"
 DEFAULT_TIMEOUT="20m"
@@ -114,6 +116,12 @@ This is an AWS-aware facade over or-stack. It requires the OpenRemote-managed
 ExternalDNS release installed by or-eks-cluster, with active Route 53 writes
 for the requested hostname. The portable or-stack command remains available
 for local clusters, unmanaged DNS, and internal-only stacks.
+
+Before workloads or ACM requests, the facade prepares the namespace and reserves
+its hostname through or-stack. A hostname cannot belong to two stacks or change
+on an existing stack. Reservations survive uninstall and failed operations;
+destroy releases them only after external cleanup. See kubernetes/README.md for
+registry permissions, migration of existing stacks, and manual recovery.
 
 Ingress accepts an explicit existing ACM ARN, the externally managed shared
 certificate configured by or-eks-cluster, or a stack-owned managed certificate.
@@ -338,6 +346,7 @@ validate_common_options() {
 }
 
 validate_hostname() {
+  HOSTNAME_VALUE="$(printf '%s' "$HOSTNAME_VALUE" | tr '[:upper:]' '[:lower:]')"
   HOSTNAME_VALUE="${HOSTNAME_VALUE%.}"
   [ -n "$HOSTNAME_VALUE" ] || die \
     "A public hostname is required for apply; use --hostname."
@@ -856,8 +865,9 @@ prepare_portable_stack() {
     --name "$STACK_NAME" \
     --kube-context "$KUBE_CONTEXT" \
     --target eks \
-    --exposure ingress \
-    --dns external-dns
+    --exposure "$EXPOSURE" \
+    --dns external-dns \
+    --hostname "$HOSTNAME_VALUE"
 }
 
 resolve_managed_certificate() {
@@ -1552,15 +1562,20 @@ authoritative_dns_record_exists() {
   while IFS= read -r name_server; do
     [ -n "$name_server" ] || continue
     set +e
-    answer="$(dig +time=3 +tries=1 +short \
+    answer="$(dig +time=3 +tries=1 +norecurse +noall +comments +answer +authority \
       "@$name_server" "$record_name" "$record_type" 2>/dev/null)"
     query_status=$?
     set -e
-    if [ "$query_status" -ne 0 ]; then
+    # A successful dig process can carry SERVFAIL/REFUSED or a referral. Those
+    # are not evidence of deletion and must never allow a hostname to be reused.
+    if [ "$query_status" -ne 0 ] ||
+       ! grep -Eq '^;; ->>HEADER<<-.*status: (NOERROR|NXDOMAIN),' <<< "$answer" ||
+       ! grep -Eq '^;; flags:([^;]* )?aa[ ;]' <<< "$answer"; then
       query_failed=true
       continue
     fi
-    if [ -n "$answer" ]; then
+    if awk -v type="$record_type" '!/^;/ && NF >= 5 && ($4 == type || $4 == "CNAME") { found=1 } END { exit !found }' \
+      <<< "$answer"; then
       return 0
     fi
   done <<< "$AUTHORITATIVE_NAME_SERVERS"
@@ -1827,15 +1842,18 @@ apply_stack() {
     resolve_ingress_certificate
   fi
   require_managed_external_dns
+  if [ "$EXPOSURE" = "ingress" ] && [ "$CERTIFICATE_MODE" != "managed" ]; then
+    require_selected_acm_certificate
+  fi
+  # Reserve before ACM requests as well as before Helm, so a losing concurrent
+  # apply cannot issue certificates or install a competing public endpoint.
+  prepare_portable_stack || die "Namespace preparation or hostname reservation failed; no workloads were installed."
   if [ "$CERTIFICATE_MODE" = "managed" ]; then
     require_command cksum
-    prepare_portable_stack
     resolve_managed_certificate
     wait_for_managed_certificate_validation_records
     apply_managed_certificate_validation_records
     wait_for_managed_certificate
-  elif [ "$EXPOSURE" = "ingress" ]; then
-    require_selected_acm_certificate
   fi
   apply_portable_stack
   if [ "$CERTIFICATE_MODE" != "managed" ]; then
@@ -1899,20 +1917,42 @@ show_certificate_configuration() {
 
 destroy_stack_with_managed_resources() {
   local public_dns_records
+  local reservation
   local record_name
   local record_type
 
   require_command dig
   require_command helm
   require_command jq
+  reservation="$(stack_hostname_reservation)" || die "Unable to inspect hostname reservations before destroy."
   inspect_stack_namespace_for_destroy
+  if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
+    require_reservation_namespace_identity "$reservation"
+  fi
   capture_stack_ingress_for_destroy
 
   resolve_managed_certificate_for_destroy
   if [ "$MANAGED_CERTIFICATE_DESTROY" = false ]; then
-    [ "$STACK_NAMESPACE_EXISTS" = true ] || die \
-      "Stack namespace '$STACK_NAME' does not exist and no managed ACM certificate is tagged for this stack."
-    run_or_stack "$@"
+    if [ -n "$reservation" ]; then
+      HOSTNAME_VALUE="$(jq -r '.hostname' <<< "$reservation")"
+      EXPOSURE="$(jq -r '.exposure' <<< "$reservation")"
+      CERTIFICATE_MODE=""
+      [ "$(jq -r '.target + "/" + .dns' <<< "$reservation")" = "eks/external-dns" ] || die \
+        "This reservation requires external cleanup and or-stack release-hostname."
+      require_managed_external_dns
+      select_managed_dns_domain
+      discover_authoritative_name_servers
+      if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
+        run_or_stack "$@"
+      fi
+      public_dns_records="$(printf '%s\t%s\n' "$HOSTNAME_VALUE" A "$HOSTNAME_VALUE" AAAA "$HOSTNAME_VALUE" CNAME)"
+      wait_for_dns_records_removed "stack hostname '$HOSTNAME_VALUE'" "$public_dns_records"
+      release_portable_hostname
+    else
+      [ "$STACK_NAMESPACE_EXISTS" = true ] || die \
+        "Stack namespace '$STACK_NAME' does not exist and no managed ACM certificate or hostname reservation exists."
+      run_or_stack "$@"
+    fi
     return
   fi
 
@@ -1947,7 +1987,15 @@ destroy_stack_with_managed_resources() {
 
   wait_for_dns_records_removed "ACM validation" "$VALIDATION_DNS_RECORDS"
   delete_managed_certificate
+  if [ -n "$reservation" ]; then
+    release_portable_hostname
+  fi
   log "Stack '$STACK_NAME' and its managed external certificate resources are destroyed."
+}
+
+release_portable_hostname() {
+  run_or_stack release-hostname --name "$STACK_NAME" --kube-context "$KUBE_CONTEXT" \
+    --hostname "$HOSTNAME_VALUE" --confirm "$STACK_NAME"
 }
 
 delegate_stack_command() {

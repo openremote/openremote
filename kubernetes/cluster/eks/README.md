@@ -397,13 +397,19 @@ and [registry documentation](https://kubernetes-sigs.github.io/external-dns/late
 
 Cluster destruction requires an exact-name confirmation and is refused while
 Ingresses, LoadBalancer Services, PVCs, non-system Pods, or namespaced
-`DNSEndpoint` resources remain:
+`DNSEndpoint` resources or hostname reservations remain:
 
 ```bash
 kubernetes/or-eks-cluster destroy \
   --name openremote-test \
   --confirm openremote-test
 ```
+
+The shared ConfigMap `kube-system/openremote-hostnames` must contain no remaining
+reservations. A reservation can outlive its namespace after interrupted external
+cleanup. Finish `or-eks-stack destroy` or the documented
+[manual hostname release](../../README.md#exclusive-public-hostnames) before
+retrying cluster destruction; do not discard the registry to bypass this check.
 
 After this preflight succeeds, deletion bypasses PodDisruptionBudgets while
 draining the node group. This prevents replicated EKS system add-ons such as

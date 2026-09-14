@@ -7,3 +7,7 @@ for argument in "$@"; do
   printf '\t%s' "$argument" >> "$OR_STACK_TEST_LOG"
 done
 printf '\n' >> "$OR_STACK_TEST_LOG"
+
+if [ "${1:-}" = upgrade ] && [ "${3:-}" = "${OR_STACK_TEST_HELM_FAIL_RELEASE:-}" ]; then
+  exit 1
+fi

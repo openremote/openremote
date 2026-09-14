@@ -15,8 +15,58 @@ if [ "${1:-}" = "config" ] && [ "${2:-}" = "get-contexts" ]; then
   exit 0
 fi
 
+EMPTY_RESOURCE_LIST='{"items":[]}'
 arguments=" $* "
 case "$arguments" in
+  *" get configmap openremote-hostnames "*|*" --namespace kube-system create -f - "*|*" --namespace kube-system replace -f - "*)
+    exec python3 "$(dirname "$0")/hostname-registry.py" "$@"
+    ;;
+  *" get namespaces "*)
+    printf '%s\n' "${OR_STACK_TEST_NAMESPACES_JSON:-$EMPTY_RESOURCE_LIST}"
+    exit 0
+    ;;
+  *" get ingress,services "*)
+    [ "${OR_STACK_TEST_ROUTES_READ_SUCCESS:-true}" = true ] || exit 1
+    printf '%s\n' "${OR_STACK_TEST_ROUTES_JSON:-$EMPTY_RESOURCE_LIST}"
+    exit 0
+    ;;
+  *" get deployment proxy --ignore-not-found -o json "*)
+    printf '%s' "${OR_STACK_TEST_PROXY_JSON:-}"
+    exit 0
+    ;;
+  *" get namespace "*" -o json "*)
+    if [ -n "${OR_STACK_TEST_NAMESPACE_JSON:-}" ]; then
+      printf '%s\n' "$OR_STACK_TEST_NAMESPACE_JSON"
+      exit 0
+    fi
+    previous_argument=""
+    for argument in "$@"; do
+      if [ "$previous_argument" = namespace ]; then
+        namespace_name="$argument"
+        break
+      fi
+      previous_argument="$argument"
+    done
+    jq -cn --arg name "$namespace_name" --arg uid "${OR_STACK_TEST_NAMESPACE_UID:-uid-$namespace_name}" \
+      --arg host "${OR_STACK_TEST_RECORDED_HOSTNAME:-}" \
+      --arg reserved "${OR_STACK_TEST_RESERVED_HOSTNAME:-}" \
+      '{metadata:{name:$name,uid:$uid,labels:{"openremote.io/stack":$name}}} |
+        if $host != "" then .metadata.annotations["openremote.io/hostname"]=$host else . end |
+        if $reserved != "" then .metadata.annotations["openremote.io/reserved-hostname"]=$reserved else . end'
+    exit 0
+    ;;
+  *" get namespace "*" --ignore-not-found -o name "*)
+    if [ "${OR_STACK_TEST_NAMESPACE_EXISTS:-false}" = true ] && \
+       [ ! -f "${OR_STACK_TEST_NAMESPACE_DELETED_FILE:-/nonexistent}" ]; then
+      printf 'namespace/stack-a\n'
+    fi
+    exit 0
+    ;;
+  *" delete namespace "*)
+    if [ -n "${OR_STACK_TEST_NAMESPACE_DELETED_FILE:-}" ]; then
+      : > "$OR_STACK_TEST_NAMESPACE_DELETED_FILE"
+    fi
+    ;;
   *" get namespace "*)
     if [ "${OR_STACK_TEST_NAMESPACE_EXISTS:-false}" = "true" ]; then
       case "$arguments" in

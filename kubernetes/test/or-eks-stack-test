@@ -174,6 +174,12 @@ kubectl() {
   local endpoint_manifest
 
   case "$arguments" in
+    *" get namespace stack-a -o json "*)
+      printf '%s\n' '{"metadata":{"uid":"uid-stack-a"}}'
+      ;;
+    *" get configmap openremote-hostnames "*)
+      printf '%s' "${OR_EKS_STACK_TEST_REGISTRY_JSON:-}"
+      ;;
     *" get ingressclass openremote-alb "*"shared-certificate-arn"*)
       printf '%s' "${OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN-}"
       ;;
@@ -276,6 +282,26 @@ dig() {
     return
   fi
 
+  if [ "$authoritative" = true ]; then
+    printf ';; ->>HEADER<<- opcode: QUERY, status: %s, id: 1\n' "${OR_EKS_STACK_TEST_DNS_STATUS:-NOERROR}"
+    printf ';; flags: %s; QUERY: 1, ANSWER: 0, AUTHORITY: 1\n' "${OR_EKS_STACK_TEST_DNS_FLAGS:-qr aa}"
+    [ "${OR_EKS_STACK_TEST_DNS_STATUS:-NOERROR}" = NOERROR ] || return 0
+    case "$dns_name" in
+      stack-a.example.com)
+        if [ "${OR_EKS_STACK_TEST_NAMESPACE_EXISTS:-true}" = true ] &&
+           [ ! -f "$INGRESS_DELETED_FILE" ] && [ ! -f "$NAMESPACE_DELETED_FILE" ]; then
+          printf '%s. 60 IN A 192.0.2.10\n' "$dns_name"
+        fi
+        ;;
+      _validation.stack-a.example.com|_validation.stack-a.example.com.)
+        if [ "${OR_EKS_STACK_TEST_NAMESPACE_EXISTS:-true}" = true ] && [ ! -f "$NAMESPACE_DELETED_FILE" ]; then
+          printf '%s 300 IN CNAME _target.acm-validations.aws.\n' "$dns_name"
+        fi
+        ;;
+    esac
+    return 0
+  fi
+
   case "$dns_name" in
     stack-a.example.com)
       if [ "$authoritative" = false ] || \
@@ -318,6 +344,9 @@ sleep() {
 
 run_or_stack() {
   log_call or-stack "$@"
+  if [ "${1:-}" = "prepare" ] && [ "${OR_EKS_STACK_TEST_PREPARE_FAIL:-false}" = true ]; then
+    return 1
+  fi
   if [ "${1:-}" = "destroy" ]; then
     : > "$NAMESPACE_DELETED_FILE"
   fi
@@ -678,9 +707,9 @@ test_managed_destroy() {
   assert_contains $'aws-acm\tlist-certificates'
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tdelete\tingress\tproxy\t--wait=true\t--timeout\t15m'
   assert_contains $'dig\t+time=5\t+tries=2\t+short\texample.com\tNS'
-  assert_contains $'dig\t+time=3\t+tries=1\t+short\t@ns-1.example.net.\tstack-a.example.com\tA'
+  assert_contains $'dig\t+time=3\t+tries=1\t+norecurse\t+noall\t+comments\t+answer\t+authority\t@ns-1.example.net.\tstack-a.example.com\tA'
   assert_contains $'or-stack\tdestroy\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--confirm\tstack-a\t--timeout\t15m'
-  assert_contains $'dig\t+time=3\t+tries=1\t+short\t@ns-1.example.net.\t_validation.stack-a.example.com.\tCNAME'
+  assert_contains $'dig\t+time=3\t+tries=1\t+norecurse\t+noall\t+comments\t+answer\t+authority\t@ns-1.example.net.\t_validation.stack-a.example.com.\tCNAME'
   assert_contains $'aws-acm\tdelete-certificate\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"
   assert_before $'delete\tingress\tproxy' $'stack-a.example.com\tA'
   assert_before $'stack-a.example.com\tA' $'or-stack\tdestroy'
@@ -918,6 +947,53 @@ test_validation() {
     "Matching hostname and load-balancer address sets were rejected"
 }
 
+
+test_hostname_reservation_lifecycle() {
+  local exposure registry
+  registry="$(jq -cn '{metadata:{resourceVersion:"1",labels:{"app.kubernetes.io/managed-by":"or-stack"}},
+    data:{"stack-a.example.com":({namespace:"stack-a",namespaceUID:"uid-stack-a",target:"eks",dns:"external-dns",exposure:"haproxy"}|tojson)}}')"
+
+  for exposure in haproxy ingress; do
+    if (OR_EKS_STACK_TEST_PREPARE_FAIL=true run_eks_stack apply --name stack-a \
+      --cluster test-cluster --hostname stack-a.example.com --exposure "$exposure" --profile '') >/dev/null 2>&1; then
+      fail "Failed hostname reservation did not stop $exposure apply"
+    fi
+    assert_contains $'or-stack\tprepare'
+    assert_contains $'--hostname\tstack-a.example.com'
+    assert_not_contains $'aws-acm\trequest-certificate'
+    assert_not_contains $'or-stack\tapply'
+  done
+
+  OR_EKS_STACK_TEST_REGISTRY_JSON="$registry" run_eks_stack destroy --name stack-a \
+    --cluster test-cluster --confirm stack-a --profile '' >/dev/null
+  assert_before $'or-stack\tdestroy' $'stack-a.example.com\tA'
+  assert_before $'stack-a.example.com\tA' $'or-stack\trelease-hostname'
+
+  OR_EKS_STACK_TEST_REGISTRY_JSON="$registry" OR_EKS_STACK_TEST_NAMESPACE_EXISTS=false \
+    run_eks_stack destroy --name stack-a --cluster test-cluster --confirm stack-a --profile '' >/dev/null
+  assert_not_contains $'or-stack\tdestroy'
+  assert_contains $'or-stack\trelease-hostname'
+
+  if (OR_EKS_STACK_TEST_REGISTRY_JSON="$registry" OR_EKS_STACK_TEST_DNS_STATUS=SERVFAIL \
+    run_eks_stack destroy --name stack-a --cluster test-cluster --confirm stack-a \
+      --profile '' --timeout 1s) >/dev/null 2>&1; then
+    fail "Failed DNS confirmation released the hostname reservation"
+  fi
+  assert_not_contains $'or-stack\trelease-hostname'
+
+  if (OR_EKS_STACK_TEST_REGISTRY_JSON="$registry" OR_EKS_STACK_TEST_DNS_FLAGS=qr \
+    run_eks_stack destroy --name stack-a --cluster test-cluster --confirm stack-a \
+      --profile '' --timeout 1s) >/dev/null 2>&1; then
+    fail "Non-authoritative DNS confirmation released the hostname reservation"
+  fi
+  assert_not_contains $'or-stack\trelease-hostname'
+
+  registry="$(jq '.data["stack-a.example.com"] |= (fromjson | .exposure="ingress" | tojson)' <<< "$registry")"
+  OR_EKS_STACK_TEST_REGISTRY_JSON="$registry" test_managed_destroy
+  assert_before $'aws-acm\tdelete-certificate' $'or-stack\trelease-hostname'
+}
+
+
 test_apply
 test_ingress_existing_certificate_apply
 test_ingress_shared_certificate_apply
@@ -928,5 +1004,7 @@ test_lifecycle_delegation
 test_managed_destroy
 test_managed_destroy_safety
 test_validation
+
+test_hostname_reservation_lifecycle
 
 printf 'or-eks-stack tests passed\n'

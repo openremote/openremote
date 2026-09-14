@@ -103,6 +103,9 @@ helm() {
 kubectl() {
   log_call kubectl "$@"
   case " $* " in
+    *" get configmap openremote-hostnames "*)
+      printf '%s' "${OR_EKS_TEST_REGISTRY_JSON:-}"
+      ;;
     *" apply -f - "*)
       while IFS= read -r _; do
         :
@@ -417,5 +420,12 @@ if [ "$failure_status" -eq 0 ]; then
 fi
 grep -F -- 'Amazon VPC CNI add-on diagnostics:' <<< "$failure_output" >/dev/null || fail \
   "Unhealthy add-on failure did not include diagnostics"
+
+registry="$(jq -cn '{metadata:{labels:{"app.kubernetes.io/managed-by":"or-stack"}},data:{"stack-a.example.com":({namespace:"stack-a",namespaceUID:"uid-stack-a",target:"eks",dns:"external-dns",exposure:"haproxy"}|tojson)}}')"
+: > "$CALL_LOG"
+if (OR_EKS_TEST_REGISTRY_JSON="$registry" destroy_preflight) >/dev/null 2>&1; then
+  fail "Cluster destruction accepted an outstanding hostname reservation"
+fi
+assert_not_contains $'helm\tuninstall'
 
 printf 'or-eks-cluster tests passed\n'

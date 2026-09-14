@@ -46,6 +46,23 @@ section for more details.
 We're creating an EKS cluster with a managed node group.  
 By default, the group uses 2 VMs of type t2.large. The script places them in AZ eu-west-1a and eu-west-1b
 
+### Hostname ownership
+
+Each public hostname belongs exclusively to one stack in the cluster, regardless
+of whether it uses HAProxy or shared ingress. The facade reserves it through
+`or-stack prepare --hostname ...` before workloads or ACM requests, preventing
+concurrent deployments from installing competing routes. Reapply preserves the
+reservation; changing a stack's hostname is rejected. Uninstall and failed
+operations retain ownership. Destroy releases it after namespace and DNS cleanup
+(and managed certificate cleanup where applicable), and can resume from a retained
+reservation after the namespace has gone. Outstanding reservations block cluster
+destruction.
+
+See [exclusive public hostnames](README.md#exclusive-public-hostnames) for the
+reason, registry permissions, adoption of existing stacks, and explicit recovery
+when external cleanup is performed manually. The registry is cluster-local;
+coordination with other clusters and manually managed DNS remains external.
+
 ### Persistence
 
 For persistence, the component charts request dynamically provisioned

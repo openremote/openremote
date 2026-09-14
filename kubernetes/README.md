@@ -6,6 +6,7 @@ It supposes you have already installed the required tools on your machine:
 - a Kubernetes installation, tests were performed with Docker Desktop on macOS.
 - kubectl
 - helm
+- jq (hostname reservations and stack destruction)
 
 There are three exposure modes: public HAProxy, Kubernetes Ingress, and
 internal-only. Both public modes use a HAProxy Pod in each stack namespace.
@@ -51,16 +52,18 @@ creates external resources:
   --kube-context cluster@eu-west-1 \
   --target eks \
   --exposure ingress \
-  --dns external-dns
+  --dns external-dns \
+  --hostname stack-a.example.com
 ```
 
-`prepare` creates only the namespace and its OpenRemote ownership/configuration
-labels. It installs no Helm release, workload, Service, Ingress, Secret, or
-PVC, and it performs no AWS or cluster-capability checks. Repeating it is safe
+`prepare` creates the namespace and its OpenRemote ownership/configuration
+labels, and atomically reserves the requested public hostname. It installs no
+Helm release, workload, Service, Ingress, Secret, or PVC, and it performs no AWS
+or cluster-capability checks. Repeating it is safe
 when the namespace has the matching stack label, target, and exposure. It
 refuses an unrelated namespace or an attempt to change the stored target or
-exposure. Normal users can go straight to `apply`; this separate operation is
-primarily a lifecycle building block for higher-level tooling.
+exposure or reserved hostname. Normal users can go straight to `apply`; this
+separate operation is primarily a lifecycle building block for higher-level tooling.
 
 To install or upgrade a local stack using the current Docker Desktop, kind, or
 kubeadm context:
@@ -247,6 +250,84 @@ when the stack Secret is first created. A later `apply` preserves the existing
 values and rejects a conflicting override because changing a Kubernetes Secret
 alone does not rotate credentials inside an initialized PostgreSQL or Keycloak
 database.
+
+### Exclusive public hostnames
+
+Namespaces isolate Kubernetes names and storage, but public hostnames are shared
+routing identities. Two stacks declaring the same hostname could contribute
+competing ALB rules or ExternalDNS records and send a browser to the wrong
+Manager. ExternalDNS's TXT owner identifies the cluster, not an individual stack.
+
+`prepare` and `apply` therefore reserve hostnames for every public EKS stack,
+every Ingress stack, and every ExternalDNS-managed endpoint. Both `or-stack` and
+`or-eks-stack` enforce this before installing workloads or requesting an ACM
+certificate. Local HAProxy with unmanaged DNS remains exempt, allowing the
+`localhost:8443` / `localhost:9443` workflow. New internal-only stacks reserve nothing.
+Hostnames are normalized to lowercase without a trailing dot.
+
+The reservation registry is ConfigMap `kube-system/openremote-hostnames`. Each
+entry records the owning stack namespace and its Kubernetes UID. Conditional
+Kubernetes updates reserve the hostname and the stack's fixed hostname together:
+two concurrent applies cannot both acquire the same hostname, and one stack
+cannot concurrently acquire two different hostnames. Retrying with the same
+namespace UID and hostname is safe. Changing the hostname or recreating a
+namespace under the same name does not transfer ownership.
+
+Stack operators need `jq`, permission to get/create/update that ConfigMap,
+cluster-wide read access to namespaces, Ingresses and Services, and read access
+to their own proxy Deployment, in addition to the usual stack lifecycle
+permissions. Kubernetes RBAC cannot restrict `create` by resource name; an
+administrator can pre-create the empty registry with label
+`app.kubernetes.io/managed-by: or-stack` and `data: {}` so operators need only
+`get` and `update` on this named ConfigMap. The scripts refuse an unlabelled or
+malformed registry. Protect registry write access as deployment authority.
+
+For stacks created before reservations were introduced, rerun `apply` with the
+original hostname (or `prepare --hostname ...`). The scripts inspect existing
+namespace hostname annotations, Ingress rules, both ExternalDNS hostname
+annotation prefixes, and the stack's proxy configuration. An unambiguous owner
+can establish a reservation; conflicts require resolving the existing routes
+first. A previously uninstalled portable stack might have no remaining hostname
+metadata: explicitly reserve its original hostname before deploying other stacks.
+These checks coordinate these scripts; they are not an admission policy against
+manually created conflicting resources or arbitrary additional hostnames in
+custom chart overrides. Reservations are scoped to one Kubernetes cluster.
+
+Reservations survive uninstall and failed applies. They have no automatic expiry
+or namespace ownerReference: deleting a namespace does not prove that external
+DNS or certificate cleanup finished. Disabling ExternalDNS also retains the
+reservation's DNS cleanup requirement. `or-eks-stack destroy` releases a reservation
+after namespace and external cleanup; an interrupted cleanup can be retried even
+when only the reservation remains. `or-eks-cluster destroy` refuses outstanding
+reservations so their ownership and recovery information are not lost.
+
+Portable `or-stack destroy` releases local Ingress reservations with unmanaged
+DNS after Kubernetes cleanup. For EKS or ExternalDNS workflows it retains the
+reservation. Complete external cleanup using `or-eks-stack destroy`, or verify
+that old public endpoints, DNS records, and stack-managed certificates have been
+removed before explicitly releasing it:
+
+```bash
+./or-stack release-hostname \
+  --name stack-a \
+  --kube-context cluster@eu-west-1 \
+  --hostname stack-a.example.com \
+  --confirm stack-a
+```
+
+This confirmation asserts that external cleanup is complete; the portable
+command does not contact a DNS provider. It additionally requires the namespace
+to be absent and no conflicting Kubernetes routes to remain, and only removes
+the named stack's reservation. It does not delete DNS or certificates. There is
+no force-takeover flag. For hostname changes, destroy and clean up the old stack,
+release its reservation, then recreate it with the new hostname; back up any data
+you intend to retain before destruction. In-place hostname migration is not supported.
+
+Reservation regression tests use an atomic API stub and require Python 3.9+:
+
+```bash
+python3 kubernetes/test/hostname-reservations-test
+```
 
 ### Uninstalling or destroying a stack
 

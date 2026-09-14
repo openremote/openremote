@@ -6,6 +6,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KUBERNETES_DIR="$SCRIPT_DIR"
+source "$SCRIPT_DIR/lib/hostname-reservations"
 
 DEFAULT_CONFIG_FILE="$KUBERNETES_DIR/cluster.yaml"
 DEFAULT_STORAGE_CLASS_FILE="$KUBERNETES_DIR/cluster/eks/storage-class.yaml"
@@ -1017,6 +1018,7 @@ show_cluster_status() {
 }
 
 destroy_preflight() {
+  local hostname_registry
   local dns_endpoint_count=0
   local dns_endpoint_crd
   local ingress_count
@@ -1025,6 +1027,10 @@ destroy_preflight() {
   local workload_pod_count
 
   require_kube_context
+
+  hostname_registry="$(read_hostname_registry)" || die "Unable to inspect hostname reservations."
+  [ "$(jq '(.data // {}) | length' <<< "$hostname_registry")" -eq 0 ] || die \
+    "Hostname reservations remain; finish stack destroy or explicit external cleanup before destroying the cluster."
 
   ingress_count="$(kubectl --context "$KUBE_CONTEXT" get ingress --all-namespaces -o json | jq '.items | length')"
   load_balancer_service_count="$(kubectl --context "$KUBE_CONTEXT" get services --all-namespaces -o json | jq \

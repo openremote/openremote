@@ -81,6 +81,7 @@ test_prepare() {
   reset_log
   output="$(OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack prepare \
     --name stack-prepared \
+    --hostname stack-prepared.example.com \
     --kube-context test-context \
     --target eks \
     --exposure ingress \
@@ -104,6 +105,7 @@ test_prepare() {
   OR_STACK_TEST_EXPOSURE_LABEL=ingress \
     run_stack prepare \
       --name stack-prepared \
+      --hostname stack-prepared.example.com \
       --kube-context test-context \
       --target eks \
       --exposure ingress \

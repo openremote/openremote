@@ -8,6 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KUBERNETES_DIR="$SCRIPT_DIR"
 TARGETS_DIR="$KUBERNETES_DIR/stack/targets"
 EXPOSURES_DIR="$KUBERNETES_DIR/stack/exposures"
+source "$SCRIPT_DIR/lib/hostname-reservations"
 
 DEFAULT_TIMEOUT="10m"
 
@@ -46,6 +47,7 @@ Usage:
   or-stack credentials --name <name> --kube-context <context>
   or-stack uninstall --name <name> --kube-context <context> [options]
   or-stack destroy --name <name> --kube-context <context> --confirm <name> [options]
+  or-stack release-hostname --name <name> --kube-context <context> --hostname <host> --confirm <name>
 
 Commands:
   prepare               Create or verify the owned stack namespace without
@@ -58,6 +60,8 @@ Commands:
                         credentials, PVCs, and data.
   destroy               Uninstall stack releases and delete its namespace,
                         credentials, PVCs, and data after exact-name confirmation.
+  release-hostname      Release a retained hostname after namespace deletion.
+                        Exact-name confirmation asserts external cleanup is complete.
 
 Options:
   --name <name>         Stack name and Kubernetes namespace. Env: OR_STACK_NAME.
@@ -85,15 +89,15 @@ Options:
                         exposure.
                         Env: OR_STACK_VALUES_DIR.
   --timeout <duration>  Helm wait timeout. Env: OR_STACK_TIMEOUT. Default: 10m.
-  --confirm <name>      Required exact stack name for destroy.
+  --confirm <name>      Required exact stack name for destroy or release-hostname.
   -h, --help            Show this help.
 
 The stack name is also its namespace. Helm release names remain stable within
 that namespace so component service discovery continues to use the names
 postgresql, keycloak, and manager.
 
-The prepare command only establishes namespace ownership and records the
-target, exposure, and DNS choices. It is idempotent and refuses to adopt an
+The prepare command establishes namespace ownership, records the target,
+exposure and DNS choices, and reserves public hostnames. It refuses to adopt an
 unrelated namespace. The uninstall command retains chart-managed credentials
 and data and leaves the stack namespace in place. The destroy command is the
 explicit data-purge operation and deletes every resource in the stack
@@ -108,6 +112,17 @@ ALB), or none for an internal-only stack. With --dns external-dns, this command
 labels and annotates the stack's public routing resource for a separately
 installed ExternalDNS controller. It never calls a DNS provider API itself and
 does not manage ACM certificates.
+
+Public EKS, Ingress, and ExternalDNS hostnames are exclusively reserved in
+ConfigMap kube-system/openremote-hostnames before certificates or workloads.
+This prevents cross-stack routing conflicts, including concurrent applies.
+Requires jq and permission to get/create/update this ConfigMap and inspect
+namespaces, Ingresses, and Services cluster-wide. Hostname changes are rejected.
+Reservations survive uninstall and failed operations. EKS destroy through the
+facade releases them after external cleanup. Portable destroy retains them for
+explicit release, except local Ingress without managed DNS. Local HAProxy with
+unmanaged DNS can still share localhost on different ports; new internal stacks
+reserve nothing. Disabling ExternalDNS does not clear a retained reservation.
 EOF
 }
 
@@ -135,7 +150,7 @@ parse_arguments() {
       usage
       exit 0
       ;;
-    prepare|apply|status|credentials|uninstall|destroy)
+    prepare|apply|status|credentials|uninstall|destroy|release-hostname)
       COMMAND="$1"
       shift
       ;;
@@ -244,19 +259,7 @@ validate_apply_options() {
   validate_exposure
   validate_dns_mode
 
-  if [ -z "$HOSTNAME_VALUE" ]; then
-    if [ "$TARGET" = "local" ] || [ "$EXPOSURE" = "none" ]; then
-      HOSTNAME_VALUE=localhost
-    else
-      die "A public hostname is required for public EKS exposure; use --hostname or OR_STACK_HOSTNAME."
-    fi
-  fi
-
-  [ -n "$HOSTNAME_VALUE" ] || die "Hostname cannot be empty."
-  [ "${#HOSTNAME_VALUE}" -le 253 ] || die "Hostname must contain at most 253 characters."
-  if [[ ! "$HOSTNAME_VALUE" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$ ]]; then
-    die "Hostname must be a lowercase DNS name."
-  fi
+  validate_hostname_option
 
   if [ "$TARGET" = "eks" ] && [ "$EXPOSURE" = "ingress" ]; then
     [ -n "$CERTIFICATE_ARN" ] || die \
@@ -289,13 +292,36 @@ validate_apply_options() {
   fi
 }
 
+validate_hostname_option() {
+  HOSTNAME_VALUE="$(printf '%s' "$HOSTNAME_VALUE" | tr '[:upper:]' '[:lower:]')"
+  HOSTNAME_VALUE="${HOSTNAME_VALUE%.}"
+  if [ -z "$HOSTNAME_VALUE" ]; then
+    if [ "$TARGET" = "local" ] || [ "$EXPOSURE" = "none" ]; then
+      HOSTNAME_VALUE=localhost
+    else
+      die "A public hostname is required for public EKS exposure; use --hostname or OR_STACK_HOSTNAME."
+    fi
+  fi
+
+  [ -n "$HOSTNAME_VALUE" ] || die "Hostname cannot be empty."
+  [ "${#HOSTNAME_VALUE}" -le 253 ] || die "Hostname must contain at most 253 characters."
+  if [[ ! "$HOSTNAME_VALUE" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$ ]]; then
+    die "Hostname must be a lowercase DNS name."
+  fi
+}
+
 validate_prepare_options() {
   validate_target
   validate_exposure
   validate_dns_mode
+  validate_hostname_option
 
   if [ "$DNS_MODE" = "external-dns" ] && [ "$EXPOSURE" = "none" ]; then
     die "ExternalDNS ownership requires haproxy or ingress exposure."
+  fi
+  if [ "$DNS_MODE" = "external-dns" ]; then
+    [ "$HOSTNAME_VALUE" != localhost ] && [[ "$HOSTNAME_VALUE" == *.* ]] || die \
+      "ExternalDNS ownership requires a non-local, fully qualified hostname."
   fi
 }
 
@@ -420,6 +446,7 @@ prepare_stack() {
   require_command kubectl
   require_kube_context
   ensure_namespace
+  reserve_stack_hostname
 
   log "Stack namespace '$STACK_NAME' is prepared in context '$KUBE_CONTEXT'."
   log "No Helm releases or workloads were installed."
@@ -541,6 +568,7 @@ apply_stack() {
     discover_cluster_dns
   fi
   ensure_namespace
+  reserve_stack_hostname
 
   helm_apply or-setup
   helm_apply postgresql
@@ -726,11 +754,15 @@ destroy_stack() {
   local pv_names
   local pv_name
   local pv_cleanup_failed=false
+  local reservation
 
   require_command helm
   require_command kubectl
   require_kube_context
   require_stack_namespace
+
+  reservation="$(stack_hostname_reservation)" || die "Unable to inspect hostname reservations before destroy."
+  require_reservation_namespace_identity "$reservation"
 
   pv_names="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
     get persistentvolumeclaims \
@@ -758,6 +790,17 @@ destroy_stack() {
     die "Stack namespace was deleted, but one or more PersistentVolumes remain; inspect their reclaim policy and backing storage."
   fi
 
+  if [ -n "$reservation" ]; then
+    HOSTNAME_VALUE="$(jq -r '.hostname' <<< "$reservation")"
+    if [ "$(jq -r '.target + "/" + .dns' <<< "$reservation")" = "local/none" ]; then
+      release_stack_hostname
+    else
+      log "Hostname '$HOSTNAME_VALUE' remains reserved until external cleanup is confirmed."
+      log "Use or-eks-stack destroy for automated cleanup, or after verifying external cleanup run:"
+      printf '  %q release-hostname --name %q --kube-context %q --hostname %q --confirm %q\n' \
+        "$0" "$STACK_NAME" "$KUBE_CONTEXT" "$HOSTNAME_VALUE" "$STACK_NAME"
+    fi
+  fi
   log "Stack '$STACK_NAME' and its namespaced data are destroyed."
 }
 
@@ -822,8 +865,8 @@ main() {
   parse_arguments "$@"
   validate_common_options
 
-  if [ "$COMMAND" != "destroy" ] && [ -n "$CONFIRM_STACK_NAME" ]; then
-    die "Option --confirm is only valid with destroy."
+  if [ "$COMMAND" != "destroy" ] && [ "$COMMAND" != "release-hostname" ] && [ -n "$CONFIRM_STACK_NAME" ]; then
+    die "Option --confirm is only valid with destroy or release-hostname."
   fi
 
   case "$COMMAND" in
@@ -844,6 +887,14 @@ main() {
     uninstall)
       validate_timeout
       uninstall_stack
+      ;;
+    release-hostname)
+      [ "$CONFIRM_STACK_NAME" = "$STACK_NAME" ] || die "Release requires --confirm '$STACK_NAME'."
+      [ -n "$HOSTNAME_VALUE" ] || die "Release requires --hostname."
+      validate_hostname_option
+      require_command kubectl
+      require_kube_context
+      release_stack_hostname
       ;;
     destroy)
       validate_destroy_options
