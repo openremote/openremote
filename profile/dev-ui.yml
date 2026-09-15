@@ -29,9 +29,7 @@ services:
     extends:
       file: deploy.yml
       service: postgresql
-    volumes:
-      - manager-data:/storage
-      - ../tmp/datapoint:/storage/datapoint
+    # No volume is mapped at all with this configuration, DB is ephemeral
     # Access directly if needed on localhost
     ports:
       - "5432:5432"

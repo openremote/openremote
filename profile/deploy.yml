@@ -449,10 +449,8 @@ services:
       - -c
       - work_mem=${OR_DB_WORK_MEM:-4MB}
     # Docker volume for persistent storage of DB; can alternatively map to host
-    volumes:
-      # Needs to be available on the same path as the manager for data exports to work
-      - manager-data:/storage
-    #      - postgresql-data:/var/lib/postgresql/data
+    #volumes:
+    #  - postgresql-data:/var/lib/postgresql/data
     #ports:
     #  - "5432:5432" # DB server
     environment:

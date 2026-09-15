@@ -13,8 +13,7 @@ In sandboxed environments, add `--offline` (requires dependencies to already be 
 
 ## Running tests
 
-When running integration tests, part of the stack (PostgreSQL and Keycloak) must be running. Start it with `mkdir -pm 777 tmp && docker compose -f profile/dev-testing.yml -p openremote up -d --no-build`.  
-Running `./gradlew clean` deletes the root `tmp/` directory that is mounted into PostgreSQL (see `profile/dev-testing.yml`), so recreate it and restart the stack before running tests again.
+When running integration tests, part of the stack (PostgreSQL and Keycloak) must be running. Start it with `docker compose -f profile/dev-testing.yml -p openremote up -d --no-build`.
 
 ## REST resources
 

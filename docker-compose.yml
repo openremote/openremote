@@ -39,7 +39,6 @@ services:
     shm_size: 128mb
     volumes:
       - postgresql-data:/var/lib/postgresql/data
-      - manager-data:/storage
 
   keycloak:
     restart: always
