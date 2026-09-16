@@ -154,9 +154,17 @@ data on its retained `proxy` PVC.
 `or-eks-stack` automates the necessary ordering. It waits until the public
 hostname and the current NLB hostname resolve to at least one common address,
 so a stale record from an older deployment is not considered ready. It then
-checks for a retained valid certificate, triggers `/entrypoint.sh add` only
-when needed, and waits for a trusted response from the canonical
-`/manager/` URL. Its default timeout is 20 minutes for each readiness phase.
+checks the proxy's persisted Certbot state and triggers `/entrypoint.sh add`
+only when the hostname has no certificate lineage. Existing private-key and
+full-chain files are reused; normal renewal remains the proxy's responsibility.
+Incomplete state or a failed inspection stops apply for investigation. If proxy
+startup creates the certificate concurrently and `add` fails, the facade
+rechecks the files before continuing.
+
+It independently waits for a trusted response from the canonical `/manager/`
+URL: persisted files alone do not prove that TLS or Manager is ready. A Manager
+error or connection timeout therefore does not trigger certificate issuance or
+forced renewal. Its default timeout is 20 minutes for each readiness phase.
 The automated HTTP-01 flow requires public HTTP port 80; use `or-stack`
 directly when a custom HTTP port is intentional.
 
@@ -173,6 +181,10 @@ kubectl --context <cluster-name>@eu-west-1 \
   --name stack-a \
   --kube-context <cluster-name>@eu-west-1
 ```
+
+Use `add` only for a hostname without existing Certbot state; it rejects an
+existing lineage. Reapplying a stack with retained certificates does not require
+another `add`, and `renew` forces issuance rather than checking readiness.
 
 The proxy readiness probe and certificate status are deliberately separate.
 The Pod must be ready and reachable for the HTTP ACME challenge before a

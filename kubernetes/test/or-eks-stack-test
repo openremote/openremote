@@ -7,6 +7,7 @@ KUBERNETES_DIR="$(cd "$TEST_DIR/.." && pwd)"
 TEST_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/or-eks-stack-test.XXXXXX")"
 CALL_LOG="$TEST_TEMP_DIR/calls.log"
 CURL_COUNT_FILE="$TEST_TEMP_DIR/curl-count"
+PROXY_LE_DIR="$TEST_TEMP_DIR/letsencrypt"
 DNS_ENDPOINT_LOG="$TEST_TEMP_DIR/dns-endpoint.json"
 CERTIFICATE_DELETED_FILE="$TEST_TEMP_DIR/certificate-deleted"
 INGRESS_DELETED_FILE="$TEST_TEMP_DIR/ingress-deleted"
@@ -85,6 +86,11 @@ reset_test() {
   rm -f "$CERTIFICATE_DELETED_FILE" "$INGRESS_DELETED_FILE" \
     "$NAMESPACE_DELETED_FILE" "$NAMESPACE_PREPARED_FILE" "$CERTIFICATE_NAMESPACE_FILE"
   printf '0\n' > "$CURL_COUNT_FILE"
+  rm -rf "$PROXY_LE_DIR"
+  case "${OR_EKS_STACK_TEST_PROXY_CERTIFICATE_STATE:-absent}" in
+    present) create_proxy_certificate ;;
+    incomplete) mkdir -p "$PROXY_LE_DIR/live/stack-a.example.com" ;;
+  esac
   COMMAND=""
   STACK_NAME=""
   CLUSTER_NAME=""
@@ -301,7 +307,17 @@ kubectl() {
     *" get ingress proxy "*)
       printf '%s' "${OR_EKS_STACK_TEST_ALB_ADDRESS:-test-alb.elb.eu-west-1.amazonaws.com}"
       ;;
-    *" exec deployment/proxy "*)
+    *" exec deployment/proxy "*" -- sh -c "*)
+      [ "${OR_EKS_STACK_TEST_CERTIFICATE_INSPECTION_SUCCESS:-true}" = true ] || return 1
+      # Execute the actual read-only probe against temporary persisted state.
+      while [ "$1" != -- ]; do shift; done
+      shift
+      LE_DIR="$PROXY_LE_DIR" command "$@"
+      ;;
+    *" exec deployment/proxy "*" /entrypoint.sh add "*)
+      if [ "${OR_EKS_STACK_TEST_STARTUP_ISSUES_CERTIFICATE:-false}" = true ]; then
+        create_proxy_certificate
+      fi
       [ "${OR_EKS_STACK_TEST_ACME_SUCCESS:-true}" = "true" ]
       ;;
   esac
@@ -378,6 +394,7 @@ curl() {
   curl_count="$(< "$CURL_COUNT_FILE")"
   curl_count="$((curl_count + 1))"
   printf '%s\n' "$curl_count" > "$CURL_COUNT_FILE"
+  [ "${OR_EKS_STACK_TEST_HTTPS_ALWAYS_FAILS:-false}" = false ] || return 1
   if [ "${OR_EKS_STACK_TEST_HTTPS_READY_IMMEDIATELY:-false}" = "true" ]; then
     return 0
   fi
@@ -673,7 +690,14 @@ test_managed_certificate_reuse_and_safety() {
   assert_not_contains $'or-stack\tapply\t--name'
 }
 
+create_proxy_certificate() {
+  mkdir -p "$PROXY_LE_DIR/live/stack-a.example.com"
+  printf 'persisted key\n' > "$PROXY_LE_DIR/live/stack-a.example.com/privkey.pem"
+  printf 'persisted chain\n' > "$PROXY_LE_DIR/live/stack-a.example.com/fullchain.pem"
+}
+
 test_apply_reuses_valid_certificate() {
+  OR_EKS_STACK_TEST_PROXY_CERTIFICATE_STATE=present \
   OR_EKS_STACK_TEST_HTTPS_READY_IMMEDIATELY=true \
     run_eks_stack apply \
       --name stack-a \
@@ -681,9 +705,68 @@ test_apply_reuses_valid_certificate() {
       --hostname stack-a.example.com \
       --profile '' >/dev/null
 
-  assert_not_contains $'exec\tdeployment/proxy'
+  assert_not_contains $'/entrypoint.sh\tadd'
+  assert_not_contains $'/entrypoint.sh\trenew'
   [ "$(< "$CURL_COUNT_FILE")" -eq 1 ] || fail \
     "Apply did not stop after verifying the retained valid certificate"
+}
+
+test_acme_state_and_readiness() {
+  local failure_output
+
+  # A transient Manager/network failure with persisted state must only retry
+  # readiness; it must never issue or force-renew a certificate.
+  OR_EKS_STACK_TEST_PROXY_CERTIFICATE_STATE=present \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com >/dev/null
+  assert_not_contains $'/entrypoint.sh\tadd'
+  assert_not_contains $'/entrypoint.sh\trenew'
+  [ "$(< "$CURL_COUNT_FILE")" -eq 2 ] || fail "Apply did not retry HTTPS readiness"
+
+  if failure_output="$(OR_EKS_STACK_TEST_PROXY_CERTIFICATE_STATE=present \
+    OR_EKS_STACK_TEST_HTTPS_ALWAYS_FAILS=true \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com --timeout 1s 2>&1)"; then
+    fail "Apply accepted an unavailable HTTPS endpoint"
+  fi
+  grep -F 'Trusted HTTPS did not become ready' <<< "$failure_output" >/dev/null || fail \
+    "Apply did not identify a readiness timeout"
+  assert_not_contains $'/entrypoint.sh\tadd'
+  assert_not_contains $'/entrypoint.sh\trenew'
+
+  if failure_output="$(OR_EKS_STACK_TEST_PROXY_CERTIFICATE_STATE=incomplete \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com 2>&1)"; then
+    fail "Apply accepted incomplete persisted certificate state"
+  fi
+  grep -F 'is incomplete' <<< "$failure_output" >/dev/null || fail "Missing incomplete-state diagnostic"
+  assert_not_contains $'/entrypoint.sh\tadd'
+
+  if failure_output="$(OR_EKS_STACK_TEST_CERTIFICATE_INSPECTION_SUCCESS=false \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com 2>&1)"; then
+    fail "Apply treated a failed inspection as absent certificate state"
+  fi
+  grep -F 'Unable to inspect HAProxy certificate state' <<< "$failure_output" >/dev/null || fail \
+    "Missing certificate inspection failure diagnostic"
+  assert_not_contains $'/entrypoint.sh\tadd'
+
+  # Startup can create the lineage between inspection and add. A failed add is
+  # recoverable only with persisted files, and still requires trusted HTTPS.
+  OR_EKS_STACK_TEST_STARTUP_ISSUES_CERTIFICATE=true OR_EKS_STACK_TEST_ACME_SUCCESS=false \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com >/dev/null
+  assert_contains $'/entrypoint.sh\tadd'
+  assert_contains $'curl\t'
+
+  if failure_output="$(OR_EKS_STACK_TEST_ACME_SUCCESS=false \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com 2>&1)"; then
+    fail "Apply ignored failed issuance without persisted certificate state"
+  fi
+  grep -F 'HAProxy ACME issuance failed (certificate state: absent)' <<< "$failure_output" >/dev/null || fail \
+    "Missing issuance failure diagnostic"
+  assert_not_contains $'curl\t'
 }
 
 test_lifecycle_delegation() {
@@ -1237,6 +1320,7 @@ test_ingress_shared_certificate_apply
 test_ingress_managed_certificate_apply
 test_managed_certificate_reuse_and_safety
 test_apply_reuses_valid_certificate
+test_acme_state_and_readiness
 test_lifecycle_delegation
 test_managed_destroy
 test_managed_destroy_safety

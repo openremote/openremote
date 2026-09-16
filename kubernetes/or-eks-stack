@@ -1841,14 +1841,60 @@ endpoint_is_ready() {
     "$endpoint_url"
 }
 
+proxy_certificate_state() {
+  local state
+  state="$(kubectl --context "$KUBE_CONTEXT" \
+    --namespace "$STACK_NAME" exec deployment/proxy --container proxy \
+    -- sh -c '
+      lineage="$LE_DIR/live/$1"
+      if [ -s "$lineage/privkey.pem" ] && [ -s "$lineage/fullchain.pem" ]; then
+        printf "present\n"
+      elif [ -e "$lineage" ] || [ -L "$lineage" ]; then
+        printf "incomplete\n"
+      else
+        printf "absent\n"
+      fi
+    ' sh "$HOSTNAME_VALUE")" || die \
+      "Unable to inspect HAProxy certificate state; refusing to infer that issuance is needed."
+  case "$state" in
+    present|incomplete|absent) printf '%s\n' "$state" ;;
+    *) die "Unexpected HAProxy certificate state '$state'; inspect deployment/proxy before retrying." ;;
+  esac
+}
+
 trigger_acme() {
+  local state
+  # Manager errors and connection failures say nothing about persisted TLS
+  # state. add rejects an existing lineage; renew would force fresh issuance.
+  # Leave existing certificates to the proxy's normal renewal lifecycle.
+  state="$(proxy_certificate_state)" || die "Unable to determine whether HAProxy needs ACME issuance."
+  case "$state" in
+    present)
+      log "Reusing HAProxy certificate state for '$HOSTNAME_VALUE'."
+      return
+      ;;
+    incomplete)
+      die "HAProxy certificate state for '$HOSTNAME_VALUE' is incomplete. Inspect its persisted letsencrypt directory and proxy logs before retrying; refusing to overwrite existing state."
+      ;;
+  esac
+
   log "Triggering HAProxy ACME issuance for '$HOSTNAME_VALUE'."
-  kubectl --context "$KUBE_CONTEXT" \
+  if kubectl --context "$KUBE_CONTEXT" \
     --namespace "$STACK_NAME" \
     exec deployment/proxy \
     --container proxy \
-    -- /entrypoint.sh add "$HOSTNAME_VALUE" || die \
-      "HAProxy ACME issuance failed. DNS is ready; inspect deployment/proxy logs and retry apply."
+    -- /entrypoint.sh add "$HOSTNAME_VALUE"; then
+    return
+  fi
+  # Startup cert_init runs concurrently and may have created the certificate
+  # after our first inspection. Only accept the failure if both files now exist;
+  # trusted TLS and Manager readiness are still checked independently below.
+  state="$(proxy_certificate_state)" || die "Unable to inspect HAProxy state after ACME issuance failed."
+  if [ "$state" = present ]; then
+    log "HAProxy certificate state appeared during issuance; waiting for trusted HTTPS."
+    return
+  fi
+  die "HAProxy ACME issuance failed (certificate state: $state). DNS is ready; inspect deployment/proxy logs and retry apply."
 }
 
 wait_for_https() {
@@ -1929,14 +1975,10 @@ apply_stack() {
   wait_for_dns "$LOAD_BALANCER_ADDRESS"
   endpoint_url="$(public_manager_url)"
 
-  if [ "$EXPOSURE" = "ingress" ]; then
-    wait_for_https "$endpoint_url"
-  elif endpoint_is_ready "$endpoint_url" 2>/dev/null; then
-    log "HAProxy already presents a trusted certificate for '$HOSTNAME_VALUE'."
-  else
+  if [ "$EXPOSURE" = "haproxy" ]; then
     trigger_acme
-    wait_for_https "$endpoint_url"
   fi
+  wait_for_https "$endpoint_url"
 
   log "Stack '$STACK_NAME' is ready at:"
   printf '  %s\n' "$endpoint_url"
