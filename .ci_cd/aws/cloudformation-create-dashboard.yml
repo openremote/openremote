@@ -291,6 +291,172 @@ Resources:
                   }
                 }
               }
+            },
+            {
+                "type": "metric",
+                "x": 0,
+                "y": 18,
+                "width": 8,
+                "height": 6,
+                "properties": {
+                    "metrics": [
+                        [ "CWAgent-Prometheus", "pg_connections_used", "InstanceName", "a", { "id": "m1", "yAxis": "left", "label": "DB Connections Used" } ],
+                        [ "CWAgent-Prometheus", "pg_connections_free", "InstanceName", "a", { "id": "m2", "yAxis": "left", "label": "DB Connections Free" } ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": true,
+                    "region": "eu-west-1",
+                    "stat": "Sum",
+                    "period": 300,
+                    "title": "PostgreSQL Connections",
+                    "yAxis": {
+                        "left": {
+                            "showUnits": false,
+                            "label": "Connections",
+                            "min": 0
+                        }
+                    }
+                }
+            },
+            {
+                "type": "metric",
+                "x": 8,
+                "y": 18,
+                "width": 8,
+                "height": 6,
+                "properties": {
+                    "view": "timeSeries",
+                    "metrics": [
+                        [ "CWAgent-Prometheus", "pg_long_running_queries_count", "InstanceName", "a", { "id": "m1", "yAxis": "left", "label": "Long Running Queries" } ]
+                    ],
+                    "region": "eu-west-1",
+                    "stat": "Sum",
+                    "period": 300,
+                    "title": "Long Running Queries"
+                }
+            },
+            {
+                "type": "metric",
+                "x": 4,
+                "y": 24,
+                "width": 4,
+                "height": 6,
+                "properties": {
+                    "sparkline": true,
+                    "view": "singleValue",
+                    "metrics": [
+                        [ "CWAgent-Prometheus", "pg_index_bloat_count", "InstanceName", "a", { "id": "m1", "yAxis": "left", "label": "Index Bloat Count" } ],
+                        [ "CWAgent-Prometheus", "pg_table_bloat_count", "InstanceName", "a", { "id": "m2", "yAxis": "left", "label": "Table Bloat Count" } ]
+                    ],
+                    "region": "eu-west-1",
+                    "stat": "Sum",
+                    "period": 300,
+                    "title": "Bloat Count"
+                }
+            },
+            {
+                "type": "metric",
+                "x": 0,
+                "y": 24,
+                "width": 4,
+                "height": 6,
+                "properties": {
+                    "sparkline": true,
+                    "view": "singleValue",
+                    "metrics": [
+                        [ "CWAgent-Prometheus", "pg_datapoint_chunks_needing_compression", "InstanceName", "a", { "id": "m1", "yAxis": "left", "label": "Chunks Needs Compression" } ]
+                    ],
+                    "region": "eu-west-1",
+                    "stat": "Sum",
+                    "period": 86400,
+                    "title": "Chunks Needs Compression"
+                }
+            },
+            {
+                "type": "metric",
+                "x": 16,
+                "y": 18,
+                "width": 8,
+                "height": 6,
+                "properties": {
+                    "view": "gauge",
+                    "metrics": [
+                        [ "CWAgent-Prometheus", "pg_cache_hit_percentage", "InstanceName", "a", { "id": "m1", "yAxis": "left", "label": "Cache Hit Percentage" } ],
+                        [ "CWAgent-Prometheus", "pg_datapoint_uncompressed_cache_hit_ratio", "InstanceName", "a", { "id": "m2", "yAxis": "left", "label": "Uncompressed Cache Hit Ratio" } ]
+                    ],
+                    "region": "eu-west-1",
+                    "stat": "Average",
+                    "period": 3600,
+                    "title": "Cache Hit",
+                    "yAxis": {
+                        "left": {
+                            "min": 95,
+                            "max": 100
+                        }
+                    }
+                }
+            },
+            {
+                "type": "metric",
+                "x": 16,
+                "y": 24,
+                "width": 8,
+                "height": 6,
+                "properties": {
+                    "view": "timeSeries",
+                    "metrics": [
+                        [ "CWAgent-Prometheus", "pg_timescale_job_total_failures_total", "InstanceName", "a", "proc_name", "_timescaledb_functions.policy_compression", "job_id", "1000", { "id": "m1", "yAxis": "left", "label": "Total Failures" } ]
+                    ],
+                    "region": "eu-west-1",
+                    "stat": "Average",
+                    "period": 3600,
+                    "title": "Timescale Total Failures",
+                    "yAxis": {
+                        "left": {
+                            "showUnits": false,
+                            "label": "Count",
+                            "min": 0
+                        }
+                    }
+                }
+            },
+            {
+                "type": "metric",
+                "x": 8,
+                "y": 24,
+                "width": 8,
+                "height": 6,
+                "properties": {
+                    "view": "timeSeries",
+                    "metrics": [
+                        [ "CWAgent-Prometheus", "pg_dead_tuple_percent", "InstanceName", "a", "table_name", "dashboard", { "id": "m1", "yAxis": "left", "label": "Dashboard" } ],
+                        [ "...", "user_asset_link", { "id": "m2", "yAxis": "left", "label": "User Asset Link" } ],
+                        [ "...", "global_ruleset", { "id": "m3", "yAxis": "left", "label": "Global Ruleset" } ],
+                        [ "...", "realm_ruleset", { "id": "m4", "yAxis": "left", "label": "Realm Ruleset" } ],
+                        [ "...", "syslog_event", { "id": "m5", "yAxis": "left", "label": "Syslog Event" } ],
+                        [ "...", "asset", { "id": "m6", "yAxis": "left", "label": "Asset" } ],
+                        [ "...", "flyway_schema_history", { "id": "m7", "yAxis": "left", "label": "Flyway Schema History" } ],
+                        [ "...", "asset_datapoint", { "id": "m8", "yAxis": "left", "label": "Asset Datapoint" } ],
+                        [ "...", "provisioning_config", { "id": "m9", "yAxis": "left", "label": "Provisioning Config" } ],
+                        [ "...", "notification", { "id": "m10", "yAxis": "left", "label": "Notification" } ],
+                        [ "...", "alarm_asset_link", { "id": "m11", "yAxis": "left", "label": "Alarm Asset Link" } ],
+                        [ "...", "asset_ruleset", { "id": "m12", "yAxis": "left", "label": "Asset Ruleset" } ],
+                        [ "...", "alarm", { "id": "m13", "yAxis": "left", "label": "Alarm" } ],
+                        [ "...", "gateway_connection", { "id": "m14", "yAxis": "left", "label": "Gateway Connection" } ],
+                        [ "...", "asset_predicted_datapoint", { "id": "m15", "yAxis": "left", "label": "Asset Predicted Datapoint" } ]
+                    ],
+                    "region": "eu-west-1",
+                    "stat": "Average",
+                    "period": 300,
+                    "title": "Dead Tuple",
+                    "yAxis": {
+                        "left": {
+                            "showUnits": false,
+                            "label": "Percent",
+                            "min": 0
+                        }
+                    }
+                }
             }
           ]
         }
