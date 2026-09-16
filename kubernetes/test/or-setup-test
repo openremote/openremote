@@ -47,6 +47,11 @@ rendered_proxy_policy="$(helm template or-setup "$OR_SETUP_CHART" \
   --namespace stack-proxy \
   --values "$LOCAL_TARGET_VALUES" \
   --values "$HAPROXY_EXPOSURE_VALUES")"
+rendered_mqtts_policy="$(helm template or-setup "$OR_SETUP_CHART" \
+  --namespace stack-mqtts \
+  --values "$LOCAL_TARGET_VALUES" \
+  --values "$HAPROXY_EXPOSURE_VALUES" \
+  --set networkPolicy.proxy.mqtts.enabled=true)"
 
 grep -F -- 'kind: NetworkPolicy' <<< "$rendered_a" >/dev/null || fail \
   "Stack ingress NetworkPolicy was not rendered"
@@ -87,6 +92,8 @@ grep -F -- 'port: 8443' <<< "$rendered_proxy_policy" >/dev/null || fail \
 if grep -F -- 'openremote.io/public-http' <<< "$rendered_proxy_policy" >/dev/null; then
   fail "HAProxy exposure also enabled direct public Manager/Keycloak access"
 fi
+grep -F -- 'port: 8883' <<< "$rendered_mqtts_policy" >/dev/null || fail \
+  "MQTTS-enabled HAProxy policy does not allow the proxy TLS listener"
 
 grep -F -- 'helm.sh/resource-policy: keep' <<< "$rendered_a" >/dev/null || fail \
   "Generated Secret is not retained during Helm uninstall"
@@ -239,7 +246,24 @@ grep -F -- 'port: 8080' <<< "$rendered_local_proxy" >/dev/null || fail \
 grep -F -- 'port: 8443' <<< "$rendered_local_proxy" >/dev/null || fail \
   "HAProxy local HTTPS Service port was not configurable"
 if grep -F -- 'name: mqtts' <<< "$rendered_local_proxy" >/dev/null; then
-  fail "HAProxy exposed MQTTS before the MQTT phase"
+  fail "HAProxy exposed MQTTS without explicit opt-in"
+fi
+
+rendered_local_mqtts_proxy="$(helm template proxy "$PROXY_CHART" \
+  --namespace stack-mqtts \
+  --values "$HAPROXY_PROXY_VALUES" \
+  --values "$LOCAL_HAPROXY_PROXY_VALUES" \
+  --set service.mqtts.enabled=true \
+  --set-string service.mqtts.port=18883 \
+  --set-string or.mqttPort=8883)"
+grep -F -- '- port: 18883' <<< "$rendered_local_mqtts_proxy" >/dev/null || fail \
+  "MQTTS public Service port was not configurable"
+grep -F -- 'targetPort: 8883' <<< "$rendered_local_mqtts_proxy" >/dev/null || fail \
+  "MQTTS Service does not target HAProxy's TLS listener"
+grep -F -- 'containerPort: 8883' <<< "$rendered_local_mqtts_proxy" >/dev/null || fail \
+  "MQTTS-enabled proxy does not declare its TLS listener"
+if grep -F -- 'port: 1883' <<< "$rendered_local_mqtts_proxy" >/dev/null; then
+  fail "MQTTS opt-in also exposed plaintext MQTT"
 fi
 
 rendered_eks_proxy="$(helm template proxy "$PROXY_CHART" \

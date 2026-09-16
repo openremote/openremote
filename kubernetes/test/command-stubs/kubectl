@@ -76,6 +76,9 @@ case "$arguments" in
           done
 
           case "$arguments" in
+            *"openremote\\.io/hostname"*)
+              printf '%s' "${OR_STACK_TEST_HOSTNAME:-stack-a.localhost}"
+              ;;
             *"openremote\\.io/target"*)
               printf '%s' "${OR_STACK_TEST_TARGET_LABEL-local}"
               ;;
@@ -124,6 +127,9 @@ case "$arguments" in
   *" get service kube-dns "*)
     [ "${OR_STACK_TEST_KUBE_DNS_EXISTS:-true}" = "true" ] || exit 1
     printf '%s' "${OR_STACK_TEST_KUBE_DNS:-10.96.0.10:53}"
+    ;;
+  *" get service proxy "*"spec.ports"*"mqtts"*)
+    printf '%s' "${OR_STACK_TEST_PROXY_MQTTS_PORT:-}"
     ;;
   *" get service proxy "*)
     [ "${OR_STACK_TEST_PROXY_SERVICE_EXISTS:-true}" = "true" ] || exit 1

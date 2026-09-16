@@ -132,6 +132,8 @@ test_local_apply() {
     --hostname stack-a.localhost \
     --http-port 8080 \
     --https-port 8443 \
+    --mqtts \
+    --mqtts-port 18883 \
     --values-dir "$values_dir")"
 
   assert_contains $'kubectl\t--context\ttest-context\tcreate\tnamespace\tstack-a'
@@ -144,6 +146,8 @@ test_local_apply() {
   assert_contains "$KUBERNETES_DIR/stack/targets/local/or-setup.yaml"
   assert_contains "$KUBERNETES_DIR/stack/exposures/haproxy/or-setup.yaml"
   assert_contains "$values_dir/or-setup.yaml"
+  assert_contains $'--set\tnetworkPolicy.proxy.mqtts.enabled=true'
+  assert_contains $'--set-string\tnetworkPolicy.proxy.mqtts.port=8883'
   assert_on_line_before "$KUBERNETES_DIR/stack/targets/local/or-setup.yaml" "$KUBERNETES_DIR/stack/exposures/haproxy/or-setup.yaml"
   assert_on_line_before "$KUBERNETES_DIR/stack/exposures/haproxy/or-setup.yaml" "$values_dir/or-setup.yaml"
   assert_contains $'helm\tupgrade\t--install\tpostgresql'
@@ -167,12 +171,17 @@ test_local_apply() {
   assert_contains $'--set-string\tor.httpsForwardedPort=8443'
   assert_contains $'--set-string\tservice.http.port=8080'
   assert_contains $'--set-string\tservice.https.port=8443'
+  assert_contains $'--set\tservice.mqtts.enabled=true'
+  assert_contains $'--set-string\tservice.mqtts.port=18883'
+  assert_contains $'--set-string\tor.mqttPort=8883'
   assert_not_contains "openremote-ebs"
   assert_not_contains "policyendpoints.networking.k8s.aws"
   grep -F -- "credentials --name stack-a --kube-context test-context" <<< "$output" >/dev/null || fail \
     "Apply output did not explain how to retrieve Manager credentials"
   grep -F -- "https://stack-a.localhost:8443/manager" <<< "$output" >/dev/null || fail \
     "Apply output did not use the configured HAProxy HTTPS port"
+  grep -F -- "mqtts://stack-a.localhost:18883" <<< "$output" >/dev/null || fail \
+    "Apply output did not report the configured MQTTS endpoint"
 }
 
 test_local_public_origins() {
@@ -285,6 +294,7 @@ test_eks_haproxy_apply() {
   assert_contains $'--set\tdns.enabled=true'
   assert_contains $'--set-string\tdns.hostname=stack-eks-proxy.example.com'
   assert_contains $'--set-string\tor.managerHost=manager.stack-eks-proxy.svc.cluster.local'
+  assert_not_contains $'--set\tservice.mqtts.enabled=true'
 }
 
 test_eks_none_apply() {
@@ -310,7 +320,10 @@ test_status() {
   local output
 
   reset_log
-  output="$(OR_STACK_TEST_NAMESPACE_EXISTS=true run_stack status \
+  output="$(OR_STACK_TEST_NAMESPACE_EXISTS=true \
+    OR_STACK_TEST_PROXY_MQTTS_PORT=8883 \
+    OR_STACK_TEST_HOSTNAME=stack-a.example.com \
+    run_stack status \
     --name stack-a \
     --kube-context test-context)"
 
@@ -320,6 +333,8 @@ test_status() {
     "Status did not show the stored exposure"
   grep -Fx -- "DNS: none" <<< "$output" >/dev/null || fail \
     "Status did not show the stored DNS mode"
+  grep -Fx -- "MQTTS endpoint: mqtts://stack-a.example.com:8883" <<< "$output" >/dev/null || fail \
+    "Status did not show the active MQTTS endpoint"
   assert_contains $'helm\tlist\t--kube-context\ttest-context\t--namespace\tstack-a'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tdeployments,statefulsets,pods'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tservices,ingresses,networkpolicies'
@@ -596,6 +611,26 @@ test_validation() {
   if run_stack apply --name stack-a --kube-context test-context --target local \
     --http-port 8443 --https-port 8443 >/dev/null 2>&1; then
     fail "HAProxy exposure accepted identical HTTP and HTTPS ports"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
+    --mqtts-port 18883 >/dev/null 2>&1; then
+    fail "A custom MQTTS port was accepted without --mqtts"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
+    --exposure ingress --hostname stack-a.example.com --mqtts >/dev/null 2>&1; then
+    fail "Ingress exposure accepted MQTTS"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
+    --exposure none --mqtts >/dev/null 2>&1; then
+    fail "Internal-only exposure accepted MQTTS"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
+    --mqtts --mqtts-port 443 >/dev/null 2>&1; then
+    fail "HAProxy exposure accepted an MQTTS port that collides with HTTPS"
   fi
 
   if OR_STACK_TEST_KUBE_DNS_EXISTS=false run_stack apply \

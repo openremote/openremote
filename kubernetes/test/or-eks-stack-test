@@ -105,6 +105,9 @@ reset_test() {
   TIMEOUT="20m"
   HTTP_PORT="80"
   HTTPS_PORT="443"
+  MQTTS_ENABLED=false
+  MQTTS_PORT="8883"
+  MQTTS_PORT_CONFIGURED=false
   CONFIRM_STACK_NAME=""
   OR_STACK_COMMAND="$KUBERNETES_DIR/or-stack"
   LOAD_BALANCER_ADDRESS=""
@@ -401,6 +404,15 @@ curl() {
   [ "$curl_count" -gt 1 ]
 }
 
+openssl() {
+  log_call openssl "$@"
+  [ "${OR_EKS_STACK_TEST_MQTTS_ALWAYS_FAILS:-false}" = false ] || return 1
+  printf '%s\n' 'Verify return code: 0 (ok)'
+  # macOS LibreSSL reports a poll error and exits non-zero after the verified
+  # handshake because no MQTT CONNECT packet follows before stdin closes.
+  return 1
+}
+
 sleep() {
   :
 }
@@ -434,6 +446,8 @@ test_apply() {
     --hostname stack-a.example.com \
     --profile '' \
     --https-port 8443 \
+    --mqtts \
+    --mqtts-port 18883 \
     --values-dir "$values_dir")"
 
   assert_contains $'aws-eks\tdescribe-cluster\t--name\ttest-cluster\t--query\tcluster.status'
@@ -443,7 +457,7 @@ test_apply() {
   assert_contains $'helm\tstatus\topenremote-external-dns\t--kube-context\ttest-cluster@eu-west-1\t--namespace\tkube-system'
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\trollout\tstatus\tdeployment/openremote-external-dns'
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-system\tget\tserviceaccount\texternal-dns'
-  assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\thaproxy\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--timeout\t20m\t--http-port\t80\t--https-port\t8443\t--values-dir\t'"$values_dir"
+  assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\thaproxy\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--timeout\t20m\t--http-port\t80\t--https-port\t8443\t--mqtts\t--mqtts-port\t18883\t--values-dir\t'"$values_dir"
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\tannotate\tnamespace\tstack-a\topenremote.io/certificate-mode=acme\topenremote.io/hostname=stack-a.example.com\t--overwrite'
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tget\tservice\tproxy'
   assert_contains $'dig\t+short\tstack-a.example.com\tA'
@@ -452,6 +466,7 @@ test_apply() {
   assert_contains $'curl\t--disable\t--fail\t--silent\t--show-error\t--location'
   assert_contains $'--proto\t=https\t--proto-redir\t=https\t--max-redirs\t5'
   assert_contains 'https://stack-a.example.com:8443/manager/'
+  assert_contains $'openssl\ts_client\t-connect\tstack-a.example.com:18883\t-servername\tstack-a.example.com\t-verify_return_error'
   assert_before $'helm\tstatus\topenremote-external-dns' $'or-stack\tapply'
   assert_before $'or-stack\tapply' $'get\tservice\tproxy'
   assert_before $'dig\t+short\tstack-a.example.com' $'exec\tdeployment/proxy'
@@ -459,6 +474,8 @@ test_apply() {
     "Apply did not report stack readiness"
   grep -F -- 'https://stack-a.example.com:8443/manager/' <<< "$output" >/dev/null || fail \
     "Apply did not report the canonical Manager URL"
+  grep -F -- 'mqtts://stack-a.example.com:18883' <<< "$output" >/dev/null || fail \
+    "Apply did not report the MQTTS endpoint"
 }
 
 test_ingress_existing_certificate_apply() {
@@ -767,6 +784,16 @@ test_acme_state_and_readiness() {
   grep -F 'HAProxy ACME issuance failed (certificate state: absent)' <<< "$failure_output" >/dev/null || fail \
     "Missing issuance failure diagnostic"
   assert_not_contains $'curl\t'
+
+  if failure_output="$(OR_EKS_STACK_TEST_HTTPS_READY_IMMEDIATELY=true \
+    OR_EKS_STACK_TEST_MQTTS_ALWAYS_FAILS=true \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com --mqtts --timeout 1s 2>&1)"; then
+    fail "Apply accepted an unavailable MQTTS endpoint"
+  fi
+  grep -F 'Trusted MQTTS did not become ready' <<< "$failure_output" >/dev/null || fail \
+    "Apply did not identify an MQTTS readiness timeout"
+  assert_contains $'openssl\ts_client\t-connect\tstack-a.example.com:8883'
 }
 
 test_lifecycle_delegation() {
@@ -1013,6 +1040,21 @@ test_validation() {
   if (run_eks_stack apply --name stack-a --cluster test-cluster \
       --hostname stack-a.example.com --http-port 8080) >/dev/null 2>&1; then
     fail "The ACME workflow accepted a non-standard public HTTP port"
+  fi
+
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --mqtts-port 18883) >/dev/null 2>&1; then
+    fail "A custom MQTTS port was accepted without --mqtts"
+  fi
+
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --exposure ingress --mqtts) >/dev/null 2>&1; then
+    fail "Ingress exposure accepted MQTTS"
+  fi
+
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --mqtts --mqtts-port 443) >/dev/null 2>&1; then
+    fail "HAProxy exposure accepted an MQTTS port that collides with HTTPS"
   fi
 
   if (run_eks_stack destroy --name stack-a --cluster test-cluster \

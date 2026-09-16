@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Requirements: you need to have kubectl, helm, jq, curl, dig,
+Requirements: you need to have kubectl, helm, jq, curl, dig, OpenSSL,
 [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html),
 and [eksctl](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html#eksctl-install-update)
 installed beforehand.
@@ -30,6 +30,10 @@ still inherited; an empty `AWS_PROFILE` is not the same as an unset variable.
 The CLI-specific `OR_EKS_AWS_PROFILE` and `OR_EKS_STACK_AWS_PROFILE` environment
 overrides are no longer used. See [credential configuration](cluster/eks/README.md#configuration)
 for details, including refreshing existing kubeconfig contexts.
+
+HAProxy stacks can additionally expose MQTTS on the same NLB, hostname, and
+certificate with `--mqtts`. Plaintext MQTT and MQTTS for Ingress stacks are not
+currently supported.
 
 The `eks-setup*.sh` and `eks-cleanup*.sh` scripts below are the legacy combined
 cluster-and-stack workflow. They will be split further as part of multi-stack
@@ -163,6 +167,21 @@ The command installs the stack, waits for DNS to point to its NLB, obtains or
 reuses the HAProxy certificate, and waits for a trusted HTTPS response from
 Manager. After it succeeds, open `https://stack-a.example.com/manager/` and
 [retrieve the Manager credentials](#inspect-a-stack-and-retrieve-credentials).
+
+Enable MQTTS on the same hostname and NLB with:
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --hostname stack-a.example.com \
+  --mqtts
+```
+
+This adds public TCP port 8883 to the existing proxy Service. Use
+`--mqtts-port <port>` only when a different public port is required. Repeat
+`--mqtts` on later applies that should retain the MQTTS exposure.
 
 The automated HTTP-01 certificate flow requires public HTTP port 80. The
 default timeout is 20 minutes for each readiness phase. Reapply the same command
@@ -507,10 +526,11 @@ Ingress gateway does not store certificates.
 Each stack applies an ingress NetworkPolicy that allows traffic from its own
 namespace and rejects traffic originating in other stack namespaces. Egress is
 not restricted. In HAProxy mode, a second policy permits external traffic only
-to the HAProxy Pod's HTTP and HTTPS ports; Manager, Keycloak, and PostgreSQL are
-not directly public. In Ingress mode, the second policy permits the ALB to
-reach only HTTP port 8080 on a private per-stack HAProxy gateway. That gateway
-then reaches Manager and Keycloak through the same-namespace rule, so neither
+to the HAProxy Pod's HTTP and HTTPS ports, plus its MQTTS port when enabled;
+Manager, Keycloak, PostgreSQL, and Manager's plaintext MQTT listener are not
+directly public. In Ingress mode, the second policy permits the ALB to reach
+only HTTP port 8080 on a private per-stack HAProxy gateway. That gateway then
+reaches Manager and Keycloak through the same-namespace rule, so neither
 application Pod is directly reachable from another stack namespace.
 `or-eks-cluster create` enables NetworkPolicy on the managed VPC CNI add-on,
 and `or-eks-cluster apply` reconciles that setting without changing the
@@ -548,6 +568,10 @@ lineage, while `renew` forces issuance rather than checking readiness.
 `/manager/` URL: persisted files alone do not prove that TLS or Manager is ready.
 A Manager error or connection timeout therefore does not trigger certificate
 issuance or forced renewal.
+
+When `--mqtts` is enabled, it also completes a trusted TLS handshake with the
+MQTTS listener before reporting the stack ready. HTTPS and MQTTS use the same
+hostname and HAProxy certificate.
 
 The proxy readiness probe and certificate status are deliberately separate.
 The Pod must be ready and reachable for the HTTP ACME challenge before a
@@ -713,9 +737,11 @@ HAProxy exposes a LoadBalancer service for communication from the outside world.
 We're using [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.7/) to automatically create a Network Load Balancer (NLB) based on that service.  
 One NLB is automatically created when a (LoadBalancer) Service object exists and destroyed when the Service is deleted.
 
-The current namespaced HAProxy profile exposes HTTP and HTTPS only. Port 8883
-is reserved but disabled until MQTT(S) hostname, certificate, policy, and
-lifecycle behavior are implemented together.
+The namespaced HAProxy profile exposes HTTP and HTTPS by default. `--mqtts`
+adds port 8883 to the same per-stack NLB and HAProxy terminates MQTTS with the
+same hostname and certificate used for HTTPS before forwarding to Manager's
+namespace-local port 1883. `--mqtts-port` can change the public Service port;
+the HAProxy container listener remains 8883. Plaintext MQTT is never exposed.
 
 #### Using Ingress with a per-stack gateway
 
@@ -737,11 +763,11 @@ To create the certificate, we use [AWS Certificate Manager](https://docs.aws.ama
 Domain ownership validation is performed via DNS record.
 
 The old combined scripts exposed MQTT(S) with additional Manager LoadBalancer
-services. The namespaced `or-stack` workflow does not enable those services
-yet. MQTT and MQTTS will be added as explicit options in a follow-up. Ingress
-stacks will need a per-stack NLB in addition to the shared web ALB; HAProxy
-stacks can reuse their existing NLB. Both paths must preserve the NetworkPolicy
-model.
+services. The namespaced HAProxy workflow instead keeps Manager private and
+reuses the existing proxy NLB when `--mqtts` is selected. Ingress stacks still
+need a dedicated per-stack MQTT NLB in a later increment; `--mqtts` is rejected
+with Ingress exposure until that endpoint, certificate, and policy lifecycle is
+implemented. Plaintext MQTT is not currently supported.
 
 #### Annotations
 

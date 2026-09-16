@@ -42,6 +42,9 @@ VALUES_DIR="${OR_EKS_STACK_VALUES_DIR:-}"
 TIMEOUT="${OR_EKS_STACK_TIMEOUT:-$DEFAULT_TIMEOUT}"
 HTTP_PORT="${OR_EKS_STACK_HTTP_PORT:-80}"
 HTTPS_PORT="${OR_EKS_STACK_HTTPS_PORT:-443}"
+MQTTS_ENABLED="${OR_EKS_STACK_MQTTS:-false}"
+MQTTS_PORT="${OR_EKS_STACK_MQTTS_PORT:-8883}"
+MQTTS_PORT_CONFIGURED=false
 CONFIRM_STACK_NAME=""
 OR_STACK_COMMAND="${OR_EKS_STACK_OR_STACK:-$SCRIPT_DIR/or-stack}"
 LOAD_BALANCER_ADDRESS=""
@@ -56,6 +59,10 @@ STACK_INGRESS_JSON=""
 VALIDATION_DNS_ENDPOINT_EXISTS=false
 MANAGED_CERTIFICATE_DESTROY=false
 
+if [ "${OR_EKS_STACK_MQTTS_PORT+x}" = "x" ]; then
+  MQTTS_PORT_CONFIGURED=true
+fi
+
 usage() {
   cat <<'EOF'
 Manage an OpenRemote stack on an existing Amazon EKS cluster.
@@ -69,7 +76,8 @@ Usage:
 
 Commands:
   apply                 Install or upgrade the stack, wait for its load balancer
-                        and DNS, resolve TLS, and verify trusted HTTPS.
+                        and DNS, resolve TLS, and verify trusted HTTPS and any
+                        enabled MQTTS endpoint.
   status                Show the stack's Kubernetes status.
   credentials           Show the Manager administrator login credentials.
   uninstall             Remove workloads while retaining namespace, credentials,
@@ -109,6 +117,12 @@ Options:
                         automated HTTP-01 certificate issuance.
   --https-port <port>   Public HAProxy Service HTTPS port. Env:
                         OR_EKS_STACK_HTTPS_PORT. HAProxy only; default: 443.
+  --mqtts               Expose MQTTS through the HAProxy NLB using the same
+                        hostname and certificate. Env: OR_EKS_STACK_MQTTS.
+                        Default: false. Plaintext MQTT is not exposed.
+  --mqtts-port <port>   Public HAProxy Service MQTTS port. Env:
+                        OR_EKS_STACK_MQTTS_PORT. Default: 8883. Requires
+                        --mqtts and HAProxy exposure.
   --values-dir <path>   Optional per-component values directory passed to
                         or-stack. Env: OR_EKS_STACK_VALUES_DIR.
   --timeout <duration>  Timeout used by Helm and each endpoint readiness phase.
@@ -264,6 +278,16 @@ parse_arguments() {
         HTTPS_PORT="$2"
         shift 2
         ;;
+      --mqtts)
+        MQTTS_ENABLED=true
+        shift
+        ;;
+      --mqtts-port)
+        [ "$#" -ge 2 ] || die "Option --mqtts-port requires a value."
+        MQTTS_PORT="$2"
+        MQTTS_PORT_CONFIGURED=true
+        shift 2
+        ;;
       --values-dir)
         [ "$#" -ge 2 ] || die "Option --values-dir requires a value."
         VALUES_DIR="$2"
@@ -373,6 +397,17 @@ validate_hostname() {
 validate_apply_options() {
   validate_hostname
 
+  case "$MQTTS_ENABLED" in
+    true|false)
+      ;;
+    *)
+      die "OR_EKS_STACK_MQTTS must be true or false."
+      ;;
+  esac
+  if [ "$MQTTS_ENABLED" != true ] && [ "$MQTTS_PORT_CONFIGURED" = true ]; then
+    die "Option --mqtts-port requires --mqtts."
+  fi
+
   case "$EXPOSURE" in
     haproxy)
       [ -z "$CERTIFICATE_MODE" ] || die \
@@ -383,10 +418,17 @@ validate_apply_options() {
       validate_port "$HTTPS_PORT" "HTTPS"
       [ "$HTTP_PORT" != "$HTTPS_PORT" ] || die \
         "HAProxy HTTP and HTTPS ports must be different."
+      if [ "$MQTTS_ENABLED" = true ]; then
+        validate_port "$MQTTS_PORT" "MQTTS"
+        [ "$MQTTS_PORT" != "$HTTP_PORT" ] && [ "$MQTTS_PORT" != "$HTTPS_PORT" ] || die \
+          "HAProxy HTTP, HTTPS, and MQTTS ports must be different."
+      fi
       [ "$HTTP_PORT" = "80" ] || die \
         "The automated HAProxy ACME workflow requires public HTTP port 80. Use or-stack directly for a custom HTTP port."
       ;;
     ingress)
+      [ "$MQTTS_ENABLED" = false ] || die \
+        "MQTTS with Ingress exposure is not supported yet; use HAProxy exposure."
       case "$CERTIFICATE_MODE" in
         existing)
           # An existing stack may reuse its recorded ARN; resolve it after
@@ -1454,6 +1496,9 @@ apply_portable_stack() {
 
   if [ "$EXPOSURE" = "haproxy" ]; then
     stack_args+=(--http-port "$HTTP_PORT" --https-port "$HTTPS_PORT")
+    if [ "$MQTTS_ENABLED" = true ]; then
+      stack_args+=(--mqtts --mqtts-port "$MQTTS_PORT")
+    fi
   else
     stack_args+=(--certificate-arn "$CERTIFICATE_ARN")
   fi
@@ -1948,12 +1993,56 @@ wait_for_https() {
   die "Trusted HTTPS did not become ready at '$endpoint_url' within '$TIMEOUT'. Inspect deployment/proxy logs and its persisted certificate state."
 }
 
+mqtts_endpoint_is_ready() {
+  local output
+
+  # LibreSSL's s_client can exit non-zero after a successful, verified TLS
+  # handshake when stdin closes before an MQTT CONNECT packet is sent. Treat
+  # the verification result as authoritative for this TLS readiness probe.
+  output="$(openssl s_client \
+    -connect "$HOSTNAME_VALUE:$MQTTS_PORT" \
+    -servername "$HOSTNAME_VALUE" \
+    -verify_return_error </dev/null 2>&1 || true)"
+  grep -Eq 'Verify return code: 0 \(ok\)|Verification: OK' <<< "$output"
+}
+
+wait_for_mqtts() {
+  local deadline
+  local next_notice
+  local now
+  local timeout_seconds
+
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  log "Waiting for trusted MQTTS at '$HOSTNAME_VALUE:$MQTTS_PORT'."
+
+  while [ "$now" -lt "$deadline" ]; do
+    if mqtts_endpoint_is_ready; then
+      log "Trusted MQTTS is ready."
+      return
+    fi
+    if [ "$now" -ge "$next_notice" ]; then
+      log "The trusted MQTTS endpoint is still pending."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "Trusted MQTTS did not become ready at '$HOSTNAME_VALUE:$MQTTS_PORT' within '$TIMEOUT'. Inspect service '$STACK_NAME/proxy', deployment/proxy logs, and its persisted certificate state."
+}
+
 apply_stack() {
   local endpoint_url
 
   require_command helm
   require_command dig
   require_command curl
+  if [ "$MQTTS_ENABLED" = true ]; then
+    require_command openssl
+  fi
   [ -x "$OR_STACK_COMMAND" ] || die \
     "Portable stack command '$OR_STACK_COMMAND' is missing or not executable."
   if [ "$EXPOSURE" = "ingress" ]; then
@@ -1999,9 +2088,15 @@ apply_stack() {
     trigger_acme
   fi
   wait_for_https "$endpoint_url"
+  if [ "$MQTTS_ENABLED" = true ]; then
+    wait_for_mqtts
+  fi
 
   log "Stack '$STACK_NAME' is ready at:"
   printf '  %s\n' "$endpoint_url"
+  if [ "$MQTTS_ENABLED" = true ]; then
+    printf '  mqtts://%s:%s\n' "$HOSTNAME_VALUE" "$MQTTS_PORT"
+  fi
   log "Retrieve its Manager login at any time with:"
   printf '  %q credentials --name %q --cluster %q --region %q' \
     "$0" "$STACK_NAME" "$CLUSTER_NAME" "$AWS_REGION_NAME"

@@ -298,9 +298,10 @@ isolation is deliberately not required. `networkPolicy.additionalIngressFrom`
 accepts additional Kubernetes `NetworkPolicyPeer` entries for trusted sources.
 Ingress exposure permits external traffic only to port 8080 on the stack's
 proxy Pod. HAProxy exposure permits external traffic only to ports 8080 and
-8443 on that Pod. In both modes, the proxy reaches Manager and Keycloak through
-the same-namespace rule, while direct access from other namespaces to Manager,
-Keycloak, and PostgreSQL remains denied. `none` adds no public ingress rule.
+8443 on that Pod, plus port 8883 when MQTTS is explicitly enabled. In both
+modes, the proxy reaches Manager and Keycloak through the same-namespace rule,
+while direct access from other namespaces to Manager, Keycloak, PostgreSQL,
+and Manager's MQTT listener remains denied. `none` adds no public ingress rule.
 
 ### Exclusive public hostnames
 
@@ -661,9 +662,28 @@ and port forwarding, this is the hostname you need to use for the JMX configurat
 
 #### Accessing MQTT
 
-MQTT(S) is intentionally disabled in the current namespaced exposure profiles.
-It will be added as a separate option with its DNS, certificate, load-balancer,
-and NetworkPolicy lifecycle handled together.
+MQTTS is disabled by default. Enable it with `--mqtts` when applying an HAProxy
+stack:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context docker-desktop \
+  --target local \
+  --hostname localhost \
+  --http-port 8080 \
+  --https-port 8443 \
+  --mqtts \
+  --mqtts-port 18883
+```
+
+The public endpoint is `mqtts://localhost:18883` in this example. HAProxy
+terminates TLS with the same certificate used for HTTPS and forwards the
+connection to Manager port 1883 inside the stack namespace. Repeat `--mqtts`
+on later applies that should retain this exposure. Plaintext MQTT is not
+publicly exposed. On clusters without LoadBalancer support, include the MQTTS
+mapping when port-forwarding, for example `18883:18883` when the Service port is
+18883.
 
 #### Using with IDE for development
 
@@ -719,8 +739,9 @@ NetworkPolicy are configured consistently:
 #### Accessing MQTT
 
 The HTTP Ingress does not carry MQTT traffic. MQTT(S) remains disabled pending
-the dedicated per-stack NLB implementation. A development-only plaintext MQTT
-connection can still use a manual port-forward to Manager port 1883.
+the dedicated per-stack NLB implementation; `--mqtts` is rejected with Ingress
+exposure. A development-only plaintext MQTT connection can still use a manual
+port-forward to Manager port 1883.
 
 #### Running a custom project
 

@@ -11,6 +11,7 @@ EXPOSURES_DIR="$KUBERNETES_DIR/stack/exposures"
 source "$SCRIPT_DIR/lib/hostname-reservations"
 
 DEFAULT_TIMEOUT="10m"
+PROXY_MQTTS_PORT="8883"
 
 COMMAND=""
 STACK_NAME="${OR_STACK_NAME:-}"
@@ -24,8 +25,11 @@ VALUES_DIR="${OR_STACK_VALUES_DIR:-}"
 TIMEOUT="${OR_STACK_TIMEOUT:-$DEFAULT_TIMEOUT}"
 HTTP_PORT="${OR_STACK_HTTP_PORT:-80}"
 HTTPS_PORT="${OR_STACK_HTTPS_PORT:-443}"
+MQTTS_ENABLED="${OR_STACK_MQTTS:-false}"
+MQTTS_PORT="${OR_STACK_MQTTS_PORT:-8883}"
 HTTP_PORT_CONFIGURED=false
 HTTPS_PORT_CONFIGURED=false
+MQTTS_PORT_CONFIGURED=false
 CLUSTER_DNS=""
 CONFIRM_STACK_NAME=""
 
@@ -34,6 +38,9 @@ if [ "${OR_STACK_HTTP_PORT+x}" = "x" ]; then
 fi
 if [ "${OR_STACK_HTTPS_PORT+x}" = "x" ]; then
   HTTPS_PORT_CONFIGURED=true
+fi
+if [ "${OR_STACK_MQTTS_PORT+x}" = "x" ]; then
+  MQTTS_PORT_CONFIGURED=true
 fi
 
 usage() {
@@ -83,6 +90,11 @@ Options:
                         OR_STACK_HTTP_PORT. Default: 80.
   --https-port <port>   Public HAProxy Service HTTPS port and forwarded port.
                         Env: OR_STACK_HTTPS_PORT. Default: 443.
+  --mqtts               Expose MQTTS through HAProxy using the stack hostname
+                        and certificate. Env: OR_STACK_MQTTS. Default: false.
+                        Plaintext MQTT is not exposed.
+  --mqtts-port <port>   Public HAProxy Service MQTTS port. Env:
+                        OR_STACK_MQTTS_PORT. Default: 8883. Requires --mqtts.
   --values-dir <path>   Optional directory containing per-component overrides:
                         or-setup.yaml, postgresql.yaml, keycloak.yaml, and
                         manager.yaml, plus proxy.yaml for either public
@@ -208,6 +220,16 @@ parse_arguments() {
         HTTPS_PORT_CONFIGURED=true
         shift 2
         ;;
+      --mqtts)
+        MQTTS_ENABLED=true
+        shift
+        ;;
+      --mqtts-port)
+        [ "$#" -ge 2 ] || die "Option --mqtts-port requires a value."
+        MQTTS_PORT="$2"
+        MQTTS_PORT_CONFIGURED=true
+        shift 2
+        ;;
       --values-dir)
         [ "$#" -ge 2 ] || die "Option --values-dir requires a value."
         VALUES_DIR="$2"
@@ -261,6 +283,21 @@ validate_apply_options() {
 
   validate_hostname_option
 
+  case "$MQTTS_ENABLED" in
+    true|false)
+      ;;
+    *)
+      die "OR_STACK_MQTTS must be true or false."
+      ;;
+  esac
+
+  if [ "$MQTTS_ENABLED" = true ] && [ "$EXPOSURE" != "haproxy" ]; then
+    die "MQTTS is currently supported only with HAProxy exposure."
+  fi
+  if [ "$MQTTS_ENABLED" != true ] && [ "$MQTTS_PORT_CONFIGURED" = true ]; then
+    die "Option --mqtts-port requires --mqtts."
+  fi
+
   if [ "$TARGET" = "eks" ] && [ "$EXPOSURE" = "ingress" ]; then
     [ -n "$CERTIFICATE_ARN" ] || die \
       "An ACM certificate ARN is required for EKS ingress exposure; use --certificate-arn or OR_STACK_CERTIFICATE_ARN."
@@ -275,6 +312,11 @@ validate_apply_options() {
     validate_port "$HTTP_PORT" "HTTP"
     validate_port "$HTTPS_PORT" "HTTPS"
     [ "$HTTP_PORT" != "$HTTPS_PORT" ] || die "HAProxy HTTP and HTTPS ports must be different."
+    if [ "$MQTTS_ENABLED" = true ]; then
+      validate_port "$MQTTS_PORT" "MQTTS"
+      [ "$MQTTS_PORT" != "$HTTP_PORT" ] && [ "$MQTTS_PORT" != "$HTTPS_PORT" ] || die \
+        "HAProxy HTTP, HTTPS, and MQTTS ports must be different."
+    fi
   elif [ "$HTTP_PORT_CONFIGURED" = true ] || [ "$HTTPS_PORT_CONFIGURED" = true ]; then
     die "Options --http-port and --https-port are only valid with HAProxy exposure."
   fi
@@ -404,6 +446,11 @@ stack_namespace_dns() {
     -o 'jsonpath={.metadata.labels.openremote\.io/dns}'
 }
 
+stack_namespace_hostname() {
+  kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    -o 'jsonpath={.metadata.annotations.openremote\.io/hostname}'
+}
+
 ensure_namespace() {
   local stack_label
   local stored_exposure
@@ -439,11 +486,18 @@ ensure_namespace() {
     --overwrite >/dev/null
 }
 
+record_stack_hostname() {
+  kubectl --context "$KUBE_CONTEXT" annotate namespace "$STACK_NAME" \
+    "openremote.io/hostname=$HOSTNAME_VALUE" \
+    --overwrite >/dev/null
+}
+
 prepare_stack() {
   require_command kubectl
   require_kube_context
   ensure_namespace
   reserve_stack_hostname
+  record_stack_hostname
 
   log "Stack namespace '$STACK_NAME' is prepared in context '$KUBE_CONTEXT'."
   log "No Helm releases or workloads were installed."
@@ -557,6 +611,10 @@ apply_stack() {
   )
   local keycloak_hostname="$HOSTNAME_VALUE"
   local proxy_args=()
+  local setup_args=(
+    --set "networkPolicy.proxy.mqtts.enabled=$MQTTS_ENABLED"
+    --set-string "networkPolicy.proxy.mqtts.port=$PROXY_MQTTS_PORT"
+  )
 
   if [ "$EXPOSURE" != "none" ]; then
     # Manager discovers the token issuer through Keycloak's internal HTTP URL.
@@ -581,8 +639,9 @@ apply_stack() {
   fi
   ensure_namespace
   reserve_stack_hostname
+  record_stack_hostname
 
-  helm_apply or-setup
+  helm_apply or-setup "${setup_args[@]}"
   helm_apply postgresql
   helm_apply keycloak --set-string "or.hostname=$keycloak_hostname"
   helm_apply manager "${manager_args[@]}"
@@ -593,6 +652,7 @@ apply_stack() {
       --set-string "or.keycloakHost=keycloak.$STACK_NAME.svc.cluster.local"
       --set-string "or.nameserver=$CLUSTER_DNS"
       --set dns.enabled=false
+      --set "service.mqtts.enabled=$MQTTS_ENABLED"
     )
     if [ "$DNS_MODE" = "external-dns" ]; then
       proxy_args+=(
@@ -606,6 +666,12 @@ apply_stack() {
         --set-string "service.http.port=$HTTP_PORT"
         --set-string "service.https.port=$HTTPS_PORT"
       )
+      if [ "$MQTTS_ENABLED" = true ]; then
+        proxy_args+=(
+          --set-string "service.mqtts.port=$MQTTS_PORT"
+          --set-string "or.mqttPort=$PROXY_MQTTS_PORT"
+        )
+      fi
     else
       proxy_args+=(--set-string "ingress.hostname=$HOSTNAME_VALUE")
       if [ "$TARGET" = "eks" ]; then
@@ -649,6 +715,10 @@ apply_stack() {
       printf ':%s' "$HTTPS_PORT"
     fi
     printf '/manager\n'
+    if [ "$MQTTS_ENABLED" = true ]; then
+      log "MQTTS is exposed through the same HAProxy hostname and certificate:"
+      printf '  mqtts://%s:%s\n' "$HOSTNAME_VALUE" "$MQTTS_PORT"
+    fi
     log "Inspect its external address with:"
     printf '  kubectl --context %q --namespace %q get service proxy\n' \
       "$KUBE_CONTEXT" "$STACK_NAME"
@@ -821,6 +891,8 @@ show_stack_status() {
   local exposure
   local proxy_address
   local proxy_certificate
+  local proxy_hostname
+  local proxy_mqtts_port
   local target
 
   require_command helm
@@ -852,6 +924,7 @@ show_stack_status() {
     get persistentvolumeclaims
 
   if [ "$exposure" = "haproxy" ]; then
+    proxy_address=""
     if proxy_address="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
       get service proxy \
       -o 'jsonpath={.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}' \
@@ -859,6 +932,19 @@ show_stack_status() {
       printf 'HAProxy external address: %s\n' "$proxy_address"
     else
       log "WARNING: HAProxy LoadBalancer external address is pending or unavailable."
+    fi
+
+    proxy_mqtts_port="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+      get service proxy \
+      -o 'jsonpath={.spec.ports[?(@.name=="mqtts")].port}' \
+      2>/dev/null || true)"
+    if [ -n "$proxy_mqtts_port" ]; then
+      proxy_hostname="$(stack_namespace_hostname 2>/dev/null || true)"
+      printf 'MQTTS: enabled\n'
+      printf 'MQTTS endpoint: mqtts://%s:%s\n' \
+        "${proxy_hostname:-${proxy_address:-pending}}" "$proxy_mqtts_port"
+    else
+      printf 'MQTTS: disabled\n'
     fi
 
     if proxy_certificate="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
