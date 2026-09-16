@@ -20,6 +20,7 @@ import {
   type CircleLayerSpecification,
   type GeoJSONFeature,
   type GeoJSONSource,
+  type GeoJSONSourceSpecification,
   type MapSourceDataEvent,
   Marker,
 } from "maplibre-gl";
@@ -351,7 +352,20 @@ export class AssetMap extends BaseMap {
 
     this._source = this._map.getSource("assets") as GeoJSONSource;
 
+<<<<<<< Updated upstream
     this._map.on("data", this._onData);
+=======
+    // Source events carry the serialized source, so only copy its features when the data is read
+    const source = this._source;
+    const serialize = source.serialize.bind(source);
+    source.serialize = () =>
+      Object.defineProperty({ ...source._options, type: source.type }, "data", {
+        enumerable: true,
+        get: () => serialize().data,
+      }) as GeoJSONSourceSpecification;
+
+    this._map.on("sourcedata", this._onData);
+>>>>>>> Stashed changes
 
     // Create asset-specific controls
     if (this._filters?.length) {
