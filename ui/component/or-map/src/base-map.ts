@@ -18,7 +18,7 @@
  */
 import type { GeoJsonConfig } from "@openremote/model";
 import manager, { DefaultColor4 } from "@openremote/core";
-import maplibregl, {
+import {
   type AddLayerObject,
   AttributionControl,
   type IControl,
@@ -279,6 +279,9 @@ export class BaseMap {
       return;
     }
 
+    // The worker and the shared module it imports are copied next to the app by its bundler config
+    if (!map.getWorkerUrl()) map.setWorkerUrl(new URL("maplibre/maplibre-gl-worker.mjs", document.baseURI).href);
+
     this._map = new map.Map(options);
 
     await this._styleLoaded();
@@ -333,7 +336,7 @@ export class BaseMap {
   protected _styleLoaded(): Promise<void> {
     return new Promise((resolve) => {
       if (this._map) {
-        this._map.once("style.load", resolve);
+        this._map.once("style.load", () => resolve());
       }
     });
   }
@@ -805,9 +808,6 @@ export class BaseMap {
       this._map.on("touchcancel", clearTimeoutFunc);
       this._map.on("touchmove", clearTimeoutFunc);
       this._map.on("moveend", clearTimeoutFunc);
-      this._map.on("gesturestart", clearTimeoutFunc);
-      this._map.on("gesturechange", clearTimeoutFunc);
-      this._map.on("gestureend", clearTimeoutFunc);
     }
   }
 

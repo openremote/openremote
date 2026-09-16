@@ -16,9 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { defineConfig } from "@rsbuild/core";
 
+// The maplibre worker imports the shared module, so both must sit side by side
+const maplibreDist = dirname(createRequire(import.meta.url).resolve("maplibre-gl/dist/maplibre-gl-worker.mjs"));
+
 export default defineConfig({
+  output: {
+    copy: ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"].map((file) => ({
+      from: join(maplibreDist, file),
+      to: "maplibre",
+      info: { minimized: true },
+    })),
+  },
   source: {
     decorators: {
       version: "legacy",

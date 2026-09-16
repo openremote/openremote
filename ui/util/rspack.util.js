@@ -60,6 +60,14 @@ function getStandardModuleRules() {
   };
 }
 
+function resolveDir(request, dirname) {
+  try {
+    return path.dirname(require.resolve(request, { paths: [dirname] }));
+  } catch {
+    return undefined;
+  }
+}
+
 function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port) {
   const production = mode === "production";
   port = port || 9000;
@@ -191,6 +199,18 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
       to: ".appignore",
       toType: "file",
     });
+  }
+  // Check if maplibre is installed, its worker imports the shared module so both must sit side by side
+  const maplibreDist = resolveDir("maplibre-gl/dist/maplibre-gl-worker.mjs", dirname);
+  if (maplibreDist) {
+    for (const file of ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"]) {
+      patterns.push({
+        from: path.join(maplibreDist, file),
+        to: "maplibre",
+        toType: "dir",
+        info: { minimized: true },
+      });
+    }
   }
 
   // Copy unprocessed files
