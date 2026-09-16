@@ -149,6 +149,14 @@ removes its owned record but not another controller's or an operator's records.
 The chart and image are pinned independently; the current defaults are chart
 `1.21.1` and ExternalDNS `v0.22.0`.
 
+Stack hostnames must be strict subdomains of the configured domain: for
+`example.com`, both `stack.example.com` and `staging.stack.example.com` qualify,
+but `example.com` does not. Otherwise ExternalDNS's record-type prefix places
+the ownership TXT name outside the domain allowed by the DNS role.
+`or-eks-stack apply` enforces this before creating stack resources; callers of
+the portable `or-stack` command must observe the same restriction when using
+this managed ExternalDNS configuration.
+
 Cluster reconciliation explicitly applies the pinned chart's `DNSEndpoint`
 CRD before installing ExternalDNS and waits for it to become established. The
 chart grants the controller read/watch access to `DNSEndpoint` objects and

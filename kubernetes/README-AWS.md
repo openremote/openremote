@@ -151,6 +151,15 @@ still makes no AWS calls. Without DNS ownership, create the record externally.
 HAProxy manages its own TLS certificate and keeps Certbot account/certificate
 data on its retained `proxy` PVC.
 
+For both HAProxy and Ingress, `or-eks-stack apply` requires a hostname strictly
+below the configured managed DNS domain. With `openremote.app` configured,
+`test.openremote.app` and `staging.test.openremote.app` are supported, but
+`openremote.app` itself is rejected before namespace preparation or certificate
+issuance. ExternalDNS prefixes its ownership TXT names with a record type;
+at the managed domain itself this would place them outside the IAM domain
+boundary. Subdomain depth is unrestricted by this check, but the certificate
+must still cover the chosen hostname.
+
 `or-eks-stack` automates the necessary ordering. It waits until the public
 hostname and the current NLB hostname resolve to at least one common address,
 so a stale record from an older deployment is not considered ready. It then

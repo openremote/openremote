@@ -88,6 +88,7 @@ Options:
   --exposure <mode>     Public exposure: haproxy or ingress. Env:
                         OR_EKS_STACK_EXPOSURE. Default: haproxy.
   --hostname <host>     Public, ExternalDNS-managed hostname. Required by apply.
+                        Must be a strict subdomain of a managed DNS domain.
                         Env: OR_EKS_STACK_HOSTNAME.
   --certificate-mode <mode>
                         Certificate ownership mode for Ingress: existing,
@@ -571,6 +572,22 @@ require_managed_external_dns() {
     "ExternalDNS ServiceAccount kube-system/$EXTERNAL_DNS_SERVICE_ACCOUNT_NAME has no IRSA role annotation."
 
   EXTERNAL_DNS_ARGS="$external_dns_args"
+}
+
+require_stack_hostname_subdomain() {
+  local domain_filter
+  # ExternalDNS prefixes ownership TXT names with the record type. At the
+  # managed domain itself that name leaves the IAM domain boundary (for example,
+  # example.com -> a-example.com). Nested subdomains keep it inside the boundary.
+  # This is an apply-only check so it never prevents cleanup of existing state.
+  while IFS= read -r domain_filter; do
+    domain_filter="${domain_filter%.}"
+    [ -n "$domain_filter" ] || continue
+    if [[ "$HOSTNAME_VALUE" == *."$domain_filter" ]]; then
+      return
+    fi
+  done < <(sed -n 's/^--domain-filter=//p' <<< "$EXTERNAL_DNS_ARGS")
+  die "Hostname '$HOSTNAME_VALUE' must be a strict subdomain of a managed ExternalDNS domain; using the domain itself would place ownership TXT records outside the permitted DNS boundary."
 }
 
 read_certificate_namespace() {
@@ -1951,6 +1968,7 @@ apply_stack() {
     fi
   fi
   require_managed_external_dns
+  require_stack_hostname_subdomain
   if [ "$EXPOSURE" = "ingress" ] && [ "$CERTIFICATE_MODE" != "managed" ]; then
     require_selected_acm_certificate
   fi

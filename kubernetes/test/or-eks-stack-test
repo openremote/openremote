@@ -934,6 +934,51 @@ test_managed_destroy_safety() {
   assert_not_contains $'delete-certificate'
 }
 
+test_managed_domain_boundary() {
+  local exposure hostname failure_output
+  local dns_args
+
+  # Reject the domain itself, including normalized spelling, before namespace
+  # reservation, workload installation, or managed certificate issuance.
+  for exposure in haproxy ingress; do
+    for hostname in example.com EXAMPLE.COM.; do
+      if failure_output="$(run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname "$hostname" --exposure "$exposure" 2>&1)"; then
+        fail "Apply accepted managed domain '$hostname' for $exposure"
+      fi
+      grep -F 'must be a strict subdomain' <<< "$failure_output" >/dev/null || fail \
+        "Apply did not explain the managed-domain restriction: $failure_output"
+      assert_not_contains $'or-stack\tprepare'
+      assert_not_contains $'or-stack\tapply'
+      assert_not_contains $'aws-acm\trequest-certificate'
+    done
+  done
+
+  # The boundary is the configured managed suffix, not necessarily a zone apex.
+  dns_args="${DEFAULT_EXTERNAL_DNS_ARGS/--domain-filter=example.com/--domain-filter=stack-a.example.com.}"
+  if failure_output="$(OR_EKS_STACK_TEST_EXTERNAL_DNS_ARGS="$dns_args" \
+    run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com 2>&1)"; then
+    fail "Apply accepted a hostname equal to a managed subdomain"
+  fi
+  grep -F 'must be a strict subdomain' <<< "$failure_output" >/dev/null || fail \
+    "The trailing-dot filter bypassed the managed-domain check"
+  assert_not_contains $'or-stack\tprepare'
+
+  # Exercise the DNS preflight without certificate coverage or endpoint stubs
+  # restricting the number of hostname labels accepted by the DNS boundary.
+  for hostname in test.example.com staging.test.example.com; do
+    reset_test
+    HOSTNAME_VALUE="$hostname"
+    require_managed_external_dns
+    require_stack_hostname_subdomain
+  done
+  reset_test
+  HOSTNAME_VALUE=staging.stack-a.example.com
+  OR_EKS_STACK_TEST_EXTERNAL_DNS_ARGS="$dns_args" require_managed_external_dns
+  require_stack_hostname_subdomain
+}
+
 test_validation() {
   if (run_eks_stack apply --name stack-a --cluster test-cluster \
       --hostname stack-a.example.com --exposure ingress \
@@ -1325,6 +1370,7 @@ test_lifecycle_delegation
 test_managed_destroy
 test_managed_destroy_safety
 test_validation
+test_managed_domain_boundary
 
 test_hostname_reservation_lifecycle
 test_destroy_requires_current_metadata
