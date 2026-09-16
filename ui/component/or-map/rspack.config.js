@@ -20,8 +20,8 @@ const util = require("@openremote/util");
 
 bundles = {
   index: {
+    // maplibre is bundled in, it no longer ships a UMD build to load as a global
     vendor: {
-      "maplibre-gl": "maplibre",
       moment: "moment",
     },
     excludeOr: true,
