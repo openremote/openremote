@@ -44,7 +44,7 @@ import {
 } from "./index";
 import { OrMapGeocoderControl } from "./controls/geocoder";
 import type { OrMapMarker } from "./markers/or-map-marker";
-import { getLngLat, isWebglSupported, metersToPixelsAtMaxZoom } from "./util";
+import { getLngLat, metersToPixelsAtMaxZoom } from "./util";
 import { isMapboxURL, transformMapboxUrl } from "./util/mapbox-url";
 import type { Feature, FeatureCollection } from "geojson";
 
@@ -273,16 +273,28 @@ export class BaseMap {
       options.zoom = this._zoom;
     }
 
-    // Firefox headless mode does not support webgl, see https://bugzilla.mozilla.org/show_bug.cgi?id=1375585
-    if (!isWebglSupported()) {
-      console.warn("WebGL is not supported in this environment. The map cannot be initialized.");
-      return;
-    }
-
     // The worker and the shared module it imports are copied next to the app by its bundler config
     if (!map.getWorkerUrl()) map.setWorkerUrl(new URL("maplibre/maplibre-gl-worker.mjs", document.baseURI).href);
 
-    this._map = new map.Map(options);
+    try {
+      this._map = new map.Map(options);
+    } catch (error) {
+      // Creating the map fails where WebGL2 is unavailable, such as headless Firefox
+      if (!(error instanceof map.GPUInitializationError)) throw error;
+      console.warn(error.message);
+      return;
+    }
+
+    // Recreating the context after it was lost and restored can also fail;
+    // that failure arrives through the error event since the map already exists.
+    // Source: https://maplibre.org/maplibre-gl-js/docs/examples/check-if-webgl-is-supported/
+    this._map.on("error", (e) => {
+      if (e.error instanceof map.GPUInitializationError) {
+        console.warn(e.error.message);
+        return;
+      }
+      console.error(e.error);
+    });
 
     await this._styleLoaded();
 

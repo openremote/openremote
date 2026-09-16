@@ -1029,9 +1029,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@maplibre/maplibre-gl-style-spec@npm:^26.2.1":
-  version: 26.4.1
-  resolution: "@maplibre/maplibre-gl-style-spec@npm:26.4.1"
+"@maplibre/maplibre-gl-style-spec@npm:^26.4.1":
+  version: 26.4.2
+  resolution: "@maplibre/maplibre-gl-style-spec@npm:26.4.2"
   dependencies:
     "@mapbox/jsonlint-lines-primitives": "npm:^2.0.3"
     "@mapbox/unitbezier": "npm:^1.0.0"
@@ -1043,11 +1043,11 @@ __metadata:
     gl-style-format: dist/gl-style-format.mjs
     gl-style-migrate: dist/gl-style-migrate.mjs
     gl-style-validate: dist/gl-style-validate.mjs
-  checksum: 10c0/dcb1b6ffc1b58a34b0faf79ceea97d8fe3b8fa7b158a67499c105db254e86c32daf9cf9a4172f07429206478e885b2d79ba6ed0230891c05d2dcd4514b535f5b
+  checksum: 10c0/46e816876e2e59b3e82971c41af183b92188ed6d3d25216b12c183a9e4f5f1bf5f612639a080db05d198940722a002948264e45c27e051da0c965cc4ffa5af73
   languageName: node
   linkType: hard
 
-"@maplibre/mlt@npm:^1.1.12":
+"@maplibre/mlt@npm:^1.2.1":
   version: 1.2.1
   resolution: "@maplibre/mlt@npm:1.2.1"
   dependencies:
@@ -1900,7 +1900,7 @@ __metadata:
     "@rsdoctor/rspack-plugin": "npm:~1.5.13"
     "@rspack/core": "npm:~2.1.10"
     lit: "npm:^3.3.1"
-    maplibre-gl: "npm:~6.4.1"
+    maplibre-gl: "npm:~6.8.0"
     moment: "npm:^2.29.4"
     reselect: "npm:^4.1.8"
   languageName: unknown
@@ -2248,7 +2248,7 @@ __metadata:
     lit: "npm:^3.3.1"
     lit-html: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
-    maplibre-gl: "npm:~6.4.1"
+    maplibre-gl: "npm:~6.8.0"
   languageName: unknown
   linkType: soft
 
@@ -8604,17 +8604,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"maplibre-gl@npm:~6.4.1":
-  version: 6.4.1
-  resolution: "maplibre-gl@npm:6.4.1"
+"maplibre-gl@npm:~6.8.0":
+  version: 6.8.0
+  resolution: "maplibre-gl@npm:6.8.0"
   dependencies:
     "@mapbox/point-geometry": "npm:^1.1.0"
     "@mapbox/tiny-sdf": "npm:^2.2.0"
     "@mapbox/unitbezier": "npm:^1.0.0"
     "@mapbox/vector-tile": "npm:^3.0.0"
     "@maplibre/geojson-vt": "npm:^6.1.1"
-    "@maplibre/maplibre-gl-style-spec": "npm:^26.2.1"
-    "@maplibre/mlt": "npm:^1.1.12"
+    "@maplibre/maplibre-gl-style-spec": "npm:^26.4.1"
+    "@maplibre/mlt": "npm:^1.2.1"
     "@maplibre/vt-pbf": "npm:^4.3.2"
     "@types/geojson": "npm:^7946.0.16"
     earcut: "npm:^3.2.3"
@@ -8625,7 +8625,7 @@ __metadata:
     potpack: "npm:^2.1.0"
     quickselect: "npm:^3.0.0"
     tinyqueue: "npm:^3.0.0"
-  checksum: 10c0/622aa7d247d999481edd3db9bd4191f09163d4cbc6faae1f990d526cc93945dad9f68867c413a76b4ced7477164ac1db9dbb05c52fa61b36d866ecb629d5ac1e
+  checksum: 10c0/e6f2b021059425bfdcc0d6233e67f6fbb3e84ac97c572c5faaab791982c6f5070aa7761f3bb8855275967e35b48efbda455b42031c8ff6b51d6b6fc0c4023577
   languageName: node
   linkType: hard
 
