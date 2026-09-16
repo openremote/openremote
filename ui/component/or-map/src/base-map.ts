@@ -276,6 +276,7 @@ export class BaseMap {
     // The worker and the shared module it imports are copied next to the app by its bundler config
     if (!map.getWorkerUrl()) map.setWorkerUrl(new URL("maplibre/maplibre-gl-worker.mjs", document.baseURI).href);
 
+    // Firefox headless mode does not support webgl, see https://bugzilla.mozilla.org/show_bug.cgi?id=1375585
     try {
       this._map = new map.Map(options);
     } catch (error) {
