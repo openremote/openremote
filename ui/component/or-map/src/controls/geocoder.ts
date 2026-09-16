@@ -19,9 +19,8 @@
 import { css, html } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
-import type { Map as MapGL } from "maplibre-gl";
+import { type Map as MapGL, Marker } from "maplibre-gl";
 import { OrMapBaseControl } from "./base";
-import maplibregl from "maplibre-gl";
 import debounce from "lodash.debounce";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-combo-box";
@@ -226,7 +225,7 @@ export class OrMapGeocoder extends OrElement {
       this._hasValue = true;
       this._marker?.remove();
       this._map?.flyTo({ center: item.center, zoom: 14 });
-      this._marker = new maplibregl.Marker().setLngLat(item.center).addTo(this._map!);
+      this._marker = new Marker().setLngLat(item.center).addTo(this._map!);
       this.dispatchEvent(
         new OrMapGeocoderChangeEvent({
           type: "Feature",

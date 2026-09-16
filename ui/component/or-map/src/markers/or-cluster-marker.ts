@@ -48,18 +48,17 @@ export class OrClusterMarker extends OrElement {
   }
 
   /**
-   * Checks that all slices match the accumulated cluster properties
-   *
-   * Note: This method assumes the slices contain the same types as `counts`. If not,
-   * a new cluster marker should be created.
+   * Checks that all slices match the accumulated cluster properties and add up to the cluster's point count
    * @param counts A record of the accumulated cluster properties to check
-   * @returns Whether the slices have the same counts as the accumulated properties
+   * @returns Whether the slices still represent the cluster
    */
   public slicesMatch(counts: Record<string, number>) {
+    let total = 0;
     for (const [type, , count] of this._slices) {
       if (counts[type] !== count) return false;
+      total += count;
     }
-    return true;
+    return total === counts.point_count;
   }
 
   protected render() {
