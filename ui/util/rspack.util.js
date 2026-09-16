@@ -34,6 +34,11 @@ function getStandardModuleRules() {
         type: "asset/resource",
       },
       {
+        // maplibre builds its worker URL at runtime, so its own `new URL()` calls are not build time assets
+        test: /maplibre-gl[\\/]dist[\\/].+\.mjs$/,
+        parser: { url: false },
+      },
+      {
         test: /\.css$/, //
         exclude: /(maplibre|@material|gridstack|@mdi).*\.css$/,
         use: [{ loader: "css-loader" }],

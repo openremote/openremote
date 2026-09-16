@@ -85,6 +85,7 @@ export default defineConfig({
     },
     rspack: (config, { addRules }) => {
       addRules([{ test: /(@material|@mdi).*\.css$/, type: "asset/source" }]); // Add rule to treat external CSS imports as raw strings.
+      addRules([{ test: /maplibre-gl[\\/]dist[\\/].+\.mjs$/, parser: { url: false } }]); // maplibre builds its worker URL at runtime, so its own `new URL()` calls are not build time assets.
       return config;
     },
   },
