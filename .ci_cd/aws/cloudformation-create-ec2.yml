@@ -261,7 +261,7 @@ Resources:
                 - |
                   {
                     "agent":{
-                      "metrics_collection_interval": 300
+                      "metrics_collection_interval": 900
                     },
                     "metrics": {
                       "append_dimensions": {
@@ -270,9 +270,8 @@ Resources:
                       "metrics_collected": {
                         "mem": {
                           "measurement": [
-                            "mem_used_percent"
-                          ],
-                          "metrics_collection_interval": 900
+                            "used_percent"
+                          ]
                         },
                         "disk": {
                           "drop_device": true,
@@ -282,8 +281,7 @@ Resources:
                           "resources": [
                             "/",
                             "/var/lib/docker/volumes"
-                          ],
-                          "metrics_collection_interval": 900
+                          ]
                         }
                       }
                     },
@@ -319,7 +317,17 @@ Resources:
                               "haproxy_server_status": "Count",
                               "haproxy_server_http_responses_total": "Count",
                               "haproxy_server_max_session_rate": "Count/Second",
-                              "haproxy_server_total_time_average_seconds": "Seconds"
+                              "haproxy_server_total_time_average_seconds": "Seconds",
+                              "pg_connections_used": "Count",
+                              "pg_connections_free": "Count",
+                              "pg_long_running_queries_count": "Count",
+                              "pg_cache_hit_percentage": "Percent",
+                              "pg_datapoint_chunks_needing_compression": "Count",
+                              "pg_datapoint_uncompressed_cache_hit_ratio": "Count",
+                              "pg_timescale_job_total_failures_total": "Count",
+                              "pg_dead_tuple_percent": "Percent",
+                              "pg_table_bloat_count": "Count",
+                              "pg_index_bloat_count": "Count"
                             },
                             "metric_declaration": [
                               {
@@ -338,6 +346,61 @@ Resources:
                                   "^or_provisioning_seconds_count$",
                                   "^or_provisioning_seconds_sum$",
                                   "^or_provisioning_seconds_max$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^query-exporter$",
+                                "dimensions": [
+                                  [ "InstanceName" ]
+                                ],
+                                "metric_selectors": [
+                                  "^pg_connections_used$",
+                                  "^pg_connections_free$",
+                                  "^pg_long_running_queries_count$",
+                                  "^pg_table_bloat_count$",
+                                  "^pg_index_bloat_count$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^query-exporter$",
+                                "dimensions": [
+                                  [ "InstanceName", "table_name" ]
+                                ],
+                                "metric_selectors": [
+                                  "^pg_dead_tuple_percent$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^query-exporter$",
+                                "dimensions": [
+                                  [ "InstanceName", "job_id", "proc_name" ]
+                                ],
+                                "metric_selectors": [
+                                  "^pg_timescale_job_total_failures_total$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^query-exporter-hourly$",
+                                "dimensions": [
+                                  [ "InstanceName" ]
+                                ],
+                                "metric_selectors": [
+                                  "^pg_cache_hit_percentage$",
+                                  "^pg_datapoint_uncompressed_cache_hit_ratio$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^query-exporter-daily$",
+                                "dimensions": [
+                                  [ "InstanceName" ]
+                                ],
+                                "metric_selectors": [
+                                  "^pg_datapoint_chunks_needing_compression$"
                                 ]
                               },
                               {
@@ -455,6 +518,60 @@ Resources:
                           regex: '(.*)'
                           replacement: '${Host}'
                           target_label: InstanceName
+
+                    - job_name: query-exporter
+                      sample_limit: 10000
+                      scrape_interval: 5m
+                      static_configs:
+                        - targets:
+                            - localhost:8406
+                        - labels:
+                            InstanceName: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
+                      metric_relabel_configs:
+                        - action: keep
+                          source_labels: [__name__]
+                          regex: '(pg_connections_used|pg_connections_free|pg_long_running_queries_count|pg_table_bloat_count|pg_index_bloat_count|pg_dead_tuple_percent|pg_timescale_job_total_failures_total)'
+                        - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
+                          source_labels: [ InstanceName ]
+                          regex: '(.*)'
+                          replacement: '${Host}'
+                          target_label: InstanceName
+
+                    - job_name: query-exporter-hourly
+                      sample_limit: 10000
+                      scrape_interval: 1h
+                      static_configs:
+                        - targets:
+                            - localhost:8406
+                        - labels:
+                            InstanceName: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
+                      metric_relabel_configs:
+                        - action: keep
+                          source_labels: [__name__]
+                          regex: '(pg_cache_hit_percentage|pg_datapoint_uncompressed_cache_hit_ratio)'
+                        - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
+                          source_labels: [ InstanceName ]
+                          regex: '(.*)'
+                          replacement: '${Host}'
+                          target_label: InstanceName
+
+                    - job_name: query-exporter-daily
+                      sample_limit: 10000
+                      scrape_interval: 1d
+                      static_configs:
+                        - targets:
+                            - localhost:8406
+                        - labels:
+                            InstanceName: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
+                      metric_relabel_configs:
+                        - action: keep
+                          source_labels: [__name__]
+                          regex: '(pg_datapoint_chunks_needing_compression)'
+                        - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
+                          source_labels: [ InstanceName ]
+                          regex: '(.*)'
+                          replacement: '${Host}'
+                          target_label: InstanceName
                 - "# Prometheus scrape config file"
         daily_cleanup:
           files:
@@ -560,7 +677,7 @@ Resources:
 
                 if [ -n "${DNSHostedZoneRoleArn}" ]; then
                   echo "Assuming role '${DNSHostedZoneRoleArn}' for DNS A record update"
-                  # Assume DNS role in TLD account 
+                  # Assume DNS role in TLD account
                   CREDENTIALS=$(aws sts assume-role --role-arn ${DNSHostedZoneRoleArn} --role-session-name ${Host}-dns)
                   if [ $? -ne 0 ]; then
                     echo "Failed to get assume role credentials"
@@ -745,7 +862,7 @@ Resources:
                 fi
             02_efs_dns:
               command: !Sub |
-                # Output EFS_DNS to /etc/environment               
+                # Output EFS_DNS to /etc/environment
                 if [ -n "${EFSDNS}" ]; then
                   echo "EFS Filesystem DNS: ${EFSDNS}"
                   echo "EFS_DNS=${EFSDNS}" >> /etc/environment
@@ -1057,7 +1174,7 @@ Resources:
       Namespace: CWAgent
       MetricName: mem_used_percent
       Statistic: Average
-      Period: 600
+      Period: 900
       EvaluationPeriods: 3
       ComparisonOperator: GreaterThanThreshold
       Threshold: 90
@@ -1148,3 +1265,196 @@ Resources:
         - !Ref SnsTopic
       OKActions:
         - !Ref SnsTopic
+
+  PostgreSQLConnectionsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      AlarmDescription: Available PostgreSQL Connections less then 15% of limit
+      Metrics:
+        - Id: e1
+          ReturnData: true
+          Expression: IF(m1 < (m1 + m2) * 0.15, 1, 0)
+        - Id: m1
+          ReturnData: false
+          MetricStat:
+            Metric:
+              Namespace: CWAgent-Prometheus
+              MetricName: pg_connections_free
+              Dimensions:
+                - Name: InstanceName
+                  Value: !Ref Host
+              Period: 300
+              Stat: Average
+        - Id: m2
+          ReturnData: false
+          MetricStat:
+            Metric:
+              Namespace: CWAgent-Prometheus
+              MetricName: pg_connections_used
+              Dimensions:
+                - Name: InstanceName
+                  Value: !Ref Host
+              Period: 300
+              Stat: Average
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+
+  LongRunningQueriesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent-Prometheus
+      MetricName: pg_long_running_queries_count
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+
+  CacheHitAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent-Prometheus
+      MetricName: pg_cache_hit_percentage
+      Statistic: Average
+      Period: 3600
+      EvaluationPeriods: 1
+      ComparisonOperator: LessThanOrEqualToThreshold
+      Threshold: 95
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+
+  UncompressedCacheHitRatioAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent-Prometheus
+      MetricName: pg_datapoint_uncompressed_cache_hit_ratio
+      Statistic: Average
+      Period: 3600
+      EvaluationPeriods: 1
+      ComparisonOperator: LessThanOrEqualToThreshold
+      Threshold: 95
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+
+  ChunksNeedsCompressionAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent-Prometheus
+      MetricName: pg_datapoint_chunks_needing_compression
+      Statistic: Average
+      Period: 86400
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+
+  TableBloatCountAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent-Prometheus
+      MetricName: pg_table_bloat_count
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+
+  IndexBloatCountAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent-Prometheus
+      MetricName: pg_index_bloat_count
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+
+  DeadTupleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Metrics:
+        - Id: q1
+          Label: pg_dead_tuple_percent
+          ReturnData: true
+          Expression: SELECT AVG(pg_dead_tuple_percent) FROM SCHEMA("CWAgent-Prometheus", InstanceName,table_name) GROUP BY table_name ORDER BY AVG() DESC
+          Period: 300
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 20
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+
+  TimescaleTotalFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent-Prometheus
+      MetricName: pg_timescale_job_total_failures_total
+      Statistic: Average
+      Period: 3600
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
