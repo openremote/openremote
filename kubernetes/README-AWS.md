@@ -414,10 +414,15 @@ or an earlier uninstall cannot bypass it. AWS lookup failures retain both
 reservations; retry destroy once the lookup succeeds and the NLB is deleted.
 For managed mode it also waits for NLB detachment and
 validation-CNAME removal, then deletes only the certificate carrying the exact
-cluster, stack, hostname, and `openremote.io/endpoint=mqtts` ownership tags. A
-failed apply records enough lifecycle intent before ACM or Helm to make a later
-facade destroy safe; a low-level `or-stack` MQTTS endpoint is not adopted
-automatically while its namespace still exists.
+cluster, stack, hostname, and `openremote.io/endpoint=mqtts` ownership tags.
+Apply records certificate mode before ACM requests or Helm installation. If it
+stops earlier, between hostname reservation and recording mode, destroy also
+accepts the incomplete preparation when no MQTTS Service, recorded certificate
+ARN, or validation DNSEndpoint exists. The hostname, if already recorded, must
+match its reservation. Normal certificate ownership, NLB deletion, and DNS
+cleanup checks still apply before releasing either hostname. A low-level
+`or-stack` MQTTS endpoint with deployed resources is not adopted automatically
+while its namespace still exists.
 
 Destroying an Ingress stack with MQTTS also uses
 `elasticloadbalancing:DescribeLoadBalancers` and

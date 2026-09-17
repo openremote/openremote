@@ -404,6 +404,7 @@ kubectl() {
       printf '%s\n' "${OR_EKS_STACK_TEST_DNS_ENDPOINT_JSON-$DEFAULT_DNS_ENDPOINT_JSON}"
       ;;
     *" get dnsendpoint acm-validation-mqtts "*)
+      [ "${OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_READ_SUCCESS:-true}" = true ] || return 1
       if [ -f "$NAMESPACE_DELETED_FILE" ]; then
         return 0
       fi
@@ -418,6 +419,7 @@ kubectl() {
       printf '%s\n' "$endpoint_manifest" > "$DNS_ENDPOINT_LOG"
       ;;
     *" get service proxy-mqtts "*" -o json "*)
+      [ "${OR_EKS_STACK_TEST_MQTTS_SERVICE_READ_SUCCESS:-true}" = true ] || return 1
       if [ "${OR_EKS_STACK_TEST_MQTTS_SERVICE_EXISTS:-true}" = true ] && \
          [ ! -f "$NAMESPACE_DELETED_FILE" ]; then
         printf '%s\n' "${OR_EKS_STACK_TEST_MQTTS_SERVICE_JSON-$DEFAULT_MQTTS_SERVICE_JSON}"
@@ -2007,8 +2009,9 @@ test_hostname_reservation_lifecycle() {
   assert_before $'aws-acm\tdelete-certificate' $'or-stack\trelease-hostname'
 }
 
-test_destroy_rejects_unmanaged_ingress_mqtts_lifecycle() {
+test_destroy_handles_incomplete_mqtts_lifecycle() {
   local failure_output
+  local output hostname scenario expected_error
   local registry
 
   registry="$(jq -cn '{metadata:{resourceVersion:"1",labels:{"app.kubernetes.io/managed-by":"or-stack"}},
@@ -2025,6 +2028,81 @@ test_destroy_rejects_unmanaged_ingress_mqtts_lifecycle() {
   grep -F -- 'low-level or unowned Ingress MQTTS endpoint' <<< "$failure_output" >/dev/null || fail "$failure_output"
   assert_not_contains $'or-stack\tdestroy'
   assert_not_contains $'or-stack\trelease-hostname'
+
+  local OR_EKS_STACK_TEST_REGISTRY_JSON="$registry"
+  local OR_EKS_STACK_TEST_MQTTS_SERVICE_EXISTS=false
+  local OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=""
+  local OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN=""
+  local OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=""
+  local OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_EXISTS=false
+  local OR_EKS_STACK_TEST_MQTTS_SERVICE_READ_SUCCESS=true
+  local OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_READ_SUCCESS=true
+  local OR_EKS_STACK_TEST_LOAD_BALANCERS_JSON=""
+  local OR_EKS_STACK_TEST_DNS_STATUS=NOERROR
+
+  # Interruption can occur just after the reservation write, or after prepare
+  # has also annotated the hostname but before the facade records mode.
+  for hostname in '' mqtt-stack-a.example.com; do
+    OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME="$hostname"
+    output="$(run_eks_stack destroy --name stack-a --cluster test-cluster \
+      --profile '' --confirm stack-a)"
+    grep -F 'incomplete MQTTS prepare' <<< "$output" >/dev/null || fail "$output"
+    assert_contains $'or-stack\tdestroy'
+    assert_before $'get\tdnsendpoint\tacm-validation-mqtts' $'or-stack\tdestroy'
+    assert_before $'aws-elbv2\tdescribe-load-balancers' $'or-stack\trelease-hostname'
+    assert_before $'mqtt-stack-a.example.com\tA' $'or-stack\trelease-hostname'
+    assert_contains $'--hostname\tmqtt-stack-a.example.com\t--confirm\tstack-a'
+    assert_contains $'--hostname\tstack-a.example.com\t--confirm\tstack-a'
+    assert_not_contains $'aws-acm\tdelete-certificate'
+  done
+
+  for scenario in certificate validation hostname mode service-read validation-read nlb dns; do
+    OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=""
+    OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN=""
+    OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=mqtt-stack-a.example.com
+    OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_EXISTS=false
+    OR_EKS_STACK_TEST_MQTTS_SERVICE_READ_SUCCESS=true
+    OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_READ_SUCCESS=true
+    OR_EKS_STACK_TEST_LOAD_BALANCERS_JSON=""
+    OR_EKS_STACK_TEST_DNS_STATUS=NOERROR
+    case "$scenario" in
+      certificate)
+        OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN"
+        expected_error='low-level or unowned Ingress MQTTS endpoint' ;;
+      validation)
+        OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_EXISTS=true
+        expected_error='MQTTS validation resources without a recorded certificate mode' ;;
+      hostname)
+        OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=other.example.com
+        expected_error="but reserves 'mqtt-stack-a.example.com'" ;;
+      mode)
+        OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=unsupported
+        expected_error='low-level or unowned Ingress MQTTS endpoint' ;;
+      service-read)
+        OR_EKS_STACK_TEST_MQTTS_SERVICE_READ_SUCCESS=false
+        expected_error="Unable to inspect Service 'stack-a/proxy-mqtts'" ;;
+      validation-read)
+        OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_READ_SUCCESS=false
+        expected_error='Unable to inspect validation resources for the incomplete MQTTS configuration' ;;
+      nlb)
+        OR_EKS_STACK_TEST_LOAD_BALANCERS_JSON="$DEFAULT_LOAD_BALANCERS_JSON"
+        expected_error='MQTTS NLB deletion' ;;
+      dns)
+        OR_EKS_STACK_TEST_DNS_STATUS=SERVFAIL
+        expected_error='DNS' ;;
+    esac
+    if failure_output="$(run_eks_stack destroy --name stack-a --cluster test-cluster \
+        --profile '' --confirm stack-a --timeout 1s 2>&1)"; then
+      fail "Destroy accepted unsafe incomplete MQTTS cleanup ($scenario)"
+    fi
+    grep -F "$expected_error" <<< "$failure_output" >/dev/null || fail "$failure_output"
+    case "$scenario" in
+      nlb|dns) assert_contains $'or-stack\tdestroy' ;;
+      *) assert_not_contains $'or-stack\tdestroy' ;;
+    esac
+    assert_not_contains $'or-stack\trelease-hostname'
+    assert_not_contains $'aws-acm\tdelete-certificate'
+  done
 }
 
 test_destroy_requires_current_metadata() {
@@ -2235,7 +2313,7 @@ test_validation
 test_managed_domain_boundary
 
 test_hostname_reservation_lifecycle
-test_destroy_rejects_unmanaged_ingress_mqtts_lifecycle
+test_destroy_handles_incomplete_mqtts_lifecycle
 test_destroy_requires_current_metadata
 test_persistent_certificate_modes
 

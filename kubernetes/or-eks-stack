@@ -3340,6 +3340,7 @@ prepare_mqtts_destroy() {
   local service_port
   local service_ssl_ports
   local service_type
+  local validation_endpoint
 
   [ -n "$mqtts_reservation" ] || return 0
   [ "$(jq -r '.target + "/" + .dns' <<< "$mqtts_reservation")" = "eks/external-dns" ] || die \
@@ -3365,8 +3366,34 @@ prepare_mqtts_destroy() {
     "Unable to read MQTTS certificate ARN from namespace '$STACK_NAME'."
   recorded_hostname="$(stack_mqtts_hostname)" || die \
     "Unable to read MQTTS hostname from namespace '$STACK_NAME'."
+
+  STACK_MQTTS_SERVICE_JSON="$(kubectl --context "$KUBE_CONTEXT" \
+    --namespace "$STACK_NAME" \
+    get service proxy-mqtts \
+    --ignore-not-found \
+    -o json)" || die \
+      "Unable to inspect Service '$STACK_NAME/proxy-mqtts' before destroy."
   case "$recorded_mode" in
     existing|shared|managed) ;;
+    "")
+      # Prepare reserves hostnames before the facade records certificate mode.
+      # An interruption there leaves a valid claim but no MQTTS resources. Allow
+      # cleanup of that state without adopting an unowned deployed endpoint.
+      [ -z "$STACK_MQTTS_SERVICE_JSON" ] && [ -z "$recorded_arn" ] || die \
+        "Stack '$STACK_NAME' has a low-level or unowned Ingress MQTTS endpoint; refusing automated cleanup without a supported openremote.io/mqtts-certificate-mode."
+      [ -z "$recorded_hostname" ] || [ "$recorded_hostname" = "$MQTTS_HOSTNAME_VALUE" ] || die \
+        "Namespace '$STACK_NAME' records MQTTS hostname '$recorded_hostname', but reserves '$MQTTS_HOSTNAME_VALUE'."
+      validation_endpoint="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+        get dnsendpoint "$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME" \
+        --ignore-not-found -o json)" || die \
+          "Unable to inspect validation resources for the incomplete MQTTS configuration."
+      [ -z "$validation_endpoint" ] || die \
+        "Stack '$STACK_NAME' has MQTTS validation resources without a recorded certificate mode; refusing destructive cleanup."
+      # Normal tagged-certificate recovery and NLB/DNS cleanup still follow;
+      # neither missing mode nor missing Service proves external cleanup.
+      log "Stack '$STACK_NAME' has an incomplete MQTTS prepare; continuing verified cleanup."
+      return
+      ;;
     *)
       die "Stack '$STACK_NAME' has a low-level or unowned Ingress MQTTS endpoint; refusing automated cleanup without a supported openremote.io/mqtts-certificate-mode."
       ;;
@@ -3376,12 +3403,6 @@ prepare_mqtts_destroy() {
   MQTTS_CERTIFICATE_MODE="$recorded_mode"
   MQTTS_CERTIFICATE_ARN="$recorded_arn"
 
-  STACK_MQTTS_SERVICE_JSON="$(kubectl --context "$KUBE_CONTEXT" \
-    --namespace "$STACK_NAME" \
-    get service proxy-mqtts \
-    --ignore-not-found \
-    -o json)" || die \
-      "Unable to inspect Service '$STACK_NAME/proxy-mqtts' before destroy."
   [ -n "$STACK_MQTTS_SERVICE_JSON" ] || return 0
 
   service_managed_dns="$(jq -r '.metadata.labels["openremote.io/managed-dns"] // empty' \
@@ -3598,8 +3619,8 @@ destroy_stack_with_managed_resources() {
   fi
   if [ -n "$mqtts_reservation" ]; then
     release_portable_mqtts_hostname
-    if [ "$MANAGED_MQTTS_CERTIFICATE_DESTROY" = false ]; then
-      log "Externally owned $MQTTS_CERTIFICATE_MODE MQTTS ACM certificate '${MQTTS_CERTIFICATE_ARN:-unknown}' was retained."
+    if [ "$MANAGED_MQTTS_CERTIFICATE_DESTROY" = false ] && [ -n "$MQTTS_CERTIFICATE_ARN" ]; then
+      log "Externally owned $MQTTS_CERTIFICATE_MODE MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' was retained."
     fi
   fi
   # Release the required web claim last. If its release fails, destroy can
