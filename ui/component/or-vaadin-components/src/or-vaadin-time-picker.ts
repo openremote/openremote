@@ -16,9 +16,25 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+import type { LitElement } from "lit";
 import { customElement } from "lit/decorators.js";
 import { TimePicker } from "@vaadin/time-picker";
+import { getTimePickerI18n, syncWithLanguage } from "./date-time-i18n";
 import type { OrVaadinComponent } from "./util";
 
 @customElement("or-vaadin-time-picker")
-export class OrVaadinTimePicker extends TimePicker implements OrVaadinComponent {}
+export class OrVaadinTimePicker extends (TimePicker as new () => TimePicker & LitElement) implements OrVaadinComponent {
+  protected _stopLanguageSync?: () => void;
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._stopLanguageSync = syncWithLanguage(() => {
+      this.i18n = getTimePickerI18n();
+    });
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._stopLanguageSync?.();
+  }
+}

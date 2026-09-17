@@ -16,9 +16,25 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+import type { LitElement } from "lit";
 import { customElement } from "lit/decorators.js";
 import { DatePicker } from "@vaadin/date-picker";
+import { getDatePickerI18n, syncWithLanguage } from "./date-time-i18n";
 import type { OrVaadinComponent } from "./util";
 
 @customElement("or-vaadin-date-picker")
-export class OrVaadinDatePicker extends DatePicker implements OrVaadinComponent {}
+export class OrVaadinDatePicker extends (DatePicker as new () => DatePicker & LitElement) implements OrVaadinComponent {
+  protected _stopLanguageSync?: () => void;
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._stopLanguageSync = syncWithLanguage(() => {
+      this.i18n = getDatePickerI18n();
+    });
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._stopLanguageSync?.();
+  }
+}

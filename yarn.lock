@@ -2424,6 +2424,7 @@ __metadata:
     "@vaadin/text-field": "npm:~25.2.8"
     "@vaadin/time-picker": "npm:~25.2.8"
     "@vaadin/vaadin-themable-mixin": "npm:~25.2.8"
+    i18next: "npm:^21.5.3"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft

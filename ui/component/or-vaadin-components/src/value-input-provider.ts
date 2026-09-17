@@ -55,6 +55,7 @@ import {
   type SupportedWellknownValueTypes,
 } from "./util";
 import { OrVaadinInput } from "./or-vaadin-input";
+import { OrVaadinDateTimePicker } from "./or-vaadin-date-time-picker";
 
 export interface ValueInputProviderOptions {
   label?: string;
@@ -361,6 +362,20 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     }
   }
 
+  // or-vaadin-date-time-picker works with local ISO strings, while the value is a timestamp or an ISO 8601 string
+  if (inputType === InputType.DATETIME) {
+    step = OrVaadinDateTimePicker.getStep(format);
+    min = min === undefined ? undefined : OrVaadinDateTimePicker.getLocalizedISOString(new Date(min), step);
+    max = max === undefined ? undefined : OrVaadinDateTimePicker.getLocalizedISOString(new Date(max), step);
+    valueConverter = (v) => {
+      const timestamp = v ? Date.parse(v) : Number.NaN;
+      if (Number.isNaN(timestamp)) {
+        return null;
+      }
+      return valueDescriptor.jsonType === "string" ? new Date(timestamp).toISOString() : timestamp;
+    };
+  }
+
   if (inputType === InputType.NUMBER && format?.resolution) {
     step = format.resolution;
   }
@@ -389,7 +404,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
       if (elem?.checkValidity()) {
         const doRemoteUpdate =
           !OrVaadinInput.CHANGE_EVENTS.has(inputType) || OrVaadinInput.CHANGE_EVENTS.get(inputType) === ev.type;
-        valueChangeNotifier(valueConverter?.(elem.nativeValue) ?? elem.nativeValue, doRemoteUpdate);
+        valueChangeNotifier(valueConverter ? valueConverter(elem.nativeValue) : elem.nativeValue, doRemoteUpdate);
       }
     };
 
@@ -399,8 +414,11 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
       if (inputType === InputType.CHECKBOX || inputType === InputType.SWITCH) {
         checked = Boolean(value);
         value = undefined;
+      } else if (inputType === InputType.DATETIME && value !== undefined && value !== null) {
+        value = OrVaadinDateTimePicker.getLocalizedISOString(new Date(value), step);
       }
 
+      // The step is set before the value, so that a date time picker does not trim the value to its default precision.
       return html`
         <or-vaadin-input
           ${ref(inputRef)}
@@ -408,6 +426,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
           style="${ifDefined(inputStyle)}"
           type=${ifDefined(inputType)}
           label=${ifDefined(label)}
+          step=${ifDefined(step)}
           value=${ifDefined(value)}
           ?checked="${checked}"
           pattern=${ifDefined(pattern)}
