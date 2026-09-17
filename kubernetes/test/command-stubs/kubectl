@@ -45,8 +45,10 @@ case "$arguments" in
     done
     jq -cn --arg name "$namespace_name" --arg uid "${OR_STACK_TEST_NAMESPACE_UID:-uid-$namespace_name}" \
       --arg reserved "${OR_STACK_TEST_RESERVED_HOSTNAME:-}" \
+      --arg reserved_mqtts "${OR_STACK_TEST_RESERVED_MQTTS_HOSTNAME:-}" \
       '{metadata:{name:$name,uid:$uid,labels:{"openremote.io/stack":$name}}} |
-        if $reserved != "" then .metadata.annotations["openremote.io/reserved-hostname"]=$reserved else . end'
+        if $reserved != "" then .metadata.annotations["openremote.io/reserved-hostname"]=$reserved else . end |
+        if $reserved_mqtts != "" then .metadata.annotations["openremote.io/reserved-mqtts-hostname"]=$reserved_mqtts else . end'
     exit 0
     ;;
   *" get namespace "*" --ignore-not-found -o name "*)
@@ -76,6 +78,9 @@ case "$arguments" in
           done
 
           case "$arguments" in
+            *"openremote\\.io/mqtts-hostname"*)
+              printf '%s' "${OR_STACK_TEST_MQTTS_HOSTNAME:-mqtt-stack-a.localhost}"
+              ;;
             *"openremote\\.io/hostname"*)
               printf '%s' "${OR_STACK_TEST_HOSTNAME:-stack-a.localhost}"
               ;;
@@ -130,6 +135,13 @@ case "$arguments" in
     ;;
   *" get service proxy "*"spec.ports"*"mqtts"*)
     printf '%s' "${OR_STACK_TEST_PROXY_MQTTS_PORT:-}"
+    ;;
+  *" get service proxy-mqtts "*"spec.ports"*"mqtts"*)
+    printf '%s' "${OR_STACK_TEST_PROXY_MQTTS_PORT:-}"
+    ;;
+  *" get service proxy-mqtts "*)
+    [ "${OR_STACK_TEST_PROXY_MQTTS_SERVICE_EXISTS:-true}" = "true" ] || exit 1
+    printf '%s' "${OR_STACK_TEST_PROXY_MQTTS_ADDRESS:-localhost}"
     ;;
   *" get service proxy "*)
     [ "${OR_STACK_TEST_PROXY_SERVICE_EXISTS:-true}" = "true" ] || exit 1

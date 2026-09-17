@@ -38,6 +38,18 @@ class HostnameReservationsTest(unittest.TestCase):
             args += ["--certificate-arn", "arn:aws:acm:eu-west-1:123456789012:certificate/test"]
         return self.command(*args, **env)
 
+    def apply_ingress_mqtts(self, stack="stack-a", web_host="a.example.com",
+                            mqtts_host="mqtt-a.example.com", **env):
+        return self.command(
+            "apply", "--name", stack, "--target", "eks", "--exposure", "ingress",
+            "--hostname", web_host,
+            "--certificate-arn", "arn:aws:acm:eu-west-1:123456789012:certificate/web",
+            "--mqtts", "--mqtts-hostname", mqtts_host,
+            "--mqtts-certificate-arn",
+            "arn:aws:acm:eu-west-1:123456789012:certificate/mqtts",
+            **env,
+        )
+
     def success(self, result):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
@@ -87,6 +99,28 @@ class HostnameReservationsTest(unittest.TestCase):
         for result in results:
             self.success(result)
         self.assertEqual(len(self.claims()), 2)
+
+    def test_stack_reserves_independent_web_and_mqtts_hostnames(self):
+        self.success(self.apply_ingress_mqtts())
+        claims = self.claims()
+        self.assertEqual(set(claims), {"a.example.com", "mqtt-a.example.com"})
+        self.assertEqual(claims["a.example.com"]["endpoint"], "web")
+        self.assertEqual(claims["mqtt-a.example.com"]["endpoint"], "mqtts")
+        self.success(self.apply_ingress_mqtts())
+        self.failure(self.apply_ingress_mqtts(mqtts_host="other-mqtt.example.com"),
+                     "conflicting reservation")
+        self.failure(self.apply("stack-b", host="mqtt-a.example.com"),
+                     "conflicting reservation")
+
+    def test_destroy_retains_and_explicitly_releases_both_public_hostnames(self):
+        self.success(self.apply_ingress_mqtts())
+        self.success(self.command("destroy", "--name", "stack-a", "--confirm", "stack-a",
+                                  OR_STACK_TEST_NAMESPACE_EXISTS="true"))
+        self.assertEqual(len(self.claims()), 2)
+        for hostname in ("a.example.com", "mqtt-a.example.com"):
+            self.success(self.command("release-hostname", "--name", "stack-a",
+                                      "--hostname", hostname, "--confirm", "stack-a"))
+        self.assertEqual(self.claims(), {})
 
     def test_failed_apply_and_uninstall_retain_claim(self):
         self.assertNotEqual(self.apply(OR_STACK_TEST_HELM_FAIL_RELEASE="manager").returncode, 0)

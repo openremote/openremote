@@ -19,6 +19,7 @@ HAPROXY_PROXY_VALUES="$TEST_DIR/../stack/exposures/haproxy/proxy.yaml"
 LOCAL_HAPROXY_PROXY_VALUES="$TEST_DIR/../stack/exposures/haproxy/local/proxy.yaml"
 EKS_HAPROXY_PROXY_VALUES="$TEST_DIR/../stack/exposures/haproxy/eks/proxy.yaml"
 TEST_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"
+TEST_MQTTS_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-mqtts-certificate"
 
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
@@ -52,6 +53,12 @@ rendered_mqtts_policy="$(helm template or-setup "$OR_SETUP_CHART" \
   --values "$LOCAL_TARGET_VALUES" \
   --values "$HAPROXY_EXPOSURE_VALUES" \
   --set networkPolicy.proxy.mqtts.enabled=true)"
+rendered_ingress_mqtts_policy="$(helm template or-setup "$OR_SETUP_CHART" \
+  --namespace stack-ingress-mqtts \
+  --values "$EKS_TARGET_VALUES" \
+  --values "$INGRESS_EXPOSURE_VALUES" \
+  --set networkPolicy.proxy.mqtts.enabled=true \
+  --set-string networkPolicy.proxy.mqtts.port=1883)"
 
 grep -F -- 'kind: NetworkPolicy' <<< "$rendered_a" >/dev/null || fail \
   "Stack ingress NetworkPolicy was not rendered"
@@ -94,6 +101,8 @@ if grep -F -- 'openremote.io/public-http' <<< "$rendered_proxy_policy" >/dev/nul
 fi
 grep -F -- 'port: 8883' <<< "$rendered_mqtts_policy" >/dev/null || fail \
   "MQTTS-enabled HAProxy policy does not allow the proxy TLS listener"
+grep -F -- 'port: 1883' <<< "$rendered_ingress_mqtts_policy" >/dev/null || fail \
+  "MQTTS-enabled Ingress policy does not allow the edge-terminated proxy listener"
 
 grep -F -- 'helm.sh/resource-policy: keep' <<< "$rendered_a" >/dev/null || fail \
   "Generated Secret is not retained during Helm uninstall"
@@ -216,6 +225,45 @@ fi
 if grep -F -- 'port: 443' <<< "$rendered_eks_gateway" >/dev/null; then
   fail "Ingress gateway unexpectedly exposed the proxy TLS Service port"
 fi
+
+rendered_eks_mqtts_gateway="$(helm template proxy "$PROXY_CHART" \
+  --namespace stack-mqtts \
+  --values "$INGRESS_PROXY_VALUES" \
+  --values "$EKS_INGRESS_PROXY_VALUES" \
+  --set service.mqtts.enabled=true \
+  --set-string service.mqtts.port=18883 \
+  --set-string or.mqttPort=1883 \
+  --set service.mqtts.dns.enabled=true \
+  --set-string service.mqtts.dns.hostname=mqtt-stack.example.com \
+  --set-string "service.mqtts.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-ssl-cert=$TEST_MQTTS_CERTIFICATE_ARN")"
+grep -F -- 'name: proxy-mqtts' <<< "$rendered_eks_mqtts_gateway" >/dev/null || fail \
+  "Ingress MQTTS did not render a dedicated proxy-mqtts Service"
+grep -F -- 'service.beta.kubernetes.io/aws-load-balancer-type: external' \
+  <<< "$rendered_eks_mqtts_gateway" >/dev/null || fail \
+    "Ingress MQTTS Service is not managed by the AWS Load Balancer Controller"
+grep -F -- 'service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip' \
+  <<< "$rendered_eks_mqtts_gateway" >/dev/null || fail \
+    "Ingress MQTTS Service does not use NLB IP targets"
+grep -F -- 'service.beta.kubernetes.io/aws-load-balancer-ssl-ports: mqtts' \
+  <<< "$rendered_eks_mqtts_gateway" >/dev/null || fail \
+    "Ingress MQTTS NLB does not terminate TLS on its MQTTS listener"
+grep -F -- 'service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp' \
+  <<< "$rendered_eks_mqtts_gateway" >/dev/null || fail \
+    "Ingress MQTTS NLB does not forward plaintext TCP to the proxy gateway"
+grep -F -- "service.beta.kubernetes.io/aws-load-balancer-ssl-cert: $TEST_MQTTS_CERTIFICATE_ARN" \
+  <<< "$rendered_eks_mqtts_gateway" >/dev/null || fail \
+    "Ingress MQTTS NLB does not reference its ACM certificate"
+grep -F -- 'external-dns.kubernetes.io/hostname: "mqtt-stack.example.com"' \
+  <<< "$rendered_eks_mqtts_gateway" >/dev/null || fail \
+    "Ingress MQTTS Service does not declare its dedicated DNS hostname"
+grep -F -- '- port: 18883' <<< "$rendered_eks_mqtts_gateway" >/dev/null || fail \
+  "Ingress MQTTS public Service port was not configurable"
+grep -F -- 'targetPort: 1883' <<< "$rendered_eks_mqtts_gateway" >/dev/null || fail \
+  "Ingress MQTTS Service does not target the proxy's plaintext MQTT listener"
+grep -F -- 'containerPort: 1883' <<< "$rendered_eks_mqtts_gateway" >/dev/null || fail \
+  "Ingress proxy does not declare its edge-terminated MQTT listener"
+[ "$(grep -c 'external-dns.kubernetes.io/hostname: "mqtt-stack.example.com"' <<< "$rendered_eks_mqtts_gateway")" -eq 1 ] || fail \
+  "Ingress MQTTS DNS intent was not declared exactly once"
 
 rendered_local_proxy="$(helm template proxy "$PROXY_CHART" \
   --namespace stack-a \

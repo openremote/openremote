@@ -1213,6 +1213,26 @@ test_hostname_reservation_lifecycle() {
   assert_before $'aws-acm\tdelete-certificate' $'or-stack\trelease-hostname'
 }
 
+test_destroy_rejects_unmanaged_ingress_mqtts_lifecycle() {
+  local failure_output
+  local registry
+
+  registry="$(jq -cn '{metadata:{resourceVersion:"1",labels:{"app.kubernetes.io/managed-by":"or-stack"}},
+    data:{
+      "stack-a.example.com":({namespace:"stack-a",namespaceUID:"uid-stack-a",target:"eks",dns:"external-dns",exposure:"ingress",endpoint:"web"}|tojson),
+      "mqtt-stack-a.example.com":({namespace:"stack-a",namespaceUID:"uid-stack-a",target:"eks",dns:"external-dns",exposure:"ingress",endpoint:"mqtts"}|tojson)
+    }}')"
+
+  if failure_output="$(OR_EKS_STACK_TEST_REGISTRY_JSON="$registry" \
+      run_eks_stack destroy --name stack-a --cluster test-cluster \
+        --profile '' --confirm stack-a 2>&1)"; then
+    fail "or-eks-stack destroy accepted a low-level Ingress MQTTS endpoint"
+  fi
+  grep -F -- 'cannot clean up safely' <<< "$failure_output" >/dev/null || fail "$failure_output"
+  assert_not_contains $'or-stack\tdestroy'
+  assert_not_contains $'or-stack\trelease-hostname'
+}
+
 test_destroy_requires_current_metadata() {
   local mode failure_output ingress_json
   for mode in acme existing shared managed; do
@@ -1415,6 +1435,7 @@ test_validation
 test_managed_domain_boundary
 
 test_hostname_reservation_lifecycle
+test_destroy_rejects_unmanaged_ingress_mqtts_lifecycle
 test_destroy_requires_current_metadata
 test_persistent_certificate_modes
 

@@ -2136,6 +2136,7 @@ show_certificate_configuration() {
 }
 
 destroy_stack_with_managed_resources() {
+  local mqtts_reservation
   local public_dns_records
   local reservation
   local record_name
@@ -2145,6 +2146,10 @@ destroy_stack_with_managed_resources() {
   require_command helm
   require_command jq
   reservation="$(stack_hostname_reservation)" || die "Unable to inspect hostname reservations before destroy."
+  mqtts_reservation="$(stack_mqtts_hostname_reservation)" || die \
+    "Unable to inspect MQTTS hostname reservations before destroy."
+  [ -z "$mqtts_reservation" ] || die \
+    "Stack '$STACK_NAME' has a low-level Ingress MQTTS endpoint that this or-eks-stack increment cannot clean up safely. Use or-stack destroy, verify NLB and DNS removal, then explicitly release both retained hostnames."
   # Every public EKS stack reserves its hostname before creating external
   # resources. Never bypass DNS cleanup when that required state is missing.
   [ -n "$reservation" ] || die \

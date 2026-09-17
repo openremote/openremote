@@ -9,6 +9,7 @@ TEST_BIN="$TEST_DIR/command-stubs"
 TEST_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/or-stack-test.XXXXXX")"
 CALL_LOG="$TEST_TEMP_DIR/calls.log"
 TEST_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"
+TEST_MQTTS_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-mqtts-certificate"
 
 cleanup() {
   rm -rf "$TEST_TEMP_DIR"
@@ -113,6 +114,22 @@ test_prepare() {
 
   assert_not_contains $'create\tnamespace\tstack-prepared'
   assert_contains $'label\tnamespace\tstack-prepared'
+  assert_not_contains $'helm\t'
+
+  reset_log
+  OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack prepare \
+    --name stack-prepared-mqtts \
+    --hostname stack-prepared-mqtts.example.com \
+    --kube-context test-context \
+    --target eks \
+    --exposure ingress \
+    --dns external-dns \
+    --mqtts \
+    --mqtts-hostname mqtt-stack-prepared.example.com >/dev/null
+
+  assert_contains $'openremote.io/reserved-hostname=stack-prepared-mqtts.example.com'
+  assert_contains $'openremote.io/reserved-mqtts-hostname=mqtt-stack-prepared.example.com'
+  assert_contains $'openremote.io/mqtts-hostname=mqtt-stack-prepared.example.com'
   assert_not_contains $'helm\t'
 }
 
@@ -275,6 +292,40 @@ test_eks_apply() {
   assert_contains $'--set-string\tor.keycloakHost=keycloak.stack-eks.svc.cluster.local'
 }
 
+test_eks_ingress_mqtts_apply() {
+  local output
+
+  reset_log
+  output="$(OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack apply \
+    --name stack-eks-mqtts \
+    --kube-context test-context \
+    --target eks \
+    --exposure ingress \
+    --dns external-dns \
+    --hostname stack-eks-mqtts.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" \
+    --mqtts \
+    --mqtts-hostname mqtt-stack-eks-mqtts.example.com \
+    --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN" \
+    --mqtts-port 18883)"
+
+  assert_contains $'openremote.io/reserved-hostname=stack-eks-mqtts.example.com'
+  assert_contains $'openremote.io/reserved-mqtts-hostname=mqtt-stack-eks-mqtts.example.com'
+  assert_contains $'openremote.io/mqtts-hostname=mqtt-stack-eks-mqtts.example.com'
+  assert_contains $'--set\tnetworkPolicy.proxy.mqtts.enabled=true'
+  assert_contains $'--set-string\tnetworkPolicy.proxy.mqtts.port=1883'
+  assert_contains $'--set\tservice.mqtts.enabled=true'
+  assert_contains $'--set-string\tor.mqttPort=1883'
+  assert_contains $'--set-string\tservice.mqtts.port=18883'
+  assert_contains "aws-load-balancer-ssl-cert=$TEST_MQTTS_CERTIFICATE_ARN"
+  assert_contains $'--set\tservice.mqtts.dns.enabled=true'
+  assert_contains $'--set-string\tservice.mqtts.dns.hostname=mqtt-stack-eks-mqtts.example.com'
+  grep -F -- 'mqtts://mqtt-stack-eks-mqtts.example.com:18883' <<< "$output" >/dev/null || fail \
+    "Ingress apply output did not report its dedicated MQTTS endpoint"
+  grep -F -- 'get service proxy-mqtts' <<< "$output" >/dev/null || fail \
+    "Ingress apply output did not identify the dedicated MQTTS Service"
+}
+
 test_eks_haproxy_apply() {
   reset_log
   OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack apply \
@@ -341,6 +392,20 @@ test_status() {
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tpersistentvolumeclaims'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tservice\tproxy'
   assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\texec\tdeployment/proxy'
+
+  reset_log
+  output="$(OR_STACK_TEST_NAMESPACE_EXISTS=true \
+    OR_STACK_TEST_EXPOSURE_LABEL=ingress \
+    OR_STACK_TEST_PROXY_MQTTS_PORT=8883 \
+    OR_STACK_TEST_MQTTS_HOSTNAME=mqtt-stack-a.example.com \
+    run_stack status \
+    --name stack-a \
+    --kube-context test-context)"
+
+  grep -Fx -- "MQTTS endpoint: mqtts://mqtt-stack-a.example.com:8883" <<< "$output" >/dev/null || fail \
+    "Ingress status did not show the dedicated MQTTS endpoint"
+  assert_contains $'kubectl\t--context\ttest-context\t--namespace\tstack-a\tget\tservice\tproxy-mqtts'
+  assert_not_contains $'exec\tdeployment/proxy'
 }
 
 test_uninstall() {
@@ -619,8 +684,10 @@ test_validation() {
   fi
 
   if run_stack apply --name stack-a --kube-context test-context --target local \
-    --exposure ingress --hostname stack-a.example.com --mqtts >/dev/null 2>&1; then
-    fail "Ingress exposure accepted MQTTS"
+    --exposure ingress --hostname stack-a.example.com --mqtts \
+    --mqtts-hostname mqtt-stack-a.example.com \
+    --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN" >/dev/null 2>&1; then
+    fail "Local Ingress exposure accepted EKS-specific MQTTS"
   fi
 
   if run_stack apply --name stack-a --kube-context test-context --target local \
@@ -631,6 +698,33 @@ test_validation() {
   if run_stack apply --name stack-a --kube-context test-context --target local \
     --mqtts --mqtts-port 443 >/dev/null 2>&1; then
     fail "HAProxy exposure accepted an MQTTS port that collides with HTTPS"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target eks \
+    --exposure ingress --hostname stack-a.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" --mqtts >/dev/null 2>&1; then
+    fail "EKS Ingress MQTTS accepted a missing hostname and certificate"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target eks \
+    --exposure ingress --hostname stack-a.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" --mqtts \
+    --mqtts-hostname stack-a.example.com \
+    --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN" >/dev/null 2>&1; then
+    fail "EKS Ingress MQTTS accepted the web hostname"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target eks \
+    --exposure ingress --hostname stack-a.example.com \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" --mqtts \
+    --mqtts-hostname mqtt-stack-a.example.com \
+    --mqtts-certificate-arn invalid >/dev/null 2>&1; then
+    fail "EKS Ingress MQTTS accepted an invalid ACM certificate ARN"
+  fi
+
+  if run_stack apply --name stack-a --kube-context test-context --target local \
+    --mqtts --mqtts-hostname mqtt-stack-a.example.com >/dev/null 2>&1; then
+    fail "HAProxy MQTTS accepted a separate MQTTS hostname"
   fi
 
   if OR_STACK_TEST_KUBE_DNS_EXISTS=false run_stack apply \
@@ -681,6 +775,7 @@ test_local_apply
 test_local_public_origins
 test_local_ingress_apply
 test_eks_apply
+test_eks_ingress_mqtts_apply
 test_eks_haproxy_apply
 test_eks_none_apply
 test_status

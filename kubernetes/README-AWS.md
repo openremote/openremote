@@ -32,8 +32,11 @@ overrides are no longer used. See [credential configuration](cluster/eks/README.
 for details, including refreshing existing kubeconfig contexts.
 
 HAProxy stacks can additionally expose MQTTS on the same NLB, hostname, and
-certificate with `--mqtts`. Plaintext MQTT and MQTTS for Ingress stacks are not
-currently supported.
+certificate with `--mqtts`. The lower-level `or-stack` command can also create
+the dedicated MQTTS NLB data path for an Ingress stack when given its separate
+hostname and ACM certificate ARN. `or-eks-stack` certificate and lifecycle
+automation for that endpoint is the next increment. Plaintext MQTT is not
+supported.
 
 The `eks-setup*.sh` and `eks-cleanup*.sh` scripts below are the legacy combined
 cluster-and-stack workflow. They will be split further as part of multi-stack
@@ -529,9 +532,11 @@ not restricted. In HAProxy mode, a second policy permits external traffic only
 to the HAProxy Pod's HTTP and HTTPS ports, plus its MQTTS port when enabled;
 Manager, Keycloak, PostgreSQL, and Manager's plaintext MQTT listener are not
 directly public. In Ingress mode, the second policy permits the ALB to reach
-only HTTP port 8080 on a private per-stack HAProxy gateway. That gateway then
-reaches Manager and Keycloak through the same-namespace rule, so neither
-application Pod is directly reachable from another stack namespace.
+HTTP port 8080 on a private per-stack HAProxy gateway. When low-level Ingress
+MQTTS is enabled, it also permits the dedicated NLB to reach the gateway's
+plaintext port 1883. That gateway then reaches Manager and Keycloak through the
+same-namespace rule, so neither application Pod is directly reachable from
+another stack namespace.
 `or-eks-cluster create` enables NetworkPolicy on the managed VPC CNI add-on,
 and `or-eks-cluster apply` reconciles that setting without changing the
 installed add-on version. New clusters give the VPC CNI add-on a dedicated IAM
@@ -657,9 +662,8 @@ isolation.
 This design adds one internal HTTP hop and one small proxy Pod per stack. The
 reason to select it is ALB-managed web TLS and layer-7 integration: ACM, SNI,
 central HTTP redirects, and optional AWS features such as WAF. It does not
-reduce the final load-balancer count. The planned MQTT(S) support requires one
-additional NLB per ingress stack, while HAProxy exposure will reuse its existing
-per-stack NLB.
+reduce the final load-balancer count. MQTTS requires one additional NLB per
+Ingress stack, while HAProxy exposure reuses its existing per-stack NLB.
 
 Only namespaces carrying `app.kubernetes.io/part-of=openremote` may use this
 class. `or-stack` applies that label when it creates or reapplies a valid stack
@@ -765,9 +769,11 @@ Domain ownership validation is performed via DNS record.
 The old combined scripts exposed MQTT(S) with additional Manager LoadBalancer
 services. The namespaced HAProxy workflow instead keeps Manager private and
 reuses the existing proxy NLB when `--mqtts` is selected. Ingress stacks still
-need a dedicated per-stack MQTT NLB in a later increment; `--mqtts` is rejected
-with Ingress exposure until that endpoint, certificate, and policy lifecycle is
-implemented. Plaintext MQTT is not currently supported.
+use the proxy as their isolation gateway: low-level `or-stack` can create one
+dedicated MQTTS NLB per stack, with ACM terminating TLS before plaintext MQTT
+is forwarded to proxy port 1883 and then Manager. The higher-level
+`or-eks-stack` workflow does not automate that second hostname or certificate
+yet. Plaintext MQTT is not publicly exposed.
 
 #### Annotations
 

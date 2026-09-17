@@ -296,12 +296,13 @@ kubectl delete deployment network-policy-test --namespace stack-a
 Set `networkPolicy.enabled: false` in a stack's `or-setup.yaml` only when
 isolation is deliberately not required. `networkPolicy.additionalIngressFrom`
 accepts additional Kubernetes `NetworkPolicyPeer` entries for trusted sources.
-Ingress exposure permits external traffic only to port 8080 on the stack's
-proxy Pod. HAProxy exposure permits external traffic only to ports 8080 and
-8443 on that Pod, plus port 8883 when MQTTS is explicitly enabled. In both
-modes, the proxy reaches Manager and Keycloak through the same-namespace rule,
-while direct access from other namespaces to Manager, Keycloak, PostgreSQL,
-and Manager's MQTT listener remains denied. `none` adds no public ingress rule.
+Ingress exposure permits external traffic to port 8080 on the stack's proxy
+Pod and, for EKS Ingress MQTTS, to its edge-terminated port 1883. HAProxy
+exposure permits external traffic only to ports 8080 and 8443 on that Pod, plus
+port 8883 when MQTTS is explicitly enabled. In both modes, the proxy reaches
+Manager and Keycloak through the same-namespace rule, while direct access from
+other namespaces to Manager, Keycloak, PostgreSQL, and Manager's MQTT listener
+remains denied. `none` adds no public ingress rule.
 
 ### Exclusive public hostnames
 
@@ -318,12 +319,14 @@ Local HAProxy with unmanaged DNS remains exempt, allowing the localhost:8443 / l
 Hostnames are normalized to lowercase without a trailing dot. For EKS-specific behavior, see Hostname ownership (README-AWS.md#hostname-ownership)
 
 The reservation registry is ConfigMap `kube-system/openremote-hostnames`. Each
-entry records the owning stack namespace and its Kubernetes UID. Conditional
-Kubernetes updates reserve the hostname and the stack's fixed hostname together:
-two concurrent applies cannot both acquire the same hostname, and one stack
-cannot concurrently acquire two different hostnames. Retrying with the same
-namespace UID and hostname is safe. Changing the hostname or recreating a
-namespace under the same name does not transfer ownership.
+entry records the owning stack namespace, its Kubernetes UID, and the endpoint
+role (`web` or `mqtts`). Conditional Kubernetes updates reserve each hostname
+and the stack's fixed hostname for that role together: two concurrent applies
+cannot both acquire the same hostname, and one stack cannot concurrently
+acquire two different hostnames for the same endpoint. An Ingress stack may
+therefore own one web hostname and one distinct MQTTS hostname. Retrying with
+the same namespace UID and hostname is safe. Changing either hostname or
+recreating a namespace under the same name does not transfer ownership.
 
 Stack operators need `jq`, permission to get/create/update that ConfigMap,
 and cluster-wide read access to namespaces, Ingresses and Services, in addition
@@ -738,10 +741,40 @@ NetworkPolicy are configured consistently:
 
 #### Accessing MQTT
 
-The HTTP Ingress does not carry MQTT traffic. MQTT(S) remains disabled pending
-the dedicated per-stack NLB implementation; `--mqtts` is rejected with Ingress
-exposure. A development-only plaintext MQTT connection can still use a manual
-port-forward to Manager port 1883.
+The HTTP Ingress does not carry MQTT traffic. On EKS, `or-stack` can create a
+separate per-stack NLB for MQTTS while retaining the same private proxy gateway:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context <cluster>@eu-west-1 \
+  --target eks \
+  --exposure ingress \
+  --dns external-dns \
+  --hostname stack-a.example.com \
+  --certificate-arn <web-acm-certificate-arn> \
+  --mqtts \
+  --mqtts-hostname mqtt-stack-a.example.com \
+  --mqtts-certificate-arn <mqtts-acm-certificate-arn>
+```
+
+The dedicated `proxy-mqtts` LoadBalancer Service creates an IP-target NLB. ACM
+terminates TLS on public port 8883, then the NLB forwards plaintext TCP to port
+1883 on the namespace-local proxy, which forwards it to Manager. The MQTTS
+hostname must differ from the web hostname because their DNS records target
+different load balancers. `--mqtts-port` changes the public NLB listener port.
+
+This low-level workflow only declares the provided certificate ARN; it does not
+inspect, create, renew, or delete the certificate. When `--dns external-dns` is
+selected, it declares the MQTTS hostname on the NLB Service. Without it, DNS is
+also the caller's responsibility. Higher-level `or-eks-stack` automation for
+the MQTTS hostname, certificate, readiness, and destruction is implemented in
+later increments; until then, repeat the MQTTS options on apply and use
+`or-stack destroy`, verify NLB and DNS cleanup, and explicitly release both
+retained hostname reservations. `or-eks-stack destroy` fails closed when it
+finds this low-level endpoint. A development-only plaintext MQTT connection can
+still use a manual port-forward to Manager port 1883; plaintext MQTT is never
+public.
 
 #### Running a custom project
 
