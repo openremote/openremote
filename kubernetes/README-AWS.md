@@ -406,7 +406,13 @@ Uninstall retains both endpoint reservations and the recorded certificate
 state. Destroy validates the MQTTS Service and its lifecycle metadata, removes
 the namespace, confirms the NLB and both public DNS names are gone, and then
 releases both reservations. Existing and shared MQTTS certificates are always
-retained. For managed mode it also waits for NLB detachment and
+retained. NLB deletion is checked using the controller's AWS identity tags:
+`elbv2.k8s.aws/cluster=<cluster>` and `service.k8s.aws/stack=<stack>/proxy-mqtts`.
+This check does not depend on the Service's last reported address and also
+runs when the Service or namespace is already gone, so an interrupted destroy
+or an earlier uninstall cannot bypass it. AWS lookup failures retain both
+reservations; retry destroy once the lookup succeeds and the NLB is deleted.
+For managed mode it also waits for NLB detachment and
 validation-CNAME removal, then deletes only the certificate carrying the exact
 cluster, stack, hostname, and `openremote.io/endpoint=mqtts` ownership tags. A
 failed apply records enough lifecycle intent before ACM or Helm to make a later
@@ -414,8 +420,9 @@ facade destroy safe; a low-level `or-stack` MQTTS endpoint is not adopted
 automatically while its namespace still exists.
 
 Destroying an Ingress stack with MQTTS also uses
-`elasticloadbalancing:DescribeLoadBalancers` to confirm deletion of the
-dedicated NLB.
+`elasticloadbalancing:DescribeLoadBalancers` and
+`elasticloadbalancing:DescribeTags` to confirm deletion of the dedicated NLB,
+including on retries after namespace deletion.
 
 #### Inspect a stack and retrieve credentials
 

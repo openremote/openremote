@@ -3415,42 +3415,67 @@ prepare_mqtts_destroy() {
     warn "Service '$STACK_NAME/proxy-mqtts' uses certificate '$service_certificate_arn', while the namespace records '$recorded_arn'. This can follow an interrupted rotation; both externally owned certificates will be retained."
   fi
   MQTTS_CERTIFICATE_ARN="$service_certificate_arn"
-  MQTTS_LOAD_BALANCER_ADDRESS="$(jq -r \
-    '.status.loadBalancer.ingress[0] | (.ip // "") + (.hostname // "")' \
-    <<< "$STACK_MQTTS_SERVICE_JSON")"
+}
+
+mqtts_load_balancer_exists() {
+  local load_balancers
+  local load_balancer_arns
+  local arn
+  local tags
+  local matches
+
+  # Service status disappears with the namespace (or an earlier uninstall).
+  # Query the controller's AWS identity tags on every destroy attempt so an
+  # interrupted cleanup cannot release reservations while its NLB still exists.
+  load_balancers="$(aws_elbv2 describe-load-balancers --output json 2>&1)" || die \
+    "Unable to inspect MQTTS load balancers before releasing hostname reservations: $load_balancers"
+  load_balancer_arns="$(jq -er '
+    .LoadBalancers | if type != "array" then error("missing load balancers") else
+      [.[] | select(.Type == "network") | .LoadBalancerArn |
+        if type == "string" and length > 0 then . else error("missing NLB ARN") end] |
+      join("\n")
+    end' <<< "$load_balancers")" || die "Unable to parse the AWS load-balancer response."
+  while IFS= read -r arn; do
+    [ -n "$arn" ] || continue
+    if ! tags="$(aws_elbv2 describe-tags --resource-arns "$arn" --output json 2>&1)"; then
+      case "$tags" in
+        # The controller may delete an NLB between the list and tag queries.
+        *'(LoadBalancerNotFound)'*) continue ;;
+        *) die "Unable to inspect load-balancer ownership for '$arn': $tags" ;;
+      esac
+    fi
+    matches="$(jq -er --arg arn "$arn" --arg cluster "$CLUSTER_NAME" \
+      --arg service "$STACK_NAME/proxy-mqtts" '
+      .TagDescriptions |
+      if type != "array" or length != 1 then error("missing tag description") else
+        .[0] | if .ResourceArn != $arn or (.Tags | type) != "array" then
+          error("invalid tag description") else
+          .Tags | from_entries |
+          .["elbv2.k8s.aws/cluster"] == $cluster and
+          .["service.k8s.aws/stack"] == $service
+        end
+      end | tostring' <<< "$tags")" || die "Unable to parse AWS load-balancer ownership for '$arn'."
+    [ "$matches" != true ] || return 0
+  done <<< "$load_balancer_arns"
+  return 1
 }
 
 wait_for_mqtts_load_balancer_removed() {
   local deadline
-  local describe_output
-  local describe_status
   local next_notice
   local now
   local timeout_seconds
 
-  [ -n "$MQTTS_LOAD_BALANCER_ADDRESS" ] || return 0
-  if [[ "$MQTTS_LOAD_BALANCER_ADDRESS" =~ ^[0-9a-fA-F:.]+$ ]]; then
-    warn "The MQTTS load balancer was reported as an IP address; relying on Kubernetes Service finalizer cleanup."
-    return
-  fi
+  [ "$MQTTS_ENABLED" = true ] && [ "$EXPOSURE" = ingress ] || return 0
   timeout_seconds="$(duration_seconds "$TIMEOUT")"
   now="$(date +%s)"
   deadline="$((now + timeout_seconds))"
   next_notice="$((now + 30))"
-  log "Waiting for MQTTS NLB '$MQTTS_LOAD_BALANCER_ADDRESS' to be deleted."
+  log "Waiting for MQTTS NLBs for '$CLUSTER_NAME/$STACK_NAME/proxy-mqtts' to be deleted."
 
   while [ "$now" -lt "$deadline" ]; do
-    set +e
-    describe_output="$(aws_elbv2 describe-load-balancers \
-      --output json 2>&1)"
-    describe_status=$?
-    set -e
-    [ "$describe_status" -eq 0 ] || die \
-      "Unable to verify deletion of MQTTS NLB '$MQTTS_LOAD_BALANCER_ADDRESS': $describe_output"
-    if ! jq -e --arg dns_name "$MQTTS_LOAD_BALANCER_ADDRESS" \
-        '.LoadBalancers[]? | select(.DNSName == $dns_name)' \
-        <<< "$describe_output" >/dev/null; then
-      log "The MQTTS NLB is deleted."
+    if ! mqtts_load_balancer_exists; then
+      log "No MQTTS NLB remains for the stack."
       return
     fi
     if [ "$now" -ge "$next_notice" ]; then
@@ -3460,7 +3485,7 @@ wait_for_mqtts_load_balancer_removed() {
     sleep 5
     now="$(date +%s)"
   done
-  die "The MQTTS NLB '$MQTTS_LOAD_BALANCER_ADDRESS' was not confirmed deleted within '$TIMEOUT'. Hostname reservations and certificate state were retained so destroy can be retried safely."
+  die "MQTTS NLB deletion for '$CLUSTER_NAME/$STACK_NAME/proxy-mqtts' was not confirmed within '$TIMEOUT'. Hostname reservations and certificate state were retained so destroy can be retried safely."
 }
 
 wait_for_public_hostname_removed() {
