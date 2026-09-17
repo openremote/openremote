@@ -1019,7 +1019,7 @@ destroy_stack() {
       if [ "$reservation_endpoint" = web ]; then
         log "Use or-eks-stack destroy for automated cleanup, or after verifying external cleanup run:"
       else
-        log "Ingress MQTTS lifecycle automation is not available in or-eks-stack yet. After verifying NLB, DNS, and certificate cleanup run:"
+        log "Use or-eks-stack destroy to verify EKS DNS cleanup and release the retained reservation, or after verifying external cleanup run:"
       fi
       printf '  %q release-hostname --name %q --kube-context %q --hostname %q --confirm %q\n' \
         "$0" "$STACK_NAME" "$KUBE_CONTEXT" "$HOSTNAME_VALUE" "$STACK_NAME"

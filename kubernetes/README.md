@@ -767,14 +767,21 @@ different load balancers. `--mqtts-port` changes the public NLB listener port.
 This low-level workflow only declares the provided certificate ARN; it does not
 inspect, create, renew, or delete the certificate. When `--dns external-dns` is
 selected, it declares the MQTTS hostname on the NLB Service. Without it, DNS is
-also the caller's responsibility. Higher-level `or-eks-stack` automation for
-the MQTTS hostname, certificate, readiness, and destruction is implemented in
-later increments; until then, repeat the MQTTS options on apply and use
-`or-stack destroy`, verify NLB and DNS cleanup, and explicitly release both
-retained hostname reservations. `or-eks-stack destroy` fails closed when it
-finds this low-level endpoint. A development-only plaintext MQTT connection can
-still use a manual port-forward to Manager port 1883; plaintext MQTT is never
-public.
+also the caller's responsibility.
+
+For an EKS cluster using OpenRemote-managed ExternalDNS, prefer
+`or-eks-stack`. It accepts the same `--mqtts`, `--mqtts-hostname`, and
+`--mqtts-certificate-arn` options, validates that the existing certificate is
+issued in the correct account and region and covers the hostname, waits for the
+NLB, DNS, and trusted MQTTS endpoint, records lifecycle state, and automates
+safe teardown. Repeat `--mqtts` on reapply; after a successful first apply, the
+recorded MQTTS hostname and ARN can be omitted. Destroy confirms NLB and DNS
+removal, releases both hostname reservations, and retains the externally owned
+MQTTS certificate. It refuses to adopt a low-level endpoint while its namespace
+still exists because the required ownership metadata is absent.
+
+A development-only plaintext MQTT connection can still use a manual
+port-forward to Manager port 1883; plaintext MQTT is never public.
 
 #### Running a custom project
 

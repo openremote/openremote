@@ -17,6 +17,7 @@ CERTIFICATE_NAMESPACE_FILE="$TEST_TEMP_DIR/certificate-namespace.json"
 TEST_CLUSTER_ENDPOINT="https://test-cluster.eks.example.com"
 TEST_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"
 TEST_SECOND_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/second-certificate"
+TEST_MQTTS_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/mqtts-certificate"
 DEFAULT_CERTIFICATE_JSON='{"Certificate":{"Status":"ISSUED","DomainName":"example.com","SubjectAlternativeNames":["example.com","*.example.com"]}}'
 DEFAULT_CERTIFICATE_TAGS='{"Tags":[]}'
 DEFAULT_CERTIFICATE_LIST='{"CertificateSummaryList":[]}'
@@ -24,6 +25,7 @@ MANAGED_CERTIFICATE_JSON='{"Certificate":{"Status":"PENDING_VALIDATION","DomainN
 MANAGED_CERTIFICATE_TAGS='{"Tags":[{"Key":"openremote.io/managed-by","Value":"or-eks-stack"},{"Key":"openremote.io/cluster","Value":"test-cluster"},{"Key":"openremote.io/stack","Value":"stack-a"},{"Key":"openremote.io/hostname","Value":"stack-a.example.com"}]}'
 DEFAULT_DNS_ENDPOINT_JSON='{"metadata":{"labels":{"app.kubernetes.io/managed-by":"or-eks-stack","openremote.io/managed-dns":"true"},"annotations":{"openremote.io/certificate-arn":"arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"}},"spec":{"endpoints":[{"dnsName":"_validation.stack-a.example.com.","recordType":"CNAME","recordTTL":300,"targets":["_target.acm-validations.aws."]}]}}'
 DEFAULT_INGRESS_JSON='{"metadata":{"labels":{"openremote.io/managed-dns":"true"},"annotations":{"external-dns.kubernetes.io/hostname":"stack-a.example.com","alb.ingress.kubernetes.io/certificate-arn":"arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"}},"spec":{"rules":[{"host":"stack-a.example.com"}]}}'
+DEFAULT_MQTTS_SERVICE_JSON='{"metadata":{"labels":{"openremote.io/managed-dns":"true"},"annotations":{"external-dns.kubernetes.io/hostname":"mqtt-stack-a.example.com","service.beta.kubernetes.io/aws-load-balancer-type":"external","service.beta.kubernetes.io/aws-load-balancer-ssl-ports":"mqtts","service.beta.kubernetes.io/aws-load-balancer-ssl-cert":"arn:aws:acm:eu-west-1:123456789012:certificate/mqtts-certificate"}},"spec":{"type":"LoadBalancer","ports":[{"name":"mqtts","port":8883}]},"status":{"loadBalancer":{"ingress":[{"hostname":"test-mqtt-nlb.elb.eu-west-1.amazonaws.com"}]}}}'
 DEFAULT_EXTERNAL_DNS_ARGS=$'--source=service\n--source=ingress\n--source=crd\n--policy=sync\n--registry=txt\n--txt-owner-id=test-cluster-eu-west-1\n--label-filter=openremote.io/managed-dns=true\n--domain-filter=example.com'
 DEFAULT_HOSTNAME_REGISTRY_JSON="$(jq -cn '{metadata:{resourceVersion:"1",labels:{"app.kubernetes.io/managed-by":"or-stack"}},
   data:{"stack-a.example.com":({namespace:"stack-a",namespaceUID:"uid-stack-a",target:"eks",dns:"external-dns",exposure:"ingress"}|tojson)}}')"
@@ -108,9 +110,12 @@ reset_test() {
   MQTTS_ENABLED=false
   MQTTS_PORT="8883"
   MQTTS_PORT_CONFIGURED=false
+  MQTTS_HOSTNAME_VALUE=""
+  MQTTS_CERTIFICATE_ARN=""
   CONFIRM_STACK_NAME=""
   OR_STACK_COMMAND="$KUBERNETES_DIR/or-stack"
   LOAD_BALANCER_ADDRESS=""
+  MQTTS_LOAD_BALANCER_ADDRESS=""
   EXTERNAL_DNS_ARGS=""
   CERTIFICATE_JSON=""
   CERTIFICATE_EXISTS=false
@@ -119,6 +124,7 @@ reset_test() {
   MANAGED_DNS_DOMAIN=""
   AUTHORITATIVE_NAME_SERVERS=""
   STACK_INGRESS_JSON=""
+  STACK_MQTTS_SERVICE_JSON=""
   VALIDATION_DNS_ENDPOINT_EXISTS=false
   MANAGED_CERTIFICATE_DESTROY=false
 }
@@ -158,7 +164,11 @@ aws_acm() {
       printf '%s\n' "${OR_EKS_STACK_TEST_REQUESTED_CERTIFICATE_ARN:-$TEST_CERTIFICATE_ARN}"
       ;;
     *" list-tags-for-certificate "*)
-      printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_TAGS-$DEFAULT_CERTIFICATE_TAGS}"
+      if [[ " $* " == *" $TEST_MQTTS_CERTIFICATE_ARN "* ]]; then
+        printf '%s\n' "${OR_EKS_STACK_TEST_MQTTS_CERTIFICATE_TAGS-${OR_EKS_STACK_TEST_CERTIFICATE_TAGS-$DEFAULT_CERTIFICATE_TAGS}}"
+      else
+        printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_TAGS-$DEFAULT_CERTIFICATE_TAGS}"
+      fi
       ;;
     *" Certificate.Status "*)
       if [ -f "$CERTIFICATE_DELETED_FILE" ]; then
@@ -172,9 +182,22 @@ aws_acm() {
         printf '%s\n' 'ResourceNotFoundException' >&2
         return 1
       fi
-      printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_JSON-$DEFAULT_CERTIFICATE_JSON}"
+      if [[ " $* " == *" $TEST_MQTTS_CERTIFICATE_ARN "* ]]; then
+        printf '%s\n' "${OR_EKS_STACK_TEST_MQTTS_CERTIFICATE_JSON-${OR_EKS_STACK_TEST_CERTIFICATE_JSON-$DEFAULT_CERTIFICATE_JSON}}"
+      else
+        printf '%s\n' "${OR_EKS_STACK_TEST_CERTIFICATE_JSON-$DEFAULT_CERTIFICATE_JSON}"
+      fi
       ;;
   esac
+}
+
+aws_elbv2() {
+  log_call aws-elbv2 "$@"
+  if [ -f "$NAMESPACE_DELETED_FILE" ]; then
+    printf '%s\n' '{"LoadBalancers":[]}'
+    return
+  fi
+  printf '%s\n' '{"LoadBalancers":[{"DNSName":"test-mqtt-nlb.elb.eu-west-1.amazonaws.com"}]}'
 }
 
 helm() {
@@ -195,9 +218,15 @@ kubectl() {
       elif [ "${OR_EKS_STACK_TEST_NAMESPACE_EXISTS:-true}" = true ] || [ -f "$NAMESPACE_PREPARED_FILE" ]; then
         jq -cn --arg mode "${OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE:-}" \
           --arg arn "${OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN:-}" \
+          --arg mqttsMode "${OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE:-}" \
+          --arg mqttsArn "${OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN:-}" \
+          --arg mqttsHostname "${OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME:-}" \
           --arg owner "${OR_EKS_STACK_TEST_NAMESPACE_STACK_LABEL:-stack-a}" \
           '{metadata:{name:"stack-a",uid:"uid-stack-a",resourceVersion:"1",labels:{"openremote.io/stack":$owner},
-            annotations:{"openremote.io/certificate-mode":$mode,"openremote.io/certificate-arn":$arn}}}'
+            annotations:{"openremote.io/certificate-mode":$mode,"openremote.io/certificate-arn":$arn,
+              "openremote.io/mqtts-certificate-mode":$mqttsMode,
+              "openremote.io/mqtts-certificate-arn":$mqttsArn,
+              "openremote.io/mqtts-hostname":$mqttsHostname}}}'
       fi
       ;;
     *" annotate namespace stack-a "*)
@@ -240,6 +269,27 @@ kubectl() {
       ;;
     *" get namespace kube-system "*)
       [ "${OR_EKS_STACK_TEST_CONTEXT_REACHABLE:-true}" = "true" ]
+      ;;
+    *" get namespace stack-a "*"mqtts-certificate-mode"*)
+      if [ -f "$CERTIFICATE_NAMESPACE_FILE" ]; then
+        jq -r '.metadata.annotations["openremote.io/mqtts-certificate-mode"] // empty' "$CERTIFICATE_NAMESPACE_FILE"
+      else
+        printf '%s' "${OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE:-}"
+      fi
+      ;;
+    *" get namespace stack-a "*"mqtts-certificate-arn"*)
+      if [ -f "$CERTIFICATE_NAMESPACE_FILE" ]; then
+        jq -r '.metadata.annotations["openremote.io/mqtts-certificate-arn"] // empty' "$CERTIFICATE_NAMESPACE_FILE"
+      else
+        printf '%s' "${OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN:-}"
+      fi
+      ;;
+    *" get namespace stack-a "*"mqtts-hostname"*)
+      if [ -f "$CERTIFICATE_NAMESPACE_FILE" ]; then
+        jq -r '.metadata.annotations["openremote.io/mqtts-hostname"] // empty' "$CERTIFICATE_NAMESPACE_FILE"
+      else
+        printf '%s' "${OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME:-}"
+      fi
       ;;
     *" get namespace stack-a "*"certificate-mode"*)
       if [ -f "$CERTIFICATE_NAMESPACE_FILE" ]; then
@@ -293,6 +343,15 @@ kubectl() {
     *" apply -f - "*)
       IFS= read -r endpoint_manifest
       printf '%s\n' "$endpoint_manifest" > "$DNS_ENDPOINT_LOG"
+      ;;
+    *" get service proxy-mqtts "*" -o json "*)
+      if [ "${OR_EKS_STACK_TEST_MQTTS_SERVICE_EXISTS:-true}" = true ] && \
+         [ ! -f "$NAMESPACE_DELETED_FILE" ]; then
+        printf '%s\n' "${OR_EKS_STACK_TEST_MQTTS_SERVICE_JSON-$DEFAULT_MQTTS_SERVICE_JSON}"
+      fi
+      ;;
+    *" get service proxy-mqtts "*)
+      printf '%s' "${OR_EKS_STACK_TEST_MQTTS_NLB_ADDRESS:-test-mqtt-nlb.elb.eu-west-1.amazonaws.com}"
       ;;
     *" get service proxy "*)
       printf '%s' "${OR_EKS_STACK_TEST_NLB_ADDRESS:-test-nlb.elb.eu-west-1.amazonaws.com}"
@@ -358,6 +417,12 @@ dig() {
           printf '%s. 60 IN A 192.0.2.10\n' "$dns_name"
         fi
         ;;
+      mqtt-stack-a.example.com)
+        if [ "${OR_EKS_STACK_TEST_NAMESPACE_EXISTS:-true}" = true ] && \
+           [ ! -f "$NAMESPACE_DELETED_FILE" ]; then
+          printf '%s. 60 IN A 192.0.2.20\n' "$dns_name"
+        fi
+        ;;
       _validation.stack-a.example.com|_validation.stack-a.example.com.)
         if [ "${OR_EKS_STACK_TEST_NAMESPACE_EXISTS:-true}" = true ] && [ ! -f "$NAMESPACE_DELETED_FILE" ]; then
           printf '%s 300 IN CNAME _target.acm-validations.aws.\n' "$dns_name"
@@ -375,6 +440,13 @@ dig() {
         printf '%s\n' "${OR_EKS_STACK_TEST_HOST_ADDRESS:-192.0.2.10}"
       fi
       ;;
+    mqtt-stack-a.example.com)
+      if [ "$authoritative" = false ] || \
+         { [ "${OR_EKS_STACK_TEST_NAMESPACE_EXISTS:-true}" = "true" ] && \
+           [ ! -f "$NAMESPACE_DELETED_FILE" ]; }; then
+        printf '%s\n' "${OR_EKS_STACK_TEST_MQTTS_HOST_ADDRESS:-192.0.2.20}"
+      fi
+      ;;
     _validation.stack-a.example.com|_validation.stack-a.example.com.)
       if [ "${OR_EKS_STACK_TEST_NAMESPACE_EXISTS:-true}" = "true" ] && \
          [ ! -f "$NAMESPACE_DELETED_FILE" ]; then
@@ -386,6 +458,9 @@ dig() {
       ;;
     test-alb.elb.eu-west-1.amazonaws.com)
       printf '%s\n' "${OR_EKS_STACK_TEST_ALB_RESOLVED_ADDRESS:-192.0.2.10}"
+      ;;
+    test-mqtt-nlb.elb.eu-west-1.amazonaws.com)
+      printf '%s\n' "${OR_EKS_STACK_TEST_MQTTS_NLB_RESOLVED_ADDRESS:-192.0.2.20}"
       ;;
   esac
 }
@@ -505,6 +580,200 @@ test_ingress_existing_certificate_apply() {
     <<< "$output" >/dev/null || fail "Apply did not report ACM validation"
   grep -F -- "The shared ALB is 'test-alb.elb.eu-west-1.amazonaws.com'" \
     <<< "$output" >/dev/null || fail "Apply did not report shared ALB readiness"
+}
+
+test_ingress_mqtts_existing_certificate_lifecycle() {
+  local failure_output
+  local output
+  local registry
+
+  output="$(run_eks_stack apply \
+    --name stack-a \
+    --cluster test-cluster \
+    --hostname stack-a.example.com \
+    --profile '' \
+    --exposure ingress \
+    --certificate-mode existing \
+    --certificate-arn "$TEST_CERTIFICATE_ARN" \
+    --mqtts \
+    --mqtts-hostname mqtt-stack-a.example.com \
+    --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN")"
+
+  assert_contains $'or-stack\tprepare\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\tingress\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--mqtts\t--mqtts-hostname\tmqtt-stack-a.example.com'
+  assert_contains $'aws-acm\tdescribe-certificate\t--certificate-arn\t'"$TEST_MQTTS_CERTIFICATE_ARN"$'\t--output\tjson'
+  assert_contains $'or-stack\tapply\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--target\teks\t--exposure\tingress\t--dns\texternal-dns\t--hostname\tstack-a.example.com\t--timeout\t20m\t--certificate-arn\t'"$TEST_CERTIFICATE_ARN"$'\t--mqtts\t--mqtts-port\t8883\t--mqtts-hostname\tmqtt-stack-a.example.com\t--mqtts-certificate-arn\t'"$TEST_MQTTS_CERTIFICATE_ARN"
+  assert_contains $'openremote.io/mqtts-certificate-mode=existing\topenremote.io/mqtts-hostname=mqtt-stack-a.example.com\t--overwrite\t--resource-version=2'
+  assert_contains $'openremote.io/mqtts-certificate-mode=existing\topenremote.io/mqtts-certificate-arn='"$TEST_MQTTS_CERTIFICATE_ARN"$'\topenremote.io/mqtts-hostname=mqtt-stack-a.example.com\t--overwrite'
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tget\tservice\tproxy-mqtts'
+  assert_contains $'dig\t+short\tmqtt-stack-a.example.com\tA'
+  assert_contains $'dig\t+short\ttest-mqtt-nlb.elb.eu-west-1.amazonaws.com\tA'
+  assert_contains $'openssl\ts_client\t-connect\tmqtt-stack-a.example.com:8883\t-servername\tmqtt-stack-a.example.com\t-verify_return_error'
+  assert_before $'or-stack\tprepare' $'openremote.io/mqtts-certificate-mode=existing\topenremote.io/mqtts-hostname='
+  assert_before $'openremote.io/mqtts-certificate-mode=existing\topenremote.io/mqtts-hostname=' $'or-stack\tapply'
+  assert_before $'or-stack\tapply' $'openremote.io/mqtts-certificate-arn='
+  assert_before $'get\tservice\tproxy-mqtts' $'dig\t+short\tmqtt-stack-a.example.com'
+  grep -F -- "Validated user-owned ACM certificate '$TEST_MQTTS_CERTIFICATE_ARN' for MQTTS hostname 'mqtt-stack-a.example.com'." \
+    <<< "$output" >/dev/null || fail "Apply did not report MQTTS ACM validation"
+  grep -F -- 'mqtts://mqtt-stack-a.example.com:8883' <<< "$output" >/dev/null || fail \
+    "Apply did not report the dedicated MQTTS endpoint"
+  jq -e --arg arn "$TEST_MQTTS_CERTIFICATE_ARN" '
+    .metadata.annotations["openremote.io/mqtts-certificate-mode"] == "existing" and
+    .metadata.annotations["openremote.io/mqtts-certificate-arn"] == $arn and
+    .metadata.annotations["openremote.io/mqtts-hostname"] == "mqtt-stack-a.example.com"' \
+    "$CERTIFICATE_NAMESPACE_FILE" >/dev/null || fail \
+      "Apply did not persist the MQTTS lifecycle configuration"
+
+  OR_EKS_STACK_TEST_CERTIFICATE_TAGS="$MANAGED_CERTIFICATE_TAGS" \
+  OR_EKS_STACK_TEST_CERTIFICATE_JSON="$MANAGED_CERTIFICATE_JSON" \
+  OR_EKS_STACK_TEST_MQTTS_CERTIFICATE_TAGS="$DEFAULT_CERTIFICATE_TAGS" \
+  OR_EKS_STACK_TEST_MQTTS_CERTIFICATE_JSON="$DEFAULT_CERTIFICATE_JSON" \
+    run_eks_stack apply \
+      --name stack-a --cluster test-cluster --hostname stack-a.example.com \
+      --profile '' --exposure ingress --certificate-mode managed \
+      --mqtts --mqtts-hostname mqtt-stack-a.example.com \
+      --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN" >/dev/null
+  assert_contains $'--certificate-arn\t'"$TEST_CERTIFICATE_ARN"$'\t--mqtts\t--mqtts-port\t8883'
+  assert_contains $'openremote.io/mqtts-certificate-arn='"$TEST_MQTTS_CERTIFICATE_ARN"
+
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=existing \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=mqtt-stack-a.example.com \
+    run_eks_stack apply \
+      --name stack-a --cluster test-cluster --hostname stack-a.example.com \
+      --profile '' --exposure ingress --mqtts >/dev/null
+  assert_contains $'--mqtts-hostname\tmqtt-stack-a.example.com\t--mqtts-certificate-arn\t'"$TEST_MQTTS_CERTIFICATE_ARN"
+
+  output="$(OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+    OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+    OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=existing \
+    OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN" \
+    OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=mqtt-stack-a.example.com \
+      run_eks_stack status --name stack-a --cluster test-cluster --profile '')"
+  grep -F 'MQTTS certificate mode: existing' <<< "$output" >/dev/null || fail \
+    "Status did not report the MQTTS certificate mode"
+  grep -F 'MQTTS hostname: mqtt-stack-a.example.com' <<< "$output" >/dev/null || fail \
+    "Status did not report the MQTTS hostname"
+  grep -F "MQTTS certificate ARN: $TEST_MQTTS_CERTIFICATE_ARN" <<< "$output" >/dev/null || fail \
+    "Status did not report the MQTTS certificate ARN"
+
+  if failure_output="$(OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+      OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+      OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=existing \
+      OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN" \
+      OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=mqtt-stack-a.example.com \
+        run_eks_stack apply --name stack-a --cluster test-cluster \
+          --hostname stack-a.example.com --profile '' --exposure ingress 2>&1)"; then
+    fail "Ingress reapply silently removed its recorded MQTTS endpoint"
+  fi
+  grep -F 'repeat --mqtts to preserve it' <<< "$failure_output" >/dev/null || fail "$failure_output"
+
+  registry="$(jq -cn '{metadata:{resourceVersion:"1",labels:{"app.kubernetes.io/managed-by":"or-stack"}},
+    data:{
+      "stack-a.example.com":({namespace:"stack-a",namespaceUID:"uid-stack-a",target:"eks",dns:"external-dns",exposure:"ingress",endpoint:"web"}|tojson),
+      "mqtt-stack-a.example.com":({namespace:"stack-a",namespaceUID:"uid-stack-a",target:"eks",dns:"external-dns",exposure:"ingress",endpoint:"mqtts"}|tojson)
+    }}')"
+  OR_EKS_STACK_TEST_REGISTRY_JSON="$registry" \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=existing \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=mqtt-stack-a.example.com \
+    run_eks_stack destroy --name stack-a --cluster test-cluster \
+      --profile '' --confirm stack-a >/dev/null
+  assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tget\tservice\tproxy-mqtts\t--ignore-not-found\t-o\tjson'
+  assert_contains $'aws-elbv2\tdescribe-load-balancers\t--output\tjson'
+  assert_not_contains $'aws-elbv2\tdescribe-load-balancers\t--names'
+  assert_contains $'or-stack\trelease-hostname\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--hostname\tstack-a.example.com'
+  assert_contains $'or-stack\trelease-hostname\t--name\tstack-a\t--kube-context\ttest-cluster@eu-west-1\t--hostname\tmqtt-stack-a.example.com'
+  assert_before $'or-stack\tdestroy' $'aws-elbv2\tdescribe-load-balancers'
+  assert_before $'mqtt-stack-a.example.com\tA' $'--hostname\tmqtt-stack-a.example.com\t--confirm\tstack-a'
+  assert_before $'--hostname\tmqtt-stack-a.example.com\t--confirm\tstack-a' $'--hostname\tstack-a.example.com\t--confirm\tstack-a'
+  assert_not_contains $'aws-acm\tdelete-certificate'
+
+  OR_EKS_STACK_TEST_REGISTRY_JSON="$registry" \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=existing \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=mqtt-stack-a.example.com \
+  OR_EKS_STACK_TEST_MQTTS_SERVICE_EXISTS=false \
+    run_eks_stack destroy --name stack-a --cluster test-cluster \
+      --profile '' --confirm stack-a >/dev/null
+  assert_contains $'or-stack\tdestroy'
+  assert_not_contains $'aws-elbv2\tdescribe-load-balancers'
+  assert_contains $'--hostname\tmqtt-stack-a.example.com\t--confirm\tstack-a'
+
+  OR_EKS_STACK_TEST_REGISTRY_JSON="$registry" \
+  OR_EKS_STACK_TEST_NAMESPACE_EXISTS=false \
+    run_eks_stack destroy --name stack-a --cluster test-cluster \
+      --profile '' --confirm stack-a >/dev/null
+  assert_not_contains $'or-stack\tdestroy'
+  assert_contains $'--hostname\tmqtt-stack-a.example.com\t--confirm\tstack-a'
+}
+
+test_ingress_mqtts_validation() {
+  local failure_output
+
+  if failure_output="$(run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --profile '' --exposure ingress \
+      --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN" \
+      --mqtts --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN" 2>&1)"; then
+    fail "First Ingress MQTTS apply accepted a missing hostname"
+  fi
+  grep -F -- 'requires --mqtts-hostname on first apply' <<< "$failure_output" >/dev/null || fail "$failure_output"
+  assert_not_contains $'or-stack\tprepare'
+
+  if failure_output="$(run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --profile '' --exposure ingress \
+      --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN" \
+      --mqtts --mqtts-hostname mqtt-stack-a.example.com 2>&1)"; then
+    fail "First Ingress MQTTS apply accepted a missing certificate ARN"
+  fi
+  grep -F -- 'requires --mqtts-certificate-arn on first apply' <<< "$failure_output" >/dev/null || fail "$failure_output"
+  assert_not_contains $'or-stack\tprepare'
+
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --profile '' --exposure ingress \
+      --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN" \
+      --mqtts --mqtts-hostname stack-a.example.com \
+      --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN") >/dev/null 2>&1; then
+    fail "Ingress MQTTS accepted the web hostname"
+  fi
+  assert_not_contains $'or-stack\tprepare'
+
+  if failure_output="$(OR_EKS_STACK_TEST_EXTERNAL_DNS_ARGS="${DEFAULT_EXTERNAL_DNS_ARGS/--source=service/}" \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com --profile '' --exposure ingress \
+        --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN" \
+        --mqtts --mqtts-hostname mqtt-stack-a.example.com \
+        --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN" 2>&1)"; then
+    fail "Ingress MQTTS accepted ExternalDNS without its Service source"
+  fi
+  grep -F -- "missing required argument '--source=service'" <<< "$failure_output" >/dev/null || fail "$failure_output"
+  assert_not_contains $'or-stack\tprepare'
+
+  if failure_output="$(OR_EKS_STACK_TEST_MQTTS_CERTIFICATE_JSON='{"Certificate":{"Status":"ISSUED","DomainName":"another.example.net","SubjectAlternativeNames":["another.example.net"]}}' \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com --profile '' --exposure ingress \
+        --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN" \
+        --mqtts --mqtts-hostname mqtt-stack-a.example.com \
+        --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN" 2>&1)"; then
+    fail "Ingress MQTTS accepted a certificate for another hostname"
+  fi
+  grep -F -- "does not cover 'mqtt-stack-a.example.com'" <<< "$failure_output" >/dev/null || fail "$failure_output"
+  assert_not_contains $'or-stack\tprepare'
+
+  if failure_output="$(OR_EKS_STACK_TEST_MQTTS_CERTIFICATE_TAGS='{"Tags":[{"Key":"openremote.io/managed-by","Value":"or-eks-stack"}]}' \
+      run_eks_stack apply --name stack-a --cluster test-cluster \
+        --hostname stack-a.example.com --profile '' --exposure ingress \
+        --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN" \
+        --mqtts --mqtts-hostname mqtt-stack-a.example.com \
+        --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN" 2>&1)"; then
+    fail "Ingress MQTTS accepted an or-eks-stack-managed certificate"
+  fi
+  grep -F -- 'cannot be used as an existing certificate' <<< "$failure_output" >/dev/null || fail "$failure_output"
+  assert_not_contains $'or-stack\tprepare'
 }
 
 test_ingress_shared_certificate_apply() {
@@ -1228,7 +1497,7 @@ test_destroy_rejects_unmanaged_ingress_mqtts_lifecycle() {
         --profile '' --confirm stack-a 2>&1)"; then
     fail "or-eks-stack destroy accepted a low-level Ingress MQTTS endpoint"
   fi
-  grep -F -- 'cannot clean up safely' <<< "$failure_output" >/dev/null || fail "$failure_output"
+  grep -F -- 'low-level or unowned Ingress MQTTS endpoint' <<< "$failure_output" >/dev/null || fail "$failure_output"
   assert_not_contains $'or-stack\tdestroy'
   assert_not_contains $'or-stack\trelease-hostname'
 }
@@ -1423,6 +1692,8 @@ test_persistent_certificate_modes() {
 
 test_apply
 test_ingress_existing_certificate_apply
+test_ingress_mqtts_existing_certificate_lifecycle
+test_ingress_mqtts_validation
 test_ingress_shared_certificate_apply
 test_ingress_managed_certificate_apply
 test_managed_certificate_reuse_and_safety

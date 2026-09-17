@@ -23,6 +23,9 @@ CERTIFICATE_HOSTNAME_TAG_KEY="openremote.io/hostname"
 CERTIFICATE_MODE_ANNOTATION="openremote.io/certificate-mode"
 CERTIFICATE_ARN_ANNOTATION="openremote.io/certificate-arn"
 HOSTNAME_ANNOTATION="openremote.io/hostname"
+MQTTS_CERTIFICATE_MODE_ANNOTATION="openremote.io/mqtts-certificate-mode"
+MQTTS_CERTIFICATE_ARN_ANNOTATION="openremote.io/mqtts-certificate-arn"
+MQTTS_HOSTNAME_ANNOTATION="openremote.io/mqtts-hostname"
 SHARED_CERTIFICATE_ARN_ANNOTATION="openremote.io/shared-certificate-arn"
 ACM_VALIDATION_DNS_ENDPOINT_NAME="acm-validation"
 
@@ -45,9 +48,12 @@ HTTPS_PORT="${OR_EKS_STACK_HTTPS_PORT:-443}"
 MQTTS_ENABLED="${OR_EKS_STACK_MQTTS:-false}"
 MQTTS_PORT="${OR_EKS_STACK_MQTTS_PORT:-8883}"
 MQTTS_PORT_CONFIGURED=false
+MQTTS_HOSTNAME_VALUE="${OR_EKS_STACK_MQTTS_HOSTNAME:-}"
+MQTTS_CERTIFICATE_ARN="${OR_EKS_STACK_MQTTS_CERTIFICATE_ARN:-}"
 CONFIRM_STACK_NAME=""
 OR_STACK_COMMAND="${OR_EKS_STACK_OR_STACK:-$SCRIPT_DIR/or-stack}"
 LOAD_BALANCER_ADDRESS=""
+MQTTS_LOAD_BALANCER_ADDRESS=""
 EXTERNAL_DNS_ARGS=""
 CERTIFICATE_JSON=""
 CERTIFICATE_EXISTS=false
@@ -56,6 +62,7 @@ VALIDATION_DNS_RECORDS=""
 MANAGED_DNS_DOMAIN=""
 AUTHORITATIVE_NAME_SERVERS=""
 STACK_INGRESS_JSON=""
+STACK_MQTTS_SERVICE_JSON=""
 VALIDATION_DNS_ENDPOINT_EXISTS=false
 MANAGED_CERTIFICATE_DESTROY=false
 
@@ -117,12 +124,21 @@ Options:
                         automated HTTP-01 certificate issuance.
   --https-port <port>   Public HAProxy Service HTTPS port. Env:
                         OR_EKS_STACK_HTTPS_PORT. HAProxy only; default: 443.
-  --mqtts               Expose MQTTS through the HAProxy NLB using the same
-                        hostname and certificate. Env: OR_EKS_STACK_MQTTS.
-                        Default: false. Plaintext MQTT is not exposed.
-  --mqtts-port <port>   Public HAProxy Service MQTTS port. Env:
-                        OR_EKS_STACK_MQTTS_PORT. Default: 8883. Requires
-                        --mqtts and HAProxy exposure.
+  --mqtts               Expose MQTTS. HAProxy uses the web hostname and its
+                        own certificate; Ingress uses a dedicated NLB,
+                        hostname, and existing ACM certificate. Env:
+                        OR_EKS_STACK_MQTTS. Default: false. Plaintext MQTT is
+                        not exposed.
+  --mqtts-port <port>   Public MQTTS port. Env: OR_EKS_STACK_MQTTS_PORT.
+                        Default: 8883. Requires --mqtts.
+  --mqtts-hostname <host>
+                        Dedicated ExternalDNS-managed hostname for Ingress
+                        MQTTS. Required on first apply; reapply may reuse the
+                        recorded hostname. Env: OR_EKS_STACK_MQTTS_HOSTNAME.
+  --mqtts-certificate-arn <arn>
+                        Existing ACM certificate for the Ingress MQTTS NLB.
+                        Required on first apply; reapply may reuse the recorded
+                        ARN. Env: OR_EKS_STACK_MQTTS_CERTIFICATE_ARN.
   --values-dir <path>   Optional per-component values directory passed to
                         or-stack. Env: OR_EKS_STACK_VALUES_DIR.
   --timeout <duration>  Timeout used by Helm and each endpoint readiness phase.
@@ -156,6 +172,8 @@ this deployment requirement is not established by the script's ownership checks.
 The first certificate mode is retained across failed applies and uninstall.
 Changing mode requires destroying and recreating the stack; back up any data
 to retain first. Certificate rotation within existing or shared mode is supported.
+Ingress MQTTS currently accepts only an existing, user-owned ACM certificate.
+The certificate is validated and recorded but is never deleted by this command.
 EOF
 }
 
@@ -191,6 +209,10 @@ aws_eks() {
 
 aws_acm() {
   aws_cli acm "$@"
+}
+
+aws_elbv2() {
+  aws_cli elbv2 "$@"
 }
 
 aws_sts() {
@@ -288,6 +310,16 @@ parse_arguments() {
         MQTTS_PORT_CONFIGURED=true
         shift 2
         ;;
+      --mqtts-hostname)
+        [ "$#" -ge 2 ] || die "Option --mqtts-hostname requires a value."
+        MQTTS_HOSTNAME_VALUE="$2"
+        shift 2
+        ;;
+      --mqtts-certificate-arn)
+        [ "$#" -ge 2 ] || die "Option --mqtts-certificate-arn requires a value."
+        MQTTS_CERTIFICATE_ARN="$2"
+        shift 2
+        ;;
       --values-dir)
         [ "$#" -ge 2 ] || die "Option --values-dir requires a value."
         VALUES_DIR="$2"
@@ -382,16 +414,32 @@ validate_common_options() {
   [ "$timeout_seconds" -gt 0 ] || die "Timeout must be greater than zero."
 }
 
+validate_hostname_value() {
+  local hostname="$1"
+  local description="$2"
+
+  [ -n "$hostname" ] || die "$description is required."
+  [ "${#hostname}" -le 253 ] || die \
+    "$description must contain at most 253 characters."
+  if [[ ! "$hostname" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)+$ ]]; then
+    die "$description must be a lowercase, fully qualified DNS name."
+  fi
+}
+
 validate_hostname() {
   HOSTNAME_VALUE="$(printf '%s' "$HOSTNAME_VALUE" | tr '[:upper:]' '[:lower:]')"
   HOSTNAME_VALUE="${HOSTNAME_VALUE%.}"
   [ -n "$HOSTNAME_VALUE" ] || die \
     "A public hostname is required for apply; use --hostname."
-  [ "${#HOSTNAME_VALUE}" -le 253 ] || die \
-    "Hostname must contain at most 253 characters."
-  if [[ ! "$HOSTNAME_VALUE" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)+$ ]]; then
-    die "Hostname must be a lowercase, fully qualified DNS name."
-  fi
+  validate_hostname_value "$HOSTNAME_VALUE" "Hostname"
+}
+
+normalize_and_validate_mqtts_hostname() {
+  MQTTS_HOSTNAME_VALUE="$(printf '%s' "$MQTTS_HOSTNAME_VALUE" | tr '[:upper:]' '[:lower:]')"
+  MQTTS_HOSTNAME_VALUE="${MQTTS_HOSTNAME_VALUE%.}"
+  [ -n "$MQTTS_HOSTNAME_VALUE" ] || die \
+    "An MQTTS hostname is required for Ingress exposure; use --mqtts-hostname."
+  validate_hostname_value "$MQTTS_HOSTNAME_VALUE" "MQTTS hostname"
 }
 
 validate_apply_options() {
@@ -407,6 +455,10 @@ validate_apply_options() {
   if [ "$MQTTS_ENABLED" != true ] && [ "$MQTTS_PORT_CONFIGURED" = true ]; then
     die "Option --mqtts-port requires --mqtts."
   fi
+  if [ "$MQTTS_ENABLED" != true ] && \
+     { [ -n "$MQTTS_HOSTNAME_VALUE" ] || [ -n "$MQTTS_CERTIFICATE_ARN" ]; }; then
+    die "Options --mqtts-hostname and --mqtts-certificate-arn require --mqtts."
+  fi
 
   case "$EXPOSURE" in
     haproxy)
@@ -414,6 +466,10 @@ validate_apply_options() {
         "Option --certificate-mode is only valid with Ingress exposure."
       [ -z "$CERTIFICATE_ARN" ] || die \
         "Option --certificate-arn is only valid with Ingress exposure."
+      [ -z "$MQTTS_HOSTNAME_VALUE" ] || die \
+        "Option --mqtts-hostname is only valid with Ingress exposure."
+      [ -z "$MQTTS_CERTIFICATE_ARN" ] || die \
+        "Option --mqtts-certificate-arn is only valid with Ingress exposure."
       validate_port "$HTTP_PORT" "HTTP"
       validate_port "$HTTPS_PORT" "HTTPS"
       [ "$HTTP_PORT" != "$HTTPS_PORT" ] || die \
@@ -427,8 +483,18 @@ validate_apply_options() {
         "The automated HAProxy ACME workflow requires public HTTP port 80. Use or-stack directly for a custom HTTP port."
       ;;
     ingress)
-      [ "$MQTTS_ENABLED" = false ] || die \
-        "MQTTS with Ingress exposure is not supported yet; use HAProxy exposure."
+      if [ "$MQTTS_ENABLED" = true ]; then
+        validate_port "$MQTTS_PORT" "MQTTS"
+        if [ -n "$MQTTS_HOSTNAME_VALUE" ]; then
+          normalize_and_validate_mqtts_hostname
+          [ "$MQTTS_HOSTNAME_VALUE" != "$HOSTNAME_VALUE" ] || die \
+            "Ingress web and MQTTS hostnames must be different."
+        fi
+        if [ -n "$MQTTS_CERTIFICATE_ARN" ] && \
+           [[ ! "$MQTTS_CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:[a-z0-9-]+:[0-9]{12}:certificate/[A-Za-z0-9-]+$ ]]; then
+          die "MQTTS certificate ARN must be a valid ACM certificate ARN."
+        fi
+      fi
       case "$CERTIFICATE_MODE" in
         existing)
           # An existing stack may reuse its recorded ARN; resolve it after
@@ -551,13 +617,16 @@ dns_name_is_covered() {
 }
 
 hostname_is_covered() {
-  dns_name_is_covered "$HOSTNAME_VALUE" "$1"
+  local domain_filter="$1"
+  local hostname="${2:-$HOSTNAME_VALUE}"
+  dns_name_is_covered "$hostname" "$domain_filter"
 }
 
 require_managed_external_dns() {
   local domain_filter
   local external_dns_args
   local hostname_covered=false
+  local mqtts_hostname_covered=false
   local service_account_role_arn
 
   helm status "$EXTERNAL_DNS_RELEASE_NAME" \
@@ -577,6 +646,9 @@ require_managed_external_dns() {
 
   if [ "$EXPOSURE" = "ingress" ]; then
     require_external_dns_argument "$external_dns_args" "--source=ingress"
+    if [ "$MQTTS_ENABLED" = true ]; then
+      require_external_dns_argument "$external_dns_args" "--source=service"
+    fi
   else
     require_external_dns_argument "$external_dns_args" "--source=service"
   fi
@@ -600,12 +672,19 @@ require_managed_external_dns() {
     [ -n "$domain_filter" ] || continue
     if hostname_is_covered "$domain_filter"; then
       hostname_covered=true
-      break
+    fi
+    if [ "$MQTTS_ENABLED" = true ] && [ "$EXPOSURE" = ingress ] && \
+       hostname_is_covered "$domain_filter" "$MQTTS_HOSTNAME_VALUE"; then
+      mqtts_hostname_covered=true
     fi
   done < <(sed -n 's/^--domain-filter=//p' <<< "$external_dns_args")
 
   [ "$hostname_covered" = true ] || die \
     "ExternalDNS domain filters do not cover '$HOSTNAME_VALUE'; reconcile the cluster DNS configuration first."
+  if [ "$MQTTS_ENABLED" = true ] && [ "$EXPOSURE" = ingress ]; then
+    [ "$mqtts_hostname_covered" = true ] || die \
+      "ExternalDNS domain filters do not cover MQTTS hostname '$MQTTS_HOSTNAME_VALUE'; reconcile the cluster DNS configuration first."
+  fi
 
   service_account_role_arn="$(kubectl --context "$KUBE_CONTEXT" \
     --namespace kube-system \
@@ -620,6 +699,7 @@ require_managed_external_dns() {
 
 require_stack_hostname_subdomain() {
   local domain_filter
+  local hostname="${1:-$HOSTNAME_VALUE}"
   # ExternalDNS prefixes ownership TXT names with the record type. At the
   # managed domain itself that name leaves the IAM domain boundary (for example,
   # example.com -> a-example.com). Nested subdomains keep it inside the boundary.
@@ -627,11 +707,11 @@ require_stack_hostname_subdomain() {
   while IFS= read -r domain_filter; do
     domain_filter="${domain_filter%.}"
     [ -n "$domain_filter" ] || continue
-    if [[ "$HOSTNAME_VALUE" == *."$domain_filter" ]]; then
+    if [[ "$hostname" == *."$domain_filter" ]]; then
       return
     fi
   done < <(sed -n 's/^--domain-filter=//p' <<< "$EXTERNAL_DNS_ARGS")
-  die "Hostname '$HOSTNAME_VALUE' must be a strict subdomain of a managed ExternalDNS domain; using the domain itself would place ownership TXT records outside the permitted DNS boundary."
+  die "Hostname '$hostname' must be a strict subdomain of a managed ExternalDNS domain; using the domain itself would place ownership TXT records outside the permitted DNS boundary."
 }
 
 read_certificate_namespace() {
@@ -695,6 +775,52 @@ resolve_ingress_certificate() {
   log "Selected the cluster's shared ACM certificate '$CERTIFICATE_ARN'."
 }
 
+resolve_ingress_mqtts_configuration() {
+  local namespace_json
+  local recorded_arn
+  local recorded_hostname
+  local recorded_mode
+
+  namespace_json="$(read_certificate_namespace)" || die \
+    "Unable to resolve the stack's MQTTS certificate configuration."
+  recorded_hostname="$(jq -r '.metadata.annotations["openremote.io/mqtts-hostname"] // empty' \
+    <<< "$namespace_json")"
+  recorded_mode="$(jq -r '.metadata.annotations["openremote.io/mqtts-certificate-mode"] // empty' \
+    <<< "$namespace_json")"
+  recorded_arn="$(jq -r '.metadata.annotations["openremote.io/mqtts-certificate-arn"] // empty' \
+    <<< "$namespace_json")"
+
+  if [ "$MQTTS_ENABLED" != true ]; then
+    if [ -n "$recorded_hostname" ] || [ -n "$recorded_mode" ] || [ -n "$recorded_arn" ]; then
+      die "Stack '$STACK_NAME' records an Ingress MQTTS endpoint; repeat --mqtts to preserve it. Disabling it in place is not supported."
+    fi
+    return
+  fi
+
+  [ -z "$recorded_mode" ] || [ "$recorded_mode" = existing ] || die \
+    "Stack '$STACK_NAME' records incompatible MQTTS certificate mode '$recorded_mode'."
+  if [ -z "$recorded_mode" ] && [ -n "$recorded_arn" ]; then
+    die "Stack '$STACK_NAME' has incomplete MQTTS certificate state; inspect its namespace annotations before retrying."
+  fi
+
+  if [ -n "$recorded_hostname" ]; then
+    if [ -n "$MQTTS_HOSTNAME_VALUE" ] && \
+       [ "${MQTTS_HOSTNAME_VALUE%.}" != "${recorded_hostname%.}" ]; then
+      die "Stack '$STACK_NAME' uses MQTTS hostname '$recorded_hostname'; in-place hostname migration to '$MQTTS_HOSTNAME_VALUE' is not supported."
+    fi
+    MQTTS_HOSTNAME_VALUE="$recorded_hostname"
+  fi
+  [ -n "$MQTTS_HOSTNAME_VALUE" ] || die \
+    "Ingress MQTTS requires --mqtts-hostname on first apply."
+  normalize_and_validate_mqtts_hostname
+  [ "$MQTTS_HOSTNAME_VALUE" != "$HOSTNAME_VALUE" ] || die \
+    "Ingress web and MQTTS hostnames must be different."
+
+  MQTTS_CERTIFICATE_ARN="${MQTTS_CERTIFICATE_ARN:-$recorded_arn}"
+  [ -n "$MQTTS_CERTIFICATE_ARN" ] || die \
+    "Ingress MQTTS requires --mqtts-certificate-arn on first apply."
+}
+
 record_initial_certificate_mode() {
   local namespace_json recorded_mode resource_version
   local annotations=("$CERTIFICATE_MODE_ANNOTATION=$CERTIFICATE_MODE")
@@ -719,25 +845,132 @@ record_initial_certificate_mode() {
       "Unable to record certificate mode; the namespace may have changed concurrently. Retry apply."
 }
 
+record_initial_mqtts_configuration() {
+  local namespace_json
+  local recorded_hostname
+  local recorded_mode
+  local resource_version
+
+  [ "$EXPOSURE" = ingress ] && [ "$MQTTS_ENABLED" = true ] || return 0
+  namespace_json="$(read_certificate_namespace)" || die \
+    "Unable to record the stack's MQTTS lifecycle configuration."
+  [ -n "$namespace_json" ] || die \
+    "Prepared namespace '$STACK_NAME' is missing; unable to record MQTTS lifecycle configuration."
+  recorded_mode="$(jq -r '.metadata.annotations["openremote.io/mqtts-certificate-mode"] // empty' \
+    <<< "$namespace_json")"
+  recorded_hostname="$(jq -r '.metadata.annotations["openremote.io/mqtts-hostname"] // empty' \
+    <<< "$namespace_json")"
+  if [ -n "$recorded_mode" ]; then
+    [ "$recorded_mode" = existing ] || die \
+      "Stack '$STACK_NAME' now uses incompatible MQTTS certificate mode '$recorded_mode'."
+    [ -n "$recorded_hostname" ] || die \
+      "Stack '$STACK_NAME' has incomplete MQTTS lifecycle configuration."
+    [ "$recorded_hostname" = "$MQTTS_HOSTNAME_VALUE" ] || die \
+      "Stack '$STACK_NAME' now records MQTTS hostname '$recorded_hostname', not '$MQTTS_HOSTNAME_VALUE'."
+    return
+  fi
+  resource_version="$(jq -er '.metadata.resourceVersion | select(type == "string" and length > 0)' \
+    <<< "$namespace_json")" || die \
+      "Unable to verify namespace version before recording MQTTS lifecycle configuration."
+  # Record the facade's ownership mode before Helm. If apply is interrupted,
+  # destroy can still distinguish this workflow from a low-level or-stack
+  # endpoint. Record the selected ARN only after Helm succeeds so certificate
+  # rotation never advances recorded state ahead of the Service.
+  kubectl --context "$KUBE_CONTEXT" annotate namespace "$STACK_NAME" \
+    "$MQTTS_CERTIFICATE_MODE_ANNOTATION=existing" \
+    "$MQTTS_HOSTNAME_ANNOTATION=$MQTTS_HOSTNAME_VALUE" \
+    --overwrite --resource-version="$resource_version" >/dev/null || die \
+      "Unable to record MQTTS lifecycle configuration; the namespace may have changed concurrently. Retry apply."
+}
+
 certificate_name_covers_hostname() {
   local certificate_name
+  local hostname="${2:-$HOSTNAME_VALUE}"
   local wildcard_suffix
 
   certificate_name="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
   certificate_name="${certificate_name%.}"
-  if [ "$certificate_name" = "$HOSTNAME_VALUE" ]; then
+  if [ "$certificate_name" = "$hostname" ]; then
     return 0
   fi
 
   case "$certificate_name" in
     \*.*)
       wildcard_suffix="${certificate_name#*.}"
-      [ "${HOSTNAME_VALUE#*.}" = "$wildcard_suffix" ]
+      [ "${hostname#*.}" = "$wildcard_suffix" ]
       ;;
     *)
       return 1
       ;;
   esac
+}
+
+require_selected_mqtts_acm_certificate() {
+  local certificate_account
+  local certificate_json
+  local certificate_name
+  local certificate_region
+  local certificate_status
+  local certificate_tags
+  local current_account
+  local describe_status
+  local hostname_covered=false
+  local tags_status
+
+  if [[ ! "$MQTTS_CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:([^:]+):([0-9]{12}):certificate/[A-Za-z0-9-]+$ ]]; then
+    die "MQTTS certificate ARN must be a valid ACM certificate ARN."
+  fi
+  certificate_region="${BASH_REMATCH[1]}"
+  certificate_account="${BASH_REMATCH[2]}"
+  [ "$certificate_region" = "$AWS_REGION_NAME" ] || die \
+    "MQTTS certificate '$MQTTS_CERTIFICATE_ARN' is in region '$certificate_region', but cluster '$CLUSTER_NAME' is in '$AWS_REGION_NAME'."
+  current_account="$(aws_sts get-caller-identity --query Account --output text)" || die \
+    "Unable to determine the EKS AWS account."
+  [ "$certificate_account" = "$current_account" ] || die \
+    "MQTTS certificate '$MQTTS_CERTIFICATE_ARN' belongs to account '$certificate_account', but the EKS account is '$current_account'."
+
+  set +e
+  certificate_json="$(aws_acm describe-certificate \
+    --certificate-arn "$MQTTS_CERTIFICATE_ARN" \
+    --output json 2>&1)"
+  describe_status=$?
+  set -e
+  [ "$describe_status" -eq 0 ] || die \
+    "Unable to describe MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN': $certificate_json"
+  certificate_status="$(jq -r '.Certificate.Status // empty' <<< "$certificate_json")" || die \
+    "Unable to read MQTTS ACM certificate metadata."
+  [ "$certificate_status" = ISSUED ] || die \
+    "The MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' is '$certificate_status', not ISSUED."
+
+  while IFS= read -r certificate_name; do
+    [ -n "$certificate_name" ] || continue
+    if certificate_name_covers_hostname "$certificate_name" "$MQTTS_HOSTNAME_VALUE"; then
+      hostname_covered=true
+      break
+    fi
+  done < <(jq -r \
+    '[.Certificate.DomainName, .Certificate.SubjectAlternativeNames[]?] | unique[] | select(. != null)' \
+    <<< "$certificate_json")
+  [ "$hostname_covered" = true ] || die \
+    "The MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' does not cover '$MQTTS_HOSTNAME_VALUE'."
+
+  set +e
+  certificate_tags="$(aws_acm list-tags-for-certificate \
+    --certificate-arn "$MQTTS_CERTIFICATE_ARN" \
+    --output json 2>&1)"
+  tags_status=$?
+  set -e
+  [ "$tags_status" -eq 0 ] || die \
+    "Unable to inspect ownership tags on MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN': $certificate_tags"
+  if jq -e \
+      --arg key "$CERTIFICATE_MANAGED_BY_TAG_KEY" \
+      --arg value "$CERTIFICATE_MANAGED_BY_TAG_VALUE" \
+      '.Tags[]? | select(.Key == $key and .Value == $value)' \
+      <<< "$certificate_tags" >/dev/null; then
+    die "MQTTS certificate '$MQTTS_CERTIFICATE_ARN' is marked as managed by or-eks-stack and cannot be used as an existing certificate."
+  fi
+
+  log "Validated user-owned ACM certificate '$MQTTS_CERTIFICATE_ARN' for MQTTS hostname '$MQTTS_HOSTNAME_VALUE'."
 }
 
 require_selected_acm_certificate() {
@@ -964,6 +1197,21 @@ stack_hostname() {
     -o 'go-template={{with index .metadata.annotations "openremote.io/hostname"}}{{.}}{{end}}'
 }
 
+stack_mqtts_certificate_mode() {
+  kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    -o 'go-template={{with index .metadata.annotations "openremote.io/mqtts-certificate-mode"}}{{.}}{{end}}'
+}
+
+stack_mqtts_certificate_arn() {
+  kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    -o 'go-template={{with index .metadata.annotations "openremote.io/mqtts-certificate-arn"}}{{.}}{{end}}'
+}
+
+stack_mqtts_hostname() {
+  kubectl --context "$KUBE_CONTEXT" get namespace "$STACK_NAME" \
+    -o 'go-template={{with index .metadata.annotations "openremote.io/mqtts-hostname"}}{{.}}{{end}}'
+}
+
 inspect_stack_namespace_for_destroy() {
   local namespace_identity
   local namespace_name
@@ -988,13 +1236,19 @@ inspect_stack_namespace_for_destroy() {
 }
 
 prepare_portable_stack() {
-  run_or_stack prepare \
+  local stack_args=(
+    prepare
     --name "$STACK_NAME" \
     --kube-context "$KUBE_CONTEXT" \
     --target eks \
     --exposure "$EXPOSURE" \
     --dns external-dns \
     --hostname "$HOSTNAME_VALUE"
+  )
+  if [ "$EXPOSURE" = ingress ] && [ "$MQTTS_ENABLED" = true ]; then
+    stack_args+=(--mqtts --mqtts-hostname "$MQTTS_HOSTNAME_VALUE")
+  fi
+  run_or_stack "${stack_args[@]}"
 }
 
 resolve_managed_certificate() {
@@ -1501,6 +1755,14 @@ apply_portable_stack() {
     fi
   else
     stack_args+=(--certificate-arn "$CERTIFICATE_ARN")
+    if [ "$MQTTS_ENABLED" = true ]; then
+      stack_args+=(
+        --mqtts
+        --mqtts-port "$MQTTS_PORT"
+        --mqtts-hostname "$MQTTS_HOSTNAME_VALUE"
+        --mqtts-certificate-arn "$MQTTS_CERTIFICATE_ARN"
+      )
+    fi
   fi
   if [ -n "$VALUES_DIR" ]; then
     stack_args+=(--values-dir "$VALUES_DIR")
@@ -1525,6 +1787,16 @@ record_certificate_configuration() {
       "$HOSTNAME_ANNOTATION=$HOSTNAME_VALUE" \
       --overwrite >/dev/null
   fi
+}
+
+record_mqtts_certificate_configuration() {
+  [ "$EXPOSURE" = ingress ] && [ "$MQTTS_ENABLED" = true ] || return 0
+  kubectl --context "$KUBE_CONTEXT" annotate namespace "$STACK_NAME" \
+    "$MQTTS_CERTIFICATE_MODE_ANNOTATION=existing" \
+    "$MQTTS_CERTIFICATE_ARN_ANNOTATION=$MQTTS_CERTIFICATE_ARN" \
+    "$MQTTS_HOSTNAME_ANNOTATION=$MQTTS_HOSTNAME_VALUE" \
+    --overwrite >/dev/null || die \
+      "Unable to record the Ingress MQTTS certificate configuration."
 }
 
 wait_for_load_balancer() {
@@ -1570,6 +1842,40 @@ wait_for_load_balancer() {
   die "The proxy $resource_kind did not receive a $load_balancer_kind address within '$TIMEOUT'; inspect '$STACK_NAME/proxy' and the AWS Load Balancer Controller."
 }
 
+wait_for_mqtts_load_balancer() {
+  local deadline
+  local next_notice
+  local now
+  local timeout_seconds
+
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  MQTTS_LOAD_BALANCER_ADDRESS=""
+  log "Waiting for the stack MQTTS NLB address."
+
+  while [ "$now" -lt "$deadline" ]; do
+    MQTTS_LOAD_BALANCER_ADDRESS="$(kubectl --context "$KUBE_CONTEXT" \
+      --namespace "$STACK_NAME" \
+      get service proxy-mqtts \
+      -o 'jsonpath={.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}' \
+      2>/dev/null || true)"
+    if [ -n "$MQTTS_LOAD_BALANCER_ADDRESS" ]; then
+      log "The stack MQTTS NLB is '$MQTTS_LOAD_BALANCER_ADDRESS'."
+      return
+    fi
+    if [ "$now" -ge "$next_notice" ]; then
+      log "The stack MQTTS NLB address is still pending."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "Service '$STACK_NAME/proxy-mqtts' did not receive an NLB address within '$TIMEOUT'; inspect the Service and the AWS Load Balancer Controller."
+}
+
 resolve_addresses() {
   local dns_name="$1"
 
@@ -1597,6 +1903,7 @@ wait_for_dns() {
   local deadline
   local hostname_addresses
   local load_balancer_address="$1"
+  local hostname="${2:-$HOSTNAME_VALUE}"
   local load_balancer_addresses
   local next_notice
   local now
@@ -1606,10 +1913,10 @@ wait_for_dns() {
   now="$(date +%s)"
   deadline="$((now + timeout_seconds))"
   next_notice="$((now + 30))"
-  log "Waiting for '$HOSTNAME_VALUE' to resolve to the current load balancer '$load_balancer_address'."
+  log "Waiting for '$hostname' to resolve to the current load balancer '$load_balancer_address'."
 
   while [ "$now" -lt "$deadline" ]; do
-    hostname_addresses="$(resolve_addresses "$HOSTNAME_VALUE")"
+    hostname_addresses="$(resolve_addresses "$hostname")"
     if [[ "$load_balancer_address" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || \
        [[ "$load_balancer_address" == *:* ]]; then
       load_balancer_addresses="$load_balancer_address"
@@ -1630,24 +1937,25 @@ wait_for_dns() {
     now="$(date +%s)"
   done
 
-  die "DNS '$HOSTNAME_VALUE' did not resolve to the current load balancer within '$TIMEOUT'. Inspect deployment/$EXTERNAL_DNS_RELEASE_NAME logs and allow for resolver negative caching before retrying."
+  die "DNS '$hostname' did not resolve to the current load balancer within '$TIMEOUT'. Inspect deployment/$EXTERNAL_DNS_RELEASE_NAME logs and allow for resolver negative caching before retrying."
 }
 
 select_managed_dns_domain() {
   local domain_filter
+  local hostname="${1:-$HOSTNAME_VALUE}"
 
   MANAGED_DNS_DOMAIN=""
   while IFS= read -r domain_filter; do
     domain_filter="${domain_filter%.}"
     [ -n "$domain_filter" ] || continue
-    if dns_name_is_covered "$HOSTNAME_VALUE" "$domain_filter" && \
+    if dns_name_is_covered "$hostname" "$domain_filter" && \
        [ "${#domain_filter}" -gt "${#MANAGED_DNS_DOMAIN}" ]; then
       MANAGED_DNS_DOMAIN="$domain_filter"
     fi
   done < <(sed -n 's/^--domain-filter=//p' <<< "$EXTERNAL_DNS_ARGS")
 
   [ -n "$MANAGED_DNS_DOMAIN" ] || die \
-    "Unable to select an ExternalDNS domain for '$HOSTNAME_VALUE'."
+    "Unable to select an ExternalDNS domain for '$hostname'."
 }
 
 discover_authoritative_name_servers() {
@@ -1994,14 +2302,20 @@ wait_for_https() {
 }
 
 mqtts_endpoint_is_ready() {
+  local hostname
   local output
+
+  hostname="$HOSTNAME_VALUE"
+  if [ "$EXPOSURE" = ingress ]; then
+    hostname="$MQTTS_HOSTNAME_VALUE"
+  fi
 
   # LibreSSL's s_client can exit non-zero after a successful, verified TLS
   # handshake when stdin closes before an MQTT CONNECT packet is sent. Treat
   # the verification result as authoritative for this TLS readiness probe.
   output="$(openssl s_client \
-    -connect "$HOSTNAME_VALUE:$MQTTS_PORT" \
-    -servername "$HOSTNAME_VALUE" \
+    -connect "$hostname:$MQTTS_PORT" \
+    -servername "$hostname" \
     -verify_return_error </dev/null 2>&1 || true)"
   grep -Eq 'Verify return code: 0 \(ok\)|Verification: OK' <<< "$output"
 }
@@ -2011,12 +2325,19 @@ wait_for_mqtts() {
   local next_notice
   local now
   local timeout_seconds
+  local hostname="$HOSTNAME_VALUE"
+  local service_name=proxy
+
+  if [ "$EXPOSURE" = ingress ]; then
+    hostname="$MQTTS_HOSTNAME_VALUE"
+    service_name=proxy-mqtts
+  fi
 
   timeout_seconds="$(duration_seconds "$TIMEOUT")"
   now="$(date +%s)"
   deadline="$((now + timeout_seconds))"
   next_notice="$((now + 30))"
-  log "Waiting for trusted MQTTS at '$HOSTNAME_VALUE:$MQTTS_PORT'."
+  log "Waiting for trusted MQTTS at '$hostname:$MQTTS_PORT'."
 
   while [ "$now" -lt "$deadline" ]; do
     if mqtts_endpoint_is_ready; then
@@ -2031,7 +2352,7 @@ wait_for_mqtts() {
     now="$(date +%s)"
   done
 
-  die "Trusted MQTTS did not become ready at '$HOSTNAME_VALUE:$MQTTS_PORT' within '$TIMEOUT'. Inspect service '$STACK_NAME/proxy', deployment/proxy logs, and its persisted certificate state."
+  die "Trusted MQTTS did not become ready at '$hostname:$MQTTS_PORT' within '$TIMEOUT'. Inspect service '$STACK_NAME/$service_name' and deployment/proxy logs."
 }
 
 apply_stack() {
@@ -2052,6 +2373,7 @@ apply_stack() {
   require_eks_target
   if [ "$EXPOSURE" = "ingress" ]; then
     resolve_ingress_certificate
+    resolve_ingress_mqtts_configuration
     if [ "$CERTIFICATE_MODE" = managed ]; then
       require_command cksum
       [ "${#HOSTNAME_VALUE}" -le 64 ] || die \
@@ -2060,14 +2382,21 @@ apply_stack() {
   fi
   require_managed_external_dns
   require_stack_hostname_subdomain
+  if [ "$EXPOSURE" = ingress ] && [ "$MQTTS_ENABLED" = true ]; then
+    require_stack_hostname_subdomain "$MQTTS_HOSTNAME_VALUE"
+  fi
   if [ "$EXPOSURE" = "ingress" ] && [ "$CERTIFICATE_MODE" != "managed" ]; then
     require_selected_acm_certificate
+  fi
+  if [ "$EXPOSURE" = ingress ] && [ "$MQTTS_ENABLED" = true ]; then
+    require_selected_mqtts_acm_certificate
   fi
   # Reserve before ACM requests as well as before Helm, so a losing concurrent
   # apply cannot issue certificates or install a competing public endpoint.
   prepare_portable_stack || die "Namespace preparation or hostname reservation failed; no workloads were installed."
   if [ "$EXPOSURE" = "ingress" ]; then
     record_initial_certificate_mode
+    record_initial_mqtts_configuration
   fi
   if [ "$CERTIFICATE_MODE" = "managed" ]; then
     resolve_managed_certificate
@@ -2076,12 +2405,17 @@ apply_stack() {
     wait_for_managed_certificate
   fi
   apply_portable_stack
+  record_mqtts_certificate_configuration
   if [ "$CERTIFICATE_MODE" != "managed" ]; then
     record_certificate_configuration
   fi
 
   wait_for_load_balancer
   wait_for_dns "$LOAD_BALANCER_ADDRESS"
+  if [ "$EXPOSURE" = ingress ] && [ "$MQTTS_ENABLED" = true ]; then
+    wait_for_mqtts_load_balancer
+    wait_for_dns "$MQTTS_LOAD_BALANCER_ADDRESS" "$MQTTS_HOSTNAME_VALUE"
+  fi
   endpoint_url="$(public_manager_url)"
 
   if [ "$EXPOSURE" = "haproxy" ]; then
@@ -2095,7 +2429,11 @@ apply_stack() {
   log "Stack '$STACK_NAME' is ready at:"
   printf '  %s\n' "$endpoint_url"
   if [ "$MQTTS_ENABLED" = true ]; then
-    printf '  mqtts://%s:%s\n' "$HOSTNAME_VALUE" "$MQTTS_PORT"
+    if [ "$EXPOSURE" = ingress ]; then
+      printf '  mqtts://%s:%s\n' "$MQTTS_HOSTNAME_VALUE" "$MQTTS_PORT"
+    else
+      printf '  mqtts://%s:%s\n' "$HOSTNAME_VALUE" "$MQTTS_PORT"
+    fi
   fi
   log "Retrieve its Manager login at any time with:"
   printf '  %q credentials --name %q --cluster %q --region %q' \
@@ -2110,6 +2448,10 @@ show_certificate_configuration() {
   local certificate_arn
   local certificate_mode
   local certificate_status
+  local mqtts_certificate_arn
+  local mqtts_certificate_mode
+  local mqtts_certificate_status
+  local mqtts_hostname
 
   certificate_mode="$(stack_certificate_mode 2>/dev/null || true)"
   certificate_arn="$(stack_certificate_arn 2>/dev/null || true)"
@@ -2133,11 +2475,168 @@ show_certificate_configuration() {
       warn "Unable to read the current status of $certificate_mode ACM certificate '$certificate_arn'."
     fi
   fi
+
+  mqtts_certificate_mode="$(stack_mqtts_certificate_mode 2>/dev/null || true)"
+  mqtts_certificate_arn="$(stack_mqtts_certificate_arn 2>/dev/null || true)"
+  mqtts_hostname="$(stack_mqtts_hostname 2>/dev/null || true)"
+  if [ -n "$mqtts_certificate_mode" ] || [ -n "$mqtts_certificate_arn" ] || \
+     [ -n "$mqtts_hostname" ]; then
+    printf 'MQTTS certificate mode: %s\n' "${mqtts_certificate_mode:-unrecorded}"
+    [ -z "$mqtts_hostname" ] || printf 'MQTTS hostname: %s\n' "$mqtts_hostname"
+    [ -z "$mqtts_certificate_arn" ] || printf 'MQTTS certificate ARN: %s\n' "$mqtts_certificate_arn"
+    if [ "$mqtts_certificate_mode" = existing ] && [ -n "$mqtts_certificate_arn" ]; then
+      if mqtts_certificate_status="$(aws_acm describe-certificate \
+          --certificate-arn "$mqtts_certificate_arn" \
+          --query 'Certificate.Status' \
+          --output text 2>/dev/null)"; then
+        printf 'MQTTS certificate status: %s\n' "$mqtts_certificate_status"
+      else
+        warn "Unable to read the current status of MQTTS ACM certificate '$mqtts_certificate_arn'."
+      fi
+    fi
+  fi
+}
+
+prepare_mqtts_destroy() {
+  local mqtts_reservation="$1"
+  local recorded_arn
+  local recorded_hostname
+  local recorded_mode
+  local service_certificate_arn
+  local service_hostname
+  local service_managed_dns
+  local service_load_balancer_type
+  local service_port
+  local service_ssl_ports
+  local service_type
+
+  [ -n "$mqtts_reservation" ] || return 0
+  [ "$(jq -r '.target + "/" + .dns' <<< "$mqtts_reservation")" = "eks/external-dns" ] || die \
+    "The MQTTS hostname reservation requires external cleanup and or-stack release-hostname."
+  [ "$(jq -r '.exposure' <<< "$mqtts_reservation")" = ingress ] && \
+    [ "$(jq -r '.endpoint' <<< "$mqtts_reservation")" = mqtts ] || die \
+      "The MQTTS hostname reservation is not an EKS Ingress MQTTS endpoint."
+
+  MQTTS_ENABLED=true
+  MQTTS_HOSTNAME_VALUE="$(jq -r '.hostname' <<< "$mqtts_reservation")"
+  normalize_and_validate_mqtts_hostname
+  [ "$MQTTS_HOSTNAME_VALUE" != "$HOSTNAME_VALUE" ] || die \
+    "The web and MQTTS reservations unexpectedly use the same hostname."
+  if [ "$STACK_NAMESPACE_EXISTS" != true ]; then
+    log "Stack namespace '$STACK_NAME' is already absent; recovering retained MQTTS DNS ownership."
+    return
+  fi
+
+  require_reservation_namespace_identity "$mqtts_reservation"
+  recorded_mode="$(stack_mqtts_certificate_mode)" || die \
+    "Unable to read MQTTS certificate mode from namespace '$STACK_NAME'."
+  recorded_arn="$(stack_mqtts_certificate_arn)" || die \
+    "Unable to read MQTTS certificate ARN from namespace '$STACK_NAME'."
+  recorded_hostname="$(stack_mqtts_hostname)" || die \
+    "Unable to read MQTTS hostname from namespace '$STACK_NAME'."
+  [ "$recorded_mode" = existing ] || die \
+    "Stack '$STACK_NAME' has a low-level or unowned Ingress MQTTS endpoint; refusing automated cleanup without openremote.io/mqtts-certificate-mode=existing."
+  [ "$recorded_hostname" = "$MQTTS_HOSTNAME_VALUE" ] || die \
+    "Namespace '$STACK_NAME' records MQTTS hostname '$recorded_hostname', but reserves '$MQTTS_HOSTNAME_VALUE'."
+  MQTTS_CERTIFICATE_ARN="$recorded_arn"
+
+  STACK_MQTTS_SERVICE_JSON="$(kubectl --context "$KUBE_CONTEXT" \
+    --namespace "$STACK_NAME" \
+    get service proxy-mqtts \
+    --ignore-not-found \
+    -o json)" || die \
+      "Unable to inspect Service '$STACK_NAME/proxy-mqtts' before destroy."
+  [ -n "$STACK_MQTTS_SERVICE_JSON" ] || return 0
+
+  service_managed_dns="$(jq -r '.metadata.labels["openremote.io/managed-dns"] // empty' \
+    <<< "$STACK_MQTTS_SERVICE_JSON")"
+  service_hostname="$(jq -r '.metadata.annotations["external-dns.kubernetes.io/hostname"] // empty' \
+    <<< "$STACK_MQTTS_SERVICE_JSON")"
+  service_certificate_arn="$(jq -r '.metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-ssl-cert"] // empty' \
+    <<< "$STACK_MQTTS_SERVICE_JSON")"
+  service_load_balancer_type="$(jq -r '.metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-type"] // empty' \
+    <<< "$STACK_MQTTS_SERVICE_JSON")"
+  service_ssl_ports="$(jq -r '.metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-ssl-ports"] // empty' \
+    <<< "$STACK_MQTTS_SERVICE_JSON")"
+  service_type="$(jq -r '.spec.type // empty' <<< "$STACK_MQTTS_SERVICE_JSON")"
+  service_port="$(jq -r '.spec.ports[]? | select(.name == "mqtts") | .port' \
+    <<< "$STACK_MQTTS_SERVICE_JSON")"
+  [ "$service_managed_dns" = true ] || die \
+    "Service '$STACK_NAME/proxy-mqtts' is not marked for OpenRemote-managed DNS."
+  [ "$service_hostname" = "$MQTTS_HOSTNAME_VALUE" ] || die \
+    "Service '$STACK_NAME/proxy-mqtts' records hostname '$service_hostname', not '$MQTTS_HOSTNAME_VALUE'."
+  [ "$service_type" = LoadBalancer ] && [ -n "$service_port" ] || die \
+    "Service '$STACK_NAME/proxy-mqtts' is not the expected MQTTS LoadBalancer."
+  [ "$service_load_balancer_type" = external ] && [ "$service_ssl_ports" = mqtts ] || die \
+    "Service '$STACK_NAME/proxy-mqtts' is not configured as the expected ACM-terminated AWS NLB."
+  if [[ ! "$service_certificate_arn" =~ ^arn:[^:]+:acm:[a-z0-9-]+:[0-9]{12}:certificate/[A-Za-z0-9-]+$ ]]; then
+    die "Service '$STACK_NAME/proxy-mqtts' does not carry a valid ACM certificate ARN."
+  fi
+  if [ -n "$recorded_arn" ] && [ "$recorded_arn" != "$service_certificate_arn" ]; then
+    warn "Service '$STACK_NAME/proxy-mqtts' uses certificate '$service_certificate_arn', while the namespace records '$recorded_arn'. This can follow an interrupted rotation; both externally owned certificates will be retained."
+  fi
+  MQTTS_CERTIFICATE_ARN="$service_certificate_arn"
+  MQTTS_LOAD_BALANCER_ADDRESS="$(jq -r \
+    '.status.loadBalancer.ingress[0] | (.ip // "") + (.hostname // "")' \
+    <<< "$STACK_MQTTS_SERVICE_JSON")"
+}
+
+wait_for_mqtts_load_balancer_removed() {
+  local deadline
+  local describe_output
+  local describe_status
+  local next_notice
+  local now
+  local timeout_seconds
+
+  [ -n "$MQTTS_LOAD_BALANCER_ADDRESS" ] || return 0
+  if [[ "$MQTTS_LOAD_BALANCER_ADDRESS" =~ ^[0-9a-fA-F:.]+$ ]]; then
+    warn "The MQTTS load balancer was reported as an IP address; relying on Kubernetes Service finalizer cleanup."
+    return
+  fi
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  log "Waiting for MQTTS NLB '$MQTTS_LOAD_BALANCER_ADDRESS' to be deleted."
+
+  while [ "$now" -lt "$deadline" ]; do
+    set +e
+    describe_output="$(aws_elbv2 describe-load-balancers \
+      --output json 2>&1)"
+    describe_status=$?
+    set -e
+    [ "$describe_status" -eq 0 ] || die \
+      "Unable to verify deletion of MQTTS NLB '$MQTTS_LOAD_BALANCER_ADDRESS': $describe_output"
+    if ! jq -e --arg dns_name "$MQTTS_LOAD_BALANCER_ADDRESS" \
+        '.LoadBalancers[]? | select(.DNSName == $dns_name)' \
+        <<< "$describe_output" >/dev/null; then
+      log "The MQTTS NLB is deleted."
+      return
+    fi
+    if [ "$now" -ge "$next_notice" ]; then
+      log "The MQTTS NLB is still present."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+  die "The MQTTS NLB '$MQTTS_LOAD_BALANCER_ADDRESS' was not confirmed deleted within '$TIMEOUT'. Hostname reservations and the existing certificate were retained so destroy can be retried safely."
+}
+
+wait_for_public_hostname_removed() {
+  local description="$2"
+  local hostname="$1"
+  local records
+
+  select_managed_dns_domain "$hostname"
+  discover_authoritative_name_servers
+  records="$(printf '%s\t%s\n' "$hostname" A "$hostname" AAAA "$hostname" CNAME)"
+  wait_for_dns_records_removed "$description" "$records"
 }
 
 destroy_stack_with_managed_resources() {
   local mqtts_reservation
-  local public_dns_records
   local reservation
   local record_name
   local record_type
@@ -2148,8 +2647,6 @@ destroy_stack_with_managed_resources() {
   reservation="$(stack_hostname_reservation)" || die "Unable to inspect hostname reservations before destroy."
   mqtts_reservation="$(stack_mqtts_hostname_reservation)" || die \
     "Unable to inspect MQTTS hostname reservations before destroy."
-  [ -z "$mqtts_reservation" ] || die \
-    "Stack '$STACK_NAME' has a low-level Ingress MQTTS endpoint that this or-eks-stack increment cannot clean up safely. Use or-stack destroy, verify NLB and DNS removal, then explicitly release both retained hostnames."
   # Every public EKS stack reserves its hostname before creating external
   # resources. Never bypass DNS cleanup when that required state is missing.
   [ -n "$reservation" ] || die \
@@ -2162,19 +2659,33 @@ destroy_stack_with_managed_resources() {
   if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
     require_reservation_namespace_identity "$reservation"
   fi
+  MQTTS_ENABLED=false
+  if [ -n "$mqtts_reservation" ]; then
+    prepare_mqtts_destroy "$mqtts_reservation"
+  fi
   capture_stack_ingress_for_destroy
 
   resolve_managed_certificate_for_destroy
   if [ "$MANAGED_CERTIFICATE_DESTROY" = false ]; then
     CERTIFICATE_MODE=""
     require_managed_external_dns
-    select_managed_dns_domain
-    discover_authoritative_name_servers
     if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
       run_or_stack "$@"
+      STACK_NAMESPACE_EXISTS=false
     fi
-    public_dns_records="$(printf '%s\t%s\n' "$HOSTNAME_VALUE" A "$HOSTNAME_VALUE" AAAA "$HOSTNAME_VALUE" CNAME)"
-    wait_for_dns_records_removed "stack hostname '$HOSTNAME_VALUE'" "$public_dns_records"
+    wait_for_mqtts_load_balancer_removed
+    wait_for_public_hostname_removed "$HOSTNAME_VALUE" "stack hostname '$HOSTNAME_VALUE'"
+    if [ -n "$mqtts_reservation" ]; then
+      wait_for_public_hostname_removed "$MQTTS_HOSTNAME_VALUE" \
+        "MQTTS hostname '$MQTTS_HOSTNAME_VALUE'"
+    fi
+    if [ -n "$mqtts_reservation" ]; then
+      release_portable_mqtts_hostname
+      log "Existing MQTTS ACM certificate '${MQTTS_CERTIFICATE_ARN:-unknown}' was retained."
+    fi
+    # Release the required web claim last. If its release fails, destroy can
+    # still be retried; releasing it first would strand a remaining optional
+    # MQTTS claim behind the web-reservation preflight.
     release_portable_hostname
     return
   fi
@@ -2193,12 +2704,7 @@ destroy_stack_with_managed_resources() {
   discover_authoritative_name_servers
 
   remove_managed_stack_ingress
-  public_dns_records="$(printf '%s\t%s\n' \
-    "$HOSTNAME_VALUE" A \
-    "$HOSTNAME_VALUE" AAAA \
-    "$HOSTNAME_VALUE" CNAME)"
-  wait_for_dns_records_removed "stack hostname '$HOSTNAME_VALUE'" \
-    "$public_dns_records"
+  wait_for_public_hostname_removed "$HOSTNAME_VALUE" "stack hostname '$HOSTNAME_VALUE'"
   wait_for_managed_certificate_detachment
 
   # Managed mode assumes the certificate and its validation CNAMEs are exclusive
@@ -2212,8 +2718,19 @@ destroy_stack_with_managed_resources() {
     log "Stack namespace '$STACK_NAME' is already absent; continuing external cleanup."
   fi
 
+  wait_for_mqtts_load_balancer_removed
+  if [ -n "$mqtts_reservation" ]; then
+    wait_for_public_hostname_removed "$MQTTS_HOSTNAME_VALUE" \
+      "MQTTS hostname '$MQTTS_HOSTNAME_VALUE'"
+  fi
+  select_managed_dns_domain "$HOSTNAME_VALUE"
+  discover_authoritative_name_servers
   wait_for_dns_records_removed "ACM validation" "$VALIDATION_DNS_RECORDS"
   delete_managed_certificate
+  if [ -n "$mqtts_reservation" ]; then
+    release_portable_mqtts_hostname
+    log "Existing MQTTS ACM certificate '${MQTTS_CERTIFICATE_ARN:-unknown}' was retained."
+  fi
   release_portable_hostname
   log "Stack '$STACK_NAME' and its managed external certificate resources are destroyed."
 }
@@ -2221,6 +2738,11 @@ destroy_stack_with_managed_resources() {
 release_portable_hostname() {
   run_or_stack release-hostname --name "$STACK_NAME" --kube-context "$KUBE_CONTEXT" \
     --hostname "$HOSTNAME_VALUE" --confirm "$STACK_NAME"
+}
+
+release_portable_mqtts_hostname() {
+  run_or_stack release-hostname --name "$STACK_NAME" --kube-context "$KUBE_CONTEXT" \
+    --hostname "$MQTTS_HOSTNAME_VALUE" --confirm "$STACK_NAME"
 }
 
 delegate_stack_command() {
