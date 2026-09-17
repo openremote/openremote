@@ -610,7 +610,8 @@ test_apply() {
 test_ingress_existing_certificate_apply() {
   local output
 
-  output="$(run_eks_stack apply \
+  output="$(OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_SECOND_CERTIFICATE_ARN" \
+    run_eks_stack apply \
     --name stack-a \
     --cluster test-cluster \
     --hostname stack-a.example.com \
@@ -641,7 +642,8 @@ test_ingress_mqtts_existing_certificate_lifecycle() {
   local output
   local registry
 
-  output="$(run_eks_stack apply \
+  output="$(OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_SECOND_CERTIFICATE_ARN" \
+    run_eks_stack apply \
     --name stack-a \
     --cluster test-cluster \
     --hostname stack-a.example.com \
@@ -812,6 +814,20 @@ test_ingress_mqtts_managed_certificate_lifecycle() {
     "$CERTIFICATE_NAMESPACE_FILE" >/dev/null || fail \
       "Managed MQTTS apply did not persist its lifecycle state"
 
+  OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_SECOND_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_REQUESTED_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_MQTTS_CERTIFICATE_JSON="$MANAGED_MQTTS_CERTIFICATE_JSON" \
+  OR_EKS_STACK_TEST_MQTTS_CERTIFICATE_TAGS="$MANAGED_MQTTS_CERTIFICATE_TAGS" \
+    run_eks_stack apply \
+      --name stack-a --cluster test-cluster --hostname stack-a.example.com \
+      --profile '' --exposure ingress \
+      --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN" \
+      --mqtts --mqtts-hostname mqtt-stack-a.example.com \
+      --mqtts-certificate-mode managed >/dev/null
+  assert_contains $'aws-acm\trequest-certificate\t--domain-name\tmqtt-stack-a.example.com'
+  assert_contains $'openremote.io/mqtts-certificate-mode=managed'
+  assert_not_contains $'--mqtts-certificate-arn\t'"$TEST_SECOND_CERTIFICATE_ARN"
+
   OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
   OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
   OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=managed \
@@ -964,6 +980,101 @@ test_dual_managed_certificate_lifecycle() {
     $'aws-acm\tdelete-certificate\t--certificate-arn\t'"$TEST_MQTTS_CERTIFICATE_ARN"
 }
 
+test_ingress_mqtts_shared_certificate_lifecycle() {
+  local failure_output
+  local output
+  local registry
+
+  output="$(OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN" \
+    run_eks_stack apply \
+      --name stack-a \
+      --cluster test-cluster \
+      --hostname stack-a.example.com \
+      --profile '' \
+      --exposure ingress \
+      --certificate-mode existing \
+      --certificate-arn "$TEST_CERTIFICATE_ARN" \
+      --mqtts \
+      --mqtts-hostname mqtt-stack-a.example.com)"
+
+  grep -F -- "Selected the cluster's shared ACM certificate '$TEST_MQTTS_CERTIFICATE_ARN' for MQTTS." \
+    <<< "$output" >/dev/null || fail \
+      "First MQTTS apply did not automatically select the shared certificate"
+  grep -F -- "Validated externally managed shared ACM certificate '$TEST_MQTTS_CERTIFICATE_ARN' for MQTTS hostname 'mqtt-stack-a.example.com'." \
+    <<< "$output" >/dev/null || fail \
+      "Shared MQTTS certificate was not validated as externally managed"
+  assert_contains $'openremote.io/mqtts-certificate-mode=shared\topenremote.io/mqtts-hostname=mqtt-stack-a.example.com\t--overwrite\t--resource-version=2'
+  assert_contains $'openremote.io/mqtts-certificate-mode=shared\topenremote.io/mqtts-certificate-arn='"$TEST_MQTTS_CERTIFICATE_ARN"
+  assert_contains $'--mqtts-certificate-arn\t'"$TEST_MQTTS_CERTIFICATE_ARN"
+  assert_not_contains $'aws-acm\trequest-certificate'
+
+  OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN" \
+    run_eks_stack apply \
+      --name stack-a --cluster test-cluster --hostname stack-a.example.com \
+      --profile '' --exposure ingress \
+      --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN" \
+      --mqtts --mqtts-hostname mqtt-stack-a.example.com \
+      --mqtts-certificate-mode shared >/dev/null
+  assert_contains $'openremote.io/mqtts-certificate-mode=shared'
+  assert_contains $'--mqtts-certificate-arn\t'"$TEST_MQTTS_CERTIFICATE_ARN"
+  assert_not_contains $'aws-acm\trequest-certificate'
+
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=shared \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=mqtt-stack-a.example.com \
+  OR_EKS_STACK_TEST_SHARED_CERTIFICATE_ARN="$TEST_SECOND_CERTIFICATE_ARN" \
+    run_eks_stack apply \
+      --name stack-a --cluster test-cluster --hostname stack-a.example.com \
+      --profile '' --exposure ingress --mqtts >/dev/null
+  assert_contains $'--mqtts-certificate-arn\t'"$TEST_SECOND_CERTIFICATE_ARN"
+  assert_contains $'openremote.io/mqtts-certificate-mode=shared\topenremote.io/mqtts-certificate-arn='"$TEST_SECOND_CERTIFICATE_ARN"
+  assert_not_contains $'aws-acm\trequest-certificate'
+
+  output="$(OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+    OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+    OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=shared \
+    OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN" \
+    OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=mqtt-stack-a.example.com \
+      run_eks_stack status --name stack-a --cluster test-cluster --profile '')"
+  grep -F 'MQTTS certificate mode: shared' <<< "$output" >/dev/null || fail \
+    "Status did not report shared MQTTS certificate mode"
+  grep -F 'MQTTS certificate status: ISSUED' <<< "$output" >/dev/null || fail \
+    "Status did not inspect the shared MQTTS certificate"
+
+  if failure_output="$(OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+      OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+      OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=shared \
+      OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN" \
+      OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=mqtt-stack-a.example.com \
+        run_eks_stack apply --name stack-a --cluster test-cluster \
+          --hostname stack-a.example.com --profile '' --exposure ingress \
+          --mqtts 2>&1)"; then
+    fail "Recorded shared MQTTS mode accepted a missing cluster certificate"
+  fi
+  grep -F -- 'MQTTS certificate mode shared requires a certificate configured' \
+    <<< "$failure_output" >/dev/null || fail "$failure_output"
+  assert_not_contains $'or-stack\tprepare'
+
+  registry="$(jq -cn '{metadata:{resourceVersion:"1",labels:{"app.kubernetes.io/managed-by":"or-stack"}},
+    data:{
+      "stack-a.example.com":({namespace:"stack-a",namespaceUID:"uid-stack-a",target:"eks",dns:"external-dns",exposure:"ingress",endpoint:"web"}|tojson),
+      "mqtt-stack-a.example.com":({namespace:"stack-a",namespaceUID:"uid-stack-a",target:"eks",dns:"external-dns",exposure:"ingress",endpoint:"mqtts"}|tojson)
+    }}')"
+  OR_EKS_STACK_TEST_REGISTRY_JSON="$registry" \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_MODE=existing \
+  OR_EKS_STACK_TEST_RECORDED_CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_MODE=shared \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN" \
+  OR_EKS_STACK_TEST_RECORDED_MQTTS_HOSTNAME=mqtt-stack-a.example.com \
+    run_eks_stack destroy --name stack-a --cluster test-cluster \
+      --profile '' --confirm stack-a >/dev/null
+  assert_contains $'or-stack\tdestroy'
+  assert_contains $'--hostname\tmqtt-stack-a.example.com\t--confirm\tstack-a'
+  assert_not_contains $'aws-acm\tdelete-certificate'
+}
+
 test_ingress_mqtts_validation() {
   local failure_output
 
@@ -1047,6 +1158,16 @@ test_ingress_mqtts_validation() {
       --mqtts-certificate-mode managed \
       --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN") >/dev/null 2>&1; then
     fail "Managed MQTTS mode accepted a caller-supplied ARN"
+  fi
+  assert_not_contains $'or-stack\tprepare'
+
+  if (run_eks_stack apply --name stack-a --cluster test-cluster \
+      --hostname stack-a.example.com --profile '' --exposure ingress \
+      --certificate-mode existing --certificate-arn "$TEST_CERTIFICATE_ARN" \
+      --mqtts --mqtts-hostname mqtt-stack-a.example.com \
+      --mqtts-certificate-mode shared \
+      --mqtts-certificate-arn "$TEST_MQTTS_CERTIFICATE_ARN") >/dev/null 2>&1; then
+    fail "Shared MQTTS mode accepted a caller-supplied ARN"
   fi
   assert_not_contains $'or-stack\tprepare'
 
@@ -1982,6 +2103,7 @@ test_ingress_existing_certificate_apply
 test_ingress_mqtts_existing_certificate_lifecycle
 test_ingress_mqtts_managed_certificate_lifecycle
 test_dual_managed_certificate_lifecycle
+test_ingress_mqtts_shared_certificate_lifecycle
 test_ingress_mqtts_validation
 test_ingress_shared_certificate_apply
 test_ingress_managed_certificate_apply

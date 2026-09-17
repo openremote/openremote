@@ -33,10 +33,10 @@ for details, including refreshing existing kubeconfig contexts.
 
 HAProxy stacks can additionally expose MQTTS on the same NLB, hostname, and
 certificate with `--mqtts`. Ingress stacks use `--mqtts` with a separate
-hostname and either an existing, user-owned or stack-managed ACM certificate;
-`or-eks-stack` coordinates the certificate, dedicated MQTTS NLB, ExternalDNS
-records, trusted endpoint readiness, and destruction. Plaintext MQTT is not
-supported.
+hostname and an existing user-owned, cluster-shared, or stack-managed ACM
+certificate; `or-eks-stack` coordinates the certificate, dedicated MQTTS NLB,
+ExternalDNS records, trusted endpoint readiness, and destruction. Plaintext
+MQTT is not supported.
 
 The `eks-setup*.sh` and `eks-cleanup*.sh` scripts below are the legacy combined
 cluster-and-stack workflow. They will be split further as part of multi-stack
@@ -319,9 +319,10 @@ ARN on each apply. Mode `managed` reuses its owned certificate.
 
 #### MQTTS with Ingress
 
-Enable MQTTS for an Ingress stack with a second hostname. By default the facade
-creates a dedicated stack-managed ACM certificate. This is independent of the
-web certificate mode: the web side can use `existing`, `shared`, or `managed`:
+Enable MQTTS for an Ingress stack with a second hostname. Its certificate mode
+is independent of the web certificate mode: either endpoint can use
+`existing`, `shared`, or `managed`. To select a dedicated stack-managed MQTTS
+certificate explicitly:
 
 ```bash
 ./or-eks-stack apply \
@@ -333,7 +334,8 @@ web certificate mode: the web side can use `existing`, `shared`, or `managed`:
   --certificate-mode existing \
   --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/web \
   --mqtts \
-  --mqtts-hostname mqtt-stack-a.example.com
+  --mqtts-hostname mqtt-stack-a.example.com \
+  --mqtts-certificate-mode managed
 ```
 
 The MQTTS hostname must differ from the web hostname because it points to a
@@ -341,8 +343,27 @@ dedicated per-stack NLB rather than the shared web ALB. Managed mode records its
 intent before requesting ACM, requests or recovers one exactly tagged
 certificate for the MQTTS endpoint, publishes ACM's validation CNAME through
 the namespace's `acm-validation-mqtts` `DNSEndpoint`, and installs workloads
-only after ACM reports `ISSUED`. It is selected explicitly with
-`--mqtts-certificate-mode managed`, but that option can normally be omitted.
+only after ACM reports `ISSUED`.
+
+If neither an MQTTS mode nor ARN is supplied on first apply, the facade uses
+the cluster certificate configured by `or-eks-cluster
+--shared-certificate-arn`. It validates that the shared certificate also covers
+the MQTTS hostname, attaches the same ARN to the stack's dedicated NLB, and
+never deletes it. If the cluster has no shared ARN, selection falls back to
+managed mode. Shared mode can also be requested explicitly:
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode shared \
+  --mqtts \
+  --mqtts-hostname mqtt-stack-a.example.com \
+  --mqtts-certificate-mode shared
+```
 
 To supply a user-owned certificate instead, use:
 
@@ -367,31 +388,30 @@ omitted. The certificate must be in the EKS account and region, have status
 certificates tagged as managed by `or-eks-stack` are rejected, and the facade
 never renews or deletes it. A single wildcard or multi-name existing
 certificate may be supplied for both web and MQTTS when it meets the ownership
-and hostname checks. MQTTS does not currently have a cluster-shared certificate
-mode.
+and hostname checks.
 
 Repeat `--mqtts` on every reapply. After first selection, the MQTTS mode is
 persistent and the hostname and certificate ARN may be omitted because they are
 read from namespace annotations. An explicit different mode is rejected.
 Existing mode can rotate its certificate reference by supplying a new ARN;
-managed mode reuses its owned certificate. Changing or disabling the MQTTS
-hostname in place is not supported. To change mode or hostname, back up any
-data to retain, destroy the stack, and recreate it. `or-eks-stack status`
-reports the recorded MQTTS hostname, certificate mode, ARN, and current ACM
-status.
+shared mode follows the cluster's current shared ARN; managed mode reuses its
+owned certificate. Changing or disabling the MQTTS hostname in place is not
+supported. To change mode or hostname, back up any data to retain, destroy the
+stack, and recreate it. `or-eks-stack status` reports the recorded MQTTS
+hostname, certificate mode, ARN, and current ACM status.
 
 Apply waits for both the shared ALB and dedicated MQTTS NLB, verifies each DNS
 name points to its current load balancer, and verifies trusted HTTPS and MQTTS.
 Uninstall retains both endpoint reservations and the recorded certificate
 state. Destroy validates the MQTTS Service and its lifecycle metadata, removes
 the namespace, confirms the NLB and both public DNS names are gone, and then
-releases both reservations. An existing MQTTS certificate is always retained.
-For managed mode it also waits for NLB detachment and validation-CNAME removal,
-then deletes only the certificate carrying the exact cluster, stack, hostname,
-and `openremote.io/endpoint=mqtts` ownership tags. A failed apply records enough
-lifecycle intent before ACM or Helm to make a later facade destroy safe; a
-low-level `or-stack` MQTTS endpoint is not adopted automatically while its
-namespace still exists.
+releases both reservations. Existing and shared MQTTS certificates are always
+retained. For managed mode it also waits for NLB detachment and
+validation-CNAME removal, then deletes only the certificate carrying the exact
+cluster, stack, hostname, and `openremote.io/endpoint=mqtts` ownership tags. A
+failed apply records enough lifecycle intent before ACM or Helm to make a later
+facade destroy safe; a low-level `or-stack` MQTTS endpoint is not adopted
+automatically while its namespace still exists.
 
 Destroying an Ingress stack with MQTTS also uses
 `elasticloadbalancing:DescribeLoadBalancers` to confirm deletion of the
@@ -855,10 +875,11 @@ The old combined scripts exposed MQTT(S) with additional Manager LoadBalancer
 services. The namespaced HAProxy workflow instead keeps Manager private and
 reuses the existing proxy NLB when `--mqtts` is selected. Ingress stacks still
 use the proxy as their isolation gateway. `or-eks-stack` creates one dedicated
-MQTTS NLB per stack, with an existing or stack-managed ACM certificate
-terminating TLS before plaintext MQTT is forwarded to proxy port 1883 and then
-Manager. The facade coordinates its separate hostname, certificate lifecycle,
-readiness, and teardown. Plaintext MQTT is not publicly exposed.
+MQTTS NLB per stack, with an existing, cluster-shared, or stack-managed ACM
+certificate terminating TLS before plaintext MQTT is forwarded to proxy port
+1883 and then Manager. The facade coordinates the endpoint's separate hostname,
+certificate lifecycle, readiness, and teardown. Plaintext MQTT is not publicly
+exposed.
 
 #### Annotations
 

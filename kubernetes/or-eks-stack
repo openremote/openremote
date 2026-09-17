@@ -144,10 +144,11 @@ Options:
                         MQTTS. Required on first apply; reapply may reuse the
                         recorded hostname. Env: OR_EKS_STACK_MQTTS_HOSTNAME.
   --mqtts-certificate-mode <mode>
-                        Certificate ownership mode for Ingress MQTTS: existing
-                        or managed. An explicit ARN implies existing; otherwise
-                        first apply defaults to managed. Reapply preserves the
-                        recorded mode. Env:
+                        Certificate ownership mode for Ingress MQTTS: existing,
+                        shared, or managed. An explicit ARN implies existing;
+                        otherwise first apply selects the cluster's configured
+                        shared certificate, falling back to managed. Reapply
+                        preserves the recorded mode. Env:
                         OR_EKS_STACK_MQTTS_CERTIFICATE_MODE.
   --mqtts-certificate-arn <arn>
                         Existing ACM certificate for the Ingress MQTTS NLB in
@@ -186,10 +187,11 @@ this deployment requirement is not established by the script's ownership checks.
 The first certificate mode is retained across failed applies and uninstall.
 Changing mode requires destroying and recreating the stack; back up any data
 to retain first. Certificate rotation within existing or shared mode is supported.
-Ingress MQTTS accepts an existing, user-owned ACM certificate or a dedicated
-stack-managed certificate. Managed mode owns a separate ACM certificate and
-DNS-validation resource for the MQTTS endpoint; destroy deletes only that
-exactly tagged certificate after the NLB and validation records are removed.
+Ingress MQTTS accepts an existing user-owned ACM certificate, the cluster's
+externally managed shared certificate, or a dedicated stack-managed
+certificate. Managed mode owns a separate ACM certificate and DNS-validation
+resource for the MQTTS endpoint; destroy deletes only that exactly tagged
+certificate after the NLB and validation records are removed.
 EOF
 }
 
@@ -519,14 +521,15 @@ validate_apply_options() {
           die "MQTTS certificate ARN must be a valid ACM certificate ARN."
         fi
         case "$MQTTS_CERTIFICATE_MODE" in
-          existing|managed|"") ;;
+          existing|shared|managed|"") ;;
           *)
-            die "Unsupported Ingress MQTTS certificate mode '$MQTTS_CERTIFICATE_MODE'; expected existing or managed."
+            die "Unsupported Ingress MQTTS certificate mode '$MQTTS_CERTIFICATE_MODE'; expected existing, shared, or managed."
             ;;
         esac
-        if [ "$MQTTS_CERTIFICATE_MODE" = managed ] && \
+        if { [ "$MQTTS_CERTIFICATE_MODE" = shared ] || \
+             [ "$MQTTS_CERTIFICATE_MODE" = managed ]; } && \
            [ -n "$MQTTS_CERTIFICATE_ARN" ]; then
-          die "Option --mqtts-certificate-arn requires --mqtts-certificate-mode existing; managed mode resolves it automatically."
+          die "Option --mqtts-certificate-arn requires --mqtts-certificate-mode existing; shared and managed modes resolve it automatically."
         fi
       fi
       case "$CERTIFICATE_MODE" in
@@ -817,6 +820,7 @@ resolve_ingress_mqtts_configuration() {
   local recorded_mode
   local requested_arn="$MQTTS_CERTIFICATE_ARN"
   local requested_mode="$MQTTS_CERTIFICATE_MODE"
+  local shared_certificate_arn=""
 
   namespace_json="$(read_certificate_namespace)" || die \
     "Unable to resolve the stack's MQTTS certificate configuration."
@@ -835,7 +839,7 @@ resolve_ingress_mqtts_configuration() {
   fi
 
   case "$recorded_mode" in
-    existing|managed|"") ;;
+    existing|shared|managed|"") ;;
     *) die "Stack '$STACK_NAME' records incompatible MQTTS certificate mode '$recorded_mode'." ;;
   esac
   if [ -z "$recorded_mode" ] && [ -n "$recorded_arn" ]; then
@@ -849,8 +853,18 @@ resolve_ingress_mqtts_configuration() {
     if [ -n "$requested_arn" ]; then
       MQTTS_CERTIFICATE_MODE=existing
     else
-      MQTTS_CERTIFICATE_MODE=managed
-      log "No MQTTS certificate was supplied; selected stack-managed MQTTS certificate mode."
+      if ! shared_certificate_arn="$(kubectl --context "$KUBE_CONTEXT" \
+          get ingressclass openremote-alb \
+          -o "go-template={{with .metadata.annotations}}{{with index . \"$SHARED_CERTIFICATE_ARN_ANNOTATION\"}}{{.}}{{end}}{{end}}" \
+          2>/dev/null)"; then
+        die "Unable to inspect shared MQTTS certificate configuration on IngressClass 'openremote-alb'."
+      fi
+      if [ -n "$shared_certificate_arn" ]; then
+        MQTTS_CERTIFICATE_MODE=shared
+      else
+        MQTTS_CERTIFICATE_MODE=managed
+        log "No shared MQTTS certificate is configured; selected stack-managed MQTTS certificate mode."
+      fi
     fi
   fi
 
@@ -872,6 +886,22 @@ resolve_ingress_mqtts_configuration() {
       MQTTS_CERTIFICATE_ARN="${requested_arn:-$recorded_arn}"
       [ -n "$MQTTS_CERTIFICATE_ARN" ] || die \
         "Ingress MQTTS certificate mode existing requires --mqtts-certificate-arn on first apply."
+      ;;
+    shared)
+      [ -z "$requested_arn" ] || die \
+        "Option --mqtts-certificate-arn cannot be used with shared MQTTS certificate mode."
+      if [ -z "$shared_certificate_arn" ]; then
+        if ! shared_certificate_arn="$(kubectl --context "$KUBE_CONTEXT" \
+            get ingressclass openremote-alb \
+            -o "go-template={{with .metadata.annotations}}{{with index . \"$SHARED_CERTIFICATE_ARN_ANNOTATION\"}}{{.}}{{end}}{{end}}" \
+            2>/dev/null)"; then
+          die "Unable to inspect shared MQTTS certificate configuration on IngressClass 'openremote-alb'."
+        fi
+      fi
+      [ -n "$shared_certificate_arn" ] || die \
+        "Ingress MQTTS certificate mode shared requires a certificate configured with or-eks-cluster --shared-certificate-arn."
+      MQTTS_CERTIFICATE_ARN="$shared_certificate_arn"
+      log "Selected the cluster's shared ACM certificate '$MQTTS_CERTIFICATE_ARN' for MQTTS."
       ;;
     managed)
       [ -z "$requested_arn" ] || die \
@@ -1030,10 +1060,17 @@ require_selected_mqtts_acm_certificate() {
       --arg value "$CERTIFICATE_MANAGED_BY_TAG_VALUE" \
       '.Tags[]? | select(.Key == $key and .Value == $value)' \
       <<< "$certificate_tags" >/dev/null; then
+    if [ "$MQTTS_CERTIFICATE_MODE" = shared ]; then
+      die "MQTTS certificate '$MQTTS_CERTIFICATE_ARN' is marked as managed by or-eks-stack and cannot be used in shared mode."
+    fi
     die "MQTTS certificate '$MQTTS_CERTIFICATE_ARN' is marked as managed by or-eks-stack and cannot be used as an existing certificate."
   fi
 
-  log "Validated user-owned ACM certificate '$MQTTS_CERTIFICATE_ARN' for MQTTS hostname '$MQTTS_HOSTNAME_VALUE'."
+  if [ "$MQTTS_CERTIFICATE_MODE" = shared ]; then
+    log "Validated externally managed shared ACM certificate '$MQTTS_CERTIFICATE_ARN' for MQTTS hostname '$MQTTS_HOSTNAME_VALUE'."
+  else
+    log "Validated user-owned ACM certificate '$MQTTS_CERTIFICATE_ARN' for MQTTS hostname '$MQTTS_HOSTNAME_VALUE'."
+  fi
 }
 
 require_selected_acm_certificate() {
@@ -3131,7 +3168,7 @@ apply_stack() {
     fi
     if [ "$MQTTS_CERTIFICATE_MODE" = managed ]; then
       [ "${#MQTTS_HOSTNAME_VALUE}" -le 64 ] || die \
-        "Managed MQTTS ACM mode currently requires a hostname of at most 64 characters; use an existing certificate for a longer name."
+        "Managed MQTTS ACM mode currently requires a hostname of at most 64 characters; use an existing or shared certificate for a longer name."
     fi
   fi
   require_managed_external_dns
@@ -3143,7 +3180,7 @@ apply_stack() {
     require_selected_acm_certificate
   fi
   if [ "$EXPOSURE" = ingress ] && [ "$MQTTS_ENABLED" = true ] && \
-     [ "$MQTTS_CERTIFICATE_MODE" = existing ]; then
+     [ "$MQTTS_CERTIFICATE_MODE" != managed ]; then
     require_selected_mqtts_acm_certificate
   fi
   # Reserve before ACM requests as well as before Helm, so a losing concurrent
@@ -3248,6 +3285,7 @@ show_certificate_configuration() {
     [ -z "$mqtts_hostname" ] || printf 'MQTTS hostname: %s\n' "$mqtts_hostname"
     [ -z "$mqtts_certificate_arn" ] || printf 'MQTTS certificate ARN: %s\n' "$mqtts_certificate_arn"
     if { [ "$mqtts_certificate_mode" = existing ] || \
+         [ "$mqtts_certificate_mode" = shared ] || \
          [ "$mqtts_certificate_mode" = managed ]; } && \
        [ -n "$mqtts_certificate_arn" ]; then
       if mqtts_certificate_status="$(aws_acm describe-certificate \
@@ -3300,7 +3338,7 @@ prepare_mqtts_destroy() {
   recorded_hostname="$(stack_mqtts_hostname)" || die \
     "Unable to read MQTTS hostname from namespace '$STACK_NAME'."
   case "$recorded_mode" in
-    existing|managed) ;;
+    existing|shared|managed) ;;
     *)
       die "Stack '$STACK_NAME' has a low-level or unowned Ingress MQTTS endpoint; refusing automated cleanup without a supported openremote.io/mqtts-certificate-mode."
       ;;
@@ -3508,7 +3546,7 @@ destroy_stack_with_managed_resources() {
   if [ -n "$mqtts_reservation" ]; then
     release_portable_mqtts_hostname
     if [ "$MANAGED_MQTTS_CERTIFICATE_DESTROY" = false ]; then
-      log "Existing MQTTS ACM certificate '${MQTTS_CERTIFICATE_ARN:-unknown}' was retained."
+      log "Externally owned $MQTTS_CERTIFICATE_MODE MQTTS ACM certificate '${MQTTS_CERTIFICATE_ARN:-unknown}' was retained."
     fi
   fi
   # Release the required web claim last. If its release fails, destroy can
