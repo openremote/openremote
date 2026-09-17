@@ -683,6 +683,17 @@ The Pod must be ready and reachable for the HTTP ACME challenge before a
 production certificate can be issued; `or-stack status` shows the certificate
 issuer and expiry once managed or custom certificate material is present.
 
+##### MQTTS readiness
+
+MQTTS readiness requires Python 3 with its standard `ssl` module and a working
+CA trust store (using Python's default CA paths or `SSL_CERT_FILE`/`SSL_CERT_DIR`).
+The probe verifies the certificate chain and requested hostname
+through the TLS API: OpenSSL/LibreSSL diagnostic output alone can report a zero
+verification code even when no TLS session was established. Each probe is
+limited to ten seconds or the remaining readiness timeout, whichever is shorter.
+This verifies TLS readiness; MQTT authentication and publish/subscribe behavior
+still require an MQTT client test.
+
 ##### Managed-certificate lifecycle
 
 This lifecycle applies independently to managed web and MQTTS certificates

@@ -3087,21 +3087,42 @@ wait_for_https() {
 
 mqtts_endpoint_is_ready() {
   local hostname
-  local output
+  local probe_timeout="$1"
 
   hostname="$HOSTNAME_VALUE"
   if [ "$EXPOSURE" = ingress ]; then
     hostname="$MQTTS_HOSTNAME_VALUE"
   fi
 
-  # LibreSSL's s_client can exit non-zero after a successful, verified TLS
-  # handshake when stdin closes before an MQTT CONNECT packet is sent. Treat
-  # the verification result as authoritative for this TLS readiness probe.
-  output="$(openssl s_client \
-    -connect "$hostname:$MQTTS_PORT" \
-    -servername "$hostname" \
-    -verify_return_error </dev/null 2>&1 || true)"
-  grep -Eq 'Verify return code: 0 \(ok\)|Verification: OK' <<< "$output"
+  # s_client can print "Verify return code: 0" without completing TLS, and SNI
+  # alone does not verify the hostname. Use the TLS API's verified handshake;
+  # no MQTT exchange is needed and peer shutdown after the handshake is harmless.
+  python3 - "$hostname" "$MQTTS_PORT" "$probe_timeout" <<'PY'
+import signal
+import socket
+import ssl
+import sys
+
+def timed_out(signum, frame):
+    raise TimeoutError("MQTTS TLS probe timed out")
+
+# Bound DNS resolution as well as connection/handshake on the Unix platforms
+# supported by these scripts, without requiring GNU timeout on macOS.
+signal.signal(signal.SIGALRM, timed_out)
+signal.alarm(int(sys.argv[3]))
+try:
+    # Pass resolved paths explicitly: macOS LibreSSL can ignore SSL_CERT_FILE
+    # when loading defaults, even though get_default_verify_paths resolves it.
+    trust = ssl.get_default_verify_paths()
+    context = ssl.create_default_context(cafile=trust.cafile, capath=trust.capath)
+    with socket.create_connection((sys.argv[1], int(sys.argv[2]))) as connection:
+        with context.wrap_socket(connection, server_hostname=sys.argv[1]):
+            pass
+except (OSError, ValueError):
+    sys.exit(1)
+finally:
+    signal.alarm(0)
+PY
 }
 
 wait_for_mqtts() {
@@ -3109,6 +3130,7 @@ wait_for_mqtts() {
   local next_notice
   local now
   local timeout_seconds
+  local probe_timeout
   local hostname="$HOSTNAME_VALUE"
   local service_name=proxy
 
@@ -3124,15 +3146,21 @@ wait_for_mqtts() {
   log "Waiting for trusted MQTTS at '$hostname:$MQTTS_PORT'."
 
   while [ "$now" -lt "$deadline" ]; do
-    if mqtts_endpoint_is_ready; then
+    probe_timeout="$((deadline - now))"
+    [ "$probe_timeout" -le 10 ] || probe_timeout=10
+    if mqtts_endpoint_is_ready "$probe_timeout"; then
       log "Trusted MQTTS is ready."
       return
     fi
+    now="$(date +%s)"
+    [ "$now" -lt "$deadline" ] || break
     if [ "$now" -ge "$next_notice" ]; then
       log "The trusted MQTTS endpoint is still pending."
       next_notice="$((now + 30))"
     fi
-    sleep 5
+    probe_timeout="$((deadline - now))"
+    [ "$probe_timeout" -le 5 ] || probe_timeout=5
+    sleep "$probe_timeout"
     now="$(date +%s)"
   done
 
@@ -3146,7 +3174,7 @@ apply_stack() {
   require_command dig
   require_command curl
   if [ "$MQTTS_ENABLED" = true ]; then
-    require_command openssl
+    require_command python3
   fi
   [ -x "$OR_STACK_COMMAND" ] || die \
     "Portable stack command '$OR_STACK_COMMAND' is missing or not executable."

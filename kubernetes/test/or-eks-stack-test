@@ -533,13 +533,11 @@ curl() {
   [ "$curl_count" -gt 1 ]
 }
 
-openssl() {
-  log_call openssl "$@"
-  [ "${OR_EKS_STACK_TEST_MQTTS_ALWAYS_FAILS:-false}" = false ] || return 1
-  printf '%s\n' 'Verify return code: 0 (ok)'
-  # macOS LibreSSL reports a poll error and exits non-zero after the verified
-  # handshake because no MQTT CONNECT packet follows before stdin closes.
-  return 1
+python3() {
+  log_call python3 "$@"
+  # Real TLS behavior is covered separately by mqtts-readiness-test.
+  cat >/dev/null
+  [ "${OR_EKS_STACK_TEST_MQTTS_ALWAYS_FAILS:-false}" = false ]
 }
 
 sleep() {
@@ -595,7 +593,7 @@ test_apply() {
   assert_contains $'curl\t--disable\t--fail\t--silent\t--show-error\t--location'
   assert_contains $'--proto\t=https\t--proto-redir\t=https\t--max-redirs\t5'
   assert_contains 'https://stack-a.example.com:8443/manager/'
-  assert_contains $'openssl\ts_client\t-connect\tstack-a.example.com:18883\t-servername\tstack-a.example.com\t-verify_return_error'
+  assert_contains $'python3\t-\tstack-a.example.com\t18883\t10'
   assert_before $'helm\tstatus\topenremote-external-dns' $'or-stack\tapply'
   assert_before $'or-stack\tapply' $'get\tservice\tproxy'
   assert_before $'dig\t+short\tstack-a.example.com' $'exec\tdeployment/proxy'
@@ -663,7 +661,7 @@ test_ingress_mqtts_existing_certificate_lifecycle() {
   assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tstack-a\tget\tservice\tproxy-mqtts'
   assert_contains $'dig\t+short\tmqtt-stack-a.example.com\tA'
   assert_contains $'dig\t+short\ttest-mqtt-nlb.elb.eu-west-1.amazonaws.com\tA'
-  assert_contains $'openssl\ts_client\t-connect\tmqtt-stack-a.example.com:8883\t-servername\tmqtt-stack-a.example.com\t-verify_return_error'
+  assert_contains $'python3\t-\tmqtt-stack-a.example.com\t8883\t10'
   assert_before $'or-stack\tprepare' $'openremote.io/mqtts-certificate-mode=existing\topenremote.io/mqtts-hostname='
   assert_before $'openremote.io/mqtts-certificate-mode=existing\topenremote.io/mqtts-hostname=' $'or-stack\tapply'
   assert_before $'or-stack\tapply' $'openremote.io/mqtts-certificate-arn='
@@ -1470,7 +1468,7 @@ test_acme_state_and_readiness() {
   fi
   grep -F 'Trusted MQTTS did not become ready' <<< "$failure_output" >/dev/null || fail \
     "Apply did not identify an MQTTS readiness timeout"
-  assert_contains $'openssl\ts_client\t-connect\tstack-a.example.com:8883'
+  assert_contains $'python3\t-\tstack-a.example.com\t8883\t1'
 }
 
 test_lifecycle_delegation() {

@@ -380,6 +380,16 @@ you intend to retain before destruction. In-place hostname migration is not supp
 For EKS cleanup and recovery, see
 [Hostname ownership](README-AWS.md#hostname-ownership).
 
+The EKS facade's MQTTS readiness probe requires Python 3 with its standard `ssl`
+module and configured CA trust. It verifies a completed TLS handshake and the
+endpoint hostname for both HAProxy and Ingress exposure. Local TLS regression
+tests require Python 3.9+, OpenSSL (or LibreSSL) to generate temporary test
+certificates, and permission to listen on loopback sockets:
+
+```bash
+python3 kubernetes/test/mqtts-readiness-test
+```
+
 ### Uninstalling or destroying a stack
 
 Uninstall a stack's Helm releases while preserving its namespace, credentials,
