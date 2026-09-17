@@ -1,4 +1,5 @@
 {{- include "manager.logging.validate" . }}
+{{- include "manager.otel.validate" . }}
 {{- $loggingInlineConfig := .Values.logging.config -}}
 {{- $loggingExistingConfigMap := .Values.logging.existingConfigMap -}}
 {{- $loggingEnabled := or $loggingInlineConfig $loggingExistingConfigMap -}}
@@ -136,6 +137,25 @@ spec:
               value: "{{ .Values.or.metricsEnabled }}"
             - name: OR_METRICS_PORT
               value: "{{ .Values.or.metricsPort }}"
+
+            {{- if .Values.or.otel.enabled }}
+            - name: OTEL_JAVAAGENT_ENABLED
+              value: "true"
+            - name: OTEL_SERVICE_NAME
+              value: {{ .Values.or.otel.serviceName | quote }}
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.or.otel.endpoint | quote }}
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: {{ .Values.or.otel.protocol | quote }}
+            - name: OTEL_METRICS_EXPORTER
+              value: "none"
+            - name: OTEL_LOGS_EXPORTER
+              value: "none"
+            - name: OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED
+              value: "true"
+            {{- end }}
 
             {{- if $loggingEnabled }}
             - name: OR_LOGGING_CONFIG_FILE

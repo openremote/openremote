@@ -174,6 +174,7 @@ RUN mkdir -p /storage/logs
 WORKDIR /opt/app
 
 ADD lib /opt/app/lib
+ADD opentelemetry /opt/opentelemetry
 ADD web /opt/web
 ADD map /opt/map
 

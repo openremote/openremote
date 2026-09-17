@@ -14,6 +14,15 @@ application {
   mainClass = "org.openremote.manager.Main"
 }
 
+configurations {
+  demoExtension
+  otelJavaAgent {
+    canBeConsumed = false
+    canBeResolved = true
+    transitive = false
+  }
+}
+
 dependencies {
 
   api project(":container")
@@ -57,6 +66,8 @@ dependencies {
   implementation libs.prometheusMetricsExporterHttpserver
 
   implementation libs.sshdNetty
+
+  otelJavaAgent libs.opentelemetryJavaagent
 
   testImplementation libs.groovyAll
   testImplementation platform(libs.spockBom)
@@ -136,6 +147,11 @@ distributions {
       }
       into("map") {
         from("${projectDir}/src/map")
+      }
+      into("opentelemetry") {
+        from(configurations.otelJavaAgent) {
+          rename { "opentelemetry-javaagent.jar" }
+        }
       }
     }
   }
