@@ -20,6 +20,7 @@ CERTIFICATE_MANAGED_BY_TAG_VALUE="or-eks-stack"
 CERTIFICATE_CLUSTER_TAG_KEY="openremote.io/cluster"
 CERTIFICATE_STACK_TAG_KEY="openremote.io/stack"
 CERTIFICATE_HOSTNAME_TAG_KEY="openremote.io/hostname"
+CERTIFICATE_ENDPOINT_TAG_KEY="openremote.io/endpoint"
 CERTIFICATE_MODE_ANNOTATION="openremote.io/certificate-mode"
 CERTIFICATE_ARN_ANNOTATION="openremote.io/certificate-arn"
 HOSTNAME_ANNOTATION="openremote.io/hostname"
@@ -28,6 +29,7 @@ MQTTS_CERTIFICATE_ARN_ANNOTATION="openremote.io/mqtts-certificate-arn"
 MQTTS_HOSTNAME_ANNOTATION="openremote.io/mqtts-hostname"
 SHARED_CERTIFICATE_ARN_ANNOTATION="openremote.io/shared-certificate-arn"
 ACM_VALIDATION_DNS_ENDPOINT_NAME="acm-validation"
+ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME="acm-validation-mqtts"
 
 COMMAND=""
 STACK_NAME="${OR_EKS_STACK_NAME:-}"
@@ -49,6 +51,7 @@ MQTTS_ENABLED="${OR_EKS_STACK_MQTTS:-false}"
 MQTTS_PORT="${OR_EKS_STACK_MQTTS_PORT:-8883}"
 MQTTS_PORT_CONFIGURED=false
 MQTTS_HOSTNAME_VALUE="${OR_EKS_STACK_MQTTS_HOSTNAME:-}"
+MQTTS_CERTIFICATE_MODE="${OR_EKS_STACK_MQTTS_CERTIFICATE_MODE:-}"
 MQTTS_CERTIFICATE_ARN="${OR_EKS_STACK_MQTTS_CERTIFICATE_ARN:-}"
 CONFIRM_STACK_NAME=""
 OR_STACK_COMMAND="${OR_EKS_STACK_OR_STACK:-$SCRIPT_DIR/or-stack}"
@@ -57,14 +60,19 @@ MQTTS_LOAD_BALANCER_ADDRESS=""
 EXTERNAL_DNS_ARGS=""
 CERTIFICATE_JSON=""
 CERTIFICATE_EXISTS=false
+MQTTS_CERTIFICATE_JSON=""
+MQTTS_CERTIFICATE_EXISTS=false
 STACK_NAMESPACE_EXISTS=false
 VALIDATION_DNS_RECORDS=""
+MQTTS_VALIDATION_DNS_RECORDS=""
 MANAGED_DNS_DOMAIN=""
 AUTHORITATIVE_NAME_SERVERS=""
 STACK_INGRESS_JSON=""
 STACK_MQTTS_SERVICE_JSON=""
 VALIDATION_DNS_ENDPOINT_EXISTS=false
+MQTTS_VALIDATION_DNS_ENDPOINT_EXISTS=false
 MANAGED_CERTIFICATE_DESTROY=false
+MANAGED_MQTTS_CERTIFICATE_DESTROY=false
 
 if [ "${OR_EKS_STACK_MQTTS_PORT+x}" = "x" ]; then
   MQTTS_PORT_CONFIGURED=true
@@ -126,7 +134,7 @@ Options:
                         OR_EKS_STACK_HTTPS_PORT. HAProxy only; default: 443.
   --mqtts               Expose MQTTS. HAProxy uses the web hostname and its
                         own certificate; Ingress uses a dedicated NLB,
-                        hostname, and existing ACM certificate. Env:
+                        hostname, and ACM certificate. Env:
                         OR_EKS_STACK_MQTTS. Default: false. Plaintext MQTT is
                         not exposed.
   --mqtts-port <port>   Public MQTTS port. Env: OR_EKS_STACK_MQTTS_PORT.
@@ -135,10 +143,16 @@ Options:
                         Dedicated ExternalDNS-managed hostname for Ingress
                         MQTTS. Required on first apply; reapply may reuse the
                         recorded hostname. Env: OR_EKS_STACK_MQTTS_HOSTNAME.
+  --mqtts-certificate-mode <mode>
+                        Certificate ownership mode for Ingress MQTTS: existing
+                        or managed. An explicit ARN implies existing; otherwise
+                        first apply defaults to managed. Reapply preserves the
+                        recorded mode. Env:
+                        OR_EKS_STACK_MQTTS_CERTIFICATE_MODE.
   --mqtts-certificate-arn <arn>
-                        Existing ACM certificate for the Ingress MQTTS NLB.
-                        Required on first apply; reapply may reuse the recorded
-                        ARN. Env: OR_EKS_STACK_MQTTS_CERTIFICATE_ARN.
+                        Existing ACM certificate for the Ingress MQTTS NLB in
+                        mode existing. Reapply may reuse the recorded ARN. Env:
+                        OR_EKS_STACK_MQTTS_CERTIFICATE_ARN.
   --values-dir <path>   Optional per-component values directory passed to
                         or-stack. Env: OR_EKS_STACK_VALUES_DIR.
   --timeout <duration>  Timeout used by Helm and each endpoint readiness phase.
@@ -172,8 +186,10 @@ this deployment requirement is not established by the script's ownership checks.
 The first certificate mode is retained across failed applies and uninstall.
 Changing mode requires destroying and recreating the stack; back up any data
 to retain first. Certificate rotation within existing or shared mode is supported.
-Ingress MQTTS currently accepts only an existing, user-owned ACM certificate.
-The certificate is validated and recorded but is never deleted by this command.
+Ingress MQTTS accepts an existing, user-owned ACM certificate or a dedicated
+stack-managed certificate. Managed mode owns a separate ACM certificate and
+DNS-validation resource for the MQTTS endpoint; destroy deletes only that
+exactly tagged certificate after the NLB and validation records are removed.
 EOF
 }
 
@@ -313,6 +329,11 @@ parse_arguments() {
       --mqtts-hostname)
         [ "$#" -ge 2 ] || die "Option --mqtts-hostname requires a value."
         MQTTS_HOSTNAME_VALUE="$2"
+        shift 2
+        ;;
+      --mqtts-certificate-mode)
+        [ "$#" -ge 2 ] || die "Option --mqtts-certificate-mode requires a value."
+        MQTTS_CERTIFICATE_MODE="$2"
         shift 2
         ;;
       --mqtts-certificate-arn)
@@ -456,8 +477,9 @@ validate_apply_options() {
     die "Option --mqtts-port requires --mqtts."
   fi
   if [ "$MQTTS_ENABLED" != true ] && \
-     { [ -n "$MQTTS_HOSTNAME_VALUE" ] || [ -n "$MQTTS_CERTIFICATE_ARN" ]; }; then
-    die "Options --mqtts-hostname and --mqtts-certificate-arn require --mqtts."
+     { [ -n "$MQTTS_HOSTNAME_VALUE" ] || [ -n "$MQTTS_CERTIFICATE_MODE" ] || \
+       [ -n "$MQTTS_CERTIFICATE_ARN" ]; }; then
+    die "Options --mqtts-hostname, --mqtts-certificate-mode, and --mqtts-certificate-arn require --mqtts."
   fi
 
   case "$EXPOSURE" in
@@ -468,6 +490,8 @@ validate_apply_options() {
         "Option --certificate-arn is only valid with Ingress exposure."
       [ -z "$MQTTS_HOSTNAME_VALUE" ] || die \
         "Option --mqtts-hostname is only valid with Ingress exposure."
+      [ -z "$MQTTS_CERTIFICATE_MODE" ] || die \
+        "Option --mqtts-certificate-mode is only valid with Ingress exposure."
       [ -z "$MQTTS_CERTIFICATE_ARN" ] || die \
         "Option --mqtts-certificate-arn is only valid with Ingress exposure."
       validate_port "$HTTP_PORT" "HTTP"
@@ -493,6 +517,16 @@ validate_apply_options() {
         if [ -n "$MQTTS_CERTIFICATE_ARN" ] && \
            [[ ! "$MQTTS_CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:[a-z0-9-]+:[0-9]{12}:certificate/[A-Za-z0-9-]+$ ]]; then
           die "MQTTS certificate ARN must be a valid ACM certificate ARN."
+        fi
+        case "$MQTTS_CERTIFICATE_MODE" in
+          existing|managed|"") ;;
+          *)
+            die "Unsupported Ingress MQTTS certificate mode '$MQTTS_CERTIFICATE_MODE'; expected existing or managed."
+            ;;
+        esac
+        if [ "$MQTTS_CERTIFICATE_MODE" = managed ] && \
+           [ -n "$MQTTS_CERTIFICATE_ARN" ]; then
+          die "Option --mqtts-certificate-arn requires --mqtts-certificate-mode existing; managed mode resolves it automatically."
         fi
       fi
       case "$CERTIFICATE_MODE" in
@@ -656,7 +690,8 @@ require_managed_external_dns() {
   require_external_dns_argument "$external_dns_args" "--registry=txt"
   require_external_dns_argument "$external_dns_args" \
     "--label-filter=openremote.io/managed-dns=true"
-  if [ "$CERTIFICATE_MODE" = "managed" ]; then
+  if [ "$CERTIFICATE_MODE" = "managed" ] || \
+     [ "$MQTTS_CERTIFICATE_MODE" = "managed" ]; then
     require_external_dns_argument "$external_dns_args" "--source=crd"
     kubectl --context "$KUBE_CONTEXT" get \
       customresourcedefinition/dnsendpoints.externaldns.k8s.io >/dev/null 2>&1 || die \
@@ -780,6 +815,8 @@ resolve_ingress_mqtts_configuration() {
   local recorded_arn
   local recorded_hostname
   local recorded_mode
+  local requested_arn="$MQTTS_CERTIFICATE_ARN"
+  local requested_mode="$MQTTS_CERTIFICATE_MODE"
 
   namespace_json="$(read_certificate_namespace)" || die \
     "Unable to resolve the stack's MQTTS certificate configuration."
@@ -797,10 +834,24 @@ resolve_ingress_mqtts_configuration() {
     return
   fi
 
-  [ -z "$recorded_mode" ] || [ "$recorded_mode" = existing ] || die \
-    "Stack '$STACK_NAME' records incompatible MQTTS certificate mode '$recorded_mode'."
+  case "$recorded_mode" in
+    existing|managed|"") ;;
+    *) die "Stack '$STACK_NAME' records incompatible MQTTS certificate mode '$recorded_mode'." ;;
+  esac
   if [ -z "$recorded_mode" ] && [ -n "$recorded_arn" ]; then
     die "Stack '$STACK_NAME' has incomplete MQTTS certificate state; inspect its namespace annotations before retrying."
+  fi
+  if [ -n "$recorded_mode" ]; then
+    [ -z "$requested_mode" ] || [ "$requested_mode" = "$recorded_mode" ] || die \
+      "Stack '$STACK_NAME' uses MQTTS certificate mode '$recorded_mode'; in-place certificate mode migration to '$requested_mode' is not supported."
+    MQTTS_CERTIFICATE_MODE="$recorded_mode"
+  elif [ -z "$MQTTS_CERTIFICATE_MODE" ]; then
+    if [ -n "$requested_arn" ]; then
+      MQTTS_CERTIFICATE_MODE=existing
+    else
+      MQTTS_CERTIFICATE_MODE=managed
+      log "No MQTTS certificate was supplied; selected stack-managed MQTTS certificate mode."
+    fi
   fi
 
   if [ -n "$recorded_hostname" ]; then
@@ -816,9 +867,20 @@ resolve_ingress_mqtts_configuration() {
   [ "$MQTTS_HOSTNAME_VALUE" != "$HOSTNAME_VALUE" ] || die \
     "Ingress web and MQTTS hostnames must be different."
 
-  MQTTS_CERTIFICATE_ARN="${MQTTS_CERTIFICATE_ARN:-$recorded_arn}"
-  [ -n "$MQTTS_CERTIFICATE_ARN" ] || die \
-    "Ingress MQTTS requires --mqtts-certificate-arn on first apply."
+  case "$MQTTS_CERTIFICATE_MODE" in
+    existing)
+      MQTTS_CERTIFICATE_ARN="${requested_arn:-$recorded_arn}"
+      [ -n "$MQTTS_CERTIFICATE_ARN" ] || die \
+        "Ingress MQTTS certificate mode existing requires --mqtts-certificate-arn on first apply."
+      ;;
+    managed)
+      [ -z "$requested_arn" ] || die \
+        "Option --mqtts-certificate-arn cannot be used with managed MQTTS certificate mode."
+      # A recorded managed ARN is loaded and ownership-checked after the
+      # namespace and hostname reservations have been prepared.
+      MQTTS_CERTIFICATE_ARN=""
+      ;;
+  esac
 }
 
 record_initial_certificate_mode() {
@@ -861,8 +923,8 @@ record_initial_mqtts_configuration() {
   recorded_hostname="$(jq -r '.metadata.annotations["openremote.io/mqtts-hostname"] // empty' \
     <<< "$namespace_json")"
   if [ -n "$recorded_mode" ]; then
-    [ "$recorded_mode" = existing ] || die \
-      "Stack '$STACK_NAME' now uses incompatible MQTTS certificate mode '$recorded_mode'."
+    [ "$recorded_mode" = "$MQTTS_CERTIFICATE_MODE" ] || die \
+      "Stack '$STACK_NAME' now uses MQTTS certificate mode '$recorded_mode', not '$MQTTS_CERTIFICATE_MODE'."
     [ -n "$recorded_hostname" ] || die \
       "Stack '$STACK_NAME' has incomplete MQTTS lifecycle configuration."
     [ "$recorded_hostname" = "$MQTTS_HOSTNAME_VALUE" ] || die \
@@ -872,12 +934,13 @@ record_initial_mqtts_configuration() {
   resource_version="$(jq -er '.metadata.resourceVersion | select(type == "string" and length > 0)' \
     <<< "$namespace_json")" || die \
       "Unable to verify namespace version before recording MQTTS lifecycle configuration."
-  # Record the facade's ownership mode before Helm. If apply is interrupted,
-  # destroy can still distinguish this workflow from a low-level or-stack
-  # endpoint. Record the selected ARN only after Helm succeeds so certificate
-  # rotation never advances recorded state ahead of the Service.
+  # Record the facade's ownership mode before ACM requests or Helm. If apply is
+  # interrupted, destroy can still distinguish this workflow from a low-level
+  # or-stack endpoint. Existing-mode ARNs are recorded only after Helm succeeds
+  # so rotation never advances namespace state ahead of the Service. Managed
+  # mode records its ARN immediately after an owned certificate is resolved.
   kubectl --context "$KUBE_CONTEXT" annotate namespace "$STACK_NAME" \
-    "$MQTTS_CERTIFICATE_MODE_ANNOTATION=existing" \
+    "$MQTTS_CERTIFICATE_MODE_ANNOTATION=$MQTTS_CERTIFICATE_MODE" \
     "$MQTTS_HOSTNAME_ANNOTATION=$MQTTS_HOSTNAME_VALUE" \
     --overwrite --resource-version="$resource_version" >/dev/null || die \
       "Unable to record MQTTS lifecycle configuration; the namespace may have changed concurrently. Retry apply."
@@ -1048,8 +1111,10 @@ require_selected_acm_certificate() {
   fi
 }
 
-managed_certificate_tags_match() {
+managed_certificate_tags_match_for_endpoint() {
   local tags_json="$1"
+  local hostname="$2"
+  local endpoint="$3"
 
   jq -e \
     --arg managed_by_key "$CERTIFICATE_MANAGED_BY_TAG_KEY" \
@@ -1059,17 +1124,22 @@ managed_certificate_tags_match() {
     --arg stack_key "$CERTIFICATE_STACK_TAG_KEY" \
     --arg stack_value "$STACK_NAME" \
     --arg hostname_key "$CERTIFICATE_HOSTNAME_TAG_KEY" \
-    --arg hostname_value "$HOSTNAME_VALUE" \
+    --arg hostname_value "$hostname" \
+    --arg endpoint_key "$CERTIFICATE_ENDPOINT_TAG_KEY" \
+    --arg endpoint_value "$endpoint" \
     'def values_for($key): [.Tags[]? | select(.Key == $key) | .Value];
      values_for($managed_by_key) == [$managed_by_value] and
      values_for($cluster_key) == [$cluster_value] and
      values_for($stack_key) == [$stack_value] and
-     values_for($hostname_key) == [$hostname_value]' \
+     values_for($hostname_key) == [$hostname_value] and
+     (values_for($endpoint_key) == [$endpoint_value] or
+      ($endpoint_value == "web" and values_for($endpoint_key) == []))' \
     <<< "$tags_json" >/dev/null
 }
 
-managed_certificate_tags_match_stack() {
+managed_certificate_tags_match_stack_for_endpoint() {
   local tags_json="$1"
+  local endpoint="$2"
 
   jq -e \
     --arg managed_by_key "$CERTIFICATE_MANAGED_BY_TAG_KEY" \
@@ -1078,11 +1148,31 @@ managed_certificate_tags_match_stack() {
     --arg cluster_value "$CLUSTER_NAME" \
     --arg stack_key "$CERTIFICATE_STACK_TAG_KEY" \
     --arg stack_value "$STACK_NAME" \
+    --arg endpoint_key "$CERTIFICATE_ENDPOINT_TAG_KEY" \
+    --arg endpoint_value "$endpoint" \
     'def values_for($key): [.Tags[]? | select(.Key == $key) | .Value];
      values_for($managed_by_key) == [$managed_by_value] and
      values_for($cluster_key) == [$cluster_value] and
-     values_for($stack_key) == [$stack_value]' \
+     values_for($stack_key) == [$stack_value] and
+     (values_for($endpoint_key) == [$endpoint_value] or
+      ($endpoint_value == "web" and values_for($endpoint_key) == []))' \
     <<< "$tags_json" >/dev/null
+}
+
+managed_certificate_tags_match() {
+  managed_certificate_tags_match_for_endpoint "$1" "$HOSTNAME_VALUE" web
+}
+
+managed_certificate_tags_match_stack() {
+  managed_certificate_tags_match_stack_for_endpoint "$1" web
+}
+
+managed_mqtts_certificate_tags_match() {
+  managed_certificate_tags_match_for_endpoint "$1" "$MQTTS_HOSTNAME_VALUE" mqtts
+}
+
+managed_mqtts_certificate_tags_match_stack() {
+  managed_certificate_tags_match_stack_for_endpoint "$1" mqtts
 }
 
 require_managed_certificate_ownership() {
@@ -1174,6 +1264,7 @@ request_managed_certificate() {
       "Key=$CERTIFICATE_CLUSTER_TAG_KEY,Value=$CLUSTER_NAME" \
       "Key=$CERTIFICATE_STACK_TAG_KEY,Value=$STACK_NAME" \
       "Key=$CERTIFICATE_HOSTNAME_TAG_KEY,Value=$HOSTNAME_VALUE" \
+      "Key=$CERTIFICATE_ENDPOINT_TAG_KEY,Value=web" \
     --query CertificateArn \
     --output text)" || die \
       "Unable to request a managed ACM certificate for '$HOSTNAME_VALUE'."
@@ -1269,6 +1360,320 @@ resolve_managed_certificate() {
 
   require_managed_certificate_ownership
   record_certificate_configuration
+}
+
+require_managed_mqtts_certificate_ownership() {
+  local certificate_account
+  local certificate_region
+  local certificate_tags
+  local current_account
+
+  if [[ ! "$MQTTS_CERTIFICATE_ARN" =~ ^arn:[^:]+:acm:([^:]+):([0-9]{12}):certificate/[A-Za-z0-9-]+$ ]]; then
+    die "Managed MQTTS certificate ARN '$MQTTS_CERTIFICATE_ARN' is invalid."
+  fi
+  certificate_region="${BASH_REMATCH[1]}"
+  certificate_account="${BASH_REMATCH[2]}"
+  [ "$certificate_region" = "$AWS_REGION_NAME" ] || die \
+    "Managed MQTTS certificate '$MQTTS_CERTIFICATE_ARN' is in region '$certificate_region', not '$AWS_REGION_NAME'."
+
+  current_account="$(aws_sts get-caller-identity --query Account --output text)" || die \
+    "Unable to determine the EKS AWS account."
+  [ "$certificate_account" = "$current_account" ] || die \
+    "Managed MQTTS certificate '$MQTTS_CERTIFICATE_ARN' belongs to account '$certificate_account', not '$current_account'."
+
+  certificate_tags="$(aws_acm list-tags-for-certificate \
+    --certificate-arn "$MQTTS_CERTIFICATE_ARN" \
+    --output json)" || die \
+      "Unable to inspect ownership tags on managed MQTTS certificate '$MQTTS_CERTIFICATE_ARN'."
+  managed_mqtts_certificate_tags_match "$certificate_tags" || die \
+    "Certificate '$MQTTS_CERTIFICATE_ARN' does not carry the exact managed MQTTS ownership tags for stack '$STACK_NAME' and hostname '$MQTTS_HOSTNAME_VALUE'."
+}
+
+discover_managed_mqtts_certificate() {
+  local candidate_arn
+  local candidate_arns=""
+  local candidate_count=0
+  local certificate_domain
+  local certificate_list
+  local certificate_tagged_hostname
+  local certificate_tags
+
+  certificate_list="$(aws_acm list-certificates \
+    --certificate-statuses \
+      PENDING_VALIDATION ISSUED INACTIVE EXPIRED VALIDATION_TIMED_OUT REVOKED FAILED \
+    --output json)" || die \
+      "Unable to list ACM certificates for managed MQTTS certificate discovery."
+
+  while IFS=$'\t' read -r candidate_arn certificate_domain; do
+    [ -n "$candidate_arn" ] || continue
+    certificate_tags="$(aws_acm list-tags-for-certificate \
+      --certificate-arn "$candidate_arn" \
+      --output json)" || die \
+        "Unable to inspect ownership tags on ACM certificate '$candidate_arn'."
+    managed_mqtts_certificate_tags_match_stack "$certificate_tags" || continue
+
+    certificate_tagged_hostname="$(jq -r \
+      --arg key "$CERTIFICATE_HOSTNAME_TAG_KEY" \
+      '.Tags[]? | select(.Key == $key) | .Value' \
+      <<< "$certificate_tags")"
+    if ! managed_mqtts_certificate_tags_match "$certificate_tags" || \
+       [ "${certificate_domain%.}" != "$MQTTS_HOSTNAME_VALUE" ]; then
+      die "Managed MQTTS ACM certificate '$candidate_arn' is already owned by stack '$STACK_NAME' for hostname '${certificate_tagged_hostname:-${certificate_domain%.}}'; refusing to create another certificate for '$MQTTS_HOSTNAME_VALUE'."
+    fi
+
+    candidate_count="$((candidate_count + 1))"
+    candidate_arns+="${candidate_arns:+$'\n'}$candidate_arn"
+  done < <(jq -r \
+    '.CertificateSummaryList[]? | [.CertificateArn, (.DomainName | ascii_downcase)] | @tsv' \
+    <<< "$certificate_list")
+
+  [ "$candidate_count" -le 1 ] || die \
+    "Found $candidate_count managed MQTTS ACM certificates for stack '$STACK_NAME' and hostname '$MQTTS_HOSTNAME_VALUE'; refusing to choose one."
+  if [ "$candidate_count" -eq 1 ]; then
+    MQTTS_CERTIFICATE_ARN="$candidate_arns"
+    log "Reusing tagged managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN'."
+  fi
+}
+
+request_managed_mqtts_certificate() {
+  local idempotency_token
+
+  idempotency_token="$(printf '%s' \
+    "$CLUSTER_NAME|$AWS_REGION_NAME|$STACK_NAME|mqtts|$MQTTS_HOSTNAME_VALUE" | \
+    cksum | awk '{print "or" $1}')"
+
+  log "Requesting a managed MQTTS ACM certificate for '$MQTTS_HOSTNAME_VALUE'."
+  MQTTS_CERTIFICATE_ARN="$(aws_acm request-certificate \
+    --domain-name "$MQTTS_HOSTNAME_VALUE" \
+    --validation-method DNS \
+    --idempotency-token "$idempotency_token" \
+    --tags \
+      "Key=$CERTIFICATE_MANAGED_BY_TAG_KEY,Value=$CERTIFICATE_MANAGED_BY_TAG_VALUE" \
+      "Key=$CERTIFICATE_CLUSTER_TAG_KEY,Value=$CLUSTER_NAME" \
+      "Key=$CERTIFICATE_STACK_TAG_KEY,Value=$STACK_NAME" \
+      "Key=$CERTIFICATE_HOSTNAME_TAG_KEY,Value=$MQTTS_HOSTNAME_VALUE" \
+      "Key=$CERTIFICATE_ENDPOINT_TAG_KEY,Value=mqtts" \
+    --query CertificateArn \
+    --output text)" || die \
+      "Unable to request a managed MQTTS ACM certificate for '$MQTTS_HOSTNAME_VALUE'."
+  [ -n "$MQTTS_CERTIFICATE_ARN" ] && [ "$MQTTS_CERTIFICATE_ARN" != "None" ] || die \
+    "ACM did not return a certificate ARN for '$MQTTS_HOSTNAME_VALUE'."
+  log "Requested managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN'."
+}
+
+resolve_managed_mqtts_certificate() {
+  local recorded_certificate_arn
+  local recorded_certificate_mode
+
+  recorded_certificate_mode="$(stack_mqtts_certificate_mode)" || die \
+    "Unable to read the recorded MQTTS certificate mode."
+  recorded_certificate_arn="$(stack_mqtts_certificate_arn)" || die \
+    "Unable to read the recorded MQTTS certificate ARN."
+  [ "$recorded_certificate_mode" = managed ] || die \
+    "Stack '$STACK_NAME' no longer records managed MQTTS certificate mode."
+  if [ -n "$recorded_certificate_arn" ]; then
+    MQTTS_CERTIFICATE_ARN="$recorded_certificate_arn"
+    log "Reusing the managed MQTTS ACM certificate recorded by stack '$STACK_NAME'."
+  else
+    discover_managed_mqtts_certificate
+    if [ -z "$MQTTS_CERTIFICATE_ARN" ]; then
+      request_managed_mqtts_certificate
+    fi
+  fi
+
+  require_managed_mqtts_certificate_ownership
+  record_mqtts_certificate_configuration
+}
+
+require_actionable_managed_mqtts_certificate_status() {
+  local certificate_status="$1"
+
+  case "$certificate_status" in
+    PENDING_VALIDATION|ISSUED) ;;
+    *)
+      die "Managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' is '$certificate_status' and cannot be reconciled automatically."
+      ;;
+  esac
+}
+
+wait_for_managed_mqtts_certificate_validation_records() {
+  local certificate_json
+  local certificate_status="unknown"
+  local deadline
+  local describe_status
+  local last_error=""
+  local next_notice
+  local now
+  local timeout_seconds
+
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  log "Waiting for ACM to publish MQTTS DNS validation records."
+
+  while [ "$now" -lt "$deadline" ]; do
+    set +e
+    certificate_json="$(aws_acm describe-certificate \
+      --certificate-arn "$MQTTS_CERTIFICATE_ARN" \
+      --output json 2>&1)"
+    describe_status=$?
+    set -e
+    if [ "$describe_status" -eq 0 ]; then
+      certificate_status="$(jq -r '.Certificate.Status // empty' \
+        <<< "$certificate_json")" || die \
+          "Unable to read managed MQTTS ACM certificate metadata."
+      require_actionable_managed_mqtts_certificate_status "$certificate_status"
+      jq -e \
+        --arg hostname "$MQTTS_HOSTNAME_VALUE" \
+        '(.Certificate.DomainName | ascii_downcase) == $hostname and
+         ([.Certificate.DomainValidationOptions[]?] | length) > 0 and
+         ([.Certificate.DomainValidationOptions[]?] |
+          all((.ResourceRecord.Name // "") != "" and
+              (.ResourceRecord.Type // "") != "" and
+              (.ResourceRecord.Value // "") != ""))' \
+        <<< "$certificate_json" >/dev/null && {
+          MQTTS_CERTIFICATE_JSON="$certificate_json"
+          return
+        }
+      last_error="ACM has not published every MQTTS validation record yet"
+    else
+      last_error="$certificate_json"
+    fi
+
+    if [ "$now" -ge "$next_notice" ]; then
+      log "ACM MQTTS validation records are still pending."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "ACM did not publish DNS validation records for MQTTS certificate '$MQTTS_CERTIFICATE_ARN' within '$TIMEOUT': $last_error"
+}
+
+validate_managed_mqtts_certificate_records() {
+  local record_name
+  local record_target
+  local record_type
+
+  while IFS=$'\t' read -r record_name record_type record_target; do
+    [ -n "$record_name" ] && [ -n "$record_target" ] || die \
+      "ACM returned an incomplete DNS validation record for MQTTS certificate '$MQTTS_CERTIFICATE_ARN'."
+    [ "$record_type" = CNAME ] || die \
+      "ACM returned unsupported MQTTS validation record type '$record_type'."
+    validation_record_is_in_managed_domain "$record_name" || die \
+      "ACM MQTTS validation record '$record_name' is outside the configured ExternalDNS domains."
+  done < <(jq -r \
+    '.Certificate.DomainValidationOptions[]?.ResourceRecord |
+     [.Name, .Type, .Value] | @tsv' <<< "$MQTTS_CERTIFICATE_JSON")
+}
+
+require_owned_mqtts_validation_dns_endpoint() {
+  local existing_certificate_arn
+  local existing_endpoint_kind
+  local existing_endpoint
+  local existing_managed_by
+
+  if ! existing_endpoint="$(kubectl --context "$KUBE_CONTEXT" \
+      --namespace "$STACK_NAME" \
+      get dnsendpoint "$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME" \
+      -o json 2>/dev/null)"; then
+    return
+  fi
+
+  existing_managed_by="$(jq -r \
+    '.metadata.labels["app.kubernetes.io/managed-by"] // empty' \
+    <<< "$existing_endpoint")"
+  existing_certificate_arn="$(jq -r \
+    '.metadata.annotations["openremote.io/certificate-arn"] // empty' \
+    <<< "$existing_endpoint")"
+  existing_endpoint_kind="$(jq -r \
+    '.metadata.annotations["openremote.io/endpoint"] // empty' \
+    <<< "$existing_endpoint")"
+  [ "$existing_managed_by" = "$CERTIFICATE_MANAGED_BY_TAG_VALUE" ] && \
+    [ "$existing_certificate_arn" = "$MQTTS_CERTIFICATE_ARN" ] && \
+    [ "$existing_endpoint_kind" = mqtts ] || die \
+      "DNSEndpoint '$STACK_NAME/$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME' is not owned by managed MQTTS certificate '$MQTTS_CERTIFICATE_ARN'; refusing to replace it."
+}
+
+apply_managed_mqtts_certificate_validation_records() {
+  local endpoint_manifest
+
+  validate_managed_mqtts_certificate_records
+  require_owned_mqtts_validation_dns_endpoint
+  endpoint_manifest="$(jq -c \
+    --arg name "$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME" \
+    --arg namespace "$STACK_NAME" \
+    --arg certificate_arn "$MQTTS_CERTIFICATE_ARN" \
+    --arg managed_by "$CERTIFICATE_MANAGED_BY_TAG_VALUE" \
+    '{
+      apiVersion: "externaldns.k8s.io/v1alpha1",
+      kind: "DNSEndpoint",
+      metadata: {
+        name: $name,
+        namespace: $namespace,
+        labels: {
+          "app.kubernetes.io/managed-by": $managed_by,
+          "openremote.io/managed-dns": "true"
+        },
+        annotations: {
+          "openremote.io/certificate-arn": $certificate_arn,
+          "openremote.io/endpoint": "mqtts"
+        }
+      },
+      spec: {
+        endpoints: ([.Certificate.DomainValidationOptions[]?.ResourceRecord | {
+          dnsName: .Name,
+          recordType: .Type,
+          recordTTL: 300,
+          targets: [.Value]
+        }] | unique_by(.dnsName, .recordType, .targets[0]))
+      }
+    }' <<< "$MQTTS_CERTIFICATE_JSON")" || die \
+      "Unable to render ACM MQTTS validation records as a DNSEndpoint."
+
+  log "Reconciling ACM MQTTS DNS validation records in '$STACK_NAME/$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME'."
+  kubectl --context "$KUBE_CONTEXT" \
+    --namespace "$STACK_NAME" \
+    apply -f - <<< "$endpoint_manifest" >/dev/null || die \
+      "Unable to apply ACM MQTTS validation DNSEndpoint '$STACK_NAME/$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME'."
+}
+
+wait_for_managed_mqtts_certificate() {
+  local certificate_status="unknown"
+  local deadline
+  local next_notice
+  local now
+  local timeout_seconds
+
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  log "Waiting for managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' to be issued."
+
+  while [ "$now" -lt "$deadline" ]; do
+    certificate_status="$(aws_acm describe-certificate \
+      --certificate-arn "$MQTTS_CERTIFICATE_ARN" \
+      --query 'Certificate.Status' \
+      --output text 2>/dev/null || true)"
+    if [ "$certificate_status" = ISSUED ]; then
+      log "Managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' is issued."
+      return
+    fi
+    if [ -n "$certificate_status" ] && [ "$certificate_status" != None ]; then
+      require_actionable_managed_mqtts_certificate_status "$certificate_status"
+    fi
+    if [ "$now" -ge "$next_notice" ]; then
+      log "Managed MQTTS ACM certificate validation is still pending."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "Managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' remained '$certificate_status' beyond '$TIMEOUT'. The validation DNSEndpoint is retained for a later retry."
 }
 
 discover_managed_certificate_for_destroy() {
@@ -1424,6 +1829,235 @@ resolve_managed_certificate_for_destroy() {
   load_managed_certificate_for_destroy
   validate_hostname
   MANAGED_CERTIFICATE_DESTROY=true
+}
+
+discover_managed_mqtts_certificate_for_destroy() {
+  local certificate_arn
+  local certificate_count=0
+  local certificate_list
+  local certificate_tags
+  local discovered_certificate_arn=""
+
+  certificate_list="$(aws_acm list-certificates \
+    --certificate-statuses \
+      PENDING_VALIDATION ISSUED INACTIVE EXPIRED VALIDATION_TIMED_OUT REVOKED FAILED \
+    --output json)" || die \
+      "Unable to check for stack-managed MQTTS ACM certificates before destroy."
+
+  while IFS= read -r certificate_arn; do
+    [ -n "$certificate_arn" ] || continue
+    certificate_tags="$(aws_acm list-tags-for-certificate \
+      --certificate-arn "$certificate_arn" \
+      --output json)" || die \
+        "Unable to inspect ownership tags on ACM certificate '$certificate_arn'."
+    if managed_mqtts_certificate_tags_match_stack "$certificate_tags"; then
+      certificate_count="$((certificate_count + 1))"
+      discovered_certificate_arn="$certificate_arn"
+    fi
+  done < <(jq -r '.CertificateSummaryList[]?.CertificateArn' \
+    <<< "$certificate_list")
+
+  [ "$certificate_count" -le 1 ] || die \
+    "Found $certificate_count managed MQTTS ACM certificates for stack '$STACK_NAME'; refusing destructive cleanup."
+  if [ "$certificate_count" -eq 1 ]; then
+    printf '%s\n' "$discovered_certificate_arn"
+  fi
+}
+
+load_managed_mqtts_certificate_for_destroy() {
+  local certificate_domain
+  local certificate_json
+  local certificate_tags
+  local describe_status
+  local tagged_hostname
+
+  set +e
+  certificate_json="$(aws_acm describe-certificate \
+    --certificate-arn "$MQTTS_CERTIFICATE_ARN" \
+    --output json 2>&1)"
+  describe_status=$?
+  set -e
+  if [ "$describe_status" -ne 0 ]; then
+    case "$certificate_json" in
+      *ResourceNotFoundException*)
+        MQTTS_CERTIFICATE_EXISTS=false
+        MQTTS_CERTIFICATE_JSON=""
+        return
+        ;;
+      *)
+        die "Unable to describe managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' before destroy: $certificate_json"
+        ;;
+    esac
+  fi
+
+  certificate_tags="$(aws_acm list-tags-for-certificate \
+    --certificate-arn "$MQTTS_CERTIFICATE_ARN" \
+    --output json)" || die \
+      "Unable to inspect ownership tags on managed MQTTS certificate '$MQTTS_CERTIFICATE_ARN'."
+  managed_mqtts_certificate_tags_match_stack "$certificate_tags" || die \
+    "Certificate '$MQTTS_CERTIFICATE_ARN' does not carry the exact managed MQTTS ownership tags for stack '$STACK_NAME'."
+  tagged_hostname="$(jq -r \
+    --arg key "$CERTIFICATE_HOSTNAME_TAG_KEY" \
+    '[.Tags[]? | select(.Key == $key) | .Value] |
+     if length == 1 then .[0] else empty end' \
+    <<< "$certificate_tags")" || die \
+      "Unable to read the managed hostname tag from MQTTS certificate '$MQTTS_CERTIFICATE_ARN'."
+  [ -n "$tagged_hostname" ] || die \
+    "MQTTS certificate '$MQTTS_CERTIFICATE_ARN' does not have exactly one managed hostname tag."
+  if [ -n "$MQTTS_HOSTNAME_VALUE" ] && \
+     [ "$MQTTS_HOSTNAME_VALUE" != "$tagged_hostname" ]; then
+    die "Namespace '$STACK_NAME' records MQTTS hostname '$MQTTS_HOSTNAME_VALUE', but its managed MQTTS certificate records '$tagged_hostname'."
+  fi
+  MQTTS_HOSTNAME_VALUE="$tagged_hostname"
+  normalize_and_validate_mqtts_hostname
+
+  certificate_domain="$(jq -r '.Certificate.DomainName // empty | ascii_downcase' \
+    <<< "$certificate_json")" || die \
+      "Unable to read the domain of managed MQTTS certificate '$MQTTS_CERTIFICATE_ARN'."
+  [ "${certificate_domain%.}" = "$MQTTS_HOSTNAME_VALUE" ] || die \
+    "Managed MQTTS certificate '$MQTTS_CERTIFICATE_ARN' is for '$certificate_domain', not '$MQTTS_HOSTNAME_VALUE'."
+
+  require_managed_mqtts_certificate_ownership
+  MQTTS_CERTIFICATE_EXISTS=true
+  MQTTS_CERTIFICATE_JSON="$certificate_json"
+}
+
+resolve_managed_mqtts_certificate_for_destroy() {
+  local discovered_certificate_arn=""
+  local recorded_certificate_arn="$MQTTS_CERTIFICATE_ARN"
+  local recorded_certificate_mode="$MQTTS_CERTIFICATE_MODE"
+  local validation_endpoint
+
+  MANAGED_MQTTS_CERTIFICATE_DESTROY=false
+  if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
+    recorded_certificate_mode="$(stack_mqtts_certificate_mode)" || die \
+      "Unable to read MQTTS certificate mode from namespace '$STACK_NAME'."
+    recorded_certificate_arn="$(stack_mqtts_certificate_arn)" || die \
+      "Unable to read MQTTS certificate ARN from namespace '$STACK_NAME'."
+  fi
+
+  if ! discovered_certificate_arn="$(discover_managed_mqtts_certificate_for_destroy)"; then
+    die "Unable to safely discover a unique managed MQTTS ACM certificate for stack '$STACK_NAME'."
+  fi
+  if [ "$recorded_certificate_mode" = managed ]; then
+    if [ -n "$recorded_certificate_arn" ] && \
+       [ -n "$discovered_certificate_arn" ] && \
+       [ "$recorded_certificate_arn" != "$discovered_certificate_arn" ]; then
+      die "Namespace '$STACK_NAME' records managed MQTTS certificate '$recorded_certificate_arn', but ownership tags identify '$discovered_certificate_arn'."
+    fi
+    MQTTS_CERTIFICATE_ARN="${recorded_certificate_arn:-$discovered_certificate_arn}"
+    if [ -z "$MQTTS_CERTIFICATE_ARN" ]; then
+      validation_endpoint="$(kubectl --context "$KUBE_CONTEXT" --namespace "$STACK_NAME" \
+        get dnsendpoint "$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME" \
+        --ignore-not-found -o json)" || die \
+          "Unable to inspect validation resources for the incomplete managed MQTTS certificate configuration."
+      [ -z "$validation_endpoint" ] || die \
+        "Stack '$STACK_NAME' has MQTTS validation resources without an identifiable managed certificate; refusing destructive cleanup."
+      return 0
+    fi
+  elif [ -n "$discovered_certificate_arn" ]; then
+    [ -z "$recorded_certificate_mode" ] || die \
+      "Stack '$STACK_NAME' records MQTTS certificate mode '$recorded_certificate_mode', but also owns managed MQTTS certificate '$discovered_certificate_arn'."
+    MQTTS_CERTIFICATE_ARN="$discovered_certificate_arn"
+    log "Recovered tagged managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' for stack '$STACK_NAME'."
+  else
+    return 0
+  fi
+
+  load_managed_mqtts_certificate_for_destroy
+  MQTTS_CERTIFICATE_MODE=managed
+  MANAGED_MQTTS_CERTIFICATE_DESTROY=true
+}
+
+capture_mqtts_validation_dns_records_for_destroy() {
+  local certificate_records_json='[]'
+  local endpoint_certificate_arn
+  local endpoint_kind
+  local endpoint_managed_by
+  local endpoint_managed_dns
+  local endpoint_records_json='[]'
+  local validation_endpoint=""
+
+  MQTTS_VALIDATION_DNS_ENDPOINT_EXISTS=false
+  MQTTS_VALIDATION_DNS_RECORDS=""
+  if [ "$MQTTS_CERTIFICATE_EXISTS" = true ]; then
+    certificate_records_json="$(jq -c \
+      '[.Certificate.DomainValidationOptions[]?.ResourceRecord |
+        select((.Name // "") != "" and (.Type // "") != "" and
+               (.Value // "") != "") | {
+          dnsName: .Name,
+          recordType: .Type,
+          targets: [.Value]
+        }] | unique_by(.dnsName, .recordType, .targets[0]) |
+        sort_by(.dnsName, .recordType, .targets[0])' \
+      <<< "$MQTTS_CERTIFICATE_JSON")" || die \
+        "Unable to read validation records from managed MQTTS certificate '$MQTTS_CERTIFICATE_ARN'."
+  fi
+
+  if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
+    validation_endpoint="$(kubectl --context "$KUBE_CONTEXT" \
+      --namespace "$STACK_NAME" \
+      get dnsendpoint "$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME" \
+      --ignore-not-found -o json)" || die \
+        "Unable to inspect DNSEndpoint '$STACK_NAME/$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME' before destroy."
+  fi
+
+  if [ -n "$validation_endpoint" ]; then
+    MQTTS_VALIDATION_DNS_ENDPOINT_EXISTS=true
+    endpoint_managed_by="$(jq -r \
+      '.metadata.labels["app.kubernetes.io/managed-by"] // empty' \
+      <<< "$validation_endpoint")"
+    endpoint_managed_dns="$(jq -r \
+      '.metadata.labels["openremote.io/managed-dns"] // empty' \
+      <<< "$validation_endpoint")"
+    endpoint_certificate_arn="$(jq -r \
+      '.metadata.annotations["openremote.io/certificate-arn"] // empty' \
+      <<< "$validation_endpoint")"
+    endpoint_kind="$(jq -r \
+      '.metadata.annotations["openremote.io/endpoint"] // empty' \
+      <<< "$validation_endpoint")"
+    [ "$endpoint_managed_by" = "$CERTIFICATE_MANAGED_BY_TAG_VALUE" ] && \
+      [ "$endpoint_managed_dns" = true ] && \
+      [ "$endpoint_certificate_arn" = "$MQTTS_CERTIFICATE_ARN" ] && \
+      [ "$endpoint_kind" = mqtts ] || die \
+        "DNSEndpoint '$STACK_NAME/$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME' does not exactly match managed MQTTS certificate '$MQTTS_CERTIFICATE_ARN'; refusing to delete it."
+
+    endpoint_records_json="$(jq -c \
+      '[.spec.endpoints[]? | {
+        dnsName: (.dnsName // ""),
+        recordType: (.recordType // ""),
+        targets: ((.targets // []) | sort)
+      }] | unique_by(.dnsName, .recordType, .targets[0]) |
+      sort_by(.dnsName, .recordType, .targets[0])' \
+      <<< "$validation_endpoint")" || die \
+        "Unable to read records from DNSEndpoint '$STACK_NAME/$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME'."
+    [ "$(jq 'length' <<< "$endpoint_records_json")" -gt 0 ] || die \
+      "DNSEndpoint '$STACK_NAME/$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME' has no validation records."
+    if [ "$MQTTS_CERTIFICATE_EXISTS" = true ] && \
+       [ "$endpoint_records_json" != "$certificate_records_json" ]; then
+      die "DNSEndpoint '$STACK_NAME/$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME' does not contain exactly the records returned by ACM; refusing destructive cleanup."
+    fi
+  elif [ "$MQTTS_CERTIFICATE_EXISTS" = false ]; then
+    die "Managed MQTTS certificate '$MQTTS_CERTIFICATE_ARN' and its validation DNSEndpoint are both absent; validation-record ownership cannot be verified."
+  fi
+
+  if [ "$MQTTS_VALIDATION_DNS_ENDPOINT_EXISTS" = true ]; then
+    MQTTS_VALIDATION_DNS_RECORDS="$(jq -r \
+      '.[] | [.dnsName, .recordType] | @tsv' \
+      <<< "$endpoint_records_json")"
+  else
+    MQTTS_VALIDATION_DNS_RECORDS="$(jq -r \
+      '.[] | [.dnsName, .recordType] | @tsv' \
+      <<< "$certificate_records_json")"
+  fi
+
+  while IFS=$'\t' read -r record_name record_type; do
+    [ -n "$record_name" ] || continue
+    [ "$record_type" = CNAME ] || die \
+      "Managed MQTTS validation record '$record_name' has unsupported type '$record_type'."
+    validation_record_is_in_managed_domain "$record_name" || die \
+      "Managed MQTTS validation record '$record_name' is outside the configured ExternalDNS domains."
+  done <<< "$MQTTS_VALIDATION_DNS_RECORDS"
 }
 
 validate_stack_ingress_for_managed_destroy() {
@@ -1792,7 +2426,7 @@ record_certificate_configuration() {
 record_mqtts_certificate_configuration() {
   [ "$EXPOSURE" = ingress ] && [ "$MQTTS_ENABLED" = true ] || return 0
   kubectl --context "$KUBE_CONTEXT" annotate namespace "$STACK_NAME" \
-    "$MQTTS_CERTIFICATE_MODE_ANNOTATION=existing" \
+    "$MQTTS_CERTIFICATE_MODE_ANNOTATION=$MQTTS_CERTIFICATE_MODE" \
     "$MQTTS_CERTIFICATE_ARN_ANNOTATION=$MQTTS_CERTIFICATE_ARN" \
     "$MQTTS_HOSTNAME_ANNOTATION=$MQTTS_HOSTNAME_VALUE" \
     --overwrite >/dev/null || die \
@@ -2192,6 +2826,119 @@ delete_managed_certificate() {
   die "Deletion of managed ACM certificate '$CERTIFICATE_ARN' was not confirmed within '$TIMEOUT'."
 }
 
+wait_for_managed_mqtts_certificate_detachment() {
+  local certificate_json
+  local deadline
+  local describe_status
+  local in_use_count
+  local last_error=""
+  local next_notice
+  local now
+  local timeout_seconds
+
+  [ "$MQTTS_CERTIFICATE_EXISTS" = true ] || return 0
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  log "Waiting for managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' to be detached."
+
+  while [ "$now" -lt "$deadline" ]; do
+    set +e
+    certificate_json="$(aws_acm describe-certificate \
+      --certificate-arn "$MQTTS_CERTIFICATE_ARN" \
+      --output json 2>&1)"
+    describe_status=$?
+    set -e
+    if [ "$describe_status" -eq 0 ]; then
+      in_use_count="$(jq -r '.Certificate.InUseBy // [] | length' \
+        <<< "$certificate_json")" || die \
+          "Unable to read attachment state for managed MQTTS certificate '$MQTTS_CERTIFICATE_ARN'."
+      if [ "$in_use_count" -eq 0 ]; then
+        MQTTS_CERTIFICATE_JSON="$certificate_json"
+        log "Managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' is detached."
+        return
+      fi
+      last_error="certificate is still attached to $in_use_count AWS resource(s)"
+    elif [[ "$certificate_json" == *ResourceNotFoundException* ]]; then
+      MQTTS_CERTIFICATE_EXISTS=false
+      MQTTS_CERTIFICATE_JSON=""
+      log "Managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' is already absent."
+      return
+    else
+      last_error="$certificate_json"
+    fi
+
+    if [ "$now" -ge "$next_notice" ]; then
+      log "Managed MQTTS ACM certificate detachment is still pending."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "Managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' did not detach within '$TIMEOUT': $last_error"
+}
+
+delete_managed_mqtts_certificate() {
+  local delete_output
+  local delete_status
+  local describe_output
+  local describe_status
+  local deadline
+  local next_notice
+  local now
+  local timeout_seconds
+
+  [ "$MQTTS_CERTIFICATE_EXISTS" = true ] || return 0
+  require_managed_mqtts_certificate_ownership
+  log "Deleting managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN'."
+  set +e
+  delete_output="$(aws_acm delete-certificate \
+    --certificate-arn "$MQTTS_CERTIFICATE_ARN" 2>&1)"
+  delete_status=$?
+  set -e
+  if [ "$delete_status" -ne 0 ]; then
+    case "$delete_output" in
+      *ResourceNotFoundException*)
+        MQTTS_CERTIFICATE_EXISTS=false
+        log "Managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' is already absent."
+        return
+        ;;
+      *)
+        die "Unable to delete managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN': $delete_output"
+        ;;
+    esac
+  fi
+
+  timeout_seconds="$(duration_seconds "$TIMEOUT")"
+  now="$(date +%s)"
+  deadline="$((now + timeout_seconds))"
+  next_notice="$((now + 30))"
+  while [ "$now" -lt "$deadline" ]; do
+    set +e
+    describe_output="$(aws_acm describe-certificate \
+      --certificate-arn "$MQTTS_CERTIFICATE_ARN" \
+      --output json 2>&1)"
+    describe_status=$?
+    set -e
+    if [ "$describe_status" -ne 0 ] && \
+       [[ "$describe_output" == *ResourceNotFoundException* ]]; then
+      MQTTS_CERTIFICATE_EXISTS=false
+      log "Managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' was deleted."
+      return
+    fi
+    if [ "$now" -ge "$next_notice" ]; then
+      log "Managed MQTTS ACM certificate deletion is still propagating."
+      next_notice="$((now + 30))"
+    fi
+    sleep 5
+    now="$(date +%s)"
+  done
+
+  die "Deletion of managed MQTTS ACM certificate '$MQTTS_CERTIFICATE_ARN' was not confirmed within '$TIMEOUT'."
+}
+
 public_manager_url() {
   printf 'https://%s' "$HOSTNAME_VALUE"
   if [ "$EXPOSURE" = "haproxy" ] && [ "$HTTPS_PORT" != "443" ]; then
@@ -2374,10 +3121,17 @@ apply_stack() {
   if [ "$EXPOSURE" = "ingress" ]; then
     resolve_ingress_certificate
     resolve_ingress_mqtts_configuration
-    if [ "$CERTIFICATE_MODE" = managed ]; then
+    if [ "$CERTIFICATE_MODE" = managed ] || \
+       [ "$MQTTS_CERTIFICATE_MODE" = managed ]; then
       require_command cksum
+    fi
+    if [ "$CERTIFICATE_MODE" = managed ]; then
       [ "${#HOSTNAME_VALUE}" -le 64 ] || die \
         "Managed ACM mode currently requires a hostname of at most 64 characters; use an existing or shared certificate for a longer name."
+    fi
+    if [ "$MQTTS_CERTIFICATE_MODE" = managed ]; then
+      [ "${#MQTTS_HOSTNAME_VALUE}" -le 64 ] || die \
+        "Managed MQTTS ACM mode currently requires a hostname of at most 64 characters; use an existing certificate for a longer name."
     fi
   fi
   require_managed_external_dns
@@ -2388,7 +3142,8 @@ apply_stack() {
   if [ "$EXPOSURE" = "ingress" ] && [ "$CERTIFICATE_MODE" != "managed" ]; then
     require_selected_acm_certificate
   fi
-  if [ "$EXPOSURE" = ingress ] && [ "$MQTTS_ENABLED" = true ]; then
+  if [ "$EXPOSURE" = ingress ] && [ "$MQTTS_ENABLED" = true ] && \
+     [ "$MQTTS_CERTIFICATE_MODE" = existing ]; then
     require_selected_mqtts_acm_certificate
   fi
   # Reserve before ACM requests as well as before Helm, so a losing concurrent
@@ -2404,8 +3159,16 @@ apply_stack() {
     apply_managed_certificate_validation_records
     wait_for_managed_certificate
   fi
+  if [ "$MQTTS_CERTIFICATE_MODE" = managed ]; then
+    resolve_managed_mqtts_certificate
+    wait_for_managed_mqtts_certificate_validation_records
+    apply_managed_mqtts_certificate_validation_records
+    wait_for_managed_mqtts_certificate
+  fi
   apply_portable_stack
-  record_mqtts_certificate_configuration
+  if [ "$MQTTS_CERTIFICATE_MODE" != managed ]; then
+    record_mqtts_certificate_configuration
+  fi
   if [ "$CERTIFICATE_MODE" != "managed" ]; then
     record_certificate_configuration
   fi
@@ -2484,7 +3247,9 @@ show_certificate_configuration() {
     printf 'MQTTS certificate mode: %s\n' "${mqtts_certificate_mode:-unrecorded}"
     [ -z "$mqtts_hostname" ] || printf 'MQTTS hostname: %s\n' "$mqtts_hostname"
     [ -z "$mqtts_certificate_arn" ] || printf 'MQTTS certificate ARN: %s\n' "$mqtts_certificate_arn"
-    if [ "$mqtts_certificate_mode" = existing ] && [ -n "$mqtts_certificate_arn" ]; then
+    if { [ "$mqtts_certificate_mode" = existing ] || \
+         [ "$mqtts_certificate_mode" = managed ]; } && \
+       [ -n "$mqtts_certificate_arn" ]; then
       if mqtts_certificate_status="$(aws_acm describe-certificate \
           --certificate-arn "$mqtts_certificate_arn" \
           --query 'Certificate.Status' \
@@ -2534,10 +3299,15 @@ prepare_mqtts_destroy() {
     "Unable to read MQTTS certificate ARN from namespace '$STACK_NAME'."
   recorded_hostname="$(stack_mqtts_hostname)" || die \
     "Unable to read MQTTS hostname from namespace '$STACK_NAME'."
-  [ "$recorded_mode" = existing ] || die \
-    "Stack '$STACK_NAME' has a low-level or unowned Ingress MQTTS endpoint; refusing automated cleanup without openremote.io/mqtts-certificate-mode=existing."
+  case "$recorded_mode" in
+    existing|managed) ;;
+    *)
+      die "Stack '$STACK_NAME' has a low-level or unowned Ingress MQTTS endpoint; refusing automated cleanup without a supported openremote.io/mqtts-certificate-mode."
+      ;;
+  esac
   [ "$recorded_hostname" = "$MQTTS_HOSTNAME_VALUE" ] || die \
     "Namespace '$STACK_NAME' records MQTTS hostname '$recorded_hostname', but reserves '$MQTTS_HOSTNAME_VALUE'."
+  MQTTS_CERTIFICATE_MODE="$recorded_mode"
   MQTTS_CERTIFICATE_ARN="$recorded_arn"
 
   STACK_MQTTS_SERVICE_JSON="$(kubectl --context "$KUBE_CONTEXT" \
@@ -2573,6 +3343,9 @@ prepare_mqtts_destroy() {
     die "Service '$STACK_NAME/proxy-mqtts' does not carry a valid ACM certificate ARN."
   fi
   if [ -n "$recorded_arn" ] && [ "$recorded_arn" != "$service_certificate_arn" ]; then
+    if [ "$recorded_mode" = managed ]; then
+      die "Service '$STACK_NAME/proxy-mqtts' uses certificate '$service_certificate_arn', not owned managed certificate '$recorded_arn'."
+    fi
     warn "Service '$STACK_NAME/proxy-mqtts' uses certificate '$service_certificate_arn', while the namespace records '$recorded_arn'. This can follow an interrupted rotation; both externally owned certificates will be retained."
   fi
   MQTTS_CERTIFICATE_ARN="$service_certificate_arn"
@@ -2621,7 +3394,7 @@ wait_for_mqtts_load_balancer_removed() {
     sleep 5
     now="$(date +%s)"
   done
-  die "The MQTTS NLB '$MQTTS_LOAD_BALANCER_ADDRESS' was not confirmed deleted within '$TIMEOUT'. Hostname reservations and the existing certificate were retained so destroy can be retried safely."
+  die "The MQTTS NLB '$MQTTS_LOAD_BALANCER_ADDRESS' was not confirmed deleted within '$TIMEOUT'. Hostname reservations and certificate state were retained so destroy can be retried safely."
 }
 
 wait_for_public_hostname_removed() {
@@ -2638,8 +3411,6 @@ wait_for_public_hostname_removed() {
 destroy_stack_with_managed_resources() {
   local mqtts_reservation
   local reservation
-  local record_name
-  local record_type
 
   require_command dig
   require_command helm
@@ -2666,73 +3437,88 @@ destroy_stack_with_managed_resources() {
   capture_stack_ingress_for_destroy
 
   resolve_managed_certificate_for_destroy
-  if [ "$MANAGED_CERTIFICATE_DESTROY" = false ]; then
-    CERTIFICATE_MODE=""
-    require_managed_external_dns
-    if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
-      run_or_stack "$@"
-      STACK_NAMESPACE_EXISTS=false
-    fi
-    wait_for_mqtts_load_balancer_removed
-    wait_for_public_hostname_removed "$HOSTNAME_VALUE" "stack hostname '$HOSTNAME_VALUE'"
-    if [ -n "$mqtts_reservation" ]; then
-      wait_for_public_hostname_removed "$MQTTS_HOSTNAME_VALUE" \
-        "MQTTS hostname '$MQTTS_HOSTNAME_VALUE'"
-    fi
-    if [ -n "$mqtts_reservation" ]; then
-      release_portable_mqtts_hostname
-      log "Existing MQTTS ACM certificate '${MQTTS_CERTIFICATE_ARN:-unknown}' was retained."
-    fi
-    # Release the required web claim last. If its release fails, destroy can
-    # still be retried; releasing it first would strand a remaining optional
-    # MQTTS claim behind the web-reservation preflight.
-    release_portable_hostname
-    return
+  resolve_managed_mqtts_certificate_for_destroy
+  if [ "$MANAGED_MQTTS_CERTIFICATE_DESTROY" = true ] && \
+     [ -z "$mqtts_reservation" ]; then
+    die "Stack '$STACK_NAME' owns a managed MQTTS certificate without an MQTTS hostname reservation; refusing unverifiable DNS cleanup."
   fi
 
-  CERTIFICATE_MODE=managed
-  EXPOSURE=ingress
+  if [ "$MANAGED_CERTIFICATE_DESTROY" = true ]; then
+    CERTIFICATE_MODE=managed
+    EXPOSURE=ingress
+  else
+    CERTIFICATE_MODE=""
+  fi
+  if [ "$MANAGED_MQTTS_CERTIFICATE_DESTROY" = true ]; then
+    MQTTS_CERTIFICATE_MODE=managed
+  fi
   require_managed_external_dns
-  validate_stack_ingress_for_managed_destroy
-  capture_validation_dns_records_for_destroy
-  select_managed_dns_domain
-  while IFS=$'\t' read -r record_name record_type; do
-    [ -n "$record_name" ] || continue
-    dns_name_is_covered "$record_name" "$MANAGED_DNS_DOMAIN" || die \
-      "Validation record '$record_name' is not inside authoritative DNS domain '$MANAGED_DNS_DOMAIN'."
-  done <<< "$VALIDATION_DNS_RECORDS"
-  discover_authoritative_name_servers
+  if [ "$MANAGED_CERTIFICATE_DESTROY" = true ]; then
+    validate_stack_ingress_for_managed_destroy
+    capture_validation_dns_records_for_destroy
+  fi
+  if [ "$MANAGED_MQTTS_CERTIFICATE_DESTROY" = true ]; then
+    capture_mqtts_validation_dns_records_for_destroy
+  fi
 
-  remove_managed_stack_ingress
-  wait_for_public_hostname_removed "$HOSTNAME_VALUE" "stack hostname '$HOSTNAME_VALUE'"
-  wait_for_managed_certificate_detachment
+  # The ALB Ingress can be removed independently, allowing its managed web
+  # certificate to detach before the namespace is deleted. The MQTTS
+  # certificate remains attached to the NLB until Service finalizer cleanup.
+  if [ "$MANAGED_CERTIFICATE_DESTROY" = true ]; then
+    remove_managed_stack_ingress
+    wait_for_public_hostname_removed "$HOSTNAME_VALUE" "stack hostname '$HOSTNAME_VALUE'"
+    wait_for_managed_certificate_detachment
+  fi
 
-  # Managed mode assumes the certificate and its validation CNAMEs are exclusive
-  # to this stack. ACM can reuse a CNAME for other certificates; ownership tags
-  # do not prove DNS-record exclusivity. Under this deployment requirement,
-  # deleting the namespace lets ExternalDNS remove the validation records too.
   if [ "$STACK_NAMESPACE_EXISTS" = true ]; then
     run_or_stack "$@"
     STACK_NAMESPACE_EXISTS=false
-  else
+  elif [ "$MANAGED_CERTIFICATE_DESTROY" = true ] || \
+       [ "$MANAGED_MQTTS_CERTIFICATE_DESTROY" = true ]; then
     log "Stack namespace '$STACK_NAME' is already absent; continuing external cleanup."
   fi
 
   wait_for_mqtts_load_balancer_removed
+  if [ "$MANAGED_CERTIFICATE_DESTROY" = false ]; then
+    wait_for_public_hostname_removed "$HOSTNAME_VALUE" "stack hostname '$HOSTNAME_VALUE'"
+  fi
   if [ -n "$mqtts_reservation" ]; then
     wait_for_public_hostname_removed "$MQTTS_HOSTNAME_VALUE" \
       "MQTTS hostname '$MQTTS_HOSTNAME_VALUE'"
   fi
-  select_managed_dns_domain "$HOSTNAME_VALUE"
-  discover_authoritative_name_servers
-  wait_for_dns_records_removed "ACM validation" "$VALIDATION_DNS_RECORDS"
-  delete_managed_certificate
+
+  # Managed mode assumes each certificate and its validation CNAMEs are
+  # exclusive to its endpoint. ACM can reuse CNAMEs for other certificates;
+  # ownership tags do not prove DNS-record exclusivity. Deleting the namespace
+  # lets ExternalDNS remove both validation DNSEndpoints before ACM deletion.
+  if [ "$MANAGED_MQTTS_CERTIFICATE_DESTROY" = true ]; then
+    wait_for_managed_mqtts_certificate_detachment
+    select_managed_dns_domain "$MQTTS_HOSTNAME_VALUE"
+    discover_authoritative_name_servers
+    wait_for_dns_records_removed "MQTTS ACM validation" \
+      "$MQTTS_VALIDATION_DNS_RECORDS"
+    delete_managed_mqtts_certificate
+  fi
+  if [ "$MANAGED_CERTIFICATE_DESTROY" = true ]; then
+    select_managed_dns_domain "$HOSTNAME_VALUE"
+    discover_authoritative_name_servers
+    wait_for_dns_records_removed "ACM validation" "$VALIDATION_DNS_RECORDS"
+    delete_managed_certificate
+  fi
   if [ -n "$mqtts_reservation" ]; then
     release_portable_mqtts_hostname
-    log "Existing MQTTS ACM certificate '${MQTTS_CERTIFICATE_ARN:-unknown}' was retained."
+    if [ "$MANAGED_MQTTS_CERTIFICATE_DESTROY" = false ]; then
+      log "Existing MQTTS ACM certificate '${MQTTS_CERTIFICATE_ARN:-unknown}' was retained."
+    fi
   fi
+  # Release the required web claim last. If its release fails, destroy can
+  # still be retried; releasing it first would strand a remaining optional
+  # MQTTS claim behind the web-reservation preflight.
   release_portable_hostname
-  log "Stack '$STACK_NAME' and its managed external certificate resources are destroyed."
+  if [ "$MANAGED_CERTIFICATE_DESTROY" = true ] || \
+     [ "$MANAGED_MQTTS_CERTIFICATE_DESTROY" = true ]; then
+    log "Stack '$STACK_NAME' and its managed external certificate resources are destroyed."
+  fi
 }
 
 release_portable_hostname() {

@@ -770,15 +770,17 @@ selected, it declares the MQTTS hostname on the NLB Service. Without it, DNS is
 also the caller's responsibility.
 
 For an EKS cluster using OpenRemote-managed ExternalDNS, prefer
-`or-eks-stack`. It accepts the same `--mqtts`, `--mqtts-hostname`, and
-`--mqtts-certificate-arn` options, validates that the existing certificate is
-issued in the correct account and region and covers the hostname, waits for the
-NLB, DNS, and trusted MQTTS endpoint, records lifecycle state, and automates
-safe teardown. Repeat `--mqtts` on reapply; after a successful first apply, the
-recorded MQTTS hostname and ARN can be omitted. Destroy confirms NLB and DNS
-removal, releases both hostname reservations, and retains the externally owned
-MQTTS certificate. It refuses to adopt a low-level endpoint while its namespace
-still exists because the required ownership metadata is absent.
+`or-eks-stack`. It additionally accepts `--mqtts-certificate-mode existing` or
+`managed`. Supplying an ARN with no mode selects `existing`; omitting both on
+first apply selects `managed`. Existing mode validates the supplied certificate
+and always retains it. Managed mode requests a dedicated DNS-validated ACM
+certificate, publishes its validation CNAME through a namespaced
+`acm-validation-mqtts` `DNSEndpoint`, and deletes only that exactly owned
+certificate during stack destruction. In both modes the facade waits for the
+NLB, DNS, and trusted MQTTS endpoint and records lifecycle state. Repeat
+`--mqtts` on reapply; the recorded mode, hostname, and ARN are then reused.
+It refuses to adopt a low-level endpoint while its namespace still exists
+because the required ownership metadata is absent.
 
 A development-only plaintext MQTT connection can still use a manual
 port-forward to Manager port 1883; plaintext MQTT is never public.
