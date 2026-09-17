@@ -41,7 +41,7 @@ Your report is reviewed and you are told the outcome, whatever it is.
 
 We reproduce the issue before writing a fix. If we cannot, we will come back to you rather than close it silently.
 
-We agree the severity within the team. If we arrive at a different score from the one you assigned, we will discuss it with you before changing it.
+We agree the severity within the team and re-evaluate the vector you supplied. If we arrive at a different score from the one you assigned, we will provide a clear rationale for the change.
 
 If your report turns out to describe the same vulnerability as another one, the reports are merged and everyone who found it is credited on the advisory that is published.
 
