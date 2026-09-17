@@ -1612,12 +1612,13 @@ require_owned_mqtts_validation_dns_endpoint() {
   local existing_endpoint
   local existing_managed_by
 
-  if ! existing_endpoint="$(kubectl --context "$KUBE_CONTEXT" \
+  # Only NotFound permits creation; a failed read cannot establish ownership.
+  existing_endpoint="$(kubectl --context "$KUBE_CONTEXT" \
       --namespace "$STACK_NAME" \
       get dnsendpoint "$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME" \
-      -o json 2>/dev/null)"; then
-    return
-  fi
+      --ignore-not-found -o json)" || die \
+    "Unable to inspect DNSEndpoint '$STACK_NAME/$ACM_MQTTS_VALIDATION_DNS_ENDPOINT_NAME'; refusing to write ACM MQTTS validation records without ownership checks."
+  [ -n "$existing_endpoint" ] || return 0
 
   existing_managed_by="$(jq -r \
     '.metadata.labels["app.kubernetes.io/managed-by"] // empty' \
@@ -2311,12 +2312,13 @@ require_owned_validation_dns_endpoint() {
   local existing_certificate_arn
   local existing_managed_by
 
-  if ! existing_endpoint="$(kubectl --context "$KUBE_CONTEXT" \
+  # Only NotFound permits creation; a failed read cannot establish ownership.
+  existing_endpoint="$(kubectl --context "$KUBE_CONTEXT" \
       --namespace "$STACK_NAME" \
       get dnsendpoint "$ACM_VALIDATION_DNS_ENDPOINT_NAME" \
-      -o json 2>/dev/null)"; then
-    return
-  fi
+      --ignore-not-found -o json)" || die \
+    "Unable to inspect DNSEndpoint '$STACK_NAME/$ACM_VALIDATION_DNS_ENDPOINT_NAME'; refusing to write ACM validation records without ownership checks."
+  [ -n "$existing_endpoint" ] || return 0
 
   existing_managed_by="$(jq -r \
     '.metadata.labels["app.kubernetes.io/managed-by"] // empty' \

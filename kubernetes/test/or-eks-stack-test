@@ -394,6 +394,10 @@ kubectl() {
       printf '%s' "${OR_EKS_STACK_TEST_EXTERNAL_DNS_ROLE_ARN-arn:aws:iam::123456789012:role/openremote-external-dns}"
       ;;
     *" get dnsendpoint acm-validation "*)
+      if [ -n "${OR_EKS_STACK_TEST_DNS_ENDPOINT_READ_ERROR:-}" ]; then
+        printf '%s\n' "$OR_EKS_STACK_TEST_DNS_ENDPOINT_READ_ERROR" >&2
+        return 1
+      fi
       if [ -f "$NAMESPACE_DELETED_FILE" ]; then
         return 0
       fi
@@ -404,6 +408,10 @@ kubectl() {
       printf '%s\n' "${OR_EKS_STACK_TEST_DNS_ENDPOINT_JSON-$DEFAULT_DNS_ENDPOINT_JSON}"
       ;;
     *" get dnsendpoint acm-validation-mqtts "*)
+      if [ -n "${OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_READ_ERROR:-}" ]; then
+        printf '%s\n' "$OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_READ_ERROR" >&2
+        return 1
+      fi
       [ "${OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_READ_SUCCESS:-true}" = true ] || return 1
       if [ -f "$NAMESPACE_DELETED_FILE" ]; then
         return 0
@@ -1509,6 +1517,73 @@ create_proxy_certificate() {
   printf 'persisted chain\n' > "$PROXY_LE_DIR/live/stack-a.example.com/fullchain.pem"
 }
 
+test_validation_dns_endpoint_read_safety() {
+  local endpoint scenario apply_records endpoint_name failure_output read_error
+  local OR_EKS_STACK_TEST_DNS_ENDPOINT_EXISTS
+  local OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_EXISTS
+  local OR_EKS_STACK_TEST_DNS_ENDPOINT_JSON
+  local OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_JSON
+  local OR_EKS_STACK_TEST_DNS_ENDPOINT_READ_ERROR
+  local OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_READ_ERROR
+
+  for endpoint in web mqtts; do
+    apply_records=apply_managed_certificate_validation_records
+    endpoint_name=acm-validation
+    if [ "$endpoint" = mqtts ]; then
+      apply_records=apply_managed_mqtts_certificate_validation_records
+      endpoint_name=acm-validation-mqtts
+    fi
+    for scenario in absent owned unowned forbidden unavailable; do
+      reset_test
+      STACK_NAME=stack-a
+      KUBE_CONTEXT=test-cluster@eu-west-1
+      CERTIFICATE_ARN="$TEST_CERTIFICATE_ARN"
+      MQTTS_CERTIFICATE_ARN="$TEST_MQTTS_CERTIFICATE_ARN"
+      CERTIFICATE_JSON="$MANAGED_CERTIFICATE_JSON"
+      MQTTS_CERTIFICATE_JSON="$MANAGED_MQTTS_CERTIFICATE_JSON"
+      EXTERNAL_DNS_ARGS="$DEFAULT_EXTERNAL_DNS_ARGS"
+      OR_EKS_STACK_TEST_DNS_ENDPOINT_EXISTS=true
+      OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_EXISTS=true
+      OR_EKS_STACK_TEST_DNS_ENDPOINT_JSON="$DEFAULT_DNS_ENDPOINT_JSON"
+      OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_JSON="$DEFAULT_MQTTS_DNS_ENDPOINT_JSON"
+      read_error=""
+      case "$scenario" in
+        absent)
+          OR_EKS_STACK_TEST_DNS_ENDPOINT_EXISTS=false
+          OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_EXISTS=false ;;
+        unowned)
+          OR_EKS_STACK_TEST_DNS_ENDPOINT_JSON='{"metadata":{"labels":{"app.kubernetes.io/managed-by":"someone-else"}}}'
+          OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_JSON="$OR_EKS_STACK_TEST_DNS_ENDPOINT_JSON" ;;
+        forbidden) read_error='Error from server (Forbidden): cannot get DNSEndpoint' ;;
+        unavailable) read_error='Unable to connect to the server: connection refused' ;;
+      esac
+      OR_EKS_STACK_TEST_DNS_ENDPOINT_READ_ERROR="$read_error"
+      OR_EKS_STACK_TEST_MQTTS_DNS_ENDPOINT_READ_ERROR="$read_error"
+      case "$scenario" in
+        absent|owned)
+          "$apply_records" >/dev/null
+          assert_contains $'apply\t-f\t-'
+          [ "$(jq -r '.metadata.name' "$DNS_ENDPOINT_LOG")" = "$endpoint_name" ] || fail \
+            "Did not write the expected $endpoint validation resource"
+          ;;
+        *)
+          if failure_output="$("$apply_records" 2>&1)"; then
+            fail "Validation records were applied after $scenario lookup for $endpoint"
+          fi
+          assert_not_contains $'apply\t-f\t-'
+          if [ -n "$read_error" ]; then
+            grep -F "$read_error" <<< "$failure_output" >/dev/null || fail "$failure_output"
+            grep -F 'without ownership checks' <<< "$failure_output" >/dev/null || fail "$failure_output"
+          else
+            grep -F 'not owned' <<< "$failure_output" >/dev/null || fail "$failure_output"
+          fi
+          ;;
+      esac
+      assert_contains $'get\tdnsendpoint\t'"$endpoint_name"$'\t--ignore-not-found\t-o\tjson'
+    done
+  done
+}
+
 test_apply_reuses_valid_certificate() {
   OR_EKS_STACK_TEST_PROXY_CERTIFICATE_STATE=present \
   OR_EKS_STACK_TEST_HTTPS_READY_IMMEDIATELY=true \
@@ -2304,6 +2379,7 @@ test_ingress_mqtts_validation
 test_ingress_shared_certificate_apply
 test_ingress_managed_certificate_apply
 test_managed_certificate_reuse_and_safety
+test_validation_dns_endpoint_read_safety
 test_apply_reuses_valid_certificate
 test_acme_state_and_readiness
 test_lifecycle_delegation

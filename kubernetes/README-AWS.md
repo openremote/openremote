@@ -730,6 +730,10 @@ remain recognized as web certificates for upgrade compatibility.
 4. Wait for every selected managed certificate to report `ISSUED` before
    installing workloads.
 
+Both endpoints verify ownership before updating an existing validation
+`DNSEndpoint`. Only a confirmed missing resource permits creation; permission
+errors or API failures stop apply before writing validation records.
+
 ###### Retry after interruption
 
 Rerun the same `apply` command. The recorded mode survives failed applies; if
