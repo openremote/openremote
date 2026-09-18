@@ -1,5 +1,5 @@
 # OpenRemote component charts own their namespaced PersistentVolumeClaims.
-# This chart currently provides the namespaced shared secret only.
+# This chart provides the namespaced shared secret and optional network policies.
 
 credentials:
   # Empty passwords are generated when the Secret is first created. Existing
