@@ -493,7 +493,7 @@ validate_target_cluster() {
       -o 'jsonpath={.spec.template.spec.containers[*].name}')" || die \
         "Unable to inspect the Amazon VPC CNI DaemonSet in context '$KUBE_CONTEXT'."
     case " $vpc_cni_containers " in
-      *" aws-eks-nodeagent "*|*" aws-network-policy-agent "*)
+      *" aws-eks-nodeagent "*)
         ;;
       *)
         die "Amazon VPC CNI NetworkPolicy enforcement is not active in context '$KUBE_CONTEXT'; run or-eks-cluster apply first."

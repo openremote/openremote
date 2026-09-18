@@ -702,7 +702,7 @@ verify_network_policy_support() {
       "Unable to inspect the Amazon VPC CNI DaemonSet."
 
   case " $vpc_cni_containers " in
-    *" aws-eks-nodeagent "*|*" aws-network-policy-agent "*)
+    *" aws-eks-nodeagent "*)
       ;;
     *)
       die "The Amazon VPC CNI NetworkPolicy agent is not installed."

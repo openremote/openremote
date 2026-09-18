@@ -462,9 +462,11 @@ assert_contains $'kubectl\t--context\ttest-cluster@eu-west-1\t--namespace\tkube-
 assert_contains $'aws-eks\tupdate-addon'
 
 : > "$CALL_LOG"
-OR_EKS_TEST_VPC_CNI_CONFIGURATION='{"enableNetworkPolicy":true}' \
-OR_EKS_TEST_CNI_CONTAINERS='aws-node aws-network-policy-agent' \
-  reconcile_network_policy_support
+if (OR_EKS_TEST_VPC_CNI_CONFIGURATION='{"enableNetworkPolicy":true}' \
+    OR_EKS_TEST_CNI_CONTAINERS='aws-node aws-network-policy-agent' \
+    reconcile_network_policy_support) >/dev/null 2>&1; then
+  fail "NetworkPolicy reconciliation accepted the image name instead of the aws-eks-nodeagent container"
+fi
 
 : > "$CALL_LOG"
 if (OR_EKS_TEST_POLICY_CRD=false reconcile_network_policy_support) >/dev/null 2>&1; then

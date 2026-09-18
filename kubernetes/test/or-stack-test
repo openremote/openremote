@@ -599,12 +599,15 @@ test_validation() {
     fail "EKS target accepted an IngressClass without HTTPS redirection"
   fi
 
-  OR_STACK_TEST_NAMESPACE_EXISTS=true \
-  OR_STACK_TEST_TARGET_LABEL=eks \
-  OR_STACK_TEST_EXPOSURE_LABEL=haproxy \
-  OR_STACK_TEST_EKS_CNI_CONTAINERS='aws-node aws-network-policy-agent' \
+  if OR_STACK_TEST_NAMESPACE_EXISTS=true \
+    OR_STACK_TEST_TARGET_LABEL=eks \
+    OR_STACK_TEST_EXPOSURE_LABEL=haproxy \
+    OR_STACK_TEST_EKS_CNI_CONTAINERS='aws-node aws-network-policy-agent' \
     run_stack apply --name stack-alternate-agent --kube-context test-context --target eks \
-      --hostname stack-alternate-agent.example.com >/dev/null
+      --hostname stack-alternate-agent.example.com >/dev/null 2>&1; then
+    fail "EKS target accepted the image name instead of the aws-eks-nodeagent container"
+  fi
+  assert_not_contains $'helm\tupgrade'
 }
 
 test_prepare
