@@ -4,11 +4,17 @@ plugins {
 
 configurations {
   managerRuntime
+
+  // Configuration for the demo setup extension used during deployment
+  demoExtensionRuntime
 }
 
 dependencies {
   api project(":setup")
   managerRuntime project(':manager')
+
+  // Consume the demo setup extension exposed by the manager project
+  demoExtensionRuntime project(path: ':manager', configuration: 'demoExtensionRuntime')
 }
 
 tasks.register('license', Copy) {
@@ -45,6 +51,11 @@ tasks.register('installDist', Copy) {
     exclude {
       (it.file.path.contains(".gradle") || it.file.path.contains(".m2")) && it.file.path.contains("io.openremote.ui")
     }
+  }
+
+  // Include the demo setup extension in the deployment image
+  into("image/manager/extensions") {
+    from configurations.demoExtensionRuntime
   }
 
   into("image/manager/extensions") {

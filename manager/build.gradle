@@ -16,6 +16,13 @@ application {
 
 configurations {
   demoExtension
+
+// Expose demo setup extension for consumption by deployment packaging
+  demoExtensionRuntime {
+    canBeResolved = false
+    canBeConsumed = true
+    extendsFrom demoExtension
+  }
 }
 
 dependencies {
