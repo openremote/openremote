@@ -151,7 +151,7 @@ class PredictedFacadeTest extends Specification implements ManagerContainerTrait
   def "Asset scope #operation fails when the scope asset has been deleted"() {
     given: "a facade whose scope asset exists at construction time"
     def scopeAsset = createAsset("Deleted scope", realm)
-    def facade = new PredictedFacade(new RulesEngineId(realm, scopeAsset.id), predictedService)
+    def facade = new PredictedFacade(new RulesEngineId(realm, scopeAsset.id), assetStorageService, predictedService)
     assert assetStorageService.delete([scopeAsset.id])
     assert assetStorageService.find(scopeAsset.id, true) == null
 
@@ -223,7 +223,7 @@ class PredictedFacadeTest extends Specification implements ManagerContainerTrait
       default:
         throw new IllegalArgumentException("Unknown scope: " + scope)
     }
-    return new PredictedFacade(engineId, predictedService)
+    return new PredictedFacade(engineId, assetStorageService, predictedService)
   }
 
   private Object performOperation(PredictedFacade facade, String assetId, String operation) {

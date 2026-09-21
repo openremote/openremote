@@ -181,7 +181,7 @@ public class RulesEngine<T extends Ruleset> {
     this.webhooksFacade = new WebhooksFacade<>(id, webhookService);
     this.alarmsFacade = new AlarmFacade<>(id, alarmService);
     this.historicFacade = new HistoricFacade<>(id, assetDatapointService);
-    this.predictedFacade = new PredictedFacade<>(id, assetPredictedDatapointService);
+    this.predictedFacade = new PredictedFacade<>(id, assetStorageService, assetPredictedDatapointService);
     this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
     this.facts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, LOG);
