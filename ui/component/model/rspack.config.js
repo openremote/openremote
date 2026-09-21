@@ -16,21 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-export default [
-  "write:assets",
-  "write:alarms",
-  "write:attributes",
-  "read:assets",
-  "write:logs",
-  "write:user",
-  "write:admin",
-  "read:users",
-  "read:insights",
-  "write:rules",
-  "read:map",
-  "read:admin",
-  "read:alarms",
-  "read:rules",
-  "read:logs",
-  "write:insights",
-];
+const util = require("@openremote/util");
+
+bundles = {
+  "index.bundle": {
+    excludeOr: true,
+  },
+};
+
+module.exports = util.generateExports(__dirname);

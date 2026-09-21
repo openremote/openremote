@@ -2,27 +2,35 @@
   "name": "@openremote/or-app",
   "version": "1.28.0-snapshot",
   "description": "OpenRemote app template",
-  "customElements": "custom-elements.json",
+  "customElements": "build/custom-elements.json",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
-  "main": "dist/umd/index.bundle.js",
-  "module": "lib/index.js",
+  "main": "build/dist/umd/index.bundle.js",
+  "module": "build/lib/index.js",
   "exports": {
-    ".": "./lib/index.js",
-    "./*": "./lib/*.js",
+    ".": "./build/lib/index.js",
+    "./images/*": "./src/images/*",
+    "./*": "./build/lib/*.js",
     "./jsx": {
-      "types": "./custom-elements-jsx.d.ts"
+      "types": "./build/custom-elements-jsx.d.ts"
     }
   },
-  "types": "lib/index.d.ts",
+  "types": "build/lib/index.d.ts",
+  "files": [
+    "src/images/**",
+    "build/lib/**",
+    "build/dist/**",
+    "build/custom-elements.json",
+    "build/custom-elements-jsx.d.ts"
+  ],
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
+    "clean": "npx tsc -b --clean && npx shx rm -rf build",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
     "test": "echo \"No tests\" && exit 0",
-    "prepack": "npx tsc -b"
+    "prepack": "npx tsc -b && npx rspack"
   },
   "dependencies": {
     "@openremote/core": "workspace:*",

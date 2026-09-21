@@ -47,7 +47,6 @@ services:
       POSTGRES_MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-100}
     volumes:
       - postgresql-data:/var/lib/postgresql/data
-      - manager-data:/storage
 
   keycloak:
     restart: always

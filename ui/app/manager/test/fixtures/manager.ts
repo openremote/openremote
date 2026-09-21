@@ -53,8 +53,8 @@ import { AssetTree } from "../../../../component/or-asset-tree/test/fixtures";
 import { isAxiosError, type AxiosRequestConfig } from "axios";
 const { admin, smartcity } = users;
 
-export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
-export const userStatePath = path.join(__dirname, "data/.auth/user.json");
+export const adminStatePath = path.join(__dirname, "../../build/.auth/admin.json");
+export const userStatePath = path.join(__dirname, "../../build/.auth/user.json");
 
 /** Logs a warning for a failed HTTP request; any other error is a test bug and is rethrown to fail the test. */
 function warnOnHttpError(e: unknown, message: string, ...context: unknown[]) {

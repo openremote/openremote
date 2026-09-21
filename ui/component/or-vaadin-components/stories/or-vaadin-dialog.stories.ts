@@ -18,7 +18,7 @@
  */
 import { setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/web-components";
 import { getORStorybookHelpers } from "../../storybook-utils";
-import customElements from "../custom-elements.json" with { type: "json" };
+import customElements from "../build/custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
 import { html } from "lit";
 import {

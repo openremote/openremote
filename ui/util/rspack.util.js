@@ -34,6 +34,11 @@ function getStandardModuleRules() {
         type: "asset/resource",
       },
       {
+        // maplibre builds its worker URL at runtime, so its own `new URL()` calls are not build time assets
+        test: /maplibre-gl[\\/]dist[\\/].+\.mjs$/,
+        parser: { url: false },
+      },
+      {
         test: /\.css$/, //
         exclude: /(maplibre|@material|gridstack|@mdi).*\.css$/,
         use: [{ loader: "css-loader" }],
@@ -60,6 +65,14 @@ function getStandardModuleRules() {
   };
 }
 
+function resolveDir(request, dirname) {
+  try {
+    return path.dirname(require.resolve(request, { paths: [dirname] }));
+  } catch {
+    return undefined;
+  }
+}
+
 function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port) {
   const production = mode === "production";
   port = port || 9000;
@@ -84,7 +97,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
       bundle: "./src/index.ts",
     },
     output: {
-      path: dirname + "/dist",
+      path: dirname + "/build/dist",
       publicPath: isDevServer ? "/" + dirname.split(path.sep).slice(-1)[0] + "/" : "./",
       filename: production ? "[name].[contenthash].js" : "[name].js",
     },
@@ -192,6 +205,18 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
       toType: "file",
     });
   }
+  // Check if maplibre is installed, its worker imports the shared module so both must sit side by side
+  const maplibreDist = resolveDir("maplibre-gl/dist/maplibre-gl-worker.mjs", dirname);
+  if (maplibreDist) {
+    for (const file of ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"]) {
+      patterns.push({
+        from: path.join(maplibreDist, file),
+        to: "maplibre",
+        toType: "dir",
+        info: { minimized: true },
+      });
+    }
+  }
 
   // Copy unprocessed files
   config.plugins.push(
@@ -275,7 +300,7 @@ function generateExports(dirname) {
       mode: "production",
       output: {
         filename: "[name].js",
-        path: path.resolve(dirname, "dist/umd"),
+        path: path.resolve(dirname, "build/dist/umd"),
         library: {
           name: libName,
           target: "umd",

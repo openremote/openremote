@@ -20,7 +20,7 @@ import { type Meta, setCustomElementsManifest, type StoryObj } from "@storybook/
 import { getORStorybookHelpers } from "../../storybook-utils";
 import manager from "@openremote/core";
 import { html } from "lit";
-import customElements from "../custom-elements.json" with { type: "json" };
+import customElements from "../build/custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
 import "../src/index";
 import "../src/markers/or-map-marker";
