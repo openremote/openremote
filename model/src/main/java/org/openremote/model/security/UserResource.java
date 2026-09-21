@@ -541,7 +541,7 @@ public interface UserResource {
       @Parameter(description = USER_ID, example = EXAMPLE_USER_ID) @PathParam("userId")
           String userId);
 
-  @GET
+  @DELETE
   @Path("{realm}/disconnect/{sessionID}")
   @Operation(
       operationId = "disconnectUserSession",

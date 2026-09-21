@@ -113,7 +113,7 @@ class UserSessionResourceTest extends Specification implements ManagerContainerT
 
     when: "an authorized caller disconnects the session"
     def authorizedTarget = caller == "owner" ? ownerTarget : superuserTarget
-    response = authorizedTarget.path("user/${realm}/disconnect/${sessionId}".toString()).request().get()
+    response = authorizedTarget.path("user/${realm}/disconnect/${sessionId}".toString()).request().delete()
 
     then:
     response.status == 204
