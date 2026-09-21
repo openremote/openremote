@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 import { ct, expect } from "@openremote/test";
 
 import { BarChartInterval, OrAttributeBarChart } from "@openremote/or-attribute-barchart";
@@ -112,12 +111,61 @@ ct("should preserve the original 24-hour duration across repeated navigation", a
   expect(previous[1].getTime()).toBe(next[1].getTime());
 });
 
-ct("should preserve calendar-day semantics across DST", async () => {
-  const initial: [Date, Date] = [new Date("2026-03-28T00:00:00+01:00"), new Date("2026-03-29T00:00:00+01:00")];
-  const next = shiftTimeframe(initial[0], initial[1], DAY, "days", 1, "next");
+ct("should preserve preset navigation duration across repeated component updates", async ({ mount }) => {
+  const component = await mount(OrAttributeBarChart, {
+    props: { timePrefixKey: "this", timeWindowKey: "Hour", interval: BarChartInterval.ONE_HOUR },
+  });
+  const result = await component.evaluate(
+    async (element, { start, end, hour }) => {
+      const chart = element as any;
+      chart._shiftTimeframe(new Date(start), new Date(end), "Hour", "next");
+      await chart.updateComplete;
+      const first = chart.timeframe as [Date, Date];
+      const firstNavigationDuration = chart._navigationDuration;
+
+      chart._shiftTimeframe(first[0], first[1], "Hour", "next");
+      await chart.updateComplete;
+      const second = chart.timeframe as [Date, Date];
+
+      return {
+        firstOffset: first[0].getTime() - start,
+        secondOffset: second[0].getTime() - first[0].getTime(),
+        firstNavigationDuration,
+        expectedDuration: hour,
+      };
+    },
+    { start: Date.parse("2026-01-01T00:00:00Z"), end: Date.parse("2026-01-01T00:59:59.999Z"), hour: HOUR }
+  );
+
+  // The first navigation creates a timeframe, but that timeframe is still a preset window.
+  expect(result).toEqual({
+    firstOffset: HOUR,
+    secondOffset: HOUR,
+    firstNavigationDuration: HOUR,
+    expectedDuration: HOUR,
+  });
+});
+
+ct("should preserve calendar-day semantics across DST", async ({ mount }) => {
+  const component = await mount(OrAttributeBarChart, {
+    props: { timePrefixKey: "this", timeWindowKey: "Day", interval: BarChartInterval.ONE_DAY },
+  });
+  const elapsed = await component.evaluate(
+    async (element, { start, end }) => {
+      const chart = element as any;
+      chart._shiftTimeframe(new Date(start), new Date(end), "Day", "next");
+      await chart.updateComplete;
+      const next = chart.timeframe as [Date, Date];
+      return next[1].getTime() - next[0].getTime();
+    },
+    {
+      start: "2026-03-28T00:00:00+01:00",
+      end: "2026-03-29T00:00:00+01:00",
+    }
+  );
 
   // A calendar day crossing the spring transition is 23 elapsed hours by design.
-  expect(next[1].getTime() - next[0].getTime()).toBe(23 * HOUR);
+  expect(elapsed).toBe(23 * HOUR);
 });
 
 ct("should recognize Moment singular and alias calendar units", async () => {

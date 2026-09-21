@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 import { defineCtConfig } from "@openremote/test/component.config";
 
 export default defineCtConfig(__dirname, { use: { timezoneId: "Europe/Stockholm" } });
