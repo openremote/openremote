@@ -78,7 +78,7 @@ services:
 
   keycloak:
     restart: always
-    image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
+    image: ekhorn/or-keycloak:vaadin
     depends_on:
       postgresql:
         condition: service_healthy
