@@ -552,10 +552,25 @@ helm_apply() {
 }
 
 apply_stack() {
-  local component_args=(
+  local manager_args=(
     --set-string "or.hostname=$HOSTNAME_VALUE"
   )
+  local keycloak_hostname="$HOSTNAME_VALUE"
   local proxy_args=()
+
+  if [ "$EXPOSURE" != "none" ]; then
+    # Manager discovers the token issuer through Keycloak's internal HTTP URL.
+    # Pin the public URL so discovery and proxied browser requests return the
+    # same issuer, including any non-default HTTPS port.
+    keycloak_hostname="https://$HOSTNAME_VALUE"
+    if [ "$EXPOSURE" = "haproxy" ] && [ "$HTTPS_PORT" != "443" ]; then
+      keycloak_hostname="$keycloak_hostname:$HTTPS_PORT"
+    fi
+    # Manager's default CORS origins use the hostname without the public port.
+    # Allow this stack's exact HTTPS origin so browser writes are not rejected.
+    manager_args+=(--set-string "or.allowedOrigins=$keycloak_hostname")
+    keycloak_hostname="$keycloak_hostname/auth"
+  fi
 
   require_command helm
   require_command kubectl
@@ -569,8 +584,8 @@ apply_stack() {
 
   helm_apply or-setup
   helm_apply postgresql
-  helm_apply keycloak "${component_args[@]}"
-  helm_apply manager "${component_args[@]}"
+  helm_apply keycloak --set-string "or.hostname=$keycloak_hostname"
+  helm_apply manager "${manager_args[@]}"
   if [ "$EXPOSURE" != "none" ]; then
     proxy_args=(
       --set-string "or.hostname=$HOSTNAME_VALUE"

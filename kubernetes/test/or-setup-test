@@ -123,6 +123,19 @@ grep -F -- 'postgresql-password: "Y2hvc2VuLWRhdGFiYXNl"' <<< "$rendered_explicit
 
 rendered_manager="$(helm template manager "$MANAGER_CHART" --namespace stack-a)"
 
+if grep -F -- '- name: OR_WEBSERVER_ALLOWED_ORIGINS' <<< "$rendered_manager" >/dev/null; then
+  fail "Default Manager chart should retain the application's default CORS configuration"
+fi
+
+for origin in https://localhost:8443 https://localhost:9443 https://stack.example.com; do
+  rendered_public_manager="$(helm template manager "$MANAGER_CHART" \
+    --namespace stack-a --set-string "or.allowedOrigins=$origin")"
+  rendered_origin="$(awk '/- name: OR_WEBSERVER_ALLOWED_ORIGINS/ {getline; print $2}' \
+    <<< "$rendered_public_manager")"
+  [ "$rendered_origin" = "\"$origin\"" ] || fail \
+    "Manager CORS origin must exactly match the public URL: $origin"
+done
+
 grep -F -- '- name: OR_DB_USERNAME' <<< "$rendered_manager" >/dev/null || fail \
   "Manager does not receive its PostgreSQL username through OR_DB_USERNAME"
 grep -F -- '- name: OR_DB_PASSWORD' <<< "$rendered_manager" >/dev/null || fail \

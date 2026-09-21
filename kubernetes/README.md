@@ -97,6 +97,21 @@ second independent stack with another name and different host-facing ports:
 The Managers are then available at `https://localhost:8443/manager` and
 `https://localhost:9443/manager`, using the proxy's locally generated
 certificates. Browser warnings for those local certificates are expected.
+
+For public stacks, `or-stack` sets Keycloak's hostname to the full public HTTPS
+URL, including `/auth` and any non-default HTTPS port. Manager discovers the
+token issuer through Keycloak's internal HTTP endpoint; a bare hostname would
+let discovery and browser requests produce different issuers, causing login
+to fail with `Invalid token issuer`. After correcting this setting on an
+existing stack, restart Manager so it refreshes its cached issuer.
+
+`or-stack` also configures Manager's `OR_WEBSERVER_ALLOWED_ORIGINS` with the
+stack's exact public HTTPS origin, including its port. Manager's default CORS
+origins use the hostname without a custom port; browser writes such as asset
+creation would otherwise fail with HTTP 403 `CORS origin denied`, even when
+login and page loading work. Each stack allows its own public origin without
+enabling wildcard CORS access.
+
 The HAProxy Pod readiness probe checks that the proxy can serve traffic;
 `or-stack status` reports certificate material separately. Certificate
 issuance must not gate Pod readiness because an HTTP ACME challenge needs the

@@ -149,6 +149,7 @@ test_local_apply() {
   assert_contains $'helm\tupgrade\t--install\tpostgresql'
   assert_contains "$KUBERNETES_DIR/stack/targets/local/postgresql.yaml"
   assert_contains $'helm\tupgrade\t--install\tkeycloak'
+  assert_on_line_before $'helm\tupgrade\t--install\tkeycloak' $'--set-string\tor.hostname=https://stack-a.localhost:8443/auth'
   assert_contains $'--set-string\tor.hostname=stack-a.localhost'
   assert_not_contains $'--set-string\tingress.hostname=stack-a.localhost'
   assert_not_contains $'--set\tdns.enabled=true'
@@ -174,6 +175,29 @@ test_local_apply() {
     "Apply output did not use the configured HAProxy HTTPS port"
 }
 
+test_local_public_origins() {
+  local https_port
+  local origin
+
+  for https_port in 8443 9443 443; do
+    origin="https://localhost"
+    if [ "$https_port" != 443 ]; then
+      origin="$origin:$https_port"
+    fi
+
+    reset_log
+    OR_STACK_TEST_NAMESPACE_EXISTS=false run_stack apply \
+      --name stack-local-origin \
+      --kube-context test-context \
+      --target local \
+      --https-port "$https_port" >/dev/null
+
+    assert_on_line_before $'helm\tupgrade\t--install\tmanager' $'--set-string\tor.allowedOrigins='"$origin"$'\t'
+    assert_on_line_before $'helm\tupgrade\t--install\tmanager' $'--set-string\tor.hostname=localhost\t'
+    assert_on_line_before $'helm\tupgrade\t--install\tkeycloak' $'--set-string\tor.hostname='"$origin/auth"$'\t'
+  done
+}
+
 test_local_ingress_apply() {
   local output
 
@@ -189,6 +213,8 @@ test_local_ingress_apply() {
   assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/or-setup.yaml"
   assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/proxy.yaml"
   assert_contains $'--set-string\tingress.hostname=stack-local-ingress.example.com'
+  assert_on_line_before $'helm\tupgrade\t--install\tmanager' $'--set-string\tor.allowedOrigins=https://stack-local-ingress.example.com\t'
+  assert_on_line_before $'helm\tupgrade\t--install\tkeycloak' $'--set-string\tor.hostname=https://stack-local-ingress.example.com/auth'
   assert_contains $'--set-string\tingress.tls[0].hosts[0]=stack-local-ingress.example.com'
   assert_not_contains 'certificate-arn='
   assert_contains $'get\tservice\tkube-dns'
@@ -229,6 +255,8 @@ test_eks_apply() {
   assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/proxy.yaml"
   assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/eks/proxy.yaml"
   assert_contains $'--set-string\tingress.hostname=stack-eks.example.com'
+  assert_on_line_before $'helm\tupgrade\t--install\tmanager' $'--set-string\tor.allowedOrigins=https://stack-eks.example.com\t'
+  assert_on_line_before $'helm\tupgrade\t--install\tkeycloak' $'--set-string\tor.hostname=https://stack-eks.example.com/auth'
   assert_contains $'openremote.io/dns=external-dns'
   assert_contains $'--set\tdns.enabled=true'
   assert_contains $'--set-string\tdns.hostname=stack-eks.example.com'
@@ -253,6 +281,7 @@ test_eks_haproxy_apply() {
   assert_contains $'helm\tupgrade\t--install\tproxy'
   assert_contains "$KUBERNETES_DIR/stack/exposures/haproxy/eks/proxy.yaml"
   assert_contains $'--set-string\tor.hostname=stack-eks-proxy.example.com'
+  assert_on_line_before $'helm\tupgrade\t--install\tkeycloak' $'--set-string\tor.hostname=https://stack-eks-proxy.example.com/auth'
   assert_contains $'--set\tdns.enabled=true'
   assert_contains $'--set-string\tdns.hostname=stack-eks-proxy.example.com'
   assert_contains $'--set-string\tor.managerHost=manager.stack-eks-proxy.svc.cluster.local'
@@ -269,6 +298,8 @@ test_eks_none_apply() {
     --exposure none
 
   assert_contains "$KUBERNETES_DIR/stack/exposures/none/or-setup.yaml"
+  assert_not_contains 'or.allowedOrigins='
+  assert_not_contains $'--set-string\tor.hostname=https://'
   assert_not_contains $'get\tdeployment\taws-load-balancer-controller'
   assert_not_contains $'get\tingressclass\topenremote-alb'
   assert_not_contains $'helm\tupgrade\t--install\tproxy'
@@ -612,6 +643,7 @@ test_validation() {
 
 test_prepare
 test_local_apply
+test_local_public_origins
 test_local_ingress_apply
 test_eks_apply
 test_eks_haproxy_apply
