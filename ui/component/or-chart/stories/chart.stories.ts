@@ -21,7 +21,7 @@ import { getORStorybookHelpers } from "../../storybook-utils";
 import { type Asset, type AssetQuery, WellknownMetaItems } from "@openremote/model";
 import manager from "@openremote/core";
 import { html } from "lit";
-import customElements from "../custom-elements.json" with { type: "json" };
+import customElements from "../build/custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
 import { OrChart } from "../src/index";
 import "../src/index";
@@ -158,7 +158,7 @@ async function loadOrChart(storyArgs: any) {
 }
 
 async function loadOrManager() {
-  if (await manager.init({ managerUrl: "http://localhost:8080", realm: "smartcity" })) {
+  if (await manager.init({ managerUrl: "http://127.0.0.1:8080", realm: "smartcity" })) {
     if (!manager.authenticated) {
       manager.login();
     }

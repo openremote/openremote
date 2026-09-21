@@ -110,6 +110,7 @@ public abstract class WebService implements ContainerService {
 
   public static final Map<String, String> MIME_TYPES =
       Map.of(
+          "mjs", "text/javascript",
           "pbf", "application/x-protobuf",
           "wsdl", "application/xml",
           "xsl", "text/xsl");

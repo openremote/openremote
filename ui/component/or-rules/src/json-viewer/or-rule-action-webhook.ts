@@ -16,12 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import type { JsonRule, RuleActionWebhook } from "@openremote/model";
+import type { JsonRule, RuleActionWebhook, Webhook } from "@openremote/model";
 import { css, html } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
-import "./modals/or-rule-webhook-modal";
+import "./or-rule-json-dialog";
 import "./forms/or-rule-form-webhook";
+import type { OrRulesActionDialogCancelEvent, OrRulesActionDialogOkEvent } from "./or-rule-json-dialog";
+import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
 
 // language=CSS
 const style = css`
@@ -51,15 +53,48 @@ export class OrRuleActionWebhook extends OrElement {
   @property({ type: Object, attribute: false })
   public action!: RuleActionWebhook;
 
+  @property({ type: Boolean })
+  public readonly?: boolean;
+
+  protected _initialWebhook?: Webhook;
+
+  override connectedCallback() {
+    this._initialWebhook = structuredClone(this.action.webhook);
+    super.connectedCallback();
+  }
+
   /* ---------------------- */
 
-  render() {
+  override render() {
+    // When 'cancel' is pressed, reset ACTION to the initial state (all changes get removed)
+    const onModalCancel = (_ev: OrRulesActionDialogCancelEvent) => {
+      if (this._initialWebhook && this.action.webhook) {
+        const initialWebhook = structuredClone(this._initialWebhook);
+        console.debug("Rolling back the webhook to former state...");
+
+        // Check if anything in the message has changed
+        if (JSON.stringify(this.action.webhook) !== JSON.stringify(initialWebhook)) {
+          this.action.webhook = initialWebhook;
+          this.requestUpdate("action");
+        } else {
+          console.debug("Rolling back was not necessary, as no changes have been done.");
+        }
+      } else {
+        console.warn("Could not rollback webhook form.");
+      }
+    };
+
+    const onModalOk = (_ev: OrRulesActionDialogOkEvent) => {
+      this._initialWebhook = structuredClone(this.action.webhook); // update initial action for opening the modal in the future
+      this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    };
+
     return html`
-      <div style="display: flex; align-items: center; height: 100%;">
-        <or-rule-webhook-modal .action="${this.action}">
-          <or-rule-form-webhook .webhook="${this.action.webhook}"></or-rule-form-webhook>
-        </or-rule-webhook-modal>
-      </div>
+      <or-rule-json-dialog ?readonly=${this.readonly} @cancel="${onModalCancel}" @ok="${onModalOk}">
+        <or-translate slot="button" value="message"></or-translate>
+        <or-translate slot="title" value="message"></or-translate>
+        <or-rule-form-webhook .webhook="${this.action.webhook}" ?readonly=${this.readonly}></or-rule-form-webhook>
+      </or-rule-json-dialog>
     `;
   }
 }

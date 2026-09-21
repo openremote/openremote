@@ -26,6 +26,7 @@ import {
   AlarmSource,
   AlarmStatus,
   type Asset,
+  ClientRole,
   type SentAlarm,
   type User,
   type UserQuery,
@@ -37,7 +38,7 @@ import { type GenericAxiosResponse, isAxiosError } from "@openremote/rest";
 import { getAlarmsRoute } from "../routes";
 import { when } from "lit/directives/when.js";
 import { until } from "lit/directives/until.js";
-import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { showDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import type { OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent } from "@openremote/or-asset-tree";
 import type {
   OrMwcTable,
@@ -420,8 +421,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     const disabled = false;
-    const readAlarms = manager.hasRole("read:alarms");
-    const writeAlarms = manager.hasRole("write:alarms");
+    const readAlarms = manager.hasRole(ClientRole.READ_ALARMS);
+    const writeAlarms = manager.hasRole(ClientRole.WRITE_ALARMS);
 
     const readonly = readAlarms && !writeAlarms;
     const assignOnly = !readAlarms && !writeAlarms;
@@ -548,7 +549,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
       return;
     }
 
-    if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
+    if (manager.hasRole(ClientRole.READ_USERS) || manager.hasRole(ClientRole.READ_ADMIN)) {
       const usersResponse = await manager.rest.api.UserResource.query({
         realmPredicate: { name: manager.displayRealm },
       } as UserQuery);
@@ -580,13 +581,13 @@ export class PageAlarms extends Page<AppStateKeyed> {
   }
 
   protected async _loadData() {
-    if (this._loading || (!manager.hasRole("read:alarms") && !manager.hasRole("write:alarms"))) {
+    if (this._loading || (!manager.hasRole(ClientRole.READ_ALARMS) && !manager.hasRole(ClientRole.WRITE_ALARMS))) {
       return;
     }
 
     this._loading = true;
     const response = await manager.rest.api.AlarmResource.getAlarms({ realm: manager.displayRealm });
-    if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
+    if (manager.hasRole(ClientRole.READ_USERS) || manager.hasRole(ClientRole.READ_ADMIN)) {
       const usersResponse = await manager.rest.api.UserResource.query({
         realmPredicate: { name: manager.displayRealm },
       } as UserQuery);
@@ -684,7 +685,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
   }
 
   protected getSingleAlarmTemplate(alarm: AlarmModel, readonly: boolean = true): TemplateResult {
-    const write = manager.hasRole("write:alarms");
+    const write = manager.hasRole(ClientRole.WRITE_ALARMS);
     return html`
             <!-- Breadcrumb on top of the page-->
             <div style="margin: 0 auto auto auto;
@@ -766,7 +767,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             </or-vaadin-select>
 
                             <or-vaadin-select class="alarm-input"
-                                              ?readonly=${!manager.hasRole("read:users") && !manager.hasRole("read:admin")}
+                                              ?readonly=${!manager.hasRole(ClientRole.READ_USERS) && !manager.hasRole(ClientRole.READ_ADMIN)}
                                               .items=${this._getUsers()} value=${alarm.assigneeId}
                                               @change=${(ev: Event) => {
                                                 console.debug(this._getUsers());
@@ -777,7 +778,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             </or-vaadin-select>
                             <div>
                                 <span><or-translate value="linkedAssets"></or-translate>:</span>
-                                <or-vaadin-button ?disabled=${!manager.hasRole("write:alarms")} style="margin-left: 4px;"
+                                <or-vaadin-button ?disabled=${!manager.hasRole(ClientRole.WRITE_ALARMS)} style="margin-left: 4px;"
                                                   @click=${(ev: Event) => this._openAssetSelector(ev, alarm, readonly)}>
                                     <span>${i18next.t("selectRestrictedAssets", { number: alarm.alarmAssetLinks?.length })}</span>
                                 </or-vaadin-button>
@@ -790,11 +791,11 @@ export class PageAlarms extends Page<AppStateKeyed> {
                       () => html`
                         <div class="row" style="justify-content: space-between; margin-top: 10px;">
                           ${when(
-                            manager.hasRole("write:alarms"),
+                            manager.hasRole(ClientRole.WRITE_ALARMS),
                             () => html`
                               <or-vaadin-button
                                 class="alarm-input"
-                                ?disabled=${!manager.hasRole("write:alarms") || !alarm.id}
+                                ?disabled=${!manager.hasRole(ClientRole.WRITE_ALARMS) || !alarm.id}
                                 @click=${() => this._deleteAlarm(this.alarm)}
                               >
                                 <or-translate value="delete"></or-translate>
@@ -967,12 +968,21 @@ export class PageAlarms extends Page<AppStateKeyed> {
       });
     };
 
+    const onCancel = () => openBtn.toggleAttribute("disabled", false);
+    const onOk = () => {
+      openBtn.toggleAttribute("disabled", false);
+      this.onAlarmChanged(this.shadowRoot.querySelector("or-vaadin-text-field") as HTMLElement);
+      this.requestUpdate();
+    };
+
     const dialog = showDialog(
-      new OrMwcDialog()
-        .setHeading(i18next.t("linkedAssets"))
-        .setContent(html`
+      this.shadowRoot!,
+      html`
+        <or-vaadin-dialog no-close-on-esc no-close-on-outside-click>
+          <h2 slot="header-content"><or-translate value="linkedAssets"></or-translate></h2>
           <or-asset-tree
             id="chart-asset-tree"
+            style="aspect-ratio: 1/1;"
             readonly="true"
             .selectedIds="${alarm.alarmAssetLinks?.map((al) => al.id.assetId)}"
             .showSortBtn="${false}"
@@ -987,32 +997,28 @@ export class PageAlarms extends Page<AppStateKeyed> {
               }
             }}"
           ></or-asset-tree>
-        `)
-        .setActions([
-          {
-            default: true,
-            actionName: "cancel",
-            content: i18next.t("cancel"),
-            action: () => {
-              openBtn.toggleAttribute("disabled", false);
-            },
-          },
-          {
-            actionName: "ok",
-            content: "ok",
-            action: () => {
-              openBtn.toggleAttribute("disabled", false);
-              this.onAlarmChanged(this.shadowRoot.querySelector("or-vaadin-text-field") as HTMLElement);
-              this.requestUpdate();
-            },
-          },
-        ])
-        .setDismissAction({
-          actionName: "cancel",
-          action: () => {
-            openBtn.toggleAttribute("disabled", false);
-          },
-        })
+          <div slot="footer" style="width: 100%; display: flex; justify-content: space-between;">
+            <or-vaadin-button
+              theme="tertiary"
+              @click=${() => {
+                onCancel();
+                dialog?.close();
+              }}
+            >
+              <or-translate value="cancel"></or-translate>
+            </or-vaadin-button>
+            <or-vaadin-button
+              theme="primary"
+              @click=${() => {
+                onOk();
+                dialog?.close();
+              }}
+            >
+              <or-translate value="ok"></or-translate>
+            </or-vaadin-button>
+          </div>
+        </or-vaadin-dialog>
+      `
     );
   }
 

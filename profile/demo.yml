@@ -74,7 +74,6 @@ services:
       - work_mem=4MB
     volumes:
       - postgresql-data:/var/lib/postgresql/data
-      - manager-data:/storage
     <<: *awslogs
 
   keycloak:
@@ -86,10 +85,8 @@ services:
     volumes:
       - ../deployment:/deployment
     environment:
-      KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
-      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
-      KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
-      KC_LOG_CONSOLE_FORMAT: "%-5p [%c] (%t) %s%e%n"
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
+      KC_HOSTNAME: https://${OR_HOSTNAME:-localhost}/auth
     <<: *awslogs
 
   manager:

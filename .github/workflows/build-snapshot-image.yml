@@ -27,16 +27,16 @@ jobs:
           path: manager/build
 
       - name: Install QEMU
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: linux/amd64,linux/aarch64
 
       - name: Install Buildx
-        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
 
       - name: Configure AWS Credentials
         if: ${{ inputs.PUSH }}
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::${{ secrets.AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.AWS_ECR_PUSH_ROLE }}"
@@ -54,7 +54,7 @@ jobs:
 
       - name: Build snapshot image
         timeout-minutes: 20
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: manager/build/install/manager
           platforms: linux/amd64,linux/aarch64

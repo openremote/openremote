@@ -1,5 +1,3 @@
-layout.buildDirectory.set(layout.projectDirectory.dir("dist"))
-
 tasks.register('copyMdiFont', Exec) {
   dependsOn getYarnInstallTask()
   // Using yarn throws an error relating to node_module resolution
@@ -8,7 +6,6 @@ tasks.register('copyMdiFont', Exec) {
 
 tasks.register('clean', Delete) {
   delete layout.buildDirectory
-  delete layout.projectDirectory.dir('lib')
 }
 
 tasks.register('npmAnalyze', Exec) {
