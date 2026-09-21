@@ -55,4 +55,20 @@ export const browserLocales: BrowserLocale[] = [
     typedTime: "14:15",
     firstWeekday: "Mon",
   },
+  {
+    locale: "ko-KR",
+    date: "2026. 01. 02.",
+    time: "오전 10:30",
+    typedDate: "2026. 1. 3.",
+    typedTime: "오후 2:15",
+    firstWeekday: "Sun",
+  },
+  {
+    locale: "zh-TW",
+    date: "2026/01/02",
+    time: "上午10:30",
+    typedDate: "2026/1/3",
+    typedTime: "下午2:15",
+    firstWeekday: "Sun",
+  },
 ];

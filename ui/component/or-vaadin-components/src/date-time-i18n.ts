@@ -25,8 +25,6 @@ import type { TimePickerTime } from "@vaadin/time-picker/src/vaadin-time-picker-
 // Dates and times are formatted in the browser locale, so users keep their regional format whatever the app language
 // is, while names and labels follow the app language.
 
-const TIME_REGEXP = /^\s*(\d{1,2})(?::(\d{1,2})(?::(\d{1,2})(?:\.(\d{1,3}))?)?)?\s*(.*)$/u;
-
 /**
  * Calls `update` now and whenever the app language changes.
  * @returns A function that stops the updates
@@ -75,26 +73,34 @@ export function getDatePickerI18n(): DatePickerI18n {
 }
 
 /**
- * Returns the Vaadin time picker i18n: a 12-hour clock where the browser locale uses one, or the default 24-hour format
- * of the picker otherwise.
+ * Returns the Vaadin time picker i18n: a 12-hour clock in the layout of the browser locale where it uses one, or the
+ * default 24-hour format of the picker otherwise.
  */
 export function getTimePickerI18n(): TimePickerI18n {
-  const hourFormat = getUTCFormat(undefined, { hour: "numeric" });
-  if (!hourFormat.resolvedOptions().hour12) {
+  const timeFormat = getUTCFormat(undefined, { hour: "numeric", minute: "2-digit" });
+  if (!timeFormat.resolvedOptions().hour12) {
     return {};
   }
 
-  const locale = hourFormat.resolvedOptions().locale;
+  const locale = timeFormat.resolvedOptions().locale;
   const [am, pm] = [0, 12].map(
     (hours) =>
-      hourFormat.formatToParts(Date.UTC(2000, 0, 1, hours)).find((part) => part.type === "dayPeriod")?.value ??
+      timeFormat.formatToParts(Date.UTC(2000, 0, 1, hours)).find((part) => part.type === "dayPeriod")?.value ??
       (hours < 12 ? "AM" : "PM")
   );
+  // The parts of 1:02 give the order of the day period and the time, and the literals around them. Spaces are made
+  // plain, as Intl may use a narrow no-break space that cannot be typed.
+  const parts = timeFormat
+    .formatToParts(Date.UTC(2000, 0, 1, 1, 2))
+    .map((part) => (part.type === "literal" ? { ...part, value: part.value.replace(/\s/gu, " ") } : part));
+  const separator =
+    parts.find((part, index) => part.type === "literal" && parts[index - 1]?.type === "hour")?.value ?? ":";
+  const timePattern = createTimePattern(separator);
   const normalize = (text: string) => text.toLocaleLowerCase(locale).replace(/[\s.]/gu, "");
 
   return {
-    formatTime: (time) => formatTime(time, am, pm),
-    parseTime: (text) => parseTime(text, normalize(am), normalize(pm), normalize),
+    formatTime: (time) => formatTime(time, parts, separator, am, pm),
+    parseTime: (text) => parseTime(text, timePattern, normalize(am), normalize(pm), normalize),
   };
 }
 
@@ -183,42 +189,82 @@ function getAdjustedYear(referenceDate: Date, year: number, month: number, day: 
   return adjustedYear;
 }
 
-function formatTime(time: TimePickerTime | undefined, am: string, pm: string): string {
+/**
+ * Formats a time on a 12-hour clock in the layout of the parts of the locale, with any seconds and milliseconds after
+ * the minutes.
+ */
+function formatTime(
+  time: TimePickerTime | undefined,
+  parts: Intl.DateTimeFormatPart[],
+  separator: string,
+  am: string,
+  pm: string
+): string {
   if (!time) {
     return "";
   }
   const pad = (value: number | string, length = 2) => String(value).padStart(length, "0");
   const hours = Number(time.hours);
-  let text = `${hours % 12 || 12}:${pad(time.minutes)}`;
+  let minutes = pad(time.minutes);
   if (time.seconds !== undefined) {
-    text += `:${pad(time.seconds)}`;
+    minutes += `${separator}${pad(time.seconds)}`;
   }
   if (time.milliseconds !== undefined) {
-    text += `.${pad(time.milliseconds, 3)}`;
+    minutes += `.${pad(time.milliseconds, 3)}`;
   }
-  return `${text} ${hours < 12 ? am : pm}`;
+
+  return parts
+    .map((part) => {
+      switch (part.type) {
+        case "hour":
+          return part.value.length === 2 ? pad(hours % 12 || 12) : String(hours % 12 || 12);
+        case "minute":
+          return minutes;
+        case "dayPeriod":
+          return hours < 12 ? am : pm;
+        default:
+          return part.value;
+      }
+    })
+    .join("");
 }
 
 /**
- * Parses a time on a 12-hour clock, or on a 24-hour clock when the text has no day period. A prefix of the day period is
- * enough, such as "p" for "PM".
+ * Returns the pattern of a time with the given separator, and a day period before or after it.
+ */
+function createTimePattern(separator: string): RegExp {
+  const s = separator.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  return new RegExp(
+    `^\\s*(\\D*?)\\s*(\\d{1,2})(?:${s}(\\d{1,2})(?:${s}(\\d{1,2})(?:\\.(\\d{1,3}))?)?)?\\s*(\\D*?)\\s*$`,
+    "u"
+  );
+}
+
+/**
+ * Parses a time on a 12-hour clock with the day period before or after it, or on a 24-hour clock when the text has no
+ * day period. A prefix of the day period is enough, such as "p" for "PM".
  */
 function parseTime(
   text: string,
+  pattern: RegExp,
   am: string,
   pm: string,
   normalize: (text: string) => string
 ): TimePickerTime | undefined {
-  const match = TIME_REGEXP.exec(text);
+  const match = pattern.exec(text);
   if (!match) {
     return undefined;
   }
 
-  const [, hourText, minuteText, secondText, millisecondText, periodText] = match;
+  const [, leadingPeriod, hourText, minuteText, secondText, millisecondText, trailingPeriod] = match;
+  const periods = [leadingPeriod, trailingPeriod].map(normalize).filter((period) => period);
+  if (periods.length > 1) {
+    return undefined;
+  }
+  const [period] = periods;
   let hours = parseInt(hourText);
   const minutes = minuteText === undefined ? 0 : parseInt(minuteText);
   const seconds = secondText === undefined ? undefined : parseInt(secondText);
-  const period = normalize(periodText);
   if (period) {
     const isAm = am.startsWith(period);
     const isPm = pm.startsWith(period);
