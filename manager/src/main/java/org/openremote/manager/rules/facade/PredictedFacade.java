@@ -78,12 +78,18 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
 
   @Override
   public void purgeValues(String assetId, String attributeName) {
-
+    if (!doesRuleEngineScopeAllowAccess(assetId)) {
+      return;
+    }
+    assetPredictedDatapointService.purgeValues(assetId, attributeName);
   }
 
   @Override
   public void purgeValuesBefore(String assetId, String attributeName, Instant timestamp) {
-
+    if (!doesRuleEngineScopeAllowAccess(assetId)) {
+      return;
+    }
+    assetPredictedDatapointService.purgeValuesBefore(assetId, attributeName, timestamp);
   }
 
   private boolean doesRuleEngineScopeAllowAccess(String assetId) {
