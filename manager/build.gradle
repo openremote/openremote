@@ -15,7 +15,6 @@ application {
 }
 
 configurations {
-  demoExtension
   otelJavaAgent {
     canBeConsumed = false
     canBeResolved = true
