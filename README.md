@@ -30,7 +30,7 @@ docker compose pull
 docker compose -p openremote up
 ```
 
-If all goes well then you should now be able to access the OpenRemote Manager UI at [https://localhost](https://localhost). You will need to accept the self-signed
+If all goes well then you should now be able to access the OpenRemote Manager UI at [https://127.0.0.1](https://127.0.01). You will need to accept the self-signed
 certificate, see [here](https://www.technipages.com/google-chrome-bypass-your-connection-is-not-private-message) for details how to do this in Chrome (similar for other browsers).
 
 ### Login credentials
@@ -40,7 +40,7 @@ Password: secret
 
 ### Changing host and/or port
 
-The URL you use to access the system is important, the default is configured as `https://localhost` if you are using a VM then you will need to set the `OR_HOSTNAME` environment variable, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command:
+The URL you use to access the system is important, the default is configured as `https://127.0.0.1` if you are using a VM then you will need to set the `OR_HOSTNAME` environment variable, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command:
 
 BASH:
 
@@ -72,6 +72,10 @@ Try creating assets, agents, rules, users, realms, etc. using the Manager UI, pl
 Persistent data is stored in a PostgreSQL DB which is stored in the `openremote_postgresql-data` docker volume which is durably stored independently of the running containers (see all with `docker volume ls`).
 Note that historical attribute data is purged daily based on value of `OR_DATA_POINTS_MAX_AGE_DAYS`; this value can also be overridden for individual attributes by using the `dataPointsMaxAgeDays` configuration item.
 See the [Developer Guide](https://docs.openremote.io/docs/developer-guide/useful-commands-and-queries/#backuprestore-openremote-db) for details on making backups of the database.
+
+## OpenTelemetry tracing
+
+The manager distribution and container image support OpenTelemetry tracing. See [Traces](https://docs.openremote.io/docs/user-guide/observability/traces) for more information.
 
 ## Contributing to OpenRemote
 

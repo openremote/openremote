@@ -16,9 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { defineConfig } from "@rsbuild/core";
 
+// The maplibre worker imports the shared module, so both must sit side by side
+const maplibreDist = dirname(createRequire(import.meta.url).resolve("maplibre-gl/dist/maplibre-gl-worker.mjs"));
+
 export default defineConfig({
+  output: {
+    copy: ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"].map((file) => ({
+      from: join(maplibreDist, file),
+      to: "maplibre",
+      info: { minimized: true },
+    })),
+  },
   dev: {
     hmr: false, // HMR does not work for our Web Components atm
     liveReload: true,
@@ -73,6 +85,7 @@ export default defineConfig({
     },
     rspack: (config, { addRules }) => {
       addRules([{ test: /(@material|@mdi).*\.css$/, type: "asset/source" }]); // Add rule to treat external CSS imports as raw strings.
+      addRules([{ test: /maplibre-gl[\\/]dist[\\/].+\.mjs$/, parser: { url: false } }]); // maplibre builds its worker URL at runtime, so its own `new URL()` calls are not build time assets.
       return config;
     },
   },

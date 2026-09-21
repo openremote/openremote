@@ -31,7 +31,7 @@ export class OrVaadinCheckboxGroup extends CheckboxGroup implements OrVaadinComp
    * check, so wrapped children (`or-vaadin-checkbox`, `or-vaadin-toggle`) would never register: the
    * group's `value`, its validation and its disabled/readonly propagation would all ignore them.
    * Accept any `Checkbox` subclass instead. This overrides a private Vaadin API, so re-check it when
-   * upgrading Vaadin (verified against 25.2.4).
+   * upgrading Vaadin (verified against v25).
    */
   private __filterCheckboxes(nodes: Node[]): Checkbox[] {
     return nodes.filter((node): node is Checkbox => node instanceof Checkbox);

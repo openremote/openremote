@@ -559,7 +559,6 @@
   "saveUserSucceeded": "Utilizator salvat cu succes!",
   "userAlreadyExists": "Eroare! Acest utilizator există deja.",
   "realmAlreadyExists": "Numele domeniului există deja",
-  "invalidUsername": "Numele de utilizator trebuie să fie între 3-255 caractere alfanumerice",
   "invalidEmail": "Adresa e-mail invalidă",
   "yes": "Da",
   "no": "Nu",

@@ -2,28 +2,34 @@
   "name": "@openremote/or-vaadin-components",
   "version": "1.28.0-snapshot",
   "description": "Vaadin Components packaged as components aligned with the OpenRemote design system",
-  "customElements": "custom-elements.json",
-  "main": "dist/umd/index.bundle.js",
+  "customElements": "build/custom-elements.json",
+  "main": "build/dist/umd/index.bundle.js",
   "exports": {
-    ".": "./lib/index.js",
-    "./*": "./lib/*.js",
+    ".": "./build/lib/index.js",
+    "./*": "./build/lib/*.js",
     "./jsx": {
-      "types": "./custom-elements-jsx.d.ts"
+      "types": "./build/custom-elements-jsx.d.ts"
     }
   },
   "typesVersions": {
     "*": {
       "*": [
-        "lib/*"
+        "build/lib/*"
       ]
     }
   },
+  "files": [
+    "build/lib/**",
+    "build/dist/**",
+    "build/custom-elements.json",
+    "build/custom-elements-jsx.d.ts"
+  ],
   "scripts": {
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
+    "clean": "npx tsc -b --clean && npx shx rm -rf build",
     "analyze": "npx cem analyze --config custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
     "test": "npx tsc -b && npx playwright test",
-    "prepack": "npx tsc -b"
+    "prepack": "npx tsc -b && npx rspack"
   },
   "author": "OpenRemote",
   "repository": "https://github.com/openremote/openremote",
@@ -32,31 +38,34 @@
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/or-element": "workspace:*",
-    "@vaadin/badge": "~25.2.8",
-    "@vaadin/button": "~25.2.8",
-    "@vaadin/checkbox": "~25.2.8",
-    "@vaadin/checkbox-group": "~25.2.8",
-    "@vaadin/combo-box": "~25.2.8",
-    "@vaadin/confirm-dialog": "~25.2.8",
-    "@vaadin/date-picker": "~25.2.8",
-    "@vaadin/date-time-picker": "~25.2.8",
-    "@vaadin/dialog": "~25.2.8",
-    "@vaadin/item": "~25.2.8",
-    "@vaadin/list-box": "~25.2.8",
-    "@vaadin/menu-bar": "~25.2.8",
-    "@vaadin/multi-select-combo-box": "~25.2.8",
-    "@vaadin/number-field": "~25.2.8",
-    "@vaadin/password-field": "~25.2.8",
-    "@vaadin/radio-group": "~25.2.8",
-    "@vaadin/select": "~25.2.8",
-    "@vaadin/slider": "~25.2.8",
-    "@vaadin/text-area": "~25.2.8",
-    "@vaadin/text-field": "~25.2.8",
-    "@vaadin/time-picker": "~25.2.8",
-    "@vaadin/vaadin-themable-mixin": "~25.2.8",
+    "@vaadin/badge": "~25.2.11",
+    "@vaadin/button": "~25.2.11",
+    "@vaadin/checkbox": "~25.2.11",
+    "@vaadin/checkbox-group": "~25.2.11",
+    "@vaadin/combo-box": "~25.2.11",
+    "@vaadin/confirm-dialog": "~25.2.11",
+    "@vaadin/date-picker": "~25.2.11",
+    "@vaadin/date-time-picker": "~25.2.11",
+    "@vaadin/dialog": "~25.2.11",
+    "@vaadin/item": "~25.2.11",
+    "@vaadin/list-box": "~25.2.11",
+    "@vaadin/menu-bar": "~25.2.11",
+    "@vaadin/multi-select-combo-box": "~25.2.11",
+    "@vaadin/number-field": "~25.2.11",
+    "@vaadin/password-field": "~25.2.11",
+    "@vaadin/radio-group": "~25.2.11",
+    "@vaadin/select": "~25.2.11",
+    "@vaadin/slider": "~25.2.11",
+    "@vaadin/text-area": "~25.2.11",
+    "@vaadin/text-field": "~25.2.11",
+    "@vaadin/time-picker": "~25.2.11",
+    "@vaadin/vaadin-themable-mixin": "~25.2.11",
     "lit": "^3.3.1"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "@openremote/util": "workspace:*"
   }
 }

@@ -43,7 +43,7 @@ import org.openremote.agent.protocol.serial.JSerialCommDeviceAddress;
 public class MockSerialChannel extends OioByteStreamChannel {
 
   private static final JSerialCommDeviceAddress LOCAL_ADDRESS =
-      new JSerialCommDeviceAddress("localhost");
+      new JSerialCommDeviceAddress("127.0.0.1");
 
   public interface DataHandler {
     void onDataWritten(byte[] data, ResponseCallback responseCallback);

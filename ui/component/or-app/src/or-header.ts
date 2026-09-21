@@ -33,7 +33,7 @@ import manager, {
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
 import type { OrVaadinSelect } from "@openremote/or-vaadin-components/or-vaadin-select";
-import type { AlarmEvent, Realm } from "@openremote/model";
+import { type AlarmEvent, ClientRole, type Realm } from "@openremote/model";
 import { createMenuBarItem, type MenuBarItem } from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import { type AppStateKeyed, router, updateRealm } from "./index";
 import type { AnyAction, Store } from "@reduxjs/toolkit";
@@ -467,7 +467,7 @@ export class OrHeader extends OrElement {
 
   protected async _getAlarmButton() {
     let newAlarms = false;
-    if (manager.hasRole("read:alarms") || manager.hasRole("read:admin")) {
+    if (manager.hasRole(ClientRole.READ_ALARMS) || manager.hasRole(ClientRole.READ_ADMIN)) {
       const response = await manager.rest.api.AlarmResource.getAlarms({
         realm: manager.displayRealm,
         status: Model.AlarmStatus.OPEN,
