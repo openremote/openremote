@@ -146,6 +146,30 @@ ct("should preserve preset navigation duration across repeated component updates
   });
 });
 
+ct("should derive preset navigation duration from the component configuration", async ({ mount }) => {
+  const component = await mount(OrAttributeBarChart, {
+    props: { timePrefixKey: "this", timeWindowKey: "Hour", interval: BarChartInterval.ONE_HOUR },
+  });
+  const result = await component.evaluate(
+    async (element, { start, end, hour }) => {
+      const chart = element as any;
+      chart._navigationDuration = undefined;
+      chart._isCustomWindow = false;
+      chart._shiftTimeframe(new Date(start), new Date(end), "Hour", "next");
+      await chart.updateComplete;
+      const next = chart.timeframe as [Date, Date];
+      return {
+        offset: next[0].getTime() - start,
+        duration: chart._navigationDuration,
+        expectedDuration: hour,
+      };
+    },
+    { start: Date.parse("2026-01-01T00:00:00Z"), end: Date.parse("2026-01-01T00:59:59.999Z"), hour: HOUR }
+  );
+
+  expect(result).toEqual({ offset: HOUR, duration: HOUR, expectedDuration: HOUR });
+});
+
 ct("should preserve calendar-day semantics across DST", async ({ mount }) => {
   const component = await mount(OrAttributeBarChart, {
     props: { timePrefixKey: "this", timeWindowKey: "Day", interval: BarChartInterval.ONE_DAY },
@@ -156,7 +180,10 @@ ct("should preserve calendar-day semantics across DST", async ({ mount }) => {
       chart._shiftTimeframe(new Date(start), new Date(end), "Day", "next");
       await chart.updateComplete;
       const next = chart.timeframe as [Date, Date];
-      return next[1].getTime() - next[0].getTime();
+      return {
+        browserTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        elapsed: next[1].getTime() - next[0].getTime(),
+      };
     },
     {
       start: "2026-03-28T00:00:00+01:00",
@@ -165,7 +192,7 @@ ct("should preserve calendar-day semantics across DST", async ({ mount }) => {
   );
 
   // A calendar day crossing the spring transition is 23 elapsed hours by design.
-  expect(elapsed).toBe(23 * HOUR);
+  expect(elapsed).toEqual({ browserTimezone: "Europe/Stockholm", elapsed: 23 * HOUR });
 });
 
 ct("should recognize Moment singular and alias calendar units", async () => {

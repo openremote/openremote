@@ -1074,7 +1074,9 @@ export class OrAttributeBarChart extends OrElement {
     }
 
     const [unit, value] = this.timeWindowOptions.get(timeWindowSelected)!;
-    const duration = this._navigationDuration ?? currentEnd.getTime() - currentStart.getTime();
+    const duration =
+      this._navigationDuration ??
+      getNavigationDuration(currentStart.getTime(), currentEnd.getTime(), this._isCustomWindow, unit, value);
     this.timeframe = shiftTimeframe(currentStart, currentEnd, duration, unit, value, direction);
   }
 
