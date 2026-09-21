@@ -8,6 +8,7 @@ volumes:
   postgresql-data:
 services:
   keycloak:
+    image: ekhorn/or-keycloak:vaadin
     extends:
       file: deploy.yml
       service: keycloak
