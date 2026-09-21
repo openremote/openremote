@@ -96,6 +96,12 @@ The Managers are then available at `https://localhost:8443/manager` and
 `https://localhost:9443/manager`, using the proxy's locally generated
 certificates. Browser warnings for those local certificates are expected.
 
+MQTTS is disabled by default. To expose it through the same HAProxy and
+certificate, add `--mqtts`; for multiple local stacks, also give each Service a
+different public port, for example `--mqtts-port 18883` for stack A and
+`--mqtts-port 28883` for stack B. The HAProxy container continues to listen on
+8883 inside each namespace.
+
 #### Without LoadBalancer support
 
 For kind, kubeadm, or another cluster without a LoadBalancer implementation,
@@ -379,16 +385,6 @@ you intend to retain before destruction. In-place hostname migration is not supp
 
 For EKS cleanup and recovery, see
 [Hostname ownership](README-AWS.md#hostname-ownership).
-
-The EKS facade's MQTTS readiness probe requires Python 3 with its standard `ssl`
-module and configured CA trust. It verifies a completed TLS handshake and the
-endpoint hostname for both HAProxy and Ingress exposure. Local TLS regression
-tests require Python 3.9+, OpenSSL (or LibreSSL) to generate temporary test
-certificates, and permission to listen on loopback sockets:
-
-```bash
-python3 kubernetes/test/mqtts-readiness-test
-```
 
 ### Uninstalling or destroying a stack
 
@@ -725,8 +721,8 @@ certificate persistence are disabled in the proxy, and HAProxy receives plain
 HTTP before routing `/auth` to Keycloak and other paths to Manager.
 
 This gateway provides a consistent NetworkPolicy boundary across Ingress
-implementations. The default policy allows traffic from outside the stack
-namespace only to the proxy's HTTP port. HAProxy then reaches Manager and
+implementations. For web traffic, the default policy allows access from outside
+the stack namespace only to the proxy's HTTP port. HAProxy then reaches Manager and
 Keycloak within the same namespace, keeping their ports inaccessible directly
 from other namespaces. This also works when the Ingress traffic comes from an
 external load balancer without Kubernetes Pod or namespace labels.
@@ -751,51 +747,14 @@ NetworkPolicy are configured consistently:
 
 #### Accessing MQTT
 
-The HTTP Ingress does not carry MQTT traffic. On EKS, `or-stack` can create a
-separate per-stack NLB for MQTTS while retaining the same private proxy gateway:
+The HTTP Ingress does not carry MQTT traffic. `--mqtts` with Ingress exposure
+is supported only on EKS; see [MQTTS with Ingress](README-AWS.md#mqtts-with-ingress)
+for deployment and lifecycle management, or the
+[portable workflow](README-AWS.md#ingress-mqtts-with-externally-managed-readiness)
+when DNS and certificates are managed separately.
 
-```bash
-./or-stack apply \
-  --name stack-a \
-  --kube-context <cluster>@eu-west-1 \
-  --target eks \
-  --exposure ingress \
-  --dns external-dns \
-  --hostname stack-a.example.com \
-  --certificate-arn <web-acm-certificate-arn> \
-  --mqtts \
-  --mqtts-hostname mqtt-stack-a.example.com \
-  --mqtts-certificate-arn <mqtts-acm-certificate-arn>
-```
-
-The dedicated `proxy-mqtts` LoadBalancer Service creates an IP-target NLB. ACM
-terminates TLS on public port 8883, then the NLB forwards plaintext TCP to port
-1883 on the namespace-local proxy, which forwards it to Manager. The MQTTS
-hostname must differ from the web hostname because their DNS records target
-different load balancers. `--mqtts-port` changes the public NLB listener port.
-
-This low-level workflow only declares the provided certificate ARN; it does not
-inspect, create, renew, or delete the certificate. When `--dns external-dns` is
-selected, it declares the MQTTS hostname on the NLB Service. Without it, DNS is
-also the caller's responsibility.
-
-For an EKS cluster using OpenRemote-managed ExternalDNS, prefer
-`or-eks-stack`. It additionally accepts `--mqtts-certificate-mode existing`,
-`shared`, or `managed`. Supplying an ARN with no mode selects `existing`;
-otherwise first apply selects the cluster's configured shared certificate and
-falls back to `managed`. Existing and shared modes validate and always retain
-the resolved certificate. Managed mode requests a dedicated DNS-validated ACM
-certificate, publishes its validation CNAME through a namespaced
-`acm-validation-mqtts` `DNSEndpoint`, and deletes only that exactly owned
-certificate during stack destruction. In every mode the facade waits for the
-NLB, DNS, and trusted MQTTS endpoint and records lifecycle state. Repeat
-`--mqtts` on reapply; the recorded mode and hostname are reused, while shared
-mode follows the cluster's current shared ARN. It refuses to adopt a low-level
-endpoint while its namespace still exists because the required ownership
-metadata is absent.
-
-A development-only plaintext MQTT connection can still use a manual
-port-forward to Manager port 1883; plaintext MQTT is never public.
+For local Ingress development, a plaintext MQTT connection can use a manual
+port-forward to Manager port 1883. Plaintext MQTT is never publicly exposed.
 
 #### Running a custom project
 
@@ -927,8 +886,9 @@ AWS operations; no running cluster or AWS credentials are required.
 `or-setup-test` uses the real Helm executable to lint and render the charts.
 
 To run the full set below, install Bash, Helm, jq, and Python 3.9 or newer,
-along with standard Unix command-line utilities. Run these commands from the
-repository root:
+along with standard Unix command-line utilities. The MQTTS readiness tests
+also need OpenSSL or LibreSSL to generate temporary certificates and permission
+to listen on loopback sockets. Run these commands from the repository root:
 
 ```bash
 bash kubernetes/test/or-setup-test
@@ -937,6 +897,7 @@ python3 kubernetes/test/hostname-reservations-test
 bash kubernetes/test/or-eks-cluster-test
 bash kubernetes/test/or-eks-stack-test
 bash kubernetes/test/aws-profile-test
+python3 kubernetes/test/mqtts-readiness-test
 ```
 
 | Test                         | Coverage                                                                                                          |
@@ -947,6 +908,7 @@ bash kubernetes/test/aws-profile-test
 | `or-eks-cluster-test`        | EKS cluster add-on configuration and destruction safeguards.                                                      |
 | `or-eks-stack-test`          | EKS stack orchestration, DNS and certificate handling, and cleanup safeguards.                                    |
 | `aws-profile-test`           | Default credential behavior and explicit AWS profile selection in both EKS CLIs.                                  |
+| `mqtts-readiness-test` | TLS handshake verification, hostname and trust checks, and timeout handling using local test servers. |
 
 These tests do not verify a live cluster's routing, certificate issuance, or
 NetworkPolicy enforcement. After deploying, use the connectivity checks in

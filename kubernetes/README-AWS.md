@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Requirements: you need to have kubectl, helm, jq, curl, dig, OpenSSL,
+Requirements: you need to have kubectl, helm, jq, curl, dig, Python 3 (for MQTTS readiness),
 [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html),
 and [eksctl](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html#eksctl-install-update)
 installed beforehand.
@@ -597,6 +597,39 @@ kubectl --context <cluster-name>@eu-west-1 \
   get ingress proxy \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 ```
+
+##### Ingress MQTTS with externally managed readiness
+
+The HTTP Ingress does not carry MQTT traffic. On EKS, `or-stack` can create a
+separate per-stack NLB for MQTTS while retaining the same private proxy gateway:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context <cluster>@eu-west-1 \
+  --target eks \
+  --exposure ingress \
+  --dns external-dns \
+  --hostname stack-a.example.com \
+  --certificate-arn <web-acm-certificate-arn> \
+  --mqtts \
+  --mqtts-hostname mqtt-stack-a.example.com \
+  --mqtts-certificate-arn <mqtts-acm-certificate-arn>
+```
+
+The dedicated `proxy-mqtts` LoadBalancer Service creates an IP-target NLB. ACM
+terminates TLS on public port 8883, then the NLB forwards plaintext TCP to port
+1883 on the namespace-local proxy, which forwards it to Manager. The MQTTS
+hostname must differ from the web hostname because their DNS records target
+different load balancers. `--mqtts-port` changes the public NLB listener port.
+
+This low-level workflow only declares the provided certificate ARN; it does not
+inspect, create, renew, or delete the certificate. When `--dns external-dns` is
+selected, it declares the MQTTS hostname on the NLB Service. Without it, DNS is
+also the caller's responsibility.
+
+For managed DNS, certificate lifecycle, and endpoint readiness, use
+[MQTTS with Ingress](#mqtts-with-ingress) through `or-eks-stack`.
 
 ##### Internal-only stacks
 
