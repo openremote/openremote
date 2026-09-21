@@ -31,18 +31,21 @@ export class OrVaadinDateTimePicker
   protected _stopLanguageSync?: () => void;
 
   /**
-   * Returns the date as a local ISO string in the precision of the picker step, which is minutes without a step, or
-   * undefined for an invalid date.
+   * Returns the date as a local ISO string in the precision of the picker step, which is minutes without a step,
+   * rounded down or, with roundUp, up to that precision, or undefined for an invalid date.
    */
-  public static getLocalizedISOString(d?: Date, step?: number) {
+  public static getLocalizedISOString(d?: Date, step?: number, roundUp = false) {
     if (!d || Number.isNaN(d.getTime())) {
       return undefined;
     }
     let format = "YYYY-MM-DDTHH:mm";
+    let precision = 60000;
     if (step !== undefined && step % 60 !== 0) {
       format = step % 1 === 0 ? "YYYY-MM-DDTHH:mm:ss" : "YYYY-MM-DDTHH:mm:ss.sss";
+      precision = step % 1 === 0 ? 1000 : 1;
     }
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, format.length);
+    const date = roundUp ? new Date(Math.ceil(d.getTime() / precision) * precision) : d;
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, format.length);
   }
 
   /**

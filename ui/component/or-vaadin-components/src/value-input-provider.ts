@@ -365,7 +365,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
   // or-vaadin-date-time-picker works with local ISO strings, while the value is a timestamp or an ISO 8601 string
   if (inputType === InputType.DATETIME) {
     step = OrVaadinDateTimePicker.getStep(format);
-    min = min === undefined ? undefined : OrVaadinDateTimePicker.getLocalizedISOString(new Date(min), step);
+    // A minimum rounds up, so that the earliest value the picker allows still meets it
+    min = min === undefined ? undefined : OrVaadinDateTimePicker.getLocalizedISOString(new Date(min), step, true);
     max = max === undefined ? undefined : OrVaadinDateTimePicker.getLocalizedISOString(new Date(max), step);
     valueConverter = (v) => {
       const timestamp = v ? Date.parse(v) : Number.NaN;

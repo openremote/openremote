@@ -139,3 +139,24 @@ ct("should show a number formatted as a date in minutes", async ({ mount, vaadin
   // The whole-number step of the number input used to reach the picker, which then showed seconds.
   await expect(vaadinDateTimePicker.getTimeInput(component)).toHaveValue("10:30 AM");
 });
+
+ct("should round up a minimum that falls between two picker values", async ({ mount, vaadinDateTimePicker }) => {
+  const values: unknown[] = [];
+  const component = await mount(ValueInputProviderHarness, {
+    props: {
+      valueType: "timestamp",
+      value: localTime(11, 0),
+      constraints: [{ type: "min", min: localTime(10, 30, 45) }],
+    },
+    on: { "value-change": (value: unknown) => values.push(value) },
+  });
+
+  const timeInput = vaadinDateTimePicker.getTimeInput(component);
+  await timeInput.fill("10:30 AM");
+  await timeInput.press("Enter");
+  await timeInput.fill("10:31 AM");
+  await timeInput.press("Enter");
+
+  // The minimum used to round down to 10:30, which the picker then allowed although it is before the minimum.
+  await expect.poll(() => values).toEqual([localTime(10, 31)]);
+});
