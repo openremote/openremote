@@ -99,19 +99,19 @@ class HistoricFacadeTest extends Specification implements ManagerContainerTrait 
     storedDatapoints(targetId) == originalDatapoints()
 
     where:
-    scope    | targetName   | allowed
-    "global" | "scoped"     | true
+    scope | targetName | allowed
+    "global" | "scoped" | true
     "global" | "otherRealm" | true
-    "realm"  | "scoped"     | true
-    "realm"  | "unrelated"  | true
-    "realm"  | "otherRealm" | false
-    "asset"  | "scoped"     | true
-    "asset"  | "child"      | true
-    "asset"  | "grandchild" | true
-    "asset"  | "ancestor"   | false
-    "asset"  | "sibling"    | false
-    "asset"  | "unrelated"  | false
-    "asset"  | "otherRealm" | false
+    "realm" | "scoped" | true
+    "realm" | "unrelated" | true
+    "realm" | "otherRealm" | false
+    "asset" | "scoped" | true
+    "asset" | "child" | true
+    "asset" | "grandchild" | true
+    "asset" | "ancestor" | false
+    "asset" | "sibling" | false
+    "asset" | "unrelated" | false
+    "asset" | "otherRealm" | false
   }
 
   def "#scope scope reading an attribute without history returns no datapoints"() {
