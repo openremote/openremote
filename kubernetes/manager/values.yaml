@@ -171,6 +171,14 @@ or:
   # - name: foo
   #   value: bar
 
+  # OpenTelemetry Java agent tracing. The endpoint must be set when tracing is enabled.
+  # Additional agent settings, such as sampling, can be supplied through or.env.
+  otel:
+    enabled: false
+    serviceName: "openremote-manager"
+    endpoint: ""
+    protocol: "http/protobuf"
+
   # The public HOSTNAME and SSL PORT of this manager
   hostname: "localhost"
   port: "-1"
