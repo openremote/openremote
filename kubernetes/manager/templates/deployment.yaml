@@ -68,6 +68,10 @@ spec:
               value: "{{ .Values.or.hostname }}"
             - name: OR_SSL_PORT
               value: "{{ .Values.or.port }}"
+            {{- if .Values.or.allowedOrigins }}
+            - name: OR_WEBSERVER_ALLOWED_ORIGINS
+              value: {{ .Values.or.allowedOrigins | quote }}
+            {{- end }}
 
             - name: OR_FIREBASE_CONFIG_FILE
               value: "{{ .Values.or.firebaseConfigFile }}"

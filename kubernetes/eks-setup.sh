@@ -26,11 +26,14 @@ helm install or-setup or-setup --set aws.enabled=true --set aws.managerVolumeId=
 CERTIFICATE_ARN=$(aws acm request-certificate --domain-name $FQDN --subject-alternative-names $MQTTS_FQDN --validation-method DNS --profile or --query "CertificateArn" --output text)
 
 helm install postgresql postgresql -f postgresql/values-eks.yaml
+# Pin the public issuer so internal discovery and browser tokens agree.
 helm install keycloak keycloak -f keycloak/values-eks.yaml \
-  --set-string or.hostname=$FQDN \
+  --set-string "or.hostname=https://$FQDN/auth" \
   --set-string 'ingress.annotations.alb\.ingress\.kubernetes\.io\/certificate-arn'=$CERTIFICATE_ARN
+# CORS requires a full origin (scheme and host), with no /auth path.
 helm install manager manager -f manager/values-eks.yaml \
-  --set-string or.hostname=$FQDN \
+  --set-string "or.hostname=$FQDN" \
+  --set-string "or.allowedOrigins=https://$FQDN" \
   --set-string 'ingress.annotations.alb\.ingress\.kubernetes\.io\/certificate-arn'=$CERTIFICATE_ARN \
   --set-string 'service.mqtts.annotations.service\.beta\.kubernetes\.io\/aws-load-balancer-ssl-cert'=$CERTIFICATE_ARN
 

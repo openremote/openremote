@@ -183,6 +183,10 @@ or:
   hostname: "localhost"
   port: "-1"
 
+  # Additional allowed CORS origins, comma-separated. Must be set to the exact
+  # public HTTPS origin, including any non-default port, for browser writes.
+  allowedOrigins: ""
+
   # It is important that all services have the same timezone and are time synchronized.
   # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts
   timeZone: "Europe/Amsterdam"
