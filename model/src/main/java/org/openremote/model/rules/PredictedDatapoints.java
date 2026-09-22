@@ -38,9 +38,7 @@ public abstract class PredictedDatapoints {
   public abstract void updateValue(
       AttributeRef attributeRef, Object value, LocalDateTime timestamp);
 
-
   public abstract void purgeValues(String assetId, String attributeName);
 
   public abstract void purgeValuesBefore(String assetId, String attributeName, Instant timestamp);
-
 }
