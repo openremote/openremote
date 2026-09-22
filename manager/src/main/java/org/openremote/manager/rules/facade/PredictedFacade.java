@@ -23,16 +23,10 @@ import java.time.LocalDateTime;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.PathPredicate;
-import org.openremote.model.query.filter.RealmPredicate;
-import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.PredictedDatapoints;
-import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
 
 public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
@@ -53,7 +47,8 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
   @Override
   public ValueDatapoint<?>[] getValueDatapoints(
       AttributeRef attributeRef, AssetDatapointQuery query) {
-    if (!FacadeHelper.doesRuleEngineScopeAllowAccess(rulesEngineId, attributeRef.getId(), assetStorageService)) {
+    if (!FacadeHelper.doesRuleEngineScopeAllowAccess(
+        rulesEngineId, attributeRef.getId(), assetStorageService)) {
       return new ValueDatapoint[0];
     }
     return assetPredictedDatapointService
