@@ -34,6 +34,7 @@ import static java.nio.charset.StandardCharsets.UTF_8
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_HOST
 import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_PORT
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.util.MapAccess.getInteger
 import static org.openremote.model.util.MapAccess.getString
@@ -52,11 +53,13 @@ class UserSessionResourceTest extends Specification implements ManagerContainerT
     def uri = serverUri(serverPort)
     def ownerToken = authenticate(container, realm, owner.username, owner.secret)
     def otherToken = authenticate(container, realm, other.username, other.secret)
+    def crossRealmToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, setup.testuser1.username, "testuser1")
     def superuserToken = authenticate(container, MASTER_REALM, superuser.username, superuser.secret)
     def ownerTarget = getClientApiTarget(uri, realm, ownerToken)
     def superuserTarget = getClientApiTarget(uri, MASTER_REALM, superuserToken)
     def ownerResource = ownerTarget.proxy(UserResource)
     def otherResource = getClientApiTarget(uri, realm, otherToken).proxy(UserResource)
+    def crossRealmResource = getClientApiTarget(uri, MASTER_REALM, crossRealmToken).proxy(UserResource)
     def anonymousResource = getClientApiTarget(uri, realm).proxy(UserResource)
     def superuserResource = superuserTarget.proxy(UserResource)
     def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
@@ -99,6 +102,15 @@ class UserSessionResourceTest extends Specification implements ManagerContainerT
     then:
     def forbiddenException = thrown(WebApplicationException)
     forbiddenException.response.status == 403
+    client.state == MqttClientState.CONNECTED
+    broker.getConnectionUserId(sessionId) == owner.id
+
+    when: "a non-superuser from another realm supplies the session owner's realm"
+    crossRealmResource.disconnectUserSession(null, realm, sessionId)
+
+    then:
+    def crossRealmException = thrown(WebApplicationException)
+    crossRealmException.response.status == 405
     client.state == MqttClientState.CONNECTED
     broker.getConnectionUserId(sessionId) == owner.id
 
