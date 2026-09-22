@@ -19,7 +19,6 @@
 package org.openremote.manager.rules.facade;
 
 import java.time.LocalDateTime;
-
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
@@ -42,9 +41,9 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
   protected final AssetPredictedDatapointService assetPredictedDatapointService;
 
   public PredictedFacade(
-    RulesEngineId<T> rulesEngineId,
-    AssetStorageService assetStorageService,
-    AssetPredictedDatapointService assetPredictedDatapointService) {
+      RulesEngineId<T> rulesEngineId,
+      AssetStorageService assetStorageService,
+      AssetPredictedDatapointService assetPredictedDatapointService) {
     this.rulesEngineId = rulesEngineId;
     this.assetStorageService = assetStorageService;
     this.assetPredictedDatapointService = assetPredictedDatapointService;
@@ -52,18 +51,18 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
 
   @Override
   public ValueDatapoint<?>[] getValueDatapoints(
-    AttributeRef attributeRef, AssetDatapointQuery query) {
+      AttributeRef attributeRef, AssetDatapointQuery query) {
     if (!doesRuleEngineScopeAllowAccess(attributeRef.getId())) {
       return new ValueDatapoint[0];
     }
     return assetPredictedDatapointService
-      .queryDatapoints(attributeRef.getId(), attributeRef.getName(), query)
-      .toArray(ValueDatapoint[]::new);
+        .queryDatapoints(attributeRef.getId(), attributeRef.getName(), query)
+        .toArray(ValueDatapoint[]::new);
   }
 
   @Override
   public void updateValue(
-    String assetId, String attributeName, Object value, LocalDateTime timestamp) {
+      String assetId, String attributeName, Object value, LocalDateTime timestamp) {
     if (!doesRuleEngineScopeAllowAccess(assetId)) {
       return;
     }
@@ -83,27 +82,27 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
     if (RealmRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
       // Realm is restricted to rules
       assetQuery.realm =
-        new RealmPredicate(
-          rulesEngineId
-            .getRealm()
-            .orElseThrow(
-              () -> new IllegalArgumentException("Realm missing: " + rulesEngineId)));
+          new RealmPredicate(
+              rulesEngineId
+                  .getRealm()
+                  .orElseThrow(
+                      () -> new IllegalArgumentException("Realm missing: " + rulesEngineId)));
     } else if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
       // Realm is restricted to assets'
       assetQuery.realm =
-        new RealmPredicate(
-          rulesEngineId
-            .getRealm()
-            .orElseThrow(
-              () -> new IllegalArgumentException("Realm missing: " + rulesEngineId)));
+          new RealmPredicate(
+              rulesEngineId
+                  .getRealm()
+                  .orElseThrow(
+                      () -> new IllegalArgumentException("Realm missing: " + rulesEngineId)));
 
       Asset<?> restrictedAsset =
-        assetStorageService.find(
-          rulesEngineId
-            .getAssetId()
-            .orElseThrow(
-              () -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
-          true);
+          assetStorageService.find(
+              rulesEngineId
+                  .getAssetId()
+                  .orElseThrow(
+                      () -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
+              true);
 
       if (restrictedAsset == null) {
         throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
