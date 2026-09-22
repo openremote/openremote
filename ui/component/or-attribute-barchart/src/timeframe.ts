@@ -58,10 +58,11 @@ export function shiftTimeframe(
   duration: number,
   unit: TimeframeUnit,
   value: number,
-  direction: TimeframeDirection
+  direction: TimeframeDirection,
+  isCustomTimeframe = false
 ): [Date, Date] {
   const normalizedUnit = normalizeUnit(unit);
-  if (!CALENDAR_UNITS.has(normalizedUnit)) {
+  if (isCustomTimeframe || !CALENDAR_UNITS.has(normalizedUnit)) {
     return shiftTimeframeByDuration(currentStart, currentEnd, duration, direction);
   }
 
