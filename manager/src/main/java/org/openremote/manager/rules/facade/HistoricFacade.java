@@ -19,6 +19,8 @@
 package org.openremote.manager.rules.facade;
 
 import java.util.logging.Logger;
+
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.attribute.AttributeRef;
@@ -31,17 +33,22 @@ public class HistoricFacade<T extends Ruleset> extends HistoricDatapoints {
   private static final Logger LOG = Logger.getLogger(HistoricFacade.class.getName());
 
   protected final RulesEngineId<T> rulesEngineId;
+  protected final AssetStorageService assetStorageService;
   protected final AssetDatapointService assetDatapointService;
 
   public HistoricFacade(
-      RulesEngineId<T> rulesEngineId, AssetDatapointService assetDatapointService) {
+      RulesEngineId<T> rulesEngineId, AssetStorageService assetStorageService, AssetDatapointService assetDatapointService) {
     this.rulesEngineId = rulesEngineId;
+    this.assetStorageService = assetStorageService;
     this.assetDatapointService = assetDatapointService;
   }
 
   @Override
   public ValueDatapoint<?>[] getValueDatapoints(
       AttributeRef attributeRef, AssetDatapointQuery query) {
+    if (!FacadeHelper.doesRuleEngineScopeAllowAccess(rulesEngineId, attributeRef.getId(), assetStorageService)) {
+      return new ValueDatapoint[0];
+    }
     return assetDatapointService
         .queryDatapoints(attributeRef.getId(), attributeRef.getName(), query)
         .toArray(ValueDatapoint[]::new);

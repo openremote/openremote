@@ -150,7 +150,7 @@ class HistoricFacadeTest extends Specification implements ManagerContainerTrait 
   def "Asset scope reading history fails when the scope asset has been deleted"() {
     given: "a facade whose scope asset exists at construction time"
     def scopeAsset = createAsset("Deleted scope", realm)
-    def facade = new HistoricFacade(new RulesEngineId(realm, scopeAsset.id), historicService)
+    def facade = new HistoricFacade(new RulesEngineId(realm, scopeAsset.id), assetStorageService, historicService)
     assert assetStorageService.delete([scopeAsset.id])
     assert assetStorageService.find(scopeAsset.id, true) == null
 
@@ -210,7 +210,7 @@ class HistoricFacadeTest extends Specification implements ManagerContainerTrait 
       default:
         throw new IllegalArgumentException("Unknown scope: " + scope)
     }
-    return new HistoricFacade(engineId, historicService)
+    return new HistoricFacade(engineId, assetStorageService, historicService)
   }
 
   private static AttributeRef reference(String assetId) {

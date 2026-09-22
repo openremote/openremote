@@ -180,7 +180,7 @@ public class RulesEngine<T extends Ruleset> {
     this.notificationFacade = new NotificationsFacade<>(id, notificationService);
     this.webhooksFacade = new WebhooksFacade<>(id, webhookService);
     this.alarmsFacade = new AlarmFacade<>(id, alarmService);
-    this.historicFacade = new HistoricFacade<>(id, assetDatapointService);
+    this.historicFacade = new HistoricFacade<>(id, assetStorageService, assetDatapointService);
     this.predictedFacade =
         new PredictedFacade<>(id, assetStorageService, assetPredictedDatapointService);
     this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
