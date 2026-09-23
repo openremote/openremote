@@ -12,6 +12,17 @@ metadata:
     {{- include "manager.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  {{- with .Values.strategy }}
+  strategy:
+    {{- if eq .type "Recreate" }}
+    type: Recreate
+    # Recreate cannot have rollingUpdate settings. Existing deployments may need
+    # a merge patch before a server-side apply upgrade (see test/load2-eks/README.md).
+    rollingUpdate: null
+    {{- else }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "manager.selectorLabels" . | nindent 6 }}
