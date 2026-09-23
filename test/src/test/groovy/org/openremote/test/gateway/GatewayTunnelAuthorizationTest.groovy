@@ -380,10 +380,10 @@ class GatewayTunnelAuthorizationTest extends Specification implements ManagerCon
     resource.getActiveTunnelInfo(null, realm, gateway.id, "10.0.0.1", 22).id == sshTunnel.id
 
     and: "a gateway in the same realm that is not linked to them is refused"
-    refusalOf { resource.getGatewayActiveTunnelInfos(null, realm, otherGateway.id) } == 403
-    refusalOf { resource.getActiveTunnelInfo(null, realm, otherGateway.id, "10.0.0.1", 22) } == 403
-    refusalOf { resource.startTunnel(newTunnel(otherGateway.id)) } == 403
-    refusalOf { resource.stopTunnel(otherGatewayTunnel) } == 403
+    refusalOf { resource.getGatewayActiveTunnelInfos(null, realm, otherGateway.id) } == 404
+    refusalOf { resource.getActiveTunnelInfo(null, realm, otherGateway.id, "10.0.0.1", 22) } == 404
+    refusalOf { resource.startTunnel(newTunnel(otherGateway.id)) } == 404
+    refusalOf { resource.stopTunnel(otherGatewayTunnel) } == 404
   }
 
   def "A restricted user linked to no gateway retrieves no tunnels and reaches no gateway"() {
@@ -395,10 +395,10 @@ class GatewayTunnelAuthorizationTest extends Specification implements ManagerCon
     resource.getAllActiveTunnelInfos(null, realm).length == 0
 
     and: "every gateway is refused"
-    refusalOf { resource.getGatewayActiveTunnelInfos(null, realm, gateway.id) } == 403
-    refusalOf { resource.getActiveTunnelInfo(null, realm, gateway.id, "10.0.0.1", 22) } == 403
-    refusalOf { resource.startTunnel(newTunnel(gateway.id)) } == 403
-    refusalOf { resource.stopTunnel(sshTunnel) } == 403
+    refusalOf { resource.getGatewayActiveTunnelInfos(null, realm, gateway.id) } == 404
+    refusalOf { resource.getActiveTunnelInfo(null, realm, gateway.id, "10.0.0.1", 22) } == 404
+    refusalOf { resource.startTunnel(newTunnel(gateway.id)) } == 404
+    refusalOf { resource.stopTunnel(sshTunnel) } == 404
 
     and: "the gateway was never asked to open or close a tunnel"
     openRequests.isEmpty()
@@ -414,11 +414,11 @@ class GatewayTunnelAuthorizationTest extends Specification implements ManagerCon
     ids(resources.superUser.getAllActiveTunnelInfos(null, otherRealm)) == ids(otherRealmTunnel)
 
     and: "the user is refused every request naming the other realm"
-    refusalOf { resource.getAllActiveTunnelInfos(null, otherRealm) } == 403
-    refusalOf { resource.getGatewayActiveTunnelInfos(null, otherRealm, gateway.id) } == 403
-    refusalOf { resource.getActiveTunnelInfo(null, otherRealm, gateway.id, "10.0.0.1", 22) } == 403
-    refusalOf { resource.startTunnel(newTunnel(gateway.id).setRealm(otherRealm)) } == 403
-    refusalOf { resource.stopTunnel(otherRealmTunnel) } == 403
+    refusalOf { resource.getAllActiveTunnelInfos(null, otherRealm) } == 404
+    refusalOf { resource.getGatewayActiveTunnelInfos(null, otherRealm, gateway.id) } == 404
+    refusalOf { resource.getActiveTunnelInfo(null, otherRealm, gateway.id, "10.0.0.1", 22) } == 404
+    refusalOf { resource.startTunnel(newTunnel(gateway.id).setRealm(otherRealm)) } == 404
+    refusalOf { resource.stopTunnel(otherRealmTunnel) } == 404
   }
 
   def "#user opens and closes a tunnel through the gateway"() {

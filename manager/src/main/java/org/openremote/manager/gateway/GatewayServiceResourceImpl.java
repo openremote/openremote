@@ -54,7 +54,7 @@ public class GatewayServiceResourceImpl extends ManagerWebResource
     }
 
     if (!isSuperUser() && !getAuthenticatedRealmName().equals(realm)) {
-      throw new WebApplicationException(Response.Status.FORBIDDEN);
+      throw new WebApplicationException(Response.Status.NOT_FOUND);
     }
 
     Stream<GatewayTunnelInfo> tunnels =
@@ -79,7 +79,7 @@ public class GatewayServiceResourceImpl extends ManagerWebResource
     }
 
     if (!isSuperUser() && !getAuthenticatedRealmName().equals(realm)) {
-      throw new WebApplicationException(Response.Status.FORBIDDEN);
+      throw new WebApplicationException(Response.Status.NOT_FOUND);
     }
 
     if (TextUtil.isNullOrEmpty(gatewayID)) {
@@ -87,7 +87,7 @@ public class GatewayServiceResourceImpl extends ManagerWebResource
     }
 
     if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), gatewayID)) {
-      throw new WebApplicationException(Response.Status.FORBIDDEN);
+      throw new WebApplicationException(Response.Status.NOT_FOUND);
     }
 
     return gatewayService.getGatewayTunnelInfos(realm, gatewayID);
@@ -101,7 +101,7 @@ public class GatewayServiceResourceImpl extends ManagerWebResource
     }
 
     if (!isSuperUser() && !getAuthenticatedRealmName().equals(realm)) {
-      throw new WebApplicationException(Response.Status.FORBIDDEN);
+      throw new WebApplicationException(Response.Status.NOT_FOUND);
     }
 
     if (TextUtil.isNullOrEmpty(gatewayId)) {
@@ -109,7 +109,7 @@ public class GatewayServiceResourceImpl extends ManagerWebResource
     }
 
     if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), gatewayId)) {
-      throw new WebApplicationException(Response.Status.FORBIDDEN);
+      throw new WebApplicationException(Response.Status.NOT_FOUND);
     }
 
     return this.gatewayService.getTunnelInfos().stream()
@@ -136,12 +136,12 @@ public class GatewayServiceResourceImpl extends ManagerWebResource
     if (TextUtil.isNullOrEmpty(tunnelInfo.getRealm())) {
       tunnelInfo.setRealm(getAuthenticatedRealmName());
     } else if (!isSuperUser() && !tunnelInfo.getRealm().equals(getAuthenticatedRealmName())) {
-      throw new ForbiddenException();
+      throw new WebApplicationException(Response.Status.NOT_FOUND);
     }
 
     if (isRestrictedUser()
         && !assetStorageService.isUserAsset(getUserId(), tunnelInfo.getGatewayId())) {
-      throw new ForbiddenException();
+      throw new WebApplicationException(Response.Status.NOT_FOUND);
     }
 
     try {
@@ -168,12 +168,12 @@ public class GatewayServiceResourceImpl extends ManagerWebResource
     if (TextUtil.isNullOrEmpty(tunnelInfo.getRealm())) {
       tunnelInfo.setRealm(getAuthenticatedRealmName());
     } else if (!isSuperUser() && !tunnelInfo.getRealm().equals(getAuthenticatedRealmName())) {
-      throw new ForbiddenException();
+      throw new WebApplicationException(Response.Status.NOT_FOUND);
     }
 
     if (isRestrictedUser()
         && !assetStorageService.isUserAsset(getUserId(), tunnelInfo.getGatewayId())) {
-      throw new ForbiddenException();
+      throw new WebApplicationException(Response.Status.NOT_FOUND);
     }
 
     try {
