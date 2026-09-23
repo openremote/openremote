@@ -30,6 +30,8 @@ import org.openremote.model.rules.Ruleset;
 
 public class FacadeHelper {
 
+  private FacadeHelper() {}
+
   public static boolean doesRuleEngineScopeAllowAccess(
       RulesEngineId<? extends Ruleset> rulesEngineId,
       String assetId,
