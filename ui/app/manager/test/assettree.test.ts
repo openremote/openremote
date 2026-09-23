@@ -474,8 +474,8 @@ test(`Should update asset list correctly when applying filters`, async ({ manage
     attributes: {
       ...asset2.attributes,
       amount: { name: "amount", type: "number", value: 70.5 },
-    }
-  }
+    },
+  };
 
   const assets = [asset1, asset2, asset3, asset4, asset5];
   await manager.setup("smartcity", { assets });

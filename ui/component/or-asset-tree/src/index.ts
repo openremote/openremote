@@ -16,17 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {html, type PropertyValues, type TemplateResult} from "lit";
-import {OrElement} from "@openremote/or-element";
-import {customElement, property, query, state} from "lit/decorators.js";
-import type {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
-import type {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import { html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
+import { customElement, property, query, state } from "lit/decorators.js";
+import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import type { OrVaadinButton } from "@openremote/or-vaadin-components/or-vaadin-button";
 import {
   type ComboBoxLitRenderer,
   comboBoxRenderer,
   type OrVaadinComboBox,
 } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
-import {createMenuBarItem, type MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import { createMenuBarItem, type MenuBarItem } from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import {
   getConfirmDialogContent,
   showConfirmDialog,
@@ -53,23 +53,23 @@ import {
   LogicGroupOperator,
   type SharedEvent,
   type StringPredicate,
-  ValuePredicateUnion,
+  type ValuePredicateUnion,
   WellknownAssets,
 } from "@openremote/model";
 import "@openremote/or-translate";
-import {style} from "./style";
-import manager, {type EventCallback, subscribe, Util} from "@openremote/core";
+import { style } from "./style";
+import manager, { type EventCallback, subscribe, Util } from "@openremote/core";
 import Qs from "qs";
-import {getAssetDescriptorIconTemplate, type OrIcon} from "@openremote/or-icon";
-import type {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import { getAssetDescriptorIconTemplate, type OrIcon } from "@openremote/or-icon";
+import type { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
-import {i18next} from "@openremote/or-translate";
+import { i18next } from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import type {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
+import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import type { OrAddAssetDialog, OrAddChangedEvent } from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {when} from "lit/directives/when.js";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { when } from "lit/directives/when.js";
 import debounce from "lodash.debounce";
 
 export interface AssetTreeTypeConfig {
@@ -1395,10 +1395,10 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
                 operator: NUMBER_OPERATORS[number[1] ?? "="],
                 value: Number(number[2].replace(",", ".")),
               };
-            // String input is a boolean
+              // String input is a boolean
             } else if (value === "true" || value === "false") {
               valuePredicate = { predicateType: "boolean", value: value === "true" };
-            // Otherwise, it's a string and do an equals check
+              // Otherwise, it's a string and do an equals check
             } else {
               valuePredicate = {
                 predicateType: "string",
@@ -1495,7 +1495,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
 
     return {
       assets: foundAssets,
-      matcher: (asset) => foundAssetIds.includes(asset.id!)
+      matcher: (asset) => foundAssetIds.includes(asset.id!),
     };
   }
 
