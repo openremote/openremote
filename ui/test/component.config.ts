@@ -29,6 +29,8 @@ export const defineCtConfig = (path: string) => {
   const name = basename(path);
   return baseConfig({
     testMatch: "*.test.ts",
+    /* The general timeout setting which tests should pass within */
+    timeout: 60_000,
     /* Fail the build on CI if you accidentally left test.only in the source code. */
     forbidOnly: Boolean(CI),
     /* Retry failed tests twice on CI only to allow flaky behavior such as test timeouts to be retried */
