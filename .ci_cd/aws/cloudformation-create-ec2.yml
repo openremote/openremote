@@ -1321,8 +1321,8 @@ Resources:
       OKActions:
         - !Ref SnsTopic
       Dimensions:
-        - Name: InstanceId
-          Value: !Ref EC2Instance
+        - Name: InstanceName
+          Value: !Ref Host
 
   CacheHitAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1340,8 +1340,8 @@ Resources:
       OKActions:
         - !Ref SnsTopic
       Dimensions:
-        - Name: InstanceId
-          Value: !Ref EC2Instance
+        - Name: InstanceName
+          Value: !Ref Host
 
   UncompressedCacheHitRatioAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1359,8 +1359,8 @@ Resources:
       OKActions:
         - !Ref SnsTopic
       Dimensions:
-        - Name: InstanceId
-          Value: !Ref EC2Instance
+        - Name: InstanceName
+          Value: !Ref Host
 
   ChunksNeedsCompressionAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1378,8 +1378,8 @@ Resources:
       OKActions:
         - !Ref SnsTopic
       Dimensions:
-        - Name: InstanceId
-          Value: !Ref EC2Instance
+        - Name: InstanceName
+          Value: !Ref Host
 
   TableBloatCountAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1397,8 +1397,8 @@ Resources:
       OKActions:
         - !Ref SnsTopic
       Dimensions:
-        - Name: InstanceId
-          Value: !Ref EC2Instance
+        - Name: InstanceName
+          Value: !Ref Host
 
   IndexBloatCountAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1416,8 +1416,8 @@ Resources:
       OKActions:
         - !Ref SnsTopic
       Dimensions:
-        - Name: InstanceId
-          Value: !Ref EC2Instance
+        - Name: InstanceName
+          Value: !Ref Host
 
   DeadTupleAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1453,5 +1453,9 @@ Resources:
       OKActions:
         - !Ref SnsTopic
       Dimensions:
-        - Name: InstanceId
-          Value: !Ref EC2Instance
+        - Name: InstanceName
+          Value: !Ref Host
+        - Name: job_id
+          Value: "1000"
+        - Name: proc_name
+          Value: "_timescaledb_functions.policy_compression"
