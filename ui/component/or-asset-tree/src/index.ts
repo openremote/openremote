@@ -16,17 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { html, type PropertyValues, type TemplateResult } from "lit";
-import { OrElement } from "@openremote/or-element";
-import { customElement, property, query, state } from "lit/decorators.js";
-import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
-import type { OrVaadinButton } from "@openremote/or-vaadin-components/or-vaadin-button";
+import {html, type PropertyValues, type TemplateResult} from "lit";
+import {OrElement} from "@openremote/or-element";
+import {customElement, property, query, state} from "lit/decorators.js";
+import type {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import type {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
 import {
-  comboBoxRenderer,
   type ComboBoxLitRenderer,
+  comboBoxRenderer,
   type OrVaadinComboBox,
 } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
-import { createMenuBarItem, type MenuBarItem } from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import {createMenuBarItem, type MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import {
   getConfirmDialogContent,
   showConfirmDialog,
@@ -41,6 +41,7 @@ import {
   AssetModelUtil,
   type AssetQuery,
   AssetQueryMatch,
+  AssetQueryOperator,
   AssetQueryOrderBy$Property,
   type AssetsEvent,
   type AssetTreeEvent,
@@ -52,22 +53,23 @@ import {
   LogicGroupOperator,
   type SharedEvent,
   type StringPredicate,
+  ValuePredicateUnion,
   WellknownAssets,
 } from "@openremote/model";
 import "@openremote/or-translate";
-import { style } from "./style";
-import manager, { type EventCallback, subscribe, Util } from "@openremote/core";
+import {style} from "./style";
+import manager, {type EventCallback, subscribe, Util} from "@openremote/core";
 import Qs from "qs";
-import { getAssetDescriptorIconTemplate, type OrIcon } from "@openremote/or-icon";
-import type { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
+import {getAssetDescriptorIconTemplate, type OrIcon} from "@openremote/or-icon";
+import type {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
-import { i18next } from "@openremote/or-translate";
+import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import type { OrAddAssetDialog, OrAddChangedEvent } from "./or-add-asset-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import type {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
-import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { when } from "lit/directives/when.js";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {when} from "lit/directives/when.js";
 import debounce from "lodash.debounce";
 
 export interface AssetTreeTypeConfig {
@@ -658,8 +660,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
                   style="float: left"
                   @click=${() => {
                     // Wipe the current value and hide the clear button
-                    this._filterInput.toggleAttribute("value", false);
-
+                    this._filterInput.clear();
                     this._attributeTypeFilter?.clear();
                     this._attributeValueFilter.clear();
                     this._attributeNameFilter.clear();
@@ -1375,6 +1376,18 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
         operator: LogicGroupOperator.AND,
         items: this._filter.attribute.map((attributeName: string, index) => {
           const value = this._filter?.attributeValue?.[index];
+          const isNumberOrFunc = /^\s*(>=?|<=?)?[-+]?[\d.,]+\s*%?\s*$/.test(value ?? "");
+          let valuePredicate: ValuePredicateUnion | undefined;
+          if(!isNumberOrFunc) {
+            valuePredicate = {
+              predicateType: "string",
+              match: AssetQueryMatch.EXACT,
+              value,
+              caseSensitive: false,
+            }
+          }
+          // TODO: When valuePredicate = undefined, does the fallback to number work? (aka switching to local filtering instead of remote)
+          // TODO: Once that is the case, we can add remote filtering
           return {
             name: {
               predicateType: "string",
@@ -1382,14 +1395,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
               value: Util.sentenceCaseToCamelCase(attributeName),
               caseSensitive: false,
             },
-            value: value
-              ? {
-                  predicateType: "string",
-                  match: AssetQueryMatch.EXACT,
-                  value,
-                  caseSensitive: false,
-                }
-              : undefined,
+            value: value && valuePredicate ? valuePredicate : undefined,
           };
         }),
       };
@@ -1469,105 +1475,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
 
     return {
       assets: foundAssets,
-      matcher: (asset) => {
-        let attrValueCheck = true;
-
-        if (
-          this._filter.attribute.length > 0 &&
-          this._filter.attributeValue.length > 0 &&
-          foundAssetIds.includes(asset.id!)
-        ) {
-          const attributeVal: [string, string][] = [];
-
-          this._filter.attributeValue.forEach((attrVal: string, index: number) => {
-            if (attrVal.length > 0) {
-              attributeVal.push([this._filter.attribute[index], attrVal]);
-            }
-          });
-
-          const matchingAsset: Asset | undefined = foundAssets.find((a: Asset) => a.id === asset.id);
-
-          if (matchingAsset && matchingAsset.attributes) {
-            for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++) {
-              const currentAttributeVal = attributeVal[attributeValIndex];
-
-              let atLeastOneAttributeMatchValue: boolean = false;
-              Object.keys(matchingAsset.attributes).forEach((key: string) => {
-                const attr: Attribute<any> = matchingAsset!.attributes![key];
-
-                // attr.value check to avoid to compare with empty/non existing value
-                if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase()) {
-                  switch (attr.type!) {
-                    case "number":
-                    case "integer":
-                    case "long":
-                    case "bigInteger":
-                    case "bigNumber":
-                    case "positiveInteger":
-                    case "negativeInteger":
-                    case "positiveNumber":
-                    case "negativeNumber": {
-                      let normalizedValue: string = currentAttributeVal[1]?.replace(",", ".");
-                      if (!isNaN(Number(normalizedValue))) {
-                        if ((attr.value ?? 0) === Number(normalizedValue)) {
-                          atLeastOneAttributeMatchValue = true;
-                        }
-                      } else if (/\d/.test(normalizedValue)) {
-                        if (normalizedValue.endsWith("%")) {
-                          normalizedValue = normalizedValue?.replace("%", "");
-                        }
-                        // If filter starts with a number, append '==' in front of it.
-                        if (/^[0-9]/.test(normalizedValue)) {
-                          normalizedValue = "==" + normalizedValue;
-                        }
-                        const func = attr.value + normalizedValue.replace(/[a-z]/gi, "");
-
-                        // Execute the function
-                        try {
-                          const resultNumberEval: boolean = eval(func);
-                          if (resultNumberEval) {
-                            atLeastOneAttributeMatchValue = true;
-                          }
-                        } catch (_ignored) {
-                          console.warn("Could not process filter on attribute number value;", func);
-                        }
-                      }
-                      break;
-                    }
-                    case "boolean": {
-                      const value: string = currentAttributeVal[1];
-                      if ((value === "false" || value === "true") && value === (attr.value ?? false).toString()) {
-                        atLeastOneAttributeMatchValue = true;
-                      }
-                      break;
-                    }
-                    case "text": {
-                      if (attr.value) {
-                        const unparsedValue: string = currentAttributeVal[1];
-                        const multicharString: string = "*";
-
-                        let parsedValue: string = unparsedValue.replace(multicharString, ".*");
-                        parsedValue = parsedValue.replace(/"/g, "");
-
-                        const valueFromAttribute: string = attr.value as string;
-
-                        if (valueFromAttribute.toLowerCase().indexOf(parsedValue.toLowerCase()) != -1) {
-                          atLeastOneAttributeMatchValue = true;
-                        }
-                      }
-                      break;
-                    }
-                  }
-                }
-              });
-
-              attrValueCheck = atLeastOneAttributeMatchValue;
-            }
-          }
-        }
-
-        return foundAssetIds.includes(asset.id!) && attrValueCheck;
-      },
+      matcher: (asset) => foundAssetIds.includes(asset.id!)
     };
   }
 
