@@ -22,8 +22,8 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import type { OrVaadinButton } from "@openremote/or-vaadin-components/or-vaadin-button";
 import {
-  type ComboBoxLitRenderer,
   comboBoxRenderer,
+  type ComboBoxLitRenderer,
   type OrVaadinComboBox,
 } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import { createMenuBarItem, type MenuBarItem } from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
@@ -1402,7 +1402,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
             } else {
               valuePredicate = {
                 predicateType: "string",
-                match: AssetQueryMatch.EXACT,
+                match: AssetQueryMatch.CONTAINS,
                 value,
                 caseSensitive: false,
               };
