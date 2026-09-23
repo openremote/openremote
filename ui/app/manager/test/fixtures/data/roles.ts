@@ -16,10 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+import { ClientRole } from "@openremote/model";
+
 export const custom = {
   composite: true,
   name: "Custom",
   // Find and replace with role IDs
-  compositeRoleIds: ["read:assets", "write:assets"],
-  description: "read:assets, write:assets",
+  compositeRoleIds: [ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS],
+  description: `${ClientRole.READ_ASSETS}, ${ClientRole.WRITE_ASSETS}`,
 };

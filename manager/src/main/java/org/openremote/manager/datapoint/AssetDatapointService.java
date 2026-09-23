@@ -282,9 +282,8 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
   }
 
   /**
-   * Exports datapoints as CSV using SQL; the export path used in the SQL query must also be mapped
-   * into the manager container so it can be accessed by this process. Backwards compatible overload
-   * with default format.
+   * Streams datapoints as CSV using PostgreSQL COPY TO STDOUT. Backwards compatible overload with
+   * default format.
    */
   public PipedInputStream exportDatapoints(
       AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) throws IOException {
@@ -292,8 +291,8 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
   }
 
   /**
-   * Exports datapoints as CSV using SQL; the export path used in the SQL query must also be mapped
-   * into the manager container so it can be accessed by this process.
+   * Streams datapoints as CSV using PostgreSQL COPY TO STDOUT through an in-memory pipe. No shared
+   * filesystem or intermediate export file is required.
    */
   public PipedInputStream exportDatapoints(
       AttributeRef[] attributeRefs,

@@ -18,16 +18,11 @@
  */
 package org.openremote.container.security.keycloak;
 
-import static org.openremote.model.Constants.*;
 import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
-import static org.openremote.model.util.MapAccess.getInteger;
-import static org.openremote.model.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.*;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.ResponseCodeHandler;
-import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
-import io.undertow.server.handlers.proxy.ProxyHandler;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.security.enterprise.AuthenticationException;
 import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.ServletContext;
@@ -53,7 +48,6 @@ import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.openremote.container.security.*;
-import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -61,6 +55,7 @@ import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.VersionUtil;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
@@ -80,20 +75,21 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
           "security-admin-console");
 
   public static final String OR_KEYCLOAK_HOST = "OR_KEYCLOAK_HOST";
-  public static final String OR_KEYCLOAK_HOST_DEFAULT = "localhost";
+  public static final String OR_KEYCLOAK_HOST_DEFAULT = "127.0.0.1";
   public static final String OR_KEYCLOAK_PORT = "OR_KEYCLOAK_PORT";
   public static final int OR_KEYCLOAK_PORT_DEFAULT = 8081;
+  public static final String OR_KEYCLOAK_DISABLE_ISSUER_VALIDATION =
+      "OR_KEYCLOAK_DISABLE_ISSUER_VALIDATION";
   public static final String OR_KEYCLOAK_PATH = "OR_KEYCLOAK_PATH";
   public static final String OR_KEYCLOAK_PATH_DEFAULT = "/auth";
   public static final String OIDC_CONFIG_PATH = "/realms/master/.well-known/openid-configuration";
-  public static final String KEYCLOAK_REQUEST_TIMEOUT = "KEYCLOAK_REQUEST_TIMEOUT";
-  public static final int KEYCLOAK_REQUEST_TIMEOUT_DEFAULT = 10000;
   public static final String OR_IDENTITY_SESSION_MAX_MINUTES = "OR_IDENTITY_SESSION_MAX_MINUTES";
   public static final int OR_IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24; // 1 day
   public static final String OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES =
       "OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
   public static final int OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT = 2628000; // 5 years
   private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class.getName());
+  public static final String KEYCLOAK_MIN_VERSION = "26.7.0";
   // The URI where Keycloak can be found
   protected UriBuilder keycloakServiceUri;
   // Configuration options for new realms
@@ -101,13 +97,10 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
   protected int sessionMaxSeconds;
   protected int sessionOfflineTimeoutSeconds;
   protected ResteasyWebTarget keycloakTarget;
+  protected String keycloakPublicUri;
   protected OAuthGrant oAuthGrant;
   protected ConcurrentLinkedQueue<RealmsResource> realmsResourcePool =
       new ConcurrentLinkedQueue<>();
-  // Optional reverse proxy that listens to KEYCLOAK_AUTH_PATH and forwards requests to Keycloak
-  // (used in dev mode to allow same url to be used for manager and keycloak) - handled by proxy in
-  // production
-  protected HttpHandler authProxyHandler;
   protected TokenVerifier tokenVerifier;
 
   /**
@@ -170,26 +163,21 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
 
-    if (container.isDevMode()) {
-      authProxyHandler =
-          ProxyHandler.builder()
-              .setProxyClient(new LoadBalancingProxyClient().addHost(keycloakServiceUri.build()))
-              .setMaxRequestTime(
-                  getInteger(
-                      container.getConfig(),
-                      KEYCLOAK_REQUEST_TIMEOUT,
-                      KEYCLOAK_REQUEST_TIMEOUT_DEFAULT))
-              .setNext(ResponseCodeHandler.HANDLE_404)
-              .setReuseXForwarded(true)
-              .build();
+    String keycloakPublicUrl = getKeycloakPublicUrl();
+
+    boolean disableIssuerValidation =
+        getBoolean(container.getConfig(), OR_KEYCLOAK_DISABLE_ISSUER_VALIDATION, false);
+
+    if (disableIssuerValidation) {
+      LOG.warning(
+          "Token issuer validation disabled this should not be used for publicly exposed instances");
     }
 
-    // Get public URL of keycloak from the keycloak server
-    String keycloakPublicUrl = getKeycloakPublicUrl();
     tokenVerifier =
         new TokenVerifierImpl(
             keycloakServiceUri.build().toString(),
-            keycloakPublicUrl != null ? keycloakPublicUrl : keycloakServiceUri.build().toString());
+            keycloakPublicUrl != null ? keycloakPublicUrl : keycloakServiceUri.build().toString(),
+            disableIssuerValidation);
   }
 
   @Override
@@ -235,6 +223,26 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
       }
     }
+
+    // Verify the version of keycloak matches our requirements
+    JsonNode serverInfo =
+        keycloakTarget
+            .path("admin/serverinfo")
+            .request(MediaType.APPLICATION_JSON_TYPE)
+            .get(JsonNode.class);
+    String keycloakVersion = serverInfo.get("systemInfo").get("version").asText("0.0.0");
+    if (!VersionUtil.isVersionGreaterOrEqual(keycloakVersion, KEYCLOAK_MIN_VERSION)) {
+      String msg =
+          "Keycloak version "
+              + keycloakVersion
+              + " is not supported; version "
+              + KEYCLOAK_MIN_VERSION
+              + " or newer is required.";
+      LOG.severe(msg);
+      throw new IllegalStateException(msg);
+    }
+
+    LOG.info("Keycloak version detected: " + keycloakVersion);
   }
 
   @Override
@@ -341,14 +349,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
    */
   protected abstract OAuthGrant generateStoredCredentials(Container container);
 
-  protected void enableAuthProxy(WebService webService, String keycloakPath) {
-    if (authProxyHandler == null) throw new IllegalStateException("Initialize this service first");
-
-    LOG.info(
-        "Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /"
-            + keycloakPath);
-    webService.deploy(keycloakPath, authProxyHandler);
-  }
+  /** Called by the Keycloak init setup task */
+  public abstract void onSetupDone(Container container);
 
   /**
    * There must be _some_ valid redirect URIs for the application or authentication will not be
@@ -445,7 +447,12 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     return tokenVerifier.verify(realm, accessToken);
   }
 
+  /** Get public URL of keycloak from the keycloak server token endpoint issuer */
   protected String getKeycloakPublicUrl() {
+    if (keycloakPublicUri != null) {
+      return keycloakPublicUri;
+    }
+
     WebTarget webTarget =
         new WebTargetBuilder(WebTargetBuilder.getClient(), keycloakServiceUri.build())
             .build()
@@ -475,8 +482,10 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     }
 
     // We want the base public URI not the master specific one
-    return result != null
-        ? result.issuer().replace("/realms/master", "")
-        : keycloakServiceUri.build().toString();
+    keycloakPublicUri =
+        result != null
+            ? result.issuer().replace("/realms/master", "")
+            : keycloakServiceUri.build().toString();
+    return keycloakPublicUri;
   }
 }

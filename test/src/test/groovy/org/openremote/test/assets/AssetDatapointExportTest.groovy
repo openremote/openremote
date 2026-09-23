@@ -108,7 +108,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             ]
             )
 
-    then: "the default CSV export should return a file"
+    then: "the default CSV export should return a stream"
     def inputStream1 = assetDatapointService.exportDatapoints(
             [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
             dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),

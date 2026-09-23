@@ -60,7 +60,7 @@ function getDefaultWidgetConfig(): GatewayWidgetConfig {
   return {
     attributeRefs: [],
     type: GatewayTunnelInfoType.HTTPS,
-    target: "localhost",
+    target: "127.0.0.1",
     targetPort: 443,
   };
 }

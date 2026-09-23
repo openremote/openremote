@@ -233,10 +233,7 @@ export class AssetMap extends BaseMap {
     if (!this._source) return;
     const features = this._map!.querySourceFeatures("assets");
     if (!this._hasRequired(asset) || !this._isAssetVisible(asset) || !this._isMissing(asset, features)) return;
-    if (!(asset.type in this._assetTypeColors)) {
-      this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string;
-      this._source.workerOptions.clusterProperties = this._getClusterProperties();
-    }
+    if (this._addAssetType(asset.type)) this._updateClusterProperties(this._source);
     this._assets[asset.id] = asset;
     this._source.updateData({ add: [AssetMap._assetToFeature(asset)] });
   }
@@ -247,13 +244,12 @@ export class AssetMap extends BaseMap {
     let missing = assets.filter(this._hasRequired).filter((a) => this._isAssetVisible(a));
     if (features?.length) missing = missing.filter((a) => this._isMissing(a, features));
     if (!missing.length) return;
+    let newTypes = false;
     for (const asset of missing) {
-      if (!(asset.type in this._assetTypeColors)) {
-        this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string;
-      }
+      newTypes = this._addAssetType(asset.type) || newTypes;
       this._assets[asset.id] = asset;
     }
-    this._source.workerOptions.clusterProperties = this._getClusterProperties();
+    if (newTypes) this._updateClusterProperties(this._source);
     this._source.updateData({ add: missing.map(AssetMap._assetToFeature) });
   }
 
@@ -283,6 +279,7 @@ export class AssetMap extends BaseMap {
 
     const toRemove: string[] = [];
     const toAdd: IdentifiableAsset[] = [];
+    let newTypes = false;
 
     for (const id in this._assets) {
       if (this._assets[id] && !this._isAssetVisible(this._assets[id]!)) {
@@ -296,9 +293,7 @@ export class AssetMap extends BaseMap {
       if (!asset || !this._hasRequired(asset) || this._assets[id]) continue;
       if (this._isAssetVisible(asset)) {
         const a = asset as IdentifiableAsset;
-        if (!(a.type in this._assetTypeColors)) {
-          this._assetTypeColors[a.type] = getMarkerIconAndColorFromAssetType(a.type)?.color as string;
-        }
+        newTypes = this._addAssetType(a.type) || newTypes;
         this._assets[a.id] = a;
         toAdd.push(a);
       }
@@ -306,7 +301,7 @@ export class AssetMap extends BaseMap {
 
     if (!toRemove.length && !toAdd.length) return;
 
-    this._source.workerOptions.clusterProperties = this._getClusterProperties();
+    if (newTypes) this._updateClusterProperties(this._source);
     this._source.updateData({
       ...(toRemove.length && { remove: toRemove }),
       ...(toAdd.length && { add: toAdd.map(AssetMap._assetToFeature) }),
@@ -351,7 +346,7 @@ export class AssetMap extends BaseMap {
 
     this._source = this._map.getSource("assets") as GeoJSONSource;
 
-    this._map.on("data", this._onData);
+    this._map.on("sourcedata", this._onData);
 
     // Create asset-specific controls
     if (this._filters?.length) {
@@ -456,6 +451,23 @@ export class AssetMap extends BaseMap {
 
   private _getClusterProperties() {
     return Object.fromEntries(Object.keys(this._assetTypeColors).map(AssetMap._getClusterPropertyExpression));
+  }
+
+  /**
+   * Registers the colour of an asset type the map has not seen before
+   * @returns Whether the type is new, meaning the cluster properties are out of date
+   */
+  private _addAssetType(type: string) {
+    if (type in this._assetTypeColors) return false;
+    this._assetTypeColors[type] = getMarkerIconAndColorFromAssetType(type)?.color as string;
+    return true;
+  }
+
+  private _updateClusterProperties(source: GeoJSONSource) {
+    source.workerOptions.clusterProperties = this._getClusterProperties();
+    // Data updates keep the existing cluster index, only a cluster options update rebuilds it with new properties
+    const { cluster } = source.getClusterOptions();
+    if (cluster) source.setClusterOptions({ cluster });
   }
 
   private static _getClusterPropertyExpression(value: string) {
