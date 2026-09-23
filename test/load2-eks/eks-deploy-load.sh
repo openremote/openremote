@@ -13,9 +13,12 @@ kubectl --context $K_CONTEXT patch pv postgresql-data-pv -p '{"spec":{"claimRef"
 
 helm install --kube-context=$K_CONTEXT postgresql $OR_KUBERNETES_PATH/postgresql -f $OR_KUBERNETES_PATH/postgresql/values-eks.yaml -f profiles/$OR_PROFILE/values-postgresql-eks-load.yaml
 
+# Internal discovery and browser tokens must use the same public issuer.
 helm install --kube-context=$K_CONTEXT keycloak $OR_KUBERNETES_PATH/keycloak -f $OR_KUBERNETES_PATH/keycloak/values-haproxy.yaml \
-  -f profiles/$OR_PROFILE/values-keycloak-eks-load.yaml --set-string or.hostname=$FQDN
+  -f profiles/$OR_PROFILE/values-keycloak-eks-load.yaml --set-string "or.hostname=https://$FQDN/auth"
 
+# CORS expects a full HTTPS origin, without the Keycloak /auth path.
 helm install --kube-context=$K_CONTEXT manager $OR_KUBERNETES_PATH/manager -f $OR_KUBERNETES_PATH/manager/values-haproxy-eks.yaml \
-  -f profiles/$OR_PROFILE/values-manager-eks-load.yaml --set-string or.hostname=$FQDN --set or.setupRunOnRestart=true \
+  -f profiles/$OR_PROFILE/values-manager-eks-load.yaml --set-string "or.hostname=$FQDN" --set or.setupRunOnRestart=true \
+  --set-string "or.allowedOrigins=https://$FQDN" \
   --set-string image.repository=$AWS_DEVELOPERS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager
