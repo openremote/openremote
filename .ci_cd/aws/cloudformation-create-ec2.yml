@@ -1284,8 +1284,8 @@ Resources:
               Dimensions:
                 - Name: InstanceName
                   Value: !Ref Host
-              Period: 300
-              Stat: Average
+            Period: 300
+            Stat: Average
         - Id: m2
           ReturnData: false
           MetricStat:
@@ -1295,8 +1295,8 @@ Resources:
               Dimensions:
                 - Name: InstanceName
                   Value: !Ref Host
-              Period: 300
-              Stat: Average
+            Period: 300
+            Stat: Average
       EvaluationPeriods: 1
       ComparisonOperator: GreaterThanThreshold
       Threshold: 0
@@ -1436,9 +1436,6 @@ Resources:
         - !Ref SnsTopic
       OKActions:
         - !Ref SnsTopic
-      Dimensions:
-        - Name: InstanceId
-          Value: !Ref EC2Instance
 
   TimescaleTotalFailureAlarm:
     Type: AWS::CloudWatch::Alarm

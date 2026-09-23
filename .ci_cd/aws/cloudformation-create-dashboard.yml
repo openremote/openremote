@@ -367,8 +367,10 @@ Resources:
                         [ "CWAgent-Prometheus", "pg_datapoint_chunks_needing_compression", "InstanceName", "a", { "id": "m1", "yAxis": "left", "label": "Chunks Needs Compression" } ]
                     ],
                     "region": "eu-west-1",
-                    "stat": "Sum",
+                    "stat": "Maximum",
                     "period": 86400,
+                    "start": "-P1D",
+                    "end": "P0D",
                     "title": "Chunks Needs Compression"
                 }
             },
