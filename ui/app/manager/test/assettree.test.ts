@@ -473,7 +473,7 @@ test(`Should update asset list correctly when applying filters`, async ({ manage
     name: "Building (new) 3",
     attributes: {
       ...asset2.attributes,
-      amount: { name: "amount", type: "number", value: 70 },
+      amount: { name: "amount", type: "number", value: 70.5 },
     }
   }
 
@@ -503,13 +503,13 @@ test(`Should update asset list correctly when applying filters`, async ({ manage
   await expect(assetTree.getAssetNodes()).toHaveCount(4); // 3 buildings that are left
   await expect(assetTree.getAssetNodes()).toContainText([asset2.name, asset3.name, asset4.name, asset5.name]);
 
-  // Filter by attribute name, to only contain 2 out of 5 assets
+  // Filter by attribute name (sentence case, converted to camelCase remotely), to only contain 2 out of 5 assets
   await filterButton.click();
   await expect(filterMenu).toBeVisible();
-  await filterMenu.getByRole("textbox", { name: "Attribute", exact: true }).fill("isNew");
+  await filterMenu.getByRole("textbox", { name: "Attribute", exact: true }).fill("Is New");
   await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
   await expect(filterMenu).not.toBeVisible();
-  expect(await assetTree.getFilterInput().inputValue()).toBe('type:BuildingAsset attribute:"isNew"');
+  expect(await assetTree.getFilterInput().inputValue()).toBe('type:BuildingAsset attribute:"Is New"');
   await expect(assetTree.getAssetNodes()).toHaveCount(2); // 2 buildings that are left
   await expect(assetTree.getAssetNodes()).toContainText([asset3.name, asset4.name]);
 
@@ -519,7 +519,7 @@ test(`Should update asset list correctly when applying filters`, async ({ manage
   await filterMenu.getByRole("textbox", { name: "Attribute value", exact: true }).fill("true");
   await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
   await expect(filterMenu).not.toBeVisible();
-  expect(await assetTree.getFilterInput().inputValue()).toBe('type:BuildingAsset "isNew":true');
+  expect(await assetTree.getFilterInput().inputValue()).toBe('type:BuildingAsset "Is New":true');
   await expect(assetTree.getAssetNodes()).toHaveCount(1); // 1 building that is left
   await expect(assetTree.getAssetNodes()).toContainText([asset4.name]);
 
@@ -534,14 +534,14 @@ test(`Should update asset list correctly when applying filters`, async ({ manage
   await expect(assetTree.getAssetNodes()).toHaveCount(1); // 1 building that is left
   await expect(assetTree.getAssetNodes()).toContainText([asset3.name]);
 
-  // Filter by number attribute value to only contain 1 out of 4 assets
+  // Filter by comma-decimal number attribute value to only contain 1 out of 4 assets
   await filterButton.click();
   await expect(filterMenu).toBeVisible();
   await filterMenu.getByRole("textbox", { name: "Attribute", exact: true }).fill("amount");
-  await filterMenu.getByRole("textbox", { name: "Attribute value", exact: true }).fill("70");
+  await filterMenu.getByRole("textbox", { name: "Attribute value", exact: true }).fill("70,5");
   await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
   await expect(filterMenu).not.toBeVisible();
-  expect(await assetTree.getFilterInput().inputValue()).toBe('type:BuildingAsset "amount":70');
+  expect(await assetTree.getFilterInput().inputValue()).toBe('type:BuildingAsset "amount":70,5');
   await expect(assetTree.getAssetNodes()).toHaveCount(1); // 1 building that is left
   await expect(assetTree.getAssetNodes()).toContainText([asset5.name]);
 
