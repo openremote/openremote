@@ -160,7 +160,8 @@ class GatewayTunnelAuthorizationTest extends Specification implements ManagerCon
     resources.adminWithoutTunnelRoles = resourceForNewUser("tunneladmin", [READ_ADMIN_ROLE, WRITE_ADMIN_ROLE])
     resources.tunnelReader = resourceForNewUser("tunnelreader", [READ_TUNNELS_ROLE])
     resources.tunnelWriter = resourceForNewUser("tunnelwriter", [READ_TUNNELS_ROLE, WRITE_TUNNELS_ROLE])
-    resources.readWriteComposites = resourceForNewUser("tunnelcomposites", [ClientRole.READ.value, ClientRole.WRITE.value])
+    resources.compositeReader = resourceForNewUser("tunnelcompositesreader", [ClientRole.READ.value])
+    resources.compositeWriter = resourceForNewUser("tunnelcompositeswriter", [ClientRole.READ.value, ClientRole.WRITE.value])
     resources.restrictedLinked = resourceForNewUser("tunnelrestrictedlinked", [READ_TUNNELS_ROLE, WRITE_TUNNELS_ROLE], true, gateway.id)
     resources.restrictedUnlinked = resourceForNewUser("tunnelrestrictedunlinked", [READ_TUNNELS_ROLE, WRITE_TUNNELS_ROLE], true)
     resources.superUser = resourceFor(MASTER_REALM, MASTER_REALM_ADMIN_USER, getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT))
@@ -347,14 +348,11 @@ class GatewayTunnelAuthorizationTest extends Specification implements ManagerCon
     resource.getActiveTunnelInfo(null, realm, gateway.id, "10.0.0.1", 23) == null
 
     where:
-    user << ["tunnelReader", "readWriteComposites", "superUser"]
+    user << ["tunnelReader", "compositeReader", "compositeWriter", "superUser"]
     resource = resources[user]
   }
 
   def "A user holding only the tunnel read role cannot open or close tunnels"() {
-
-    given: "a user holding only the tunnel read role"
-    def resource = resources.tunnelReader
 
     expect: "both writes are refused"
     refusalOf { resource.startTunnel(newTunnel(gateway.id)) } == 403
@@ -363,6 +361,10 @@ class GatewayTunnelAuthorizationTest extends Specification implements ManagerCon
     and: "the gateway was never asked to open or close a tunnel"
     openRequests.isEmpty()
     closeRequests.isEmpty()
+
+    where:
+    user << ["tunnelReader", "compositeReader"]
+    resource = resources[user]
   }
 
   def "A restricted user retrieves and reaches only the gateway linked to them"() {
@@ -440,7 +442,7 @@ class GatewayTunnelAuthorizationTest extends Specification implements ManagerCon
     ids(resource.getGatewayActiveTunnelInfos(null, realm, gateway.id)) == ids(httpsTunnel, sshTunnel)
 
     where:
-    user << ["tunnelWriter", "readWriteComposites", "restrictedLinked", "superUser"]
+    user << ["tunnelWriter", "compositeWriter", "restrictedLinked", "superUser"]
     resource = resources[user]
   }
 }
