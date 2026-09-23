@@ -87,7 +87,7 @@ jobs:
   trigger-extensions-ci-cd:
     name: Run CI/CD
     runs-on: ubuntu-latest
-    needs: check-artifacts
+    needs: [check-artifacts, update-openremote-version]
     steps:
       - name: Create extensions Actions token
         id: app-token
