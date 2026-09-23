@@ -48,9 +48,7 @@ public enum ClientRole {
   WRITE_INSIGHTS(Constants.WRITE_INSIGHTS_ROLE, "Write dashboard data"),
   WRITE_ALARMS(Constants.WRITE_ALARMS_ROLE, "Write alarm data"),
   WRITE_NOTIFICATIONS(Constants.WRITE_NOTIFICATIONS_ROLE, "Write notification data"),
-  WRITE_TUNNELS(
-      Constants.WRITE_TUNNELS_ROLE,
-      "Open and close gateway tunnels"),
+  WRITE_TUNNELS(Constants.WRITE_TUNNELS_ROLE, "Open and close gateway tunnels"),
 
   READ(
       "read",
