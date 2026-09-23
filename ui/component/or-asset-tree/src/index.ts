@@ -183,6 +183,15 @@ enum FilterElementType {
   ATTRIBUTE_VALUE,
 }
 
+const NUMBER_OPERATORS: Record<string, AssetQueryOperator> = {
+  "=": AssetQueryOperator.EQUALS,
+  "==": AssetQueryOperator.EQUALS,
+  ">": AssetQueryOperator.GREATER_THAN,
+  ">=": AssetQueryOperator.GREATER_EQUALS,
+  "<": AssetQueryOperator.LESS_THAN,
+  "<=": AssetQueryOperator.LESS_EQUALS,
+};
+
 export type AddEventDetail = {
   sourceAsset?: Asset;
   asset: Asset;
@@ -1375,19 +1384,30 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
       attributeCond = {
         operator: LogicGroupOperator.AND,
         items: this._filter.attribute.map((attributeName: string, index) => {
-          const value = this._filter?.attributeValue?.[index];
-          const isNumberOrFunc = /^\s*(>=?|<=?)?[-+]?[\d.,]+\s*%?\s*$/.test(value ?? "");
+          const value = this._filter?.attributeValue?.[index]?.trim();
           let valuePredicate: ValuePredicateUnion | undefined;
-          if(!isNumberOrFunc) {
-            valuePredicate = {
-              predicateType: "string",
-              match: AssetQueryMatch.EXACT,
-              value,
-              caseSensitive: false,
+          if (value) {
+            const number = value.match(/^([<>]=?|==?)?\s*([-+]?(?:\d+(?:[.,]\d+)?|\.\d+))$/);
+            // String input is number and/or function (for example '>=50')
+            if (number) {
+              valuePredicate = {
+                predicateType: "number",
+                operator: NUMBER_OPERATORS[number[1] ?? "="],
+                value: Number(number[2].replace(",", ".")),
+              };
+            // String input is a boolean
+            } else if (value === "true" || value === "false") {
+              valuePredicate = { predicateType: "boolean", value: value === "true" };
+            // Otherwise, it's a string and do an equals check
+            } else {
+              valuePredicate = {
+                predicateType: "string",
+                match: AssetQueryMatch.EXACT,
+                value,
+                caseSensitive: false,
+              };
             }
           }
-          // TODO: When valuePredicate = undefined, does the fallback to number work? (aka switching to local filtering instead of remote)
-          // TODO: Once that is the case, we can add remote filtering
           return {
             name: {
               predicateType: "string",
@@ -1395,7 +1415,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
               value: Util.sentenceCaseToCamelCase(attributeName),
               caseSensitive: false,
             },
-            value: value && valuePredicate ? valuePredicate : undefined,
+            value: valuePredicate,
           };
         }),
       };

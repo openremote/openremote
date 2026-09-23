@@ -456,7 +456,7 @@ test(`Should update asset list correctly when applying filters`, async ({ manage
     attributes: {
       ...asset2.attributes,
       isNew: { name: "isNew", type: "boolean" },
-      amount: { name: "amount", type: "number" },
+      amount: { name: "amount", type: "number", value: 80 },
       status: { name: "status", type: "string", value: "Test value" },
     },
   };
@@ -545,16 +545,16 @@ test(`Should update asset list correctly when applying filters`, async ({ manage
   await expect(assetTree.getAssetNodes()).toHaveCount(1); // 1 building that is left
   await expect(assetTree.getAssetNodes()).toContainText([asset5.name]);
 
-  // Filter by number attribute value with higher/equal check to only contain 1 out of 4 assets
+  // Filter by number attribute value with higher/equal check to only contain 2 out of 4 assets
   await filterButton.click();
   await expect(filterMenu).toBeVisible();
   await filterMenu.getByRole("textbox", { name: "Attribute", exact: true }).fill("amount");
   await filterMenu.getByRole("textbox", { name: "Attribute value", exact: true }).fill(">=60");
   await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
   await expect(filterMenu).not.toBeVisible();
-  expect(await assetTree.getFilterInput().inputValue()).toBe('type:BuildingAsset "amount":70');
-  await expect(assetTree.getAssetNodes()).toHaveCount(1); // 1 building that is left
-  await expect(assetTree.getAssetNodes()).toContainText([asset5.name]);
+  expect(await assetTree.getFilterInput().inputValue()).toBe('type:BuildingAsset "amount":>=60');
+  await expect(assetTree.getAssetNodes()).toHaveCount(2); // 2 buildings that are left
+  await expect(assetTree.getAssetNodes()).toContainText([asset3.name, asset5.name]);
 
   // Clearing the filter, shows them all again
   await filterButton.click();
@@ -563,7 +563,7 @@ test(`Should update asset list correctly when applying filters`, async ({ manage
   await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
   await expect(filterMenu).not.toBeVisible();
   await expect(assetTree.getFilterInput()).toBeEmpty();
-  await expect(assetTree.getAssetNodes()).toHaveCount(5); // 1 battery + 3 buildings + 1 console group
+  await expect(assetTree.getAssetNodes()).toHaveCount(6); // 1 battery + 4 buildings + 1 console group
 });
 
 /**
