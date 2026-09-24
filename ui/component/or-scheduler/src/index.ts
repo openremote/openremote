@@ -321,12 +321,14 @@ export class OrScheduler extends translate(i18next)(OrElement) {
       } else {
         origOptions![key as RRulePartKeys] = value;
       }
-    } else if (key === "start" && origOptions) {
+    } else if (key === "start") {
       const [year, month, date] = value.split("-").map(Number);
-      origOptions.dtstart = moment(calendarEvent.start)
-        .set({ year, month: month - 1, date })
-        .toDate();
-      calendarEvent.start = origOptions.dtstart.getTime();
+      const start = moment(calendarEvent.start).set({ year, month: month - 1, date });
+      if (origOptions) {
+        // A period event has no recurrence rule to keep in sync
+        origOptions.dtstart = start.toDate();
+      }
+      calendarEvent.start = start.valueOf();
     } else if (key === "end") {
       const [year, month, date] = value.split("-").map(Number);
       calendarEvent.end = moment(calendarEvent.end)

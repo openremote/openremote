@@ -38,7 +38,7 @@ class JSONSchemaUtilTest extends Specification {
 
   private static InputStream loadResourceAsStream(String resourcePath) {
     JSONSchemaUtilTest.getResourceAsStream(
-        "/org/openremote/model/util/" + resourcePath + ".json")
+            "/org/openremote/model/util/" + resourcePath + ".json")
   }
 
   static class Title {}
@@ -46,7 +46,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema has a generated title"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -70,7 +70,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema members do not have generated titles"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
                 {
                   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -98,7 +98,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema remaps Byte"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(loadResourceAsStream(Byte.name))
+            ValueUtil.JSON.readTree(loadResourceAsStream(Byte.name))
     def actual = ValueUtil.getSchema(Byte)
     assertEquals(expected.toString(), actual.toString(), true)
   }
@@ -108,7 +108,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema allows additional properties"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -132,14 +132,14 @@ class JSONSchemaUtilTest extends Specification {
     public boolean test3
 
     @JsonSchemaSupplier(
-        supplier = SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
+    supplier = SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     public Boolean test4
   }
 
   def "schema remaps annotated types"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema":"http://json-schema.org/draft-07/schema#",
@@ -162,18 +162,18 @@ class JSONSchemaUtilTest extends Specification {
   def "schema handles map type #mapType.simpleName"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(loadResourceAsStream(mapType.name))
+            ValueUtil.JSON.readTree(loadResourceAsStream(mapType.name))
     def actual = ValueUtil.getSchema(mapType)
     assertEquals(expected.toString(), actual.toString(), true)
 
     where:
     mapType << [
-        ValueType.BooleanMap,
-        ValueType.DoubleMap,
-        ValueType.IntegerMap,
-        ValueType.ObjectMap,
-        ValueType.StringMap,
-        ValueType.MultivaluedStringMap
+      ValueType.BooleanMap,
+      ValueType.DoubleMap,
+      ValueType.IntegerMap,
+      ValueType.ObjectMap,
+      ValueType.StringMap,
+      ValueType.MultivaluedStringMap
     ]
   }
 
@@ -191,7 +191,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema handles Jackson annotations"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -232,7 +232,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema requires primitive fields"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -275,7 +275,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema applies custom annotations to fields"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -308,7 +308,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema applies custom annotations to types"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -334,7 +334,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema applies i18n annotations"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -354,7 +354,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema applies partially disabled i18n annotations"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -384,7 +384,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema includes subtypes with a type property"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -438,12 +438,12 @@ class JSONSchemaUtilTest extends Specification {
     @JsonSubTypes.Type(SubTypeSuperClassWithCustomProperty),
   ])
   abstract static class PolymorphicTypeWithCustomProperty<
-          T extends PolymorphicTypeWithCustomProperty<?>>
-      implements Serializable {}
+  T extends PolymorphicTypeWithCustomProperty<?>>
+  implements Serializable {}
 
   @JsonTypeName("SubTypeWithCustomProperty")
   static class SubTypeWithCustomProperty
-      extends PolymorphicTypeWithCustomProperty<SubTypeWithCustomProperty> {}
+  extends PolymorphicTypeWithCustomProperty<SubTypeWithCustomProperty> {}
 
   @JsonTypeName("SubTypeSuperClassWithCustomProperty")
   static class SubTypeSuperClassWithCustomProperty extends SubTypeWithCustomProperty {}
@@ -451,7 +451,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema includes subtypes with a custom type property"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -502,20 +502,20 @@ class JSONSchemaUtilTest extends Specification {
   // Note: JsonTypeInfo.As.EXISTING_PROPERTY doesn't necessarily change the behavior mainly the
   // "customType" property on the abstract class matters.
   @JsonTypeInfo(
-      property = PolymorphicTypeWithCustomExistingProperty.VALUE_KEY_CUSTOM_TYPE,
-      use = JsonTypeInfo.Id.NAME,
-      include = JsonTypeInfo.As.EXISTING_PROPERTY)
+  property = PolymorphicTypeWithCustomExistingProperty.VALUE_KEY_CUSTOM_TYPE,
+  use = JsonTypeInfo.Id.NAME,
+  include = JsonTypeInfo.As.EXISTING_PROPERTY)
   @JsonSubTypes([
     @JsonSubTypes.Type(
-        name = SubTypeWithCustomExistingProperty.SUB_CUSTOM_TYPE,
-        value = SubTypeWithCustomExistingProperty),
+            name = SubTypeWithCustomExistingProperty.SUB_CUSTOM_TYPE,
+            value = SubTypeWithCustomExistingProperty),
     @JsonSubTypes.Type(
-        name = SubTypeSuperClassWithCustomExistingProperty.SUPER_CUSTOM_TYPE,
-        value = SubTypeSuperClassWithCustomExistingProperty),
+            name = SubTypeSuperClassWithCustomExistingProperty.SUPER_CUSTOM_TYPE,
+            value = SubTypeSuperClassWithCustomExistingProperty),
   ])
   abstract static class PolymorphicTypeWithCustomExistingProperty<
-          T extends PolymorphicTypeWithCustomExistingProperty<?>>
-      implements Serializable {
+  T extends PolymorphicTypeWithCustomExistingProperty<?>>
+  implements Serializable {
     public static final String VALUE_KEY_CUSTOM_TYPE = "customType"
 
     @JsonProperty(VALUE_KEY_CUSTOM_TYPE)
@@ -528,20 +528,20 @@ class JSONSchemaUtilTest extends Specification {
 
   @JsonTypeName(SubTypeWithCustomExistingProperty.SUB_CUSTOM_TYPE)
   static class SubTypeWithCustomExistingProperty
-      extends PolymorphicTypeWithCustomExistingProperty<SubTypeWithCustomExistingProperty> {
+  extends PolymorphicTypeWithCustomExistingProperty<SubTypeWithCustomExistingProperty> {
     public static final String SUB_CUSTOM_TYPE = "sub"
   }
 
   @JsonTypeName(SubTypeSuperClassWithCustomExistingProperty.SUPER_CUSTOM_TYPE)
   static class SubTypeSuperClassWithCustomExistingProperty
-      extends SubTypeWithCustomExistingProperty {
+  extends SubTypeWithCustomExistingProperty {
     public static final String SUPER_CUSTOM_TYPE = "super"
   }
 
   def "schema includes subtypes with an existing custom type property"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -590,15 +590,15 @@ class JSONSchemaUtilTest extends Specification {
   }
 
   @JsonTypeInfo(
-      property = "type",
-      use = JsonTypeInfo.Id.NAME,
-      include = JsonTypeInfo.As.EXTERNAL_PROPERTY)
+  property = "type",
+  use = JsonTypeInfo.Id.NAME,
+  include = JsonTypeInfo.As.EXTERNAL_PROPERTY)
   @JsonSubTypes([
     @JsonSubTypes.Type(ExternalSubType),
     @JsonSubTypes.Type(ExternalSubTypeSuperclass),
   ])
   abstract static class ExternalPolymorphicType<T extends ExternalPolymorphicType<?>>
-      implements Serializable {}
+  implements Serializable {}
 
   static class ExternalSubType extends ExternalPolymorphicType<ExternalSubType> {}
 
@@ -607,7 +607,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema sets the enum type for an external property"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -658,7 +658,7 @@ class JSONSchemaUtilTest extends Specification {
   @JsonTypeName("ReflectedPolymorphicType")
   @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME)
   abstract static class ReflectedPolymorphicType<T extends ReflectedPolymorphicType<?>>
-      implements Serializable {}
+  implements Serializable {}
 
   @JsonTypeName("ResolvedSubType")
   static class ResolvedSubType extends ReflectedPolymorphicType<ResolvedSubType> {}
@@ -666,7 +666,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema resolves subtypes through reflections"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -736,7 +736,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema applies Jackson serializers"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -817,7 +817,7 @@ class JSONSchemaUtilTest extends Specification {
   def "schema generates enum values"() {
     expect:
     def expected =
-        ValueUtil.JSON.readTree(
+            ValueUtil.JSON.readTree(
             '''
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",

@@ -22,35 +22,35 @@ import spock.lang.Specification
 
 class GeoJSONPointTest extends Specification {
 
-    def "parseRawLocation returns null for invalid input '#input'"() {
-        expect:
-        GeoJSONPoint.parseRawLocation(input) == null
+  def "parseRawLocation returns null for invalid input '#input'"() {
+    expect:
+    GeoJSONPoint.parseRawLocation(input) == null
 
-        where:
-        input << [null, "", "1,2,3", "abc,2", "1,def"]
-    }
+    where:
+    input << [null, "", "1,2,3", "abc,2", "1,def"]
+  }
 
-    def "parseRawLocation parses valid input"() {
-        when:
-        def point = GeoJSONPoint.parseRawLocation("12.5, -3.75")
+  def "parseRawLocation parses valid input"() {
+    when:
+    def point = GeoJSONPoint.parseRawLocation("12.5, -3.75")
 
-        then:
-        point != null
-        point.x == 12.5d
-        point.y == -3.75d
-    }
+    then:
+    point != null
+    point.x == 12.5d
+    point.y == -3.75d
+  }
 
-    def "offsetByMeters offsets east and north"() {
-        given:
-        def origin = new GeoJSONPoint(0d, 0d)
+  def "offsetByMeters offsets east and north"() {
+    given:
+    def origin = new GeoJSONPoint(0d, 0d)
 
-        when:
-        def offset = origin.offsetByMeters(1000d, 1000d)
+    when:
+    def offset = origin.offsetByMeters(1000d, 1000d)
 
-        then:
-        def expectedLat = 0.0090436947d
-        def expectedLon = 0.0089831528d
-        Math.abs(offset.y - expectedLat) < 1e-9
-        Math.abs(offset.x - expectedLon) < 1e-9
-    }
+    then:
+    def expectedLat = 0.0090436947d
+    def expectedLon = 0.0089831528d
+    Math.abs(offset.y - expectedLat) < 1e-9
+    Math.abs(offset.x - expectedLon) < 1e-9
+  }
 }

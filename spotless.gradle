@@ -96,9 +96,11 @@ spotless {
     endWithNewline()
   }
 
-  // Groovy files are not yet formatted because some use '::' operations which greclipse currently cannot handle
   groovy {
     target backendTarget(['**/*.groovy'])
+    targetExclude('**/BasicBrokenRules.groovy')
+    toggleOffOn()
+    greclipse().configFile(rootProject.file('tools/spotless/greclipse-google.properties'))
     licenseHeaderFile(rootProject.file('tools/spotless/openremote-license-header.txt'), blockCommentLicenseDelimiter)
     trimTrailingWhitespace()
     endWithNewline()

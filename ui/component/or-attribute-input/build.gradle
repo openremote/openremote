@@ -1,6 +1,5 @@
 tasks.register('clean', Delete) {
-  delete layout.projectDirectory.dir('dist')
-  delete layout.projectDirectory.dir('lib')
+  delete layout.buildDirectory
 }
 
 tasks.register('npmAnalyze', Exec) {
@@ -24,9 +23,4 @@ tasks.register('publishUi') {
 tasks.register('npmTest', Exec) {
   dependsOn getYarnInstallTask()
   commandLine npmCommand("yarn"), "run", "test"
-}
-
-tasks.register('npmTestUI', Exec) {
-  dependsOn getYarnInstallTask()
-  commandLine npmCommand("yarn"), "run", "test", "--ui"
 }

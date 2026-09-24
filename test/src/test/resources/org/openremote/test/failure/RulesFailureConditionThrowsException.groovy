@@ -24,11 +24,9 @@ RulesBuilder rules = binding.rules
 
 rules.add()
         .name("Condition always throws exception")
-        .when(
-        { facts ->
-            throw new RuntimeException("Oops")
+        .when({ facts ->
+          throw new RuntimeException("Oops")
         })
-        .then(
-        { facts ->
-            // Never called
+        .then({ facts ->
+          // Never called
         })

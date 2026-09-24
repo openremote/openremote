@@ -21,6 +21,7 @@ import { test, userStatePath } from "./fixtures/manager.js";
 import { preparedAssetsForRules as assets } from "./fixtures/data/assets.js";
 import { energyRule } from "./fixtures/data/rules.js";
 import { type Asset, type RealmRuleset, RulesetLang } from "@openremote/model";
+import type { OrRuleTree } from "@openremote/or-rules/or-rule-tree";
 
 test.use({ storageState: userStatePath });
 
@@ -107,7 +108,7 @@ async function mockRealmRulesApi(page: any, initialRules: RealmRuleset[]) {
  * Simple function that generates assets based on {@link assets}
  * @param multiplier - Amount of assets to generate per asset type
  */
-function generateALotOfAssets(multiplier = 5): Asset[] {
+function generateALotOfAssets(multiplier = 5) {
   return Array.from({ length: multiplier }, (_, i) =>
     assets.map((a: Asset) => ({ ...a, name: `${a.name} ${i}` }))
   ).flat();
@@ -121,25 +122,22 @@ function generateALotOfAssets(multiplier = 5): Asset[] {
  * @and Saving the rule
  * @then The When-Then rule should appear in the rule list
  */
-test("Create a When-Then rule for an asset with a trigger and action", async ({ page, manager, shared }) => {
+test("Create a When-Then rule for an asset with a trigger and action", async ({ page, manager, rulesPage, shared }) => {
   await manager.setup("smartcity", { assets });
   await manager.goToRealmStartPage("smartcity");
-  await manager.navigateToTab("Rules");
-  await page.click(".mdi-plus >> nth=0");
-  await page.getByRole("menuitem", { name: "When-Then", exact: true }).click();
-  await page.getByRole("textbox", { name: "Rule name" }).fill(energyRule.name);
+  await rulesPage.goto();
+  await rulesPage.createRule("When-Then");
+  await rulesPage.setRuleName(energyRule.name);
 
   // When clause
   const when = page.locator("or-rule-when");
-  await when.getByRole("menuitem", { name: "Add condition" }).click();
-  await when.getByRole("menuitem", { name: energyRule.asset_type }).click();
-  await when.getByRole("combobox", { name: "Asset", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.asset, exact: true }).click();
-  await when.getByRole("combobox", { name: "Attribute", exact: true }).click();
-  await when.getByRole("option", { name: energyRule.attribute_when, exact: true }).click();
-  await when.getByRole("combobox", { name: "Operator", exact: true }).click();
-  await when.getByRole("option", { name: "Less than or equal to", exact: true }).click();
-  await when.getByRole("spinbutton", { name: "Energy level" }).fill(energyRule.value.toString());
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  });
 
   // Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -167,12 +165,12 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({ 
  * @and Saving the rule
  * @then The When-Then rule should appear in the rule list
  */
-test("Create a When-Then rule by searching for an asset", async ({ page, manager, shared }) => {
+test("Create a When-Then rule by searching for an asset", async ({ page, manager, rulesPage, shared }) => {
   const multiplier = 200; // Using a multiplier above 100, which is the default querying limit
   const aLotOfAssets = generateALotOfAssets(multiplier);
   await manager.setup("smartcity", { assets: aLotOfAssets });
   await manager.goToRealmStartPage("smartcity");
-  await manager.navigateToTab("Rules");
+  await rulesPage.goto();
 
   // Make sure the correct amount assets are set up, and the variables for this rule are adjusted
   expect(manager.assets.length).toBe(multiplier * assets.length);
@@ -181,21 +179,18 @@ test("Create a When-Then rule by searching for an asset", async ({ page, manager
   expect(firstAssetName).toContain(energyRule.asset);
   expect(lastAssetName).toContain(energyRule.asset);
 
-  await page.click(".mdi-plus >> nth=0");
-  await page.getByRole("menuitem", { name: "When-Then", exact: true }).click();
-  await page.getByRole("textbox", { name: "Rule name" }).fill(energyRule.name);
+  await rulesPage.createRule("When-Then");
+  await rulesPage.setRuleName(energyRule.name);
 
   // Select asset type of the When clause, search for the last asset in the list, and select the attribute
   const when = page.locator("or-rule-when");
-  await when.getByRole("menuitem", { name: "Add condition" }).click();
-  await when.getByRole("menuitem", { name: energyRule.asset_type }).click();
-  await when.getByRole("combobox", { name: "Asset", exact: true }).fill(lastAssetName);
-  await when.getByRole("option", { name: lastAssetName, exact: true }).click();
-  await when.getByRole("combobox", { name: "Attribute", exact: true }).fill(energyRule.attribute_when);
-  await when.getByRole("option", { name: energyRule.attribute_when, exact: true }).click();
-  await when.getByRole("combobox", { name: "Operator", exact: true }).fill("Less than or");
-  await when.getByRole("option", { name: "Less than or equal to", exact: true }).click();
-  await when.getByRole("spinbutton", { name: "Energy level" }).fill(energyRule.value.toString());
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: lastAssetName,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  });
 
   // Configure Then clause
   const then = page.locator("or-rule-then-otherwise");
@@ -216,6 +211,351 @@ test("Create a When-Then rule by searching for an asset", async ({ page, manager
 });
 
 /**
+ * @when Creating a When-Then rule
+ * @and Naming the rule
+ * @and Configuring a When condition on the asset
+ * @and Configuring a Then action with an email notification
+ * @and Saving the rule
+ * @then The When-Then rule should appear in the rule list
+ */
+test("Create a When-Then rule for an asset with a email notification action", async ({
+  page,
+  manager,
+  rulesPage,
+  shared,
+}) => {
+  await manager.setup("smartcity", { assets });
+  await manager.goToRealmStartPage("smartcity");
+  await rulesPage.goto();
+  await rulesPage.createRule("When-Then");
+  await rulesPage.setRuleName(energyRule.name);
+
+  // When clause
+  const when = page.locator("or-rule-when");
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  });
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+
+  // Then clause
+  const then = page.locator("or-rule-then-otherwise");
+  await then.getByRole("menuitem", { name: "Add action" }).click();
+  await then.getByRole("menuitem", { name: "Email" }).click();
+  await expect(page.getByRole("button", { name: "Save", exact: true })).not.toBeDisabled();
+
+  await then.getByRole("combobox", { name: "Recipients", exact: true }).click();
+  await then.getByRole("option", { name: "Users", exact: true }).click();
+  await then.getByRole("combobox", { name: "Users", exact: true }).click();
+  await then.getByRole("option", { name: "Linked", exact: true }).click();
+  await then.getByRole("button", { name: "Message", exact: true }).click();
+
+  // Set up notification message in dialog
+  const overlay = rulesPage.actionDialogOverlay(then);
+  await expect(overlay).toBeVisible();
+  await then.getByRole("textbox", { name: "Subject", exact: true }).clear();
+  await rulesPage.blurActiveField(then);
+  await expect(then.getByRole("textbox", { name: "Subject", exact: true })).toHaveAttribute("invalid");
+  await expect(then.getByRole("button", { name: "OK", exact: true })).toBeDisabled();
+
+  await then.getByRole("textbox", { name: "Subject", exact: true }).fill("Email notification");
+  await rulesPage.blurActiveField(then);
+  await expect(then.getByRole("textbox", { name: "Subject", exact: true })).not.toHaveAttribute("invalid");
+  await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
+
+  await then
+    .getByRole("textbox", { name: "Body", exact: true })
+    .fill("Assets that have been impacted: %TRIGGER_ASSETS%");
+  await then.getByRole("button", { name: "OK", exact: true }).click();
+
+  await shared.interceptResponse<number>("**/rules/realm", (rule) => {
+    if (rule) manager.rules.push(rule);
+  });
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
+});
+
+/**
+ * @when Creating a When-Then rule
+ * @and Naming the rule
+ * @and Configuring a When condition on the asset
+ * @and Configuring a Then action with an push notification
+ * @and Saving the rule
+ * @then The When-Then rule should appear in the rule list
+ */
+test("Create a When-Then rule for an asset with a push notification action", async ({
+  page,
+  manager,
+  rulesPage,
+  shared,
+}) => {
+  await manager.setup("smartcity", { assets });
+  await manager.goToRealmStartPage("smartcity");
+  await rulesPage.goto();
+  await rulesPage.createRule("When-Then");
+  await rulesPage.setRuleName(energyRule.name);
+
+  // When clause
+  const when = page.locator("or-rule-when");
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  });
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+
+  // Then clause
+  const then = page.locator("or-rule-then-otherwise");
+  await then.getByRole("menuitem", { name: "Add action" }).click();
+  await then.getByRole("menuitem", { name: "Push notification" }).click();
+  await expect(page.getByRole("button", { name: "Save", exact: true })).not.toBeDisabled();
+
+  await then.getByRole("button", { name: "Message", exact: true }).click();
+
+  // Set up notification message in dialog
+  const overlay = rulesPage.actionDialogOverlay(then);
+  await expect(overlay).toBeVisible();
+  await then.getByRole("textbox", { name: "Title", exact: true }).fill("Push notification");
+  await then.getByRole("textbox", { name: "Body", exact: true }).clear();
+  await rulesPage.blurActiveField(then);
+  await expect(then.getByRole("textbox", { name: "Body", exact: true })).toHaveAttribute("invalid");
+  await expect(then.getByRole("button", { name: "OK", exact: true })).toBeDisabled();
+
+  await then.getByRole("textbox", { name: "Body", exact: true }).fill("Impacted assets: %TRIGGER_ASSETS%");
+  await rulesPage.blurActiveField(then);
+  await expect(then.getByRole("textbox", { name: "Body", exact: true })).not.toHaveAttribute("invalid");
+  await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
+
+  // Fill in website URL
+  await then.getByRole("textbox", { name: "Website to be opened", exact: true }).fill("https://openremote.io");
+  await expect(then.getByRole("textbox", { name: "Body", exact: true })).not.toHaveAttribute("invalid");
+  await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
+
+  // Toggle the switch for opening in browser
+  await then.getByRole("switch", { name: "Open in browser (for external websites)", exact: true }).click();
+  await expect(then.getByRole("textbox", { name: "Body", exact: true })).not.toHaveAttribute("invalid");
+  await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
+
+  await then.getByRole("button", { name: "OK", exact: true }).click();
+
+  await shared.interceptResponse<number>("**/rules/realm", (rule) => {
+    if (rule) manager.rules.push(rule);
+  });
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
+});
+
+/**
+ * @when Creating a When-Then rule
+ * @and Naming the rule
+ * @and Configuring a When condition on the asset
+ * @and Configuring a Then action with an push notification
+ * @and Saving the rule
+ * @then The When-Then rule should appear in the rule list
+ */
+test("Create a When-Then rule for an asset with a alarm action", async ({ page, manager, rulesPage, shared }) => {
+  await manager.setup("smartcity", { assets });
+  await manager.goToRealmStartPage("smartcity");
+  await rulesPage.goto();
+  await rulesPage.createRule("When-Then");
+  await rulesPage.setRuleName(energyRule.name);
+
+  // When clause
+  const when = page.locator("or-rule-when");
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  });
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+
+  // Then clause
+  const then = page.locator("or-rule-then-otherwise");
+  await then.getByRole("menuitem", { name: "Add action" }).click();
+  await then.getByRole("menuitem", { name: "Alarm" }).click();
+  await expect(page.getByRole("button", { name: "Save", exact: true })).not.toBeDisabled();
+
+  await then.getByRole("button", { name: "Severity" }).click();
+  await then.getByRole("option", { name: "High", exact: true }).click();
+  await then.getByRole("button", { name: "Settings", exact: true }).click();
+
+  // Set up notification message in dialog
+  const overlay = rulesPage.actionDialogOverlay(then);
+  await expect(overlay).toBeVisible();
+  await then.getByRole("textbox", { name: "Title", exact: true }).fill("High priority alarm");
+  await then.getByRole("textbox", { name: "Content", exact: true }).clear();
+  await rulesPage.blurActiveField(then);
+  await expect(then.getByRole("textbox", { name: "Content", exact: true })).toHaveAttribute("invalid");
+  await expect(then.getByRole("button", { name: "OK", exact: true })).toBeDisabled();
+
+  await then.getByRole("textbox", { name: "Content", exact: true }).fill("Warning: %TRIGGER_ASSETS%");
+  await rulesPage.blurActiveField(then);
+  await expect(then.getByRole("textbox", { name: "Content", exact: true })).not.toHaveAttribute("invalid");
+  await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
+
+  // Adjust assignee
+  await then.getByRole("combobox", { name: "Assignee", exact: true }).click();
+  await then.getByRole("option", { name: "smartcity", exact: true }).click();
+  await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
+  await then.getByRole("button", { name: "OK", exact: true }).click();
+
+  await shared.interceptResponse<number>("**/rules/realm", (rule) => {
+    if (rule) manager.rules.push(rule);
+  });
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
+});
+
+/**
+ * @given A When-Then rule with an alarm action
+ * @when Setting the alarm severity, which sits outside the settings dialog
+ * @and Editing the alarm title inside the dialog and cancelling
+ * @then The severity should be kept, and the saved rule should not contain the cancelled edit
+ */
+test("Cancelling the alarm settings dialog discards only the changes made inside it", async ({
+  page,
+  manager,
+  rulesPage,
+  shared,
+}) => {
+  await manager.setup("smartcity", { assets });
+  await manager.goToRealmStartPage("smartcity");
+  await rulesPage.goto();
+  await rulesPage.createRule("When-Then");
+  await rulesPage.setRuleName(energyRule.name);
+
+  // When clause
+  const when = page.locator("or-rule-when");
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  });
+
+  // Then clause, with an alarm that is filled in and confirmed
+  const then = page.locator("or-rule-then-otherwise");
+  await then.getByRole("menuitem", { name: "Add action" }).click();
+  await then.getByRole("menuitem", { name: "Alarm" }).click();
+  await then.getByRole("button", { name: "Settings", exact: true }).click();
+  await then.getByRole("textbox", { name: "Title", exact: true }).fill("Kept title");
+  await then.getByRole("textbox", { name: "Content", exact: true }).fill("Kept content");
+  await rulesPage.blurActiveField(then);
+  await then.getByRole("button", { name: "OK", exact: true }).click();
+
+  // Severity is edited outside of the dialog
+  await then.getByRole("button", { name: "Severity" }).click();
+  await then.getByRole("option", { name: "High", exact: true }).click();
+
+  // Reopen the dialog, edit the title, and back out again
+  await then.getByRole("button", { name: "Settings", exact: true }).click();
+  await then.getByRole("textbox", { name: "Title", exact: true }).fill("Discarded title");
+  await rulesPage.blurActiveField(then);
+  await then.getByRole("button", { name: "Cancel", exact: true }).click();
+
+  // Cancel used to restore a snapshot of the whole action, undoing the severity picked outside it
+  await expect(then.getByRole("button", { name: "Severity" })).toContainText("High");
+
+  let saved: RealmRuleset | undefined;
+  await shared.interceptResponse<number>("**/rules/realm", (rule, request) => {
+    if (rule) manager.rules.push(rule);
+    saved = request?.postDataJSON();
+  });
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
+
+  // Cancel used to swap the element's own action reference, leaving the rule holding the edit
+  const action = JSON.parse(saved!.rules!).rules[0].then[0];
+  expect(action.alarm.title).toBe("Kept title");
+  expect(action.alarm.severity).toBe("HIGH");
+});
+
+/**
+ * @when Creating a When-Then rule
+ * @and Naming the rule
+ * @and Configuring a When condition on the asset
+ * @and Configuring a Then action with an push notification
+ * @and Saving the rule
+ * @then The When-Then rule should appear in the rule list
+ */
+test("Create a When-Then rule for an asset with a webhook action", async ({ page, manager, rulesPage, shared }) => {
+  await manager.setup("smartcity", { assets });
+  await manager.goToRealmStartPage("smartcity");
+  await rulesPage.goto();
+  await rulesPage.createRule("When-Then");
+  await rulesPage.setRuleName(energyRule.name);
+
+  // When clause
+  const when = page.locator("or-rule-when");
+  await rulesPage.configureAttributeWhenClause(when, {
+    assetType: energyRule.asset_type,
+    asset: energyRule.asset,
+    attribute: energyRule.attribute_when,
+    operator: "Less than or equal to",
+    value: energyRule.value.toString(),
+  });
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+
+  // Then clause
+  const then = page.locator("or-rule-then-otherwise");
+  await then.getByRole("menuitem", { name: "Add action" }).click();
+  await then.getByRole("menuitem", { name: "Webhook" }).click();
+  await then.getByRole("button", { name: "Message", exact: true }).click();
+
+  // Set up notification message in dialog
+  const overlay = rulesPage.actionDialogOverlay(then);
+  await expect(overlay).toBeVisible();
+  await expect(then.getByRole("button", { name: "OK", exact: true })).toBeDisabled();
+  await then.getByRole("button", { name: "Method" }).first().click();
+  await then.getByRole("option", { name: "PUT", exact: true }).click();
+  await expect(then.getByRole("button", { name: "OK", exact: true })).toBeDisabled();
+  await then.getByRole("textbox", { name: "Web URL", exact: true }).fill("https://localhost");
+  await rulesPage.blurActiveField(then);
+  await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
+
+  // Add request header
+  await then.getByRole("button", { name: "Add Request Header" }).click();
+  await then.getByRole("textbox", { name: "Header", exact: true }).fill("key");
+  await then.getByRole("textbox", { name: "Value", exact: true }).fill("value");
+
+  // Add authorization info
+  await then.getByRole("switch", { name: "Requires Authorization", exact: true }).click();
+  await then.getByRole("button", { name: "Method" }).last().click();
+  await then.getByRole("option", { name: "oauth Client Credentials Grant", exact: true }).click();
+  await then.getByRole("textbox", { name: "Token URL", exact: true }).fill("https://localhost/token");
+  await then.getByRole("textbox", { name: "Client ID", exact: true }).fill("client");
+  await then.getByRole("textbox", { name: "Client secret", exact: true }).fill("secret");
+
+  // Remove body
+  await then.getByRole("switch", { name: "Include body in Request", exact: true }).click();
+  await expect(then.locator("or-vaadin-text-area")).not.toBeVisible(); // The payload is the form's only text area
+
+  // Close the dialog
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+  await expect(then.getByRole("button", { name: "OK", exact: true })).not.toBeDisabled();
+  await then.getByRole("button", { name: "OK", exact: true }).click();
+
+  await shared.interceptResponse<number>("**/rules/realm", (rule) => {
+    if (rule) manager.rules.push(rule);
+  });
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
+});
+
+/**
  * @when Creating a Flow rule
  * @and Naming the rule
  * @and Dragging elements onto the canvas
@@ -224,13 +564,12 @@ test("Create a When-Then rule by searching for an asset", async ({ page, manager
  * @and Saving the rule
  * @then The Flow rule should appear in the rule list
  */
-test("Create a Flow rule for an asset with logic connections", async ({ page, shared, manager }) => {
+test("Create a Flow rule for an asset with logic connections", async ({ page, shared, rulesPage, manager }) => {
   await manager.setup("smartcity", { assets });
   await manager.goToRealmStartPage("smartcity");
-  await manager.navigateToTab("Rules");
-  await page.click(".mdi-plus >> nth=0");
-  await page.getByRole("menuitem", { name: "Flow", exact: true }).click();
-  await page.getByRole("textbox", { name: "Rule name" }).fill("Solar panel");
+  await rulesPage.goto();
+  await rulesPage.createRule("Flow");
+  await rulesPage.setRuleName("Solar panel");
 
   await page.locator(".node-item.input-node", { hasText: "Attribute value" }).hover();
   await shared.drag(450, 250);
@@ -362,7 +701,7 @@ test("Groups containing legacy JavaScript rules cannot be renamed", async ({ pag
   await expect(page.locator("or-rule-tree").getByText("Legacy JS group", { exact: true })).toHaveCount(1);
   await page.locator("or-rule-tree").getByText("Legacy JS group", { exact: true }).click();
   await page.getByRole("textbox", { name: "Group name" }).fill("Renamed JS group");
-  await page.getByRole("button", { name: "Save" }).isDisabled();
+  await page.getByRole("button", { name: "Save" }).click();
   expect(api.putRequests).toBe(0);
 });
 
@@ -382,7 +721,7 @@ test("Dragging a legacy JavaScript rule is blocked", async ({ page, manager }) =
   await expect(page.locator("or-rule-tree").getByText(legacyJavascriptRule.name!)).toHaveCount(1);
 
   const dispatchSucceeded = await page.locator("or-rules").evaluate((element, ruleName) => {
-    const tree = element.shadowRoot?.querySelector("or-rule-tree") as any;
+    const tree = element.shadowRoot?.querySelector("or-rule-tree") as OrRuleTree;
     const rule = tree?.rules?.find((candidate: any) => candidate.name === ruleName);
 
     if (!rule) {

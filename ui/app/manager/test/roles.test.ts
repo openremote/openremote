@@ -19,8 +19,7 @@
 import { expect } from "@openremote/test";
 import { adminStatePath, test } from "./fixtures/manager.js";
 import { custom } from "./fixtures/data/roles.js";
-import type { Role } from "@openremote/model";
-import permissions from "./fixtures/data/permissions.js";
+import { ClientRole, type Role } from "@openremote/model";
 
 test.use({ storageState: adminStatePath });
 
@@ -29,13 +28,13 @@ test.use({ storageState: adminStatePath });
  * @when Logging into OpenRemote "master" realm as "admin"
  * @and Switching to the "smartcity" realm
  * @and Navigating to the "Roles" page
- * @and Creating a new role named "Custom" with specific permissions
+ * @and Creating a new role named "Custom" with specific roles
  * @and Navigating to the "Users" page and selecting a user
- * @and Assigning only the "Custom" role to the user and verifying permissions
- * @and Switching back to original permissions and verifying all permissions are selected
- * @then The new role is created and assigned correctly with expected permissions
+ * @and Assigning only the "Custom" role to the user and verifying its roles
+ * @and Switching back to the original roles and verifying all roles are selected
+ * @then The new role is created and assigned correctly with the expected roles
  */
-test("Create a new role, assign it to a user, and verify permissions", async ({ page, manager, shared, usersPage }) => {
+test("Create a new role, assign it to a user, and verify its roles", async ({ page, manager, shared, usersPage }) => {
   await manager.setup("smartcity");
   await manager.goToRealmStartPage("master");
   await manager.switchToRealmByRealmPicker("smartcity");
@@ -43,8 +42,8 @@ test("Create a new role, assign it to a user, and verify permissions", async ({ 
   await page.getByText("Add Role").click();
 
   const lastRow = page.locator("#table-roles tbody tr").last();
-  await lastRow.getByRole("textbox", { name: "Role" }).fill("Custom");
-  await lastRow.getByRole("textbox", { name: "Description" }).fill("read:asset, write:asset");
+  await lastRow.getByRole("textbox", { name: "Role" }).fill(custom.name);
+  await lastRow.getByRole("textbox", { name: "Description" }).fill(custom.description);
   await lastRow.getByRole("checkbox", { name: "assets: Read asset data" }).click();
   await lastRow.getByRole("checkbox", { name: "assets: Write asset data" }).click();
 
@@ -58,11 +57,11 @@ test("Create a new role, assign it to a user, and verify permissions", async ({ 
   await manager.navigateToMenuItem("Users");
   await page.getByRole("cell", { name: "smartcity" }).click();
 
-  await usersPage.toggleUserRoles("Read", "Write", "Custom");
-  await usersPage.toHavePermissions("read:assets", "write:assets");
+  await usersPage.toggleCompositeRoles("Read", "Write", "Custom");
+  await usersPage.toHaveRoles(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS);
 
-  await usersPage.toggleUserRoles("Read", "Write", "Custom");
-  await usersPage.toHavePermissions(...permissions);
+  await usersPage.toggleCompositeRoles("Read", "Write", "Custom");
+  await usersPage.toHaveAllRoles();
 });
 
 /**

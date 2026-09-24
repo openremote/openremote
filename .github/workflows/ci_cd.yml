@@ -285,7 +285,7 @@ jobs:
 
       - name: Set up JDK 21 and gradle cache
         id: java
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: "temurin"
           java-version: "21"
@@ -586,25 +586,25 @@ jobs:
 
       - name: Configure AWS Credentials
         if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}"
 
       - name: Login to private ECR
         if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
-        uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2.1.6
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
 
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: linux/amd64,linux/aarch64
 
       - name: install buildx
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         id: buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -724,9 +724,6 @@ jobs:
         run: |
           composeProfile='profile/dev-testing.yml'
 
-          # Make temp dir and set mask to 777 as docker seems to run as root
-          mkdir -pm 777 tmp
-
           # Define cleanup command
           echo "cleanup=docker compose -f $composeProfile down -v" >> $GITHUB_OUTPUT
 
@@ -736,7 +733,7 @@ jobs:
 
           # Run the tests
           ${{ steps.test-backend-command.outputs.value }}
-        timeout-minutes: 20
+        timeout-minutes: 30
         #continue-on-error: true
 
       - name: Generate backend test reports
@@ -805,7 +802,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ui-component-test-results
-          path: ui/component/*/component-test-report/**
+          path: ui/component/*/build/component-test-report/**
 
       - name: Run UI app tests
         id: run-ui-app-tests
@@ -813,9 +810,6 @@ jobs:
         if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: |
           composeProfile='profile/dev-testing.yml'
-
-          # Make temp dir and set mask to 777 as docker seems to run as root
-          mkdir -pm 777 tmp
 
           # Define cleanup command
           echo "cleanup=docker compose -f $composeProfile down -v" >> $GITHUB_OUTPUT
@@ -837,7 +831,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ui-app-test-results
-          path: ui/app/*/app-test-report/**
+          path: ui/app/*/build/app-test-report/**
 
       - name: Cleanup UI app tests
         if: ${{ steps.test-ui-apps-command.outputs.value != '' }}
@@ -852,7 +846,7 @@ jobs:
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushToDockerHub == 'true'
-        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         id: manager-anchore-scan
         with:
           image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}
@@ -863,7 +857,7 @@ jobs:
         if: |
           !cancelled() &&
           steps.manager-docker-command.outputs.pushToDockerHub == 'true'
-        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
           category: grype-manager

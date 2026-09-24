@@ -56,130 +56,132 @@ import static org.openremote.manager.mqtt.MQTTBrokerService.*
 @Ignore
 class AttributeEventBenchmarkTest extends Specification implements ManagerContainerTrait {
 
-    def "Attribute processing benchmark"() {
+  def "Attribute processing benchmark"() {
 
-        given: "the container environment is started"
-        def eventCount = 1000
-        def startTime = -1l
-        def endTime = -1l
-        List<SharedEvent> receivedEvents = new CopyOnWriteArrayList<>()
-        List<Object> receivedValues = new CopyOnWriteArrayList<>()
-        MQTT_IOClient client = null
-        def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
-        def container = startContainer(defaultConfig(), defaultServices())
-        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
-        def mqttBrokerService = container.getService(MQTTBrokerService.class)
-        def defaultMQTTHandler = mqttBrokerService.getCustomHandlers().find{it instanceof DefaultMQTTHandler} as DefaultMQTTHandler
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def mqttClientId = UniqueIdentifierGenerator.generateId()
-        def username = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username // realm and OAuth client id
-        def password = keycloakTestSetup.serviceUser.secret
-        def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0")
-        def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883)
-        def assetIDs = new ArrayList<String>()
-        def assetMultiID = ""
+    given: "the container environment is started"
+    def eventCount = 1000
+    def startTime = -1l
+    def endTime = -1l
+    List<SharedEvent> receivedEvents = new CopyOnWriteArrayList<>()
+    List<Object> receivedValues = new CopyOnWriteArrayList<>()
+    MQTT_IOClient client = null
+    def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def mqttBrokerService = container.getService(MQTTBrokerService.class)
+    def defaultMQTTHandler = mqttBrokerService.getCustomHandlers().find{
+      it instanceof DefaultMQTTHandler
+    } as DefaultMQTTHandler
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def mqttClientId = UniqueIdentifierGenerator.generateId()
+    def username = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username // realm and OAuth client id
+    def password = keycloakTestSetup.serviceUser.secret
+    def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0")
+    def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883)
+    def assetIDs = new ArrayList<String>()
+    def assetMultiID = ""
 
-        and: "assets are added for testing purposes"
-        for (i in 1..eventCount) {
-            def asset = assetStorageService.merge(new ThingAsset("TestThing$i").setRealm(keycloakTestSetup.realmBuilding.name).addAttributes(
-                    new Attribute<Object>("counter", ValueType.NUMBER)
-            ))
-            assetIDs.add(asset.id)
-        }
-        and: "one asset is added with many attributes"
-        def multiAsset = new ThingAsset("TestThingMulti").setRealm(keycloakTestSetup.realmBuilding.name)
-        for (i in 1..eventCount) {
-            multiAsset.addAttributes(new Attribute<Object>("counter$i", ValueType.NUMBER))
-        }
-        multiAsset = assetStorageService.merge(multiAsset)
-        assetMultiID = multiAsset.id
-
-        when: "a mqtt client connects with valid credentials"
-        client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, null)
-        client.connect()
-
-        then: "mqtt connection should exist"
-        conditions.eventually {
-            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
-            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
-        }
-
-        when: "a mqtt client subscribes to all attributes of all assets"
-        def topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
-        Consumer<MQTTMessage<String>> eventConsumer = { msg ->
-            def event = ValueUtil.parse(msg.payload, SharedEvent.class)
-            receivedEvents.add(event.get())
-            if (receivedEvents.size() == eventCount) {
-                endTime = System.currentTimeMillis()
-            }
-        }
-        def subscribed = client.addMessageConsumer(topic, eventConsumer)
-
-        then: "A subscription should exist"
-        assert subscribed
-        assert client.topicConsumerMap.get(topic) != null
-        assert client.topicConsumerMap.get(topic).size() == 1
-        assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
-        def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-        assert connection != null
-        assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
-        assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
-
-        when: "Attribute events are sent for each asset by the MQTT client"
-        startTime = System.currentTimeMillis()
-        for (i in 1..eventCount) {
-            topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/counter/${assetIDs.get(i-1)}".toString()
-            def payload = i.toString()
-            client.sendMessage(new MQTTMessage<String>(topic, payload))
-        }
-
-        then: "all attribute updates should be received by the client"
-        new PollingConditions(timeout: 300, initialDelay: 10, delay: 10).eventually {
-            getLOG().info("Events processed = ${receivedEvents.size()}")
-            assert endTime > 0
-        }
-        def processingTime = endTime-startTime
-        getLOG().info("Time taken to process $eventCount events = ${endTime-startTime}ms")
-
-        when: "Attribute events are again sent for each asset by the MQTT client"
-        endTime = 0
-        receivedEvents.clear()
-        startTime = System.currentTimeMillis()
-        for (i in 1..eventCount) {
-            topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/counter/${assetIDs.get(i-1)}".toString()
-            def payload = i.toString()
-            client.sendMessage(new MQTTMessage<String>(topic, payload))
-        }
-
-        then: "all attribute updates should be received by the client in a shorter time due to auth caching"
-        new PollingConditions(timeout: 300, initialDelay: 10, delay: 10).eventually {
-            getLOG().info("Events processed = ${receivedEvents.size()}")
-            assert endTime > 0
-        }
-        assert processingTime > endTime-startTime
-        getLOG().info("Time taken to process $eventCount events (with hot cache) = ${endTime-startTime}ms")
-
-
-        when: "Attribute events are sent for each attribute of the multi asset by the MQTT client"
-        endTime = 0
-        receivedEvents.clear()
-        startTime = System.currentTimeMillis()
-        for (i in 1..eventCount) {
-            topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/counter$i/${assetMultiID}".toString()
-            def payload = i.toString()
-            client.sendMessage(new MQTTMessage<String>(topic, payload))
-        }
-
-        then: "all attribute updates should be received by the client"
-        new PollingConditions(timeout: 300, initialDelay: 10, delay: 10).eventually {
-            getLOG().info("Events processed = ${receivedEvents.size()}")
-            assert endTime > 0
-        }
-        getLOG().info("Time taken to process $eventCount events for multi attribute asset = ${endTime-startTime}ms")
-
-        cleanup: "output processing time"
-        if (client != null) {
-            client.disconnect()
-        }
+    and: "assets are added for testing purposes"
+    for (i in 1..eventCount) {
+      def asset = assetStorageService.merge(new ThingAsset("TestThing$i").setRealm(keycloakTestSetup.realmBuilding.name).addAttributes(
+                      new Attribute<Object>("counter", ValueType.NUMBER)
+                      ))
+      assetIDs.add(asset.id)
     }
+    and: "one asset is added with many attributes"
+    def multiAsset = new ThingAsset("TestThingMulti").setRealm(keycloakTestSetup.realmBuilding.name)
+    for (i in 1..eventCount) {
+      multiAsset.addAttributes(new Attribute<Object>("counter$i", ValueType.NUMBER))
+    }
+    multiAsset = assetStorageService.merge(multiAsset)
+    assetMultiID = multiAsset.id
+
+    when: "a mqtt client connects with valid credentials"
+    client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, null)
+    client.connect()
+
+    then: "mqtt connection should exist"
+    conditions.eventually {
+      assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
+      assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
+    }
+
+    when: "a mqtt client subscribes to all attributes of all assets"
+    def topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
+    Consumer<MQTTMessage<String>> eventConsumer = { msg ->
+      def event = ValueUtil.parse(msg.payload, SharedEvent.class)
+      receivedEvents.add(event.get())
+      if (receivedEvents.size() == eventCount) {
+        endTime = System.currentTimeMillis()
+      }
+    }
+    def subscribed = client.addMessageConsumer(topic, eventConsumer)
+
+    then: "A subscription should exist"
+    assert subscribed
+    assert client.topicConsumerMap.get(topic) != null
+    assert client.topicConsumerMap.get(topic).size() == 1
+    assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
+    def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
+    assert connection != null
+    assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+    assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
+
+    when: "Attribute events are sent for each asset by the MQTT client"
+    startTime = System.currentTimeMillis()
+    for (i in 1..eventCount) {
+      topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/counter/${assetIDs.get(i-1)}".toString()
+      def payload = i.toString()
+      client.sendMessage(new MQTTMessage<String>(topic, payload))
+    }
+
+    then: "all attribute updates should be received by the client"
+    new PollingConditions(timeout: 300, initialDelay: 10, delay: 10).eventually {
+      getLOG().info("Events processed = ${receivedEvents.size()}")
+      assert endTime> 0
+    }
+    def processingTime = endTime-startTime
+    getLOG().info("Time taken to process $eventCount events = ${endTime-startTime}ms")
+
+    when: "Attribute events are again sent for each asset by the MQTT client"
+    endTime = 0
+    receivedEvents.clear()
+    startTime = System.currentTimeMillis()
+    for (i in 1..eventCount) {
+      topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/counter/${assetIDs.get(i-1)}".toString()
+      def payload = i.toString()
+      client.sendMessage(new MQTTMessage<String>(topic, payload))
+    }
+
+    then: "all attribute updates should be received by the client in a shorter time due to auth caching"
+    new PollingConditions(timeout: 300, initialDelay: 10, delay: 10).eventually {
+      getLOG().info("Events processed = ${receivedEvents.size()}")
+      assert endTime> 0
+    }
+    assert processingTime> endTime-startTime
+    getLOG().info("Time taken to process $eventCount events (with hot cache) = ${endTime-startTime}ms")
+
+
+    when: "Attribute events are sent for each attribute of the multi asset by the MQTT client"
+    endTime = 0
+    receivedEvents.clear()
+    startTime = System.currentTimeMillis()
+    for (i in 1..eventCount) {
+      topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/counter$i/${assetMultiID}".toString()
+      def payload = i.toString()
+      client.sendMessage(new MQTTMessage<String>(topic, payload))
+    }
+
+    then: "all attribute updates should be received by the client"
+    new PollingConditions(timeout: 300, initialDelay: 10, delay: 10).eventually {
+      getLOG().info("Events processed = ${receivedEvents.size()}")
+      assert endTime> 0
+    }
+    getLOG().info("Time taken to process $eventCount events for multi attribute asset = ${endTime-startTime}ms")
+
+    cleanup: "output processing time"
+    if (client != null) {
+      client.disconnect()
+    }
+  }
 }

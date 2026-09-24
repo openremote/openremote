@@ -29,9 +29,9 @@ import java.time.ZoneId
 
 class AssetDatapointQueryDeserializationTest extends Specification {
 
-    def "AssetDatapointQuery deserializes fromTime without timezone as LocalDateTime"() {
-        given:
-        def json = '''
+  def "AssetDatapointQuery deserializes fromTime without timezone as LocalDateTime"() {
+    given:
+    def json = '''
             {
               "type": "all",
               "fromTime": "2026-02-12T00:00:00.000",
@@ -39,18 +39,18 @@ class AssetDatapointQueryDeserializationTest extends Specification {
             }
         '''
 
-        when:
-        AssetDatapointQuery query = ValueUtil.JSON.readValue(json, AssetDatapointQuery.class)
+    when:
+    AssetDatapointQuery query = ValueUtil.JSON.readValue(json, AssetDatapointQuery.class)
 
-        then:
-        query instanceof AssetDatapointAllQuery
-        query.fromTime == LocalDateTime.of(2026, 2, 12, 0, 0, 0, 0)
-        query.toTime == LocalDateTime.of(2026, 2, 12, 1, 0, 0, 0)
-    }
+    then:
+    query instanceof AssetDatapointAllQuery
+    query.fromTime == LocalDateTime.of(2026, 2, 12, 0, 0, 0, 0)
+    query.toTime == LocalDateTime.of(2026, 2, 12, 1, 0, 0, 0)
+  }
 
-    def "AssetDatapointQuery deserializes fromTime with Z and converts to server timezone"() {
-        given:
-        def json = '''
+  def "AssetDatapointQuery deserializes fromTime with Z and converts to server timezone"() {
+    given:
+    def json = '''
             {
               "type": "all",
               "fromTime": "2026-02-12T00:00:00.000Z",
@@ -58,22 +58,22 @@ class AssetDatapointQueryDeserializationTest extends Specification {
             }
         '''
 
-        when:
-        AssetDatapointQuery query = ValueUtil.JSON.readValue(json, AssetDatapointQuery.class)
+    when:
+    AssetDatapointQuery query = ValueUtil.JSON.readValue(json, AssetDatapointQuery.class)
 
-        then:
-        query instanceof AssetDatapointAllQuery
-        query.fromTime == OffsetDateTime.parse("2026-02-12T00:00:00.000Z")
+    then:
+    query instanceof AssetDatapointAllQuery
+    query.fromTime == OffsetDateTime.parse("2026-02-12T00:00:00.000Z")
             .atZoneSameInstant(ZoneId.systemDefault())
             .toLocalDateTime()
-        query.toTime == OffsetDateTime.parse("2026-02-12T01:00:00.000Z")
+    query.toTime == OffsetDateTime.parse("2026-02-12T01:00:00.000Z")
             .atZoneSameInstant(ZoneId.systemDefault())
             .toLocalDateTime()
-    }
+  }
 
-    def "AssetDatapointQuery deserializes fromTime with explicit numeric offset and converts to server timezone"() {
-        given:
-        def json = '''
+  def "AssetDatapointQuery deserializes fromTime with explicit numeric offset and converts to server timezone"() {
+    given:
+    def json = '''
             {
               "type": "all",
               "fromTime": "2026-02-12T00:00:00.000+02:00",
@@ -81,16 +81,16 @@ class AssetDatapointQueryDeserializationTest extends Specification {
             }
         '''
 
-        when:
-        AssetDatapointQuery query = ValueUtil.JSON.readValue(json, AssetDatapointQuery.class)
+    when:
+    AssetDatapointQuery query = ValueUtil.JSON.readValue(json, AssetDatapointQuery.class)
 
-        then:
-        query instanceof AssetDatapointAllQuery
-        query.fromTime == OffsetDateTime.parse("2026-02-12T00:00:00.000+02:00")
+    then:
+    query instanceof AssetDatapointAllQuery
+    query.fromTime == OffsetDateTime.parse("2026-02-12T00:00:00.000+02:00")
             .atZoneSameInstant(ZoneId.systemDefault())
             .toLocalDateTime()
-        query.toTime == OffsetDateTime.parse("2026-02-12T01:00:00.000+02:00")
+    query.toTime == OffsetDateTime.parse("2026-02-12T01:00:00.000+02:00")
             .atZoneSameInstant(ZoneId.systemDefault())
             .toLocalDateTime()
-    }
+  }
 }

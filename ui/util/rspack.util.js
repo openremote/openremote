@@ -34,6 +34,11 @@ function getStandardModuleRules() {
         type: "asset/resource",
       },
       {
+        // maplibre builds its worker URL at runtime, so its own `new URL()` calls are not build time assets
+        test: /maplibre-gl[\\/]dist[\\/].+\.mjs$/,
+        parser: { url: false },
+      },
+      {
         test: /\.css$/, //
         exclude: /(maplibre|@material|gridstack|@mdi).*\.css$/,
         use: [{ loader: "css-loader" }],
@@ -60,10 +65,18 @@ function getStandardModuleRules() {
   };
 }
 
+function resolveDir(request, dirname) {
+  try {
+    return path.dirname(require.resolve(request, { paths: [dirname] }));
+  } catch {
+    return undefined;
+  }
+}
+
 function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port) {
   const production = mode === "production";
   port = port || 9000;
-  managerUrl = managerUrl || (production && !isDevServer ? undefined : "http://localhost:8080");
+  managerUrl = managerUrl || (production && !isDevServer ? undefined : "http://127.0.0.1:8080");
   const OUTPUT_PATH = isDevServer ? "src" : "dist";
 
   if (isDevServer) {
@@ -71,8 +84,8 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
     console.log("To customise the URL of the manager and/or keycloak use the managerUrl and/or keycloakUrl");
     console.log(" environment arguments e.g: ");
     console.log("");
-    console.log("npm run serve -- --env managerUrl=https://localhost");
-    console.log("npm run serve -- --env keycloakUrl=https://localhost/auth");
+    console.log("npm run serve -- --env managerUrl=https://127.0.0.1");
+    console.log("npm run serve -- --env keycloakUrl=https://127.0.0.1/auth");
     console.log("");
     console.log("MANAGER URL: " + managerUrl || "");
     console.log("KEYCLOAK URL: " + keycloakUrl || managerUrl + "/auth");
@@ -84,7 +97,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
       bundle: "./src/index.ts",
     },
     output: {
-      path: dirname + "/dist",
+      path: dirname + "/build/dist",
       publicPath: isDevServer ? "/" + dirname.split(path.sep).slice(-1)[0] + "/" : "./",
       filename: production ? "[name].[contenthash].js" : "[name].js",
     },
@@ -103,9 +116,6 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
         vm: false,
         querystring: require.resolve("querystring-es3"),
       },
-    },
-    experiments: {
-      asyncWebAssembly: true,
     },
   };
 
@@ -159,11 +169,10 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
   // Build list of resources to copy
   const patterns = [
     {
-      from: path.dirname(require.resolve("@webcomponents/webcomponentsjs")),
+      from: "**/*.js",
+      context: path.dirname(require.resolve("@webcomponents/webcomponentsjs")),
       to: "modules/@webcomponents/webcomponentsjs",
-      globOptions: {
-        ignore: ["!*.js"],
-      },
+      toType: "dir",
     },
   ];
   // Check if images dir exists
@@ -195,6 +204,18 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
       to: ".appignore",
       toType: "file",
     });
+  }
+  // Check if maplibre is installed, its worker imports the shared module so both must sit side by side
+  const maplibreDist = resolveDir("maplibre-gl/dist/maplibre-gl-worker.mjs", dirname);
+  if (maplibreDist) {
+    for (const file of ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"]) {
+      patterns.push({
+        from: path.join(maplibreDist, file),
+        to: "maplibre",
+        toType: "dir",
+        info: { minimized: true },
+      });
+    }
   }
 
   // Copy unprocessed files
@@ -279,9 +300,11 @@ function generateExports(dirname) {
       mode: "production",
       output: {
         filename: "[name].js",
-        path: path.resolve(dirname, "dist/umd"),
-        library: libName,
-        libraryTarget: "umd",
+        path: path.resolve(dirname, "build/dist/umd"),
+        library: {
+          name: libName,
+          target: "umd",
+        },
       },
       resolve: {
         extensions: [".ts", ".tsx", "..."],

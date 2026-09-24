@@ -17,7 +17,7 @@ jobs:
         with:
           lfs: true # Enable Git LFS plugin to fetch *.mbtiles
       - name: Set up JDK 21 and Gradle cache
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: "temurin"
           java-version: "21"
@@ -28,8 +28,6 @@ jobs:
         timeout-minutes: 20
         run: |
           # Run Integration Tests
-          # Make temp dir with 777 mask as docker seems to run as root
-          mkdir -pm 777 tmp
 
           # Start the stack
           docker compose -f profile/dev-testing.yml up -d --no-build

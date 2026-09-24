@@ -97,13 +97,12 @@ The most important configuration information has been exposed in the helm values
 It is sometimes necessary to provide more configuration to the containers.  
 This is done through environment variables, as it was done before with docker compose.  
 In the values files, there is `or.env` property available to define any environment variable that will get passed to the container.  
-For instance, this snippet of a values files defines a value for the KC_HOSTNAME_STRICT_HTTPS environment variable passed to the keycloak container.  
-Important: the value always needs to be enclosed in double quotes, even for boolean or numeric values.
+For example the following sets `MY_VARIABLE=false` (NOTE: the value always needs to be enclosed in double quotes, even for boolean or numeric values).
 
 ```yaml
 or:
   env:
-    - name: KC_HOSTNAME_STRICT_HTTPS
+    - name: MY_VARIABLE
       value: "false"
 ```
 
@@ -155,6 +154,28 @@ The manager configuration has 2 different flags that related to metrics:
 - `or.metricsEnabled` indicating if the manager container exposes metrics
 - `service.metrics.enabled` indicating if a metrics service for the manager should be exposed  
   This is only effective if the manager exposes metrics i.e. both flags must be true for the service to be created.
+
+### OpenTelemetry tracing
+
+The manager image contains a pinned OpenTelemetry Java agent, but does not attach it unless
+`or.otel.enabled` is explicitly set to `true`. Configure the agent through `or.otel` in an environment-specific
+values file. For example, if Alloy is exposed by the `alloy-otel` service in the `observability` namespace:
+
+```yaml
+or:
+  otel:
+    enabled: true
+    serviceName: openremote-manager
+    endpoint: http://alloy-otel.observability.svc.cluster.local:4318
+    protocol: http/protobuf
+```
+
+Replace the service name and namespace with those of the local Alloy deployment. No Tempo credentials belong in
+the manager configuration: Alloy is the local OTLP endpoint and is responsible for authenticated forwarding.
+Additional OpenTelemetry Java agent settings, such as sampling, can be supplied through `or.env`; environment
+variables managed by `or.otel` must not be duplicated there when tracing is enabled. See
+the [top-level OpenTelemetry tracing documentation](../README.md#opentelemetry-tracing) for validation and data-safety
+guidance.
 
 ### JMX
 

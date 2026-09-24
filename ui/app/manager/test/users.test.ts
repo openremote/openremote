@@ -18,7 +18,6 @@
  */
 import { expect } from "@openremote/test";
 import { adminStatePath, test } from "./fixtures/manager";
-import permissions from "./fixtures/data/permissions";
 
 test.use({ storageState: adminStatePath });
 
@@ -91,15 +90,15 @@ test(`Verify browser behavior while creating regular users`, async ({ page, user
   await usersPage.gotoUserCreation("master", "regular");
   await page.getByLabel("Username").fill("mycustomusername");
   await page.getByLabel("Email").fill("mycustom@email.com");
-  await usersPage.toHavePermissions();
-  await usersPage.toggleUserRoles("Read", "Write");
-  await usersPage.toHavePermissions(...permissions);
+  await usersPage.toHaveRoles();
+  await usersPage.toggleCompositeRoles("Read", "Write");
+  await usersPage.toHaveAllRoles();
   await page.evaluate(() => {
     document.dispatchEvent(new Event("visibilitychange"));
   });
   await expect(await page.getByRole("textbox", { name: /username/i }).inputValue()).toBe("mycustomusername");
   await expect(await page.getByRole("textbox", { name: /email/i }).inputValue()).toBe("mycustom@email.com");
-  await usersPage.toHavePermissions(...permissions);
+  await usersPage.toHaveAllRoles();
 });
 
 /**
