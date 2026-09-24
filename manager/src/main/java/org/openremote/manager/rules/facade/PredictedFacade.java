@@ -23,16 +23,10 @@ import java.time.LocalDateTime;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.PathPredicate;
-import org.openremote.model.query.filter.RealmPredicate;
-import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.PredictedDatapoints;
-import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
 
 public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
@@ -53,7 +47,8 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
   @Override
   public ValueDatapoint<?>[] getValueDatapoints(
       AttributeRef attributeRef, AssetDatapointQuery query) {
-    if (!doesRuleEngineScopeAllowAccess(attributeRef.getId())) {
+    if (!FacadeHelper.doesRuleEngineScopeAllowAccess(
+        rulesEngineId, attributeRef.getId(), assetStorageService)) {
       return new ValueDatapoint[0];
     }
     return assetPredictedDatapointService
@@ -64,7 +59,7 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
   @Override
   public void updateValue(
       String assetId, String attributeName, Object value, LocalDateTime timestamp) {
-    if (!doesRuleEngineScopeAllowAccess(assetId)) {
+    if (!FacadeHelper.doesRuleEngineScopeAllowAccess(rulesEngineId, assetId, assetStorageService)) {
       return;
     }
     assetPredictedDatapointService.updateValue(assetId, attributeName, value, timestamp);
@@ -78,7 +73,7 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
 
   @Override
   public void purgeValues(String assetId, String attributeName) {
-    if (!doesRuleEngineScopeAllowAccess(assetId)) {
+    if (!FacadeHelper.doesRuleEngineScopeAllowAccess(rulesEngineId, assetId, assetStorageService)) {
       return;
     }
     assetPredictedDatapointService.purgeValues(assetId, attributeName);
@@ -86,49 +81,9 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
 
   @Override
   public void purgeValuesBefore(String assetId, String attributeName, Instant timestamp) {
-    if (!doesRuleEngineScopeAllowAccess(assetId)) {
+    if (!FacadeHelper.doesRuleEngineScopeAllowAccess(rulesEngineId, assetId, assetStorageService)) {
       return;
     }
     assetPredictedDatapointService.purgeValuesBefore(assetId, attributeName, timestamp);
-  }
-
-  private boolean doesRuleEngineScopeAllowAccess(String assetId) {
-    AssetQuery assetQuery = new AssetQuery();
-    assetQuery.ids(assetId);
-
-    if (RealmRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-      // Realm is restricted to rules
-      assetQuery.realm =
-          new RealmPredicate(
-              rulesEngineId
-                  .getRealm()
-                  .orElseThrow(
-                      () -> new IllegalArgumentException("Realm missing: " + rulesEngineId)));
-    } else if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-      // Realm is restricted to assets'
-      assetQuery.realm =
-          new RealmPredicate(
-              rulesEngineId
-                  .getRealm()
-                  .orElseThrow(
-                      () -> new IllegalArgumentException("Realm missing: " + rulesEngineId)));
-
-      Asset<?> restrictedAsset =
-          assetStorageService.find(
-              rulesEngineId
-                  .getAssetId()
-                  .orElseThrow(
-                      () -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
-              true);
-
-      if (restrictedAsset == null) {
-        throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
-      }
-      assetQuery.paths(new PathPredicate(restrictedAsset.getPath()));
-    }
-
-    assetQuery.select = new AssetQuery.Select().excludeAttributes();
-
-    return assetStorageService.find(assetQuery) != null;
   }
 }
