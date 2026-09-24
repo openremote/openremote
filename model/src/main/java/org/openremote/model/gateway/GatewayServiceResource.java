@@ -51,6 +51,7 @@ public interface GatewayServiceResource {
           "Returns active tunnels for all gateway assets in the requested realm. Restricted users cannot list an entire realm.")
   @OpenApiResponses.Ok
   @OpenApiResponses.BadRequest
+  @OpenApiResponses.NotFound
   GatewayTunnelInfo[] getAllActiveTunnelInfos(
       @BeanParam RequestParams requestParams,
       @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("realm") String realm);
@@ -67,6 +68,7 @@ public interface GatewayServiceResource {
           "Returns active tunnels for one gateway asset. Restricted users may query only a linked gateway.")
   @OpenApiResponses.Ok
   @OpenApiResponses.BadRequest
+  @OpenApiResponses.NotFound
   GatewayTunnelInfo[] getGatewayActiveTunnelInfos(
       @BeanParam RequestParams requestParams,
       @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("realm") String realm,
@@ -85,6 +87,7 @@ public interface GatewayServiceResource {
           "Returns the tunnel matching realm, gateway, target host, and target port, or null when no active tunnel matches.")
   @OpenApiResponses.Ok
   @OpenApiResponses.BadRequest
+  @OpenApiResponses.NotFound
   @ApiResponse(
       responseCode = "204",
       description = "No active tunnel matches the requested endpoint")
