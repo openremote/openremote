@@ -16,24 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import type { Asset } from "@openremote/model";
+package org.openremote.setup.datetime;
 
-export const notes = { name: "notes", type: "text" };
-export const location = { name: "location", type: "GEO_JSONPoint" };
-export const commonAttrs = { notes, location };
-export const validAsset: Asset = {
-  id: "validAsset",
-  name: "Thing",
-  realm: "master",
-  type: "ThingAsset",
-  // 2026-01-02T10:30 in Europe/Amsterdam (UTC+1)
-  createdOn: Date.UTC(2026, 0, 2, 9, 30),
-  attributes: { ...commonAttrs },
-};
-export const invalidAsset: Asset = {
-  id: "invalidAsset",
-  name: "Thing",
-  realm: "master",
-  type: "ThingAsset",
-  attributes: { ...commonAttrs, invalid: { name: "invalid", type: "integer" } },
-};
+import java.util.List;
+import org.openremote.model.Container;
+import org.openremote.model.setup.Setup;
+
+public class SetupTasks implements org.openremote.model.setup.SetupTasks {
+
+  @Override
+  public List<Setup> createTasks(Container container, String setupType, boolean keycloakEnabled) {
+    return List.of(new ManagerDateTimeSetup(container));
+  }
+}
