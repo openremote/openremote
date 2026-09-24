@@ -311,7 +311,7 @@ class GatewayTunnelAuthorizationTest extends Specification implements ManagerCon
       call.call()
       return null
     } catch (WebApplicationException e) {
-      return e.response.status
+      return e.response.withCloseable { r -> r.status }
     }
   }
 
