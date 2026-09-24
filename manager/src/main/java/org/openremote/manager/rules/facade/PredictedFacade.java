@@ -18,7 +18,9 @@
  */
 package org.openremote.manager.rules.facade;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.attribute.AttributeRef;
@@ -30,18 +32,25 @@ import org.openremote.model.rules.Ruleset;
 public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
 
   protected final RulesEngineId<T> rulesEngineId;
+  protected final AssetStorageService assetStorageService;
   protected final AssetPredictedDatapointService assetPredictedDatapointService;
 
   public PredictedFacade(
       RulesEngineId<T> rulesEngineId,
+      AssetStorageService assetStorageService,
       AssetPredictedDatapointService assetPredictedDatapointService) {
     this.rulesEngineId = rulesEngineId;
+    this.assetStorageService = assetStorageService;
     this.assetPredictedDatapointService = assetPredictedDatapointService;
   }
 
   @Override
   public ValueDatapoint<?>[] getValueDatapoints(
       AttributeRef attributeRef, AssetDatapointQuery query) {
+    if (!FacadeHelper.doesRuleEngineScopeAllowAccess(
+        rulesEngineId, attributeRef.getId(), assetStorageService)) {
+      return new ValueDatapoint[0];
+    }
     return assetPredictedDatapointService
         .queryDatapoints(attributeRef.getId(), attributeRef.getName(), query)
         .toArray(ValueDatapoint[]::new);
@@ -50,11 +59,31 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
   @Override
   public void updateValue(
       String assetId, String attributeName, Object value, LocalDateTime timestamp) {
+    if (!FacadeHelper.doesRuleEngineScopeAllowAccess(rulesEngineId, assetId, assetStorageService)) {
+      return;
+    }
     assetPredictedDatapointService.updateValue(assetId, attributeName, value, timestamp);
   }
 
   @Override
   public void updateValue(AttributeRef attributeRef, Object value, LocalDateTime timestamp) {
+    // No scope check here, it's already done in called method
     updateValue(attributeRef.getId(), attributeRef.getName(), value, timestamp);
+  }
+
+  @Override
+  public void purgeValues(String assetId, String attributeName) {
+    if (!FacadeHelper.doesRuleEngineScopeAllowAccess(rulesEngineId, assetId, assetStorageService)) {
+      return;
+    }
+    assetPredictedDatapointService.purgeValues(assetId, attributeName);
+  }
+
+  @Override
+  public void purgeValuesBefore(String assetId, String attributeName, Instant timestamp) {
+    if (!FacadeHelper.doesRuleEngineScopeAllowAccess(rulesEngineId, assetId, assetStorageService)) {
+      return;
+    }
+    assetPredictedDatapointService.purgeValuesBefore(assetId, attributeName, timestamp);
   }
 }
