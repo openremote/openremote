@@ -18,6 +18,7 @@
  */
 package org.openremote.model.rules;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
@@ -36,4 +37,8 @@ public abstract class PredictedDatapoints {
 
   public abstract void updateValue(
       AttributeRef attributeRef, Object value, LocalDateTime timestamp);
+
+  public abstract void purgeValues(String assetId, String attributeName);
+
+  public abstract void purgeValuesBefore(String assetId, String attributeName, Instant timestamp);
 }

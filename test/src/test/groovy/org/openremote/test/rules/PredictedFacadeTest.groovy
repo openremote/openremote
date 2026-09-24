@@ -40,8 +40,10 @@ import java.time.temporal.ChronoUnit
 class PredictedFacadeTest extends Specification implements ManagerContainerTrait {
 
   private static final String ATTRIBUTE_NAME = "prediction"
+  private static final String OTHER_ATTRIBUTE_NAME = "otherPrediction"
   private static final List<String> WRITE_OVERLOADS = ["asset ID", "attribute reference"]
-  private static final List<String> OPERATIONS = ["read", *WRITE_OVERLOADS]
+  private static final List<String> PURGE_OPERATIONS = ["purgeValues", "purgeValuesBefore"]
+  private static final List<String> OPERATIONS = ["read", *WRITE_OVERLOADS, *PURGE_OPERATIONS]
 
   AssetStorageService assetStorageService
   AssetPredictedDatapointService predictedService
@@ -79,6 +81,7 @@ class PredictedFacadeTest extends Specification implements ManagerContainerTrait
     try {
       createdAssetIds.each { assetId ->
         predictedService.purgeValues(assetId, ATTRIBUTE_NAME)
+        predictedService.purgeValues(assetId, OTHER_ATTRIBUTE_NAME)
       }
     } finally {
       // One test deletes its scope asset itself; delete the rest together so descendants
@@ -125,6 +128,67 @@ class PredictedFacadeTest extends Specification implements ManagerContainerTrait
     }
   }
 
+  def "#scope scope #operation on #targetName predictions is allowed: #allowed"() {
+    given: "predictions before, exactly at, and one millisecond after the cutoff"
+    def facade = facadeFor(scope)
+    def target = testAssets[targetName]
+    target.addOrReplaceAttributes(new Attribute<>(OTHER_ATTRIBUTE_NAME, ValueType.NUMBER))
+    assetStorageService.merge(target)
+    purgeDatapoints().each { time, value ->
+      predictedService.upsertValue(target.id, ATTRIBUTE_NAME, value, time)
+      predictedService.upsertValue(target.id, OTHER_ATTRIBUTE_NAME, value, time)
+    }
+    def expected = allowed ? (operation == "purgeValues" ? [:] : retainedDatapoints()) : purgeDatapoints()
+
+    when:
+    performOperation(facade, target.id, operation)
+
+    then: "only the permitted predictions of the requested attribute are removed"
+    storedDatapoints(target.id) == expected
+    snapshot(predictedService.getDatapoints(new AttributeRef(target.id, OTHER_ATTRIBUTE_NAME))) == purgeDatapoints()
+    testAssets.values().findAll { it.id != target.id }.every {
+      storedDatapoints(it.id) == originalDatapoints()
+    }
+
+    when: "the same purge is repeated"
+    performOperation(facade, target.id, operation)
+
+    then: "the remaining predictions are unchanged"
+    storedDatapoints(target.id) == expected
+    snapshot(predictedService.getDatapoints(new AttributeRef(target.id, OTHER_ATTRIBUTE_NAME))) == purgeDatapoints()
+    testAssets.values().findAll { it.id != target.id }.every {
+      storedDatapoints(it.id) == originalDatapoints()
+    }
+
+    where:
+    [scope, targetName, allowed, operation] << scopeCases().collectMany { row ->
+      PURGE_OPERATIONS.collect { operation -> row + [operation] }
+    }
+  }
+
+  def "#scope scope #operation on an attribute without predictions is a no-op"() {
+    given:
+    def facade = facadeFor(scope)
+    def targetId = testAssets.scoped.id
+    predictedService.purgeValues(targetId, ATTRIBUTE_NAME)
+    assert storedDatapoints(targetId).isEmpty()
+
+    when:
+    performOperation(facade, targetId, operation)
+
+    then:
+    notThrown(Exception)
+    storedDatapoints(targetId).isEmpty()
+    testAssets.values().findAll { it.id != targetId }.every {
+      storedDatapoints(it.id) == originalDatapoints()
+    }
+
+    where:
+    [scope, operation] << ["global", "realm", "asset"].collectMany { scope ->
+      PURGE_OPERATIONS.collect { operation -> [scope, operation] }
+    }
+  }
+
   def "#scope scope #operation on a missing target is denied without creating predictions"() {
     given:
     def facade = facadeFor(scope)
@@ -138,6 +202,7 @@ class PredictedFacadeTest extends Specification implements ManagerContainerTrait
     notThrown(Exception)
     operation != "read" || result.length == 0
     predictedService.getDatapoints(reference(missingId)).isEmpty()
+    testAssets.values().every { storedDatapoints(it.id) == originalDatapoints() }
 
     cleanup: "remove orphan predictions written by the currently unchecked facade"
     predictedService.purgeValues(missingId, ATTRIBUTE_NAME)
@@ -174,10 +239,16 @@ class PredictedFacadeTest extends Specification implements ManagerContainerTrait
     and: "the operation succeeds while the target is a descendant"
     def initialResult = performOperation(facade, targetId, operation)
     assert operation != "read" || snapshot(initialResult) == originalDatapoints()
-    assert storedDatapoints(targetId) == (operation == "read" ? originalDatapoints() : updatedDatapoints())
+    def expectedDatapoints = originalDatapoints()
+    if (WRITE_OVERLOADS.contains(operation)) {
+      expectedDatapoints = updatedDatapoints()
+    } else if (PURGE_OPERATIONS.contains(operation)) {
+      expectedDatapoints = [:]
+    }
+    assert storedDatapoints(targetId) == expectedDatapoints
 
     and: "the target's parent is moved into another subtree in the same realm"
-    // Restore the baseline so that repeating a forbidden write would be observable.
+    // Restore the baseline so that a forbidden write or purge would be observable.
     predictedService.purgeValues(targetId, ATTRIBUTE_NAME)
     predictedService.upsertValue(targetId, ATTRIBUTE_NAME, 10d, timestamp)
     def child = assetStorageService.find(testAssets.child.id, true)
@@ -230,7 +301,13 @@ class PredictedFacadeTest extends Specification implements ManagerContainerTrait
     if (operation == "read") {
       return facade.getValueDatapoints(reference(assetId), query())
     }
-    writePredictions(facade, assetId, operation)
+    if (operation == "purgeValues") {
+      facade.purgeValues(assetId, ATTRIBUTE_NAME)
+    } else if (operation == "purgeValuesBefore") {
+      facade.purgeValuesBefore(assetId, ATTRIBUTE_NAME, timestamp.plusMinutes(1).atZone(ZoneId.systemDefault()).toInstant())
+    } else {
+      writePredictions(facade, assetId, operation)
+    }
     return null
   }
 
@@ -269,6 +346,15 @@ class PredictedFacadeTest extends Specification implements ManagerContainerTrait
 
   private Map updatedDatapoints() {
     return [(epochMillis(timestamp)): 20d, (epochMillis(timestamp.plusMinutes(1))): 30d]
+  }
+
+  private Map retainedDatapoints() {
+    long cutoff = epochMillis(timestamp.plusMinutes(1))
+    return [(cutoff): 20d, (cutoff + 1): 30d]
+  }
+
+  private Map purgeDatapoints() {
+    return originalDatapoints() + retainedDatapoints()
   }
 
   private static long epochMillis(LocalDateTime time) {
