@@ -103,6 +103,8 @@ base {
 
 javadoc {
   failOnError = false
+  // Exclude the generated TTN/ChirpStack protobuf classes from Javadoc to reduce the published artifact size
+  source = fileTree('src/main/java')
 }
 
 java {
@@ -164,4 +166,9 @@ signing {
     useInMemoryPgpKeys(signingKey, signingPassword)
     sign publishing.publications.maven
   }
+}
+
+tasks.named('sourcesJar') {
+  // Exclude the generated TTN/ChirpStack protobuf classes from sources to reduce the published artifact size
+  include 'org/openremote/**'
 }
