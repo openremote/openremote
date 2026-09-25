@@ -29,6 +29,20 @@ export class AssetTree {
   }
 
   /**
+   * Returns a locator of the filter button
+   */
+  getFilterButton() {
+    return this.page.locator("or-asset-tree #asset-tree-filter").getByTitle("Open filter");
+  }
+
+  /**
+   * Returns a locator of the filter menu
+   */
+  getFilterMenu() {
+    return this.page.locator("or-asset-tree #asset-tree-filter-setting");
+  }
+
+  /**
    * Returns a locator of all nodes that contain assets
    */
   getAssetNodes() {
