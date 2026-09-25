@@ -163,6 +163,10 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     return null;
   }
 
+  public static String getRealm(Exchange exchange) {
+    return exchange.getIn().getHeader(REALM_PARAM_NAME, String.class);
+  }
+
   @Override
   public int getPriority() {
     return PRIORITY;
@@ -488,7 +492,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     WebSocketChannel webSocketChannel =
         exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
     AuthContext authContext = exchange.getIn().getHeader(AUTH_CONTEXT, AuthContext.class);
-    String realm = exchange.getIn().getHeader(REALM_PARAM_NAME, String.class);
+    String realm = getRealm(exchange);
 
     if (webSocketChannel != null) {
       if (authContext == null) {

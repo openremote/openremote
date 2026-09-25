@@ -36,6 +36,7 @@ public enum ClientRole {
   READ_ALARMS(Constants.READ_ALARMS_ROLE, "Read alarms"),
   READ_NOTIFICATIONS(Constants.READ_NOTIFICATIONS_ROLE, "Read notifications"),
   READ_SERVICES(Constants.READ_SERVICES_ROLE, "View services"),
+  READ_TUNNELS(Constants.READ_TUNNELS_ROLE, "Read gateway tunnels"),
   WRITE_SERVICES(Constants.WRITE_SERVICES_ROLE, "Write service data"),
 
   WRITE_USER(Constants.WRITE_USER_ROLE, "Write data of the authenticated user"),
@@ -47,6 +48,7 @@ public enum ClientRole {
   WRITE_INSIGHTS(Constants.WRITE_INSIGHTS_ROLE, "Write dashboard data"),
   WRITE_ALARMS(Constants.WRITE_ALARMS_ROLE, "Write alarm data"),
   WRITE_NOTIFICATIONS(Constants.WRITE_NOTIFICATIONS_ROLE, "Write notification data"),
+  WRITE_TUNNELS(Constants.WRITE_TUNNELS_ROLE, "Open and close gateway tunnels"),
 
   READ(
       "read",
@@ -61,7 +63,8 @@ public enum ClientRole {
         READ_INSIGHTS,
         READ_ALARMS,
         READ_NOTIFICATIONS,
-        READ_SERVICES
+        READ_SERVICES,
+        READ_TUNNELS
       }),
 
   WRITE(
@@ -78,6 +81,7 @@ public enum ClientRole {
         READ_ALARMS,
         READ_NOTIFICATIONS,
         READ_SERVICES,
+        READ_TUNNELS,
         WRITE_USER,
         WRITE_ADMIN,
         WRITE_LOGS,
@@ -87,7 +91,8 @@ public enum ClientRole {
         WRITE_INSIGHTS,
         WRITE_ALARMS,
         WRITE_NOTIFICATIONS,
-        WRITE_SERVICES
+        WRITE_SERVICES,
+        WRITE_TUNNELS
       });
 
   // Only individual roles, not composites
