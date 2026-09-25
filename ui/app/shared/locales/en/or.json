@@ -435,7 +435,8 @@
     "limit_sharing_rate": "Limit the rate of how often attribute value updates are shared",
     "limit_sharing_rate_suffix": "minutes interval",
     "assetSyncRulesEnable": "Customize asset synchronization",
-    "assetSyncRulesInput": "Synchronization config"
+    "assetSyncRulesInput": "Synchronization config",
+    "clientSecretHelper": "Must be exactly 36 characters"
   },
   "gatewayTunnel": "Gateway tunnels",
   "gatewayTunnels": {
