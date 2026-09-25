@@ -681,6 +681,10 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 
     then: "the cross-realm reset should be rejected"
     thrown(NotAllowedException)
+
+    cleanup: "the fixture is given the live secret, since later specs authenticate as this service user"
+    keycloakTestSetup.serviceUser.secret =
+            adminUserResource.resetSecret(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.serviceUser.id)
   }
 
   def "Update user client roles requires realm administration rights"() {
