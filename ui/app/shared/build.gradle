@@ -8,7 +8,11 @@ plugins {
   id 'signing'
 }
 
-sourceSets.main.resources.srcDirs += layout.buildDirectory.dir('classes/main')
+sourceSets {
+  main {
+    output.dir(layout.buildDirectory.dir("classes/main"), builtBy: "generateSources")
+  }
+}
 
 base {
   archivesName = "openremote-${project.name}"
@@ -196,7 +200,5 @@ tasks.register('processTranslations', JavaCompile) {
 }
 
 jar.dependsOn(generateSources)
-processResources.dependsOn(generateSources)
-sourcesJar.dependsOn(generateSources)
 
 gradle.startParameter.excludedTaskNames += ["${project.path}:test".toString()]
