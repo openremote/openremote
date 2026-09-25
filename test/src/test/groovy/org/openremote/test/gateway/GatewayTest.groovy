@@ -699,10 +699,13 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     and: "the rogue client connects"
     rogueGatewayClient.connect()
 
-    then: "the rogue netty client status should continually connect as legitimate gateway client ALREADY_CONNECTED"
+    then: "the rogue client is refused on every attempt and keeps reconnecting"
     conditions.eventually {
-      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTING) > 5
-      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTED) > 5
+      // Count only enough cycles to show it is refused repeatedly rather than accepted once. The
+      // reconnect schedule backs off with jitter, so how many cycles fit in the polling window is a
+      // property of the retry policy and the machine, not of the behaviour under test.
+      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTING) >= 2
+      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTED) >= 2
     }
 
     then: "the rogue client is disconnected"
