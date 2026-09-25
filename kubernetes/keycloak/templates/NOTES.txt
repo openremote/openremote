@@ -1,2 +1,6 @@
 OpenRemote Keycloak {{ .Chart.AppVersion }}
+{{- if or (hasPrefix "https://" .Values.or.hostname) (hasPrefix "http://" .Values.or.hostname) }}
+Visit {{ .Values.or.hostname }}
+{{- else }}
 Visit https://{{ .Values.or.hostname }}/auth
+{{- end }}

@@ -5,6 +5,10 @@
 # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 replicaCount: 1
 
+# Optional Deployment strategy. Use type: Recreate when the cluster has no
+# spare capacity for overlapping old and new Pods; upgrades interrupt service.
+strategy: {}
+
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
   repository: openremote/manager
@@ -182,6 +186,10 @@ or:
   # The public HOSTNAME and SSL PORT of this manager
   hostname: "localhost"
   port: "-1"
+
+  # Additional allowed CORS origins, comma-separated. Must be set to the exact
+  # public HTTPS origin, including any non-default port, for browser writes.
+  allowedOrigins: ""
 
   # It is important that all services have the same timezone and are time synchronized.
   # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts
