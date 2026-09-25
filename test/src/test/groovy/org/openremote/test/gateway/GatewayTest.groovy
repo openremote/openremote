@@ -699,10 +699,13 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     and: "the rogue client connects"
     rogueGatewayClient.connect()
 
-    then: "the rogue netty client status should continually connect as legitimate gateway client ALREADY_CONNECTED"
+    then: "the rogue client is refused on every attempt and keeps reconnecting"
     conditions.eventually {
-      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTING) > 5
-      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTED) > 5
+      // Count only enough cycles to show it is refused repeatedly rather than accepted once. The
+      // reconnect schedule backs off with jitter, so how many cycles fit in the polling window is a
+      // property of the retry policy and the machine, not of the behaviour under test.
+      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTING) >= 2
+      assert rogueConnectionStatuses.count(ConnectionStatus.CONNECTED) >= 2
     }
 
     then: "the rogue client is disconnected"
@@ -1533,14 +1536,29 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     given: "some polling conditions and services from the container"
     def gatewayService = container.getService(GatewayService.class)
     def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+    def identityProvider = container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider
 
-    and: "an authenticated user in the building realm"
+    and: "a user in the building realm holding the tunnel read role the endpoint requires"
+    def tunnelReader = identityProvider.createUpdateUser(
+            managerTestSetup.realmBuildingName,
+            new User().setUsername("gatewayrealmtunnelreader").setEnabled(true),
+            "gatewayrealmtunnelreader",
+            true
+            )
+    identityProvider.updateUserClientRoles(
+            managerTestSetup.realmBuildingName,
+            tunnelReader.id,
+            KEYCLOAK_CLIENT_ID,
+            READ_TUNNELS_ROLE
+            )
+
+    and: "an authenticated session for that user"
     def accessToken = authenticate(
             container,
             managerTestSetup.realmBuildingName,
             KEYCLOAK_CLIENT_ID,
-            "testuser2",
-            "testuser2"
+            "gatewayrealmtunnelreader",
+            "gatewayrealmtunnelreader"
             )
 
     and: "the gateway service resource"
@@ -1557,9 +1575,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     then: "the building user should not be able to see any tunnels for the fake gateway ID in the smart city realm"
     assert activeTunnels.length == 0
 
-    cleanup: "the fake tunnel is removed"
+    cleanup: "the fake tunnel and the user are removed"
     if (gatewayService != null) {
       gatewayService.@tunnelInfos.remove("fake-tunnel-id")
+    }
+    if (tunnelReader != null) {
+      identityProvider.deleteUser(managerTestSetup.realmBuildingName, tunnelReader.id)
     }
   }
 
