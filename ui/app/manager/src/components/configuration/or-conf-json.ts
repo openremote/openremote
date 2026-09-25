@@ -20,11 +20,11 @@ import { html } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-components/or-ace-editor";
-import { type OrVaadinDialog, showDialog} from "@openremote/or-vaadin-components/or-vaadin-dialog";
+import { type OrVaadinDialog, showDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import { createRef, type Ref, ref } from "lit/directives/ref.js";
 import type { OrAceEditor, OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
 import type { ManagerAppConfig, MapConfig } from "@openremote/model";
-import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import type { OrVaadinButton } from "@openremote/or-vaadin-components/or-vaadin-button";
 
 @customElement("or-conf-json")
 export class OrConfJson extends OrElement {
@@ -62,26 +62,24 @@ export class OrConfJson extends OrElement {
 
     const onCancel = () => {
       dialog.close();
-    }
+    };
     const onOk = () => {
-      if(_saveConfig()) {
+      if (_saveConfig()) {
         dialog.close();
       }
-    }
+    };
 
     dialog = showDialog(
       this.shadowRoot!,
       html`
         <or-vaadin-dialog width="768px" no-close-on-esc no-close-on-outside-click>
-          <h2 slot="header-content">
-            ${this.heading}
-          </h2>
+          <h2 slot="header-content">${this.heading}</h2>
           <or-ace-editor
             ${ref(this._aceEditor)}
             .value="${this.config}"
             style="aspect-ratio: 1/1;"
             @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
-              if(this._updateButton.value) {
+              if (this._updateButton.value) {
                 this._updateButton.value.disabled = !ev.detail.valid;
                 dialog.requestUpdate();
               }
