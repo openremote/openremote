@@ -20,6 +20,7 @@ package org.openremote.model.asset;
 
 import static jakarta.persistence.DiscriminatorType.STRING;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonParser;
@@ -470,6 +471,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     return deletePending;
   }
 
+  @JsonIgnore
   public T setDeletePending(boolean deletePending) {
     this.deletePending = deletePending;
     return (T) this;

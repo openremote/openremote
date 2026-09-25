@@ -74,7 +74,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-    )
+            )
     def realmResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RealmResource.class)
 
     expect: "the rules engines to be ready"
@@ -313,16 +313,16 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
     then: "the delete is rejected with a conflict"
     WebApplicationException ex = thrown()
     try {
-        assert ex.response.status == CONFLICT.statusCode
+      assert ex.response.status == CONFLICT.statusCode
     } finally {
-        ex.response.close()
+      ex.response.close()
     }
 
     when: "the realm assets are deleted and the realm delete is retried"
     def buildingAssetIds = assetStorageService.findAll(new AssetQuery()
-        .select(new AssetQuery.Select().excludeAttributes())
-        .realm(new RealmPredicate(realmBuilding.getName())))
-        .collect { it.id }
+            .select(new AssetQuery.Select().excludeAttributes())
+            .realm(new RealmPredicate(realmBuilding.getName())))
+            .collect { it.id }
 
     assert assetStorageService.deleteUntilFinished(buildingAssetIds).get(10, TimeUnit.SECONDS)
     realmResource.delete(null, realmBuilding.getName())

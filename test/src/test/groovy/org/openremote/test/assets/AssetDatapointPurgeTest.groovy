@@ -73,29 +73,29 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
 
     def failedDeleteAssetIds = new CopyOnWriteArrayList<String>()
     assetStorageService.deletePendingAsset(_) >> { String assetId ->
-        if (failedDeleteAssetIds.contains(assetId)) {
-            assetStorageService.failedAssetDeleteIds.add(assetId)
-            return
-        }
-        callRealMethod()
+      if (failedDeleteAssetIds.contains(assetId)) {
+        assetStorageService.failedAssetDeleteIds.add(assetId)
+        return
+      }
+      callRealMethod()
     }
 
     List<PersistenceEvent<Asset<?>>> assetPersistenceEvents = new CopyOnWriteArrayList<>()
     def assetPersistenceRouteId = "Test-AssetPersistenceEvents-${System.nanoTime()}"
     messageBrokerService.context.addRoutes(new RouteBuilder() {
-        @Override
-        void configure() {
-            from(PERSISTENCE_TOPIC)
-                    .routeId(assetPersistenceRouteId)
-                    .filter(isPersistenceEventForEntityType(Asset.class))
-                    .process { exchange ->
-                        def event = exchange.in.getBody(PersistenceEvent.class) as PersistenceEvent<Asset<?>>
-                        if (event.cause in [PersistenceEvent.Cause.DELETE, PersistenceEvent.Cause.DELETE_FINISHED]) {
+              @Override
+              void configure() {
+                from(PERSISTENCE_TOPIC)
+                        .routeId(assetPersistenceRouteId)
+                        .filter(isPersistenceEventForEntityType(Asset.class))
+                        .process { exchange ->
+                          def event = exchange.in.getBody(PersistenceEvent.class) as PersistenceEvent<Asset<?>>
+                          if (event.cause in [PersistenceEvent.Cause.DELETE, PersistenceEvent.Cause.DELETE_FINISHED]) {
                             assetPersistenceEvents.add(event)
+                          }
                         }
-                    }
-        }
-    })
+              }
+            })
 
     and: "the schema name is retrieved"
     def schemaName = persistenceService.persistenceUnitProperties.getProperty(AvailableSettings.DEFAULT_SCHEMA)
@@ -260,14 +260,16 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
       assert countDatapoints(persistenceService, segmentDeleteAssetIds, attributeNames) == 0
 
       def deleteIds = assetPersistenceEvents
-        .findAll { it.cause == PersistenceEvent.Cause.DELETE }
-        .collect { it.entity.id }
+              .findAll { it.cause == PersistenceEvent.Cause.DELETE }
+              .collect { it.entity.id }
       def deleteFinishedIds = assetPersistenceEvents
-        .findAll { it.cause == PersistenceEvent.Cause.DELETE_FINISHED }
-        .collect { it.entity.id }
+              .findAll { it.cause == PersistenceEvent.Cause.DELETE_FINISHED }
+              .collect { it.entity.id }
 
       assert segmentDeleteAssetIds.every { deleteIds.contains(it) }
-      assert (segmentDeleteAssetIds - failedSegmentDeleteAssetId).every { deleteFinishedIds.contains(it) }
+      assert (segmentDeleteAssetIds - failedSegmentDeleteAssetId).every {
+        deleteFinishedIds.contains(it)
+      }
       assert !deleteFinishedIds.contains(failedSegmentDeleteAssetId)
     }
 
@@ -276,8 +278,8 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
 
     when: "an asset is merged with the same ID as the failed pending delete asset"
     assetStorageService.merge(new ThingAsset("Duplicate Pending Delete Asset")
-      .setId(failedSegmentDeleteAssetId)
-      .setRealm(keycloakTestSetup.realmMaster.name))
+            .setId(failedSegmentDeleteAssetId)
+            .setRealm(keycloakTestSetup.realmMaster.name))
 
     then: "the merge should be rejected while the asset is pending deletion"
     thrown(IllegalStateException)
@@ -374,25 +376,25 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
 
     cleanup: "restore settings and remove the temporary route"
     if (messageBrokerService != null && assetPersistenceRouteId != null) {
-        try {
-            messageBrokerService.context.routeController.stopRoute(assetPersistenceRouteId)
-        } catch (Exception ignored) {
-            // Route may not have been added if setup failed early.
-        }
-        try {
-            messageBrokerService.context.removeRoute(assetPersistenceRouteId)
-        } catch (Exception ignored) {
-            // Route may already be gone during container shutdown.
-        }
+      try {
+        messageBrokerService.context.routeController.stopRoute(assetPersistenceRouteId)
+      } catch (Exception ignored) {
+        // Route may not have been added if setup failed early.
+      }
+      try {
+        messageBrokerService.context.removeRoute(assetPersistenceRouteId)
+      } catch (Exception ignored) {
+        // Route may already be gone during container shutdown.
+      }
     }
     if (assetStorageService != null && originalAssetDeleteDatapointBatchThreshold != null) {
-        assetStorageService.assetDeleteDatapointBatchThreshold = originalAssetDeleteDatapointBatchThreshold
+      assetStorageService.assetDeleteDatapointBatchThreshold = originalAssetDeleteDatapointBatchThreshold
     }
     if (assetStorageService != null && originalAssetDeleteDatapointBatchWeeks != null) {
-        assetStorageService.assetDeleteDatapointBatchWeeks = originalAssetDeleteDatapointBatchWeeks
+      assetStorageService.assetDeleteDatapointBatchWeeks = originalAssetDeleteDatapointBatchWeeks
     }
     if (container != null && originalAssetStorageService != null) {
-        container.@services.put(AssetStorageService.class, originalAssetStorageService)
+      container.@services.put(AssetStorageService.class, originalAssetStorageService)
     }
     if (persistenceService != null && originalMaxTuplesDecompressedPerDmlTransaction != null) {
       setMaxTuplesDecompressedPerDmlTransaction(persistenceService, originalMaxTuplesDecompressedPerDmlTransaction)

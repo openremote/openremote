@@ -1591,7 +1591,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         });
   }
 
-  /** Returns the realm for each asset ID that exists. */
+  /** Returns the realm for each asset ID that exists and not pending deletion. */
   public Map<String, String> getAssetRealms(Collection<String> assetIds) {
     if (assetIds == null || assetIds.isEmpty()) {
       return Map.of();
@@ -1603,7 +1603,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                   .createQuery(
                       """
                     select a.id, a.realm from Asset a
-                    where a.id in :assetIds
+                    where a.id in :assetIds and a.deletePending is false
                     """,
                       Object[].class)
                   .setParameter("assetIds", assetIds)

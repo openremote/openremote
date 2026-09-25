@@ -264,20 +264,28 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
   @Override
   public boolean isDeletePending(RequestParams requestParams, String assetId) {
     try {
-      Asset<?> asset =
+      Asset<?> asset;
+
+      // Check restricted
+      if (isRestrictedUser()) {
+        if (!assetStorageService.isUserAsset(getUserId(), assetId)) {
+          LOG.fine(
+              "Forbidden access for restricted user: username="
+                  + getUsername()
+                  + ", assetID="
+                  + assetId);
+          throw new WebApplicationException(FORBIDDEN);
+        }
+      }
+      asset =
           assetStorageService.find(
               new AssetQuery()
                   .ids(assetId)
+                  .realm(new RealmPredicate(getRequestRealmName()))
                   .includeDeletePending(true)
                   .select(new AssetQuery.Select().excludeAttributes()));
 
-      if (asset == null) {
-        return false;
-      }
-
-      if (!isSuperUser() && !asset.getRealm().equals(getAuthenticatedRealmName())) {
-        return false;
-      }
+      if (asset == null) throw new WebApplicationException(NOT_FOUND);
 
       if (!isRealmActiveAndAccessible(asset.getRealm())) {
         LOG.fine(
@@ -285,10 +293,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 + asset.getRealm()
                 + "' nonexistent, inactive or inaccessible) for user: "
                 + getUsername());
-        return false;
+        throw new WebApplicationException(FORBIDDEN);
       }
 
       return asset.isDeletePending();
+
     } catch (IllegalStateException ex) {
       throw new WebApplicationException(ex, BAD_REQUEST);
     }

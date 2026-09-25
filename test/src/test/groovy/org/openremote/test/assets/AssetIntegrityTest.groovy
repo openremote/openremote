@@ -517,11 +517,11 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     and: "physical deletion is held back for selected assets"
     def failedDeleteAssetIds = Collections.synchronizedSet(new HashSet<String>())
     assetStorageService.deletePendingAsset(_) >> { String assetId ->
-        if (failedDeleteAssetIds.contains(assetId)) {
-            assetStorageService.failedAssetDeleteIds.add(assetId)
-            return false
-        }
-        callRealMethod()
+      if (failedDeleteAssetIds.contains(assetId)) {
+        assetStorageService.failedAssetDeleteIds.add(assetId)
+        return false
+      }
+      callRealMethod()
     }
 
     and: "there is a parent with a child"
@@ -538,7 +538,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     then: "the child is pending deletion"
     childAccepted
     conditions.eventually {
-        assert assetStorageService.isDeletePending(childAsset.id)
+      assert assetStorageService.isDeletePending(childAsset.id)
     }
 
     when: "the parent is deleted while the child is still pending deletion"
@@ -548,17 +548,17 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     then: "the parent is accepted for deletion"
     parentAccepted
     conditions.eventually {
-        assert assetStorageService.isDeletePending(parentAsset.id)
+      assert assetStorageService.isDeletePending(parentAsset.id)
     }
-    }
+  }
 
-    def "Test writing attributes with timestamps"() {
-        given: "the server container is started"
-        def container = startContainer(defaultConfig(), defaultServices())
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
-        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
-        def clientEventService = container.getService(ClientEventService.class)
-        TimerService timerService = container.getService(TimerService.class)
+  def "Test writing attributes with timestamps"() {
+    given: "the server container is started"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+    def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def clientEventService = container.getService(ClientEventService.class)
+    TimerService timerService = container.getService(TimerService.class)
     AssetDatapointService datapointService = container.getService(AssetDatapointService.class)
 
     and: "an authenticated admin user"
