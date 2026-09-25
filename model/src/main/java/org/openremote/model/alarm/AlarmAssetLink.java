@@ -104,7 +104,7 @@ public class AlarmAssetLink {
   protected String assetName;
 
   @Formula(
-      "(select pa.NAME from ASSET a left outer join ASSET pa on a.PARENT_ID = pa.ID where a.ID = ASSET_ID)")
+      "(select pa.NAME from ASSET a left outer join ASSET pa on a.PARENT_ID = pa.ID and pa.DELETE_PENDING is false where a.ID = ASSET_ID)")
   protected String parentAssetName;
 
   protected AlarmAssetLink() {}

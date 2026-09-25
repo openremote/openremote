@@ -566,6 +566,26 @@ export class Manager {
   }
 
   /**
+   * Deletes all assets in a realm
+   * @param realm The realm
+   * @param config The axios request config
+   */
+  async deleteAssetsInRealm(realm: string, config?: AxiosRequestConfig<any>) {
+    try {
+      const assetResponse = await rest.api.AssetResource.queryAssets(
+        { select: { attributes: [] } },
+        { params: { realm } }
+      );
+      expect(assetResponse.status).toBe(204);
+      const assets = assetResponse.data;
+      const response = await rest.api.AssetResource.delete({ assetId: assets.map(({ id }) => id!) }, config);
+      expect(response.status).toBe(204);
+    } catch (e) {
+      warnOnHttpError(e, "Could not delete asset(s) in realm: ", realm);
+    }
+  }
+
+  /**
    * Delete role
    *
    * Expects a realm to be configured
