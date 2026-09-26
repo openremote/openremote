@@ -256,17 +256,12 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
           target -> {
             Notification.TargetType targetType = target.getType();
             String targetId = target.getId();
+            // Do not require an FCM token in the query; consoles without a token must still be
+            // mapped so sendMessage can record "No FCM token found" (see direct ASSET targets).
             AssetQuery assetQuery =
                 new AssetQuery()
                     .select(new AssetQuery.Select().excludeAttributes())
-                    .types(ConsoleAsset.class)
-                    .attributes(
-                        new AttributePredicate(
-                            ConsoleAsset.CONSOLE_PROVIDERS,
-                            new ValueEmptyPredicate().negate(true),
-                            false,
-                            new NameValuePredicate.Path(
-                                PushNotificationMessage.TYPE, "data", "token")));
+                    .types(ConsoleAsset.class);
 
             switch (targetType) {
               case REALM ->
