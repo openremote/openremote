@@ -978,7 +978,11 @@ export class PageAlarms extends Page<AppStateKeyed> {
     const dialog = showDialog(
       this.shadowRoot!,
       html`
-        <or-vaadin-dialog no-close-on-esc no-close-on-outside-click>
+        <or-vaadin-dialog
+          width="min(640px, calc(100vw - 32px))"
+          no-close-on-esc
+          no-close-on-outside-click
+        >
           <h2 slot="header-content"><or-translate value="linkedAssets"></or-translate></h2>
           <or-asset-tree
             id="chart-asset-tree"
