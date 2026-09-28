@@ -274,31 +274,10 @@ else
 fi
 echo "Private IP \$PRIVATE_IP"
 
-# Start the stack and wait up to five minutes for readiness
-echo "Starting the stack and waiting for services to be ready"
-if ! docker-compose -f temp/docker-compose.yml -p or up -d --wait --wait-timeout 300; then
-  echo "Deployment failed: services could not start or become ready"
-
-  echo "Deployment container states:"
-  docker-compose -f temp/docker-compose.yml -p or ps -a
-
-  echo "Container health diagnostics:"
-  for CONTAINER_ID in \$(docker-compose -f temp/docker-compose.yml -p or ps -a -q); do
-    docker inspect --format '
-{{.Name}}: state={{.State.Status}}
-{{if .State.Error}}Error: {{.State.Error}}{{end}}
-{{if .State.Health}}Health: {{.State.Health.Status}}
-{{if ne .State.Health.Status "healthy"}}Recent health checks:
-{{range .State.Health.Log}}  {{.End}} exit={{.ExitCode}}
-{{.Output}}
-{{end}}{{end}}{{else}}No health check configured
-{{end}}' "\$CONTAINER_ID"
-  done
-
+# Start the stack, including any one-shot deployment service, and wait for readiness
+if ! bash temp/host_init/start.sh temp/docker-compose.yml or; then
   exit 1
 fi
-
-echo "All deployment services are ready"
 
 # Run host post init
 hostPostInitCmd=
@@ -418,31 +397,10 @@ fi
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
 
-# Start the stack and wait up to five minutes for readiness
-echo "Starting the stack and waiting for services to be ready"
-if ! docker-compose -f temp/docker-compose.yml -p or up -d --wait --wait-timeout 300; then
-  echo "Deployment failed: services could not start or become ready"
-
-  echo "Deployment container states:"
-  docker-compose -f temp/docker-compose.yml -p or ps -a
-
-  echo "Container health diagnostics:"
-  for CONTAINER_ID in \$(docker-compose -f temp/docker-compose.yml -p or ps -a -q); do
-    docker inspect --format '
-{{.Name}}: state={{.State.Status}}
-{{if .State.Error}}Error: {{.State.Error}}{{end}}
-{{if .State.Health}}Health: {{.State.Health.Status}}
-{{if ne .State.Health.Status "healthy"}}Recent health checks:
-{{range .State.Health.Log}}  {{.End}} exit={{.ExitCode}}
-{{.Output}}
-{{end}}{{end}}{{else}}No health check configured
-{{end}}' "\$CONTAINER_ID"
-  done
-
+# Start the stack, including any one-shot deployment service, and wait for readiness
+if ! bash temp/host_init/start.sh temp/docker-compose.yml or; then
   exit 1
 fi
-
-echo "All deployment services are ready"
 
 # Run host post init
 hostPostInitCmd=
