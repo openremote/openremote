@@ -1,4 +1,5 @@
-volumeSize: "16Gi"
+persistence:
+  size: "256Gi"
 
 resources:
   limits:
