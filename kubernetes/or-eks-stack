@@ -12,7 +12,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/hostname-reservations"
 
 DEFAULT_AWS_REGION="eu-west-1"
-DEFAULT_AWS_PROFILE="or"
 DEFAULT_TIMEOUT="20m"
 EXTERNAL_DNS_RELEASE_NAME="openremote-external-dns"
 EXTERNAL_DNS_SERVICE_ACCOUNT_NAME="external-dns"
@@ -31,7 +30,9 @@ COMMAND=""
 STACK_NAME="${OR_EKS_STACK_NAME:-}"
 CLUSTER_NAME="${OR_EKS_STACK_CLUSTER:-}"
 AWS_REGION_NAME="${OR_EKS_STACK_AWS_REGION:-${AWS_REGION:-$DEFAULT_AWS_REGION}}"
-AWS_PROFILE_NAME="${OR_EKS_STACK_AWS_PROFILE:-${AWS_PROFILE:-$DEFAULT_AWS_PROFILE}}"
+# Only --profile selects an explicit profile; otherwise leave credential
+# resolution to AWS, including its standard environment settings.
+AWS_PROFILE_NAME=""
 KUBE_CONTEXT="${OR_EKS_STACK_KUBE_CONTEXT:-}"
 EXPOSURE="${OR_EKS_STACK_EXPOSURE:-haproxy}"
 HOSTNAME_VALUE="${OR_EKS_STACK_HOSTNAME:-}"
@@ -81,8 +82,9 @@ Options:
   --cluster <name>      Existing EKS cluster name. Env: OR_EKS_STACK_CLUSTER.
   --region <region>     AWS region. Env: OR_EKS_STACK_AWS_REGION.
                         Default: eu-west-1.
-  --profile <name>      AWS CLI profile. Use an empty value for environment
-                        credentials. Env: OR_EKS_STACK_AWS_PROFILE. Default: or.
+  --profile <name>      Explicit AWS profile. Default: no profile argument;
+                        use the normal AWS credential chain. An empty value
+                        also leaves profile selection to AWS.
   --kube-context <c>    Kubernetes context. Defaults to <cluster>@<region>.
                         Env: OR_EKS_STACK_KUBE_CONTEXT.
   --exposure <mode>     Public exposure: haproxy or ingress. Env:
@@ -2005,8 +2007,6 @@ apply_stack() {
     "$0" "$STACK_NAME" "$CLUSTER_NAME" "$AWS_REGION_NAME"
   if [ -n "$AWS_PROFILE_NAME" ]; then
     printf ' --profile %q' "$AWS_PROFILE_NAME"
-  else
-    printf " --profile ''"
   fi
   printf '\n'
 }

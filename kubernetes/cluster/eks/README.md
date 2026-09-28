@@ -20,13 +20,12 @@ infrastructure management moves from `eksctl` to CloudFormation.
 
 ## Configuration
 
-The cluster name is deliberately required. Other settings have defaults that
-match the existing EKS scripts.
+The cluster name is deliberately required. The default AWS region is
+`eu-west-1`; no named AWS profile is selected by the CLI.
 
 ```bash
 export OR_EKS_CLUSTER_NAME=openremote-test
 export OR_EKS_AWS_REGION=eu-west-1
-export OR_EKS_AWS_PROFILE=or
 ```
 
 Optional settings are:
@@ -62,8 +61,21 @@ Changing it after records exist abandons the old TXT ownership records.
 Command-line options override environment variables. Run
 `kubernetes/or-eks-cluster --help` for the complete command reference.
 
-The script does not write AWS credentials or profiles. Configure the selected
-AWS profile before invoking it.
+The script does not write AWS credentials or profiles. Both EKS CLIs omit the
+AWS/eksctl `--profile` argument by default, allowing the normal credential chain
+to resolve credentials. Exported access keys and session tokens therefore work
+without a named profile. Standard AWS environment settings remain inherited;
+in particular, unset `AWS_PROFILE` and `AWS_DEFAULT_PROFILE` if you do not want
+environment-based profile selection. Do not export `AWS_PROFILE=''`, which
+AWS CLI can interpret as an empty profile name.
+
+To select a named profile explicitly, pass `--profile <name>` to each EKS CLI
+invocation. `--profile ''` is still accepted and has the same behavior as omitting
+the option; it does not clear inherited AWS environment variables. The old
+`OR_EKS_AWS_PROFILE` and `OR_EKS_STACK_AWS_PROFILE` overrides are no longer used.
+For existing contexts created with the old `or` default, run
+`or-eks-cluster kubeconfig --name <cluster>` with your intended credentials to
+refresh the stored authentication configuration.
 
 ## Lifecycle
 
@@ -72,8 +84,7 @@ Create a cluster and a stable kubeconfig context:
 ```bash
 kubernetes/or-eks-cluster create \
   --name openremote-test \
-  --region eu-west-1 \
-  --profile or
+  --region eu-west-1
 ```
 
 Inspect it:

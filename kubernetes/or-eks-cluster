@@ -12,7 +12,6 @@ DEFAULT_CONFIG_FILE="$KUBERNETES_DIR/cluster.yaml"
 DEFAULT_STORAGE_CLASS_FILE="$KUBERNETES_DIR/cluster/eks/storage-class.yaml"
 DEFAULT_INGRESS_CLASS_FILE="$KUBERNETES_DIR/cluster/eks/ingress-class.yaml"
 DEFAULT_AWS_REGION="eu-west-1"
-DEFAULT_AWS_PROFILE="or"
 DEFAULT_LOAD_BALANCER_CONTROLLER_CHART_VERSION="1.14.0"
 DEFAULT_EXTERNAL_DNS_CHART_VERSION="1.21.1"
 DEFAULT_EXTERNAL_DNS_IMAGE_TAG="v0.22.0"
@@ -24,7 +23,9 @@ SHARED_CERTIFICATE_ARN_ANNOTATION="openremote.io/shared-certificate-arn"
 COMMAND=""
 CLUSTER_NAME="${OR_EKS_CLUSTER_NAME:-}"
 AWS_REGION_NAME="${OR_EKS_AWS_REGION:-${AWS_REGION:-$DEFAULT_AWS_REGION}}"
-AWS_PROFILE_NAME="${OR_EKS_AWS_PROFILE:-${AWS_PROFILE:-$DEFAULT_AWS_PROFILE}}"
+# Only --profile selects an explicit profile; otherwise leave credential
+# resolution to AWS and eksctl, including their standard environment settings.
+AWS_PROFILE_NAME=""
 CONFIG_FILE="${OR_EKS_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
 KUBE_CONTEXT="${OR_EKS_KUBE_CONTEXT:-}"
 LOAD_BALANCER_CONTROLLER_CHART_VERSION="${OR_EKS_LOAD_BALANCER_CONTROLLER_CHART_VERSION:-$DEFAULT_LOAD_BALANCER_CONTROLLER_CHART_VERSION}"
@@ -67,7 +68,9 @@ Commands:
 Options:
   --name <name>       EKS cluster name. Env: OR_EKS_CLUSTER_NAME.
   --region <region>   AWS region. Env: OR_EKS_AWS_REGION. Default: eu-west-1.
-  --profile <name>    AWS CLI profile. Env: OR_EKS_AWS_PROFILE. Default: or.
+  --profile <name>    Explicit AWS profile. Default: no profile argument;
+                     use the normal AWS credential chain. An empty value
+                     also leaves profile selection to AWS.
   --config <path>     eksctl ClusterConfig template. Env: OR_EKS_CONFIG_FILE.
   --kube-context <c>  Stable kubeconfig context. Defaults to <name>@<region>.
   --load-balancer-controller-version <version>

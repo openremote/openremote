@@ -22,6 +22,15 @@ ALB. Both delegate the Kubernetes installation to `or-stack`, wait for DNS to
 point at the current load balancer, and verify the trusted Manager HTTPS
 endpoint.
 
+Both EKS CLIs use the normal AWS credential chain by default and do not pass a
+profile argument to AWS or eksctl. For exported credentials, leave `AWS_PROFILE`
+and `AWS_DEFAULT_PROFILE` unset and omit `--profile`. Select a named profile
+explicitly with `--profile <name>`. Standard AWS environment configuration is
+still inherited; an empty `AWS_PROFILE` is not the same as an unset variable.
+The CLI-specific `OR_EKS_AWS_PROFILE` and `OR_EKS_STACK_AWS_PROFILE` environment
+overrides are no longer used. See [credential configuration](cluster/eks/README.md#configuration)
+for details, including refreshing existing kubeconfig contexts.
+
 The `eks-setup*.sh` and `eks-cleanup*.sh` scripts below are the legacy combined
 cluster-and-stack workflow. They will be split further as part of multi-stack
 support and must not be used to remove one stack from a shared cluster.
@@ -88,7 +97,6 @@ one internet-facing NLB per stack:
   --name stack-a \
   --cluster <cluster-name> \
   --region eu-west-1 \
-  --profile <aws-profile> \
   --hostname stack-a.example.com
 ```
 
@@ -214,7 +222,6 @@ user-owned certificate remains available:
   --name stack-a \
   --cluster <cluster-name> \
   --region eu-west-1 \
-  --profile <aws-profile> \
   --exposure ingress \
   --hostname stack-a.example.com \
   --certificate-mode existing \
@@ -236,7 +243,6 @@ recorded once as cluster configuration:
 ./or-eks-cluster apply \
   --name <cluster-name> \
   --region eu-west-1 \
-  --profile <aws-profile> \
   --shared-certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example
 ```
 
@@ -252,7 +258,6 @@ Stacks then select it without repeating the ARN:
   --name stack-a \
   --cluster <cluster-name> \
   --region eu-west-1 \
-  --profile <aws-profile> \
   --exposure ingress \
   --hostname stack-a.example.com \
   --certificate-mode shared
@@ -272,7 +277,6 @@ back to a stack-owned managed certificate. Select it explicitly with:
   --name stack-a \
   --cluster <cluster-name> \
   --region eu-west-1 \
-  --profile <aws-profile> \
   --exposure ingress \
   --hostname stack-a.example.com \
   --certificate-mode managed
@@ -316,7 +320,7 @@ regions of the same AWS account. This exclusivity is a deployment requirement;
 the script's ownership checks do not establish it. Destroying the stack removes
 both its certificate and validation records.
 
-The AWS identity selected by `--profile` needs `acm:RequestCertificate`,
+The resolved AWS identity needs `acm:RequestCertificate`,
 `acm:ListCertificates`, `acm:DescribeCertificate`, and
 `acm:ListTagsForCertificate` in the EKS account. It also needs
 `acm:DeleteCertificate` when destroying a managed-certificate stack, in
@@ -419,8 +423,7 @@ with:
 ./or-eks-stack status \
   --name stack-a \
   --cluster <cluster-name> \
-  --region eu-west-1 \
-  --profile <aws-profile>
+  --region eu-west-1
 ```
 
 New stacks receive independently generated Manager and PostgreSQL passwords.
@@ -431,8 +434,7 @@ credentials with:
 ./or-eks-stack credentials \
   --name stack-a \
   --cluster <cluster-name> \
-  --region eu-west-1 \
-  --profile <aws-profile>
+  --region eu-west-1
 ```
 
 Remove workloads while retaining their credentials and EBS-backed data with:
@@ -441,8 +443,7 @@ Remove workloads while retaining their credentials and EBS-backed data with:
 ./or-eks-stack uninstall \
   --name stack-a \
   --cluster <cluster-name> \
-  --region eu-west-1 \
-  --profile <aws-profile>
+  --region eu-west-1
 ```
 
 Reapplying the stack with the same target and exposure reuses its retained
@@ -459,7 +460,6 @@ provisioned EBS volumes with:
   --name stack-a \
   --cluster <cluster-name> \
   --region eu-west-1 \
-  --profile <aws-profile> \
   --confirm stack-a
 ```
 
