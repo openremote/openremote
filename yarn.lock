@@ -669,10 +669,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jridgewell/sourcemap-codec@npm:^1.4.14, @jridgewell/sourcemap-codec@npm:^1.5.0, @jridgewell/sourcemap-codec@npm:^1.5.5":
+"@jridgewell/sourcemap-codec@npm:^1.4.14, @jridgewell/sourcemap-codec@npm:^1.5.0":
   version: 1.5.5
   resolution: "@jridgewell/sourcemap-codec@npm:1.5.5"
   checksum: 10c0/f9e538f302b63c0ebc06eecb1dd9918dd4289ed36147a0ddce35d6ea4d7ebbda243cda7b2213b6a5e1d8087a298d5cf630fb2bd39329cdecb82017023f6081a0
+  languageName: node
+  linkType: hard
+
+"@jridgewell/sourcemap-codec@npm:^1.6.0":
+  version: 1.6.0
+  resolution: "@jridgewell/sourcemap-codec@npm:1.6.0"
+  checksum: 10c0/b5be700e45a775f218589c3466c4ffea630582b4988657652da464e5ab8a7d18bf928ee4fd2363fb346ede4bea9c6ff0bae05a538358c4565ece6199531b5f72
   languageName: node
   linkType: hard
 
@@ -770,106 +777,107 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jsonjoy.com/fs-core@npm:4.57.8":
-  version: 4.57.8
-  resolution: "@jsonjoy.com/fs-core@npm:4.57.8"
+"@jsonjoy.com/fs-core@npm:4.78.1":
+  version: 4.78.1
+  resolution: "@jsonjoy.com/fs-core@npm:4.78.1"
   dependencies:
-    "@jsonjoy.com/fs-node-builtins": "npm:4.57.8"
-    "@jsonjoy.com/fs-node-utils": "npm:4.57.8"
+    "@jsonjoy.com/fs-node-builtins": "npm:4.78.1"
+    "@jsonjoy.com/fs-node-utils": "npm:4.78.1"
     thingies: "npm:^2.5.0"
   peerDependencies:
     tslib: 2
-  checksum: 10c0/09196a9662631df6eda00905f10f6581da9b0edd3e4999417d00c5a0f02ddd3bad3e01a2a60eea4290d2ff043c719a4ac2819fef98a914b99e6bd23b77b27141
+  checksum: 10c0/532b34193aef3817c3e61838d5334e2aaf96c1f9a0c0ce0c5050eab26cef46e0d4206ecce4d4b48cdb4f1e00c4a7d06a97e020f4fa9aae9a4a20dd2ab2de0f3d
   languageName: node
   linkType: hard
 
-"@jsonjoy.com/fs-fsa@npm:4.57.8":
-  version: 4.57.8
-  resolution: "@jsonjoy.com/fs-fsa@npm:4.57.8"
+"@jsonjoy.com/fs-fsa@npm:4.78.1":
+  version: 4.78.1
+  resolution: "@jsonjoy.com/fs-fsa@npm:4.78.1"
   dependencies:
-    "@jsonjoy.com/fs-core": "npm:4.57.8"
-    "@jsonjoy.com/fs-node-builtins": "npm:4.57.8"
-    "@jsonjoy.com/fs-node-utils": "npm:4.57.8"
+    "@jsonjoy.com/fs-core": "npm:4.78.1"
+    "@jsonjoy.com/fs-node-builtins": "npm:4.78.1"
+    "@jsonjoy.com/fs-node-utils": "npm:4.78.1"
     thingies: "npm:^2.5.0"
   peerDependencies:
     tslib: 2
-  checksum: 10c0/e23f43ad6afd6fd9ba5bb060adaafc9bad9f87341cf89a5b427f6a28a1a146487426b7c3b8be9f4d44730f9cab487d7d511e973a48e01c2bc54fa1ff4da8e582
+  checksum: 10c0/c311f6291d9c7d49fcf5601ffbdb033d98eb3eb9a46dedba4681100ad4cb008e7861ed096a9f79fc34e62e6581093c5db846d162c67a8e059d578a429fd72385
   languageName: node
   linkType: hard
 
-"@jsonjoy.com/fs-node-builtins@npm:4.57.8":
-  version: 4.57.8
-  resolution: "@jsonjoy.com/fs-node-builtins@npm:4.57.8"
+"@jsonjoy.com/fs-node-builtins@npm:4.78.1":
+  version: 4.78.1
+  resolution: "@jsonjoy.com/fs-node-builtins@npm:4.78.1"
   peerDependencies:
     tslib: 2
-  checksum: 10c0/3c2de9f76b100db10e179daf346a73a4c271cc01c363b082cf6c7a034c53eb918e265520b1df1d4fbec7c1201592edf5a9111408576bf509776700a8f4327642
+  checksum: 10c0/b60961778b1ef63b7c567f294eca4210aef6bc53658ead858253a0b2b6d3f95e0cac728dcd0b17ad3260b35975b0075a279ca9419f1faa6fe65a536f4bb31e4d
   languageName: node
   linkType: hard
 
-"@jsonjoy.com/fs-node-to-fsa@npm:4.57.8":
-  version: 4.57.8
-  resolution: "@jsonjoy.com/fs-node-to-fsa@npm:4.57.8"
+"@jsonjoy.com/fs-node-to-fsa@npm:4.78.1":
+  version: 4.78.1
+  resolution: "@jsonjoy.com/fs-node-to-fsa@npm:4.78.1"
   dependencies:
-    "@jsonjoy.com/fs-fsa": "npm:4.57.8"
-    "@jsonjoy.com/fs-node-builtins": "npm:4.57.8"
-    "@jsonjoy.com/fs-node-utils": "npm:4.57.8"
+    "@jsonjoy.com/fs-fsa": "npm:4.78.1"
+    "@jsonjoy.com/fs-node-builtins": "npm:4.78.1"
+    "@jsonjoy.com/fs-node-utils": "npm:4.78.1"
   peerDependencies:
     tslib: 2
-  checksum: 10c0/d147707ae84b3f774afd108d2a7d6ee867a78b15a94f0ce5da5442056939f44103065f75694c37871440f5fbb15fa65a6c8e238e38365d8de9d4898d42e0edca
+  checksum: 10c0/030123c5b0f920e20c693263db17e5944e6b82630fec58273f3e757e53fa4311eb0fdead372377967605508b761d7bb862b3d30fc5c5120623e8faa93c0f928b
   languageName: node
   linkType: hard
 
-"@jsonjoy.com/fs-node-utils@npm:4.57.8":
-  version: 4.57.8
-  resolution: "@jsonjoy.com/fs-node-utils@npm:4.57.8"
+"@jsonjoy.com/fs-node-utils@npm:4.78.1":
+  version: 4.78.1
+  resolution: "@jsonjoy.com/fs-node-utils@npm:4.78.1"
   dependencies:
-    "@jsonjoy.com/fs-node-builtins": "npm:4.57.8"
+    "@jsonjoy.com/fs-node-builtins": "npm:4.78.1"
+    glob-to-regex.js: "npm:^1.3.1"
   peerDependencies:
     tslib: 2
-  checksum: 10c0/80fee8af463dce150d0093fa8d935c2f7954caff5ed3031d2ec3263fce9077cb915152c6757bebf9a9a3a3eb909c4ee458ace57d2efa671d8ac31d59bc391a50
+  checksum: 10c0/58630eda69067c07e8f3ed6824ae22053534717e494e7aeafc8e45c5ce7115546f04acfaccb319ca14b57477d14c7b3cac2524bbd1d7cb3db6f970c8e0fd84ea
   languageName: node
   linkType: hard
 
-"@jsonjoy.com/fs-node@npm:4.57.8":
-  version: 4.57.8
-  resolution: "@jsonjoy.com/fs-node@npm:4.57.8"
+"@jsonjoy.com/fs-node@npm:4.78.1":
+  version: 4.78.1
+  resolution: "@jsonjoy.com/fs-node@npm:4.78.1"
   dependencies:
-    "@jsonjoy.com/fs-core": "npm:4.57.8"
-    "@jsonjoy.com/fs-node-builtins": "npm:4.57.8"
-    "@jsonjoy.com/fs-node-utils": "npm:4.57.8"
-    "@jsonjoy.com/fs-print": "npm:4.57.8"
-    "@jsonjoy.com/fs-snapshot": "npm:4.57.8"
-    glob-to-regex.js: "npm:^1.0.0"
+    "@jsonjoy.com/fs-core": "npm:4.78.1"
+    "@jsonjoy.com/fs-node-builtins": "npm:4.78.1"
+    "@jsonjoy.com/fs-node-utils": "npm:4.78.1"
+    "@jsonjoy.com/fs-print": "npm:4.78.1"
+    "@jsonjoy.com/fs-snapshot": "npm:4.78.1"
+    glob-to-regex.js: "npm:^1.3.1"
     thingies: "npm:^2.5.0"
   peerDependencies:
     tslib: 2
-  checksum: 10c0/1a4d2ce2d92584250df26c8873fb0f38bbbcb38b2ebe5125a416eb5d46e1be17db137c9fdeedba25c7bcd7b0dab3585c70f8d29a1a9c042d8f6fe467dc8f4974
+  checksum: 10c0/7ca23da8294d0d113e14a9fd91c34674224a0d71c9f1c19f71dc7e2048c1a9ffde3cc0be8dba2ae5a09f6a5d5841ca05721bd7200db3a186da3f8232743df729
   languageName: node
   linkType: hard
 
-"@jsonjoy.com/fs-print@npm:4.57.8":
-  version: 4.57.8
-  resolution: "@jsonjoy.com/fs-print@npm:4.57.8"
+"@jsonjoy.com/fs-print@npm:4.78.1":
+  version: 4.78.1
+  resolution: "@jsonjoy.com/fs-print@npm:4.78.1"
   dependencies:
-    "@jsonjoy.com/fs-node-utils": "npm:4.57.8"
+    "@jsonjoy.com/fs-node-utils": "npm:4.78.1"
     tree-dump: "npm:^1.1.0"
   peerDependencies:
     tslib: 2
-  checksum: 10c0/4b6e860eeb7a6c7d52b715b18877747bfd97f5e3e10dbc912a671a6ffb313e1a77c38058918696f33f5fd2d888a271e0707b8914cfd4aabb8e652ec4ec7e56b1
+  checksum: 10c0/160b6defe4eca4b9601d3a298eaa898c9ebdf37b9ab1041520211a000f0ad19064f270e1a4a3a275aabce8a25d6dcfe7255e431c32109232c976f67a50d06e92
   languageName: node
   linkType: hard
 
-"@jsonjoy.com/fs-snapshot@npm:4.57.8":
-  version: 4.57.8
-  resolution: "@jsonjoy.com/fs-snapshot@npm:4.57.8"
+"@jsonjoy.com/fs-snapshot@npm:4.78.1":
+  version: 4.78.1
+  resolution: "@jsonjoy.com/fs-snapshot@npm:4.78.1"
   dependencies:
     "@jsonjoy.com/buffers": "npm:^17.65.0"
-    "@jsonjoy.com/fs-node-utils": "npm:4.57.8"
+    "@jsonjoy.com/fs-node-utils": "npm:4.78.1"
     "@jsonjoy.com/json-pack": "npm:^17.65.0"
     "@jsonjoy.com/util": "npm:^17.65.0"
   peerDependencies:
     tslib: 2
-  checksum: 10c0/d2e6bd16b2b2c2d510949573a134284c06c57e3ae9b91ca59c3b1e694ccf66723b7ae0b726eabe2e436ff81a0032fe7e27935a163914ea11af9119fc2cc1c837
+  checksum: 10c0/ebe693b525bf77abdc27f43260dfe9300887fd2c1df08e89a208b5bedc1f86b6a3cf77e9cb9759ad19f4383fd0b398da4f779df8d0d03751dd7f9561279b69d0
   languageName: node
   linkType: hard
 
@@ -2452,7 +2460,7 @@ __metadata:
     "@wc-toolkit/storybook-helpers": "npm:^10.5.1"
     lit: "npm:^3.3.1"
     storybook: "npm:~10.4.6"
-    storybook-web-components-rsbuild: "npm:~3.3.4"
+    storybook-web-components-rsbuild: "npm:~3.6.0"
     typescript: "npm:~5.9.3"
   languageName: unknown
   linkType: soft
@@ -3097,14 +3105,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rsbuild/plugin-type-check@npm:^1.3.4":
-  version: 1.5.0
-  resolution: "@rsbuild/plugin-type-check@npm:1.5.0"
+"@rsbuild/plugin-type-check@npm:^1.6.0":
+  version: 1.6.0
+  resolution: "@rsbuild/plugin-type-check@npm:1.6.0"
   dependencies:
     deepmerge: "npm:^4.3.1"
     json5: "npm:^2.2.3"
     reduce-configs: "npm:^1.1.2"
-    ts-checker-rspack-plugin: "npm:^1.5.1"
+    ts-checker-rspack-plugin: "npm:^1.6.0"
   peerDependencies:
     "@rsbuild/core": ^1.0.0 || ^2.0.0-0
     "@typescript/native-preview": ^7.0.0-0
@@ -3113,7 +3121,7 @@ __metadata:
       optional: true
     "@typescript/native-preview":
       optional: true
-  checksum: 10c0/05b98bbea341f3788ddaf03171b7fdca733245c76445729f000f6c9575a5362995fc30aacc5c1138942998d92a78ff41a1cf4bfaa56ebc40bb9c23dc69b990ad
+  checksum: 10c0/45013637c46dca67b2608b43edc0ed7651010a9f4d6617828df2ed42d67be1eeedc22d43c71b7a43c9ad2814bda0d037e323a0775e2f27fc4e06ec10eb02f407
   languageName: node
   linkType: hard
 
@@ -3828,7 +3836,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/web-components@npm:^10.3.5, @storybook/web-components@npm:~10.4.6":
+"@storybook/web-components@npm:^10.6.0":
+  version: 10.6.0
+  resolution: "@storybook/web-components@npm:10.6.0"
+  dependencies:
+    "@storybook/global": "npm:^5.0.0"
+    tiny-invariant: "npm:^1.3.1"
+    ts-dedent: "npm:^2.0.0"
+  peerDependencies:
+    lit: ^2.0.0 || ^3.0.0
+    storybook: ^10.6.0
+  checksum: 10c0/2b8daba0d633de61284ca74e44ed2a81b1440cf17129fce27d0a9cf23ae6c2a0fb98433e36e1dcb282598e24a633ea69d41411881864079fef1b0337963b0898
+  languageName: node
+  linkType: hard
+
+"@storybook/web-components@npm:~10.4.6":
   version: 10.4.6
   resolution: "@storybook/web-components@npm:10.4.6"
   dependencies:
@@ -3924,7 +3946,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/estree@npm:1.0.9, @types/estree@npm:^1.0.0, @types/estree@npm:^1.0.8":
+"@types/estree@npm:1.0.9, @types/estree@npm:^1.0.8":
   version: 1.0.9
   resolution: "@types/estree@npm:1.0.9"
   checksum: 10c0/3ad3286ca2988cd550dafb8f2ad599c8474868e954fa601a36655bdfefd8039f7c714b8c1c7f2ae219ffbd58bd4660e66fa7479a0120fc02d4777057d4865387
@@ -4735,25 +4757,6 @@ __metadata:
     chai: "npm:^5.2.0"
     tinyrainbow: "npm:^2.0.0"
   checksum: 10c0/7586104e3fd31dbe1e6ecaafb9a70131e4197dce2940f727b6a84131eee3decac7b10f9c7c72fa5edbdb68b6f854353bd4c0fa84779e274207fb7379563b10db
-  languageName: node
-  linkType: hard
-
-"@vitest/mocker@npm:3.2.4":
-  version: 3.2.4
-  resolution: "@vitest/mocker@npm:3.2.4"
-  dependencies:
-    "@vitest/spy": "npm:3.2.4"
-    estree-walker: "npm:^3.0.3"
-    magic-string: "npm:^0.30.17"
-  peerDependencies:
-    msw: ^2.4.9
-    vite: ^5.0.0 || ^6.0.0 || ^7.0.0-0
-  peerDependenciesMeta:
-    msw:
-      optional: true
-    vite:
-      optional: true
-  checksum: 10c0/f7a4aea19bbbf8f15905847ee9143b6298b2c110f8b64789224cb0ffdc2e96f9802876aa2ca83f1ec1b6e1ff45e822abb34f0054c24d57b29ab18add06536ccd
   languageName: node
   linkType: hard
 
@@ -5746,10 +5749,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cjs-module-lexer@npm:^2.2.0":
-  version: 2.2.0
-  resolution: "cjs-module-lexer@npm:2.2.0"
-  checksum: 10c0/aec4ca58f87145fac221386790ecaae8b012f2e2359a45acb61d8c75ea4fa84f6ea869f17abc1a7e91a808eff0fed581209632f03540de16f72f0a28f5fd35ac
+"cjs-module-lexer@npm:^2.2.1":
+  version: 2.2.1
+  resolution: "cjs-module-lexer@npm:2.2.1"
+  checksum: 10c0/889777eb1e32c4662bf3744fdf09aca444a3f9373d70a8c3d2a575e845e415988912a70a7b5e3c2bf943c7547d930dff641c4e0ff2ee2110ba1daca05b2310cd
   languageName: node
   linkType: hard
 
@@ -7056,15 +7059,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"estree-walker@npm:^3.0.3":
-  version: 3.0.3
-  resolution: "estree-walker@npm:3.0.3"
-  dependencies:
-    "@types/estree": "npm:^1.0.0"
-  checksum: 10c0/c12e3c2b2642d2bcae7d5aa495c60fa2f299160946535763969a1c83fc74518ffa9c2cd3a8b69ac56aea547df6a8aac25f729a342992ef0bbac5f1c73e78995d
-  languageName: node
-  linkType: hard
-
 "esutils@npm:^2.0.2":
   version: 2.0.3
   resolution: "esutils@npm:2.0.3"
@@ -7257,7 +7251,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fs-extra@npm:^11.1.1, fs-extra@npm:^11.3.5":
+"fs-extra@npm:^11.1.1":
   version: 11.3.6
   resolution: "fs-extra@npm:11.3.6"
   dependencies:
@@ -7265,6 +7259,17 @@ __metadata:
     jsonfile: "npm:^6.0.1"
     universalify: "npm:^2.0.0"
   checksum: 10c0/191c96bf71519fe08595f7920b6e568f6e44b48ed968624f35cb3bb7f4f9b05718b99cd6bf81938c0f7b1daa6d151383c33e0cbfdfe4d95419d7ea121de8e91a
+  languageName: node
+  linkType: hard
+
+"fs-extra@npm:^11.4.0":
+  version: 11.4.0
+  resolution: "fs-extra@npm:11.4.0"
+  dependencies:
+    graceful-fs: "npm:^4.2.0"
+    jsonfile: "npm:^6.0.1"
+    universalify: "npm:^2.0.0"
+  checksum: 10c0/1e311eca820a12d3d795f2043dcd5628d017f4d21e634f3f9ef314ae68bee9979758262fb9cb35ffa6f26454c3fffe8b15558733e91e8fc729b07b10bb98d8b6
   languageName: node
   linkType: hard
 
@@ -7459,12 +7464,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob-to-regex.js@npm:^1.0.0, glob-to-regex.js@npm:^1.0.1":
-  version: 1.2.0
-  resolution: "glob-to-regex.js@npm:1.2.0"
+"glob-to-regex.js@npm:^1.3.1":
+  version: 1.3.1
+  resolution: "glob-to-regex.js@npm:1.3.1"
   peerDependencies:
     tslib: 2
-  checksum: 10c0/011c81ae2a4d7ac5fd617038209fd9639d54c76211cc88fe8dd85d1a0850bc683a63cf5b1eae370141fca7dd2c834dfb9684dfdd8bf7472f2c1e4ef6ab6e34f9
+  checksum: 10c0/0a4d8824c911a119b2cc7cbc2dd85287e899a5a4d16c26fee2cb0cac6d599a8273d29d04af47192116574212b63ada07f7af1c1369ba8417c75e1c3727b1c266
   languageName: node
   linkType: hard
 
@@ -8569,12 +8574,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"magic-string@npm:^0.30.17, magic-string@npm:^0.30.21":
-  version: 0.30.21
-  resolution: "magic-string@npm:0.30.21"
+"magic-string@npm:^1.4.1":
+  version: 1.4.1
+  resolution: "magic-string@npm:1.4.1"
   dependencies:
-    "@jridgewell/sourcemap-codec": "npm:^1.5.5"
-  checksum: 10c0/299378e38f9a270069fc62358522ddfb44e94244baa0d6a8980ab2a9b2490a1d03b236b447eee309e17eb3bddfa482c61259d47960eb018a904f0ded52780c4a
+    "@jridgewell/sourcemap-codec": "npm:^1.6.0"
+  checksum: 10c0/d5162ed2cef7ffa4ee5bcf44fbaba3a814f65b9919f0f3eba43076fda4223161b1064779da32901c3d1f157e7bbc0b6dd973e06c7856e550424f5e73e9217f0a
   languageName: node
   linkType: hard
 
@@ -8636,27 +8641,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"memfs@npm:^4.57.7":
-  version: 4.57.8
-  resolution: "memfs@npm:4.57.8"
+"memfs@npm:^4.64.0":
+  version: 4.78.1
+  resolution: "memfs@npm:4.78.1"
   dependencies:
-    "@jsonjoy.com/fs-core": "npm:4.57.8"
-    "@jsonjoy.com/fs-fsa": "npm:4.57.8"
-    "@jsonjoy.com/fs-node": "npm:4.57.8"
-    "@jsonjoy.com/fs-node-builtins": "npm:4.57.8"
-    "@jsonjoy.com/fs-node-to-fsa": "npm:4.57.8"
-    "@jsonjoy.com/fs-node-utils": "npm:4.57.8"
-    "@jsonjoy.com/fs-print": "npm:4.57.8"
-    "@jsonjoy.com/fs-snapshot": "npm:4.57.8"
+    "@jsonjoy.com/fs-core": "npm:4.78.1"
+    "@jsonjoy.com/fs-fsa": "npm:4.78.1"
+    "@jsonjoy.com/fs-node": "npm:4.78.1"
+    "@jsonjoy.com/fs-node-builtins": "npm:4.78.1"
+    "@jsonjoy.com/fs-node-to-fsa": "npm:4.78.1"
+    "@jsonjoy.com/fs-node-utils": "npm:4.78.1"
+    "@jsonjoy.com/fs-print": "npm:4.78.1"
+    "@jsonjoy.com/fs-snapshot": "npm:4.78.1"
     "@jsonjoy.com/json-pack": "npm:^1.11.0"
     "@jsonjoy.com/util": "npm:^1.9.0"
-    glob-to-regex.js: "npm:^1.0.1"
+    glob-to-regex.js: "npm:^1.3.1"
     thingies: "npm:^2.5.0"
     tree-dump: "npm:^1.0.3"
     tslib: "npm:^2.0.0"
-  peerDependencies:
-    tslib: 2
-  checksum: 10c0/8adffa2dc787caccb4be8addf4ea90ea33e6c494c858059420715a88c1f6c864617db22b28f819dbd25b25377d5d38667dd27f296b1adabb814ead9bfb6c5381
+  checksum: 10c0/09f5f35ca76da10f53cc5a9bdea3b708bed65e2720f5f245b0e4569c32de0ec9494dc5ec38c3c1ec3d3f1daecfd8019b4c9c0bbd99dcb71511956a24c8c47475
   languageName: node
   linkType: hard
 
@@ -9446,6 +9449,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pathe@npm:^2.0.3":
+  version: 2.0.3
+  resolution: "pathe@npm:2.0.3"
+  checksum: 10c0/c118dc5a8b5c4166011b2b70608762e260085180bb9e33e80a50dcdb1e78c010b1624f4280c492c92b05fc276715a4c357d1f9edc570f8f1b3d90b6839ebaca1
+  languageName: node
+  linkType: hard
+
 "pathval@npm:^2.0.0":
   version: 2.0.1
   resolution: "pathval@npm:2.0.1"
@@ -10110,7 +10120,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rsbuild-plugin-html-minifier-terser@npm:^1.1.3":
+"rsbuild-plugin-html-minifier-terser@npm:^1.1.5":
   version: 1.1.5
   resolution: "rsbuild-plugin-html-minifier-terser@npm:1.1.5"
   dependencies:
@@ -10553,25 +10563,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"storybook-builder-rsbuild@npm:3.3.4":
-  version: 3.3.4
-  resolution: "storybook-builder-rsbuild@npm:3.3.4"
+"storybook-builder-rsbuild@npm:3.6.0":
+  version: 3.6.0
+  resolution: "storybook-builder-rsbuild@npm:3.6.0"
   dependencies:
-    "@rsbuild/plugin-type-check": "npm:^1.3.4"
-    "@vitest/mocker": "npm:3.2.4"
+    "@rsbuild/plugin-type-check": "npm:^1.6.0"
     browser-assert: "npm:^1.2.1"
     case-sensitive-paths-webpack-plugin: "npm:^2.4.0"
-    cjs-module-lexer: "npm:^2.2.0"
+    cjs-module-lexer: "npm:^2.2.1"
     constants-browserify: "npm:^1.0.0"
     es-module-lexer: "npm:^1.7.0"
-    fs-extra: "npm:^11.3.5"
-    magic-string: "npm:^0.30.21"
+    fs-extra: "npm:^11.4.0"
+    magic-string: "npm:^1.4.1"
     path-browserify: "npm:^1.0.1"
+    pathe: "npm:^2.0.3"
     picocolors: "npm:^1.1.1"
     process: "npm:^0.11.10"
-    rsbuild-plugin-html-minifier-terser: "npm:^1.1.3"
+    rsbuild-plugin-html-minifier-terser: "npm:^1.1.5"
     sirv: "npm:^2.0.4"
-    ts-dedent: "npm:^2.2.0"
+    ts-dedent: "npm:^2.3.0"
     url: "npm:^0.11.4"
     util: "npm:^0.12.5"
     util-deprecate: "npm:^1.0.2"
@@ -10579,7 +10589,7 @@ __metadata:
     "@rsbuild/core": ^1.5.0 || ^2.0.0-0
     react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    storybook: ^10.3.5
+    storybook: ^10.6.0
   peerDependenciesMeta:
     react:
       optional: true
@@ -10587,21 +10597,21 @@ __metadata:
       optional: true
     typescript:
       optional: true
-  checksum: 10c0/a2cf4da36a85b281a1e7cfb358ff5ab079f91b76007097d24f8c04eb2f275f184594d342781e79ce8f724a5997d9f1ff309758ced1fb0ef8c3913abf21c88a24
+  checksum: 10c0/697c1e55d04ad772a007d128afd4063c7b50546697a38fc0c5e0d00854259e05a5d720f4507b888fabfb5b215115fc296d8326aefc6de6b44616e32e4fadf856
   languageName: node
   linkType: hard
 
-"storybook-web-components-rsbuild@npm:~3.3.4":
-  version: 3.3.4
-  resolution: "storybook-web-components-rsbuild@npm:3.3.4"
+"storybook-web-components-rsbuild@npm:~3.6.0":
+  version: 3.6.0
+  resolution: "storybook-web-components-rsbuild@npm:3.6.0"
   dependencies:
-    "@storybook/web-components": "npm:^10.3.5"
-    storybook-builder-rsbuild: "npm:3.3.4"
+    "@storybook/web-components": "npm:^10.6.0"
+    storybook-builder-rsbuild: "npm:3.6.0"
   peerDependencies:
     "@rsbuild/core": ^1.5.0 || ^2.0.0-0
     lit: ^2.0.0 || ^3.0.0
-    storybook: ^10.3.5
-  checksum: 10c0/53134bcb6f3d4365b147c062703c4094a0636de53d2db8bd13e47e0742fe3b1cd2c3dd135f657f10c0758c3a7701a745f35d0cef27883b04a391cf517043a8da
+    storybook: ^10.6.0
+  checksum: 10c0/493198097e06468cccd2aa0370c039138d19fc1942e5c7a6b13e6d04e51f70a9893e075bc904b43d88d4b0a7574fd84fd1fe16b12f6f3ceb6a60831423c340d2
   languageName: node
   linkType: hard
 
@@ -10866,13 +10876,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-checker-rspack-plugin@npm:^1.5.1":
-  version: 1.5.1
-  resolution: "ts-checker-rspack-plugin@npm:1.5.1"
+"ts-checker-rspack-plugin@npm:^1.6.0":
+  version: 1.6.1
+  resolution: "ts-checker-rspack-plugin@npm:1.6.1"
   dependencies:
     "@rspack/lite-tapable": "npm:^1.1.2"
     chokidar: "npm:^3.6.0"
-    memfs: "npm:^4.57.7"
+    memfs: "npm:^4.64.0"
     picocolors: "npm:^1.1.1"
   peerDependencies:
     "@rspack/core": ^1.0.0 || ^2.0.0
@@ -10883,14 +10893,21 @@ __metadata:
       optional: true
     "@typescript/native-preview":
       optional: true
-  checksum: 10c0/99706af3819a04a4bf27a64c3459bca9baa71fddac131e531e3f0618c08f6821603dbe1fecb3a3cc16f9d28fd9aa30e5e0035852b0a2d736e746560fdfe1b318
+  checksum: 10c0/f2c1f6dd465354d922161fbf6a8372ee8dfde38b5256b04369a4ffdb0486322dcc957e521b1cc3956d6c55ecf30142988b21832316d3449421a5b0c425d782ab
   languageName: node
   linkType: hard
 
-"ts-dedent@npm:^2.0.0, ts-dedent@npm:^2.2.0":
+"ts-dedent@npm:^2.0.0":
   version: 2.2.0
   resolution: "ts-dedent@npm:2.2.0"
   checksum: 10c0/175adea838468cc2ff7d5e97f970dcb798bbcb623f29c6088cb21aa2880d207c5784be81ab1741f56b9ac37840cbaba0c0d79f7f8b67ffe61c02634cafa5c303
+  languageName: node
+  linkType: hard
+
+"ts-dedent@npm:^2.3.0":
+  version: 2.3.0
+  resolution: "ts-dedent@npm:2.3.0"
+  checksum: 10c0/bfc3331e0740191c0134fb526e7f01e16657e50955c9395de14703c6ef17119c91651fa044cf558dc9c1dbb0fe1b2a74e303aeebcbd5e3b31acd14f72f545a54
   languageName: node
   linkType: hard
 
