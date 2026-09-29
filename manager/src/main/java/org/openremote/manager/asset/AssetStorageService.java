@@ -1727,7 +1727,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
       EntityManager em, String realm, Collection<String> userIds, Collection<String> assetIds) {
     StringBuilder sb = new StringBuilder();
     Map<String, Object> parameters = new HashMap<>(3);
-    sb.append("select ua from UserAssetLink ua where 1=1");
+    sb.append("select ua from UserAssetLink ua, Asset a where a.id = ua.id.assetId");
+    sb.append(" and a.deletePending is false");
 
     if (!isNullOrEmpty(realm)) {
       sb.append(" and ua.id.realm in :realm");
