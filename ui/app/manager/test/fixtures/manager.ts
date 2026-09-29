@@ -572,15 +572,15 @@ export class Manager {
    */
   async deleteAssetsInRealm(realm: string, config?: AxiosRequestConfig<any>) {
     config = config ?? await this.adminConfig();
-    config.params = config.params ?? {};
-    config.params.realm = realm;
     const assetResponse = await rest.api.AssetResource.queryAssets(
-      { select: { attributes: [] } }, config);
+      {
+        select: { attributes: [] },
+        realm: {name: realm}
+      }, config);
     expect(assetResponse.status).toBe(200);
     const assets = assetResponse.data;
     expect (assets.length).toBeGreaterThan(0);
     const assetIds = assets.map(({ id }) => id!);
-    console.log("ASSETS = " + assetIds);
     const response = await rest.api.AssetResource.delete({ assetId: assetIds}, config);
     expect(response.status).toBe(204);
   }
