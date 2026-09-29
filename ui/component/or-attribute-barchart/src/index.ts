@@ -648,7 +648,6 @@ export class OrAttributeBarChart extends OrElement {
   }
 
   protected _getTimeControlsTemplate(disabled: boolean): TemplateResult {
-    console.debug("Disabled?", disabled);
     const menuItems: MenuBarItem[] = [
       {
         component: createMenuBarItem(
