@@ -56,7 +56,7 @@ import { OrAssetTreeSelectionEvent } from "@openremote/or-asset-tree";
 import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 import { type GenericAxiosResponse, isAxiosError } from "@openremote/rest";
 import { OrAssetAttributePicker, OrAssetAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
-import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { type OrVaadinDialog, showDialog as showVaadinDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import { cache } from "lit/directives/cache.js";
 import debounce from "lodash.debounce";
@@ -65,6 +65,7 @@ import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
 import { createRef, type Ref, ref } from "lit/directives/ref.js";
 import { createMenuBarItem, type MenuBarItem } from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 echarts.use([
   GridComponent,
@@ -1240,10 +1241,12 @@ export class OrChart extends translate(i18next)(OrElement) {
       dialog?.close();
     };
     const onOk = () => {
-      if (startRef.value?.value && endRef.value?.value) {
+      if (startRef.value?.value && endRef.value?.value && startRef.value.value < endRef.value.value) {
         this._isCustomWindow = true;
         this.timeframe = [new Date(startRef.value.value), new Date(endRef.value.value)];
         dialog?.close();
+      } else {
+        showSnackbar(undefined, i18next.t("errorOccurred"));
       }
     };
     dialog = showVaadinDialog(
