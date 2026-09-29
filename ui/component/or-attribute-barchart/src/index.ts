@@ -859,7 +859,7 @@ export class OrAttributeBarChart extends OrElement {
 
     const onCancel = () => {
       dialog?.close();
-    }
+    };
     const onOk = () => {
       if (startRef.value?.value && endRef.value?.value && startRef.value.value < endRef.value.value) {
         this._isCustomWindow = true;
@@ -868,7 +868,7 @@ export class OrAttributeBarChart extends OrElement {
       } else {
         showSnackbar(undefined, i18next.t("errorOccurred"));
       }
-    }
+    };
     dialog = showDialog(
       this.shadowRoot!,
       html`
