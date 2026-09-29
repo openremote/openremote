@@ -274,16 +274,10 @@ else
 fi
 echo "Private IP \$PRIVATE_IP"
 
-# Start the stack
-echo "Starting the stack"
-docker-compose -f temp/docker-compose.yml -p or up -d
-
-if [ \$? -ne 0 ]; then
-  echo "Deployment failed to start the stack"
+# Start the stack, including any one-shot deployment service, and wait for readiness
+if ! bash temp/host_init/start.sh temp/docker-compose.yml or; then
   exit 1
 fi
-
-temp/host_init/healthy.sh
 
 # Run host post init
 hostPostInitCmd=
@@ -403,16 +397,10 @@ fi
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
 
-# Start the stack
-echo "Starting the stack"
-docker-compose -f temp/docker-compose.yml -p or up -d
-
-if [ \$? -ne 0 ]; then
-  echo "Deployment failed to start the stack"
+# Start the stack, including any one-shot deployment service, and wait for readiness
+if ! bash temp/host_init/start.sh temp/docker-compose.yml or; then
   exit 1
 fi
-
-temp/host_init/healthy.sh
 
 # Run host post init
 hostPostInitCmd=
