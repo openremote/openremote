@@ -327,7 +327,7 @@ export class AssettypesPanel extends OrElement {
         }
       }
       dialog?.close();
-    }
+    };
 
     dialog = showDialog(
       this.shadowRoot!,

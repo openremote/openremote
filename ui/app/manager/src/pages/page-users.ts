@@ -832,13 +832,13 @@ export class PageUsers extends Page<AppStateKeyed> {
       user.previousAssetLinks = undefined;
       openBtn.disabled = false;
       dialog?.close();
-    }
+    };
     const onOk = () => {
       openBtn.disabled = false;
       this.onUserChanged(suffix);
       this.requestUpdate();
       dialog?.close();
-    }
+    };
 
     dialog = showDialog(
       this.shadowRoot!,
