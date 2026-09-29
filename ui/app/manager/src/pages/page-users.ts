@@ -837,6 +837,7 @@ export class PageUsers extends Page<AppStateKeyed> {
       openBtn.disabled = false;
       this.onUserChanged(suffix);
       this.requestUpdate();
+      dialog?.close();
     }
 
     dialog = showDialog(
