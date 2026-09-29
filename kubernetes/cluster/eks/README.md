@@ -8,11 +8,7 @@ stack data volumes. ExternalDNS changes records only for stack resources that
 explicitly opt in.
 
 After the shared cluster is ready, use `kubernetes/or-eks-stack` for the normal
-stack workflow with managed ExternalDNS. HAProxy is the default; explicit
-Ingress validates an existing or cluster-configured shared ACM certificate, or
-creates a stack-owned certificate, before using the shared ALB. The facade
-delegates namespaced resources to `kubernetes/or-stack`, which remains the
-portable and low-level interface.
+stack workflow.
 
 The current implementation uses the existing `kubernetes/cluster.yaml`
 `eksctl` configuration. This boundary is intended to remain stable when EKS
@@ -71,13 +67,13 @@ AWS CLI can interpret as an empty profile name.
 
 To select a named profile explicitly, pass `--profile <name>` to each EKS CLI
 invocation. `--profile ''` is still accepted and has the same behavior as omitting
-the option; it does not clear inherited AWS environment variables. The old
-`OR_EKS_AWS_PROFILE` and `OR_EKS_STACK_AWS_PROFILE` overrides are no longer used.
-For existing contexts created with the old `or` default, run
-`or-eks-cluster kubeconfig --name <cluster>` with your intended credentials to
-refresh the stored authentication configuration.
+the option; it does not clear inherited AWS environment variables.
 
 ## Lifecycle
+
+Run the examples in this section from the repository root.
+
+### Create and inspect a cluster
 
 Create a cluster and a stable kubeconfig context:
 
@@ -93,6 +89,8 @@ Inspect it:
 kubernetes/or-eks-cluster status --name openremote-test
 ```
 
+### Reconcile cluster configuration
+
 `apply` currently enables NetworkPolicy enforcement in the existing managed
 VPC CNI configuration, reconciles the AWS Load Balancer Controller and its
 CRDs, applies the shared `openremote-alb` IngressClass and `openremote-ebs`
@@ -103,12 +101,6 @@ implemented by the future CloudFormation cluster definition.
 ```bash
 kubernetes/or-eks-cluster apply --name openremote-test
 ```
-
-Supplying `--shared-certificate-arn` during create or apply records an
-externally managed ACM certificate on `openremote-alb`. Later applies that omit
-the option preserve the reference. `--clear-shared-certificate` removes only
-the reference; neither command changes or deletes the certificate. Cluster
-status reports the currently deployed value.
 
 The VPC CNI configuration update retains other configuration keys and does not
 change the installed add-on version. If that version does not support native
@@ -129,25 +121,105 @@ See the AWS documentation for the current
 [VPC CNI NetworkPolicy prerequisites and behavior](https://docs.aws.amazon.com/eks/latest/userguide/cni-network-policy.html)
 and [managed add-on configuration](https://docs.aws.amazon.com/eks/latest/userguide/cni-network-policy-configure.html).
 
+### Destroy a cluster
+
+Remove OpenRemote stacks and decide which data to retain before destroying the
+cluster. Uninstalling workloads alone leaves namespaces, credentials, and PVCs,
+which continue to block cluster destruction. Follow the
+[stack cleanup instructions](../../README-AWS.md#uninstall-restore-or-destroy-a-stack)
+and wait for external DNS and backing-volume cleanup to finish.
+
+Cluster destruction requires an exact-name confirmation and is refused while
+OpenRemote namespaces, Ingresses, LoadBalancer Services, PVCs, PersistentVolumes,
+non-system Pods or workload controllers, namespaced `DNSEndpoint` resources,
+or hostname reservations remain:
+
+```bash
+kubernetes/or-eks-cluster destroy \
+  --name openremote-test \
+  --confirm openremote-test
+```
+
+The shared ConfigMap `kube-system/openremote-hostnames` must contain no remaining
+reservations. A reservation can outlive its namespace after interrupted external
+cleanup. Finish `or-eks-stack destroy` or the documented
+[manual hostname release](../../README.md#exclusive-public-hostnames) before
+retrying cluster destruction; do not discard the registry to bypass this check.
+
+The namespace check also protects internal stacks without public hostnames and
+interrupted preparations. Workload checks include Deployments, StatefulSets,
+DaemonSets, ReplicaSets, ReplicationControllers, Jobs, and CronJobs, even when
+they have no Pods. Controllers in `kube-system`, `kube-public`, and
+`kube-node-lease` are excluded, matching the Pod check. Empty unrelated
+namespaces do not block deletion.
+
+PersistentVolumes block deletion even after their PVCs have gone, so retained
+storage or incomplete cleanup cannot silently lose its Kubernetes metadata.
+The preflight lists blocking namespaces, controllers, and volumes. Inspect and
+resolve them before retrying; for retained storage, preserve the data and
+recovery information you need before removing its Kubernetes metadata. The
+preflight does not delete these resources or discover orphaned AWS resources
+that no longer have Kubernetes metadata.
+
+After this preflight succeeds, deletion bypasses PodDisruptionBudgets while
+draining the node group. This prevents replicated EKS system add-ons such as
+CoreDNS, the EBS CSI controller, and metrics-server from blocking deletion once
+all nodes have been cordoned. The bypass does not weaken the preflight for
+OpenRemote stacks or other non-system workloads.
+
+When the OpenRemote-managed ExternalDNS release exists, the preflight therefore
+requires its Ingress and LoadBalancer Service sources to be gone before the
+script uninstalls the controller. Pass `--skip-external-dns` only when its
+lifecycle belongs to another operator.
+
+### Kubernetes upgrades
+
+Kubernetes minor-version upgrades are intentionally outside this first phase.
+The current `cluster.yaml` uses a self-managed `nodeGroups` entry, so an upgrade
+strategy must be designed separately before the cluster command exposes that
+lifecycle operation.
+
 ## Shared ALB ingress
 
 The `openremote-alb` IngressClass uses `IngressClassParams` to place all of its
 Ingresses in one `openremote-stacks` group. This produces one internet-facing
 ALB for the cluster by default and sends traffic directly to Pod IPs through
 the Amazon VPC CNI. Its namespace selector accepts only namespaces labeled
-`app.kubernetes.io/part-of=openremote`; `or-stack` owns that label. It enforces
-port 443 as the SSL redirect destination for every group member.
+`app.kubernetes.io/part-of=openremote`; `or-stack` applies that label when
+preparing a stack namespace. The class enforces HTTPS redirection to port 443
+for every group member.
 
-The class defines shared transport behavior and can carry the optional shared
-certificate ARN. Stack-specific hostname, route, resolved certificate, and DNS
-intent remain namespaced resources. In `existing` and `shared` modes,
-`or-eks-stack` verifies that the ACM certificate is issued, belongs to the
-ALB's account and region, covers the hostname, and is not tagged as
-stack-managed. In `managed` mode it owns one exact-hostname ACM certificate and
-its namespaced validation record. DNS validation records and stack hostnames
-may be hosted in another AWS account. See the controller's
+The class defines shared routing behavior and can hold an optional shared
+certificate ARN. Individual stacks define their hostnames, routes, certificate
+selection, and DNS records. For stack deployment and certificate modes, see
+[Shared HTTPS routing with Ingress](../../README-AWS.md#shared-https-routing-with-ingress).
+
+See the controller's
 [IngressClass documentation](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/)
 for the enforced group and namespace-selector behavior.
+
+### Configure a shared certificate
+
+Supplying `--shared-certificate-arn` during create or apply records an
+externally managed ACM certificate on `openremote-alb`. Later applies that omit
+the option preserve the reference. `--clear-shared-certificate` removes only
+the reference; neither command changes or deletes the certificate. Cluster
+status reports the currently deployed value.
+
+From the repository root, configure the shared certificate with:
+
+```bash
+kubernetes/or-eks-cluster apply \
+  --name openremote-test \
+  --region eu-west-1 \
+  --shared-certificate-arn <acm-certificate-arn>
+```
+
+This configuration supplies a certificate for stacks that select `shared`
+mode. Changing the reference does not change existing stacks' certificate
+ownership modes, and cluster destruction does not delete the certificate.
+For stack selection and certificate rotation, see
+[Use a cluster-configured shared certificate](../../README-AWS.md#use-a-cluster-configured-shared-certificate).
 
 ## Automatic Route 53 records
 
@@ -160,33 +232,25 @@ removes its owned record but not another controller's or an operator's records.
 The chart and image are pinned independently; the current defaults are chart
 `1.21.1` and ExternalDNS `v0.22.0`.
 
-Stack hostnames must be strict subdomains of the configured domain: for
-`example.com`, both `stack.example.com` and `staging.stack.example.com` qualify,
+Hostnames managed by this controller must be strict subdomains of the configured
+domain: for `example.com`, both `stack.example.com` and `staging.stack.example.com` qualify,
 but `example.com` does not. Otherwise ExternalDNS's record-type prefix places
 the ownership TXT name outside the domain allowed by the DNS role.
-`or-eks-stack apply` enforces this before creating stack resources; callers of
-the portable `or-stack` command must observe the same restriction when using
-this managed ExternalDNS configuration.
 
 Cluster reconciliation explicitly applies the pinned chart's `DNSEndpoint`
 CRD before installing ExternalDNS and waits for it to become established. The
 chart grants the controller read/watch access to `DNSEndpoint` objects and
-status-update access when its `crd` source is enabled. `or-eks-stack`
-represents managed ACM validation CNAMEs through this resource in the owning
-stack namespace. Cluster status reports whether both the CRD and source are
-active.
+status-update access when its `crd` source is enabled. Cluster status reports
+whether both the CRD and source are active.
 
-`or-stack apply --dns external-dns` supplies the selection label and the GA
-`external-dns.kubernetes.io/hostname` annotation. In ingress mode they are on
-the stack's one proxy Ingress. In HAProxy mode they are on the proxy
-LoadBalancer Service. No Manager, Keycloak, metrics Service, or private gateway
-Service declares the same hostname.
+For `Ingress` and `Service` sources, the controller supports the GA
+`external-dns.kubernetes.io/hostname` annotation alongside the required
+selection label. `DNSEndpoint` resources specify DNS records directly.
 
-The higher-level `or-eks-stack apply` command validates this managed release,
-rejects dry-run mode or a domain filter that does not cover the requested
-hostname, delegates the source-resource creation to `or-stack`, and waits for
-the current load balancer and record to converge. It then triggers ACME for
-HAProxy or verifies the selected ACM-backed HTTPS listener for Ingress.
+For stack deployment and automated DNS and HTTPS readiness checks, see
+[Namespaced stacks](../../README-AWS.md#namespaced-stacks). For how stacks
+declare DNS ownership on their resources, see
+[DNS ownership](../../README.md#dns-ownership).
 
 ### Cross-account IAM bootstrap
 
@@ -277,120 +341,18 @@ annotation prefix, and has a safe ownership registry. The skip option also
 prevents `or-eks-cluster destroy` from explicitly uninstalling that Helm
 release.
 
-### Fresh records and safe migration
-
-For a new HAProxy hostname, use the AWS-aware facade:
-
-```bash
-../../or-eks-stack apply \
-  --name stack-a \
-  --cluster "$CLUSTER_NAME" \
-  --region "$CLUSTER_REGION" \
-  --profile "$CLUSTER_AWS_PROFILE" \
-  --hostname stack-a.example.com
-```
-
-ExternalDNS waits for the ALB or NLB hostname in resource status and then
-creates the Route 53 alias and its TXT ownership record.
-
-For Ingress with an existing certificate, use:
-
-```bash
-../../or-eks-stack apply \
-  --name stack-a \
-  --cluster "$CLUSTER_NAME" \
-  --region "$CLUSTER_REGION" \
-  --profile "$CLUSTER_AWS_PROFILE" \
-  --exposure ingress \
-  --hostname stack-a.example.com \
-  --certificate-mode existing \
-  --certificate-arn <acm-certificate-arn>
-```
-
-The ARN is stored with mode `existing` on the namespace for status and future
-lifecycle decisions. It remains user-owned and is never deleted by stack
-uninstall or destroy.
-
-To configure and use one externally managed certificate across stacks:
-
-```bash
-../../or-eks-cluster apply \
-  --name "$CLUSTER_NAME" \
-  --region "$CLUSTER_REGION" \
-  --profile "$CLUSTER_AWS_PROFILE" \
-  --shared-certificate-arn <acm-certificate-arn>
-
-../../or-eks-stack apply \
-  --name stack-a \
-  --cluster "$CLUSTER_NAME" \
-  --region "$CLUSTER_REGION" \
-  --profile "$CLUSTER_AWS_PROFILE" \
-  --exposure ingress \
-  --hostname stack-a.example.com \
-  --certificate-mode shared
-```
-
-On first selection, the stack certificate mode may be omitted: Ingress selects
-the configured shared certificate. Later applies preserve the recorded mode;
-adding or removing the cluster's shared certificate configuration does not
-change another stack's certificate ownership mode. In-place mode migration is
-not supported; see [certificate lifecycle](../../README-AWS.md#shared-https-routing-with-ingress).
-The stack validates coverage and records the resolved ARN, but neither cluster
-nor stack destruction deletes it. Use `or-stack apply --dns external-dns`
-directly when another orchestrator owns endpoint readiness.
-
-When there is no configured shared certificate on first selection, Ingress
-selects managed mode. It can also be selected explicitly:
-
-```bash
-../../or-eks-stack apply \
-  --name stack-a \
-  --cluster "$CLUSTER_NAME" \
-  --region "$CLUSTER_REGION" \
-  --profile "$CLUSTER_AWS_PROFILE" \
-  --exposure ingress \
-  --hostname stack-a.example.com \
-  --certificate-mode managed
-```
-
-The facade first prepares the owned namespace without installing workloads. It
-then reuses the ARN recorded there, discovers a uniquely tagged certificate,
-or requests a new DNS-validated certificate. Certificates carry exact
-`managed-by`, cluster, stack, and hostname tags. The ACM CNAMEs are stored in
-the stack's `acm-validation` `DNSEndpoint`, allowing the cross-account
-ExternalDNS role to publish them. The facade waits for `ISSUED` before passing
-the ARN to `or-stack`; retrying the command reuses the same certificate and DNS
-resource.
-
-The facade's EKS-account identity needs `acm:RequestCertificate`,
-`acm:ListCertificates`, `acm:DescribeCertificate`, and
-`acm:ListTagsForCertificate`. Destroying a managed-certificate stack also needs
-`acm:DeleteCertificate`. It never assumes the DNS-account role directly; the
-restricted ExternalDNS role publishes and removes the validation records.
-
-The validation resource remains present through ordinary uninstall because ACM
-needs its CNAMEs for managed renewal. Managed stack destruction validates exact
-ownership before making changes, removes the stack Ingress, and checks
-authoritative DNS until the public hostname is gone. It waits for ACM to report
-that the certificate is no longer attached, destroys the namespace and its
-validation `DNSEndpoint`, verifies that every validation CNAME is gone, then
-deletes the certificate. Existing and shared certificates remain external to
-the stack lifecycle and are never deleted.
-
-The operation is deliberately retryable. If it stops after namespace deletion,
-the next `destroy` can recover the one certificate carrying the exact cluster
-and stack tags and finish external cleanup. Ambiguous certificates or
-mismatched namespace, Ingress, DNS, hostname, or certificate ownership stop the
-operation instead of selecting a resource to delete.
+### Migrating existing DNS records
 
 ExternalDNS does not silently adopt a manually created record. Migrate existing
 records with this dry-run-first sequence:
 
 1. Reconcile the cluster using the complete DNS configuration plus
    `--external-dns-dry-run`.
-2. Reapply each intended stack with `--dns external-dns`.
+2. Reapply each intended stack using `or-stack apply` with its existing
+   configuration and `--dns external-dns`. Use the portable command here because
+   `or-eks-stack apply` rejects a controller running in dry-run mode.
 3. Inspect the proposed changes with `kubectl --namespace kube-system logs
-   deployment/openremote-external-dns`.
+deployment/openremote-external-dns`.
 4. Capture the exact current record values, then delete only the manually
    managed `A`, `AAAA`, or `CNAME` records for those stack hostnames. Do not
    delete ACM validation records or unrelated TXT records.
@@ -400,16 +362,7 @@ records with this dry-run-first sequence:
    `--external-dns-dry-run`.
 7. Verify the new alias and TXT records in Route 53 and test the endpoint.
 
-Removing `--dns external-dns`, uninstalling a stack, or destroying it removes
-the Ingress or Service that sources the stack's public hostname. The
-controller's event-triggered sync then removes only records carrying its owner
-ID. A managed certificate's separate validation `DNSEndpoint` is retained by
-uninstall and removed by destroy as described above. Wait for the public alias
-and TXT record to disappear before shutting down the cluster or creating a
-manual replacement. The DNS-account CloudFormation stack is deliberately not
-deleted with the cluster; it can be retained for a recreated cluster using the
-same source role name, or deleted explicitly in the DNS account after all
-managed records are gone.
+### Monitoring and removing ExternalDNS
 
 `or-eks-cluster status` reports the ExternalDNS Helm health, TXT owner ID,
 dry-run state, and IRSA role. The controller's AWS provider and TXT registry are
@@ -417,59 +370,22 @@ documented in the upstream
 [AWS tutorial](https://kubernetes-sigs.github.io/external-dns/latest/docs/tutorials/aws/)
 and [registry documentation](https://kubernetes-sigs.github.io/external-dns/latest/docs/registry/registry/).
 
-Cluster destruction requires an exact-name confirmation and is refused while
-OpenRemote namespaces, Ingresses, LoadBalancer Services, PVCs, PersistentVolumes,
-non-system Pods or workload controllers, namespaced `DNSEndpoint` resources,
-or hostname reservations remain:
+ExternalDNS waits for the ALB or NLB hostname in a source resource's status,
+then creates the Route 53 alias and its TXT ownership record. When a source
+resource or its DNS declaration is removed, the controller's event-triggered
+sync removes only records carrying its owner ID.
 
-```bash
-kubernetes/or-eks-cluster destroy \
-  --name openremote-test \
-  --confirm openremote-test
-```
+Keep the controller running until its managed DNS records have been removed.
+Wait for the public alias and TXT records to disappear before shutting down the
+cluster or creating manual replacements. For stack and certificate cleanup,
+follow the [stack lifecycle instructions](../../README-AWS.md#uninstall-restore-or-destroy-a-stack).
+The [cluster destruction checks](#destroy-a-cluster) prevent controller removal
+while managed source resources remain.
 
-The shared ConfigMap `kube-system/openremote-hostnames` must contain no remaining
-reservations. A reservation can outlive its namespace after interrupted external
-cleanup. Finish `or-eks-stack destroy` or the documented
-[manual hostname release](../../README.md#exclusive-public-hostnames) before
-retrying cluster destruction; do not discard the registry to bypass this check.
-
-The namespace check also protects internal stacks without public hostnames and
-interrupted preparations. Workload checks include Deployments, StatefulSets,
-DaemonSets, ReplicaSets, ReplicationControllers, Jobs, and CronJobs, even when
-they have no Pods. Controllers in `kube-system`, `kube-public`, and
-`kube-node-lease` are excluded, matching the Pod check. Empty unrelated
-namespaces do not block deletion.
-
-PersistentVolumes block deletion even after their PVCs have gone, so retained
-storage or incomplete cleanup cannot silently lose its Kubernetes metadata.
-The preflight lists blocking namespaces, controllers, and volumes. Inspect and
-resolve them before retrying; for retained storage, preserve the data and
-recovery information you need before removing its Kubernetes metadata. The
-preflight does not delete these resources or discover orphaned AWS resources
-that no longer have Kubernetes metadata.
-
-After this preflight succeeds, deletion bypasses PodDisruptionBudgets while
-draining the node group. This prevents replicated EKS system add-ons such as
-CoreDNS, the EBS CSI controller, and metrics-server from blocking deletion once
-all nodes have been cordoned. The bypass does not weaken the preflight for
-OpenRemote stacks or other non-system workloads.
-
-When the OpenRemote-managed ExternalDNS release exists, the preflight therefore
-requires its Ingress and LoadBalancer Service sources to be gone before the
-script uninstalls the controller. Pass `--skip-external-dns` only when its
-lifecycle belongs to another operator.
-
-Remove OpenRemote stacks and make an explicit data-retention decision before
-destroying their cluster. `or-stack uninstall` preserves a stack's namespace,
-credentials, and EBS-backed PVCs, so the cluster destroy preflight continues to
-block. `or-stack destroy --confirm <stack-name>` deletes that namespace and its
-data, allowing cluster destruction after the backing volumes have been removed.
-
-Kubernetes minor-version upgrades are intentionally outside this first phase.
-The current `cluster.yaml` uses a self-managed `nodeGroups` entry, so an upgrade
-strategy must be designed separately before the cluster command exposes that
-lifecycle operation.
+The DNS-account CloudFormation stack is deliberately not deleted with the
+cluster. It can be retained for a recreated cluster using the same source role
+name, or deleted explicitly in the DNS account after all managed records are
+gone.
 
 ## Persistent storage
 

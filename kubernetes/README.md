@@ -16,22 +16,34 @@ be installed for the latter mode
 ([Nginx Controller](https://kubernetes.github.io/ingress-nginx/deploy/#quick-start)
 was used during local testing).
 
-This README file covers deployment on a local machine, for information on deploying into an EKS cluster on AWS, see README-AWS.md
+This README covers local deployment and the portable `or-stack` CLI.
+For AWS EKS deployment using `or-eks-cluster` and `or-eks-stack`, see [README-AWS.md](README-AWS.md).
 
-For EKS with the OpenRemote-managed ExternalDNS controller, use
-[`or-eks-stack`](or-eks-stack) for the end-to-end workflow. It keeps `or-stack`
-portable while coordinating load balancer, Route 53, certificate, and HTTPS
-readiness. HAProxy with ACME remains the default; explicit Ingress currently
-accepts a validated existing ACM certificate, the externally managed shared
-certificate configured on the EKS cluster, or a stack-owned managed ACM
-certificate.
+## TL;DR: deploy a local stack
+
+With Kubernetes enabled in Docker Desktop and the tools listed above installed,
+run the following from the repository root:
+
+```bash
+cd kubernetes
+./or-stack apply --name stack-a --kube-context docker-desktop --target local
+./or-stack credentials --name stack-a --kube-context docker-desktop
+```
+
+Open <https://localhost/manager> and sign in with the credentials printed by the
+last command. This uses the defaults: HAProxy exposure, hostname `localhost`,
+HTTP port 80, HTTPS port 443, and no DNS management. A browser warning is
+expected for the locally generated certificate.
+
+For another local cluster or different ports, see
+[Local deployment with HAProxy](#local-deployment-with-haproxy).
 
 ## Namespaced stack management
 
 `or-stack` installs each OpenRemote stack into a namespace with the same name.
 The Helm release names remain `or-setup`, `postgresql`, `keycloak`, and
-`manager`, plus `proxy` in either public mode, inside every namespace. Existing
-component service names therefore continue to work while namespaced resources
+`manager`, plus `proxy` when exposure is haproxy or ingress (for both local and EKS), inside every namespace.
+Existing component service names therefore continue to work while namespaced resources
 and persistent data remain independent.
 
 The stack command provides namespace preparation, apply, inspection, credential
@@ -43,30 +55,20 @@ portable choice: `--dns external-dns` declares the hostname to a compatible
 cluster controller, while the default `--dns none` leaves it externally
 managed.
 
-An AWS-aware orchestrator can reserve and verify namespace ownership before it
-creates external resources:
+The selected target and exposure are stored on the namespace. Reapplying with a
+different choice is rejected because changing public routing in place needs a
+deliberate migration.
 
-```bash
-./or-stack prepare \
-  --name stack-a \
-  --kube-context cluster@eu-west-1 \
-  --target eks \
-  --exposure ingress \
-  --dns external-dns \
-  --hostname stack-a.example.com
-```
+### Local deployment with HAProxy
 
-`prepare` creates the namespace and its OpenRemote ownership/configuration
-labels, and atomically reserves the requested public hostname. It installs no
-Helm release, workload, Service, Ingress, Secret, or PVC, and it performs no AWS
-or cluster-capability checks. Repeating it is safe
-when the namespace has the matching stack label, target, and exposure. It
-refuses an unrelated namespace or an attempt to change the stored target or
-exposure or reserved hostname. Normal users can go straight to `apply`; this
-separate operation is primarily a lifecycle building block for higher-level tooling.
+The local target uses the cluster's default StorageClass and enables the
+PostgreSQL volume permission init container required by Docker Desktop's
+dynamically provisioned hostpath volumes.
 
-To install or upgrade a local stack using the current Docker Desktop, kind, or
-kubeadm context:
+#### With LoadBalancer support
+
+To install or upgrade a local stack on Docker Desktop, or another cluster with
+LoadBalancer support:
 
 ```bash
 ./or-stack apply \
@@ -76,10 +78,6 @@ kubeadm context:
   --http-port 8080 \
   --https-port 8443
 ```
-
-The local target uses the cluster's default StorageClass and enables the
-PostgreSQL volume permission init container required by Docker Desktop's
-dynamically provisioned hostpath volumes.
 
 The local HAProxy Service uses the cluster's `LoadBalancer` support and reports
 the configured HTTPS port to Manager and Keycloak. On Docker Desktop, deploy a
@@ -98,27 +96,10 @@ The Managers are then available at `https://localhost:8443/manager` and
 `https://localhost:9443/manager`, using the proxy's locally generated
 certificates. Browser warnings for those local certificates are expected.
 
-For public stacks, `or-stack` sets Keycloak's hostname to the full public HTTPS
-URL, including `/auth` and any non-default HTTPS port. Manager discovers the
-token issuer through Keycloak's internal HTTP endpoint; a bare hostname would
-let discovery and browser requests produce different issuers, causing login
-to fail with `Invalid token issuer`. After correcting this setting on an
-existing stack, restart Manager so it refreshes its cached issuer.
-
-`or-stack` also configures Manager's `OR_WEBSERVER_ALLOWED_ORIGINS` with the
-stack's exact public HTTPS origin, including its port. Manager's default CORS
-origins use the hostname without a custom port; browser writes such as asset
-creation would otherwise fail with HTTP 403 `CORS origin denied`, even when
-login and page loading work. Each stack allows its own public origin without
-enabling wildcard CORS access.
-
-The HAProxy Pod readiness probe checks that the proxy can serve traffic;
-`or-stack status` reports certificate material separately. Certificate
-issuance must not gate Pod readiness because an HTTP ACME challenge needs the
-Service to send traffic to that Pod.
+#### Without LoadBalancer support
 
 For kind, kubeadm, or another cluster without a LoadBalancer implementation,
-put this in the stack's `proxy.yaml` values override:
+put this in `./stacks/stack-a/proxy.yaml`:
 
 ```yaml
 service:
@@ -142,20 +123,74 @@ kubectl --context kind-openremote --namespace stack-a \
   port-forward service/proxy 8080:8080 8443:8443
 ```
 
-Select Kubernetes Ingress explicitly with `--exposure ingress`, or use
-`--exposure none` for an internal-only stack. Ingress traffic terminates TLS at
+### Local deployment with Ingress
+
+Select Kubernetes Ingress explicitly with `--exposure ingress` when calling
+`or-stack apply --target local`. Ingress traffic terminates TLS at
 the configured controller and then passes through a private per-stack HAProxy
 gateway to Manager or Keycloak. A local Ingress installation and its TLS Secret
 are user-managed. `or-stack` declares the TLS hostname; a controller may use its
-default certificate when no `secretName` is provided. The selected target and
-exposure are stored on the namespace; reapplying with a different choice is
-rejected because changing public routing in place needs a deliberate migration.
+default certificate when no `secretName` is provided.
+
+### Internal-only deployment
+
+Use `--exposure none` when calling `or-stack apply` for an internal-only stack.
+This mode deploys the backend components without HAProxy or an Ingress.
+
+### Customizing a stack
+
+`apply` accepts an optional `--values-dir`. Files named `or-setup.yaml`,
+`postgresql.yaml`, `keycloak.yaml`, `manager.yaml`, and `proxy.yaml` in that
+directory are applied after the selected target and exposure values.
+Command-line hostname configuration is also available:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context docker-desktop \
+  --target local \
+  --hostname stack-a.localhost \
+  --http-port 8080 \
+  --https-port 8443 \
+  --values-dir ./stacks/stack-a
+```
+
+To choose initial credentials instead of generating them, put the following in
+`or-setup.yaml` in that values directory:
+
+```yaml
+credentials:
+  adminPassword: "replace-me"
+  postgresqlUsername: "postgres"
+  postgresqlPassword: "replace-me-too"
+```
+
+Avoid committing credential values to source control. These settings apply only
+when the stack Secret is first created. A later `apply` preserves the existing
+values and rejects a conflicting override because changing a Kubernetes Secret
+alone does not rotate credentials inside an initialized PostgreSQL or Keycloak
+database.
+
+### Inspecting a stack and retrieving credentials
+
+#### Stack status
 
 Show resources belonging to one stack:
 
 ```bash
 ./or-stack status --name stack-a --kube-context docker-desktop
 ```
+
+For HAProxy exposure, `status` also reports the external address and the issuer
+and expiry of a readable managed or custom certificate. If no such certificate
+is found, it warns that the fallback self-signed certificate may be in use.
+
+The HAProxy Pod readiness probe checks that the proxy can serve traffic;
+it does not wait for certificate issuance. An HTTP ACME challenge needs the
+Service to send traffic to that Pod before issuance can complete. Pod readiness
+therefore does not by itself confirm that a trusted certificate is available.
+
+#### Manager credentials
 
 Each new stack receives a generated Manager administrator password and a
 separate generated PostgreSQL password. Retrieve the Manager login at any time
@@ -167,6 +202,39 @@ with:
 
 The Manager username is `admin`. The command deliberately does not display the
 PostgreSQL credentials.
+
+### Authentication and CORS configuration
+
+The following settings are applied automatically by `or-stack`; they are useful
+to check when troubleshooting login or browser request failures.
+
+For public stacks, `or-stack` sets Keycloak's hostname to the full public HTTPS
+URL, including `/auth` and any non-default HTTPS port. Manager discovers the
+token issuer through Keycloak's internal HTTP endpoint; a bare hostname would
+let discovery and browser requests produce different issuers, causing login
+to fail with `Invalid token issuer`. After correcting this setting on an
+existing stack, restart Manager so it refreshes its cached issuer.
+
+`or-stack` also configures Manager's `OR_WEBSERVER_ALLOWED_ORIGINS` with the
+stack's exact public HTTPS origin, including its port. Manager's default CORS
+origins use the hostname without a custom port; browser writes such as asset
+creation would otherwise fail with HTTP 403 `CORS origin denied`, even when
+login and page loading work. Each stack allows its own public origin without
+enabling wildcard CORS access.
+
+### Namespace preparation for deployment tools
+
+Higher-level deployment tools can use `or-stack prepare` to reserve the namespace
+and hostname before provisioning external resources. Normal deployments can call
+`apply` directly, which also performs this preparation.
+
+`prepare` creates the namespace and its OpenRemote ownership/configuration
+labels, and atomically reserves the requested public hostname. It installs no
+Helm release, workload, Service, Ingress, Secret, or PVC, and it performs no AWS
+or cluster-capability checks. Repeating it is safe
+when the namespace has the matching stack label, target, and exposure. It
+refuses an unrelated namespace or an attempt to change the stored target or
+exposure or reserved hostname.
 
 ### Network isolation
 
@@ -234,51 +302,19 @@ proxy Pod. HAProxy exposure permits external traffic only to ports 8080 and
 the same-namespace rule, while direct access from other namespaces to Manager,
 Keycloak, and PostgreSQL remains denied. `none` adds no public ingress rule.
 
-`apply` accepts an optional `--values-dir`. Files named `or-setup.yaml`,
-`postgresql.yaml`, `keycloak.yaml`, `manager.yaml`, and `proxy.yaml` in that
-directory are applied after the selected target and exposure values.
-Command-line hostname configuration is also available:
-
-```bash
-./or-stack apply \
-  --name stack-a \
-  --kube-context docker-desktop \
-  --target local \
-  --hostname stack-a.localhost \
-  --http-port 8080 \
-  --https-port 8443 \
-  --values-dir ./stacks/stack-a
-```
-
-To choose initial credentials instead of generating them, put the following in
-`or-setup.yaml` in that values directory:
-
-```yaml
-credentials:
-  adminPassword: "replace-me"
-  postgresqlUsername: "postgres"
-  postgresqlPassword: "replace-me-too"
-```
-
-Avoid committing credential values to source control. These settings apply only
-when the stack Secret is first created. A later `apply` preserves the existing
-values and rejects a conflicting override because changing a Kubernetes Secret
-alone does not rotate credentials inside an initialized PostgreSQL or Keycloak
-database.
-
 ### Exclusive public hostnames
 
-Namespaces isolate Kubernetes names and storage, but public hostnames are shared
-routing identities. Two stacks declaring the same hostname could contribute
-competing ALB rules or ExternalDNS records and send a browser to the wrong
-Manager. ExternalDNS's TXT owner identifies the cluster, not an individual stack.
+Namespaces isolate Kubernetes names and storage, but hostnames used for external
+access are shared routing identities. Two stacks declaring the same hostname
+could create conflicting routes or DNS records, directing clients to the wrong
+stack.
 
-`prepare` and `apply` therefore reserve hostnames for every public EKS stack,
-every Ingress stack, and every ExternalDNS-managed endpoint. Both `or-stack` and
-`or-eks-stack` enforce this before installing workloads or requesting an ACM
-certificate. Local HAProxy with unmanaged DNS remains exempt, allowing the
-`localhost:8443` / `localhost:9443` workflow. New internal-only stacks reserve nothing.
-Hostnames are normalized to lowercase without a trailing dot.
+With the OpenRemote-managed ExternalDNS configuration, DNS ownership identifies
+the cluster, not an individual stack.
+
+For local deployments, prepare and apply reserve hostnames for Ingress stacks and ExternalDNS-managed endpoints before installing workloads.
+Local HAProxy with unmanaged DNS remains exempt, allowing the localhost:8443 / localhost:9443 workflow. New internal-only stacks reserve nothing.
+Hostnames are normalized to lowercase without a trailing dot. For EKS-specific behavior, see Hostname ownership (README-AWS.md#hostname-ownership)
 
 The reservation registry is ConfigMap `kube-system/openremote-hostnames`. Each
 entry records the owning stack namespace and its Kubernetes UID. Conditional
@@ -295,11 +331,12 @@ to the usual stack lifecycle permissions. Kubernetes RBAC cannot restrict
 administrator can pre-create the empty registry with label
 `app.kubernetes.io/managed-by: or-stack` and `data: {}` so operators need only
 `get` and `update` on this named ConfigMap. The scripts refuse an unlabelled or
-malformed registry. Protect registry write access as deployment authority.
+malformed registry.
+Only trusted deployment operators and automation should have write access to this registry,
+because modifying it can bypass hostname ownership checks.
 
 The lifecycle scripts support stacks created with the current metadata and
-reservation format. There is no adoption or migration path for older stack
-layouts: target and exposure come from namespace labels, and hostname ownership
+reservation format. Target and exposure come from namespace labels, and hostname ownership
 comes from the reservation and its namespace annotation. Missing target or
 exposure labels are treated as inconsistent state, not inferred from workloads.
 The scripts still inspect other namespaces' reservations and existing Ingress
@@ -311,27 +348,19 @@ custom chart overrides. Reservations are scoped to one Kubernetes cluster.
 Reservations survive uninstall and failed applies. They have no automatic expiry
 or namespace ownerReference: deleting a namespace does not prove that external
 DNS or certificate cleanup finished. Disabling ExternalDNS also retains the
-reservation's DNS cleanup requirement. `or-eks-stack destroy` releases a reservation
-after namespace and external cleanup; an interrupted cleanup can be retried even
-when only the reservation remains. `or-eks-cluster destroy` refuses outstanding
-reservations so their ownership and recovery information are not lost.
+reservation's DNS cleanup requirement.
 
-`or-eks-stack destroy` requires a hostname reservation in every certificate
-mode. Missing reservations stop destruction before resources are changed;
-inspect the stack and registry rather than bypassing DNS cleanup. A namespace
-left by a failed preparation that never acquired a reservation can be inspected
-and removed with the portable `or-stack destroy` command.
-
-Portable `or-stack destroy` releases local Ingress reservations with unmanaged
-DNS after Kubernetes cleanup. For EKS or ExternalDNS workflows it retains the
-reservation. Complete external cleanup using `or-eks-stack destroy`, or verify
-that old public endpoints, DNS records, and stack-managed certificates have been
-removed before explicitly releasing it:
+For local deployments, `or-stack destroy` releases Ingress reservations with
+unmanaged DNS after Kubernetes cleanup. When ExternalDNS is used, it retains
+the reservation until external cleanup is confirmed. Verify that old public
+endpoints, DNS records, and stack-managed certificates have been removed before
+explicitly releasing it. For example, after cleaning up a local stack that used
+ExternalDNS:
 
 ```bash
 ./or-stack release-hostname \
   --name stack-a \
-  --kube-context cluster@eu-west-1 \
+  --kube-context kind-openremote \
   --hostname stack-a.example.com \
   --confirm stack-a
 ```
@@ -344,11 +373,8 @@ no force-takeover flag. For hostname changes, destroy and clean up the old stack
 release its reservation, then recreate it with the new hostname; back up any data
 you intend to retain before destruction. In-place hostname migration is not supported.
 
-Reservation regression tests use an atomic API stub and require Python 3.9+:
-
-```bash
-python3 kubernetes/test/hostname-reservations-test
-```
+For EKS cleanup and recovery, see
+[Hostname ownership](README-AWS.md#hostname-ownership).
 
 ### Uninstalling or destroying a stack
 
@@ -381,8 +407,7 @@ Destroy requires both exact-name confirmation and a matching
 `openremote.io/stack` label on the namespace. It uninstalls remaining releases
 and deletes the entire namespace, including every PVC and other namespaced
 resource in it. Backing volume deletion then follows the PV's StorageClass
-reclaim policy; Docker Desktop's default StorageClass and the OpenRemote EKS
-StorageClass currently use `Delete`.
+reclaim policy; Docker Desktop's default StorageClass currently use `Delete`.
 
 For the same reason, `apply` refuses to adopt a pre-existing namespace that
 does not already have the matching stack label. This prevents an unrelated
@@ -390,7 +415,7 @@ namespace from later becoming eligible for stack destruction.
 
 ### DNS ownership
 
-`or-stack` does not call Route 53 or any other DNS provider. With the default
+`or-stack` does not call any DNS provider. With the default
 `--dns none`, it adds no DNS metadata. With `--dns external-dns`, it places the
 GA `external-dns.kubernetes.io/hostname` annotation and the
 `openremote.io/managed-dns=true` selection label on exactly one resource:
@@ -401,13 +426,11 @@ GA `external-dns.kubernetes.io/hostname` annotation and the
 The cluster's ExternalDNS installation must watch `Ingress` and `Service`
 sources and select that label. A higher-level orchestrator may also use
 namespaced `DNSEndpoint` resources for records that do not derive their target
-from an Ingress or Service, such as ACM validation CNAMEs. The managed EKS
-facade uses that contract for stack-owned certificates, but `or-stack` itself
-does not create such records. The managed EKS setup is documented in
-[`cluster/eks/README.md`](cluster/eks/README.md). A bring-your-own controller on
-another Kubernetes platform can use the same contract. ExternalDNS `0.22` or
-later understands the GA annotation prefix by default; a bring-your-own
-controller must support that prefix.
+from an Ingress or Service, such as certificate-validation CNAME records.
+These records are managed by higher-level deployment tools; or-stack itself does not create them.
+For the OpenRemote-managed ExternalDNS installation on EKS, see the EKS cluster documentation (cluster/eks/README.md).
+A bring-your-own controller on another Kubernetes platform can use the same contract. ExternalDNS `0.22` or
+later understands the GA annotation prefix by default; a bring-your-own controller must support that prefix.
 
 DNS ownership requires public exposure and a fully qualified, non-local
 hostname. For example:
@@ -428,11 +451,12 @@ management. A TXT-registry controller using `sync` policy then removes only
 records it owns. Wait for that reconciliation before creating a manual record
 with the same name or destroying the cluster.
 
-## TL;DR
+## Manual deployment with Helm (legacy workflow)
 
-The following manual steps deploy one stack in the current namespace using the
-first access option, managing connections through HAProxy. Prefer `or-stack`
-for namespaced multi-stack deployment.
+The following steps install the component charts directly with Helm in the
+current namespace, using HAProxy for external access. This is the legacy manual
+workflow; use `or-stack` for namespaced stack deployment and lifecycle management,
+as shown in the [local quick start](#tldr-deploy-a-local-stack).
 
 ### Create the required secrets
 
@@ -667,18 +691,18 @@ Keycloak Services. TLS terminates at the Ingress controller, ACME and
 certificate persistence are disabled in the proxy, and HAProxy receives plain
 HTTP before routing `/auth` to Keycloak and other paths to Manager.
 
-This gateway is required for NetworkPolicy isolation. An external Ingress data
-plane such as an AWS ALB has no Pod or namespace labels that a portable
-NetworkPolicy can select. Allowing it to connect directly to Manager and
-Keycloak would also allow Pods in other namespaces to use those same ports. A
-single public rule on the proxy keeps the application Pods namespace-private.
+This gateway provides a consistent NetworkPolicy boundary across Ingress
+implementations. The default policy allows traffic from outside the stack
+namespace only to the proxy's HTTP port. HAProxy then reaches Manager and
+Keycloak within the same namespace, keeping their ports inaccessible directly
+from other namespaces. This also works when the Ingress traffic comes from an
+external load balancer without Kubernetes Pod or namespace labels.
 
 The tradeoff is one additional internal HTTP hop and one small proxy Pod per
-stack. In return, Ingress mode retains controller-managed TLS and layer-7
-features. On EKS that means ACM, a shared ALB, SNI, HTTP redirects, and optional
-ALB integrations such as WAF. It is not a load-balancer cost optimization:
-once MQTT(S) is implemented, an Ingress stack will also require its own NLB for
-MQTT in addition to the shared web ALB.
+stack. TLS termination and external HTTP routing remain the responsibility of
+the Ingress controller; available features and certificate configuration depend
+on that controller. For AWS-specific routing and load-balancer tradeoffs, see
+[Shared HTTPS routing with Ingress](README-AWS.md#shared-https-routing-with-ingress).
 
 Apply this mode through `or-stack` so the proxy, its Ingress, and its
 NetworkPolicy are configured consistently:
@@ -819,3 +843,37 @@ kubectl port-forward svc/postgresql 5432:5432
 ```
 
 ## Guidelines
+
+## Testing the deployment tools
+
+The regression tests in `kubernetes/test` check chart rendering and deployment
+command behavior without deploying a stack. They use stubs for Kubernetes and
+AWS operations; no running cluster or AWS credentials are required.
+`or-setup-test` uses the real Helm executable to lint and render the charts.
+
+To run the full set below, install Bash, Helm, jq, and Python 3.9 or newer,
+along with standard Unix command-line utilities. Run these commands from the
+repository root:
+
+```bash
+bash kubernetes/test/or-setup-test
+bash kubernetes/test/or-stack-test
+python3 kubernetes/test/hostname-reservations-test
+bash kubernetes/test/or-eks-cluster-test
+bash kubernetes/test/or-eks-stack-test
+bash kubernetes/test/aws-profile-test
+```
+
+| Test                         | Coverage                                                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `or-setup-test`              | Helm chart linting and rendered resources for the supported targets and exposure modes.                           |
+| `or-stack-test`              | Portable stack commands, values selection, credentials, and lifecycle safeguards.                                 |
+| `hostname-reservations-test` | Hostname ownership, concurrent reservations, and cleanup/recovery using a persistent, atomic Kubernetes API stub. |
+| `or-eks-cluster-test`        | EKS cluster add-on configuration and destruction safeguards.                                                      |
+| `or-eks-stack-test`          | EKS stack orchestration, DNS and certificate handling, and cleanup safeguards.                                    |
+| `aws-profile-test`           | Default credential behavior and explicit AWS profile selection in both EKS CLIs.                                  |
+
+These tests do not verify a live cluster's routing, certificate issuance, or
+NetworkPolicy enforcement. After deploying, use the connectivity checks in
+[Network isolation](#network-isolation) to verify that the cluster enforces
+cross-stack isolation.

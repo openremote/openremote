@@ -62,10 +62,41 @@ of whether it uses HAProxy or shared ingress. The facade reserves it through
 `or-stack prepare --hostname ...` before workloads or ACM requests, preventing
 concurrent deployments from installing competing routes. Reapply preserves the
 reservation; changing a stack's hostname is rejected. Uninstall and failed
-operations retain ownership. Destroy releases it after namespace and DNS cleanup
-(and managed certificate cleanup where applicable), and can resume from a retained
-reservation after the namespace has gone. Outstanding reservations block cluster
-destruction.
+operations retain ownership.
+
+An AWS-aware orchestrator can reserve and verify namespace ownership before it
+creates external resources:
+
+```bash
+./or-stack prepare \
+  --name stack-a \
+  --kube-context cluster@eu-west-1 \
+  --target eks \
+  --exposure ingress \
+  --dns external-dns \
+  --hostname stack-a.example.com
+```
+
+`or-eks-stack` performs this preparation automatically; normal deployments do not
+need to run it separately.
+
+`or-eks-stack destroy` releases a reservation after namespace and DNS cleanup
+(and managed certificate cleanup where applicable). An interrupted cleanup can
+be retried even when only the reservation remains. `or-eks-cluster destroy`
+refuses outstanding reservations so their ownership and recovery information
+are not lost.
+
+`or-eks-stack destroy` requires a hostname reservation in every certificate
+mode. Missing reservations stop destruction before resources are changed;
+inspect the stack and registry rather than bypassing DNS cleanup. A namespace
+left by a failed preparation that never acquired a reservation can be inspected
+and removed with the portable `or-stack destroy` command.
+
+For EKS stacks, the portable `or-stack destroy` command retains hostname
+reservations after Kubernetes cleanup. Complete external cleanup using
+`or-eks-stack destroy`, or verify that old public endpoints, DNS records, and
+stack-managed certificates have been removed before explicitly releasing the
+reservation with `or-stack release-hostname`.
 
 See [exclusive public hostnames](README.md#exclusive-public-hostnames) for the
 reason, registry permissions, required stack metadata, and explicit recovery
@@ -88,6 +119,34 @@ the `Delete` reclaim policy.
 
 ### Namespaced stacks
 
+Use `or-eks-stack` for deployment with OpenRemote-managed DNS and HTTPS
+readiness checks. The examples below run from the `kubernetes` directory.
+Deploy a stack, retrieve its credentials, and use the lifecycle commands to
+inspect, uninstall, or destroy it. For custom DNS or orchestration, see
+[the advanced workflow](#advanced-deploy-with-or-stack-directly).
+
+#### Before deploying
+
+- Create and configure the shared cluster with `or-eks-cluster`. See the
+  [cluster setup instructions](cluster/eks/README.md) for storage, networking,
+  ExternalDNS, and cross-account DNS permissions.
+- Configure AWS credentials with access to the EKS account and cluster. Both
+  EKS CLIs use the normal AWS credential chain; add `--profile <name>` to select
+  a named profile explicitly.
+- Enable the OpenRemote-managed ExternalDNS release with dry-run disabled.
+  Its domain filter must cover the hostname you intend to deploy.
+- Choose a hostname strictly below the managed DNS domain. For example, with
+  `openremote.app` configured, `test.openremote.app` and
+  `staging.test.openremote.app` are supported, but `openremote.app` itself is not.
+  Any certificate you supply must cover the chosen hostname.
+
+`or-eks-stack` checks that the cluster is active, the selected kubeconfig
+context points to it, and the managed ExternalDNS configuration is suitable.
+Ingress deployments additionally require the shared `openremote-alb`
+IngressClass and its enforced HTTPS redirect.
+
+#### Deploy with HAProxy (default)
+
 After creating and configuring the shared cluster, the normal managed-DNS
 HAProxy deployment is one command. HAProxy is the default exposure and creates
 one internet-facing NLB per stack:
@@ -100,25 +159,341 @@ one internet-facing NLB per stack:
   --hostname stack-a.example.com
 ```
 
-`or-eks-stack` verifies that the named cluster is active and that the selected
-kubeconfig context points to that cluster. It also requires the non-dry-run,
-OpenRemote-managed ExternalDNS release installed by `or-eks-cluster`, and
-checks that its domain filter covers the requested hostname. The managed Route
-53 controller and its cross-account IAM bootstrap are documented in
-[`cluster/eks/README.md`](cluster/eks/README.md).
+The command installs the stack, waits for DNS to point to its NLB, obtains or
+reuses the HAProxy certificate, and waits for a trusted HTTPS response from
+Manager. After it succeeds, open `https://stack-a.example.com/manager/` and
+[retrieve the Manager credentials](#inspect-a-stack-and-retrieve-credentials).
 
-The portable `or-stack` command remains the lower-level interface for custom
-DNS ownership, internal-only stacks, local Kubernetes, and custom orchestration.
-For example, omit DNS automation on EKS with:
+The automated HTTP-01 certificate flow requires public HTTP port 80. The
+default timeout is 20 minutes for each readiness phase. Reapply the same command
+to update the stack; retained certificates are reused. To deploy another stack,
+choose a different stack name and hostname.
+
+#### Shared HTTPS routing with Ingress
+
+Select `--exposure ingress` to route web traffic through the shared OpenRemote
+ALB and a private HAProxy gateway in each stack namespace. TLS terminates at the
+ALB using an ACM certificate. `or-eks-stack apply` handles certificate validation,
+DNS readiness, and the trusted Manager HTTPS check.
+
+Choose the certificate mode before deploying:
+
+| Mode       | Certificate source                                                   | Effect of stack destruction                         |
+| ---------- | -------------------------------------------------------------------- | --------------------------------------------------- |
+| `managed`  | The stack requests and owns an ACM certificate.                      | Deletes the certificate and its validation records. |
+| `existing` | You supply an externally managed certificate ARN.                    | Leaves the certificate unchanged.                   |
+| `shared`   | The stack uses the externally managed ARN configured on the cluster. | Leaves the certificate unchanged.                   |
+
+On the first apply, omitting `--certificate-mode` selects `shared` if the
+cluster has a shared certificate configured, otherwise `managed`. On later
+applies, the recorded mode is reused. The examples below select each mode
+explicitly.
+
+##### Create a stack-owned certificate
+
+With `managed`, certificate issuance completes before workloads are installed.
+ACM DNS validation can use the configured DNS account even when it is separate
+from the EKS account.
+
+Managed mode assumes that both the certificate and its ACM DNS validation
+records are exclusive to the stack. Other resources must not use the certificate,
+and other certificates must not depend on its validation records. ACM can reuse
+a validation CNAME for separate certificates, including certificates in other
+regions of the same AWS account. This exclusivity is a deployment requirement;
+the script's ownership checks do not establish it. Destroying the stack removes
+both its certificate and validation records.
+
+The resolved AWS identity needs `acm:RequestCertificate`,
+`acm:ListCertificates`, `acm:DescribeCertificate`, and
+`acm:ListTagsForCertificate` in the EKS account. It also needs
+`acm:DeleteCertificate` when destroying a managed-certificate stack, in
+addition to the EKS access already required by the facade. Route 53 write
+permission remains confined to the ExternalDNS roles; `or-eks-stack` does not
+use DNS-account credentials.
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode managed
+```
+
+##### Use an existing certificate
+
+Use `existing` with an ACM certificate in the EKS account and region. It must
+have status `ISSUED`, cover the hostname with an exact name or one-level
+wildcard, and be externally managed rather than owned by `or-eks-stack`.
+The command checks these requirements before changing the stack and rejects
+certificates carrying the `openremote.io/managed-by=or-eks-stack` ownership tag.
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode existing \
+  --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example
+```
+
+The certificate remains user-owned: apply only references it, while uninstall
+and destroy never modify or delete it. The selected mode and ARN are shown by
+`or-eks-stack status`.
+
+##### Use a cluster-configured shared certificate
+
+An externally managed certificate intended for multiple stacks can instead be
+recorded once as cluster configuration:
+
+```bash
+./or-eks-cluster apply \
+  --name <cluster-name> \
+  --region eu-west-1 \
+  --shared-certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example
+```
+
+This option records an externally managed ARN on the `openremote-alb`
+IngressClass for stacks to use; it does not create, tag, renew, or delete the
+certificate. Omitting it on a later cluster apply preserves the reference.
+Use `--clear-shared-certificate` to remove the reference without changing ACM.
+
+Stacks then select it without repeating the ARN:
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode shared
+```
+
+Each stack validates the shared certificate's account, region, `ISSUED` status,
+hostname coverage, and ownership before changing resources. Uninstall and
+destroy never modify or delete the certificate.
+
+##### Reapply or rotate certificates
+
+Certificate mode is a persistent stack setting. When omitted on later applies,
+the recorded mode is reused, even if the cluster's shared certificate configuration
+has changed. An explicit different mode is rejected before modifying resources.
+A stack recorded as `shared` fails clearly if the cluster's shared certificate
+configuration is removed; it does not fall back to `managed`.
+
+In-place certificate mode migration is not supported. To change modes, back up
+any data you need to retain, destroy the stack and finish its cleanup, then
+recreate it in the desired mode. This avoids abandoning a managed certificate
+and its validation records while the Ingress switches to another certificate.
+
+Certificate rotation within a mode remains supported. Mode `existing` reuses
+its recorded ARN when omitted; supply `--certificate-mode existing` and a new
+`--certificate-arn` to replace it. Mode `shared` uses the cluster's current shared
+ARN on each apply. Mode `managed` reuses its owned certificate.
+
+#### Inspect a stack and retrieve credentials
+
+These commands apply to both HAProxy and Ingress stacks. Inspect the stack's
+resources and configuration with:
+
+```bash
+./or-eks-stack status \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1
+```
+
+New stacks receive independently generated Manager and PostgreSQL passwords.
+Retrieve a stack's Manager administrator login without exposing its database
+credentials with:
+
+```bash
+./or-eks-stack credentials \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1
+```
+
+#### Uninstall, restore, or destroy a stack
+
+##### Uninstall and restore
+
+Remove workloads while retaining their credentials and EBS-backed data with:
+
+```bash
+./or-eks-stack uninstall \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1
+```
+
+Reapplying the stack with the same target and exposure reuses its retained
+Secret and data PVCs. HAProxy exposure also reuses its retained certificate
+PVC; Ingress gateways have no certificate PVC because TLS terminates at the
+ALB. The selected target and exposure are stored as namespace labels; changing
+either is rejected until a deliberate migration workflow is implemented.
+
+For managed Ingress certificates, uninstall also retains the certificate and
+its DNS validation records so ACM can renew it and a later apply can reuse it.
+Restore workloads by rerunning the original `apply` command.
+
+##### Destroy the stack and its data
+
+Use `destroy` to delete the namespace, credentials, PVCs, and dynamically
+provisioned EBS volumes. This command applies to HAProxy and all Ingress
+certificate modes. Managed Ingress certificates and their validation records
+are also deleted; existing and shared certificates are preserved.
+
+```bash
+./or-eks-stack destroy \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --confirm stack-a
+```
+
+Destruction requires exact-name confirmation, matching stack ownership, and a
+hostname reservation. It stops if certificate or DNS ownership is absent,
+mismatched, or ambiguous. It waits for external DNS cleanup and for the
+`Delete` reclaim policy to remove the stack's PersistentVolumes. See
+[hostname ownership](#hostname-ownership) for recovery from incomplete preparation.
+
+An interrupted destroy can be retried, including after the namespace has gone.
+For managed certificates, the command recovers ownership from the retained
+reservation and certificate tags. The
+[managed-certificate lifecycle](#managed-certificate-lifecycle) explains the
+cleanup order.
+
+Complete stack cleanup before running `or-eks-cluster destroy`. Cluster
+destruction refuses remaining OpenRemote namespaces, non-system workload
+controllers (even those with no Pods), retained hostname reservations, and
+PersistentVolumes whose claims have already gone. See the
+[cluster lifecycle documentation](cluster/eks/README.md#lifecycle).
+
+#### Advanced: deploy with `or-stack` directly
+
+Use the portable `or-stack` command for custom DNS ownership, internal-only
+stacks, or custom orchestration. It installs Kubernetes resources but makes no
+AWS calls and does not perform the end-to-end DNS, certificate, and HTTPS
+readiness workflow of `or-eks-stack`.
+
+##### HAProxy with externally managed DNS
+
+Use this procedure when you manage DNS records yourself. `or-stack` deploys the
+Kubernetes resources; you then configure DNS, complete certificate setup, and
+verify HTTPS access.
+
+1. **Deploy the stack without DNS automation.**
+
+   ```bash
+   ./or-stack apply \
+     --name stack-a \
+     --kube-context <cluster-name>@eu-west-1 \
+     --target eks \
+     --hostname stack-a.example.com \
+     --dns none
+   ```
+
+2. **Point the hostname at the stack's load balancer.** Retrieve the NLB hostname:
+
+   ```bash
+   kubectl --context <cluster-name>@eu-west-1 \
+     --namespace stack-a \
+     get service proxy \
+     -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
+   ```
+
+   If the output is empty, wait for the load balancer to be provisioned and
+   retry. Use your DNS provider to point `stack-a.example.com` at that hostname.
+   Wait until public DNS resolves to the current load balancer before continuing.
+
+3. **Complete certificate setup.** The HTTP-01 challenge requires public HTTP
+   port 80 to reach HAProxy. If the hostname already has retained Certbot
+   certificate state, skip the following command and reuse it. Otherwise,
+   request the certificate after DNS is ready:
+
+   ```bash
+   kubectl --context <cluster-name>@eu-west-1 \
+     --namespace stack-a \
+     exec deployment/proxy \
+     --container proxy \
+     -- /entrypoint.sh add stack-a.example.com
+   ```
+
+   If you intentionally use a custom public HTTP port, arrange a suitable
+   certificate separately instead of relying on this HTTP-01 procedure.
+
+4. **Verify certificate status and Manager access.** Inspect the certificate:
+
+   ```bash
+   ./or-stack status \
+     --name stack-a \
+     --kube-context <cluster-name>@eu-west-1
+   ```
+
+   Then open `https://stack-a.example.com/manager/` and confirm that Manager is
+   reachable over trusted HTTPS. Certificate files alone do not establish that
+   the public endpoint works.
+
+##### Alternative: let ExternalDNS manage the HAProxy record
+
+If your cluster has a compatible ExternalDNS controller, use
+`--dns external-dns` instead of `--dns none` in the apply command above. The
+proxy Service declares the hostname, and the controller creates the DNS record
+pointing to the NLB. Wait for DNS to resolve to the current load balancer, then
+complete the certificate and HTTPS checks in steps 3 and 4 yourself.
+
+##### Ingress with externally managed readiness
+
+Use `or-stack --exposure ingress` directly when DNS or endpoint readiness is
+managed elsewhere. The portable command accepts the ARN but deliberately does
+not inspect ACM or call Route 53.
+
+With this workflow, you are responsible for supplying a suitable issued ACM
+certificate, arranging DNS, and checking the public HTTPS endpoint. Inspect the
+ALB address once the controller has published it:
+
+```bash
+kubectl --context <cluster-name>@eu-west-1 \
+  --namespace stack-a \
+  get ingress proxy \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
+```
+
+##### Internal-only stacks
+
+Use `--exposure none` with `or-stack` for an internal-only EKS stack. It creates
+no proxy, Ingress, ALB, or NLB:
 
 ```bash
 ./or-stack apply \
-  --name stack-a \
+  --name stack-internal \
   --kube-context <cluster-name>@eu-west-1 \
   --target eks \
-  --hostname stack-a.example.com \
-  --dns none
+  --exposure none
 ```
+
+##### Use a separate ALB group
+
+A stack can opt out of the default group through its `proxy.yaml` values. Set
+`ingress.className: alb` and give the proxy Ingress a unique
+`alb.ingress.kubernetes.io/group.name`, together with the desired `scheme` and
+`target-type` annotations. Also add the `ssl-redirect` annotation because the
+dedicated class does not inherit the shared class's redirect setting. That
+creates a separate ALB group for that stack; the shared class remains the
+default.
+
+#### How deployment works
+
+The following details explain the validation, routing, and recovery behavior
+behind the commands above. They do not add manual steps to the normal
+`or-eks-stack` workflow.
+
+##### Cluster checks, storage, and network isolation
 
 The EKS target verifies that the EBS CSI driver and `openremote-ebs`
 StorageClass exist. It also requires the Amazon VPC CNI NetworkPolicy
@@ -144,29 +519,17 @@ role with `AmazonEKS_CNI_Policy`; for existing add-ons, cluster reconciliation
 aligns the `aws-node` ServiceAccount annotation with the role already recorded
 by EKS.
 
-In the low-level workflow, inspect the per-stack NLB address with:
+##### DNS domain restrictions
 
-```bash
-kubectl --context <cluster-name>@eu-west-1 \
-  --namespace stack-a \
-  get service proxy \
-  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
-```
+The hostname must be below the managed domain because ExternalDNS prefixes
+its ownership TXT names with a record type. At the managed domain itself, these
+records would fall outside the IAM domain boundary. Subdomain depth is
+unrestricted by this check, but the certificate must still cover the hostname.
 
-With `--dns external-dns`, the proxy Service declares the hostname and the
-cluster controller points it at that address. The portable `or-stack` command
-still makes no AWS calls. Without DNS ownership, create the record externally.
-HAProxy manages its own TLS certificate and keeps Certbot account/certificate
-data on its retained `proxy` PVC.
+##### HAProxy certificate lifecycle and readiness
 
-For both HAProxy and Ingress, `or-eks-stack apply` requires a hostname strictly
-below the configured managed DNS domain. With `openremote.app` configured,
-`test.openremote.app` and `staging.test.openremote.app` are supported, but
-`openremote.app` itself is rejected before namespace preparation or certificate
-issuance. ExternalDNS prefixes its ownership TXT names with a record type;
-at the managed domain itself this would place them outside the IAM domain
-boundary. Subdomain depth is unrestricted by this check, but the certificate
-must still cover the chosen hostname.
+In HAProxy exposure mode, the proxy manages its own TLS certificate and keeps
+Certbot account and certificate data on its retained `proxy` PVC.
 
 `or-eks-stack` automates the necessary ordering. It waits until the public
 hostname and the current NLB hostname resolve to at least one common address,
@@ -178,170 +541,72 @@ Incomplete state or a failed inspection stops apply for investigation. If proxy
 startup creates the certificate concurrently and `add` fails, the facade
 rechecks the files before continuing.
 
-It independently waits for a trusted response from the canonical `/manager/`
-URL: persisted files alone do not prove that TLS or Manager is ready. A Manager
-error or connection timeout therefore does not trigger certificate issuance or
-forced renewal. Its default timeout is 20 minutes for each readiness phase.
-The automated HTTP-01 flow requires public HTTP port 80; use `or-stack`
-directly when a custom HTTP port is intentional.
+For manual certificate operations, `add` rejects an existing certificate
+lineage, while `renew` forces issuance rather than checking readiness.
 
-When using `or-stack` directly, perform the ACME trigger after DNS is ready:
-
-```bash
-kubectl --context <cluster-name>@eu-west-1 \
-  --namespace stack-a \
-  exec deployment/proxy \
-  --container proxy \
-  -- /entrypoint.sh add stack-a.example.com
-
-./or-stack status \
-  --name stack-a \
-  --kube-context <cluster-name>@eu-west-1
-```
-
-Use `add` only for a hostname without existing Certbot state; it rejects an
-existing lineage. Reapplying a stack with retained certificates does not require
-another `add`, and `renew` forces issuance rather than checking readiness.
+`or-eks-stack` independently waits for a trusted response from the canonical
+`/manager/` URL: persisted files alone do not prove that TLS or Manager is ready.
+A Manager error or connection timeout therefore does not trigger certificate
+issuance or forced renewal.
 
 The proxy readiness probe and certificate status are deliberately separate.
 The Pod must be ready and reachable for the HTTP ACME challenge before a
 production certificate can be issued; `or-stack status` shows the certificate
 issuer and expiry once managed or custom certificate material is present.
 
-Use `--exposure none` for an internal-only EKS stack. It creates no proxy,
-Ingress, ALB, or NLB.
+##### Managed-certificate lifecycle
 
-#### Shared HTTPS routing with Ingress
+This lifecycle applies to Ingress stacks using `--certificate-mode managed`.
+The namespace annotations record the selected mode and certificate ARN. ACM
+tags identify the certificate's owner by deployment tool, cluster, stack, and
+exact hostname, allowing the CLI to verify ownership and recover interrupted
+operations.
 
-Select Ingress explicitly to route web traffic through the shared OpenRemote
-ALB and a private gateway in each stack namespace. An explicit existing
-user-owned certificate remains available:
+###### Apply
 
-```bash
-./or-eks-stack apply \
-  --name stack-a \
-  --cluster <cluster-name> \
-  --region eu-west-1 \
-  --exposure ingress \
-  --hostname stack-a.example.com \
-  --certificate-mode existing \
-  --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example
-```
+`or-eks-stack apply` performs these steps automatically:
 
-Before changing the stack, `or-eks-stack` verifies that the ACM ARN belongs to
-the EKS account and region, the certificate has status `ISSUED`, and an exact
-name or one-level wildcard covers the requested hostname. It also rejects the
-future `openremote.io/managed-by=or-eks-stack` ownership tag in `existing`
-mode. The certificate remains user-owned: apply only references it, while
-uninstall and destroy never modify or delete it. The selected mode and ARN are
-recorded as namespace annotations and reported by `or-eks-stack status`.
+1. Prepare the namespace and record the certificate mode before making ACM
+   requests or installing workloads.
+2. Reuse the recorded certificate ARN, discover a uniquely tagged certificate,
+   or request a new DNS-validated ACM certificate if none exists.
+3. Store the validation CNAME records in the namespace's `acm-validation`
+   `DNSEndpoint`. The cluster's ExternalDNS controller publishes them through
+   its restricted cross-account role.
+4. Wait for ACM to report `ISSUED` before installing workloads.
 
-An externally managed certificate intended for multiple stacks can instead be
-recorded once as cluster configuration:
+###### Retry after interruption
 
-```bash
-./or-eks-cluster apply \
-  --name <cluster-name> \
-  --region eu-west-1 \
-  --shared-certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/example
-```
+Rerun the same `apply` command. The recorded mode survives failed applies; if
+the certificate ARN was not recorded before the interruption, the command
+discovers the certificate through its ownership tags or requests one if none
+exists.
 
-The option only records the ARN on the `openremote-alb` IngressClass; it does
-not create, tag, renew, or delete the certificate. Omitting the option on a
-later cluster apply preserves the existing reference. Remove the reference,
-without touching ACM, with `--clear-shared-certificate`.
+A conditional namespace update prevents concurrent first applies from choosing
+different modes. If that update conflicts, retry `apply`.
 
-Stacks then select it without repeating the ARN:
+###### Uninstall
 
-```bash
-./or-eks-stack apply \
-  --name stack-a \
-  --cluster <cluster-name> \
-  --region eu-west-1 \
-  --exposure ingress \
-  --hostname stack-a.example.com \
-  --certificate-mode shared
-```
+`uninstall` retains the recorded mode, certificate, and validation records.
+ACM can continue renewing the certificate, and a later `apply` can reuse it.
 
-On first selection, mode `shared` may be omitted because it is the automatic
-Ingress fallback when the cluster has a shared ARN. Each stack still validates
-the resolved certificate's account, region, `ISSUED` status, hostname coverage, and
-ownership before making stack changes. Its namespace records mode `shared` and
-the resolved ARN. Uninstall and destroy never modify or delete it.
+###### Destroy
 
-On first selection, if the cluster has no shared certificate, omitted mode falls
-back to a stack-owned managed certificate. Select it explicitly with:
+Before deleting anything, `destroy` validates the namespace, Ingress,
+validation `DNSEndpoint`, and exact ACM ownership tags. It then:
 
-```bash
-./or-eks-stack apply \
-  --name stack-a \
-  --cluster <cluster-name> \
-  --region eu-west-1 \
-  --exposure ingress \
-  --hostname stack-a.example.com \
-  --certificate-mode managed
-```
+1. Removes the Ingress.
+2. Waits for the public hostname to disappear from authoritative DNS and for
+   ACM to report that the certificate is detached.
+3. Destroys the namespace, including the validation `DNSEndpoint`.
+4. Waits for the validation CNAME records to disappear from DNS.
+5. Deletes the managed certificate.
 
-Certificate mode is a persistent stack setting. When omitted on later applies,
-the recorded mode is reused, even if the cluster's shared certificate configuration
-has changed. An explicit different mode is rejected before modifying resources.
-A stack recorded as `shared` fails clearly if the cluster's shared certificate
-configuration is removed; it does not fall back to `managed`.
-
-In-place certificate mode migration is not supported. To change modes, back up
-any data you need to retain, destroy the stack and finish its cleanup, then
-recreate it in the desired mode. This avoids abandoning a managed certificate
-and its validation records while the Ingress switches to another certificate.
-
-Certificate rotation within a mode remains supported. Mode `existing` reuses
-its recorded ARN when omitted; supply `--certificate-mode existing` and a new
-`--certificate-arn` to replace it. Mode `shared` uses the cluster's current shared
-ARN on each apply. Mode `managed` reuses its owned certificate.
-
-The initial mode is recorded before ACM requests or workload installation and
-retained across failed applies and uninstall. A conditional namespace update
-prevents concurrent first applies from choosing different modes; if the update
-conflicts, retry apply. An interrupted managed apply without a recorded ARN
-resumes by discovering its tagged certificate or requesting one if none exists.
-
-Managed mode prepares the namespace and records the mode first, then reuses its
-recorded ARN, discovers a uniquely tagged certificate, or requests a new DNS-validated ACM
-certificate. It stores every ACM validation CNAME in the namespace's
-`acm-validation` `DNSEndpoint`; the cluster ExternalDNS controller publishes
-those records through its restricted cross-account role. Certificate tags bind
-ownership to `or-eks-stack`, the cluster, stack, and exact hostname. Workload
-installation starts only after ACM reports `ISSUED`.
-
-Managed mode assumes that both the certificate and its ACM DNS validation
-records are exclusive to the stack. Other resources must not use the certificate,
-and other certificates must not depend on its validation records. ACM can reuse
-a validation CNAME for separate certificates, including certificates in other
-regions of the same AWS account. This exclusivity is a deployment requirement;
-the script's ownership checks do not establish it. Destroying the stack removes
-both its certificate and validation records.
-
-The resolved AWS identity needs `acm:RequestCertificate`,
-`acm:ListCertificates`, `acm:DescribeCertificate`, and
-`acm:ListTagsForCertificate` in the EKS account. It also needs
-`acm:DeleteCertificate` when destroying a managed-certificate stack, in
-addition to the EKS access already required by the facade. Route 53 write
-permission remains confined to the ExternalDNS roles; `or-eks-stack` does not
-use DNS-account credentials.
-
-The CNAME resource and certificate are retained during `uninstall` so ACM can
-renew the certificate and a later apply can reuse it. For a managed certificate,
-`destroy` validates the namespace, Ingress, validation `DNSEndpoint`, and exact
-ACM ownership tags before deleting anything. It then removes the Ingress, waits
-for the public hostname to disappear from authoritative DNS and for ACM to
-report that the certificate is detached, destroys the namespace, waits for the
-validation CNAME to disappear, and deletes the certificate. A failed or
-interrupted destroy can be retried: the facade can recover the certificate from
-its cluster and stack tags even after the namespace is gone. Existing and
+An interrupted `destroy` can be retried. The command can recover the certificate
+from its cluster and stack tags even after the namespace is gone. Existing and
 shared certificates are never deleted by stack destruction.
 
-Ingress mode additionally validates the shared `openremote-alb` IngressClass
-and its enforced HTTPS redirect. ACM DNS validation can be hosted in another
-account.
+##### Shared ALB routing and gateway design
 
 `or-eks-cluster` creates an `openremote-alb` IngressClass backed by an AWS Load
 Balancer Controller `IngressClassParams` resource. It fixes the scheme to
@@ -356,9 +621,8 @@ The resulting web path is:
 Client -> shared ALB (TLS/ACM) -> stack HAProxy gateway (HTTP) -> Manager/Keycloak
 ```
 
-HAProxy uses its edge-terminated TLS configuration in this mode. It does not
-request a certificate or expose its own HTTPS Service port; it routes `/auth`
-to Keycloak and other paths to Manager.
+TLS terminates at the ALB. HAProxy receives plain HTTP and routes /auth to Keycloak and other paths to Manager.
+It does not request certificates or expose an HTTPS Service port in this mode.
 
 The gateway is an intentional NetworkPolicy boundary. The external ALB has no
 Kubernetes Pod or namespace labels, so a portable NetworkPolicy rule that lets
@@ -378,26 +642,12 @@ class. `or-stack` applies that label when it creates or reapplies a valid stack
 namespace. This cluster-side restriction prevents unrelated namespaces from
 joining the shared ALB merely by naming its group.
 
-After applying the first stack, wait for the controller to publish the shared
-ALB hostname:
-
-```bash
-kubectl --context <cluster-name>@eu-west-1 \
-  --namespace stack-a \
-  get ingress proxy \
-  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
-```
-
 The stack Ingress declares its hostname and the cluster controller creates the
 record that points to the ALB. The facade waits for the Ingress to publish its
 ALB hostname, confirms that public DNS resolves to that current ALB, and then
 verifies the trusted `/manager/` endpoint. The EKS target configures listeners
 on ports 80 and 443, while `or-stack` adds the validated certificate supplied
 through `--certificate-arn` to the stack's proxy Ingress.
-
-Use `or-stack --exposure ingress` directly when DNS or endpoint readiness is
-managed elsewhere. The portable command accepts the ARN but deliberately does
-not inspect ACM or call Route 53.
 
 Certificate annotations are merged across the shared IngressGroup, allowing
 the ALB to use SNI when stacks use different certificates. A wildcard
@@ -407,78 +657,11 @@ the AWS Load Balancer Controller documentation for
 [IngressClassParams](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/)
 and [IngressGroup annotation behavior](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/#ingressgroup).
 
-A stack can opt out of the default group through its `proxy.yaml` values. Set
-`ingress.className: alb` and give the proxy Ingress a unique
-`alb.ingress.kubernetes.io/group.name`, together with the desired `scheme` and
-`target-type` annotations. Also add the `ssl-redirect` annotation because the
-dedicated class does not inherit the shared class's redirect setting. That
-creates a separate ALB group for that stack; the shared class remains the
-default.
+##### Cluster destruction and node drain
 
-Use the same apply command with a different stack name to create another
-namespace. For a default HAProxy stack managed through the facade, inspect it
-with:
-
-```bash
-./or-eks-stack status \
-  --name stack-a \
-  --cluster <cluster-name> \
-  --region eu-west-1
-```
-
-New stacks receive independently generated Manager and PostgreSQL passwords.
-Retrieve a stack's Manager administrator login without exposing its database
-credentials with:
-
-```bash
-./or-eks-stack credentials \
-  --name stack-a \
-  --cluster <cluster-name> \
-  --region eu-west-1
-```
-
-Remove workloads while retaining their credentials and EBS-backed data with:
-
-```bash
-./or-eks-stack uninstall \
-  --name stack-a \
-  --cluster <cluster-name> \
-  --region eu-west-1
-```
-
-Reapplying the stack with the same target and exposure reuses its retained
-Secret and data PVCs. HAProxy exposure also reuses its retained certificate
-PVC; Ingress gateways have no certificate PVC because TLS terminates at the
-ALB. The selected target and exposure are stored as namespace labels; changing
-either is rejected until a deliberate migration workflow is implemented. For
-HAProxy and Ingress stacks using an `existing` or `shared` certificate,
-explicitly delete the stack namespace, credentials, PVCs, and dynamically
-provisioned EBS volumes with:
-
-```bash
-./or-eks-stack destroy \
-  --name stack-a \
-  --cluster <cluster-name> \
-  --region eu-west-1 \
-  --confirm stack-a
-```
-
-The destroy command requires the matching stack namespace label and waits for
-the `Delete` reclaim policy to remove the stack's PersistentVolumes. For a
-stack-owned managed certificate it also performs the ordered DNS and ACM
-cleanup described above. The command refuses destructive cleanup if certificate
-or DNS ownership is absent, mismatched, or ambiguous. Perform supported stack
-cleanup before asking `or-eks-cluster` to destroy an otherwise empty cluster.
-Cluster destruction also rejects remaining OpenRemote namespaces, non-system
-workload controllers (including those with no Pods), and PersistentVolumes
-whose claims have already gone. It lists these resources for explicit cleanup;
-see the [cluster lifecycle documentation](cluster/eks/README.md#lifecycle).
-Once that cluster-level preflight succeeds, `or-eks-cluster` bypasses system
+Once the cluster-level cleanup checks succeed, `or-eks-cluster` bypasses system
 PodDisruptionBudgets during the final node drain so EKS add-ons cannot leave
 cluster deletion waiting indefinitely.
-
-Ingress supports `existing`, cluster-configured `shared`, and stack-owned
-`managed` certificate modes.
 
 #### PosgreSQL data directory
 
