@@ -143,15 +143,16 @@ export class OrVaadinInput extends OrElement {
   }
 
   updated(changedProps: PropertyValues) {
+    // A new type renders a different Vaadin element, which starts out without any of the attributes
+    if (changedProps.has("type")) {
+      this._applyAttributes();
+    }
     changedProps.forEach((_, key) => this._onPropertyChange(String(key), this[String(key) as keyof OrVaadinInput]));
     return super.updated(changedProps);
   }
 
   firstUpdated(_changedProps: PropertyValues) {
-    for (const name of this.getAttributeNames()) {
-      // console.debug(this._getLoggingPrefix() + `firstUpdated for ${name} (${typeof this.getAttribute(name)}) to`, this.getAttribute(name));
-      this._applyAttribute(name, this.getAttribute(name), this._elem);
-    }
+    this._applyAttributes();
     return super.firstUpdated(_changedProps);
   }
 
@@ -228,6 +229,17 @@ export class OrVaadinInput extends OrElement {
     ev.stopPropagation();
     if (ev.defaultPrevented) return;
     this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
+  }
+
+  /**
+   * Internal function to apply every attribute of the root element to the child Vaadin element.
+   * @protected
+   */
+  protected _applyAttributes(elem = this._elem) {
+    for (const name of this.getAttributeNames()) {
+      // console.debug(this._getLoggingPrefix() + `applying ${name} (${typeof this.getAttribute(name)}) to`, this.getAttribute(name));
+      this._applyAttribute(name, this.getAttribute(name), elem);
+    }
   }
 
   /**

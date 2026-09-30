@@ -16,9 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import type { OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType } from "@openremote/or-vaadin-components/util";
+import { OrVaadinInput } from "@openremote/or-vaadin-components/or-vaadin-input";
 import { css, html } from "lit";
 import { customElement } from "lit/decorators.js";
+import { ifDefined } from "lit/directives/if-defined.js";
 import { ControlBaseElement } from "./control-base-element";
 import { baseStyle } from "../styles";
 import {
@@ -36,8 +39,13 @@ let defaultTz: string;
 
 // language=CSS
 const style = css`
-  or-mwc-input {
+  or-mwc-input,
+  or-vaadin-input {
     width: 100%;
+  }
+
+  or-vaadin-input {
+    display: block;
   }
 `;
 
@@ -164,6 +172,29 @@ export class ControlInputElement extends ControlBaseElement {
       }
     }
 
+    // or-vaadin-select offers neither multi select nor search, so those stay on or-mwc-input
+    if (OrVaadinInput.TEMPLATES.has(this.inputType) && !multiple && !searchable) {
+      const isCheckbox = this.inputType === InputType.CHECKBOX;
+      return html`<or-vaadin-input
+        .id="${this.id}"
+        type="${this.inputType}"
+        label="${ifDefined(this.label || undefined)}"
+        value="${ifDefined(isCheckbox ? undefined : (value ?? undefined))}"
+        ?checked="${isCheckbox && !!value}"
+        ?disabled="${!this.enabled}"
+        ?required="${!!this.required}"
+        .items="${options?.map(([optionValue, optionLabel]) => ({ value: optionValue, label: optionLabel }))}"
+        minlength="${ifDefined(minLength)}"
+        maxlength="${ifDefined(maxLength)}"
+        pattern="${ifDefined(pattern)}"
+        error-message="${ifDefined(this.errors || undefined)}"
+        step="${ifDefined(step)}"
+        min="${ifDefined(min)}"
+        max="${ifDefined(max)}"
+        @change="${(e: Event) => this.onVaadinValueChanged(e)}"
+      ></or-vaadin-input>`;
+    }
+
     return html`<or-mwc-input
       .label="${this.label}"
       .type="${this.inputType}"
@@ -184,6 +215,29 @@ export class ControlInputElement extends ControlBaseElement {
       .min="${min}"
       .value="${value}"
     ></or-mwc-input>`;
+  }
+
+  /**
+   * Vaadin inputs expose their value as a string, so it is parsed back into the type the schema expects.
+   */
+  protected onVaadinValueChanged(e: Event) {
+    const value = (e.currentTarget as OrVaadinInput).nativeValue;
+    const empty = value === undefined || value === "";
+
+    switch (this.inputType) {
+      case InputType.SELECT: {
+        this.handleChange(this.path!, empty ? undefined : JSON.parse(value));
+        break;
+      }
+      case InputType.NUMBER:
+      case InputType.RANGE: {
+        this.handleChange(this.path!, empty ? undefined : Number(value));
+        break;
+      }
+      default: {
+        this.handleChange(this.path!, value);
+      }
+    }
   }
 
   protected onValueChanged(e: OrInputChangedEvent) {
