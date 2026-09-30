@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { DefaultColor3, DefaultColor4, DefaultColor5 } from "@openremote/core";
-import { css, html, unsafeCSS } from "lit";
+import { css, unsafeCSS } from "lit";
 
 // language=CSS
 export const baseStyle = css`
@@ -128,49 +128,44 @@ export const panelStyle = css`
   }
 `;
 
-// language=HTML
-export const addItemOrParameterDialogStyle = html`
-  <style>
-    .mdc-dialog__surface {
-      width: 800px;
-      overflow-x: visible !important;
-      overflow-y: visible !important;
-    }
-    #dialog-content {
-      border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-      border-top-width: 1px;
-      border-top-style: solid;
-      border-bottom-width: 1px;
-      border-bottom-style: solid;
-      padding: 0;
-    }
-    form {
-      display: flex;
-      height: 100%;
-    }
-    #type-list {
-      overflow: auto;
-      min-width: 150px;
-      max-width: 300px;
-      flex: 0 0 40%;
-      border-right: 1px solid var(--or-app-color5, #ccc);
-    }
-    #parameter-list {
-      display: block;
-    }
-    #parameter-title {
-      text-transform: capitalize;
-      color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-      font-size: 18px;
-      font-weight: bold;
-    }
-    #parameter-desc {
-      padding: 15px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      overflow: auto;
-    }
-  </style>
+/**
+ * Layout for the "add item" and "add parameter" dialogs. Their content is rendered into the shadow root
+ * of the element that opens them, so it is styled from that element's own styles.
+ */
+// language=CSS
+export const addItemOrParameterDialogStyle = css`
+  #dialog-content {
+    display: flex;
+    max-height: 50vh;
+  }
+
+  #type-list {
+    overflow: auto;
+    min-width: 150px;
+    max-width: 300px;
+    flex: 0 0 40%;
+    border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+  }
+
+  #parameter-title {
+    text-transform: capitalize;
+    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  #parameter-desc {
+    padding: 15px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow: auto;
+  }
+
+  #dialog-footer {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+  }
 `;
