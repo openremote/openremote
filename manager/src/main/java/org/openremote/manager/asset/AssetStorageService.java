@@ -3038,6 +3038,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
   protected <T extends HasAssetQuery & RespondableEvent> void onReadRequest(T event) {
     AssetQuery assetQuery = event.getAssetQuery();
+    // Ensure that deleted assets are not included in the result
+    assetQuery.includeDeletePending(false);
+
     Event response = null;
 
     if (event.getResponseConsumer() == null) {
