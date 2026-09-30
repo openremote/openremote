@@ -1719,7 +1719,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
               <or-translate value="cancel"></or-translate>
             </or-vaadin-button>
             <or-vaadin-button theme="primary" ${ref(addBtnRef)} @click=${onOk}>
-              <or-translate value="ok"></or-translate>
+              <or-translate value="add"></or-translate>
             </or-vaadin-button>
           </div>
           </div>

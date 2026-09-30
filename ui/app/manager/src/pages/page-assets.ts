@@ -308,7 +308,7 @@ export class PageAssets extends Page<AssetsStateKeyed> {
             disableSubscribe
             readonly
             .selectedIds="${[]}"
-            style="width: 100%; aspect-ratio: 1/1.5;"
+            style="width: 100%; aspect-ratio: 1/1.75;"
             @or-asset-tree-request-selection="${blockEvent}"
             @or-asset-tree-selection="${blockEvent}"
           ></or-asset-tree>
