@@ -308,6 +308,7 @@ export class PageAssets extends Page<AssetsStateKeyed> {
             disableSubscribe
             readonly
             .selectedIds="${[]}"
+            style="width: 100%; aspect-ratio: 1/1.5;"
             @or-asset-tree-request-selection="${blockEvent}"
             @or-asset-tree-selection="${blockEvent}"
           ></or-asset-tree>
@@ -316,7 +317,7 @@ export class PageAssets extends Page<AssetsStateKeyed> {
               <or-translate value="cancel"></or-translate>
             </or-vaadin-button>
             <div>
-              <or-vaadin-button theme="tertiary" @click=${clearParent}>
+              <or-vaadin-button @click=${clearParent}>
                 <or-translate value="clear"></or-translate>
               </or-vaadin-button>
               <or-vaadin-button theme="primary" @click=${onOk}>
