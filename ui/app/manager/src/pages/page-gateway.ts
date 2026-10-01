@@ -802,7 +802,7 @@ export class PageGateway extends Page<AppStateKeyed> {
               <or-translate value="cancel"></or-translate>
             </or-vaadin-button>
             <or-vaadin-button theme="primary" @click=${onOk}>
-              <or-translate value="ok"></or-translate>
+              <or-translate value="save"></or-translate>
             </or-vaadin-button>
           </div>
         </or-vaadin-dialog>

@@ -525,7 +525,7 @@ export class PageRealms extends Page<AppStateKeyed> {
     let confirmedName = "";
     const okBtnRef: Ref<OrVaadinButton> = createRef();
 
-    const doDelete = async (dialog: OrVaadinConfirmDialog) => {
+    const doDelete = async (dialog?: OrVaadinConfirmDialog) => {
       if (okBtnRef.value.disabled) return;
       try {
         await manager.rest.api.RealmResource.delete(realm.name);
@@ -534,7 +534,7 @@ export class PageRealms extends Page<AppStateKeyed> {
       } catch (e) {
         showSnackbar(undefined, "realmDeleteFailed", "dismiss");
       } finally {
-        dialog.close();
+        dialog?.close();
       }
     };
 

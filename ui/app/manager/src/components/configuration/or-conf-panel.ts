@@ -232,7 +232,7 @@ export class OrConfPanel extends OrElement {
             .items=${realmItems}
             @change=${(ev: Event) => {
               this._addedRealm = (ev.currentTarget as OrVaadinSelect).value;
-              buttonRef.value.disabled = !selectRef.value?.checkValidity();
+              buttonRef.value!.disabled = !selectRef.value?.checkValidity();
             }}
           >
             <or-translate slot="label" value="realm"></or-translate>

@@ -843,7 +843,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     dialog = showDialog(
       this.shadowRoot!,
       html`
-        <or-vaadin-dialog width="384px">
+        <or-vaadin-dialog width="384px" no-close-on-esc no-close-on-outside-click>
           <h2 slot="header-content">
             <or-translate value="linkedAssets"></or-translate>
           </h2>

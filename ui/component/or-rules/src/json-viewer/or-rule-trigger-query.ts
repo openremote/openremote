@@ -237,7 +237,7 @@ export class OrRuleTriggerQuery extends OrElement {
                       ${this.renderDialogHTML(this.condition.sun?.location)}
                       <div slot="footer" style="width: 100%; display: flex; justify-content: end;">
                         <or-vaadin-button theme="primary" @click=${() => this._mapDialogElem?.close()}>
-                          <or-translate value="ok"></or-translate>
+                          <or-translate value="close"></or-translate>
                         </or-vaadin-button>
                       </div>
                     </or-vaadin-dialog>

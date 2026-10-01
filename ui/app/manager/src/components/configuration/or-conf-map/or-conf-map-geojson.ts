@@ -78,10 +78,10 @@ export class OrConfMapGeoJson extends OrElement {
           ></or-ace-editor>
           <div slot="footer" style="width: 100%; display: flex; justify-content: space-between">
             <or-vaadin-button theme="tertiary" @click=${() => this._dialog?.close()}>
-              <or-translate value="cancel"></or-translate>
+              <or-translate value="close"></or-translate>
             </or-vaadin-button>
             <or-vaadin-button theme="primary" ${ref(buttonRef)} disabled @click=${onOk}>
-              <or-translate value="ok"></or-translate>
+              <or-translate value="update"></or-translate>
             </or-vaadin-button>
           </div>
         </or-vaadin-dialog>

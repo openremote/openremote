@@ -61,11 +61,11 @@ export class OrConfJson extends OrElement {
     };
 
     const onCancel = () => {
-      dialog.close();
+      dialog?.close();
     };
     const onOk = () => {
       if (_saveConfig()) {
-        dialog.close();
+        dialog?.close();
       }
     };
 
@@ -90,7 +90,7 @@ export class OrConfJson extends OrElement {
               <or-translate value="cancel"></or-translate>
             </or-vaadin-button>
             <or-vaadin-button theme="primary" ${ref(this._updateButton)} @click=${onOk}>
-              <or-translate value="ok"></or-translate>
+              <or-translate value="update"></or-translate>
             </or-vaadin-button>
           </div>
         </or-vaadin-dialog>

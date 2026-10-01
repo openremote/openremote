@@ -370,7 +370,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             @change=${(ev: Event) => {
               const value = (ev.currentTarget as HTMLInputElement).value;
               tunnel.targetPort = value ? Number(value) : undefined;
-              buttonRef.value.disabled = !tunnel.gatewayId || !tunnel.target || !tunnel.targetPort;
+              buttonRef.value!.disabled = !tunnel.gatewayId || !tunnel.target || !tunnel.targetPort;
               checkValidity();
             }}
           >
