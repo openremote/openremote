@@ -345,6 +345,68 @@ public interface AssetResource {
           Asset<?> asset);
 
   /**
+   * Retrieve the attribute configuration of the asset as a user editable document, holding the type
+   * and metadata of every attribute that has metadata. Repeat the attributeName query parameter to
+   * export a subset of them. Access follows the same rules as {@link #get}.
+   */
+  @GET
+  @Path("{assetId}/attributeConfiguration")
+  @Produces(APPLICATION_JSON)
+  @RolesAllowed({Constants.READ_ASSETS_ROLE})
+  @Operation(
+      operationId = "exportAttributeConfiguration",
+      summary = "Export the attribute configuration of an asset",
+      description =
+          "Returns a versioned document holding the type and metadata of each attribute that has metadata, limited to the requested attribute names when any are given. Attributes without metadata are never included.")
+  @OpenApiResponses.Ok
+  @OpenApiResponses.Authenticated
+  @OpenApiResponses.BadRequest
+  @OpenApiResponses.NotFound
+  AttributeConfigurationDocument exportAttributeConfiguration(
+      @BeanParam RequestParams requestParams,
+      @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId")
+          String assetId,
+      @Parameter(
+              description =
+                  "Attribute names to export. Repeat the query parameter for multiple attributes, omit it to export all attributes that have metadata.",
+              style = ParameterStyle.FORM,
+              explode = Explode.TRUE)
+          @QueryParam("attributeName")
+          List<String> attributeNames);
+
+  /**
+   * Validate an attribute configuration document against an asset draft and report what importing
+   * it would do, without storing anything. The returned patched attributes are for the client to
+   * apply to the draft once the user confirms, so the same access as {@link #update} is required. A
+   * 400 status is returned if the document cannot be imported, and a 409 status if the draft no
+   * longer identifies the persisted asset.
+   */
+  @POST
+  @Path("{assetId}/attributeConfiguration/import")
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
+  @Operation(
+      operationId = "previewAttributeConfigurationImport",
+      summary = "Preview an attribute configuration import",
+      description =
+          "Validates the document, matches its attributes against the draft by name and type, and returns the compatibility report together with the draft attributes holding the imported metadata. Nothing is stored; the client applies the patch after the user confirms.")
+  @OpenApiResponses.Ok
+  @OpenApiResponses.Authenticated
+  @OpenApiResponses.BadRequest
+  @OpenApiResponses.NotFound
+  @OpenApiResponses.Conflict
+  AttributeConfigurationImportPreview previewAttributeConfigurationImport(
+      @BeanParam RequestParams requestParams,
+      @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId")
+          String assetId,
+      @RequestBody(
+              required = true,
+              description =
+                  "The asset draft being edited and the contents of the selected configuration file.")
+          @NotNull AttributeConfigurationImportRequest request);
+
+  /**
    * Updates an attribute of an asset. Regular users can only update assets in their authenticated
    * realm, the superuser can update assets in other (all) realms. A 403 status is returned if a
    * regular user tries to update an asset in a realm different than its authenticated realm, or if
