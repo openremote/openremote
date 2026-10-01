@@ -1722,7 +1722,6 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
               <or-translate value="add"></or-translate>
             </or-vaadin-button>
           </div>
-          </div>
         </or-vaadin-dialog>
       `
     );

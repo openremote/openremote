@@ -55,6 +55,7 @@ export class OrConfMapGeoJson extends OrElement {
     const onOk = () => {
       this.geoJson = this.parseGeoJson(this._aceEditorValue); // update with new value
       this.dispatchEvent(new CustomEvent("update", { detail: { value: this.geoJson } }));
+      this._dialog?.close();
     };
     this._dialog = showDialog(
       this.shadowRoot!,

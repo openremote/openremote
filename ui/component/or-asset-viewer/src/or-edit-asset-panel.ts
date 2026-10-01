@@ -728,6 +728,7 @@ export class OrEditAssetPanel extends OrElement {
       this.asset.parentId = undefined;
       this.asset.path = [this.asset.id!];
       this._onModified();
+      dialog?.close();
     };
 
     const blockEvent = (ev: Event) => ev.stopPropagation();

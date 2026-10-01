@@ -287,6 +287,7 @@ export class PageAssets extends Page<AssetsStateKeyed> {
 
     const clearParent = () => {
       this._onAssetParentChange({ parentId: undefined, assetIds: this._assetIds });
+      dialog?.close();
     };
 
     const onCancel = () => dialog?.close();

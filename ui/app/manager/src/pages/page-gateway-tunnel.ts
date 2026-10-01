@@ -396,7 +396,6 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             </or-vaadin-button>
           </div>
         </or-vaadin-dialog>
-        </or-vaadin-dialog>
       `
     );
   }
