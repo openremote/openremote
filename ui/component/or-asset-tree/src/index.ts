@@ -1200,7 +1200,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
         // Values that contain spaces get additional "quotes", so the parser keeps them as a single value
         const displayValue = attributeValue.includes(" ") ? `"${attributeValue}"` : attributeValue;
         handledAttributeForValues.push(newFilter.attribute[index]);
-        searchInput += prefix + '"' + newFilter.attribute[index] + '":' + displayValue;
+        searchInput += prefix + `"${newFilter.attribute[index]}":` + displayValue;
         prefix = " ";
       });
     }
