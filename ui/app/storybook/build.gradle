@@ -1,74 +1,5 @@
 plugins {
-  id 'java'
-  id 'maven-publish'
-  id 'signing'
-}
-
-sourceSets.main.resources.srcDirs += layout.buildDirectory.dir("classes/main")
-
-base {
-  archivesName = "openremote-${project.name}"
-}
-
-java {
-  withJavadocJar()
-  withSourcesJar()
-}
-
-publishing {
-  publications {
-    maven(MavenPublication) {
-      group = "io.openremote.ui"
-      artifactId = "openremote-${project.name}"
-      from components.java
-      pom {
-        name = 'OpenRemote Storybook'
-        description = 'Provides the Storybook UI for OpenRemote components'
-        url = 'https://github.com/openremote/openremote'
-        licenses {
-          license {
-            name = 'GNU Affero General Public License v3.0'
-            url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
-          }
-        }
-        developers {
-          developer {
-            id = 'developers'
-            name = 'Developers'
-            email = 'developers@openremote.io'
-            organization = 'OpenRemote'
-            organizationUrl = 'https://openremote.io'
-          }
-        }
-        scm {
-          connection = 'scm:git:git://github.com/openremote/openremote.git'
-          developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
-          url = 'https://github.com/openremote/openremote/tree/master'
-        }
-      }
-    }
-  }
-
-  repositories {
-    maven {
-      if (!version.endsWith('-LOCAL')) {
-        credentials {
-          username = findProperty("publishUsername")
-          password = findProperty("publishPassword")
-        }
-      }
-      url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
-    }
-  }
-}
-
-signing {
-  def signingKey = findProperty("signingKey")
-  def signingPassword = findProperty("signingPassword")
-  if (signingKey && signingPassword) {
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications.maven
-  }
+  id 'base'
 }
 
 tasks.register('npmBuild', Exec) {
@@ -92,12 +23,6 @@ tasks.register('cleanDist') {
   dependsOn npmClean
 }
 
-tasks.register('generateSources', Copy) {
-  dependsOn npmBuild
-  from layout.buildDirectory.dir("dist")
-  into layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
-}
-
 tasks.register('prepareUi') {
   dependsOn clean, npmPrepare
 }
@@ -114,8 +39,3 @@ tasks.register('installDist', Copy) {
 }
 
 clean.dependsOn(cleanDist)
-jar.dependsOn(generateSources)
-processResources.dependsOn(generateSources)
-sourcesJar.dependsOn(generateSources)
-
-gradle.startParameter.excludedTaskNames += ["${project.path}:test".toString()]

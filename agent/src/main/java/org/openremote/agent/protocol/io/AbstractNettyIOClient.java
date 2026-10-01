@@ -28,6 +28,7 @@ import io.netty.channel.*;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
 import jakarta.validation.constraints.NotNull;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -298,13 +299,28 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
           if (ex != null) {
             // Cleanup resources
             disconnect();
-          } else {
-            synchronized (this) {
-              if (connectionStatus == ConnectionStatus.CONNECTING) {
+            return;
+          }
+
+          boolean reconnect = false;
+
+          synchronized (this) {
+            if (connectionStatus == ConnectionStatus.CONNECTING) {
+              if (isChannelReady()) {
                 LOG.fine("Connection attempt success: " + getClientUri());
                 onConnectionStatusChanged(ConnectionStatus.CONNECTED);
+              } else {
+                // The channel closed between the attempt succeeding and this callback running, so
+                // reporting it as connected would leave the client stuck on a dead channel with no
+                // further close event to act on
+                LOG.fine("Connection closed before it could be reported: " + getClientUri());
+                reconnect = true;
               }
             }
+          }
+
+          if (reconnect) {
+            doReconnect();
           }
         },
         executorService);
@@ -482,6 +498,7 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
         .addListener(
             closedFuture -> {
               boolean reconnect = false;
+              CompletableFuture<Void> failedAttempt = null;
 
               if (!closedFuture.isSuccess() && closedFuture.cause() != null) {
                 LOG.info(
@@ -495,7 +512,18 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
                 if (connectionStatus == ConnectionStatus.CONNECTED) {
                   onConnectionStatusChanged(ConnectionStatus.CONNECTING);
                   reconnect = true;
+                } else if (connectionStatus == ConnectionStatus.CONNECTING) {
+                  // Closed before this attempt reported success, which happens when the peer
+                  // rejects the connection as soon as it is opened. Fail the attempt so the retry
+                  // policy handles it, otherwise the attempt goes on to report itself connected on
+                  // a channel that has already gone and nothing ever reconnects.
+                  failedAttempt = connectFuture;
                 }
+              }
+
+              if (failedAttempt != null) {
+                failedAttempt.completeExceptionally(
+                    new IOException("Connection closed while connecting: " + getClientUri()));
               }
 
               if (reconnect) {

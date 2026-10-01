@@ -79,6 +79,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     if (!authContext.isSuperUser()) {
+      throwIfNotRealmActiveAndAccessible(authContext.getAuthenticatedRealmName());
+
       // Force realm to match users
       query.realm(new RealmPredicate(authContext.getAuthenticatedRealmName()));
 
@@ -157,11 +159,12 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
   @Override
   public User updateCurrent(RequestParams requestParams, User user) {
-    try {
-      Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
-      String userId = authInfo.getKey();
-      String realm = authInfo.getValue();
+    Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
+    String userId = authInfo.getKey();
+    String realm = authInfo.getValue();
+    throwIfNotRealmActiveAndAccessible(realm);
 
+    try {
       // Ensure the user ID in the provided user object matches the current user
       if (user.getId() != null && !user.getId().equals(userId)) {
         throw new ForbiddenException("Cannot update a different user's information");
@@ -229,11 +232,12 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
   @Override
   public void requestPasswordResetCurrent(RequestParams requestParams) {
-    try {
-      Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
-      String userId = authInfo.getKey();
-      String realm = authInfo.getValue();
+    Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
+    String userId = authInfo.getKey();
+    String realm = authInfo.getValue();
+    throwIfNotRealmActiveAndAccessible(realm);
 
+    try {
       // Call the identity provider to request password reset for the current user
       identityService.getIdentityProvider().requestPasswordReset(realm, userId);
     } catch (ClientErrorException ex) {
@@ -259,11 +263,12 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
   @Override
   public void updatePasswordCurrent(@BeanParam RequestParams requestParams, Credential credential) {
-    try {
-      Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
-      String userId = authInfo.getKey();
-      String realm = authInfo.getValue();
+    Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
+    String userId = authInfo.getKey();
+    String realm = authInfo.getValue();
+    throwIfNotRealmActiveAndAccessible(realm);
 
+    try {
       // Call the identity provider to reset the password
       identityService.getIdentityProvider().resetPassword(realm, userId, credential);
     } catch (ClientErrorException ex) {
@@ -459,6 +464,35 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
   @Override
   public void disconnectUserSession(RequestParams requestParams, String realm, String sessionID) {
+    String connectionUserId = mqttBrokerService.getConnectionUserId(sessionID);
+    if (connectionUserId == null) {
+      throw new NotFoundException("User session not found");
+    }
+
+    User connectionUser = identityService.getIdentityProvider().getUser(connectionUserId);
+    if (connectionUser == null) {
+      throw new NotFoundException("User not found");
+    }
+
+    String connectionRealm = connectionUser.getRealm();
+
+    if (!connectionRealm.equals(realm)) {
+      throw new NotFoundException("User session not found in realm");
+    }
+
+    throwIfCannotReadUserInRealm(connectionRealm, connectionUserId);
+
+    boolean hasAdminWriteRole =
+        hasResourceRoleOrIsSuperUser(
+            ClientRole.WRITE_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
+
+    if (!hasAdminWriteRole && !Objects.equals(getUserId(), connectionUserId)) {
+      throw new ForbiddenException(
+          "Can only disconnect own user sessions unless you have role '"
+              + ClientRole.WRITE_ADMIN
+              + "'");
+    }
+
     if (!mqttBrokerService.disconnectSession(sessionID)) {
       throw new NotFoundException("User session not found");
     }
@@ -505,6 +539,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
       throw new NotAllowedException("Cannot mutate a user in a different realm");
     }
 
+    throwIfNotRealmActiveAndAccessible(realm);
+
     if (!currentUserId.equals(userId)
         && !hasResourceRole(Constants.WRITE_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
       throw new NotAllowedException("Not allowed to mutate another user");
@@ -520,6 +556,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     if (!authContext.isRealmAccessibleByUser(realm)) {
       throw new NotAllowedException("Cannot administer a different realm");
     }
+
+    throwIfNotRealmActiveAndAccessible(realm);
   }
 
   protected void throwIfCannotReadUserInRealm(String realm, String userId)

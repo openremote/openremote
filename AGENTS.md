@@ -11,7 +11,13 @@ The backend is written in Java, we target JDK 21, use modern language features u
 Gradle is used as the build system; run `./gradlew clean installDist` for a full clean build.  
 In sandboxed environments, add `--offline` (requires dependencies to already be cached).
 
-## Running tests
+## Tests
+
+### Writing tests
+
+Since Spock 2.0, unrolling is the default, don't add un-necessary @Unroll annotations.
+
+### Running tests
 
 When running integration tests, part of the stack (PostgreSQL and Keycloak) must be running. Start it with `docker compose -f profile/dev-testing.yml -p openremote up -d --no-build`.
 

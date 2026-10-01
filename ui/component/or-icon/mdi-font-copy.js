@@ -20,16 +20,9 @@
 const fs = require("fs");
 const path = require("path");
 
-if (!fs.existsSync("build")) {
-  fs.mkdirSync("build");
-}
+const packageDir = path.dirname(require.resolve("@mdi/font/package.json"));
+const source = path.join(packageDir, "fonts", "materialdesignicons-webfont.woff2");
+const outputDir = "./build/Material Design Icons/fonts";
 
-const fontDir = path.join(path.dirname(require.resolve("@mdi/font/package.json")), "fonts");
-const cssDir = path.join(path.dirname(require.resolve("@mdi/font/package.json")), "css");
-
-if (!fs.existsSync("build/Material Design Icons")) {
-  fs.mkdirSync("build/Material Design Icons", { recursive: true });
-}
-
-fs.cpSync(fontDir, "./build/Material Design Icons/fonts", { recursive: true });
-fs.cpSync(cssDir, "./build/Material Design Icons/css", { recursive: true });
+fs.mkdirSync(outputDir, { recursive: true });
+fs.copyFileSync(source, path.join(outputDir, "materialdesignicons-webfont.woff2"));

@@ -14,6 +14,14 @@ application {
   mainClass = "org.openremote.manager.Main"
 }
 
+configurations {
+  otelJavaAgent {
+    canBeConsumed = false
+    canBeResolved = true
+    transitive = false
+  }
+}
+
 dependencies {
 
   api project(":container")
@@ -57,6 +65,8 @@ dependencies {
   implementation libs.prometheusMetricsExporterHttpserver
 
   implementation libs.sshdNetty
+
+  otelJavaAgent libs.opentelemetryJavaagent
 
   testImplementation libs.groovyAll
   testImplementation platform(libs.spockBom)
@@ -137,6 +147,11 @@ distributions {
       into("map") {
         from("${projectDir}/src/map")
       }
+      into("opentelemetry") {
+        from(configurations.otelJavaAgent) {
+          rename { "opentelemetry-javaagent.jar" }
+        }
+      }
     }
   }
 }
@@ -150,7 +165,6 @@ java {
   withSourcesJar()
 }
 
-def openApiJsonFile = layout.buildDirectory.file('openapi/openapi.json')
 def openApiYamlFile = layout.buildDirectory.file('openapi/openapi.yaml')
 
 publishing {
@@ -159,12 +173,6 @@ publishing {
       group = "io.openremote"
       artifactId = "openremote-${project.name}"
       from components.java
-
-      artifact(openApiJsonFile) {
-        classifier = 'openapi'
-        extension = 'json'
-        builtBy tasks.named('resolve')
-      }
 
       artifact(openApiYamlFile) {
         classifier = 'openapi'
