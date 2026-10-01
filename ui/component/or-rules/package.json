@@ -47,7 +47,7 @@
     "linqts": "^3.2.0",
     "lit": "^3.3.1",
     "lodash.debounce": "^4.0.8",
-    "moment": "^2.29.4",
+    "moment": "^2.31.0",
     "resize-observer": "^1.0.3",
     "shortid": "^2.2.15"
   },
