@@ -300,16 +300,6 @@ public interface AssetResource {
       @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId")
           String assetId);
 
-  @GET
-  @Path("{assetId}/deletePending")
-  @Produces(APPLICATION_JSON)
-  @RolesAllowed({Constants.READ_ASSETS_ROLE})
-  @Operation(
-      operationId = "isAssetDeletePending",
-      summary = "Check whether an asset deletion is pending")
-  boolean isDeletePending(
-      @BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
-
   /**
    * Updates the asset. Regular users can only update assets in their authenticated realm, the
    * superuser can update assets in other (all) realms. A 403 status is returned if a regular user
@@ -671,7 +661,7 @@ public interface AssetResource {
   @Produces(APPLICATION_JSON)
   @Operation(
       operationId = "queryCount",
-      summary = "Count assets using a query",
+      summary = "Count assets using a query (can also be used to count assets pending deletion)",
       description =
           "Returns only the number of assets matching an AssetQuery after applying the caller's realm, public, and linked-asset access constraints.")
   @OpenApiResponses.Ok

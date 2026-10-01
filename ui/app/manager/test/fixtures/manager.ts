@@ -585,6 +585,21 @@ export class Manager {
     const assetIds = assets.map(({ id }) => id!);
     const response = await rest.api.AssetResource.delete({ assetId: assetIds }, config);
     expect(response.status).toBe(204);
+    // Wait for the assets to be deleted
+    await expect
+      .poll(async () => {
+        const countResponse = await rest.api.AssetResource.queryCount(
+          {
+            select: { attributes: [] },
+            realm: { name: realm },
+            includeDeletePending: true,
+          },
+          config
+        );
+        expect(countResponse.status).toBe(200);
+        return countResponse.data;
+      })
+      .toBe(0);
   }
 
   /**

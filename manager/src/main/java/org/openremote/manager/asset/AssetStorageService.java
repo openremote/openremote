@@ -633,7 +633,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
   public List<String> findNames(String... ids) {
     if (ids == null || ids.length == 0) return new ArrayList<>();
 
-    // TODO: Do this in a loop in reasonably sized batches
     return persistenceService.doReturningTransaction(
         em -> {
           List<Object[]> result =
@@ -717,6 +716,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     long startTime = System.currentTimeMillis();
     String assetId = asset.getId();
 
+    // Ensure delete pending flag is not set for merges
+    asset.setDeletePending(false);
+
     // We skip all standard checks as asset is coming from a gateway and would be validated from
     // there
     if (requestingGatewayAsset != null) {
@@ -774,55 +776,60 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                           : (T) em.find(Asset.class, asset.getId());
 
                   if (existingAsset != null) {
+                    boolean cancelSucceeded = true;
+
                     if (existingAsset.isDeletePending()) {
-                      String msg = "Asset is pending deletion: asset=" + asset;
-                      LOG.warning(msg);
-                      throw new IllegalStateException(msg);
+                      cancelSucceeded = cancelDeleteAsset(asset.getId());
                     }
 
-                    // Verify type has not been changed
-                    if (!existingAsset.getType().equals(asset.getType())) {
-                      String msg = "Asset type cannot be changed: asset=" + asset;
-                      LOG.warning(msg);
-                      throw new IllegalStateException(msg);
-                    }
+                    if (!cancelSucceeded) {
+                      existingAsset = null;
+                    } else {
+                      // Verify type has not been changed
+                      if (!existingAsset.getType().equals(asset.getType())) {
+                        String msg = "Asset type cannot be changed: asset=" + asset;
+                        LOG.warning(msg);
+                        throw new IllegalStateException(msg);
+                      }
 
-                    if (!existingAsset.getRealm().equals(asset.getRealm())) {
-                      String msg = "Asset realm cannot be changed: asset=" + asset;
-                      LOG.warning(msg);
-                      throw new IllegalStateException(msg);
-                    }
+                      if (!existingAsset.getRealm().equals(asset.getRealm())) {
+                        String msg = "Asset realm cannot be changed: asset=" + asset;
+                        LOG.warning(msg);
+                        throw new IllegalStateException(msg);
+                      }
 
-                    // Update timestamp on modified attributes this allows fast equality checking
-                    asset.getAttributes().stream()
+                      // Update timestamp on modified attributes this allows fast equality checking
+                      T finalExistingAsset = existingAsset;
+                      asset.getAttributes().stream()
                         .forEach(
-                            attr ->
-                                existingAsset
-                                    .getAttribute(attr.getName())
-                                    .ifPresent(
-                                        existingAttr -> {
-                                          // If attribute is modified make sure the timestamp is
-                                          // also updated to allow simple equality
-                                          if (!attr.deepEquals(existingAttr)
-                                              && attr.getTimestamp().orElse(0L)
-                                                  <= existingAttr.getTimestamp().orElse(0L)) {
-                                            // In the unlikely situation that we are in the same
-                                            // millisecond as last update
-                                            // we will always ensure a delta of >= 1ms
-                                            attr.setTimestamp(
-                                                Math.max(
-                                                    existingAttr.getTimestamp().orElse(0L) + 1,
-                                                    timerService.getCurrentTimeMillis()));
-                                          }
-                                        }));
+                          attr ->
+                            finalExistingAsset
+                              .getAttribute(attr.getName())
+                              .ifPresent(
+                                existingAttr -> {
+                                  // If attribute is modified make sure the timestamp is
+                                  // also updated to allow simple equality
+                                  if (!attr.deepEquals(existingAttr)
+                                    && attr.getTimestamp().orElse(0L)
+                                    <= existingAttr.getTimestamp().orElse(0L)) {
+                                    // In the unlikely situation that we are in the same
+                                    // millisecond as last update
+                                    // we will always ensure a delta of >= 1ms
+                                    attr.setTimestamp(
+                                      Math.max(
+                                        existingAttr.getTimestamp().orElse(0L) + 1,
+                                        timerService.getCurrentTimeMillis()));
+                                  }
+                                }));
 
-                    // If this is real merge and desired, copy the persistent version number over
-                    // the detached
-                    // version, so the detached state always wins and this update will go through
-                    // and ignore
-                    // concurrent updates
-                    if (overrideVersion) {
-                      asset.setVersion(existingAsset.getVersion());
+                      // If this is real merge and desired, copy the persistent version number over
+                      // the detached
+                      // version, so the detached state always wins and this update will go through
+                      // and ignore
+                      // concurrent updates
+                      if (overrideVersion) {
+                        asset.setVersion(existingAsset.getVersion());
+                      }
                     }
                   }
 
@@ -1124,6 +1131,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     return markAssetsForDeletionAndQueue(ids, assetIds);
   }
 
+  /**
+   * Marks assets as pending deletion and queues them for actual deletion.
+   * @return DeleteResult indicating whether the deletion was accepted or rejected
+   */
   protected DeleteResult markAssetsForDeletionAndQueue(List<String> ids, List<String> assetIds) {
     if (!ids.isEmpty()) {
       try {
@@ -1182,10 +1193,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     return DeleteResult.accepted(CompletableFuture.completedFuture(true));
   }
 
+  /**
+   * Queue deletion of all assets marked as pending deletion
+   */
   protected void queueAssetsDeletion() {
     queueAssetsDeletion(findPendingDeleteAssetIds());
   }
 
+  /**
+   * Queue deletion of the specified ordered asset IDs
+   * @return CompletableFuture indicating whether the etire deletion batch succeeded
+   */
   protected CompletableFuture<Boolean> queueAssetsDeletion(List<String> orderedAssetIds) {
     if (pendingAssetDeleteStopping) {
       return CompletableFuture.completedFuture(false);
@@ -1232,6 +1250,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     return deleteResult;
   }
 
+  /**
+   * Re-attempts batch deletion of all assets that previously failed deletion.
+   */
   protected void retryFailedAssetDeletes() {
     if (pendingAssetDeleteStopping) {
       return;
@@ -1250,6 +1271,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     requestPendingAssetDeletionRetry(failedAssetIds);
   }
 
+  /**
+   * Re-attempts batch deletion of the specified assets.
+   */
   protected void requestPendingAssetDeletionRetry(List<String> assetIds) {
     if (pendingAssetDeleteStopping || assetIds.isEmpty()) {
       return;
@@ -1271,6 +1295,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     executorService));
   }
 
+  /**
+   * Get all assets from the database that are marked as pending deletion
+   * @return List of asset IDs that are pending deletion
+   */
   @SuppressWarnings("unchecked")
   protected List<String> findPendingDeleteAssetIds() {
     return persistenceService.doReturningTransaction(
@@ -1285,6 +1313,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     return datapointCount > assetDeleteDatapointBatchThreshold;
   }
 
+  /**
+   * Get the datapoint counts for all the provided asset IDs
+   * @return map of asset ID and datapoint count
+   */
   protected Map<String, Long> findAssetDatapointCounts(Collection<String> assetIds) {
     if (assetIds.isEmpty()) {
       return Collections.emptyMap();
@@ -1317,6 +1349,22 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     return datapointCounts;
   }
 
+  /**
+   * Attempts to cancel a pending asset deletion
+   * @return true if the deletion was successfully cancelled, false otherwise
+   */
+  protected boolean cancelDeletion(String assetId) {
+    LOG.info("Attempting to cancel pending asset deletion: assetId=" + assetId);
+    existingAsset.setDeletePending(false);
+    asset.setDeletePending(false);
+    failedAssetDeleteIds.remove(existingAsset.getId());
+  }
+
+  /**
+   * Handles the actual deletion of an asset by batching the datapoint deletion if count is above threshold; otherwise
+   * the asset is just deleted and FK cascading ensures datapoints are correctly deleted.
+   * @return True if the asset was successfully deleted
+   */
   protected boolean doAssetDeletion(String assetId, long datapointCount) {
     long start = System.currentTimeMillis();
 
@@ -1347,13 +1395,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     return deletePendingAsset(assetId);
   }
 
+  /**
+   * Purges the Asset entity from the database only if no ancestor assets have failed deletion.
+   * @return True if the asset was successfully deleted
+   */
   protected boolean deletePendingAsset(String assetId) {
     if (pendingAssetDeleteStopping) {
       return false;
     }
 
     LOG.fine("Deleting asset: assetId=" + assetId);
-
     AtomicReference<Boolean> blockedByFailedPath = new AtomicReference<>(false);
 
     try {

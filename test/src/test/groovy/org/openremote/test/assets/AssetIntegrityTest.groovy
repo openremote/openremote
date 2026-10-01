@@ -34,6 +34,7 @@ import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeState
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.query.AssetQuery
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -538,7 +539,8 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     then: "the child is pending deletion"
     childAccepted
     conditions.eventually {
-      assert assetStorageService.isDeletePending(childAsset.id)
+      assert assetStorageService.count(new AssetQuery().ids(childAsset.id)) == 0
+      assert assetStorageService.count(new AssetQuery().includeDeletePending(true).ids(childAsset.id)) == 1
     }
 
     when: "the parent is deleted while the child is still pending deletion"
@@ -548,7 +550,8 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     then: "the parent is accepted for deletion"
     parentAccepted
     conditions.eventually {
-      assert assetStorageService.isDeletePending(parentAsset.id)
+      assert assetStorageService.count(new AssetQuery().ids(parentAsset.id)) == 0
+      assert assetStorageService.count(new AssetQuery().includeDeletePending(true).ids(parentAsset.id)) == 1
     }
   }
 
