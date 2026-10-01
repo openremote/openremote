@@ -21,6 +21,8 @@ Since Spock 2.0, unrolling is the default, don't add un-necessary @Unroll annota
 
 When running integration tests, part of the stack (PostgreSQL and Keycloak) must be running. Start it with `docker compose -f profile/dev-testing.yml -p openremote up -d --no-build`.
 
+Spock snapshots are stored under `model/src/test/resources/snapshots`. Rewrite them with `./gradlew :model:test -PupdateSnapshots` and review the resulting diff, since a mismatch is only reported as a test failure otherwise.
+
 ## REST resources
 
 ### Endpoint roles
