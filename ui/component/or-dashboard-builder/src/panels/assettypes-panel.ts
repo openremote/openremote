@@ -345,6 +345,7 @@ export class AssettypesPanel extends OrElement {
             .showSortBtn="${false}"
             .showFilterIcon="${false}"
             .checkboxes="${multi}"
+            style="width: 100%; aspect-ratio: 1/1.75;"
           ></or-asset-tree>
           <div slot="footer" style="width: 100%; display: flex; justify-content: space-between">
             <or-vaadin-button theme="tertiary" @click=${onCancel}>

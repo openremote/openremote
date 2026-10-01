@@ -563,7 +563,7 @@ export class PageRealms extends Page<AppStateKeyed> {
             "deleteRealmConfirm",
             dialogContent,
             html`
-              <or-vaadin-button ${ref(okBtnRef)} disabled slot="confirm-button">
+              <or-vaadin-button theme="primary error" ${ref(okBtnRef)} disabled slot="confirm-button">
                 <or-translate value="delete"></or-translate>
               </or-vaadin-button>
             `,
