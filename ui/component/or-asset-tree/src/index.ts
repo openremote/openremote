@@ -1198,7 +1198,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     if (newFilter.attribute.length > 0 && newFilter.attributeValue.length > 0) {
       newFilter.attributeValue.forEach((attributeValue: string, index: number) => {
         // Values that contain spaces get additional "quotes", so the parser keeps them as a single value
-        const displayValue = attributeValue.includes(" ") ? '"' + attributeValue + '"' : attributeValue;
+        const displayValue = attributeValue.includes(" ") ? `"${attributeValue}"` : attributeValue;
         handledAttributeForValues.push(newFilter.attribute[index]);
         searchInput += prefix + '"' + newFilter.attribute[index] + '":' + displayValue;
         prefix = " ";
