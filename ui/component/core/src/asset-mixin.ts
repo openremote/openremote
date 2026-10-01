@@ -23,42 +23,16 @@ import { Util } from ".";
 
 declare type Constructor<T = {}> = new (...args: any[]) => T;
 
-interface CustomElement {
+export interface CustomElement {
   requestUpdate(name?: PropertyKey, oldValue?: unknown): void;
   connectedCallback?(): void;
   disconnectedCallback?(): void;
   readonly isConnected: boolean;
 }
 
-export interface SubscribedElement extends CustomElement {
-  set assetIds(value: string[] | undefined);
-  get assetIds(): string[] | undefined;
-  set attributeRefs(value: AttributeRef[] | undefined);
-  get attributeRefs(): AttributeRef[] | undefined;
-  _connectRequested: boolean;
-  _subscriptionIds?: string[];
-  _assetIds?: string[];
-  _attributeRefs?: AttributeRef[];
-  _status: EventProviderStatus;
-  connectEvents(): void;
-  disconnectEvents(): void;
-  _doConnect(): Promise<void>;
-  readonly eventsConnected: boolean;
-  _addEventSubscriptions(): Promise<void>;
-  _removeEventSubscriptions(): void;
-  _refreshEventSubscriptions(): void;
-  _sendEvent(event: SharedEvent): void;
-  _sendEventWithReply<U extends SharedEvent, V extends SharedEvent>(event: U): Promise<V>;
-  onEventsConnect(): void;
-  onEventsDisconnect(): void;
-  _onEvent(event: SharedEvent): void;
-  _onEventsConnect(): void;
-  _onEventsDisconnect(): void;
-}
-
-export const subscribe =
+const subscribeMixin =
   (eventProviderFactory: EventProviderFactory) =>
-  <T extends Constructor<CustomElement>>(base: T): T & Constructor<SubscribedElement> =>
+  <T extends Constructor<CustomElement>>(base: T) =>
     class extends base {
       public _connectRequested = false;
       public _subscriptionIds?: string[];
@@ -245,3 +219,14 @@ export const subscribe =
       // noinspection JSUnusedLocalSymbols
       public _onEvent(event: SharedEvent) {}
     };
+
+/**
+ * Instance API that {@link subscribe} adds to the base class, derived from the mixin so it cannot
+ * drift from the implementation.
+ */
+export interface SubscribedElement extends InstanceType<ReturnType<ReturnType<typeof subscribeMixin>>> {}
+
+export const subscribe =
+  (eventProviderFactory: EventProviderFactory) =>
+  <T extends Constructor<CustomElement>>(base: T): T & Constructor<SubscribedElement> =>
+    subscribeMixin(eventProviderFactory)(base);
