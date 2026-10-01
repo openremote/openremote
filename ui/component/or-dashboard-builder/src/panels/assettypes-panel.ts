@@ -338,7 +338,6 @@ export class AssettypesPanel extends OrElement {
           </h2>
           <or-asset-tree
             ${ref(assetTreeRef)}
-            id="chart-asset-tree"
             readonly
             disableSubscribe
             .config="${config}"

@@ -1639,8 +1639,8 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     const onCancel = () => dialog?.close();
     const onOk = () => {
       const addAssetDialog = addAssetDialogRef.value!;
-      const descriptor = addAssetDialog!.selectedType;
-      const selectedOptionalAttributes = addAssetDialog!.selectedAttributes;
+      const descriptor = addAssetDialog.selectedType;
+      const selectedOptionalAttributes = addAssetDialog.selectedAttributes;
       const name = addAssetDialog.name.trim();
       const parent = addAssetDialog.parent;
 
@@ -1706,7 +1706,6 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
             <or-translate value="addAsset"></or-translate>
           </h2>
           <or-add-asset-dialog
-            id="add-panel"
             ${ref(addAssetDialogRef)}
             .config="${this.config}"
             .agentTypes="${agentTypes}"

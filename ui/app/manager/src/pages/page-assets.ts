@@ -304,7 +304,6 @@ export class PageAssets extends Page<AssetsStateKeyed> {
             <or-translate value="setParent"></or-translate>
           </h2>
           <or-asset-tree
-            id="parent-asset-tree"
             ${ref(assetTreeRef)}
             disableSubscribe
             readonly
