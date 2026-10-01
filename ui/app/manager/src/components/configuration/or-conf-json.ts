@@ -81,7 +81,7 @@ export class OrConfJson extends OrElement {
             @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
               if (this._updateButton.value) {
                 this._updateButton.value.disabled = !ev.detail.valid;
-                dialog.requestUpdate();
+                dialog?.requestUpdate();
               }
             }}"
           ></or-ace-editor>

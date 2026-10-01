@@ -320,9 +320,10 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
 
     const onAddClick = () => {
       this._tryStartTunnel(tunnel);
+      dialog?.close();
     };
     const checkValidity = () => {
-      buttonRef.value.disabled = !tunnel.gatewayId || !tunnel.target || !tunnel.targetPort;
+      buttonRef.value!.disabled = !tunnel.gatewayId || !tunnel.target || !tunnel.targetPort;
     };
 
     const gatewayListTemplate = async (): Promise<TemplateResult> => {

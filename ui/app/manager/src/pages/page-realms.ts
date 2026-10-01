@@ -526,7 +526,7 @@ export class PageRealms extends Page<AppStateKeyed> {
     const okBtnRef: Ref<OrVaadinButton> = createRef();
 
     const doDelete = async (dialog?: OrVaadinConfirmDialog) => {
-      if (okBtnRef.value.disabled) return;
+      if (okBtnRef.value!.disabled) return;
       try {
         await manager.rest.api.RealmResource.delete(realm.name);
         this._realms = this._realms.filter((r) => r !== realm);
@@ -555,7 +555,7 @@ export class PageRealms extends Page<AppStateKeyed> {
     </div>`;
 
     const dialog = showConfirmDialog(
-      this.shadowRoot,
+      this.shadowRoot!,
       html`
         <or-vaadin-confirm-dialog @confirm=${() => doDelete(dialog)}>
           ${getConfirmDialogContent(

@@ -70,7 +70,7 @@ export class OrConfMapGeoJson extends OrElement {
             style="width: 100%; aspect-ratio: 1/1;"
             @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
               this._jsonValid = ev.detail.valid;
-              buttonRef.value.disabled = !this._jsonValid;
+              buttonRef.value!.disabled = !this._jsonValid;
               if (this._jsonValid) {
                 this._aceEditorValue = ev.detail.value;
               }

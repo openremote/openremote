@@ -1633,16 +1633,16 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
 
     const onAddChanged = (ev: OrAddChangedEvent) => {
       const nameValid = !!ev.detail.name && ev.detail.name.trim().length > 0 && ev.detail.name.trim().length < 1024;
-      const addBtn = addBtnRef.value;
-      addBtn!.disabled = !ev.detail.descriptor || !nameValid;
+      const addBtn = addBtnRef.value!;
+      addBtn.disabled = !ev.detail.descriptor || !nameValid;
     };
     const onCancel = () => dialog?.close();
     const onOk = () => {
-      const addAssetDialog = addAssetDialogRef.value;
+      const addAssetDialog = addAssetDialogRef.value!;
       const descriptor = addAssetDialog!.selectedType;
       const selectedOptionalAttributes = addAssetDialog!.selectedAttributes;
-      const name = addAssetDialog!.name.trim();
-      const parent = addAssetDialog!.parent;
+      const name = addAssetDialog.name.trim();
+      const parent = addAssetDialog.parent;
 
       if (!descriptor) {
         return;
@@ -1718,7 +1718,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
             <or-vaadin-button theme="tertiary" @click=${onCancel}>
               <or-translate value="cancel"></or-translate>
             </or-vaadin-button>
-            <or-vaadin-button theme="primary" ${ref(addBtnRef)} @click=${onOk}>
+            <or-vaadin-button theme="primary" ${ref(addBtnRef)} disabled @click=${onOk}>
               <or-translate value="add"></or-translate>
             </or-vaadin-button>
           </div>

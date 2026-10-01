@@ -681,8 +681,8 @@ export class OrEditAssetPanel extends OrElement {
             this.requestUpdate();
           }
         });
-        dialog?.close();
       }
+      dialog?.close();
     };
 
     const dialog = showDialog(

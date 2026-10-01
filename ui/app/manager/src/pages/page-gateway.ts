@@ -780,6 +780,7 @@ export class PageGateway extends Page<AppStateKeyed> {
           }
         }
         this._updateAttributeFilters(parsed);
+        dialog?.close();
       } catch (e) {
         console.error(e);
         showSnackbar(undefined, i18next.t("errorOccurred"));

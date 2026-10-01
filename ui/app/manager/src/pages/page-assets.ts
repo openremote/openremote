@@ -280,7 +280,7 @@ export class PageAssets extends Page<AssetsStateKeyed> {
     const blockEvent = (ev: Event) => ev.stopPropagation();
 
     const setParent = () => {
-      const assetTree = assetTreeRef.value;
+      const assetTree = assetTreeRef.value!;
       const idd = assetTree.selectedIds!.length === 1 ? assetTree.selectedIds![0] : undefined;
       this._onAssetParentChange({ parentId: idd, assetIds: this._assetIds });
     };
