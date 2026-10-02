@@ -144,6 +144,11 @@ export const addItemOrParameterDialogStyle = css`
     max-height: 60vh;
   }
 
+  /* A form holding nothing but a key field sizes to that field instead */
+  #dialog-content.auto-height {
+    min-height: unset;
+  }
+
   /* The panes read as cards against the tinted dialog background, which is what separates them */
   #type-list,
   #parameter-desc {

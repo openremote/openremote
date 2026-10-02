@@ -440,7 +440,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
           <h2 slot="header-content">
             ${(this.label ? computeLabel(this.label, this.required, false) + " - " : "") + i18next.t("addParameter")}
           </h2>
-          <div id="dialog-content">
+          <div id="dialog-content" class="${dynamic ? "auto-height" : ""}">
             ${when(
               !dynamic,
               () => html`
