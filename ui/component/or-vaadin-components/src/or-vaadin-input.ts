@@ -78,14 +78,24 @@ export class OrVaadinInput extends OrElement {
     [InputType.BIG_INT, OrVaadinInput.getNumberFieldTemplate],
     [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
     [InputType.DATETIME, OrVaadinInput.getDateTimePickerTemplate],
+    [InputType.EMAIL, OrVaadinInput.getEmailFieldTemplate],
+    [InputType.JSON, OrVaadinInput.getTextAreaTemplate],
+    [InputType.JSON_OBJECT, OrVaadinInput.getTextAreaTemplate],
     [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
     [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
     [InputType.RANGE, OrVaadinInput.getSliderTemplate],
     [InputType.SELECT, OrVaadinInput.getSelectTemplate],
     [InputType.SWITCH, OrVaadinInput.getSwitchTemplate],
+    [InputType.TELEPHONE, OrVaadinInput.getTextFieldTemplate],
     [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
     [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
   ]);
+
+  /**
+   * Input types whose text is JSON rather than a plain string, so the value has to be parsed on the way out
+   * and serialized on the way in.
+   */
+  public static readonly JSON_TYPES: readonly InputType[] = [InputType.JSON, InputType.JSON_OBJECT];
 
   /**
    * Static map of what HTML event to listen for when a value changes. By default, or when undefined, the "change" event is used.
@@ -93,7 +103,11 @@ export class OrVaadinInput extends OrElement {
    */
   public static readonly CHANGE_EVENTS = new Map<InputType, string>([
     [InputType.BIG_INT, "submit"],
+    [InputType.EMAIL, "submit"],
+    [InputType.JSON, "submit"],
+    [InputType.JSON_OBJECT, "submit"],
     [InputType.NUMBER, "submit"],
+    [InputType.TELEPHONE, "submit"],
     [InputType.TEXTAREA, "submit"],
     [InputType.TEXT, "submit"],
     [InputType.PASSWORD, "submit"],
@@ -143,15 +157,16 @@ export class OrVaadinInput extends OrElement {
   }
 
   updated(changedProps: PropertyValues) {
+    // A new type renders a different Vaadin element, which starts out without any of the attributes
+    if (changedProps.has("type")) {
+      this._applyAttributes();
+    }
     changedProps.forEach((_, key) => this._onPropertyChange(String(key), this[String(key) as keyof OrVaadinInput]));
     return super.updated(changedProps);
   }
 
   firstUpdated(_changedProps: PropertyValues) {
-    for (const name of this.getAttributeNames()) {
-      // console.debug(this._getLoggingPrefix() + `firstUpdated for ${name} (${typeof this.getAttribute(name)}) to`, this.getAttribute(name));
-      this._applyAttribute(name, this.getAttribute(name), this._elem);
-    }
+    this._applyAttributes();
     return super.firstUpdated(_changedProps);
   }
 
@@ -171,6 +186,10 @@ export class OrVaadinInput extends OrElement {
       case InputType.SWITCH: {
         return (this._elem as HTMLInputElement | undefined)?.checked;
       }
+      case InputType.JSON:
+      case InputType.JSON_OBJECT: {
+        return OrVaadinInput.parseJson(this.type, this._elem?.value).value;
+      }
       default: {
         return this._elem?.value;
       }
@@ -182,7 +201,47 @@ export class OrVaadinInput extends OrElement {
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/checkValidity|HTMLInputElement/checkValidity}
    */
   public checkValidity(): boolean {
-    return this._elem?.checkValidity() ?? false;
+    if (!(this._elem?.checkValidity() ?? false)) {
+      return false;
+    }
+    // A text area accepts any text, so JSON types need their own parse check on top of the field constraints
+    return !OrVaadinInput.JSON_TYPES.includes(this.type) || OrVaadinInput.parseJson(this.type, this._elem?.value).valid;
+  }
+
+  /**
+   * Serializes a value for display in a JSON input type, matching what {@link nativeValue} parses back.
+   * @param value - The value to serialize
+   */
+  public static stringifyJson(value: any): string | undefined {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Parses the text of a JSON input type. An empty field is a valid, absent value; text that does not parse,
+   * or that is not an object for {@link InputType.JSON_OBJECT}, is invalid and has no value.
+   * @param type - The input type being parsed
+   * @param text - The text to parse
+   */
+  protected static parseJson(type: InputType, text?: string): { value?: any; valid: boolean } {
+    if (!text?.trim()) {
+      return { valid: true };
+    }
+    try {
+      const value = JSON.parse(text);
+      if (type === InputType.JSON_OBJECT && (typeof value !== "object" || value === null || Array.isArray(value))) {
+        return { valid: false };
+      }
+      return { value, valid: true };
+    } catch {
+      return { valid: false };
+    }
   }
 
   render() {
@@ -227,7 +286,22 @@ export class OrVaadinInput extends OrElement {
   protected _onValueChange(ev: Event) {
     ev.stopPropagation();
     if (ev.defaultPrevented) return;
+    // No field constraint catches malformed JSON, so the invalid state has to be set from the parse result
+    if (OrVaadinInput.JSON_TYPES.includes(this.type) && this._elem) {
+      (this._elem as HTMLInputElement & { invalid: boolean }).invalid = !this.checkValidity();
+    }
     this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
+  }
+
+  /**
+   * Internal function to apply every attribute of the root element to the child Vaadin element.
+   * @protected
+   */
+  protected _applyAttributes(elem = this._elem) {
+    for (const name of this.getAttributeNames()) {
+      // console.debug(this._getLoggingPrefix() + `applying ${name} (${typeof this.getAttribute(name)}) to`, this.getAttribute(name));
+      this._applyAttribute(name, this.getAttribute(name), elem);
+    }
   }
 
   /**
@@ -262,6 +336,10 @@ export class OrVaadinInput extends OrElement {
 
   public static getDateTimePickerTemplate(onChange?: (e: Event) => void) {
     return html`<or-vaadin-date-time-picker id="elem" @change=${onChange}></or-vaadin-date-time-picker>`;
+  }
+
+  public static getEmailFieldTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-email-field id="elem" @change=${onChange}></or-vaadin-email-field>`;
   }
 
   public static getNumberFieldTemplate(onChange?: (e: Event) => void) {

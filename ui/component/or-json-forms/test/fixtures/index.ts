@@ -116,7 +116,8 @@ export class JsonForms {
     private readonly page: Page,
     private dialog: Locator
   ) {
-    this.dialog = this.page.locator("or-mwc-dialog");
+    // A closing dialog is only removed once its animation ends, so match on the open one to stay unambiguous
+    this.dialog = this.page.locator("or-vaadin-dialog[opened]");
   }
 
   /**
@@ -213,7 +214,7 @@ export class JsonForms {
         if (subType.$ref) {
           resolvedSchema = this.resolveSchema(schema, subType.$ref!);
         }
-        await this.dialog.locator("li").getByText(resolvedSchema.title, { exact: true }).click();
+        await this.dialog.getByRole("option", { name: resolvedSchema.title, exact: true }).click();
         await this.dialog.getByRole("button", { name: "Add", exact: true }).click();
       }
     } else {
@@ -231,10 +232,7 @@ export class JsonForms {
 
     if (schema.patternProperties) {
       await locator.getByRole("button", { name: "Add Parameter" }).click();
-      await this.page
-        .getByRole("alertdialog", { name: " - Add" })
-        .locator("label", { hasText: "Key" })
-        .pressSequentially("test");
+      await this.dialog.getByRole("textbox", { name: "Key" }).pressSequentially("test");
       await this.dialog.getByRole("button", { name: "Add", exact: true }).click();
     } else {
       const properties = options?.selectAllProps
@@ -246,11 +244,11 @@ export class JsonForms {
         await locator.getByRole("button", { name: "Add Parameter" }).click();
 
         const name = Util.camelCaseToSentenceCase(key);
-        await this.dialog.locator("or-mwc-list li").getByText(name, { exact: true }).click();
-        const anyOfPicker = this.dialog.locator("#schema-picker or-mwc-input");
+        await this.dialog.getByRole("option", { name, exact: true }).click();
+        const anyOfPicker = this.dialog.locator("#schema-picker or-vaadin-select");
         if (await anyOfPicker.isVisible()) {
           await anyOfPicker.click();
-          await anyOfPicker.locator("li").first().click();
+          await this.page.getByRole("listbox").getByRole("option").first().click();
         }
         await this.dialog.getByRole("button", { name: "Add", exact: true }).click();
       }

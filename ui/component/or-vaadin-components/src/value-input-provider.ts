@@ -48,6 +48,7 @@ import { type Ref, ref, createRef } from "lit/directives/ref.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { styleMap } from "lit/directives/style-map.js";
 import {
+  type InputOption,
   InputType,
   inputTypeSupportsHelperText,
   inputTypeSupportsLabel,
@@ -123,7 +124,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
   let max: any;
   let multiple: any;
   let required: boolean | undefined;
-  let selectOptions: { label: string; value: string }[] | undefined;
+  let selectOptions: InputOption[] | undefined;
   let valueConverter: (v: any) => any | undefined;
   const styles = {} as any;
 
@@ -417,6 +418,9 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         value = undefined;
       } else if (inputType === InputType.DATETIME && value !== undefined && value !== null) {
         value = OrVaadinDateTimePicker.getLocalizedISOString(new Date(value), step);
+      } else if (OrVaadinInput.JSON_TYPES.includes(inputType)) {
+        // The value attribute carries text, so a JSON value is shown as formatted JSON
+        value = OrVaadinInput.stringifyJson(value);
       }
 
       // The step is set before the value, so that a date time picker does not trim the value to its default precision.
