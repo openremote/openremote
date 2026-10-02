@@ -16,24 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import type { Asset } from "@openremote/model";
+package org.openremote.setup.datetime.model;
 
-export const notes = { name: "notes", type: "text" };
-export const location = { name: "location", type: "GEO_JSONPoint" };
-export const commonAttrs = { notes, location };
-export const validAsset: Asset = {
-  id: "validAsset",
-  name: "Thing",
-  realm: "master",
-  type: "ThingAsset",
-  // 2026-01-02T10:30 in Europe/Amsterdam (UTC+1)
-  createdOn: Date.UTC(2026, 0, 2, 9, 30),
-  attributes: { ...commonAttrs },
-};
-export const invalidAsset: Asset = {
-  id: "invalidAsset",
-  name: "Thing",
-  realm: "master",
-  type: "ThingAsset",
-  attributes: { ...commonAttrs, invalid: { name: "invalid", type: "integer" } },
-};
+import org.openremote.model.AssetModelProvider;
+
+public class DateTimeAssetModelProvider implements AssetModelProvider {
+  @Override
+  public boolean useAutoScan() {
+    return true;
+  }
+}
