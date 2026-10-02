@@ -779,7 +779,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     boolean cancelSucceeded = true;
 
                     if (existingAsset.isDeletePending()) {
-                      cancelSucceeded = cancelDeleteAsset(asset.getId());
+                      cancelSucceeded = cancelDeletion(asset.getId());
                     }
 
                     if (!cancelSucceeded) {
@@ -1354,10 +1354,42 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
    * @return true if the deletion was successfully cancelled, false otherwise
    */
   protected boolean cancelDeletion(String assetId) {
-    LOG.info("Attempting to cancel pending asset deletion: assetId=" + assetId);
-    existingAsset.setDeletePending(false);
-    asset.setDeletePending(false);
-    failedAssetDeleteIds.remove(existingAsset.getId());
+    if (isNullOrEmpty(assetId)) {
+      throw new IllegalArgumentException("Can't cancel deletion for null or empty asset identifier");
+    }
+
+    return withAssetLock(
+      assetId,
+      () -> {
+
+        LOG.info("Attempting to cancel pending asset deletion: assetId=" + assetId);
+
+        try {
+          Boolean cancelled =
+            persistenceService.doReturningTransaction(
+              em -> {
+                Asset<?> asset = em.find(Asset.class, assetId);
+
+                if (asset == null) {
+                  return false;
+                }
+
+                if (!asset.isDeletePending()) {
+                  return true;
+                }
+
+                asset.setDeletePending(false);
+                em.flush();
+                return true;
+              });
+
+          failedAssetDeleteIds.remove(assetId);
+          return cancelled;
+        } catch (Exception e) {
+          LOG.log(WARNING, "Failed to cancel pending asset deletion: assetId=" + assetId, e);
+          return false;
+        }
+      });
   }
 
   /**
@@ -1377,7 +1409,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
               + ", threshold="
               + assetDeleteDatapointBatchThreshold);
       try {
-        deleteAssetDatapoints(assetId);
+        if (deleteAssetDatapoints(assetId)) {
+          failedAssetDeleteIds.remove(assetId);
+          return true;
+        }
         LOG.fine(
             "Purged asset datapoints: assetId="
                 + assetId
@@ -1389,7 +1424,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     if (pendingAssetDeleteStopping) {
-      return false;
+      return !isDeletePending(assetId);
+    }
+
+    if (!isDeletePending(assetId)) {
+      failedAssetDeleteIds.remove(assetId);
+      return true;
     }
 
     return deletePendingAsset(assetId);
@@ -1404,51 +1444,59 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
       return false;
     }
 
-    LOG.fine("Deleting asset: assetId=" + assetId);
-    AtomicReference<Boolean> blockedByFailedPath = new AtomicReference<>(false);
+    return withAssetLock(
+      assetId,
+      () -> {
+        if (pendingAssetDeleteStopping) {
+          return false;
+        }
 
-    try {
-      persistenceService.doTransaction(
-          em -> {
-            useCustomQueryPlansForTimescaleDelete(em);
-            Asset<?> asset = em.find(Asset.class, assetId);
+        LOG.fine("Deleting asset: assetId=" + assetId);
+        AtomicReference<Boolean> blockedByFailedPath = new AtomicReference<>(false);
 
-            if (asset == null) {
-              return;
-            }
+        try {
+          persistenceService.doTransaction(
+            em -> {
+              useCustomQueryPlansForTimescaleDelete(em);
+              Asset<?> asset = em.find(Asset.class, assetId);
 
-            synchronized (failedAssetDeleteIds) {
-              if (blockedByFailedPath.updateAndGet(
-                  blocked ->
-                      failedAssetDeleteIds.stream()
-                          .anyMatch(
-                              failedAssetId ->
-                                  !failedAssetId.equals(assetId)
-                                      && asset.pathContains(failedAssetId)))) {
+              if (asset == null || !asset.isDeletePending()) {
                 return;
               }
-            }
 
-            em.remove(asset);
-            em.flush();
-          });
+              synchronized (failedAssetDeleteIds) {
+                if (blockedByFailedPath.updateAndGet(
+                  blocked ->
+                    failedAssetDeleteIds.stream()
+                      .anyMatch(
+                        failedAssetId ->
+                          !failedAssetId.equals(assetId)
+                            && asset.pathContains(failedAssetId)))) {
+                  return;
+                }
+              }
 
-      if (blockedByFailedPath.get()) {
-        failedAssetDeleteIds.add(assetId);
-        LOG.fine(
-            "Asset delete skipped because a failed pending delete asset is in its path: assetId="
+              em.remove(asset);
+              em.flush();
+            });
+
+          if (blockedByFailedPath.get()) {
+            failedAssetDeleteIds.add(assetId);
+            LOG.fine(
+              "Asset delete skipped because a failed pending delete asset is in its path: assetId="
                 + assetId);
-        return false;
-      }
+            return false;
+          }
 
-      failedAssetDeleteIds.remove(assetId);
-      return true;
-    } catch (Exception e) {
-      failedAssetDeleteIds.add(assetId);
-      // TODO: Raise an alarm for asset deletion failure.
-      LOG.log(SEVERE, "Failed to delete pending asset, queued for retry: assetId=" + assetId, e);
-      return false;
-    }
+          failedAssetDeleteIds.remove(assetId);
+          return true;
+        } catch (Exception e) {
+          failedAssetDeleteIds.add(assetId);
+          // TODO: Raise an alarm for asset deletion failure.
+          LOG.log(SEVERE, "Failed to delete pending asset, queued for retry: assetId=" + assetId, e);
+          return false;
+        }
+      });
   }
 
   // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
@@ -1457,16 +1505,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
   }
 
-  protected void deleteAssetDatapoints(String assetId) {
+  /**
+   * Purges the datapoints for the asset in batches; checks the asset pending deletion flag between executions.
+   * @return True if the asset is no longer pending deletion
+   */
+  protected boolean deleteAssetDatapoints(String assetId) {
     LocalDateTime oldestChunkStart = findOldestAssetDatapointChunkStart();
 
     if (oldestChunkStart == null) {
       LOG.fine("No asset datapoint chunks found for pending asset delete: assetId=" + assetId);
-      return;
+      return !isDeletePending(assetId);
     }
 
     if (pendingAssetDeleteStopping) {
-      return;
+      return !isDeletePending(assetId);
     }
 
     LocalDateTime rangeStart = oldestChunkStart;
@@ -1508,8 +1560,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 + (System.currentTimeMillis() - start));
       }
 
+      if (!isDeletePending(assetId)) {
+        failedAssetDeleteIds.remove(assetId);
+        return true;
+      }
+
       rangeStart = rangeEnd;
     }
+
+    return !isDeletePending(assetId);
   }
 
   protected LocalDateTime findOldestAssetDatapointChunkStart() {
