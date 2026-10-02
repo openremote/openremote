@@ -1572,7 +1572,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
             )}
           </div>
           <div id="right-wrapper" class="mobileHidden">
-            ${validationErrors.length === 0 ? (asset!.createdOn ? html`<or-translate id="created-time" class="tabletHidden" value="createdOnWithDate" .options="${{ date: moment(asset!.createdOn!).format("lll") } as TOptions<InitOptions>}"></or-translate>` : ``) : html`<span id="error-wrapper" .title="${validationErrors.join("\n")}"><or-icon icon="alert"></or-icon><or-translate class="tabletHidden" value="validation.invalidAsset"></or-translate></span>`}
+            ${validationErrors.length === 0 ? (asset!.createdOn ? html`<or-translate id="created-time" class="tabletHidden" value="createdOnWithDate" .options="${{ date: moment(asset!.createdOn!).format("lll") } as TOptions}"></or-translate>` : ``) : html`<span id="error-wrapper" .title="${validationErrors.join("\n")}"><or-icon icon="alert"></or-icon><or-translate class="tabletHidden" value="validation.invalidAsset"></or-translate></span>`}
             ${when(
               editMode,
               () => html`

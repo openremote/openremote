@@ -38,7 +38,6 @@ const subscribeMixin =
       public _subscriptionIds?: string[];
       public _assetIds?: string[];
       public _attributeRefs?: AttributeRef[];
-      public _status: EventProviderStatus = EventProviderStatus.DISCONNECTED;
       public _statusCallback = (status: EventProviderStatus) => this._onEventProviderStatusChanged(status);
 
       connectedCallback() {
