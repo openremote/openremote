@@ -77,7 +77,7 @@ export class AssetViewer {
         .locator("li", { has: this.page.getByText(Util.camelCaseToSentenceCase(item), { exact: true }) })
         .check();
     }
-    await this.page.getByRole("button", { name: "Add", exact: true }).click();
+    await this.page.getByRole("dialog").getByRole("button", { name: "Add", exact: true }).click();
   }
 
   /**
