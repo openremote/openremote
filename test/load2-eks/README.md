@@ -86,6 +86,64 @@ then use the `eks-deploy-load.sh` script to properly re-deploy those charts.
 That script sets `or.setupRunOnRestart=true` to reset and rebuild the test
 dataset; this procedure does not preserve your existing test data.
 
+## Switching an existing Deployment to Recreate
+
+The Keycloak and Manager charts support an optional deployment strategy. To
+avoid needing spare capacity for overlapping old and new Pods during an
+upgrade, set this in the values file for each chart that should use it:
+
+```yaml
+strategy:
+  type: Recreate
+```
+
+With `Recreate`, a rollout terminates the old Pods before starting their
+replacements, so upgrades interrupt service. The chart default, `strategy: {}`,
+leaves Kubernetes to use its default `RollingUpdate` strategy on a fresh install.
+
+When changing an existing Deployment from `RollingUpdate` to `Recreate`, its
+`spec.strategy.rollingUpdate` settings must also be removed. Kubernetes rejects
+a Deployment that has both `type: Recreate` and a `rollingUpdate` block. The
+templates render `rollingUpdate: null` to clear that block, but if an upgrade
+(including one using server-side apply) retains the existing settings, it can
+fail with:
+
+```text
+spec.strategy.rollingUpdate: Forbidden: may not be specified when strategy `type` is 'Recreate'
+```
+
+For this error, use a JSON merge patch to set the strategy and remove the
+incompatible block in the same request, then retry the upgrade. A merge patch
+updates the specified fields while preserving omitted fields; a `null` value
+removes a field. Unlike server-side apply, it explicitly patches the live object
+without relying on apply's field ownership to remove previously managed settings.
+
+Set `K_CONTEXT` to the target cluster context and `K_NAMESPACE` to the namespace
+containing the release. The examples use the Deployment names created by the
+load-test scripts; adjust them if you use different release names or name overrides.
+Run only the patch for each Deployment you intend to switch:
+
+```shell
+kubectl --context "$K_CONTEXT" --namespace "$K_NAMESPACE" patch deployment keycloak \
+  --type=merge \
+  -p '{"spec":{"strategy":{"type":"Recreate","rollingUpdate":null}}}'
+
+kubectl --context "$K_CONTEXT" --namespace "$K_NAMESPACE" patch deployment manager \
+  --type=merge \
+  -p '{"spec":{"strategy":{"type":"Recreate","rollingUpdate":null}}}'
+```
+
+Keep `strategy.type: Recreate` in the Helm values used for subsequent upgrades.
+This workaround is only needed if the strategy change fails to remove the old
+settings. Fresh installations using `Recreate` and upgrades that keep `Recreate`
+do not need it. A Deployment created after this chart option was introduced can
+still encounter the issue if it starts with `RollingUpdate` and switches later.
+
+See the Kubernetes documentation on [patching API objects](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/)
+and [server-side apply](https://kubernetes.io/docs/reference/using-api/server-side-apply/).
+
+## Running load tests
+
 Once deployed, running the load tests can be done using the same clients as for load testing a VM,
 but using the scenarios present under `scenarios` in this folder instead.  
 See `load1` folder for the tools, scripts and documentation.
