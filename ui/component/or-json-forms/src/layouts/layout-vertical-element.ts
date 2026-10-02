@@ -91,11 +91,6 @@ const style = css`
     vertical-align: top;
   }
 
-  .key-container or-mwc-input,
-  .value-container or-mwc-input {
-    display: block;
-  }
-
   .value-container > .item-container {
     margin: 0;
   }

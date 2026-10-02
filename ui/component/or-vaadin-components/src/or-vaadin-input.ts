@@ -78,6 +78,7 @@ export class OrVaadinInput extends OrElement {
     [InputType.BIG_INT, OrVaadinInput.getNumberFieldTemplate],
     [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
     [InputType.DATETIME, OrVaadinInput.getDateTimePickerTemplate],
+    [InputType.EMAIL, OrVaadinInput.getEmailFieldTemplate],
     [InputType.JSON, OrVaadinInput.getTextAreaTemplate],
     [InputType.JSON_OBJECT, OrVaadinInput.getTextAreaTemplate],
     [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
@@ -85,6 +86,7 @@ export class OrVaadinInput extends OrElement {
     [InputType.RANGE, OrVaadinInput.getSliderTemplate],
     [InputType.SELECT, OrVaadinInput.getSelectTemplate],
     [InputType.SWITCH, OrVaadinInput.getSwitchTemplate],
+    [InputType.TELEPHONE, OrVaadinInput.getTextFieldTemplate],
     [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
     [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
   ]);
@@ -101,9 +103,11 @@ export class OrVaadinInput extends OrElement {
    */
   public static readonly CHANGE_EVENTS = new Map<InputType, string>([
     [InputType.BIG_INT, "submit"],
+    [InputType.EMAIL, "submit"],
     [InputType.JSON, "submit"],
     [InputType.JSON_OBJECT, "submit"],
     [InputType.NUMBER, "submit"],
+    [InputType.TELEPHONE, "submit"],
     [InputType.TEXTAREA, "submit"],
     [InputType.TEXT, "submit"],
     [InputType.PASSWORD, "submit"],
@@ -332,6 +336,10 @@ export class OrVaadinInput extends OrElement {
 
   public static getDateTimePickerTemplate(onChange?: (e: Event) => void) {
     return html`<or-vaadin-date-time-picker id="elem" @change=${onChange}></or-vaadin-date-time-picker>`;
+  }
+
+  public static getEmailFieldTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-email-field id="elem" @change=${onChange}></or-vaadin-email-field>`;
   }
 
   public static getNumberFieldTemplate(onChange?: (e: Event) => void) {

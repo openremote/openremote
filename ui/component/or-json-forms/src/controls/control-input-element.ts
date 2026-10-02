@@ -16,10 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import type { OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { InputType } from "@openremote/or-vaadin-components/util";
+import { type InputOption, InputType } from "@openremote/or-vaadin-components/util";
 import { OrVaadinInput } from "@openremote/or-vaadin-components/or-vaadin-input";
-import { css, html } from "lit";
+import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import type { OrVaadinMultiSelectComboBox } from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
+import "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
+import "@openremote/or-vaadin-components/or-vaadin-date-picker";
+import "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
+import "@openremote/or-vaadin-components/or-vaadin-time-picker";
+import { css, html, type TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { ControlBaseElement } from "./control-base-element";
@@ -39,13 +45,17 @@ let defaultTz: string;
 
 // language=CSS
 const style = css`
-  or-mwc-input,
-  or-vaadin-input {
-    width: 100%;
-  }
-
   or-vaadin-input {
     display: block;
+  }
+
+  or-vaadin-input,
+  or-vaadin-combo-box,
+  or-vaadin-multi-select-combo-box,
+  or-vaadin-date-picker,
+  or-vaadin-date-time-picker,
+  or-vaadin-time-picker {
+    width: 100%;
   }
 `;
 
@@ -73,9 +83,7 @@ export class ControlInputElement extends ControlBaseElement {
     let options: [string, string][] | undefined;
     let multiple = false;
     let value: any = this.data ?? schema.default;
-    let searchable: boolean | undefined;
-    let searchProvider!: (search?: string) => [any, string][] | undefined;
-    let onValueChanged = (e: OrInputChangedEvent) => this.onValueChanged(e);
+    let searchable = false;
 
     if (Array.isArray(schema.type)) {
       this.inputType = InputType.JSON;
@@ -123,16 +131,6 @@ export class ControlInputElement extends ControlBaseElement {
           });
         }
       }
-
-      if (multiple) {
-        value = Array.isArray(value)
-          ? value.map((v) => JSON.stringify(v))
-          : value !== undefined
-            ? [JSON.stringify(value)]
-            : undefined;
-      } else {
-        value = value !== undefined ? JSON.stringify(value) : undefined;
-      }
     } else if (isStringControl(uischema, schema, context)) {
       minLength = schema.minLength;
       maxLength = schema.maxLength;
@@ -154,70 +152,135 @@ export class ControlInputElement extends ControlBaseElement {
         this.inputType = InputType.PASSWORD;
       } else if (format === "timezone") {
         this.inputType = InputType.SELECT;
-        options = Intl.supportedValuesOf("timeZone").map((z) => [z, z]);
+        options = Intl.supportedValuesOf("timeZone").map((z) => [JSON.stringify(z), z]);
         if (!(defaultTz && value)) {
           defaultTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
           this.handleChange(this.path, defaultTz);
         }
+        // There are hundreds of zones to pick from, so the list needs to be filterable
         searchable = true;
-        onValueChanged = (e: OrInputChangedEvent) => this.handleChange(this.path, e.detail.value);
-        searchProvider = (search?: string) => {
-          if (search) {
-            return options?.filter(([, name]) => name.toLowerCase().includes(search.toLowerCase()));
-          }
-          return options?.filter(([, name]) =>
-            name.toLowerCase().includes((value ?? defaultTz).toLowerCase().split("/")[0])
-          );
-        };
       }
     }
 
-    // or-vaadin-select offers neither multi select nor search, so those stay on or-mwc-input
-    if (OrVaadinInput.TEMPLATES.has(this.inputType) && !multiple && !searchable) {
-      const isCheckbox = this.inputType === InputType.CHECKBOX;
-      const displayValue = OrVaadinInput.JSON_TYPES.includes(this.inputType)
-        ? OrVaadinInput.stringifyJson(value)
-        : (value ?? undefined);
-      return html`<or-vaadin-input
-        .id="${this.id}"
-        type="${this.inputType}"
-        label="${ifDefined(this.label || undefined)}"
-        value="${ifDefined(isCheckbox ? undefined : displayValue)}"
-        ?checked="${isCheckbox && !!value}"
-        ?disabled="${!this.enabled}"
-        ?required="${!!this.required}"
-        .items="${options?.map(([optionValue, optionLabel]) => ({ value: optionValue, label: optionLabel }))}"
-        minlength="${ifDefined(minLength)}"
-        maxlength="${ifDefined(maxLength)}"
-        pattern="${ifDefined(pattern)}"
-        error-message="${ifDefined(this.errors || undefined)}"
-        step="${ifDefined(step)}"
-        min="${ifDefined(min)}"
-        max="${ifDefined(max)}"
-        @change="${(e: Event) => this.onVaadinValueChanged(e)}"
-      ></or-vaadin-input>`;
+    // Option values are JSON so that every enum type round-trips through the string an option carries
+    if (this.inputType === InputType.SELECT) {
+      if (multiple) {
+        const values = Array.isArray(value) ? value : [value];
+        value = values.filter((v) => v !== undefined).map((v) => JSON.stringify(v));
+      } else {
+        value = value === undefined ? undefined : JSON.stringify(value);
+      }
     }
 
-    return html`<or-mwc-input
-      .label="${this.label}"
-      .type="${this.inputType}"
-      .disabled="${!this.enabled}"
-      .required="${!!this.required}"
+    if (multiple || searchable) {
+      return this.getOptionsTemplate(options, value, multiple);
+    }
+
+    if ([InputType.DATE, InputType.DATETIME, InputType.TIME].includes(this.inputType)) {
+      return this.getPickerTemplate(value);
+    }
+
+    const isCheckbox = this.inputType === InputType.CHECKBOX;
+    const displayValue = OrVaadinInput.JSON_TYPES.includes(this.inputType)
+      ? OrVaadinInput.stringifyJson(value)
+      : (value ?? undefined);
+    return html`<or-vaadin-input
       .id="${this.id}"
-      .options="${options}"
-      .multiple="${multiple}"
-      ?searchable="${searchable}"
-      .searchProvider="${searchProvider}"
-      @or-mwc-input-changed="${onValueChanged}"
-      .maxLength="${maxLength}"
-      .minLength="${minLength}"
-      .pattern="${pattern}"
-      .validationMessage="${this.errors}"
-      .step="${step}"
-      .max="${max}"
-      .min="${min}"
-      .value="${value}"
-    ></or-mwc-input>`;
+      type="${this.inputType}"
+      label="${ifDefined(this.label || undefined)}"
+      value="${ifDefined(isCheckbox ? undefined : displayValue)}"
+      ?checked="${isCheckbox && !!value}"
+      ?disabled="${!this.enabled}"
+      ?required="${!!this.required}"
+      .items="${options?.map(([optionValue, optionLabel]) => ({ value: optionValue, label: optionLabel }))}"
+      minlength="${ifDefined(minLength)}"
+      maxlength="${ifDefined(maxLength)}"
+      pattern="${ifDefined(pattern)}"
+      error-message="${ifDefined(this.errors || undefined)}"
+      step="${ifDefined(step)}"
+      min="${ifDefined(min)}"
+      max="${ifDefined(max)}"
+      @change="${(e: Event) => this.onVaadinValueChanged(e)}"
+    ></or-vaadin-input>`;
+  }
+
+  /**
+   * Template for an enum, which a combo box renders so that long lists can be filtered and several values picked.
+   */
+  protected getOptionsTemplate(options: [string, string][] | undefined, value: any, multiple: boolean): TemplateResult {
+    const items: InputOption[] | undefined = options?.map(([optionValue, optionLabel]) => ({
+      value: optionValue,
+      label: optionLabel,
+    }));
+
+    if (multiple) {
+      const selected: string[] = value ?? [];
+      return html`<or-vaadin-multi-select-combo-box
+        .items="${items}"
+        .selectedItems="${items?.filter((item) => selected.includes(item.value))}"
+        label="${ifDefined(this.label || undefined)}"
+        error-message="${ifDefined(this.errors || undefined)}"
+        ?disabled="${!this.enabled}"
+        ?required="${!!this.required}"
+        @change="${(e: Event) => this.onOptionsChanged(e)}"
+      ></or-vaadin-multi-select-combo-box>`;
+    }
+
+    return html`<or-vaadin-combo-box
+      .items="${items}"
+      .value="${value ?? ""}"
+      label="${ifDefined(this.label || undefined)}"
+      error-message="${ifDefined(this.errors || undefined)}"
+      ?disabled="${!this.enabled}"
+      ?required="${!!this.required}"
+      @change="${(e: Event) => this.onOptionChanged(e)}"
+    ></or-vaadin-combo-box>`;
+  }
+
+  /**
+   * Template for a date, time or date and time, which the pickers read and write in the same format the
+   * matching JSON schema format describes.
+   */
+  protected getPickerTemplate(value: any): TemplateResult {
+    const label = this.label || undefined;
+    const errorMessage = this.errors || undefined;
+    const disabled = !this.enabled;
+    const required = !!this.required;
+    const onChange = (e: Event) =>
+      this.handleChange(this.path!, (e.currentTarget as HTMLInputElement).value || undefined);
+
+    switch (this.inputType) {
+      case InputType.DATE: {
+        return html`<or-vaadin-date-picker
+          value="${ifDefined(value)}"
+          label="${ifDefined(label)}"
+          error-message="${ifDefined(errorMessage)}"
+          ?disabled="${disabled}"
+          ?required="${required}"
+          @change="${onChange}"
+        ></or-vaadin-date-picker>`;
+      }
+      case InputType.TIME: {
+        return html`<or-vaadin-time-picker
+          value="${ifDefined(value)}"
+          label="${ifDefined(label)}"
+          error-message="${ifDefined(errorMessage)}"
+          ?disabled="${disabled}"
+          ?required="${required}"
+          @change="${onChange}"
+        ></or-vaadin-time-picker>`;
+      }
+      default: {
+        return html`<or-vaadin-date-time-picker
+          value="${ifDefined(value)}"
+          label="${ifDefined(label)}"
+          error-message="${ifDefined(errorMessage)}"
+          ?disabled="${disabled}"
+          ?required="${required}"
+          @change="${onChange}"
+        ></or-vaadin-date-time-picker>`;
+      }
+    }
   }
 
   /**
@@ -252,18 +315,18 @@ export class ControlInputElement extends ControlBaseElement {
     }
   }
 
-  protected onValueChanged(e: OrInputChangedEvent) {
-    if (this.inputType === InputType.SELECT) {
-      if (Array.isArray(e.detail.value)) {
-        this.handleChange(
-          this.path!,
-          (e.detail.value as []).map((v: string) => JSON.parse(v))
-        );
-      } else {
-        this.handleChange(this.path!, JSON.parse(e.detail.value as string));
-      }
-    } else {
-      this.handleChange(this.path!, e.detail.value);
-    }
+  /** Reads the single option a combo box holds, whose value is the JSON of the schema value. */
+  protected onOptionChanged(e: Event) {
+    const value = (e.currentTarget as OrVaadinComboBox).value;
+    this.handleChange(this.path!, value ? JSON.parse(value) : undefined);
+  }
+
+  /** Reads the options a multi select combo box holds, whose values are the JSON of the schema values. */
+  protected onOptionsChanged(e: Event) {
+    const items = (e.currentTarget as OrVaadinMultiSelectComboBox).selectedItems as InputOption[];
+    this.handleChange(
+      this.path!,
+      items.map((item) => JSON.parse(item.value))
+    );
   }
 }
