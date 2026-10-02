@@ -24,7 +24,6 @@ import { until } from "lit/directives/until.js";
 import { createRef, type Ref, ref } from "lit/directives/ref.js";
 import { when } from "lit/directives/when.js";
 import { i18next, translate } from "@openremote/or-translate";
-import moment from "moment";
 import {
   type Attribute,
   type AttributeDescriptor,
@@ -154,7 +153,7 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
     return;
   }
 
-  return i18next.t("updatedWithDate", { date: moment(timestamp).format("lll") });
+  return i18next.t("updatedWithDate", { date: new Date(timestamp) });
 }
 
 export const jsonFormsAttributeRenderers = [
