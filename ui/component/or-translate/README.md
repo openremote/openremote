@@ -41,7 +41,7 @@ If using the default namespace then the namespace prefix can be omitted:
 <or-translate value="asset" />
 ```
 
-It is also possible to pass an `TOptions<InitOptions>` object to the `18next.t` method by setting the
+It is also possible to pass a `TOptions` object to the `i18next.t` method by setting the
 `options` attribute.
 
 ### Translate mixin (`dist/translate-mixin`)
