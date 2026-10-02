@@ -567,6 +567,41 @@ test(`Should update asset list correctly when applying filters`, async ({ manage
 });
 
 /**
+ * @given 2 battery assets are created in the "smartcity" realm
+ * @and the asset tree filter contains "Battery", showing 2 out of 3 nodes
+ * @when the filter text is removed while leaving a single space behind
+ * @then all assets should be shown again
+ * @and the tree should settle, without repeatedly re-fetching the assets
+ */
+test(`Should load the asset tree only once after clearing the filter to whitespace`, async ({
+  page,
+  manager,
+  assetsPage,
+  assetTree,
+}) => {
+  const batteryAssets = createBatteryAssets(2);
+  await manager.setup("smartcity", { assets: batteryAssets });
+  await manager.goToRealmStartPage("smartcity");
+  await assetsPage.goto();
+  await expect(assetTree.getAssetNodes()).toHaveCount(3); // 2 battery assets + 1 console group
+
+  await assetTree.getFilterInput().fill("Battery");
+  await expect(assetTree.getAssetNodes()).toHaveCount(2); // Both battery assets, but no console group
+
+  // Monitor requests to the /count endpoint
+  let countRequests = 0;
+  await page.route("**/asset/count", async (route) => {
+    countRequests++;
+    await route.continue();
+  });
+
+  // Clear the input, and leave a single space behind.
+  await assetTree.getFilterInput().fill(" ");
+  await expect(assetTree.getAssetNodes()).toHaveCount(3); // All assets are visible again
+  expect(countRequests, "Asset tree kept reloading after the filter was cleared").toBeLessThanOrEqual(2);
+});
+
+/**
  * @given 4 assets are created in the "master" realm
  * @and 2 assets are created in the "smartcity" realm
  * @and the assets are visible in the tree (a total of 5)

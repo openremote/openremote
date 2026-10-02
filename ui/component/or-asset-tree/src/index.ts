@@ -442,7 +442,11 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     console.debug("Applying filter to the asset tree:", filter);
     this._filter = filter;
     if (reflect) {
-      this.updateComplete.finally(() => (this._filterInput.value = this.formatFilter(filter)));
+      this.updateComplete.finally(() => {
+        if (this._filter === filter) {
+          this._filterInput.value = this.formatFilter(filter);
+        }
+      });
     }
   }
 
@@ -1278,15 +1282,19 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     this._doFiltering();
   }
 
+  protected isFilterEmpty(): boolean {
+    return !(
+      this._filter.asset?.length ||
+      this._filter.attribute?.length ||
+      this._filter.assetType?.length ||
+      this._filter.attributeValue?.length
+    );
+  }
+
   protected async _doFiltering() {
     if (this.isConnected && this._nodes) {
       // Clear filter if everything is not set anymore
-      if (
-        !this._filter.asset?.length &&
-        !this._filter.attribute?.length &&
-        !this._filter.assetType?.length &&
-        !this._filter.attributeValue?.length
-      ) {
+      if (this.isFilterEmpty()) {
         console.debug("Clearing asset tree filter...");
         OrAssetTree._forEachNodeRecursive(this._nodes!, (node) => {
           node.notMatchingFilter = false;
@@ -1891,7 +1899,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
       this.dataProvider(offset, this.queryLimit, parentId).then((assets) => {
         this._loading = false;
         this._buildTreeNodes(assets);
-        if (this._filterInput?.value) {
+        if (!this.isFilterEmpty()) {
           this._doFiltering();
         }
       });
@@ -1963,7 +1971,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
         } else {
           this._buildTreeNodes(newAssets);
         }
-        if (this._filterInput?.value) {
+        if (!this.isFilterEmpty()) {
           this._doFiltering();
         }
       }) as Promise<AssetTreeEvent>;
@@ -2031,7 +2039,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
 
       // In case of filter already active, do not override the actual state of assetTree
       this._buildTreeNodes(assets);
-      if (this._filterInput?.value) {
+      if (!this.isFilterEmpty()) {
         this._doFiltering();
       }
       this.dispatchEvent(new OrAssetTreeAssetEvent(assetEvent));
