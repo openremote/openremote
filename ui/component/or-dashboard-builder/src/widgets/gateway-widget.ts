@@ -22,7 +22,7 @@ import { css, html, type PropertyValues, type TemplateResult } from "lit";
 import type { WidgetSettings } from "../util/widget-settings";
 import type { AssetWidgetConfig } from "../util/widget-config";
 import { GatewaySettings } from "../settings/gateway-settings";
-import { type GatewayTunnelInfo, GatewayTunnelInfoType } from "@openremote/model";
+import { ClientRole, type GatewayTunnelInfo, GatewayTunnelInfoType } from "@openremote/model";
 import manager from "@openremote/core";
 import { when } from "lit/directives/when.js";
 import { i18next } from "@openremote/or-translate";
@@ -121,6 +121,10 @@ export class GatewayWidget extends OrWidget {
   }
 
   protected firstUpdated(changedProps: PropertyValues) {
+    if (!manager.hasRole(ClientRole.READ_TUNNELS)) {
+      this._loading = false;
+      return super.firstUpdated(changedProps);
+    }
     if (this.widgetConfig) {
       const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
       this._readyCheck(this.widgetConfig);
@@ -147,6 +151,7 @@ export class GatewayWidget extends OrWidget {
 
   protected render(): TemplateResult {
     const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
+    const readonly = !manager.hasRole(ClientRole.WRITE_TUNNELS);
     const disabled = this.getEditMode?.() || !this._isConfigComplete(this.widgetConfig) || !this._isReady;
     return html`
       <div id="gateway-widget-wrapper">
@@ -160,7 +165,7 @@ export class GatewayWidget extends OrWidget {
                   <div>
                     <or-vaadin-button
                       theme="primary"
-                      ?disabled=${disabled}
+                      ?disabled=${disabled || readonly}
                       @click=${(ev: Event) => this._onStopTunnelClick(ev)}
                     >
                       <or-icon slot="prefix" icon="stop"></or-icon>
@@ -201,7 +206,10 @@ export class GatewayWidget extends OrWidget {
                 `;
               } else {
                 return html`
-                  <or-vaadin-button ?disabled=${disabled} @click=${(ev: Event) => this._onStartTunnelClick(ev)}>
+                  <or-vaadin-button
+                    ?disabled=${disabled || readonly}
+                    @click=${(ev: Event) => this._onStartTunnelClick(ev)}
+                  >
                     <or-translate value=${disabled ? "gatewayTunnels.offline" : "gatewayTunnels.start"}></or-translate>
                   </or-vaadin-button>
                 `;
@@ -295,6 +303,9 @@ export class GatewayWidget extends OrWidget {
    * and acts as a controller to call the correct functions throughout the starting process.
    */
   protected _tryStartTunnel(widgetConfig: GatewayWidgetConfig): void {
+    if (!manager.hasRole(ClientRole.WRITE_TUNNELS)) {
+      return;
+    }
     if (this._isConfigComplete(widgetConfig)) {
       const tunnelInfo = this._getTunnelInfoByConfig(widgetConfig);
       this._loading = true;
@@ -394,6 +405,9 @@ export class GatewayWidget extends OrWidget {
    * Function that tries to destroy the currently active tunnel.
    */
   protected _tryStopTunnel(config: GatewayWidgetConfig): void {
+    if (!manager.hasRole(ClientRole.WRITE_TUNNELS)) {
+      return;
+    }
     const tunnelInfo = this._getTunnelInfoByConfig(config);
     this._loading = true;
     this._stopTunnel(tunnelInfo)

@@ -44,9 +44,20 @@ import org.openremote.model.query.UserQuery;
 @Tag(
     name = "User",
     description =
-        "Query and manage identity-provider users, roles, credentials, locale, and live sessions")
+        "Query and manage identity-provider users, roles, credentials, locale, and live sessions. "
+            + "An active realm is enabled and its activation time has been reached. "
+            + "Superusers bypass realm activity and cross-realm restrictions; endpoint-specific role requirements still apply.")
 @Path("user")
 @OpenApiResponses.Authenticated
+@ApiResponse(
+    responseCode = "401",
+    description = "Authentication is required or the supplied credentials are invalid",
+    content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
+@ApiResponse(
+    responseCode = "403",
+    description =
+        "The caller lacks the required permissions, or the target realm is inactive and the caller is not a superuser",
+    content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
 public interface UserResource {
 
   @GET
@@ -58,7 +69,8 @@ public interface UserResource {
       operationId = "getClientRoles",
       summary = "Retrieve client roles for a realm and client",
       description =
-          "Returns all role definitions exposed by the named identity-provider client. Realm-administrator access is required.")
+          "Returns all role definitions exposed by the named identity-provider client. Realm-administrator access is required. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.NotFound
   Role[] getClientRoles(
@@ -75,7 +87,8 @@ public interface UserResource {
       operationId = "updateRoles",
       summary = "Update OpenRemote client roles for a realm",
       description =
-          "Creates, updates, or removes role definitions for the default OpenRemote client in the requested realm.")
+          "Creates, updates, or removes role definitions for the default OpenRemote client in the requested realm. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.NoContent
   @OpenApiResponses.BadRequest
   @OpenApiResponses.NotFound
@@ -96,7 +109,8 @@ public interface UserResource {
       operationId = "updateClientRoles",
       summary = "Update client roles for a realm and client",
       description =
-          "Creates, updates, or removes role definitions for a named identity-provider client.")
+          "Creates, updates, or removes role definitions for a named identity-provider client. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.NoContent
   @OpenApiResponses.BadRequest
   @OpenApiResponses.NotFound
@@ -119,7 +133,8 @@ public interface UserResource {
       operationId = "queryUsers",
       summary = "Query users based on criteria",
       description =
-          "Executes a UserQuery. Non-super users are forced into their authenticated realm and cannot see system accounts; callers with read-users but not read-admin receive basic fields only.")
+          "Executes a UserQuery. Non-super users are forced into their authenticated realm and cannot see system accounts; callers with read-users but not read-admin receive basic fields only. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.BadRequest
   User[] query(
@@ -146,7 +161,8 @@ public interface UserResource {
       operationId = "getUser",
       summary = "Retrieve a user in a realm",
       description =
-          "Returns one user when it belongs to the requested accessible realm. Without read-admin permission, callers may retrieve only their own user.")
+          "Returns one user when it belongs to the requested accessible realm. Without read-admin permission, callers may retrieve only their own user. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.NotFound
   User get(
@@ -162,7 +178,8 @@ public interface UserResource {
       operationId = "getCurrentUser",
       summary = "Retrieve the currently authenticated user",
       description =
-          "Returns the identity-provider record corresponding to the current access token.")
+          "Returns the identity-provider record corresponding to the current access token. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.NotFound
   User getCurrent(@BeanParam RequestParams requestParams);
@@ -176,7 +193,8 @@ public interface UserResource {
       operationId = "updateUser",
       summary = "Update a user in a realm",
       description =
-          "Updates an existing identity-provider user in an administered realm. The master administrator cannot be disabled.")
+          "Updates an existing identity-provider user in an administered realm. The master administrator cannot be disabled. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.BadRequest
   @OpenApiResponses.NotFound
@@ -202,7 +220,8 @@ public interface UserResource {
       operationId = "updateSelf",
       summary = "Update the currently authenticated user",
       description =
-          "Updates the caller's own profile. A supplied user ID must match the access token; role and realm administration are not provided by this endpoint.")
+          "Updates the caller's own profile. A supplied user ID must match the access token; role and realm administration are not provided by this endpoint. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.BadRequest
   @OpenApiResponses.NotFound
@@ -222,7 +241,8 @@ public interface UserResource {
       operationId = "createUser",
       summary = "Create a new user in a realm",
       description =
-          "Creates an identity-provider user in a realm administered by the caller and returns the resulting user record.")
+          "Creates an identity-provider user in a realm administered by the caller and returns the resulting user record. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.BadRequest
   @OpenApiResponses.Conflict
@@ -251,7 +271,8 @@ public interface UserResource {
       operationId = "deleteUser",
       summary = "Delete a user from a realm",
       description =
-          "Permanently deletes a user from an administered realm. The master-realm administrator cannot be deleted.")
+          "Permanently deletes a user from an administered realm. The master-realm administrator cannot be deleted. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.NoContent
   @OpenApiResponses.NotFound
   @ApiResponse(
@@ -272,7 +293,8 @@ public interface UserResource {
       operationId = "requestUserPasswordReset",
       summary = "Request a password reset for a user in a realm",
       description =
-          "Asks the identity provider to send or initiate its configured password-reset action for the specified user.")
+          "Asks the identity provider to send or initiate its configured password-reset action for the specified user. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.NoContent
   @OpenApiResponses.BadRequest
   @OpenApiResponses.NotFound
@@ -294,7 +316,8 @@ public interface UserResource {
       operationId = "requestPasswordReset",
       summary = "Request a password reset for the current user",
       description =
-          "Initiates the identity provider's configured password-reset action for the caller's own account.")
+          "Initiates the identity provider's configured password-reset action for the caller's own account. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.NoContent
   @OpenApiResponses.BadRequest
   void requestPasswordResetCurrent(@BeanParam RequestParams requestParams);
@@ -308,7 +331,8 @@ public interface UserResource {
       operationId = "updatePassword",
       summary = "Update the password for a user in a realm",
       description =
-          "Replaces a user's credential in an administered realm using the supplied credential representation.")
+          "Replaces a user's credential in an administered realm using the supplied credential representation. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.NoContent
   @OpenApiResponses.BadRequest
   @OpenApiResponses.NotFound
@@ -334,7 +358,8 @@ public interface UserResource {
       operationId = "updateOwnPassword",
       summary = "Update the current user's password",
       description =
-          "Replaces the caller's own identity-provider credential using the supplied credential representation.")
+          "Replaces the caller's own identity-provider credential using the supplied credential representation. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.NoContent
   @OpenApiResponses.BadRequest
   void updatePasswordCurrent(
@@ -352,7 +377,8 @@ public interface UserResource {
       operationId = "resetSecret",
       summary = "Reset the secret for a user in a realm",
       description =
-          "Generates and returns a new client secret for a service user in an administered realm.")
+          "Generates and returns a new client secret for a service user in an administered realm. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.BadRequest
   @OpenApiResponses.NotFound
@@ -372,7 +398,8 @@ public interface UserResource {
       operationId = "getUserClientRoles",
       summary = "Retrieve a user's client roles",
       description =
-          "Returns role names assigned to one user for the named client. Without read-admin permission, callers may retrieve only their own roles.")
+          "Returns role names assigned to one user for the named client. Without read-admin permission, callers may retrieve only their own roles. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.NotFound
   String[] getUserClientRoles(
@@ -390,7 +417,8 @@ public interface UserResource {
       operationId = "getUserRealmRoles",
       summary = "Retrieve a user's realm roles",
       description =
-          "Returns realm-level role names assigned to one user. Without read-admin permission, callers may retrieve only their own roles.")
+          "Returns realm-level role names assigned to one user. Without read-admin permission, callers may retrieve only their own roles. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.NotFound
   String[] getUserRealmRoles(
@@ -406,7 +434,8 @@ public interface UserResource {
       operationId = "getCurrentUserClientRoles",
       summary = "Retrieve the current user's client roles",
       description =
-          "Returns role names assigned to the caller for the named identity-provider client.")
+          "Returns role names assigned to the caller for the named identity-provider client. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.NotFound
   String[] getCurrentUserClientRoles(
@@ -420,7 +449,9 @@ public interface UserResource {
   @Operation(
       operationId = "getCurrentUserRealmRoles",
       summary = "Retrieve the current user's realm roles",
-      description = "Returns realm-level role names assigned to the caller.")
+      description =
+          "Returns realm-level role names assigned to the caller. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.NotFound
   String[] getCurrentUserRealmRoles(@BeanParam RequestParams requestParams);
@@ -433,7 +464,8 @@ public interface UserResource {
       operationId = "updateUserClientRoles",
       summary = "Update a user's client roles",
       description =
-          "Replaces the user's assigned role names for the named client in an administered realm.")
+          "Replaces the user's assigned role names for the named client in an administered realm. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.NoContent
   @OpenApiResponses.BadRequest
   @OpenApiResponses.NotFound
@@ -456,7 +488,9 @@ public interface UserResource {
   @Operation(
       operationId = "updateUserRealmRoles",
       summary = "Update a user's realm roles",
-      description = "Replaces the user's assigned realm-level role names in an administered realm.")
+      description =
+          "Replaces the user's assigned realm-level role names in an administered realm. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.NoContent
   @OpenApiResponses.BadRequest
   @OpenApiResponses.NotFound
@@ -477,7 +511,8 @@ public interface UserResource {
       operationId = "updateCurrentUserLocale",
       summary = "Update the current user's locale",
       description =
-          "Stores the supplied non-empty locale string as the caller's identity-provider locale attribute.")
+          "Stores the supplied non-empty locale string as the caller's identity-provider locale attribute. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.NoContent
   @OpenApiResponses.BadRequest
   @OpenApiResponses.NotFound
@@ -496,7 +531,8 @@ public interface UserResource {
       operationId = "getUserSessions",
       summary = "Retrieve live sessions for a user",
       description =
-          "Returns active MQTT sessions for one user, including connection ID, creation time, and remote address. Without read-admin permission, callers may inspect only themselves.")
+          "Returns active MQTT sessions for one user, including connection ID, creation time, and remote address. Without read-admin permission, callers may inspect only themselves. "
+              + "The target realm must be active unless the caller is a superuser.")
   @OpenApiResponses.Ok
   @OpenApiResponses.NotFound
   UserSession[] getUserSessions(
@@ -505,17 +541,39 @@ public interface UserResource {
       @Parameter(description = USER_ID, example = EXAMPLE_USER_ID) @PathParam("userId")
           String userId);
 
-  @GET
+  @DELETE
   @Path("{realm}/disconnect/{sessionID}")
   @Operation(
       operationId = "disconnectUserSession",
       summary = "Disconnect a user session",
-      description = "Terminates the active MQTT connection identified by sessionID.")
+      description =
+          "Terminates the active MQTT connection identified by sessionID. The realm must match the session owner's realm. "
+              + "Authenticated users may disconnect their own sessions without an additional client role. "
+              + "Disconnecting another user's session requires the openremote client role write:admin or superuser status. "
+              + "Non-superusers are limited to their own active realm; superusers may disconnect sessions across realms, including inactive realms.")
   @OpenApiResponses.NoContent
-  @OpenApiResponses.NotFound
+  @ApiResponse(
+      responseCode = "403",
+      description =
+          "The realm is inactive for a non-superuser, or the caller is neither the session owner, a user with write:admin, nor a superuser",
+      content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
+  @ApiResponse(
+      responseCode = "404",
+      description =
+          "The session or its owning user does not exist, or the session does not belong to the specified realm",
+      content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
+  @ApiResponse(
+      responseCode = "405",
+      description = "A non-superuser cannot access the session owner's realm",
+      content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
   void disconnectUserSession(
       @BeanParam RequestParams requestParams,
-      @Parameter(description = REALM, example = EXAMPLE_REALM) @PathParam("realm") String realm,
+      @Parameter(
+              description =
+                  "Realm of the session owner; must match even when the caller is a superuser.",
+              example = EXAMPLE_REALM)
+          @PathParam("realm")
+          String realm,
       @Parameter(
               description = "Active MQTT connection identifier returned by getUserSessions.",
               example = "mqtt-connection-7")

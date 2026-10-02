@@ -53,6 +53,7 @@ public class GatewayConnector {
 
   private static final Logger LOG =
       SyslogCategory.getLogger(GATEWAY, GatewayConnector.class.getName());
+  public static final String EVENT_SOURCE = GatewayService.class.getSimpleName();
   public static int MAX_SYNC_RETRIES = 5;
   public static int SYNC_ASSET_BATCH_SIZE = 20;
   public static final String ASSET_READ_EVENT_NAME_INITIAL = "INITIAL";
@@ -188,7 +189,11 @@ public class GatewayConnector {
       this.sessionId.set(null);
     }
 
-    requestDisconnect.run();
+    if (requestDisconnect != null) {
+      requestDisconnect.run();
+    }
+    requestDisconnect = null;
+
     LOG.info("Disconnected: " + getGatewayIdString());
     if (syncProcessorFuture != null) {
       LOG.finest("Aborting active sync process: " + getGatewayIdString());
@@ -418,7 +423,7 @@ public class GatewayConnector {
   }
 
   protected void publishAttributeEvent(AttributeEvent event) {
-    assetProcessingService.sendAttributeEvent(event, GatewayService.class.getSimpleName());
+    assetProcessingService.sendAttributeEvent(event, EVENT_SOURCE);
   }
 
   protected synchronized void onGatewayEvent(SharedEvent e) {
@@ -437,11 +442,18 @@ public class GatewayConnector {
           cachedAssetEvents.add((AssetEvent) e);
         }
       } else {
-        synchronized (eventConsumerMap) {
-          Consumer<SharedEvent> consumer = eventConsumerMap.get(e.getClass());
-          if (consumer != null) {
-            consumer.accept(e);
+        SharedEvent ev = authoriseGatewayEvent(e);
+
+        if (ev != null) {
+          synchronized (eventConsumerMap) {
+            Consumer<SharedEvent> consumer = eventConsumerMap.get(ev.getClass());
+            if (consumer != null) {
+              consumer.accept(ev);
+            }
           }
+        } else {
+          LOG.log(
+              Level.WARNING, () -> "Invalid event received from gateway:" + getGatewayIdString());
         }
       }
     } catch (Exception ex) {
@@ -457,6 +469,54 @@ public class GatewayConnector {
     }
   }
 
+  /**
+   * Explicitly check event type and authorise accordingly don't blindly accept events from gateway
+   * clients as they may be malicious - every event type added to {@link #eventConsumerMap} should
+   * be handled
+   */
+  protected SharedEvent authoriseGatewayEvent(SharedEvent event) {
+    // Gateway capabilities response events are always authorised
+    if (event instanceof GatewayCapabilitiesResponseEvent) {
+      return event;
+    }
+
+    // Gateway tunnel start/stop response events are always authorised
+    if (event instanceof GatewayTunnelStartResponseEvent
+        || event instanceof GatewayTunnelStopResponseEvent) {
+      return event;
+    }
+
+    // Only some attribute and asset events are authorised
+    if (event instanceof AssetInfo assetInfo) {
+
+      // Map the gateway Asset ID to the central instance
+      String assetId = mapAssetId(gatewayId, assetInfo.getId(), false);
+      // Only use the gateway ID as the parent asset ID if the event is an asset event
+      String parentAssetId =
+          assetInfo.getParentId() == null
+              ? event instanceof AssetEvent ? gatewayId : null
+              : mapAssetId(gatewayId, assetInfo.getParentId(), false);
+
+      // Events for the gateway asset are not allowed over the connector
+      if (Objects.equals(assetId, gatewayId)) {
+        LOG.log(Level.INFO, "Events for the gateway asset itself are not allowed from the gateway");
+        return null;
+      }
+
+      String eventGatewayId = gatewayService.getLocallyRegisteredGatewayId(assetId, parentAssetId);
+
+      if (eventGatewayId == null || !Objects.equals(eventGatewayId, gatewayId)) {
+        LOG.log(Level.INFO, "Event is not for a descendant of this gateway asset");
+        return null;
+      }
+
+      return event;
+    }
+
+    LOG.log(Level.INFO, "Event is not supported");
+    return null;
+  }
+
   /** Get list of gateway assets (get basic details and then batch load them to minimise load) */
   protected synchronized void startSync() {
     if (syncAborted()) {
@@ -466,7 +526,7 @@ public class GatewayConnector {
     expectedSyncResponseName = ASSET_READ_EVENT_NAME_INITIAL;
     sendMessageToGateway(
         new GatewayInitStartEvent(
-            gatewayService.getGatewayTunnelInfos(gatewayId),
+            gatewayService.getGatewayTunnelInfos(realm, gatewayId),
             VersionInfo.getGatewayApiVersion(),
             gatewayService.getTunnelSSHHostname(),
             gatewayService.getTunnelSSHPort() > 0 ? gatewayService.getTunnelSSHPort() : null));

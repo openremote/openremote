@@ -373,6 +373,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
    */
   protected void onGatewayMessageIntercept(Exchange exchange) {
     String clientId = ClientEventService.getClientId(exchange);
+    String realm = ClientEventService.getRealm(exchange);
 
     if (!isGatewayClientId(clientId)) {
       return;
@@ -380,13 +381,13 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
     if (header(SESSION_OPEN).matches(exchange)) {
       String sessionKey = ClientEventService.getSessionKey(exchange);
-      processGatewayConnected(clientId, sessionKey);
+      processGatewayConnected(realm, clientId, sessionKey);
       return;
     }
 
     if (or(header(SESSION_CLOSE), header(SESSION_CLOSE_ERROR)).matches(exchange)) {
       String sessionKey = ClientEventService.getSessionKey(exchange);
-      processGatewayDisconnected(clientId, sessionKey);
+      processGatewayDisconnected(realm, clientId, sessionKey);
       return;
     }
 
@@ -395,7 +396,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
       exchange.setRouteStop(true);
       String sessionKey = ClientEventService.getSessionKey(exchange);
       String gatewayId = getGatewayIdFromClientId(clientId);
-      processGatewayMessage(gatewayId, sessionKey, exchange.getIn().getBody(SharedEvent.class));
+      processGatewayMessage(
+          realm, gatewayId, sessionKey, exchange.getIn().getBody(SharedEvent.class));
     }
   }
 
@@ -571,9 +573,10 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     return this.tunnelInfos.values();
   }
 
-  public GatewayTunnelInfo[] getGatewayTunnelInfos(String gatewayID) {
+  public GatewayTunnelInfo[] getGatewayTunnelInfos(String realm, String gatewayID) {
     return getTunnelInfos().stream()
         .filter(tunnel -> tunnel.getGatewayId().equals(gatewayID))
+        .filter(tunnel -> tunnel.getRealm().equals(realm))
         .toArray(GatewayTunnelInfo[]::new);
   }
 
@@ -762,13 +765,21 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     return null;
   }
 
-  protected void processGatewayConnected(String gatewayClientId, String sessionId) {
+  protected void processGatewayConnected(String realm, String gatewayClientId, String sessionId) {
     String gatewayId = getGatewayIdFromClientId(gatewayClientId);
     GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
     if (connector == null) {
       LOG.warning(
           "Gateway connected but not recognised which shouldn't happen: GatewayID=" + gatewayId);
+      clientEventService.sendToWebsocketSession(
+          sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.UNRECOGNISED));
+      clientEventService.closeWebsocketSession(sessionId);
+      return;
+    }
+
+    if (!Objects.equals(realm, connector.getRealm())) {
+      LOG.warning("Gateway connected with incorrect realm: GatewayID=" + gatewayId);
       clientEventService.sendToWebsocketSession(
           sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.UNRECOGNISED));
       clientEventService.closeWebsocketSession(sessionId);
@@ -794,9 +805,16 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         });
   }
 
-  protected void processGatewayDisconnected(String gatewayClientId, String sessionId) {
+  protected void processGatewayDisconnected(
+      String realm, String gatewayClientId, String sessionId) {
     String gatewayId = getGatewayIdFromClientId(gatewayClientId);
     GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
+
+    // If a client is trying to cross realm boundaries do nothing
+    if (connector != null && !Objects.equals(realm, connector.getRealm())) {
+      LOG.warning("Gateway disconnected with incorrect realm: GatewayID=" + gatewayId);
+      return;
+    }
 
     try {
       if (connector != null) {
@@ -817,9 +835,10 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     }
   }
 
-  protected void processGatewayMessage(String gatewayId, String sessionId, SharedEvent event) {
+  protected void processGatewayMessage(
+      String realm, String gatewayId, String sessionId, SharedEvent event) {
     GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
-    if (connector == null) {
+    if (connector == null || !Objects.equals(realm, connector.getRealm())) {
       return;
     }
     if (!connector.isConnected() || !sessionId.equals(connector.getSessionId())) {
