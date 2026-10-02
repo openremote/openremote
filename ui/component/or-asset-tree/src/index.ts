@@ -41,6 +41,7 @@ import {
   AssetModelUtil,
   type AssetQuery,
   AssetQueryMatch,
+  AssetQueryOperator,
   AssetQueryOrderBy$Property,
   type AssetsEvent,
   type AssetTreeEvent,
@@ -52,6 +53,7 @@ import {
   LogicGroupOperator,
   type SharedEvent,
   type StringPredicate,
+  type ValuePredicateUnion,
   WellknownAssets,
 } from "@openremote/model";
 import "@openremote/or-translate";
@@ -180,6 +182,15 @@ enum FilterElementType {
   ATTRIBUTE_NAME,
   ATTRIBUTE_VALUE,
 }
+
+const NUMBER_OPERATORS: Record<string, AssetQueryOperator> = {
+  "=": AssetQueryOperator.EQUALS,
+  "==": AssetQueryOperator.EQUALS,
+  ">": AssetQueryOperator.GREATER_THAN,
+  ">=": AssetQueryOperator.GREATER_EQUALS,
+  "<": AssetQueryOperator.LESS_THAN,
+  "<=": AssetQueryOperator.LESS_EQUALS,
+};
 
 export type AddEventDetail = {
   sourceAsset?: Asset;
@@ -431,7 +442,11 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     console.debug("Applying filter to the asset tree:", filter);
     this._filter = filter;
     if (reflect) {
-      this.updateComplete.finally(() => (this._filterInput.value = this.formatFilter(filter)));
+      this.updateComplete.finally(() => {
+        if (this._filter === filter) {
+          this._filterInput.value = this.formatFilter(filter);
+        }
+      });
     }
   }
 
@@ -658,8 +673,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
                   style="float: left"
                   @click=${() => {
                     // Wipe the current value and hide the clear button
-                    this._filterInput.toggleAttribute("value", false);
-
+                    this._filterInput.clear();
                     this._attributeTypeFilter?.clear();
                     this._attributeValueFilter.clear();
                     this._attributeNameFilter.clear();
@@ -692,7 +706,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
       )}
       ${when(
         !this._nodes,
-        () => html` <span id="loading"><or-translate value="loading"></or-translate></span> `,
+        () => html`<span id="loading"><or-translate value="loading"></or-translate></span> `,
         () => html`
           ${when(
             this._nodes!.length === 0 || !this.atLeastOneNodeToBeShown(),
@@ -1187,8 +1201,10 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
 
     if (newFilter.attribute.length > 0 && newFilter.attributeValue.length > 0) {
       newFilter.attributeValue.forEach((attributeValue: string, index: number) => {
+        // Values that contain spaces get additional "quotes", so the parser keeps them as a single value
+        const displayValue = attributeValue.includes(" ") ? `"${attributeValue}"` : attributeValue;
         handledAttributeForValues.push(newFilter.attribute[index]);
-        searchInput += prefix + '"' + newFilter.attribute[index] + '":' + attributeValue;
+        searchInput += prefix + `"${newFilter.attribute[index]}":` + displayValue;
         prefix = " ";
       });
     }
@@ -1237,11 +1253,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     }
 
     if (this._attributeNameFilter.value && this._attributeValueFilter.value) {
-      let attributeValueValue: string = this._attributeValueFilter.value;
-      if (attributeValueValue.includes(" ")) {
-        attributeValueValue = '"' + attributeValueValue + '"';
-      }
-      filter.attributeValue = [attributeValueValue];
+      filter.attributeValue = [this._attributeValueFilter.value];
     } else {
       filter.attributeValue = [];
     }
@@ -1270,15 +1282,19 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     this._doFiltering();
   }
 
+  protected isFilterEmpty(): boolean {
+    return !(
+      this._filter.asset?.length ||
+      this._filter.attribute?.length ||
+      this._filter.assetType?.length ||
+      this._filter.attributeValue?.length
+    );
+  }
+
   protected async _doFiltering() {
     if (this.isConnected && this._nodes) {
       // Clear filter if everything is not set anymore
-      if (
-        !this._filter.asset?.length &&
-        !this._filter.attribute?.length &&
-        !this._filter.assetType?.length &&
-        !this._filter.attributeValue?.length
-      ) {
+      if (this.isFilterEmpty()) {
         console.debug("Clearing asset tree filter...");
         OrAssetTree._forEachNodeRecursive(this._nodes!, (node) => {
           node.notMatchingFilter = false;
@@ -1375,7 +1391,31 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     if (this._filter.attribute.length > 0) {
       attributeCond = {
         operator: LogicGroupOperator.AND,
-        items: this._filter.attribute.map((attributeName: string) => {
+        items: this._filter.attribute.map((attributeName: string, index) => {
+          const value = this._filter?.attributeValue?.[index]?.trim();
+          let valuePredicate: ValuePredicateUnion | undefined;
+          if (value) {
+            const number = value.match(/^([<>]=?|==?)?\s*([-+]?(?:\d+(?:[.,]\d+)?|\.\d+))$/);
+            // String input is number and/or function (for example '>=50')
+            if (number) {
+              valuePredicate = {
+                predicateType: "number",
+                operator: NUMBER_OPERATORS[number[1] ?? "="],
+                value: Number(number[2].replace(",", ".")),
+              };
+              // String input is a boolean
+            } else if (value === "true" || value === "false") {
+              valuePredicate = { predicateType: "boolean", value: value === "true" };
+              // Otherwise, it's a string and do an equals check
+            } else {
+              valuePredicate = {
+                predicateType: "string",
+                match: AssetQueryMatch.CONTAINS,
+                value,
+                caseSensitive: false,
+              };
+            }
+          }
           return {
             name: {
               predicateType: "string",
@@ -1383,6 +1423,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
               value: Util.sentenceCaseToCamelCase(attributeName),
               caseSensitive: false,
             },
+            value: valuePredicate,
           };
         }),
       };
@@ -1462,105 +1503,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
 
     return {
       assets: foundAssets,
-      matcher: (asset) => {
-        let attrValueCheck = true;
-
-        if (
-          this._filter.attribute.length > 0 &&
-          this._filter.attributeValue.length > 0 &&
-          foundAssetIds.includes(asset.id!)
-        ) {
-          const attributeVal: [string, string][] = [];
-
-          this._filter.attributeValue.forEach((attrVal: string, index: number) => {
-            if (attrVal.length > 0) {
-              attributeVal.push([this._filter.attribute[index], attrVal]);
-            }
-          });
-
-          const matchingAsset: Asset | undefined = foundAssets.find((a: Asset) => a.id === asset.id);
-
-          if (matchingAsset && matchingAsset.attributes) {
-            for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++) {
-              const currentAttributeVal = attributeVal[attributeValIndex];
-
-              let atLeastOneAttributeMatchValue: boolean = false;
-              Object.keys(matchingAsset.attributes).forEach((key: string) => {
-                const attr: Attribute<any> = matchingAsset!.attributes![key];
-
-                // attr.value check to avoid to compare with empty/non existing value
-                if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase()) {
-                  switch (attr.type!) {
-                    case "number":
-                    case "integer":
-                    case "long":
-                    case "bigInteger":
-                    case "bigNumber":
-                    case "positiveInteger":
-                    case "negativeInteger":
-                    case "positiveNumber":
-                    case "negativeNumber": {
-                      let normalizedValue: string = currentAttributeVal[1]?.replace(",", ".");
-                      if (!isNaN(Number(normalizedValue))) {
-                        if ((attr.value ?? 0) === Number(normalizedValue)) {
-                          atLeastOneAttributeMatchValue = true;
-                        }
-                      } else if (/\d/.test(normalizedValue)) {
-                        if (normalizedValue.endsWith("%")) {
-                          normalizedValue = normalizedValue?.replace("%", "");
-                        }
-                        // If filter starts with a number, append '==' in front of it.
-                        if (/^[0-9]/.test(normalizedValue)) {
-                          normalizedValue = "==" + normalizedValue;
-                        }
-                        const func = attr.value + normalizedValue.replace(/[a-z]/gi, "");
-
-                        // Execute the function
-                        try {
-                          const resultNumberEval: boolean = eval(func);
-                          if (resultNumberEval) {
-                            atLeastOneAttributeMatchValue = true;
-                          }
-                        } catch (_ignored) {
-                          console.warn("Could not process filter on attribute number value;", func);
-                        }
-                      }
-                      break;
-                    }
-                    case "boolean": {
-                      const value: string = currentAttributeVal[1];
-                      if ((value === "false" || value === "true") && value === (attr.value ?? false).toString()) {
-                        atLeastOneAttributeMatchValue = true;
-                      }
-                      break;
-                    }
-                    case "text": {
-                      if (attr.value) {
-                        const unparsedValue: string = currentAttributeVal[1];
-                        const multicharString: string = "*";
-
-                        let parsedValue: string = unparsedValue.replace(multicharString, ".*");
-                        parsedValue = parsedValue.replace(/"/g, "");
-
-                        const valueFromAttribute: string = attr.value as string;
-
-                        if (valueFromAttribute.toLowerCase().indexOf(parsedValue.toLowerCase()) != -1) {
-                          atLeastOneAttributeMatchValue = true;
-                        }
-                      }
-                      break;
-                    }
-                  }
-                }
-              });
-
-              attrValueCheck = atLeastOneAttributeMatchValue;
-            }
-          }
-        }
-
-        return foundAssetIds.includes(asset.id!) && attrValueCheck;
-      },
+      matcher: (asset) => foundAssetIds.includes(asset.id!),
     };
   }
 
@@ -1655,7 +1598,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
           },
           {
             actionName: "add",
-            content: html` <or-vaadin-button id="add-btn" theme="primary" disabled>
+            content: html`<or-vaadin-button id="add-btn" theme="primary" disabled>
               <or-translate value="add"></or-translate>
             </or-vaadin-button>`,
             action: () => {
@@ -1956,7 +1899,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
       this.dataProvider(offset, this.queryLimit, parentId).then((assets) => {
         this._loading = false;
         this._buildTreeNodes(assets);
-        if (this._filterInput?.value) {
+        if (!this.isFilterEmpty()) {
           this._doFiltering();
         }
       });
@@ -2028,7 +1971,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
         } else {
           this._buildTreeNodes(newAssets);
         }
-        if (this._filterInput?.value) {
+        if (!this.isFilterEmpty()) {
           this._doFiltering();
         }
       }) as Promise<AssetTreeEvent>;
@@ -2096,7 +2039,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
 
       // In case of filter already active, do not override the actual state of assetTree
       this._buildTreeNodes(assets);
-      if (this._filterInput?.value) {
+      if (!this.isFilterEmpty()) {
         this._doFiltering();
       }
       this.dispatchEvent(new OrAssetTreeAssetEvent(assetEvent));
@@ -2424,7 +2367,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
             >
             ${
               this.checkboxes
-                ? html` <span class="mdc-list-item__graphic">
+                ? html`<span class="mdc-list-item__graphic">
                     ${
                       treeNode.expandable
                         ? html`<div class="mdc-checkbox">
