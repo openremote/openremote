@@ -21,6 +21,7 @@ import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { InputType } from "./util";
 import "./or-vaadin-checkbox";
+import "./or-vaadin-date-time-picker";
 import "./or-vaadin-email-field";
 import "./or-vaadin-number-field";
 import "./or-vaadin-password-field";
@@ -59,6 +60,7 @@ export class OrVaadinInput extends OrElement {
    * Be aware: all CustomElements defined here need to be imported during initialization; dynamic imports are not expected to work.
    */
   public static readonly VAADIN_CLASSES: (CustomElementConstructor | undefined)[] = [
+    customElements.get("or-vaadin-date-time-picker"),
     customElements.get("or-vaadin-number-field"),
     customElements.get("or-vaadin-password-field"),
     customElements.get("or-vaadin-select"),
@@ -75,6 +77,7 @@ export class OrVaadinInput extends OrElement {
   public static readonly TEMPLATES = new Map<InputType, (onChange: (ev: Event) => void) => TemplateResult>([
     [InputType.BIG_INT, OrVaadinInput.getNumberFieldTemplate],
     [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
+    [InputType.DATETIME, OrVaadinInput.getDateTimePickerTemplate],
     [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
     [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
     [InputType.RANGE, OrVaadinInput.getSliderTemplate],
@@ -255,6 +258,10 @@ export class OrVaadinInput extends OrElement {
 
   public static getCheckboxTemplate(onChange?: (e: Event) => void) {
     return html`<or-vaadin-checkbox id="elem" @change=${onChange}></or-vaadin-checkbox>`;
+  }
+
+  public static getDateTimePickerTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-date-time-picker id="elem" @change=${onChange}></or-vaadin-date-time-picker>`;
   }
 
   public static getNumberFieldTemplate(onChange?: (e: Event) => void) {
