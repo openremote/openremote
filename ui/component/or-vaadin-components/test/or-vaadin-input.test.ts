@@ -54,3 +54,29 @@ ct("should expose the picked date and time as a local ISO string", async ({ moun
   // Setting the value does not count as a change, only the picked time does.
   await expect.poll(() => changeCount).toBe(1);
 });
+
+ct("should render a text area for the json type", async ({ mount }) => {
+  const component = await mount(OrVaadinInput, { props: { type: "json" } });
+
+  // The json type was absent from TEMPLATES, so every consumer fell back to the deprecated or-mwc-input.
+  await expect(component.getByRole("textbox")).toBeVisible();
+});
+
+ct("should show a json value as text", async ({ mount }) => {
+  const component = await mount(OrVaadinInput, { props: { type: "json" } });
+  // Values reach the Vaadin element through attributes; a property would be serialized a second time.
+  await component.evaluate((el) => el.setAttribute("value", '{"a":1}'));
+
+  await expect(component.getByRole("textbox")).toHaveValue('{"a":1}');
+});
+
+ct("should mark the field invalid when the json does not parse", async ({ mount }) => {
+  const component = await mount(OrVaadinInput, { props: { type: "json" } });
+
+  const input = component.getByRole("textbox");
+  await input.fill("{ not json");
+  await input.blur();
+
+  // A text area has no constraint of its own that rejects this, so the parse result has to set the state.
+  await expect(component.locator("or-vaadin-text-area")).toHaveAttribute("invalid");
+});

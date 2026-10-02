@@ -78,6 +78,8 @@ export class OrVaadinInput extends OrElement {
     [InputType.BIG_INT, OrVaadinInput.getNumberFieldTemplate],
     [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
     [InputType.DATETIME, OrVaadinInput.getDateTimePickerTemplate],
+    [InputType.JSON, OrVaadinInput.getTextAreaTemplate],
+    [InputType.JSON_OBJECT, OrVaadinInput.getTextAreaTemplate],
     [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
     [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
     [InputType.RANGE, OrVaadinInput.getSliderTemplate],
@@ -88,11 +90,19 @@ export class OrVaadinInput extends OrElement {
   ]);
 
   /**
+   * Input types whose text is JSON rather than a plain string, so the value has to be parsed on the way out
+   * and serialized on the way in.
+   */
+  public static readonly JSON_TYPES: readonly InputType[] = [InputType.JSON, InputType.JSON_OBJECT];
+
+  /**
    * Static map of what HTML event to listen for when a value changes. By default, or when undefined, the "change" event is used.
    * Sometimes you'd like to override this, such as a text field, where it should only be updated "on submit".
    */
   public static readonly CHANGE_EVENTS = new Map<InputType, string>([
     [InputType.BIG_INT, "submit"],
+    [InputType.JSON, "submit"],
+    [InputType.JSON_OBJECT, "submit"],
     [InputType.NUMBER, "submit"],
     [InputType.TEXTAREA, "submit"],
     [InputType.TEXT, "submit"],
@@ -172,6 +182,10 @@ export class OrVaadinInput extends OrElement {
       case InputType.SWITCH: {
         return (this._elem as HTMLInputElement | undefined)?.checked;
       }
+      case InputType.JSON:
+      case InputType.JSON_OBJECT: {
+        return OrVaadinInput.parseJson(this.type, this._elem?.value).value;
+      }
       default: {
         return this._elem?.value;
       }
@@ -183,7 +197,47 @@ export class OrVaadinInput extends OrElement {
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/checkValidity|HTMLInputElement/checkValidity}
    */
   public checkValidity(): boolean {
-    return this._elem?.checkValidity() ?? false;
+    if (!(this._elem?.checkValidity() ?? false)) {
+      return false;
+    }
+    // A text area accepts any text, so JSON types need their own parse check on top of the field constraints
+    return !OrVaadinInput.JSON_TYPES.includes(this.type) || OrVaadinInput.parseJson(this.type, this._elem?.value).valid;
+  }
+
+  /**
+   * Serializes a value for display in a JSON input type, matching what {@link nativeValue} parses back.
+   * @param value - The value to serialize
+   */
+  public static stringifyJson(value: any): string | undefined {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Parses the text of a JSON input type. An empty field is a valid, absent value; text that does not parse,
+   * or that is not an object for {@link InputType.JSON_OBJECT}, is invalid and has no value.
+   * @param type - The input type being parsed
+   * @param text - The text to parse
+   */
+  protected static parseJson(type: InputType, text?: string): { value?: any; valid: boolean } {
+    if (!text?.trim()) {
+      return { valid: true };
+    }
+    try {
+      const value = JSON.parse(text);
+      if (type === InputType.JSON_OBJECT && (typeof value !== "object" || value === null || Array.isArray(value))) {
+        return { valid: false };
+      }
+      return { value, valid: true };
+    } catch {
+      return { valid: false };
+    }
   }
 
   render() {
@@ -228,6 +282,10 @@ export class OrVaadinInput extends OrElement {
   protected _onValueChange(ev: Event) {
     ev.stopPropagation();
     if (ev.defaultPrevented) return;
+    // No field constraint catches malformed JSON, so the invalid state has to be set from the parse result
+    if (OrVaadinInput.JSON_TYPES.includes(this.type) && this._elem) {
+      (this._elem as HTMLInputElement & { invalid: boolean }).invalid = !this.checkValidity();
+    }
     this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
   }
 

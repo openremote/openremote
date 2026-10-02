@@ -175,11 +175,14 @@ export class ControlInputElement extends ControlBaseElement {
     // or-vaadin-select offers neither multi select nor search, so those stay on or-mwc-input
     if (OrVaadinInput.TEMPLATES.has(this.inputType) && !multiple && !searchable) {
       const isCheckbox = this.inputType === InputType.CHECKBOX;
+      const displayValue = OrVaadinInput.JSON_TYPES.includes(this.inputType)
+        ? OrVaadinInput.stringifyJson(value)
+        : (value ?? undefined);
       return html`<or-vaadin-input
         .id="${this.id}"
         type="${this.inputType}"
         label="${ifDefined(this.label || undefined)}"
-        value="${ifDefined(isCheckbox ? undefined : (value ?? undefined))}"
+        value="${ifDefined(isCheckbox ? undefined : displayValue)}"
         ?checked="${isCheckbox && !!value}"
         ?disabled="${!this.enabled}"
         ?required="${!!this.required}"
@@ -221,7 +224,8 @@ export class ControlInputElement extends ControlBaseElement {
    * Vaadin inputs expose their value as a string, so it is parsed back into the type the schema expects.
    */
   protected onVaadinValueChanged(e: Event) {
-    const value = (e.currentTarget as OrVaadinInput).nativeValue;
+    const input = e.currentTarget as OrVaadinInput;
+    const value = input.nativeValue;
     const empty = value === undefined || value === "";
 
     switch (this.inputType) {
@@ -232,6 +236,14 @@ export class ControlInputElement extends ControlBaseElement {
       case InputType.NUMBER:
       case InputType.RANGE: {
         this.handleChange(this.path!, empty ? undefined : Number(value));
+        break;
+      }
+      case InputType.JSON:
+      case InputType.JSON_OBJECT: {
+        // Text that does not parse has no value, so keep what is there and let the field show it is invalid
+        if (input.checkValidity()) {
+          this.handleChange(this.path!, value);
+        }
         break;
       }
       default: {
