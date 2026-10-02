@@ -536,7 +536,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     failedDeleteAssetIds.add(childAsset.id)
     def childAccepted = assetStorageService.delete([childAsset.id])
 
-    then: "the child is pending deletion"
+    then: "the child is pending deletion so can only be queried through the count include delete pending endpoint"
     childAccepted
     conditions.eventually {
       assert assetStorageService.count(new AssetQuery().ids(childAsset.id)) == 0
@@ -553,6 +553,32 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
       assert assetStorageService.count(new AssetQuery().ids(parentAsset.id)) == 0
       assert assetStorageService.count(new AssetQuery().includeDeletePending(true).ids(parentAsset.id)) == 1
     }
+
+    when: "the child asset is re-merged while it is still pending deletion"
+    failedDeleteAssetIds.remove(childAsset.id)
+    childAsset.setName("Restored pending delete child")
+    def restoredChildAsset = assetStorageService.merge(childAsset)
+
+    then: "the child deletion is cancelled and the asset is visible again"
+    restoredChildAsset.id == childAsset.id
+    restoredChildAsset.name == "Restored pending delete child"
+    !restoredChildAsset.isDeletePending()
+    conditions.eventually {
+      assert assetStorageService.count(new AssetQuery().ids(childAsset.id)) == 1
+      assert !assetStorageService.failedAssetDeleteIds.contains(childAsset.id)
+    }
+
+    when: "pending asset deletion is retried"
+    assetStorageService.requestPendingAssetDeletionRetry([childAsset.id])
+    TimeUnit.MILLISECONDS.sleep(500)
+
+    then: "the restored child is not physically deleted by the background deletion task"
+    assetStorageService.count(new AssetQuery().ids(childAsset.id)) == 1
+    assetStorageService.count(new AssetQuery().includeDeletePending(true).ids(childAsset.id)) == 1
+
+    and: "the parent remains pending deletion"
+    assetStorageService.count(new AssetQuery().ids(parentAsset.id)) == 0
+    assetStorageService.count(new AssetQuery().includeDeletePending(true).ids(parentAsset.id)) == 1
   }
 
   def "Test writing attributes with timestamps"() {
