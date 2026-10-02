@@ -529,7 +529,8 @@ export class PageRealms extends Page<AppStateKeyed> {
         this._realms = this._realms.filter((r) => r !== realm);
         this.dispatchEvent(new CustomEvent("realms-changed", { bubbles: true, composed: true }));
       } catch (e) {
-        showSnackbar(undefined, "realmDeleteFailed", "dismiss");
+        const snackbarKey = (e as any)?.response?.status === 409 ? "realmDeleteFailedHasAssets" : "realmDeleteFailed";
+        showSnackbar(undefined, snackbarKey, "dismiss");
       }
     };
 
