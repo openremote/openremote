@@ -45,6 +45,7 @@ import type { OrAceEditor, OrAceEditorChangedEvent } from "@openremote/or-compon
 import { html, type TemplateResult } from "lit";
 import { createRef, type Ref, ref } from "lit/directives/ref.js";
 import { unknownTemplate } from "./standard-renderers";
+import { jsonEditorStyle } from "./styles";
 import { type OrVaadinDialog, showDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import type { OrVaadinSelect, SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
 import type { OrVaadinButton } from "@openremote/or-vaadin-components/or-vaadin-button";
@@ -417,7 +418,7 @@ export const showJsonEditor = (
         <h2 slot="header-content">${title}</h2>
         <or-ace-editor
           ${ref(editorRef)}
-          style="width: 100%; height: 60vh;"
+          style="${jsonEditorStyle}"
           @or-ace-editor-edit="${() => onEditorEdit()}"
           @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => onEditorChanged(ev)}"
           .value="${value}"
