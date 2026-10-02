@@ -52,13 +52,10 @@ aws route53 change-resource-record-sets \
      '{"Changes": [ { "Action": "UPSERT", "ResourceRecordSet": { "Name": "'$FQDN'", "Type": "A", "AliasTarget":{ "HostedZoneId": '$HOSTED_ZONE_ID',"DNSName": '$DNS_NAME',"EvaluateTargetHealth": false} } } ]}' \
      --profile dnschg
 
-# Pin the public issuer so internal discovery and browser tokens agree.
 helm install keycloak keycloak -f keycloak/values-haproxy.yaml \
-  --set-string "or.hostname=https://$FQDN/auth"
-# CORS requires a full origin (scheme and host), with no /auth path.
+  --set-string or.hostname=$FQDN
 helm install manager manager -f manager/values-haproxy-eks.yaml \
-  --set-string "or.hostname=$FQDN" \
-  --set-string "or.allowedOrigins=https://$FQDN"
+  --set-string or.hostname=$FQDN
 
 while ! dig +short $FQDN | grep -qE '^[0-9]'; do
     echo "Waiting for DNS resolution..."
