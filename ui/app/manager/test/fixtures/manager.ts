@@ -426,7 +426,7 @@ export class Manager {
    */
   async resetUserPassword(config?: AxiosRequestConfig<any>) {
     try {
-      const response = await rest.api.UserResource.resetPassword(
+      const response = await rest.api.UserResource.updatePassword(
         this.realm!,
         this.user!.id!,
         { value: smartcity.password },
