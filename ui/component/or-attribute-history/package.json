@@ -40,7 +40,7 @@
     "jsonpath-plus": "^10.3.0",
     "lit": "^3.3.1",
     "lodash.debounce": "^4.0.8",
-    "moment": "^2.29.4"
+    "moment": "^2.31.0"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
