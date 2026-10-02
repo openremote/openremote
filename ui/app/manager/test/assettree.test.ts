@@ -509,6 +509,7 @@ test(`Should update asset list correctly when applying filters`, async ({ manage
       expectedNames: [asset3.name, asset4.name],
     },
     {
+      attribute: "Is New",
       value: "true",
       expectedInput: 'type:BuildingAsset "Is New":true',
       expectedNames: [asset4.name],
