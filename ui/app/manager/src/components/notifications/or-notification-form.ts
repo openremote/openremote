@@ -20,6 +20,7 @@ import { css, html } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
+import { classMap } from "lit/directives/class-map.js";
 import { i18next } from "@openremote/or-translate";
 import manager, { Util } from "@openremote/core";
 import {
@@ -70,11 +71,15 @@ export class OrNotificationFormChangedEvent extends CustomEvent<void> {
 export class OrNotificationForm extends OrElement {
   static styles = css`
     :host {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
     }
 
     .form-container {
-      height: 100%;
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
     }
 
     or-vaadin-select,
@@ -86,10 +91,6 @@ export class OrNotificationForm extends OrElement {
       margin-bottom: 16px;
     }
 
-    or-asset-tree {
-      flex: 0 0 auto;
-    }
-
     /* Grid styles */
 
     .formGridContainer {
@@ -99,8 +100,10 @@ export class OrNotificationForm extends OrElement {
       grid-template-areas:
         "targetContainer messageContentContainer"
         "targetContainer actionButtonContainer";
+      /* The action row takes the height it needs and the content area the rest */
+      grid-template-rows: 1fr auto;
       gap: var(--lumo-space-m);
-      height: 100%;
+      flex: 1 1 auto;
     }
 
     .formGridContainer-readonly {
@@ -110,8 +113,16 @@ export class OrNotificationForm extends OrElement {
       grid-template-areas:
         "targetContainer messageContentContainer"
         "propContainer actionButtonContainer";
+      grid-template-rows: 1fr auto;
       gap: var(--lumo-space-m);
-      height: 100%;
+      flex: 1 1 auto;
+    }
+
+    /* Only push notifications have actions. Dropping that row as well as its item keeps the content
+       area from ending a row gap short of the bottom */
+    .formGridContainer.noActions {
+      grid-template-areas: "targetContainer messageContentContainer";
+      grid-template-rows: 1fr;
     }
 
     [class*="formGridContainer"] > * {
@@ -126,11 +137,15 @@ export class OrNotificationForm extends OrElement {
       position: absolute;
       width: 100%;
       height: 100%;
+      display: flex;
+      flex-direction: column;
     }
 
     .messageContentContainer {
       grid-area: messageContentContainer;
       height: 100%;
+      display: flex;
+      flex-direction: column;
     }
 
     .actionButtonContainer {
@@ -143,6 +158,7 @@ export class OrNotificationForm extends OrElement {
 
     .target-area {
       flex: 1 1 auto;
+      min-height: 0;
       overflow: auto;
     }
 
@@ -151,14 +167,13 @@ export class OrNotificationForm extends OrElement {
     }
 
     @media (max-width: 1024px) {
-      :host {
-        height: auto;
-      }
-
+      /* The noActions selectors are listed so this still wins over the two-column layout above */
       .formGridContainer,
-      .formGridContainer-readonly {
+      .formGridContainer.noActions,
+      .formGridContainer-readonly,
+      .formGridContainer-readonly.noActions {
         grid-template-columns: 1fr;
-        height: auto;
+        grid-template-rows: none;
       }
 
       .formGridContainer {
@@ -168,12 +183,25 @@ export class OrNotificationForm extends OrElement {
           "actionButtonContainer";
       }
 
+      .formGridContainer.noActions {
+        grid-template-areas:
+          "targetContainer"
+          "messageContentContainer";
+      }
+
       .formGridContainer-readonly {
         grid-template-areas:
           "targetContainer"
           "messageContentContainer"
           "propContainer"
           "actionButtonContainer";
+      }
+
+      .formGridContainer-readonly.noActions {
+        grid-template-areas:
+          "targetContainer"
+          "messageContentContainer"
+          "propContainer";
       }
 
       /* Return the target column to normal flow so its stacked row keeps a height */
@@ -461,12 +489,18 @@ export class OrNotificationForm extends OrElement {
 
   protected render() {
     const inputDisabled = this.disabled || this.readonly;
+    const hasActions = this._message.type === "push";
+    const gridClasses = {
+      formGridContainer: !this.readonly,
+      "formGridContainer-readonly": this.readonly,
+      noActions: !hasActions,
+    };
 
     return html`
       <div class="form-container">
-        <div class="${this.readonly ? "formGridContainer-readonly" : "formGridContainer"}">
+        <div class="${classMap(gridClasses)}">
           ${this._renderTargetContainer(inputDisabled)} ${this._renderMessageContentContainer(inputDisabled)}
-          ${this._message.type === "push" ? this._renderActionButtonContainer(inputDisabled) : ""}
+          ${hasActions ? this._renderActionButtonContainer(inputDisabled) : ""}
           ${this.readonly ? this._renderPropertiesContainer() : ""}
         </div>
       </div>

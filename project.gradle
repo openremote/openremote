@@ -180,6 +180,13 @@ if (project == rootProject) {
             OR_APP_DOCROOT: "manager/build/install/manager/web"
           ]
         }
+        "Date Time Setup"(Application) {
+          moduleName = getProject().idea.module.name + ".setup.datetime"
+          envs = [
+            OR_SETUP_TYPE: "datetime",
+            OR_APP_DOCROOT: "manager/build/install/manager/web"
+          ]
+        }
         "Test Setup"(Application) {
           moduleName = getProject().idea.module.name + ".setup.integration"
         }
