@@ -39,14 +39,3 @@ and allow login, but the custom load-test setup provider is absent and no test
 users or assets are created. During a clean initialization, Manager logs should
 identify `org.openremote.setup.load1.SetupTasks` as a custom setup provider.
 
-## Authentication configuration
-
-Run `bash ./eks-setup-load.sh` from `test/load1-eks` after configuring
-`eks-common.sh` and building the custom image. The script sets Keycloak's
-`KC_HOSTNAME` to `https://$FQDN/auth` so internal discovery and browser tokens
-use the same issuer. Manager keeps the bare hostname and receives
-`OR_WEBSERVER_ALLOWED_ORIGINS=https://$FQDN`: CORS requires a scheme and must
-not include the `/auth` path.
-
-Before starting a load run, verify browser login, creation and editing of an
-asset, and an authenticated MQTT publish using a provisioned test account.
