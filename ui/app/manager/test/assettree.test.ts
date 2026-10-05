@@ -457,7 +457,7 @@ test(`Should update asset list correctly when applying filters`, async ({ manage
       ...asset2.attributes,
       isNew: { name: "isNew", type: "boolean" },
       amount: { name: "amount", type: "number", value: 80 },
-      status: { name: "status", type: "string", value: "Test value" },
+      status: { name: "status", type: "text", value: "Test value" },
     },
   };
   const asset4 = {
