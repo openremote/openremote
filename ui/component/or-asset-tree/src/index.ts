@@ -16,17 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {html, type PropertyValues, type TemplateResult} from "lit";
-import {OrElement} from "@openremote/or-element";
-import {customElement, property, query, state} from "lit/decorators.js";
-import type {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
-import type {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import { html, type PropertyValues, type TemplateResult } from "lit";
+import { OrElement } from "@openremote/or-element";
+import { customElement, property, query, state } from "lit/decorators.js";
+import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import type { OrVaadinButton } from "@openremote/or-vaadin-components/or-vaadin-button";
 import {
   type ComboBoxLitRenderer,
   comboBoxRenderer,
   type OrVaadinComboBox,
 } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
-import {createMenuBarItem, type MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import { createMenuBarItem, type MenuBarItem } from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import {
   getConfirmDialogContent,
   showConfirmDialog,
@@ -57,19 +57,19 @@ import {
   WellknownAssets,
 } from "@openremote/model";
 import "@openremote/or-translate";
-import {style} from "./style";
-import manager, {type EventCallback, subscribe, Util} from "@openremote/core";
+import { style } from "./style";
+import manager, { type EventCallback, subscribe, Util } from "@openremote/core";
 import Qs from "qs";
-import {getAssetDescriptorIconTemplate, type OrIcon} from "@openremote/or-icon";
-import type {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import { getAssetDescriptorIconTemplate, type OrIcon } from "@openremote/or-icon";
+import type { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
-import {i18next} from "@openremote/or-translate";
+import { i18next } from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import type {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
+import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import type { OrAddAssetDialog, OrAddChangedEvent } from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {when} from "lit/directives/when.js";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { when } from "lit/directives/when.js";
 import debounce from "lodash.debounce";
 
 export interface AssetTreeTypeConfig {
@@ -650,7 +650,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
                   this._assetTypes?.find((at: AssetDescriptor) => {
                     return at.name === this._assetTypeFilter;
                   }),
-                  this._assetTypes
+                  this._assetTypes?.sort((a, b) => a.name!.localeCompare(b.name!))
                 )
               )}
               <or-vaadin-text-field
