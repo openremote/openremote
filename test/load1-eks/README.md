@@ -38,4 +38,3 @@ The JAR copy above is required: without it, the image can initialize Keycloak
 and allow login, but the custom load-test setup provider is absent and no test
 users or assets are created. During a clean initialization, Manager logs should
 identify `org.openremote.setup.load1.SetupTasks` as a custom setup provider.
-
