@@ -84,6 +84,7 @@ export const defineAppConfig = (path: string) => {
       video: "on",
       locale: "en",
     },
+    timeout: 60_000,
     webServer: {
       command: `node ${join(__dirname, "manager.cjs")}`,
       url: "http://127.0.0.1:8080",
