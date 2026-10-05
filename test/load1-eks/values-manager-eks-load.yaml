@@ -1,4 +1,5 @@
 image:
+  pullPolicy: Always
   tag: "load1"
 
 livenessProbe:
