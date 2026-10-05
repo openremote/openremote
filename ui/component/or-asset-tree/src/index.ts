@@ -184,8 +184,6 @@ enum FilterElementType {
 }
 
 const NUMBER_OPERATORS: Record<string, AssetQueryOperator> = {
-  "=": AssetQueryOperator.EQUALS,
-  "==": AssetQueryOperator.EQUALS,
   ">": AssetQueryOperator.GREATER_THAN,
   ">=": AssetQueryOperator.GREATER_EQUALS,
   "<": AssetQueryOperator.LESS_THAN,
