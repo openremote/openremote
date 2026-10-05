@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import themeCss from "@openremote/theme";
-import manager, { TRANSLATION_INTERPOLATION } from "@openremote/core";
+import manager, { addTranslationFormats } from "@openremote/core";
 import { thingAssetInfo, metaItemDescriptors, valueDescriptors } from "@openremote/test/data";
 
 import i18next from "i18next";
@@ -51,8 +51,8 @@ IconSets.addIconSet("or", createSvgIconSet(OrIconSet.size, OrIconSet.icons));
 window._i18next = i18next.use(HttpBackend);
 
 // Functions cannot cross the `page.evaluate` boundary, so the `locales` fixture reaches the
-// manager's interpolation formatting through the window rather than passing it in
-window._translationInterpolation = TRANSLATION_INTERPOLATION;
+// manager's translation formats through the window rather than passing them in
+window._addTranslationFormats = addTranslationFormats;
 
 /**
  * Mimics subscribing to asset events without connecting to an actual WebSocket.

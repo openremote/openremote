@@ -28,7 +28,18 @@ const DATE = new Date(2026, 11, 15, 13, 45);
 ct.beforeEach(async ({ shared }) => {
   // Only the date is interpolated, so the language decides the formatting and nothing else
   await shared.locales(
-    Object.fromEntries(localisedDates.map(({ language }) => [language, { test: { date: "{{-date, lll}}" } }]))
+    Object.fromEntries(
+      localisedDates.map(({ language }) => [
+        language,
+        {
+          test: {
+            date: "{{-date, lll}}",
+            weekday: "{{-date, llll}}",
+            weekdayLong: "{{-date, llll(weekday: long)}}",
+          },
+        },
+      ])
+    )
   );
 });
 
@@ -45,3 +56,21 @@ for (const { language, expected } of localisedDates) {
     await expect(component).toHaveText(expected);
   });
 }
+
+// i18next lowercases a format name, so `llll` and `LLLL` would be the same format. The weekday
+// option keeps them apart.
+ct("should format an interpolated date with an abbreviated weekday", async ({ mount }) => {
+  const date = DATE;
+  const component = await mount(OrTranslate, {
+    props: { value: "weekday", options: { ns: "test", lng: "de", date } },
+  });
+  await expect(component).toHaveText("Di., 15. Dez. 2026 13:45");
+});
+
+ct("should format an interpolated date with a full weekday", async ({ mount }) => {
+  const date = DATE;
+  const component = await mount(OrTranslate, {
+    props: { value: "weekdayLong", options: { ns: "test", lng: "de", date } },
+  });
+  await expect(component).toHaveText("Dienstag, 15. Dezember 2026 13:45");
+});
