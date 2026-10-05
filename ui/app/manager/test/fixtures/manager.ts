@@ -572,25 +572,32 @@ export class Manager {
    */
   async deleteAssetsInRealm(realm: string, config?: AxiosRequestConfig<any>) {
     config = config ?? (await this.adminConfig());
-    const assetResponse = await rest.api.AssetResource.queryAssets(
-      {
-        select: { attributes: [] },
-        realm: { name: realm },
-      },
-      config
-    );
-    expect(assetResponse.status).toBe(200);
-    const assets = assetResponse.data;
-    if (assets.length > 0) {
-      const assetIds = assets.map(({id}) => id!);
+
+    const assetIdRetreiver = async () => {
+      const assetResponse = await rest.api.AssetResource.queryAssets(
+        {
+          select: { attributes: [] },
+          realm: { name: realm },
+        },
+        config
+      );
+      expect(assetResponse.status).toBe(200);
+      const assets = assetResponse.data;
+      return assets.map(({id}) => id!);
+    };
+
+    let assetIds = await assetIdRetreiver();
+
+    while (assetIds.length > 0) {
       const response = await rest.api.AssetResource.delete({assetId: assetIds}, config);
       expect(response.status).toBe(204);
-      // Wait for the assets to be deleted
+      // Wait for these assets to be deleted
       await expect
         .poll(async () => {
           const countResponse = await rest.api.AssetResource.queryCount(
             {
               select: {attributes: []},
+              ids: assetIds,
               realm: {name: realm},
               includeDeletePending: true,
             },
@@ -600,6 +607,7 @@ export class Manager {
           return countResponse.data;
         })
         .toBe(0);
+      assetIds = await assetIdRetreiver();
     }
   }
 
