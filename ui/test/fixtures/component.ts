@@ -21,12 +21,13 @@ import path from "node:path";
 import type { Locator } from "@playwright/experimental-ct-core";
 import { Shared } from "./shared";
 
-import type { i18n, Resource } from "i18next";
+import type { i18n, InitOptions, Resource } from "i18next";
 import type { Asset } from "@openremote/model";
 
 declare global {
   interface Window {
     _i18next: i18n;
+    _translationInterpolation: InitOptions["interpolation"];
     _assets: Asset[];
   }
 }
@@ -101,6 +102,7 @@ export class CtShared extends Shared {
         defaultNS: "test",
         fallbackNS: "or",
         ns: ["or"],
+        interpolation: window._translationInterpolation,
         backend: {
           loadPath: "/shared/locales/{{lng}}/{{ns}}.json",
         },

@@ -103,6 +103,25 @@ export const I18NEXT_TO_MOMENT_LOCALE: Record<string, string> = {
   cn: "zh-cn",
 };
 
+/** Resolves an i18next language code to the Moment locale code to format with. */
+export function momentLocale(lng: string): string {
+  return I18NEXT_TO_MOMENT_LOCALE[lng] ?? lng;
+}
+
+/** Interpolation formatting every i18next instance is initialised with. */
+export const TRANSLATION_INTERPOLATION: InitOptions["interpolation"] = {
+  format: (value, format, lng) => {
+    if (format === "uppercase") return value.toUpperCase();
+    if (value instanceof Date) {
+      // Format in the language of this interpolation, so a per-call `lng` renders its own date
+      return moment(value)
+        .locale(momentLocale(lng ?? i18next.language))
+        .format(format);
+    }
+    return value;
+  },
+};
+
 export function normaliseConfig(config: ManagerConfig): ManagerConfig {
   const normalisedConfig: ManagerConfig = config ? Object.assign({}, config) : {};
 
@@ -467,7 +486,7 @@ export class Manager implements EventProviderFactory {
     });
 
     i18next.on("languageChanged", (lng) => {
-      moment.locale(I18NEXT_TO_MOMENT_LOCALE[lng] ?? lng);
+      moment.locale(momentLocale(lng));
       this._emitEvent(OREvent.TRANSLATE_LANGUAGE_CHANGED);
     });
 
@@ -482,15 +501,7 @@ export class Manager implements EventProviderFactory {
       defaultNS: "app",
       fallbackNS: "or",
       ns: this.config.loadTranslations,
-      interpolation: {
-        format: (value, format, lng) => {
-          if (format === "uppercase") return value.toUpperCase();
-          if (value instanceof Date) {
-            return moment(value).format(format);
-          }
-          return value;
-        },
-      },
+      interpolation: TRANSLATION_INTERPOLATION,
       backend: {
         loadPath: (langs: string[], namespaces: string[]) => {
           if (namespaces.length === 1 && namespaces[0] === "or") {
