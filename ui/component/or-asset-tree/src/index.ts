@@ -650,7 +650,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
                   this._assetTypes?.find((at: AssetDescriptor) => {
                     return at.name === this._assetTypeFilter;
                   }),
-                  this._assetTypes?.sort((a, b) => a.name!.localeCompare(b.name!))
+                  this._assetTypes?.sort(Util.sortByString(Util.getAssetTypeLabel))
                 )
               )}
               <or-vaadin-text-field
