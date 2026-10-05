@@ -592,7 +592,14 @@ test(`Should load the asset tree only once after clearing the filter to whitespa
   // Clear the input, and leave a single space behind.
   await assetTree.getFilterInput().fill(" ");
   await expect(assetTree.getAssetNodes()).toHaveCount(3); // All assets are visible again
-  expect(countRequests, "Asset tree kept reloading after the filter was cleared").toBeLessThanOrEqual(2);
+  expect(countRequests, "Clearing the filter should reload the tree once").toBeLessThanOrEqual(2);
+
+  // The empty filter used to re-enter the clear branch on every load, so the tree kept re-fetching
+  const reloadedAgain = await page
+    .waitForRequest("**/asset/count", { timeout: 1000 })
+    .then(() => true)
+    .catch(() => false);
+  expect(reloadedAgain, "Asset tree kept reloading after the filter was cleared").toBe(false);
 });
 
 /**
