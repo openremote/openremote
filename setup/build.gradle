@@ -13,6 +13,7 @@ sourceSets {
   datetime
   demo
   integration
+  jsonforms
   load1
   load2
   notification
@@ -24,6 +25,7 @@ configurations {
   datetimeImplementation.extendsFrom(implementation)
   demoImplementation.extendsFrom(implementation)
   integrationImplementation.extendsFrom(implementation)
+  jsonformsImplementation.extendsFrom(implementation)
   load1Implementation.extendsFrom(implementation)
   load2Implementation.extendsFrom(implementation)
   notificationImplementation.extendsFrom(implementation)
@@ -49,6 +51,11 @@ tasks.register('clusteringJar', Jar) {
 tasks.register('datetimeJar', Jar) {
   archiveBaseName.set("openremote-datetime-${project.name}")
   from sourceSets.datetime.output
+}
+
+tasks.register('jsonformsJar', Jar) {
+  archiveBaseName.set("openremote-jsonforms-${project.name}")
+  from sourceSets.jsonforms.output
 }
 
 tasks.register('load1Jar', Jar) {
