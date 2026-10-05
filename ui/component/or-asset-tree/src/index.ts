@@ -1505,10 +1505,6 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
     };
   }
 
-  protected isAnyFilter(): boolean {
-    return this._filter.asset !== undefined || this._filter.assetType.length > 0 || this._filter.attribute.length > 0;
-  }
-
   protected filterTreeNode(
     currentNode: UiAssetTreeNode,
     matcher: (asset: Asset) => boolean,
@@ -1523,7 +1519,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
 
     const childMatches: boolean = childOrDescendantMatches.some((m) => m);
     nodeOrDescendantMatches = nodeOrDescendantMatches || childMatches;
-    currentNode.expanded = childMatches && currentNode.children.length > 0 && this.isAnyFilter();
+    currentNode.expanded = childMatches && currentNode.children.length > 0 && !this.isFilterEmpty();
     currentNode.hidden = !nodeOrDescendantMatches && !parentMatching;
     return nodeOrDescendantMatches;
   }
