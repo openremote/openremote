@@ -1404,7 +1404,7 @@ export class OrAssetTree extends subscribe(manager)(OrElement) {
               // String input is a boolean
             } else if (value === "true" || value === "false") {
               valuePredicate = { predicateType: "boolean", value: value === "true" };
-              // Otherwise, it's a string and do an equals check
+              // Otherwise, it's a string and do a contains check
             } else {
               valuePredicate = {
                 predicateType: "string",
