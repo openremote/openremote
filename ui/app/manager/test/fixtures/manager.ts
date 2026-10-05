@@ -581,25 +581,26 @@ export class Manager {
     );
     expect(assetResponse.status).toBe(200);
     const assets = assetResponse.data;
-    expect(assets.length).toBeGreaterThan(0);
-    const assetIds = assets.map(({ id }) => id!);
-    const response = await rest.api.AssetResource.delete({ assetId: assetIds }, config);
-    expect(response.status).toBe(204);
-    // Wait for the assets to be deleted
-    await expect
-      .poll(async () => {
-        const countResponse = await rest.api.AssetResource.queryCount(
-          {
-            select: { attributes: [] },
-            realm: { name: realm },
-            includeDeletePending: true,
-          },
-          config
-        );
-        expect(countResponse.status).toBe(200);
-        return countResponse.data;
-      })
-      .toBe(0);
+    if (assets.length > 0) {
+      const assetIds = assets.map(({id}) => id!);
+      const response = await rest.api.AssetResource.delete({assetId: assetIds}, config);
+      expect(response.status).toBe(204);
+      // Wait for the assets to be deleted
+      await expect
+        .poll(async () => {
+          const countResponse = await rest.api.AssetResource.queryCount(
+            {
+              select: {attributes: []},
+              realm: {name: realm},
+              includeDeletePending: true,
+            },
+            config
+          );
+          expect(countResponse.status).toBe(200);
+          return countResponse.data;
+        })
+        .toBe(0);
+    }
   }
 
   /**

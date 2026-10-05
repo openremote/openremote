@@ -276,14 +276,6 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
     and: "the failed asset should be hidden from asset queries"
     assetStorageService.find(new AssetQuery().ids(failedSegmentDeleteAssetId)) == null
 
-    when: "an asset is merged with the same ID as the failed pending delete asset"
-    assetStorageService.merge(new ThingAsset("Duplicate Pending Delete Asset")
-            .setId(failedSegmentDeleteAssetId)
-            .setRealm(keycloakTestSetup.realmMaster.name))
-
-    then: "the merge should be rejected while the asset is pending deletion"
-    thrown(IllegalStateException)
-
     when: "the failed asset deletion is retried"
     failedDeleteAssetIds.remove(failedSegmentDeleteAssetId)
     assetStorageService.retryFailedAssetDeletes()

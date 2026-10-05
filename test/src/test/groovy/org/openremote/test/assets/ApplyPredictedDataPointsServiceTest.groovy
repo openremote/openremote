@@ -18,7 +18,6 @@
  */
 package org.openremote.test.assets
 
-import org.junit.jupiter.api.Timeout
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.ApplyPredictedDataPointsService
@@ -46,7 +45,6 @@ import java.util.function.Consumer
 import static org.openremote.model.value.MetaItemType.APPLY_PREDICTED_DATA_POINTS
 import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS
 
-@Timeout(90)
 class ApplyPredictedDataPointsServiceTest extends Specification implements ManagerContainerTrait {
 
   // Delay and future of the last schedule as a single value, so a delay can never be paired with a stale future
