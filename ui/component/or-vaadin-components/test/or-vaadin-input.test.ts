@@ -55,6 +55,52 @@ ct("should expose the picked date and time as a local ISO string", async ({ moun
   await expect.poll(() => changeCount).toBe(1);
 });
 
+ct("should render a date picker for the date type", async ({ mount }) => {
+  const component = await mount(OrVaadinInput, { props: { type: "date" } });
+
+  await expect(component.locator("or-vaadin-date-picker")).toBeVisible();
+  // A single field, where the date time picker has one for the date and one for the time.
+  await expect(component.getByRole("combobox")).toHaveCount(1);
+});
+
+ct("should expose the picked date as a local ISO string", async ({ mount }) => {
+  const component = await mount(OrVaadinInput, { props: { type: "date" } });
+
+  // Typed dates follow the date format of the browser locale, so the date is set through the local ISO value instead.
+  await component.evaluate((el: OrVaadinInput) => el.setAttribute("value", "2026-01-02"));
+
+  await expect(component.getByRole("combobox")).toHaveValue("01/02/2026");
+  await expect.poll(() => component.evaluate((el: OrVaadinInput) => el.nativeValue)).toBe("2026-01-02");
+});
+
+ct("should render a time picker for the time type", async ({ mount }) => {
+  const component = await mount(OrVaadinInput, { props: { type: "time" } });
+
+  await expect(component.locator("or-vaadin-time-picker")).toBeVisible();
+  await expect(component.getByRole("combobox")).toHaveCount(1);
+});
+
+ct("should expose the picked time as a local ISO string", async ({ mount }) => {
+  let changeCount = 0;
+  const component = await mount(OrVaadinInput, {
+    props: { type: "time" },
+    on: {
+      // The `change` CustomEvent carries no detail, so it can only be counted.
+      change: () => {
+        changeCount += 1;
+      },
+    },
+  });
+
+  const time = component.getByRole("combobox");
+  await time.fill("11:45 AM");
+  await time.press("Enter");
+
+  // The picker shows the clock of the browser locale, while its value stays a 24 hour local ISO time.
+  await expect.poll(() => component.evaluate((el: OrVaadinInput) => el.nativeValue)).toBe("11:45");
+  await expect.poll(() => changeCount).toBe(1);
+});
+
 ct("should render a text area for the json type", async ({ mount }) => {
   const component = await mount(OrVaadinInput, { props: { type: "json" } });
 

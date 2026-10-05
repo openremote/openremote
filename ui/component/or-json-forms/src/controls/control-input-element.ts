@@ -22,9 +22,6 @@ import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadi
 import type { OrVaadinMultiSelectComboBox } from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
-import "@openremote/or-vaadin-components/or-vaadin-date-picker";
-import "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
-import "@openremote/or-vaadin-components/or-vaadin-time-picker";
 import { css, html, type TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
 import { ifDefined } from "lit/directives/if-defined.js";
@@ -43,6 +40,16 @@ import { isEnumArray } from "../standard-renderers";
 
 let defaultTz: string;
 
+/** Builds the options of an enum, whose values are JSON so that every enum type round-trips through them. */
+function getOptions(values: unknown[]): [string, string][] {
+  return values.map((value) => [JSON.stringify(value), String(value)]);
+}
+
+/** Turns the options into the shape a Vaadin select or combo box takes. */
+function getInputOptions(options?: [string, string][]): InputOption[] | undefined {
+  return options?.map(([value, label]) => ({ value, label }));
+}
+
 // language=CSS
 const style = css`
   or-vaadin-input {
@@ -51,10 +58,7 @@ const style = css`
 
   or-vaadin-input,
   or-vaadin-combo-box,
-  or-vaadin-multi-select-combo-box,
-  or-vaadin-date-picker,
-  or-vaadin-date-time-picker,
-  or-vaadin-time-picker {
+  or-vaadin-multi-select-combo-box {
     width: 100%;
   }
 `;
@@ -111,25 +115,13 @@ export class ControlInputElement extends ControlBaseElement {
       this.inputType = InputType.SELECT;
 
       if (isEnumControl(uischema, schema, context)) {
-        options = schema.enum!.map((enm) => {
-          return [JSON.stringify(enm), String(enm)];
-        });
+        options = getOptions(schema.enum!);
       } else if (isOneOfEnumControl(uischema, schema, context)) {
-        options = (schema.oneOf as JsonSchema[]).map((s) => {
-          return [JSON.stringify(s.const), String(s.const)];
-        });
+        options = getOptions((schema.oneOf as JsonSchema[]).map((s) => s.const));
       } else {
         multiple = true;
-
-        if ((schema.items! as JsonSchema).oneOf!) {
-          options = (schema.items! as JsonSchema).oneOf!.map((s) => {
-            return [JSON.stringify(s.const), String(s.const)];
-          });
-        } else {
-          options = (schema.items! as JsonSchema).enum!.map((enm) => {
-            return [JSON.stringify(enm), String(enm)];
-          });
-        }
+        const items = schema.items as JsonSchema;
+        options = getOptions(items.oneOf ? items.oneOf.map((s) => s.const) : items.enum!);
       }
     } else if (isStringControl(uischema, schema, context)) {
       minLength = schema.minLength;
@@ -176,10 +168,6 @@ export class ControlInputElement extends ControlBaseElement {
       return this.getOptionsTemplate(options, value, multiple);
     }
 
-    if ([InputType.DATE, InputType.DATETIME, InputType.TIME].includes(this.inputType)) {
-      return this.getPickerTemplate(value);
-    }
-
     const isCheckbox = this.inputType === InputType.CHECKBOX;
     const displayValue = OrVaadinInput.JSON_TYPES.includes(this.inputType)
       ? OrVaadinInput.stringifyJson(value)
@@ -192,7 +180,7 @@ export class ControlInputElement extends ControlBaseElement {
       ?checked="${isCheckbox && !!value}"
       ?disabled="${!this.enabled}"
       ?required="${!!this.required}"
-      .items="${options?.map(([optionValue, optionLabel]) => ({ value: optionValue, label: optionLabel }))}"
+      .items="${getInputOptions(options)}"
       minlength="${ifDefined(minLength)}"
       maxlength="${ifDefined(maxLength)}"
       pattern="${ifDefined(pattern)}"
@@ -208,10 +196,7 @@ export class ControlInputElement extends ControlBaseElement {
    * Template for an enum, which a combo box renders so that long lists can be filtered and several values picked.
    */
   protected getOptionsTemplate(options: [string, string][] | undefined, value: any, multiple: boolean): TemplateResult {
-    const items: InputOption[] | undefined = options?.map(([optionValue, optionLabel]) => ({
-      value: optionValue,
-      label: optionLabel,
-    }));
+    const items = getInputOptions(options);
 
     if (multiple) {
       const selected: string[] = value ?? [];
@@ -238,52 +223,6 @@ export class ControlInputElement extends ControlBaseElement {
   }
 
   /**
-   * Template for a date, time or date and time, which the pickers read and write in the same format the
-   * matching JSON schema format describes.
-   */
-  protected getPickerTemplate(value: any): TemplateResult {
-    const label = this.label || undefined;
-    const errorMessage = this.errors || undefined;
-    const disabled = !this.enabled;
-    const required = !!this.required;
-    const onChange = (e: Event) =>
-      this.handleChange(this.path!, (e.currentTarget as HTMLInputElement).value || undefined);
-
-    switch (this.inputType) {
-      case InputType.DATE: {
-        return html`<or-vaadin-date-picker
-          value="${ifDefined(value)}"
-          label="${ifDefined(label)}"
-          error-message="${ifDefined(errorMessage)}"
-          ?disabled="${disabled}"
-          ?required="${required}"
-          @change="${onChange}"
-        ></or-vaadin-date-picker>`;
-      }
-      case InputType.TIME: {
-        return html`<or-vaadin-time-picker
-          value="${ifDefined(value)}"
-          label="${ifDefined(label)}"
-          error-message="${ifDefined(errorMessage)}"
-          ?disabled="${disabled}"
-          ?required="${required}"
-          @change="${onChange}"
-        ></or-vaadin-time-picker>`;
-      }
-      default: {
-        return html`<or-vaadin-date-time-picker
-          value="${ifDefined(value)}"
-          label="${ifDefined(label)}"
-          error-message="${ifDefined(errorMessage)}"
-          ?disabled="${disabled}"
-          ?required="${required}"
-          @change="${onChange}"
-        ></or-vaadin-date-time-picker>`;
-      }
-    }
-  }
-
-  /**
    * Vaadin inputs expose their value as a string, so it is parsed back into the type the schema expects.
    */
   protected onVaadinValueChanged(e: Event) {
@@ -299,6 +238,12 @@ export class ControlInputElement extends ControlBaseElement {
       case InputType.NUMBER:
       case InputType.RANGE: {
         this.handleChange(this.path!, empty ? undefined : Number(value));
+        break;
+      }
+      case InputType.DATE:
+      case InputType.DATETIME:
+      case InputType.TIME: {
+        this.handleChange(this.path!, empty ? undefined : value);
         break;
       }
       case InputType.JSON:

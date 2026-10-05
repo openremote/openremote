@@ -150,7 +150,10 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         )
       : Util.getMetaValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType);
 
-  const supportsVaadinInput = (type: InputType) => OrVaadinInput.TEMPLATES.has(type);
+  // A date or time attribute holds a timestamp, which still has to be converted to and from what the pickers take
+  const unconvertedTypes: InputType[] = [InputType.DATE, InputType.TIME];
+  const supportsVaadinInput = (type: InputType) =>
+    OrVaadinInput.TEMPLATES.has(type) && !unconvertedTypes.includes(type);
 
   // Enforces which value types are supported making SUPPORTED_WELLKNOWN_VALUE_TYPES the single source of truth through type checking
   let _exhaustiveTypeCheck: never;

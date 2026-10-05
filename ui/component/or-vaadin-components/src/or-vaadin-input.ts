@@ -21,6 +21,7 @@ import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import { InputType } from "./util";
 import "./or-vaadin-checkbox";
+import "./or-vaadin-date-picker";
 import "./or-vaadin-date-time-picker";
 import "./or-vaadin-email-field";
 import "./or-vaadin-number-field";
@@ -29,6 +30,7 @@ import "./or-vaadin-select";
 import "./or-vaadin-slider";
 import "./or-vaadin-text-field";
 import "./or-vaadin-text-area";
+import "./or-vaadin-time-picker";
 import "./or-vaadin-toggle";
 
 /**
@@ -60,6 +62,7 @@ export class OrVaadinInput extends OrElement {
    * Be aware: all CustomElements defined here need to be imported during initialization; dynamic imports are not expected to work.
    */
   public static readonly VAADIN_CLASSES: (CustomElementConstructor | undefined)[] = [
+    customElements.get("or-vaadin-date-picker"),
     customElements.get("or-vaadin-date-time-picker"),
     customElements.get("or-vaadin-number-field"),
     customElements.get("or-vaadin-password-field"),
@@ -67,6 +70,7 @@ export class OrVaadinInput extends OrElement {
     customElements.get("or-vaadin-slider"),
     customElements.get("or-vaadin-text-area"),
     customElements.get("or-vaadin-text-field"),
+    customElements.get("or-vaadin-time-picker"),
   ];
 
   /**
@@ -77,6 +81,7 @@ export class OrVaadinInput extends OrElement {
   public static readonly TEMPLATES = new Map<InputType, (onChange: (ev: Event) => void) => TemplateResult>([
     [InputType.BIG_INT, OrVaadinInput.getNumberFieldTemplate],
     [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
+    [InputType.DATE, OrVaadinInput.getDatePickerTemplate],
     [InputType.DATETIME, OrVaadinInput.getDateTimePickerTemplate],
     [InputType.EMAIL, OrVaadinInput.getEmailFieldTemplate],
     [InputType.JSON, OrVaadinInput.getTextAreaTemplate],
@@ -89,6 +94,7 @@ export class OrVaadinInput extends OrElement {
     [InputType.TELEPHONE, OrVaadinInput.getTextFieldTemplate],
     [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
     [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
+    [InputType.TIME, OrVaadinInput.getTimePickerTemplate],
   ]);
 
   /**
@@ -334,6 +340,10 @@ export class OrVaadinInput extends OrElement {
     return html`<or-vaadin-checkbox id="elem" @change=${onChange}></or-vaadin-checkbox>`;
   }
 
+  public static getDatePickerTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-date-picker id="elem" @change=${onChange}></or-vaadin-date-picker>`;
+  }
+
   public static getDateTimePickerTemplate(onChange?: (e: Event) => void) {
     return html`<or-vaadin-date-time-picker id="elem" @change=${onChange}></or-vaadin-date-time-picker>`;
   }
@@ -368,6 +378,10 @@ export class OrVaadinInput extends OrElement {
 
   public static getTextFieldTemplate(onChange?: (e: Event) => void) {
     return html`<or-vaadin-text-field id="elem" @change=${onChange}></or-vaadin-text-field>`;
+  }
+
+  public static getTimePickerTemplate(onChange?: (e: Event) => void) {
+    return html`<or-vaadin-time-picker id="elem" @change=${onChange}></or-vaadin-time-picker>`;
   }
 
   protected _getLoggingPrefix(): string {
