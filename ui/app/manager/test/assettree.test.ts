@@ -48,23 +48,6 @@ function createBuildingAssets(amount: number, realm = "smartcity"): Asset[] {
   }));
 }
 
-function createComplexTree(): Asset[] {
-  const [cityAsset1, cityAsset2] = parentAssets;
-  const buildingAssets = [cityAsset1, cityAsset2].flatMap((city) =>
-    createBuildingAssets(3).map((building) => ({
-      ...building,
-      parentId: city.id,
-    }))
-  );
-  const batteryAssets = buildingAssets.flatMap((building) =>
-    createBatteryAssets(5).map((battery) => ({
-      ...battery,
-      parentId: building.id,
-    }))
-  );
-  return [cityAsset1, cityAsset2, ...buildingAssets, ...batteryAssets];
-}
-
 // Utility function to create parent assets, and apply assets as children
 async function applyParentAssets(parentAssets: Asset[], manager: Manager) {
   for (const p of parentAssets) {
@@ -456,6 +439,167 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
   await assetsPage.deleteSelectedAsset(manager, battery10.name!, assetTree.getSelectedNodes());
   await expect(assetTree.getSelectedNodes()).toHaveCount(0);
   await expect(assetTree.getAssetNodes()).toHaveCount(0); // Nothing is visible anymore, since there is nothing matching the "Battery 10" text filter.
+});
+
+/**
+ * @given 5 assets are created in the "smartcity" realm
+ * @and the assets are visible in the tree (a total of 6)
+ * @when the user applies a combination of name, type and value in the filtering menu
+ * @then the asset tree should show the assets that comply with those requirements.
+ */
+test(`Should update asset list correctly when applying filters`, async ({ manager, assetsPage, assetTree }) => {
+  const asset1 = batteryAsset;
+  const asset2 = buildingAsset;
+  const asset3 = {
+    ...asset2,
+    name: "Building (new) 1",
+    attributes: {
+      ...asset2.attributes,
+      isNew: { name: "isNew", type: "boolean" },
+      amount: { name: "amount", type: "number", value: 80 },
+      status: { name: "status", type: "text", value: "Test value" },
+    },
+  };
+  const asset4 = {
+    ...asset2,
+    name: "Building (new) 2",
+    attributes: {
+      ...asset2.attributes,
+      isNew: { name: "isNew", type: "boolean", value: "true" },
+    },
+  };
+  const asset5 = {
+    ...asset2,
+    name: "Building (new) 3",
+    attributes: {
+      ...asset2.attributes,
+      amount: { name: "amount", type: "number", value: 70.5 },
+    },
+  };
+
+  const assets = [asset1, asset2, asset3, asset4, asset5];
+  await manager.setup("smartcity", { assets });
+  await manager.goToRealmStartPage("smartcity");
+  await assetsPage.goto();
+  await expect(assetTree.getAssetNodes()).toHaveCount(6); // 1 battery + 4 buildings + 1 console group
+
+  const filterButton = assetTree.getFilterButton();
+  const filterMenu = assetTree.getFilterMenu();
+  await expect(filterButton).toBeVisible();
+  await expect(filterButton).toHaveRole("button");
+  await expect(filterButton).not.toBeDisabled();
+
+  // Filter by the Building asset type, so only the 4 buildings are visible
+  await filterButton.click();
+  await expect(filterMenu).toBeVisible();
+  const assetTypeCombobox = filterMenu.getByRole("combobox", { name: "Asset type", exact: true });
+  await expect(assetTypeCombobox).toBeVisible();
+  await assetTypeCombobox.click();
+  await filterMenu.getByRole("option", { name: "Building asset" }).click();
+  await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
+  await expect(filterMenu).not.toBeVisible();
+  expect(await assetTree.getFilterInput().inputValue()).toBe("type:BuildingAsset");
+  await expect(assetTree.getAssetNodes()).toHaveCount(4); // 4 buildings that are left
+  await expect(assetTree.getAssetNodes()).toContainText([asset2.name, asset3.name, asset4.name, asset5.name]);
+
+  const filterCases = [
+    {
+      attribute: "Is New",
+      expectedInput: 'type:BuildingAsset attribute:"Is New"',
+      expectedNames: [asset3.name, asset4.name],
+    },
+    {
+      attribute: "Is New",
+      value: "true",
+      expectedInput: 'type:BuildingAsset "Is New":true',
+      expectedNames: [asset4.name],
+    },
+    {
+      attribute: "status",
+      value: "Test value",
+      expectedInput: 'type:BuildingAsset "status":"Test value"',
+      expectedNames: [asset3.name],
+    },
+    {
+      attribute: "amount",
+      value: "70,5",
+      expectedInput: 'type:BuildingAsset "amount":70,5',
+      expectedNames: [asset5.name],
+    },
+    {
+      attribute: "amount",
+      value: ">=60",
+      expectedInput: 'type:BuildingAsset "amount":>=60',
+      expectedNames: [asset3.name, asset5.name],
+    },
+  ];
+
+  for (const { attribute, value, expectedInput, expectedNames } of filterCases) {
+    await filterButton.click();
+    await expect(filterMenu).toBeVisible();
+    if (attribute) {
+      await filterMenu.getByRole("textbox", { name: "Attribute", exact: true }).fill(attribute);
+    }
+    if (value) {
+      await filterMenu.getByRole("textbox", { name: "Attribute value", exact: true }).fill(value);
+    }
+    await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
+    await expect(filterMenu).not.toBeVisible();
+    expect(await assetTree.getFilterInput().inputValue()).toBe(expectedInput);
+    await expect(assetTree.getAssetNodes()).toHaveCount(expectedNames.length);
+    await expect(assetTree.getAssetNodes()).toContainText(expectedNames);
+  }
+
+  // Clearing the filter, shows them all again
+  await filterButton.click();
+  await expect(filterMenu).toBeVisible();
+  await filterMenu.getByRole("button", { name: "Clear", exact: true }).click();
+  await filterMenu.getByRole("button", { name: "Filter", exact: true }).click();
+  await expect(filterMenu).not.toBeVisible();
+  await expect(assetTree.getFilterInput()).toBeEmpty();
+  await expect(assetTree.getAssetNodes()).toHaveCount(6); // 1 battery + 4 buildings + 1 console group
+});
+
+/**
+ * @given 2 battery assets are created in the "smartcity" realm
+ * @and the asset tree filter contains "Battery", showing 2 out of 3 nodes
+ * @when the filter text is removed while leaving a single space behind
+ * @then all assets should be shown again
+ * @and the tree should settle, without repeatedly re-fetching the assets
+ */
+test(`Should load the asset tree only once after clearing the filter to whitespace`, async ({
+  page,
+  manager,
+  assetsPage,
+  assetTree,
+}) => {
+  const batteryAssets = createBatteryAssets(2);
+  await manager.setup("smartcity", { assets: batteryAssets });
+  await manager.goToRealmStartPage("smartcity");
+  await assetsPage.goto();
+  await expect(assetTree.getAssetNodes()).toHaveCount(3); // 2 battery assets + 1 console group
+
+  await assetTree.getFilterInput().fill("Battery");
+  await expect(assetTree.getAssetNodes()).toHaveCount(2); // Both battery assets, but no console group
+
+  // Monitor requests to the /count endpoint
+  let countRequests = 0;
+  await page.route("**/asset/count", async (route) => {
+    countRequests++;
+    await route.continue();
+  });
+
+  // Clear the input, and leave a single space behind.
+  await assetTree.getFilterInput().fill(" ");
+  await expect(assetTree.getAssetNodes()).toHaveCount(3); // All assets are visible again
+  expect(countRequests, "Clearing the filter should reload the tree once").toBeLessThanOrEqual(2);
+
+  // The empty filter used to re-enter the clear branch on every load, so the tree kept re-fetching
+  const reloadedAgain = await page
+    .waitForRequest("**/asset/count", { timeout: 1000 })
+    .then(() => true)
+    .catch(() => false);
+  expect(reloadedAgain, "Asset tree kept reloading after the filter was cleared").toBe(false);
 });
 
 /**

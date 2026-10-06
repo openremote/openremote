@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": false
+  },
+  "include": ["."]
+}
