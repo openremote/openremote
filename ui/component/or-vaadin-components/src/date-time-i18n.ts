@@ -172,11 +172,8 @@ function parseDate(fieldOrder: string[], text: string): DatePickerDate | undefin
   const month = parts.month === undefined ? today.getMonth() : parseInt(parts.month) - 1;
   let year = today.getFullYear();
   if (parts.year !== undefined) {
-    // getAdjustedYear takes at most two digits and is typed as returning a Date, though it returns a full year
-    year =
-      parts.year.length < 3
-        ? (getAdjustedYear(today, parseInt(parts.year), month, day) as unknown as number)
-        : parseInt(parts.year);
+    // getAdjustedYear takes at most two digits, so a longer year is already a full one
+    year = parts.year.length < 3 ? getAdjustedYear(today, parseInt(parts.year), month, day) : parseInt(parts.year);
   }
   return { day, month, year };
 }
