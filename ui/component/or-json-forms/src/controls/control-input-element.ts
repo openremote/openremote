@@ -16,8 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { type InputOption, InputType } from "@openremote/or-vaadin-components/util";
+import { InputType } from "@openremote/or-vaadin-components/util";
 import { OrVaadinInput } from "@openremote/or-vaadin-components/or-vaadin-input";
+import type { SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
 import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import type { OrVaadinMultiSelectComboBox } from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-combo-box";
@@ -39,16 +40,6 @@ import {
 import { isEnumArray } from "../standard-renderers";
 
 let defaultTz: string;
-
-/** Builds the options of an enum, whose values are JSON so that every enum type round-trips through them. */
-function getOptions(values: unknown[]): [string, string][] {
-  return values.map((value) => [JSON.stringify(value), String(value)]);
-}
-
-/** Turns the options into the shape a Vaadin select or combo box takes. */
-function getInputOptions(options?: [string, string][]): InputOption[] | undefined {
-  return options?.map(([value, label]) => ({ value, label }));
-}
 
 // language=CSS
 const style = css`
@@ -115,13 +106,13 @@ export class ControlInputElement extends ControlBaseElement {
       this.inputType = InputType.SELECT;
 
       if (isEnumControl(uischema, schema, context)) {
-        options = getOptions(schema.enum!);
+        options = ControlInputElement.getOptions(schema.enum!);
       } else if (isOneOfEnumControl(uischema, schema, context)) {
-        options = getOptions((schema.oneOf as JsonSchema[]).map((s) => s.const));
+        options = ControlInputElement.getOptions((schema.oneOf as JsonSchema[]).map((s) => s.const));
       } else {
         multiple = true;
         const items = schema.items as JsonSchema;
-        options = getOptions(items.oneOf ? items.oneOf.map((s) => s.const) : items.enum!);
+        options = ControlInputElement.getOptions(items.oneOf ? items.oneOf.map((s) => s.const) : items.enum!);
       }
     } else if (isStringControl(uischema, schema, context)) {
       minLength = schema.minLength;
@@ -180,7 +171,7 @@ export class ControlInputElement extends ControlBaseElement {
       ?checked="${isCheckbox && !!value}"
       ?disabled="${!this.enabled}"
       ?required="${!!this.required}"
-      .items="${getInputOptions(options)}"
+      .items="${ControlInputElement.getInputOptions(options)}"
       minlength="${ifDefined(minLength)}"
       maxlength="${ifDefined(maxLength)}"
       pattern="${ifDefined(pattern)}"
@@ -196,13 +187,13 @@ export class ControlInputElement extends ControlBaseElement {
    * Template for an enum, which a combo box renders so that long lists can be filtered and several values picked.
    */
   protected getOptionsTemplate(options: [string, string][] | undefined, value: any, multiple: boolean): TemplateResult {
-    const items = getInputOptions(options);
+    const items = ControlInputElement.getInputOptions(options);
 
     if (multiple) {
       const selected: string[] = value ?? [];
       return html`<or-vaadin-multi-select-combo-box
         .items="${items}"
-        .selectedItems="${items?.filter((item) => selected.includes(item.value))}"
+        .selectedItems="${items?.filter((item) => selected.includes(item.value!))}"
         label="${ifDefined(this.label || undefined)}"
         error-message="${ifDefined(this.errors || undefined)}"
         ?disabled="${!this.enabled}"
@@ -268,10 +259,17 @@ export class ControlInputElement extends ControlBaseElement {
 
   /** Reads the options a multi select combo box holds, whose values are the JSON of the schema values. */
   protected onOptionsChanged(e: Event) {
-    const items = (e.currentTarget as OrVaadinMultiSelectComboBox).selectedItems as InputOption[];
-    this.handleChange(
-      this.path!,
-      items.map((item) => JSON.parse(item.value))
-    );
+    const items = (e.currentTarget as OrVaadinMultiSelectComboBox).selectedItems as SelectItem[] | undefined;
+    this.handleChange(this.path!, items?.map((item) => JSON.parse(item.value!)) ?? []);
+  }
+
+  /** Builds the options of an enum, whose values are JSON so that every enum type round-trips through them. */
+  protected static getOptions(values: unknown[]): [string, string][] {
+    return values.map((value) => [JSON.stringify(value), String(value)]);
+  }
+
+  /** Turns the options into the shape a Vaadin select or combo box takes. */
+  protected static getInputOptions(options?: [string, string][]): SelectItem[] | undefined {
+    return options?.map(([value, label]) => ({ value, label }));
   }
 }

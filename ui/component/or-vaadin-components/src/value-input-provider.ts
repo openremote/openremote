@@ -48,7 +48,6 @@ import { type Ref, ref, createRef } from "lit/directives/ref.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { styleMap } from "lit/directives/style-map.js";
 import {
-  type InputOption,
   InputType,
   inputTypeSupportsHelperText,
   inputTypeSupportsLabel,
@@ -124,7 +123,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
   let max: any;
   let multiple: any;
   let required: boolean | undefined;
-  let selectOptions: InputOption[] | undefined;
+  let selectOptions: { label: string; value: string }[] | undefined;
   let valueConverter: (v: any) => any | undefined;
   const styles = {} as any;
 
@@ -150,10 +149,10 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         )
       : Util.getMetaValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType);
 
-  // A date or time attribute holds a timestamp, which still has to be converted to and from what the pickers take
-  const unconvertedTypes: InputType[] = [InputType.DATE, InputType.TIME];
+  // A date or time attribute holds a timestamp, which this provider does not yet convert to what those pickers take
+  const typesWithoutTimestampConversion: InputType[] = [InputType.DATE, InputType.TIME];
   const supportsVaadinInput = (type: InputType) =>
-    OrVaadinInput.TEMPLATES.has(type) && !unconvertedTypes.includes(type);
+    OrVaadinInput.TEMPLATES.has(type) && !typesWithoutTimestampConversion.includes(type);
 
   // Enforces which value types are supported making SUPPORTED_WELLKNOWN_VALUE_TYPES the single source of truth through type checking
   let _exhaustiveTypeCheck: never;

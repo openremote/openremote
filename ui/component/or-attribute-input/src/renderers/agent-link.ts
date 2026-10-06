@@ -31,9 +31,10 @@ import {
   uiTypeIs,
   formatIs,
 } from "@openremote/or-json-forms";
-import type { OrVaadinSelect, SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
+import type { SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
+import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import { html } from "lit";
-import "@openremote/or-vaadin-components/or-vaadin-select";
+import "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import { i18next } from "@openremote/or-translate";
 import { until } from "lit/directives/until.js";
 
@@ -123,17 +124,18 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
       label: agent.name + " (" + agent.id + ")",
     }));
 
+    // A combo box rather than a select, so the list can be filtered and the agent id copied out of the field
     return html`
-      <or-vaadin-select
+      <or-vaadin-combo-box
         label="${i18next.t("agentId")}"
         required
         class="agent-id-picker"
         @change="${(ev: Event) =>
-          onAgentChanged(agents.find((agent) => agent.id === (ev.currentTarget as OrVaadinSelect).value))}"
-        .value="${props.data}"
+          onAgentChanged(agents.find((agent) => agent.id === (ev.currentTarget as OrVaadinComboBox).value))}"
         placeholder="${i18next.t("selectAgent")}"
         .items="${options}"
-      ></or-vaadin-select>
+        .value="${props.data ?? ""}"
+      ></or-vaadin-combo-box>
     `;
   });
 
@@ -145,7 +147,7 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
         width: 100%;
       }
     </style>
-    ${until(loadedTemplatePromise, html`<or-vaadin-select class="agent-id-picker"></or-vaadin-select>`)}
+    ${until(loadedTemplatePromise, html`<or-vaadin-combo-box class="agent-id-picker"></or-vaadin-combo-box>`)}
   `;
 
   return getTemplateWrapper(template, undefined);

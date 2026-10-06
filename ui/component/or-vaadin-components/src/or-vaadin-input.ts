@@ -50,6 +50,27 @@ function registerProperties(constructors: (CustomElementConstructor | undefined)
 }
 
 /**
+ * Parses the text of a JSON input type. An empty field is a valid, absent value; text that does not parse,
+ * or that is not an object for {@link InputType.JSON_OBJECT}, is invalid and has no value.
+ * @param type - The input type being parsed
+ * @param text - The text to parse
+ */
+function parseJson(type: InputType, text?: string): { value?: any; valid: boolean } {
+  if (!text?.trim()) {
+    return { valid: true };
+  }
+  try {
+    const value = JSON.parse(text);
+    if (type === InputType.JSON_OBJECT && (typeof value !== "object" || value === null || Array.isArray(value))) {
+      return { valid: false };
+    }
+    return { value, valid: true };
+  } catch {
+    return { valid: false };
+  }
+}
+
+/**
  * Custom element that wraps various Vaadin input components based on the specified `type`.
  * Provides a unified interface for interacting with different types of inputs.
  * @customElement "or-vaadin-input"
@@ -84,8 +105,8 @@ export class OrVaadinInput extends OrElement {
     [InputType.DATE, OrVaadinInput.getDatePickerTemplate],
     [InputType.DATETIME, OrVaadinInput.getDateTimePickerTemplate],
     [InputType.EMAIL, OrVaadinInput.getEmailFieldTemplate],
-    [InputType.JSON, OrVaadinInput.getTextAreaTemplate],
-    [InputType.JSON_OBJECT, OrVaadinInput.getTextAreaTemplate],
+    [InputType.JSON, OrVaadinInput.getJsonTemplate],
+    [InputType.JSON_OBJECT, OrVaadinInput.getJsonTemplate],
     [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
     [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
     [InputType.RANGE, OrVaadinInput.getSliderTemplate],
@@ -194,7 +215,7 @@ export class OrVaadinInput extends OrElement {
       }
       case InputType.JSON:
       case InputType.JSON_OBJECT: {
-        return OrVaadinInput.parseJson(this.type, this._elem?.value).value;
+        return parseJson(this.type, this._elem?.value).value;
       }
       default: {
         return this._elem?.value;
@@ -211,7 +232,10 @@ export class OrVaadinInput extends OrElement {
       return false;
     }
     // A text area accepts any text, so JSON types need their own parse check on top of the field constraints
-    return !OrVaadinInput.JSON_TYPES.includes(this.type) || OrVaadinInput.parseJson(this.type, this._elem?.value).valid;
+    if (OrVaadinInput.JSON_TYPES.includes(this.type)) {
+      return parseJson(this.type, this._elem?.value).valid;
+    }
+    return true;
   }
 
   /**
@@ -226,27 +250,6 @@ export class OrVaadinInput extends OrElement {
       return JSON.stringify(value, null, 2);
     } catch {
       return undefined;
-    }
-  }
-
-  /**
-   * Parses the text of a JSON input type. An empty field is a valid, absent value; text that does not parse,
-   * or that is not an object for {@link InputType.JSON_OBJECT}, is invalid and has no value.
-   * @param type - The input type being parsed
-   * @param text - The text to parse
-   */
-  protected static parseJson(type: InputType, text?: string): { value?: any; valid: boolean } {
-    if (!text?.trim()) {
-      return { valid: true };
-    }
-    try {
-      const value = JSON.parse(text);
-      if (type === InputType.JSON_OBJECT && (typeof value !== "object" || value === null || Array.isArray(value))) {
-        return { valid: false };
-      }
-      return { value, valid: true };
-    } catch {
-      return { valid: false };
     }
   }
 
@@ -292,10 +295,6 @@ export class OrVaadinInput extends OrElement {
   protected _onValueChange(ev: Event) {
     ev.stopPropagation();
     if (ev.defaultPrevented) return;
-    // No field constraint catches malformed JSON, so the invalid state has to be set from the parse result
-    if (OrVaadinInput.JSON_TYPES.includes(this.type) && this._elem) {
-      (this._elem as HTMLInputElement & { invalid: boolean }).invalid = !this.checkValidity();
-    }
     this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
   }
 
@@ -350,6 +349,23 @@ export class OrVaadinInput extends OrElement {
 
   public static getEmailFieldTemplate(onChange?: (e: Event) => void) {
     return html`<or-vaadin-email-field id="elem" @change=${onChange}></or-vaadin-email-field>`;
+  }
+
+  /**
+   * Template for the JSON types, whose value a text area holds as text. No field constraint rejects malformed JSON,
+   * so the parse result sets the invalid state before the change is passed on.
+   */
+  public static getJsonTemplate(onChange?: (e: Event) => void) {
+    // Lit calls an event listener with the element that rendered the template as `this`
+    function onJsonChange(this: OrVaadinInput, ev: Event) {
+      const textArea = this.native as (HTMLInputElement & { invalid: boolean }) | undefined;
+      if (textArea) {
+        textArea.invalid = !this.checkValidity();
+      }
+      onChange?.call(this, ev);
+    }
+
+    return html`<or-vaadin-text-area id="elem" @change=${onJsonChange}></or-vaadin-text-area>`;
   }
 
   public static getNumberFieldTemplate(onChange?: (e: Event) => void) {

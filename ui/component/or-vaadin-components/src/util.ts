@@ -88,15 +88,6 @@ export interface OrVaadinComponent {
 }
 
 /**
- * An option of a select or combo box, where the label is shown and the value identifies it.
- * Vaadin's own `SelectItem` leaves both optional, which an option list built in code never is.
- */
-export interface InputOption {
-  value: string;
-  label: string;
-}
-
-/**
  * Returns whether the {@link InputType} should show a "send" button within the attribute input UI.
  * Some input types have internal mechanics for updating attributes, which is why they should return `false`.
  * Generic input types, like a text field, "support a send button", so should return `true`

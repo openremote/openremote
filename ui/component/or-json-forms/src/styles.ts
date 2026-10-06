@@ -128,9 +128,6 @@ export const panelStyle = css`
   }
 `;
 
-/** Height the dialog body keeps even when its content is short, so a short list still fills the dialog. */
-const dialogContentMinHeight = "600px";
-
 /**
  * Layout for the "add item" and "add parameter" dialogs. Their content is rendered into the shadow root
  * of the element that opens them, so it is styled from that element's own styles.
@@ -140,7 +137,8 @@ export const addItemOrParameterDialogStyle = css`
   #dialog-content {
     display: flex;
     gap: var(--lumo-space-s);
-    min-height: ${unsafeCSS(dialogContentMinHeight)};
+    /* A short list still fills the dialog, so its height does not jump with the selection */
+    min-height: 600px;
     max-height: 60vh;
   }
 
@@ -192,4 +190,5 @@ export const addItemOrParameterDialogStyle = css`
  * Inline style for the JSON editor, which opens on an arbitrary host and so cannot rely on that host's styles.
  * It matches the panes above: same height, and rounded corners against the tinted dialog background.
  */
-export const jsonEditorStyle = `width: 100%; height: 60vh; min-height: ${dialogContentMinHeight}; border-radius: var(--lumo-border-radius-m); overflow: hidden;`;
+export const jsonEditorStyle =
+  "width: 100%; height: 60vh; min-height: 600px; border-radius: var(--lumo-border-radius-m); overflow: hidden;";

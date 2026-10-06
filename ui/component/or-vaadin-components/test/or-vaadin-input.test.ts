@@ -105,7 +105,7 @@ ct("should render a text area for the json type", async ({ mount }) => {
   const component = await mount(OrVaadinInput, { props: { type: "json" } });
 
   // The json type was absent from TEMPLATES, so every consumer fell back to the deprecated or-mwc-input.
-  await expect(component.getByRole("textbox")).toBeVisible();
+  await expect(component.locator("or-vaadin-text-area")).toBeVisible();
 });
 
 ct("should show a json value as text", async ({ mount }) => {
@@ -125,4 +125,27 @@ ct("should mark the field invalid when the json does not parse", async ({ mount 
 
   // A text area has no constraint of its own that rejects this, so the parse result has to set the state.
   await expect(component.locator("or-vaadin-text-area")).toHaveAttribute("invalid");
+});
+
+ct("should take any value that parses for the json type", async ({ mount }) => {
+  const component = await mount(OrVaadinInput, { props: { type: "json" } });
+
+  const input = component.getByRole("textbox");
+  await input.fill("[1,2]");
+  await input.blur();
+
+  await expect(component.locator("or-vaadin-text-area")).not.toHaveAttribute("invalid");
+  await expect.poll(() => component.evaluate((el: OrVaadinInput) => el.nativeValue)).toEqual([1, 2]);
+});
+
+ct("should mark the field invalid when a json object type holds an array", async ({ mount }) => {
+  const component = await mount(OrVaadinInput, { props: { type: "json-object" } });
+
+  const input = component.getByRole("textbox");
+  await input.fill("[1,2]");
+  await input.blur();
+
+  // An array parses, so only the object requirement of the json object type rejects it.
+  await expect(component.locator("or-vaadin-text-area")).toHaveAttribute("invalid");
+  await expect.poll(() => component.evaluate((el: OrVaadinInput) => el.nativeValue)).toBeUndefined();
 });
