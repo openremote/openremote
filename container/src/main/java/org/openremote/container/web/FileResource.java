@@ -20,5 +20,14 @@ package org.openremote.container.web;
 
 import java.nio.file.Path;
 
-/** A resource source that loads resources from a file system path. */
-public record FileResource(Path path) implements ResourceSource {}
+/**
+ * A resource source that loads resources from a file system path. A {@code pathPrefix} limits it to
+ * the requests below that path, which the path is then mounted at; a null prefix serves every
+ * request from the path.
+ */
+public record FileResource(Path path, String pathPrefix) implements ResourceSource {
+
+  public FileResource(Path path) {
+    this(path, null);
+  }
+}

@@ -488,8 +488,11 @@ public abstract class WebService implements ContainerService {
   }
 
   protected ResourceManager createResourceManager(ResourceSource resourceSource) {
-    if (resourceSource instanceof FileResource(Path path)) {
-      return new PathResourceManager(path);
+    if (resourceSource instanceof FileResource(Path path, String pathPrefix)) {
+      PathResourceManager pathResourceManager = new PathResourceManager(path);
+      return pathPrefix == null
+          ? pathResourceManager
+          : new PrefixResourceManager(pathPrefix, pathResourceManager);
     }
     if (resourceSource instanceof ClassPathResource(ClassLoader classLoader, String prefix)) {
       return new DirectoryAwareClassPathResourceManager(classLoader, prefix);

@@ -35,6 +35,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -67,6 +68,8 @@ public class ManagerWebService extends WebService {
   public static final String OR_ROOT_REDIRECT_PATH_DEFAULT = "/manager";
 
   public static final String API_PATH = "/api";
+  public static final String SHARED_PATH = "/shared";
+  public static final Path SHARED_SOURCE_DOCROOT = Paths.get("ui/app/shared");
   private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
   protected boolean initialised;
   protected Path builtInAppDocRoot;
@@ -83,7 +86,8 @@ public class ManagerWebService extends WebService {
   @Override
   public void init(Container container) throws Exception {
     super.init(container);
-    Set<ResourceSource> resourceSources = new HashSet<>();
+    // The first source that resolves a path serves it, so the order is significant
+    List<ResourceSource> resourceSources = new ArrayList<>();
     builtInAppDocRoot =
         Paths.get(getString(container.getConfig(), OR_APP_DOCROOT, OR_APP_DOCROOT_DEFAULT));
     customAppDocRoot =
@@ -111,6 +115,13 @@ public class ManagerWebService extends WebService {
     Application application = new WebApplication(container, apiClasses, singletons);
 
     deployJaxRsApplication(application, API_PATH, "Manager HTTP API", 0, true, null);
+
+    // The shared files are served from a copy that a Gradle task produces, so in dev mode serve
+    // them from their source dir instead and a change to e.g. a translation needs no rebuild
+    if (Config.isDevMode() && Files.isDirectory(SHARED_SOURCE_DOCROOT)) {
+      LOG.info("Serving shared files from: " + SHARED_SOURCE_DOCROOT.toAbsolutePath());
+      resourceSources.add(new FileResource(SHARED_SOURCE_DOCROOT, SHARED_PATH));
+    }
 
     if (Files.isDirectory(builtInAppDocRoot)) {
       resourceSources.add(new FileResource(builtInAppDocRoot));
