@@ -136,7 +136,9 @@ public class Container implements org.openremote.model.Container {
             new ContainerThreadFactory("ContainerExecutor"),
             new ThreadPoolExecutor.CallerRunsPolicy());
 
-    LOG.log(INFO, "Container executor threads min=" + executorThreadsMin + ", max=" + executorThreadsMax);
+    LOG.log(
+        INFO,
+        "Container executor threads min=" + executorThreadsMin + ", max=" + executorThreadsMax);
     LOG.log(INFO, "Container Scheduled executor threads=" + scheduledExecutorThreads);
 
     if (meterRegistry != null) {
