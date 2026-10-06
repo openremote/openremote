@@ -1138,61 +1138,55 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
    * @return DeleteResult indicating whether the deletion was accepted or rejected
    */
   protected DeleteResult markAssetsForDeletionAndQueue(List<String> ids, List<String> assetIds) {
-    if (!ids.isEmpty()) {
-      try {
-        // Get locks for each asset ID
-        ids.forEach(assetLocks::lock);
-
-        List<Asset<?>> assets = new ArrayList<>();
-        persistenceService.doTransaction(
-            em -> {
-              assets.addAll(
-                  em
-                      .createQuery(
-                          "select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and child.deletePending is false and not child.id in :ids) and a.id in :ids",
-                          Asset.class)
-                      .setParameter("ids", ids)
-                      .getResultList()
-                      .stream()
-                      .map(asset -> (Asset<?>) asset)
-                      .sorted(
-                          Comparator.comparingInt(
-                                  (Asset<?> asset) ->
-                                      asset.getPath() != null ? asset.getPath().length : 0)
-                              .reversed()
-                              .thenComparing(Asset::getCreatedOn))
-                      .toList());
-
-              if (ids.size() != assets.size()) {
-                throw new IllegalArgumentException(
-                    "Cannot delete one or more requested assets as they either have children or don't exist");
-              }
-
-              assets.forEach(
-                  asset -> {
-                    if (LOG.isLoggable(Level.FINEST)) {
-                      LOG.finest("Asset delete: " + asset.toStringAll());
-                    } else {
-                      LOG.fine("Asset delete: " + asset);
-                    }
-                    asset.setDeletePending(true);
-                  });
-            });
-
-        return DeleteResult.accepted(
-            queueAssetsDeletion(assets.stream().map(Asset::getId).toList()));
-      } catch (Exception e) {
-        LOG.log(
-            SEVERE,
-            "Failed to delete one or more requested assets: " + Arrays.toString(assetIds.toArray()),
-            e);
-        return DeleteResult.rejected();
-      } finally {
-        // Release all of the locks
-        ids.forEach(assetLocks::unlock);
-      }
+    if (ids.isEmpty()) {
+      return DeleteResult.accepted(CompletableFuture.completedFuture(true));
     }
-    return DeleteResult.accepted(CompletableFuture.completedFuture(true));
+
+    List<String> orderedAssetIdsToQueue;
+    try {
+      ids.forEach(assetLocks::lock);
+
+      List<Asset<?>> assets = new ArrayList<>();
+      persistenceService.doTransaction(
+          em -> {
+            assets.addAll(
+                em
+                    .createQuery(
+                        "select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and child.deletePending is false and not child.id in :ids) and a.id in :ids",
+                        Asset.class)
+                    .setParameter("ids", ids)
+                    .getResultList()
+                    .stream()
+                    .map(asset -> (Asset<?>) asset)
+                    .sorted(
+                        Comparator.comparingInt(
+                                (Asset<?> asset) ->
+                                    asset.getPath() != null ? asset.getPath().length : 0)
+                            .reversed()
+                            .thenComparing(Asset::getCreatedOn))
+                    .toList());
+
+            if (ids.size() != assets.size()) {
+              throw new IllegalArgumentException(
+                  "Cannot delete one or more requested assets as they either have children or don't exist");
+            }
+
+            assets.forEach(asset -> asset.setDeletePending(true));
+          });
+
+      orderedAssetIdsToQueue = assets.stream().map(Asset::getId).toList();
+    } catch (Exception e) {
+      LOG.log(
+          SEVERE,
+          "Failed to delete one or more requested assets: " + Arrays.toString(assetIds.toArray()),
+          e);
+      return DeleteResult.rejected();
+    } finally {
+      // Release batch locks BEFORE queueing background worker tasks
+      ids.forEach(assetLocks::unlock);
+    }
+
+    return DeleteResult.accepted(queueAssetsDeletion(orderedAssetIdsToQueue));
   }
 
   /** Queue deletion of all assets marked as pending deletion */
