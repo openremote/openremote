@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+import shlex
 import subprocess
 import tempfile
 
@@ -59,16 +60,20 @@ def check_profile(profile, temporary):
     load = "load1" if profile.name == "load1-eks" else "load2"
     name = "load1" if load == "load1" else f"load2-{profile.name}"
     values = temporary / name
-    values.mkdir()
     env = {key: value for key, value in os.environ.items()
            if not key.startswith(("OR_STACK_", "OR_EKS_"))}
     env.update(LOAD_MANAGER_REPOSITORY=REPOSITORY, CLUSTER_NAME=f"{name}-cluster",
                AWS_REGION="eu-west-1")
+    config = temporary / f"{name}.env"
+    settings = {"LOAD_TEST": load, "LOAD_MANAGER_REPOSITORY": REPOSITORY}
+    if load == "load2":
+        settings["LOAD_PROFILE"] = profile.name
+    config.write_text("".join(f"{key}={shlex.quote(value)}\n" for key, value in settings.items()))
+    preparation = [str(ROOT / "test/or-eks-load"), "prepare", "--config", str(config),
+                   "--values-dir", str(values)]
+    run(preparation, env=env)
     for component in ("manager", "postgresql", "keycloak", "proxy"):
-        template = (profile / f"{component}.yaml").read_text()
-        rendered = run(["envsubst", "${LOAD_MANAGER_REPOSITORY}"], input=template, env=env)
-        assert "${" not in rendered
-        (values / f"{component}.yaml").write_text(rendered)
+        assert "${" not in (values / f"{component}.yaml").read_text()
     cluster = run(["envsubst", "${CLUSTER_NAME} ${AWS_REGION}"],
                   input=(profile / "cluster.yaml").read_text(), env=env)
     contains(cluster, f"name: {name}-cluster")
@@ -139,7 +144,7 @@ def check_profile(profile, temporary):
         assert "type: LoadBalancer" not in manager
         if exposure != "none":
             contains(releases["keycloak"], f'value: "https://{hostname}/auth"')
-            contains(manager, f'value: "https://{hostname}"')
+            assert re.search(r'name: OR_HOSTNAME\s+value: "' + re.escape(hostname) + '"', manager)
             proxy = releases["proxy"]
             contains(proxy, f"manager.{namespace}.svc.cluster.local")
             contains(proxy, f"keycloak.{namespace}.svc.cluster.local")
@@ -286,7 +291,7 @@ elif command == "aws":
                 contains(rendered[component], f"storage: {size}")
             contains(rendered["manager"], 'image: "210987654321.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:load2"')
             contains(rendered["keycloak"], 'value: "https://legacy.example.com/auth"')
-            contains(rendered["manager"], 'value: "https://legacy.example.com"')
+            assert re.search(r'name: OR_HOSTNAME\s+value: "legacy.example.com"', rendered["manager"])
             reset = "false" if setup else "true"
             assert re.search(r'name: OR_SETUP_RUN_ON_RESTART\s+value: "' + reset + '"', rendered["manager"])
             print(f"PASS: legacy {profile.name} / {script}", flush=True)

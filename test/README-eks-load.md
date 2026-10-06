@@ -1,328 +1,329 @@
 # Deploying EKS load-test stacks
 
-Use this guide to deploy load1 or load2 with `or-eks-cluster` and
-`or-eks-stack`, then run a test against its endpoint. The main procedure creates
-a cluster and deploys one stack with HTTPS and MQTTS through HAProxy.
-Run all commands from the **repository root**.
+`test/or-eks-load` is a Bash helper for deploying a load1 or load2 profile. Save
+your settings in one file, then use `up` to configure DNS access, create or
+reconcile the cluster, and deploy the stack. The default deployment provides
+HTTPS and MQTTS through HAProxy, with a separate namespace and storage per stack.
 
-- [Before you start](#before-you-start)
-- [Deploy and verify a stack](#deploy-and-verify-a-stack)
-- [Manage a deployment](#manage-a-deployment)
-- [Alternative deployments](#alternative-deployments)
-- [Profile and deployment reference](#profile-and-deployment-reference)
-- [Legacy scripts](#legacy-scripts)
-- [Offline validation](#offline-validation)
+Run the commands below from the **repository root**.
 
-## Before you start
+## Deploy and run a test
 
-Complete the prerequisites in the [EKS deployment guide](../kubernetes/README-AWS.md)
-and configure your AWS credentials. The commands below use the default
-credential chain. For a named profile, set `AWS_PROFILE` or add
-`--profile <named-profile>` to the relevant commands. These workflows do not
-write credentials.
+### 1. Prepare credentials and the Manager image
 
-Follow [load1](load1-eks/README.md) or [load2](load2-eks/README.md) to build and
-push the custom Manager image, then set the deployment variables from that
-guide:
+Install the tools required by the [EKS deployment guide](../kubernetes/README-AWS.md):
+AWS CLI, eksctl, kubectl, Helm, jq, envsubst, dig, curl, and Python 3. The helper
+itself uses Bash, including macOS's built-in Bash; the underlying EKS CLI uses
+Python for its MQTTS TLS check.
 
-| Variable                  | Purpose                                                              |
-| ------------------------- | -------------------------------------------------------------------- |
-| `AWS_REGION`              | Region containing the cluster                                        |
-| `CLUSTER_NAME`            | Cluster to create or reuse                                           |
-| `STACK_NAME`              | Stack name and Kubernetes namespace                                  |
-| `LOAD_HOSTNAME`           | Unique public hostname for the stack                                 |
-| `LOAD_PROFILE_DIR`        | Source profile, such as `test/load2-eks/profiles/xlarge`             |
-| `LOAD_VALUES_DIR`         | Working values directory, such as `.local/$CLUSTER_NAME/$STACK_NAME` |
-| `LOAD_MANAGER_REPOSITORY` | Repository containing the custom Manager image                       |
+Authenticate to the cluster account using your normal AWS credential chain.
+For pasted temporary credentials, export `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN`, and **unset** `AWS_PROFILE`
+and `AWS_DEFAULT_PROFILE` if previously set. Do not set a profile to an empty
+string. A named cluster profile can instead be selected in the config below.
 
-Ensure the cluster nodes can pull that image, including ECR repository
-permissions for cross-account pulls. The supplied clusters use ARM nodes; the
-image build examples publish both ARM64 and AMD64 images.
+Build and push the custom Manager image using the [load1](load1-eks/README.md)
+or [load2](load2-eks/README.md) instructions. Ensure the cluster nodes can pull
+it, including ECR repository permissions for cross-account pulls. The supplied
+clusters use ARM nodes; the image examples publish both ARM64 and AMD64 images.
+The helper does not build images or change registry permissions.
 
-## Deploy and verify a stack
+### 2. Save your deployment settings
 
-### 1. Prepare the selected profile
-
-The current CLI workflow requires a working copy of the profile's component
-values. The commands below copy three files and substitute the Manager image
-repository in the fourth. Helm does not expand the
-`${LOAD_MANAGER_REPOSITORY}` placeholder itself.
-
-Create the working copy under the git-ignored `.local` directory:
+For load2:
 
 ```bash
-mkdir -p "$LOAD_VALUES_DIR"
-: "${LOAD_MANAGER_REPOSITORY:?Set the custom Manager image repository first}"
-cp "$LOAD_PROFILE_DIR"/keycloak.yaml "$LOAD_PROFILE_DIR"/postgresql.yaml \
-  "$LOAD_PROFILE_DIR"/proxy.yaml "$LOAD_VALUES_DIR/"
-envsubst '${LOAD_MANAGER_REPOSITORY}' < "$LOAD_PROFILE_DIR/manager.yaml" \
-  > "$LOAD_VALUES_DIR/manager.yaml"
+mkdir -p .local
+cp test/load2-eks/deployment.env.example .local/loadtest.env
 ```
 
-Make any per-stack customisations in this copy before deploying. Rerunning
-these commands overwrites that copy, so do not repeat them when updating an
-existing deployment unless you intend to replace its customised values.
-
-### 2. Configure DNS and create the cluster
-
-If you already have a compatible cluster, follow
-[Use an existing cluster](#use-an-existing-cluster), then continue at step 3.
-
-For a new cluster, choose the DNS zone, domain, role, and a stable owner ID
-unique to the cluster. Replace the example values below. `LOAD_HOSTNAME` must
-be a strict subdomain of `DNS_DOMAIN` and must not be used by another stack or
-cluster.
+For load1, copy `test/load1-eks/deployment.env.example` instead.
+Edit `.local/loadtest.env` for your deployment. For example:
 
 ```bash
-export DNS_ZONE_ID=Z0123456789
-export DNS_DOMAIN=example.com
-export DNS_ROLE_ARN=arn:aws:iam::123456789012:role/load-external-dns
-export DNS_OWNER_ID="$(aws sts get-caller-identity --query Account --output text)-$CLUSTER_NAME-$AWS_REGION"
+LOAD_TEST=load2
+LOAD_PROFILE=xlarge
+CLUSTER_NAME=loadtest
+STACK_NAME=load2
+AWS_REGION=eu-west-1
+LOAD_HOSTNAME=load2.openremote.app
+LOAD_MANAGER_REPOSITORY=134517981306.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager
+DNS_AWS_PROFILE=134517981306_AWSAdministratorAccess
 ```
 
-Before creating the cluster, provision the DNS role using the
-[ExternalDNS IAM bootstrap](../kubernetes/cluster/eks/README.md#cross-account-iam-bootstrap).
-Its trust must allow this cluster's IRSA role. If the role requires an external
-ID, also add `--external-dns-external-id` to the creation command.
+`LOAD_MANAGER_REPOSITORY` includes `/openremote/manager`, without an image tag;
+the profile selects `load1` or `load2`. `LOAD_HOSTNAME` is a bare hostname,
+without `https://` or a path, and must be unused by another stack or cluster.
+
+Use `DNS_AWS_PROFILE` for the account containing your public Route 53 zone.
+Leave it empty to use the cluster credentials. If using an SSO profile,
+authenticate it before deployment. Set `CLUSTER_AWS_PROFILE` only if you want
+a specific named profile for cluster operations.
+
+You do not normally need a zone ID, role ARN, external ID, or ownership ID.
+The helper discovers the zone and configures a dedicated role for this cluster.
+If multiple public zones match the same domain, it lists their IDs and stops;
+add `DNS_ZONE_ID=...` to choose one explicitly.
+
+The config is **sourced as Bash code**, so use only a file you trust. It needs
+no `export` statements and must not contain access keys. `.local/` is ignored
+by Git. Helper settings come from this file, replacing the old environment
+variable and `--` forwarding interface.
+
+### 3. Deploy
 
 ```bash
-kubernetes/or-eks-cluster create \
-  --name "$CLUSTER_NAME" --region "$AWS_REGION" \
-  --config "$LOAD_PROFILE_DIR/cluster.yaml" \
-  --external-dns-zone-id "$DNS_ZONE_ID" --external-dns-domain "$DNS_DOMAIN" \
-  --external-dns-role-arn "$DNS_ROLE_ARN" --external-dns-owner-id "$DNS_OWNER_ID"
+test/or-eks-load up --config .local/loadtest.env
 ```
 
-### 3. Deploy the stack
+This checks your credentials, configures DNS IAM, creates the cluster if absent
+or reconciles its shared add-ons if present, and applies the selected profile.
+It tests the ExternalDNS service account's actual IAM credential chain and
+Route 53 read access before starting the stack deployment. It then waits for
+DNS, trusted HTTPS, and MQTTS, and checks Keycloak's advertised login URL.
+
+Initial dataset creation can take time; the default deployment timeout is
+90 minutes. If credentials expire or a later deployment step fails, refresh
+your credentials, fix the reported issue, and rerun the **same command**.
+Reapplying retains stack data and credentials. Changing the selected profile
+does not resize existing cluster nodes or upgrade Kubernetes.
+
+### 4. Retrieve credentials and run the test
 
 ```bash
-kubernetes/or-eks-stack apply \
-  --name "$STACK_NAME" --cluster "$CLUSTER_NAME" \
-  --region "$AWS_REGION" \
-  --hostname "$LOAD_HOSTNAME" --exposure haproxy --mqtts \
-  --values-dir "$LOAD_VALUES_DIR" --timeout 90m
+test/or-eks-load credentials --config .local/loadtest.env
+test/or-eks-load status --config .local/loadtest.env
 ```
 
-Wait for the command to finish. It waits for the stack's NLB, DNS, trusted
-HTTPS, and MQTTS. The extended timeout allows the load dataset to initialise;
-see [Startup and capacity](#startup-and-capacity) for larger datasets.
+Open `https://load2.openremote.app/manager/` (substitute your configured hostname)
+and sign in with the returned administrator credentials. Before running the
+load scenario:
 
-### 4. Retrieve credentials and verify the deployment
+1. Check that the page is styled and login redirects stay on the correct host.
+2. Verify the expected test users and assets, and asset creation/editing.
+3. Verify an authenticated MQTTS publish using a provisioned test account.
+
+Configure the test client with `MANAGER_HOSTNAME` set to `LOAD_HOSTNAME` and
+MQTTS port **8883**. Plaintext MQTT is not exposed. Use the clients documented
+in [load1](load1/README.md); for load2, use its
+[scenarios and parameters](load2-eks/README.md#running-tests).
+
+## Manage the deployment
+
+All helper commands use the same `--config` file.
+
+| Command | What it does |
+| --- | --- |
+| `up` | Reconcile DNS IAM and cluster add-ons, then deploy and verify the stack |
+| `cluster-up` | Configure DNS IAM and the cluster only, then check DNS access |
+| `deploy` | Deploy and verify a stack on an already configured cluster, without changing DNS IAM or shared add-ons |
+| `status` | Show stack status |
+| `credentials` | Retrieve stack credentials |
+| `uninstall` | Stop the stack while retaining data, credentials, and certificate state |
+| `destroy-stack --confirm <stack-name>` | Delete one stack, its data, and its owned external resources |
+| `destroy-cluster --confirm <cluster-name>` | Delete a cluster after all its stacks have been destroyed |
+| `prepare --values-dir <new-directory>` | Write editable profile values locally, without contacting AWS |
+
+Status, credentials, uninstall, and destruction use only cluster credentials.
+`deploy` also uses only cluster credentials: it reads the installed ExternalDNS
+configuration and tests its role access. `up` and `cluster-up` need permissions
+to manage the dedicated IAM CloudFormation stack in the DNS account as well.
+
+### Reuse a cluster or deploy independently
+
+To deploy another stack in an already configured cluster, copy the deployment
+config and choose a new `STACK_NAME` and `LOAD_HOSTNAME`. Keep the same
+`CLUSTER_NAME` and region, check available capacity, then run:
 
 ```bash
-kubernetes/or-eks-stack credentials \
-  --name "$STACK_NAME" --cluster "$CLUSTER_NAME" \
-  --region "$AWS_REGION"
+test/or-eks-load deploy --config .local/another-stack.env
 ```
 
-Open `https://$LOAD_HOSTNAME/manager` and sign in with the returned administrator
-credentials. Before starting the load run:
+The existing cluster must have the OpenRemote add-ons and managed ExternalDNS.
+For an independently sized cluster, choose a new `CLUSTER_NAME` too and use
+`up`; the helper derives a separate DNS role and ownership ID.
 
-1. Verify that the expected test users and assets were created.
-2. Check browser login and asset creation/editing.
-3. Verify an authenticated MQTTS publish with a provisioned test account.
+### Customise component values
 
-### 5. Run the load scenario
-
-Configure your test client with `MANAGER_HOSTNAME=$LOAD_HOSTNAME` and MQTTS
-port **8883**. Plaintext MQTT is not exposed.
-
-Use the clients and scripts documented in [load1](load1/README.md). For load2,
-use the scenarios and parameters described in
-[load2's running tests section](load2-eks/README.md#running-tests).
-
-## Manage a deployment
-
-### Update configuration or the Manager image
-
-Edit the values in `LOAD_VALUES_DIR`, then repeat the same `or-eks-stack apply`
-command used to deploy the stack, including its exposure and MQTTS options.
-Ordinary reapply and uninstall/reapply retain data, passwords, and certificate
-state.
-
-Prefer a new image tag per build when comparing runs, and update `image.tag`
-in the working `manager.yaml`. If you instead push a replacement image using
-the same `load1` or `load2` tag, explicitly restart Manager after applying any
-configuration changes:
+The standard profile requires no YAML copying. To change dataset parameters,
+resource limits, or image tags, prepare an editable copy:
 
 ```bash
-kubectl --context "$CLUSTER_NAME@$AWS_REGION" --namespace "$STACK_NAME" \
-  rollout restart deployment/manager
-kubectl --context "$CLUSTER_NAME@$AWS_REGION" --namespace "$STACK_NAME" \
-  rollout status deployment/manager --timeout=90m
+test/or-eks-load prepare --config .local/loadtest.env --values-dir .local/loadtest-values
 ```
 
-### Inspect the stack
+This refuses to overwrite an existing directory. Edit the generated component
+files, then add this line to `.local/loadtest.env`:
 
 ```bash
-kubernetes/or-eks-stack status \
-  --name "$STACK_NAME" --cluster "$CLUSTER_NAME" \
-  --region "$AWS_REGION"
+LOAD_VALUES_DIR=loadtest-values
 ```
 
-Load2 profiles expose JMX internally. To access it from your machine:
+`LOAD_VALUES_DIR` is relative to the **config file**, whereas `prepare`'s
+`--values-dir` is relative to the current directory. Absolute paths also work.
+With this setting, subsequent `up` and `deploy` calls use your files unchanged.
+The image repository has already been rendered; edit `manager.yaml` to change
+it. Remove the setting to return to the checked-in profile.
 
 ```bash
-kubectl --context "$CLUSTER_NAME@$AWS_REGION" --namespace "$STACK_NAME" \
-  port-forward service/manager-jmx 8085:8085
+test/or-eks-load deploy --config .local/loadtest.env
+```
+
+An optional `or-setup.yaml` can supply further overrides. Prepared values can
+also be passed directly to `or-eks-stack` or `or-stack` with `--values-dir`.
+
+### Update the Manager image or inspect logs
+
+Prefer a unique image tag per build and update `image.tag` in prepared
+`manager.yaml`, then run `deploy`. If you replace the image under the same tag,
+reapplying unchanged values does not restart Pods. Load the trusted config into
+your shell and explicitly restart Manager:
+
+```bash
+source .local/loadtest.env
+kubectl --context "$CLUSTER_NAME@$AWS_REGION" --namespace "$STACK_NAME" rollout restart deployment/manager
+kubectl --context "$CLUSTER_NAME@$AWS_REGION" --namespace "$STACK_NAME" rollout status deployment/manager --timeout=90m
+```
+
+Use the same context and namespace to inspect setup logs:
+
+```bash
+kubectl --context "$CLUSTER_NAME@$AWS_REGION" --namespace "$STACK_NAME" logs deployment/manager --tail=100
+```
+
+On clean initialization, logs should identify `org.openremote.setup.load1.SetupTasks`
+or `org.openremote.setup.load2.SetupTasks`. Load2 also provides internal JMX:
+
+```bash
+kubectl --context "$CLUSTER_NAME@$AWS_REGION" --namespace "$STACK_NAME" port-forward service/manager-jmx 8085:8085
 ```
 
 ### Reset the test dataset
 
-To rebuild the dataset while keeping the endpoint and credentials:
+Use prepared values and set `or.setupRunOnRestart: true` in `manager.yaml`.
+Run `deploy` and wait for setup to finish, then set it back to `false` and run
+`deploy` again before testing. **While enabled, this setting wipes the stack's
+database on every Manager startup.** A normal reapply does not reset data.
 
-1. Set `or.setupRunOnRestart: true` in the working `manager.yaml`.
-2. Apply the stack and wait for setup to complete.
-3. Set the value back to `false` and apply again before running tests.
+### Delete resources
 
-**While enabled, this setting wipes the stack's database on every Manager
-startup.** For a fully fresh stack, destroy it and deploy again; that also
-replaces its credentials and certificate state.
-
-### Uninstall a stack or delete its resources
-
-To stop one stack while retaining its data and certificate state:
+To stop the stack while retaining its data:
 
 ```bash
-kubernetes/or-eks-stack uninstall \
-  --name "$STACK_NAME" --cluster "$CLUSTER_NAME" \
-  --region "$AWS_REGION"
+test/or-eks-load uninstall --config .local/loadtest.env
 ```
 
-To permanently delete one stack, its data, and its owned external resources:
+To permanently delete the example stack, then its now-empty cluster:
 
 ```bash
-kubernetes/or-eks-stack destroy \
-  --name "$STACK_NAME" --cluster "$CLUSTER_NAME" --confirm "$STACK_NAME" \
-  --region "$AWS_REGION"
+test/or-eks-load destroy-stack --config .local/loadtest.env --confirm load2
+test/or-eks-load destroy-cluster --config .local/loadtest.env --confirm loadtest
 ```
 
-Only after destroying **every** stack, delete a disposable cluster:
+Use the exact names from your config. Destroy **every** stack before deleting
+a cluster; uninstall alone retains namespaces and is not enough. Cluster
+destruction refuses remaining stacks/endpoints.
+
+The DNS-account IAM CloudFormation stack is retained for reuse. Once the
+cluster is gone and its DNS cleanup has completed, you can separately delete
+`or-load-<cluster-account-id>-<cluster-name>-<region>-dns` in the DNS account.
+
+## Configuration and deployment reference
+
+### Optional settings
+
+| Setting | Default / purpose |
+| --- | --- |
+| `CLUSTER_AWS_PROFILE` | Empty: use the normal AWS credential chain |
+| `DNS_AWS_PROFILE` | Empty: use cluster credentials |
+| `DNS_ZONE_ID` | Discover the most specific matching public hosted zone; set to disambiguate |
+| `DNS_DOMAIN` | Discovered zone name; set to constrain discovery |
+| `LOAD_VALUES_DIR` | Render the selected profile into a temporary directory |
+| `LOAD_TIMEOUT` | `90m`; increase for longer initialization |
+| `LOAD_EXPOSURE` | `haproxy`; `ingress` also supported |
+| `LOAD_MQTTS_HOSTNAME` | Required for ingress; a separate hostname in the same managed domain |
+| `CERTIFICATE_ARN` | Ingress only: use an existing web ACM certificate |
+| `MQTTS_CERTIFICATE_ARN` | Ingress only: use an existing MQTTS ACM certificate |
+
+Load1 has one fixed profile; omit `LOAD_PROFILE`. Load2 supports `large`
+(the fallback when omitted), `xlarge-minimal`, `xlarge`, `2xlarge`, `4xlarge`,
+and `8xlarge`. The example config selects `xlarge`.
+
+### DNS configuration and retries
+
+The DNS role grants access to the selected zone/domain and trusts the cluster's
+exact ExternalDNS IRSA role. The helper uses a stable, account-qualified external
+ID identifying that relationship; it is not an access key. No manually copied
+role ARN or generated local state file is needed to resume on another machine.
+
+On an existing cluster, `up` preserves ExternalDNS's TXT ownership ID and
+refuses to change its managed zone/domain. It configures ExternalDNS to use the
+helper's dedicated role, leaving any previously used DNS-account role intact.
+Use `deploy` when the cluster's DNS IAM and add-ons should remain as configured.
+
+The preflight requests a short-lived token for the `external-dns` service
+account and tests both STS role assumptions and Route 53 reads. Your Kubernetes
+identity needs permission to create that token. This catches trust/external-ID
+mismatches early; DNS record writes and propagation are checked by deployment
+readiness. Tokens and rendered temporary values are removed on exit, including
+failure. Configuration and prepared values remain available for retries.
+
+### Ingress with ACM
+
+For a **new** stack, add these settings before running `up` or `deploy`:
 
 ```bash
-kubernetes/or-eks-cluster destroy \
-  --name "$CLUSTER_NAME" --confirm "$CLUSTER_NAME" \
-  --region "$AWS_REGION"
+LOAD_EXPOSURE=ingress
+LOAD_MQTTS_HOSTNAME=mqtt-load2.openremote.app
 ```
 
-Cluster deletion refuses remaining stacks/endpoints. Uninstall alone is not
-enough because it retains the stack namespace.
+The web endpoint uses a shared ALB; MQTTS uses a dedicated NLB and the separate
+hostname. Set the MQTT scenarios' `MANAGER_HOSTNAME` to `LOAD_MQTTS_HOSTNAME`;
+browser access still uses `LOAD_HOSTNAME`. The CLI uses a configured shared ACM
+certificate if available, otherwise manages certificates for the stack. The
+optional ARN settings select existing certificates instead.
 
-## Alternative deployments
-
-### Use an existing cluster
-
-The cluster must already have managed ExternalDNS configured and the shared
-OpenRemote add-ons. Use `or-eks-cluster apply` with that cluster's existing DNS
-settings to reconcile them if needed. Neither `apply` nor changing `--config`
-resizes an existing node group or upgrades Kubernetes.
-
-Set `CLUSTER_NAME` and `AWS_REGION` for the existing cluster, then refresh its
-context instead of creating it:
-
-```bash
-kubernetes/or-eks-cluster kubeconfig \
-  --name "$CLUSTER_NAME" --region "$AWS_REGION"
-```
-
-Continue with [step 3](#3-deploy-the-stack).
-
-### Deploy another stack or cluster
-
-For another stack in the same cluster, select a new `STACK_NAME`,
-`LOAD_HOSTNAME`, and `LOAD_VALUES_DIR`. Prepare its values, then follow steps
-3–5. Check that the cluster has capacity for both stacks before deploying.
-
-For a separate cluster, also choose a new `CLUSTER_NAME`, update the working
-values directory, and configure its DNS role trust and unique owner ID. Follow
-the full deployment procedure with the desired profile.
-
-### Use Ingress with ACM certificates
-
-For a **new** stack using ACM termination, replace the apply command in step 3
-with:
-
-```bash
-export LOAD_MQTTS_HOSTNAME=mqtt-load2.example.com
-kubernetes/or-eks-stack apply \
-  --name "$STACK_NAME" --cluster "$CLUSTER_NAME" \
-  --region "$AWS_REGION" \
-  --hostname "$LOAD_HOSTNAME" --exposure ingress \
-  --mqtts --mqtts-hostname "$LOAD_MQTTS_HOSTNAME" \
-  --values-dir "$LOAD_VALUES_DIR" --timeout 90m
-```
-
-Choose an unused MQTTS hostname below the managed DNS domain. For the supplied
-MQTT scenarios, set `MANAGER_HOSTNAME` to **`$LOAD_MQTTS_HOSTNAME`**; browser
-access still uses `$LOAD_HOSTNAME`. Retrieve credentials and verify the stack
-as in steps 4–5, using this separate hostname for MQTTS.
-
-Keep these exposure/MQTTS arguments on every apply. Exposure and hostname
-changes require a new stack.
-
-The web endpoint uses a shared ALB and MQTTS a dedicated NLB. The CLI selects
-the cluster's shared ACM certificate if configured, otherwise manages
-certificates for the stack. Explicit existing certificates are also supported;
-see `or-eks-stack --help`.
-
-### Manage DNS and readiness yourself
-
-To deploy without the managed AWS facade, use the same prepared values with
-[`or-stack`](../kubernetes/README.md). Follow its documented workflow for DNS,
-certificate readiness, and external resource cleanup.
-
-## Profile and deployment reference
-
-### Source profiles and working values
-
-`LOAD_PROFILE_DIR` selects the checked-in cluster template and component
-settings. `LOAD_VALUES_DIR` contains the prepared settings for one stack. The
-cluster command reads `cluster.yaml` from the source profile; the stack command
-reads the working values directory.
-
-`--values-dir` accepts `manager.yaml`, `postgresql.yaml`, `keycloak.yaml`,
-`proxy.yaml`, and an optional `or-setup.yaml`. These override the CLI's target
-and exposure defaults. The supplied profiles need no `or-setup.yaml`: the CLI
-enables NetworkPolicies and generates independent credentials, and each
-component owns its dynamically provisioned PVC.
+Exposure and hostname changes require a new stack. This topology differs from
+the legacy experiment, which puts both protocols behind one ACM-backed NLB.
+For deployment modes outside this helper, use the
+[EKS CLI](../kubernetes/README-AWS.md) or [or-stack](../kubernetes/README.md)
+directly.
 
 ### Startup and capacity
 
-The supplied Manager startup probe allows for some time for the initialisation to execute. If dataset
-initialisation takes longer, increase both its allowance in the working
-`manager.yaml` and the deployment's `--timeout`.
+Profiles contain the cluster template and component resource budgets. `up`
+uses the template when creating a cluster; it does not resize existing nodes.
+Manager and Keycloak use `Recreate` updates to avoid overlapping Pods on a
+single-node cluster, so upgrades interrupt service.
 
-Manager and Keycloak use `Recreate` updates so a single-node profile does not
-need capacity for overlapping old and new Pods. Updates interrupt service.
-Profile requests cover one stack; Kubernetes and shared controllers need
-capacity too. Size a shared cluster for the combined requests and controller
-overhead. Namespace isolation does not eliminate CPU, disk, or network
-contention; use separate clusters for independent benchmarks.
+If dataset initialization exceeds the Manager startup probe allowance, increase
+that allowance in prepared `manager.yaml` as well as `LOAD_TIMEOUT`. A shared
+cluster needs capacity for all stacks plus Kubernetes and shared controllers.
+Namespace isolation does not remove CPU, disk, or network contention; use
+separate clusters for independent benchmarks.
 
 ## Legacy scripts
 
 The old load1 scripts and load2's standard `eks-setup-load.sh` remain in the
-repository, but stop with a message directing users to the CLIs.
-
+repository but stop with guidance directing users to the CLIs.
 The [load2 ACM/NLB experiment](load2-eks/README.md#legacy-acmnlb-multi-proxy-experiment)
-remains deployable with `eks-setup-load-acm.sh` and its associated redeployment
-and cleanup helpers. Follow the linked instructions and use a dedicated
-cluster for that workflow. These helpers must not manage CLI-created stacks.
+remains deployable using its existing setup, redeployment, and cleanup scripts.
+Use a dedicated cluster for that workflow; do not mix it with CLI-managed stacks.
 
 ## Offline validation
 
-From the repository root, run:
-
 ```bash
+python3 kubernetes/test/load-helper-test
+python3 kubernetes/test/keycloak-url-test
 python3 kubernetes/test/load-eks-test
 ```
 
-This requires Python 3, Bash, Helm, jq, and envsubst. It exercises all seven
-profiles through `or-stack` with stubbed Kubernetes commands and real Helm
-lint/rendering. It also checks legacy ACM/NLB setup and redeployment for all
-six load2 profiles, with AWS commands stubbed. No cluster or AWS credentials
-are used.
+The helper tests require Python 3, Bash, jq, and envsubst. They stub AWS,
+Kubernetes, Helm, and the EKS CLIs to check all profiles, DNS discovery,
+role-access failures, retries, config handling, and separate cleanup operations.
+The Keycloak URL tests and profile tests also require Helm. The profile tests
+render all seven profiles through the real `or-stack` and cover the retained
+legacy ACM/NLB scripts. No AWS credentials or cluster are used.
 
-Actual EKS acceptance still requires deploying the desired profiles and
-verifying login, dataset initialisation, MQTTS traffic, persistence, and
-independent stack cleanup.
+Real EKS acceptance still requires login, dataset initialization, MQTTS traffic,
+persistence, and independent stack cleanup against a deployed environment.

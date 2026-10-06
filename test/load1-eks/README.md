@@ -1,6 +1,7 @@
 # Load1 on EKS
 
-Deploy load1 with `kubernetes/or-eks-cluster` and `kubernetes/or-eks-stack`.
+Deploy load1 with `test/or-eks-load`, which selects its profile and calls
+`kubernetes/or-eks-cluster` and `kubernetes/or-eks-stack`.
 Cluster creation and stack deployment are independent: use a dedicated load-test
 cluster, or deploy another named stack into an existing compatible cluster.
 The cluster template uses one `m8g.2xlarge` node. Component values preserve the
@@ -38,26 +39,28 @@ and allow login, but the custom load-test setup provider is absent and no test
 users or assets are created. During a clean initialization, Manager logs should
 identify `org.openremote.setup.load1.SetupTasks` as a custom setup provider.
 
-## Select the cluster and stack
+## Deploy the cluster and stack
 
-After building the image, select explicit identities and a writable values
-copy for this stack:
+Copy the example configuration and edit its hostname, image repository, and
+AWS profile settings:
 
 ```bash
-# Optional: export AWS_PROFILE=<named-profile>
-export AWS_REGION=eu-west-1
-export CLUSTER_NAME=load1-cluster
-export STACK_NAME=load1
-export LOAD_HOSTNAME=load1.example.com
-export LOAD_PROFILE_DIR=test/load1-eks
-export LOAD_VALUES_DIR=".local/$CLUSTER_NAME/$STACK_NAME"
-export LOAD_MANAGER_REPOSITORY="$AWS_DEVELOPERS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager"
+mkdir -p .local
+cp test/load1-eks/deployment.env.example .local/loadtest.env
 ```
 
-Continue with the [shared EKS load-test deployment guide](../README-eks-load.md)
-to render the values, configure DNS, create or reuse a cluster, deploy with
-MQTTS, and manage the stack independently. The `manager.yaml` image repository
-is a template; render it as described there before passing `--values-dir`.
+Then deploy and retrieve credentials:
+
+```bash
+test/or-eks-load up --config .local/loadtest.env
+test/or-eks-load credentials --config .local/loadtest.env
+```
+
+The [shared deployment guide](../README-eks-load.md) explains prerequisites,
+configuration, verification, and cleanup. The Bash helper discovers the DNS
+zone, configures the cluster's DNS role, and prepares component values
+automatically. Use `cluster-up` and `deploy` separately when managing an
+existing cluster. Selecting another profile does not resize existing nodes.
 
 ## Running tests
 
@@ -71,5 +74,4 @@ Manager logs should identify `org.openremote.setup.load1.SetupTasks`.
 
 The `eks-*.sh` entry points now stop with migration guidance. They no longer
 configure AWS credentials, provision static EBS volumes, or operate on the
-current context's default namespace. See the shared guide for handling existing
-legacy installations.
+current context's default namespace.
