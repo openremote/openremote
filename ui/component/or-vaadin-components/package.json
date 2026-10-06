@@ -38,7 +38,6 @@
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/or-element": "workspace:*",
-    "i18next": "^26.3.6",
     "@vaadin/badge": "~25.3.0",
     "@vaadin/button": "~25.3.0",
     "@vaadin/checkbox": "~25.3.0",
@@ -61,6 +60,7 @@
     "@vaadin/text-field": "~25.3.0",
     "@vaadin/time-picker": "~25.3.0",
     "@vaadin/vaadin-themable-mixin": "~25.3.0",
+    "i18next": "^26.3.6",
     "lit": "^3.3.1"
   },
   "publishConfig": {

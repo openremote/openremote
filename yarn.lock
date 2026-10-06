@@ -1806,8 +1806,8 @@ __metadata:
     "@openremote/util": "workspace:*"
     "@types/lodash.transform": "npm:^4"
     "@types/qs": "npm:^6.9.7"
-    i18next: "npm:^26.3.6"
     axios: "npm:1.20.0"
+    i18next: "npm:^26.3.6"
     i18next-http-backend: "npm:^4.0.0"
     keycloak-js: "npm:^25.0.1"
     lodash.transform: "npm:^4.6.0"
@@ -1965,8 +1965,8 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/util": "workspace:*"
-    i18next: "npm:^26.3.6"
     axios: "npm:1.20.0"
+    i18next: "npm:^26.3.6"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
