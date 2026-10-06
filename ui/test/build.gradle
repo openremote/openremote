@@ -14,5 +14,7 @@ def yarnInstallRequested = gradle.startParameter.taskNames.any {
 
 tasks.register('installTestDeps', Exec) {
   onlyIf { !yarnInstallRequested }
-  commandLine npmCommand("yarn"), "workspaces", "focus", "@openremote/test", "@openremote/model", "@openremote/rest", "@openremote/core"
+  // The app test tree is type checked, which reaches the app sources and every package they import, so the app
+  // workspace has to be installed whole rather than the subset the tests themselves import
+  commandLine npmCommand("yarn"), "workspaces", "focus", "@openremote/test", "@openremote/model", "@openremote/rest", "@openremote/core", "@openremote/manager"
 }
