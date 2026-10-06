@@ -216,8 +216,8 @@ export class OrScheduler extends translate(i18next)(OrElement) {
           template = html`<or-translate value="fromTo" .options="${fromTo}"></or-translate>`;
         }
         const fromToTemplate = html`<span>&nbsp;${template}</span>`;
-        const monthNames = Object.values(MONTHS).map(i18next.t) as string[];
-        const orderISO = Object.values(WEEKDAYS).map(i18next.t) as string[];
+        const monthNames = Object.values(MONTHS).map((m) => i18next.t(m)) as string[];
+        const orderISO = Object.values(WEEKDAYS).map((w) => i18next.t(w)) as string[];
         const dayNames = [orderISO.pop()!, ...orderISO]; // Must start with Sunday
         const rule = this._rrule!.toText((id) => i18next.t(`rrule.${id}`), { dayNames, monthNames, tokens: {} });
         return html`<span class="time-label"><span>${rule}</span>${fromToTemplate}</span>`;
