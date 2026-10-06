@@ -691,8 +691,7 @@ terminates TLS with the same certificate used for HTTPS and forwards the
 connection to Manager port 1883 inside the stack namespace. Repeat `--mqtts`
 on later applies that should retain this exposure. Plaintext MQTT is not
 publicly exposed. On clusters without LoadBalancer support, include the MQTTS
-mapping when port-forwarding, for example `18883:18883` when the Service port is
-18883.
+mapping when port-forwarding, for example `18883:18883` when the Service port is 18883.
 
 #### Using with IDE for development
 
@@ -908,7 +907,7 @@ python3 kubernetes/test/mqtts-readiness-test
 | `or-eks-cluster-test`        | EKS cluster add-on configuration and destruction safeguards.                                                      |
 | `or-eks-stack-test`          | EKS stack orchestration, DNS and certificate handling, and cleanup safeguards.                                    |
 | `aws-profile-test`           | Default credential behavior and explicit AWS profile selection in both EKS CLIs.                                  |
-| `mqtts-readiness-test` | TLS handshake verification, hostname and trust checks, and timeout handling using local test servers. |
+| `mqtts-readiness-test`       | TLS handshake verification, hostname and trust checks, and timeout handling using local test servers.             |
 
 These tests do not verify a live cluster's routing, certificate issuance, or
 NetworkPolicy enforcement. After deploying, use the connectivity checks in
