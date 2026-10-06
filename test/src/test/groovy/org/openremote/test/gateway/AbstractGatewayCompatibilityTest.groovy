@@ -167,7 +167,7 @@ abstract class AbstractGatewayCompatibilityTest extends Specification implements
       assert asset.getAttribute("temperature").flatMap { it.value }.orElse(null) == 21.5
 
       // Ensure GatewayService has processed the asynchronous persistence event
-      assert gatewayService.getLocallyRegisteredGatewayId(asset.id, asset.parentId) == gateway.id
+      assert gatewayService.getLocallyRegisteredGatewayId(asset.id, null) == gateway.id
     }
   }
 
