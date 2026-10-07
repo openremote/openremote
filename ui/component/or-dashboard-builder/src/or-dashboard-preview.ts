@@ -459,7 +459,7 @@ export class OrDashboardPreview extends translate(i18next)(OrElement) {
           draggable: {
             appendTo: "parent", // Required to work, seems to be Shadow DOM related.
           },
-          mode: 'float',
+          mode: "float",
           margin: 5,
           resizable: {
             handles: "all",
@@ -471,7 +471,7 @@ export class OrDashboardPreview extends translate(i18next)(OrElement) {
         gridElement!
       );
 
-      if(this.grid) {
+      if (this.grid) {
         gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
       }
       gridElement!.style.height = "100%";
