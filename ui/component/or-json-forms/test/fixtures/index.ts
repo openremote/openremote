@@ -25,6 +25,7 @@ import {
   type SharedComponentTestFixtures,
 } from "@openremote/test";
 import type { JsonSchema7, OrJSONForms } from "@openremote/or-json-forms";
+import type { OrAceEditor } from "@openremote/or-components/or-ace-editor";
 import * as Util from "@openremote/core/lib/util";
 
 interface WalkFormOptions {
@@ -231,6 +232,23 @@ export class JsonForms {
       await el.updateComplete;
       return (window as unknown as { orJsonFormsData?: unknown }).orJsonFormsData;
     });
+  }
+
+  /**
+   * Opens the JSON editor of the outermost control and returns the document it shows, which is how the form presents
+   * its value to the user rather than what it reports through `onChange`. Closes the dialog again through cancel, so
+   * that reading the value cannot change it.
+   */
+  public async getEditorJson(form: Locator) {
+    await form.getByRole("button", { name: "JSON", exact: true }).first().click();
+    const editor = this.dialog.locator("or-ace-editor");
+    // The editor only holds a value once Ace has rendered into it, which its content layer appearing marks
+    await expect(editor.locator(".ace_content")).toBeVisible();
+    const text = await editor.evaluate((el: OrAceEditor) => el.getValue());
+
+    await this.dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(this.dialog).toHaveCount(0);
+    return JSON.parse(text ?? "null");
   }
 
   private async walkArray(locator: Locator, schema: JsonSchema, path: Path, item: number) {
