@@ -74,10 +74,10 @@ export class OrDashboardBrowser extends OrElement {
   public itemSize = 134;
 
   @state()
-  protected sidebarGrid?: GridStack;
+  protected sidebarGrid?: GridStack | null;
 
   @state()
-  protected backgroundGrid?: GridStack;
+  protected backgroundGrid?: GridStack | null;
 
   @state()
   protected items: Map<string, WidgetManifest> = new Map(widgetTypes);
@@ -110,9 +110,7 @@ export class OrDashboardBrowser extends OrElement {
   /* --------------------------------- */
 
   protected renderGrid() {
-    if (this.sidebarGrid !== undefined) {
-      this.sidebarGrid.destroy(false);
-    }
+    this.sidebarGrid?.destroy(false);
     this.sidebarGrid = GridStack.init(
       {
         acceptWidgets: false,
@@ -146,9 +144,7 @@ export class OrDashboardBrowser extends OrElement {
     });
 
     // Separate Static Background grid (to make it look like the items duplicate)
-    if (this.backgroundGrid !== undefined) {
-      this.backgroundGrid.destroy(false);
-    }
+    this.backgroundGrid?.destroy(false);
     this.backgroundGrid = GridStack.init(
       {
         acceptWidgets: false,
