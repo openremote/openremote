@@ -57,6 +57,7 @@ import {
   uiTypeIs,
 } from "@jsonforms/core";
 import { html, type TemplateResult } from "lit";
+import { i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-input";
 import type { JsonFormsStateContext } from "./index";
 import {
@@ -341,7 +342,7 @@ export function getTemplateWrapper(elementTemplate: TemplateResult, deleteHandle
   const deleteTemplate = !deleteHandler
     ? ``
     : html`
-                <button class="button-clear" @click="${deleteHandler}"><or-icon icon="close-circle"></or-icon></input>
+                <button class="button-clear" aria-label="${i18next.t("delete")}" @click="${deleteHandler}"><or-icon icon="close-circle"></or-icon></input>
             `;
   return html`
     <div class="item-container">

@@ -43,14 +43,16 @@ for (const schema of schemas) {
         schema,
         data: typeValueMap.get(schema.type),
         renderers: StandardRenderers,
-        onChange: () => null,
         readonly: false,
         label: schema.title,
         required: false,
       },
       on: {},
     });
+    await jsonForms.trackData(component);
     await jsonForms.walkForm(component, schema);
+
+    await expect(jsonForms.getData(component)).resolves.toEqual(schema["or:test:expected"]);
     await expect(jsonForms.getValidity(component)).resolves.toBeTruthy();
   });
 }
