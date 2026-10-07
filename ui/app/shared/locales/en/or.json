@@ -830,7 +830,7 @@
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
   },
-  "realmDeleteConfirm": "Warning! this will delete everything in this realm, type the realm name '{{realmName}}' to confirm.",
+  "realmDeleteConfirm": "Warning! Realm must contain no assets to allow deletion, this will delete everything else in this realm automatically, type the realm name '{{realmName}}' to confirm.",
   "realmDeleteFailed": "Failed to delete realm",
   "realmDeleteFailedHasAssets": "Failed to delete realm because it still contains assets",
   "addRule": "Add rule",

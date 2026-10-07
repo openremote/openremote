@@ -574,7 +574,7 @@
     "attributeValueLabel": "Valoarea atributului",
     "assetTypeDoesNotExist": "Filtrare : Tipul de obiect nu exista"
   },
-  "realmDeleteConfirm": "Avertisment! se va sterge totul în acest domeniu, scrie numele domeniului '{{realmName}}' pentru a confirma.",
+  "realmDeleteConfirm": "Avertisment! Domeniul nu trebuie să conțină active pentru a putea fi șters, această acțiune va șterge automat tot ce se mai află în acest domeniu, scrie numele domeniului '{{realmName}}' pentru a confirma.",
   "realmDeleteFailed": "Stergerea domeniului esuata",
   "rulesetStatus": {
     "DEPLOYED": "Instalat cu succes",
