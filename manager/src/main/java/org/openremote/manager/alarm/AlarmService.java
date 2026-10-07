@@ -444,8 +444,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             entityManager
                 .createQuery(
                     """
-                                select aal from AlarmAssetLink aal
-                                where aal.id.realm = :realm and aal.id.sentalarmId = :alarmId
+                                select aal from AlarmAssetLink aal, Asset a
+                                where a.id = aal.id.assetId and a.deletePending is false
+                                and aal.id.realm = :realm and aal.id.sentalarmId = :alarmId
                                 order by aal.createdOn desc
                                 """,
                     AlarmAssetLink.class)

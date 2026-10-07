@@ -619,6 +619,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
   public Asset<?>[] queryAssets(RequestParams requestParams, AssetQuery query) {
     if (query == null) {
       query = new AssetQuery();
+    } else {
+      // Don't allow deleted assets in query
+      query.includeDeletePending(false);
     }
 
     if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
@@ -637,6 +640,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
   public AssetTree queryAssetTree(RequestParams requestParams, AssetQuery query) {
     if (query == null) {
       query = new AssetQuery();
+    } else {
+      // Don't allow deleted assets in query
+      query.includeDeletePending(false);
     }
 
     if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {

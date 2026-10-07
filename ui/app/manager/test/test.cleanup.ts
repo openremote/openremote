@@ -48,6 +48,7 @@ cleanup(`Delete the "smartcity" user`, async ({ page, manager }) => {
  * @and The realm picker should no longer be visible
  */
 cleanup(`Delete the "smartcity" realm`, async ({ page, manager, realmsPage }) => {
+  await manager.deleteAssetsInRealm("smartcity");
   await manager.goToRealmStartPage("master");
   await manager.navigateToMenuItem("Realms");
   await realmsPage.deleteRealm("smartcity");
