@@ -98,6 +98,23 @@ ct.describe("Height", () => {
     await expect(input).toHaveCSS("height", "208px");
   });
 
+  ct("manualresize drops a height autoresize measured before the mode was known", async ({ mount }) => {
+    const component = await mount(OrVaadinTextArea, { props: { label: "Text", minRows: 3 } });
+
+    const input = component.getByRole("textbox", { name: "Text" });
+    const minRowsHeight = (await input.boundingBox())!.height;
+
+    // Attributes arrive one at a time and `value` applies synchronously, so autoresize
+    // measures the content before `manualresize` is seen. This is the order a page load
+    // renders a value that is already set.
+    await component.evaluate((el, value) => {
+      el.setAttribute("value", value);
+      el.setAttribute("manualresize", "");
+    }, lines(30));
+
+    await expect.poll(async () => (await input.boundingBox())!.height).toBe(minRowsHeight);
+  });
+
   ct("the resize handle drags the textarea taller", async ({ mount, page, shared }) => {
     const component = await mount(OrVaadinTextArea, { props: { label: "Text", minRows: 3, manualresize: true } });
 
