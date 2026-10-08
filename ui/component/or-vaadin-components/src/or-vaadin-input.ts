@@ -19,7 +19,7 @@
 import { css, html, type LitElement, type PropertyValues, type TemplateResult } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
-import { InputType } from "./util";
+import { InputType, inputTypeIsJson, parseJson } from "./util";
 import "./or-vaadin-checkbox";
 import "./or-vaadin-date-picker";
 import "./or-vaadin-date-time-picker";
@@ -47,27 +47,6 @@ function registerProperties(constructors: (CustomElementConstructor | undefined)
         .filter((attr) => !OrVaadinInput.elementProperties.has(attr))
         .forEach((attr) => OrVaadinInput.createProperty(attr, constr.getPropertyOptions(attr)))
     );
-}
-
-/**
- * Parses the text of a JSON input type. An empty field is a valid, absent value; text that does not parse,
- * or that is not an object for {@link InputType.JSON_OBJECT}, is invalid and has no value.
- * @param type - The input type being parsed
- * @param text - The text to parse
- */
-function parseJson(type: InputType, text?: string): { value?: any; valid: boolean } {
-  if (!text?.trim()) {
-    return { valid: true };
-  }
-  try {
-    const value = JSON.parse(text);
-    if (type === InputType.JSON_OBJECT && (typeof value !== "object" || value === null || Array.isArray(value))) {
-      return { valid: false };
-    }
-    return { value, valid: true };
-  } catch {
-    return { valid: false };
-  }
 }
 
 /**
@@ -117,12 +96,6 @@ export class OrVaadinInput extends OrElement {
     [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
     [InputType.TIME, OrVaadinInput.getTimePickerTemplate],
   ]);
-
-  /**
-   * Input types whose text is JSON rather than a plain string, so the value has to be parsed on the way out
-   * and serialized on the way in.
-   */
-  public static readonly JSON_TYPES: readonly InputType[] = [InputType.JSON, InputType.JSON_OBJECT];
 
   /**
    * Static map of what HTML event to listen for when a value changes. By default, or when undefined, the "change" event is used.
@@ -232,25 +205,10 @@ export class OrVaadinInput extends OrElement {
       return false;
     }
     // A text area accepts any text, so JSON types need their own parse check on top of the field constraints
-    if (OrVaadinInput.JSON_TYPES.includes(this.type)) {
+    if (inputTypeIsJson(this.type)) {
       return parseJson(this.type, this._elem?.value).valid;
     }
     return true;
-  }
-
-  /**
-   * Serializes a value for display in a JSON input type, matching what {@link nativeValue} parses back.
-   * @param value - The value to serialize
-   */
-  public static stringifyJson(value: any): string | undefined {
-    if (value === undefined || value === null) {
-      return undefined;
-    }
-    try {
-      return JSON.stringify(value, null, 2);
-    } catch {
-      return undefined;
-    }
   }
 
   render() {

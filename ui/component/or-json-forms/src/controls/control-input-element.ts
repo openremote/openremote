@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { InputType } from "@openremote/or-vaadin-components/util";
+import { InputType, inputTypeIsJson, stringifyJson } from "@openremote/or-vaadin-components/util";
 import { OrVaadinInput } from "@openremote/or-vaadin-components/or-vaadin-input";
 import type { SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
 import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
@@ -160,9 +160,7 @@ export class ControlInputElement extends ControlBaseElement {
     }
 
     const isCheckbox = this.inputType === InputType.CHECKBOX;
-    const displayValue = OrVaadinInput.JSON_TYPES.includes(this.inputType)
-      ? OrVaadinInput.stringifyJson(value)
-      : (value ?? undefined);
+    const displayValue = inputTypeIsJson(this.inputType) ? stringifyJson(value) : (value ?? undefined);
     return html`<or-vaadin-input
       .id="${this.id}"
       type="${this.inputType}"

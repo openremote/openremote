@@ -49,9 +49,11 @@ import { ifDefined } from "lit/directives/if-defined.js";
 import { styleMap } from "lit/directives/style-map.js";
 import {
   InputType,
+  inputTypeIsJson,
   inputTypeSupportsHelperText,
   inputTypeSupportsLabel,
   inputTypeSupportsSendButton,
+  stringifyJson,
   type SupportedWellknownValueTypes,
 } from "./util";
 import { OrVaadinInput } from "./or-vaadin-input";
@@ -417,9 +419,9 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         value = undefined;
       } else if (inputType === InputType.DATETIME && value !== undefined && value !== null) {
         value = OrVaadinDateTimePicker.getLocalizedISOString(new Date(value), step);
-      } else if (OrVaadinInput.JSON_TYPES.includes(inputType)) {
+      } else if (inputTypeIsJson(inputType)) {
         // The value attribute carries text, so a JSON value is shown as formatted JSON
-        value = OrVaadinInput.stringifyJson(value);
+        value = stringifyJson(value);
       }
 
       // The step is set before the value, so that a date time picker does not trim the value to its default precision.
