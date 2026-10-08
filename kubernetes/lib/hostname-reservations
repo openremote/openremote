@@ -31,7 +31,8 @@ read_hostname_registry() {
       (.namespaceUID | type == "string" and length > 0) and
       (.target == "eks" or .target == "local") and
       (.dns == "none" or .dns == "external-dns") and
-      (.exposure == "haproxy" or .exposure == "ingress")))' \
+      (.exposure == "haproxy" or .exposure == "ingress") and
+      (.endpoint == null or .endpoint == "web" or .endpoint == "mqtts")))' \
     <<< "$registry" >/dev/null || die \
       "ConfigMap kube-system/openremote-hostnames is unowned or malformed; refusing to adopt it."
   printf '%s\n' "$registry"
@@ -56,14 +57,32 @@ write_hostname_registry() {
   esac
 }
 
+stack_endpoint_hostname_reservation() {
+  local endpoint="$1"
+  local registry
+  registry="$(read_hostname_registry)" || return 1
+  jq -c --arg stack "$STACK_NAME" --arg endpoint "$endpoint" \
+    '[(.data // {} | to_entries[]) | (.value | fromjson) + {hostname: .key} |
+      select(.namespace == $stack and (.endpoint // "web") == $endpoint)] |
+      if length > 1 then error("multiple hostname reservations for one stack endpoint")
+      else .[0] // empty end' <<< "$registry"
+}
+
 stack_hostname_reservation() {
+  stack_endpoint_hostname_reservation web
+}
+
+stack_mqtts_hostname_reservation() {
+  stack_endpoint_hostname_reservation mqtts
+}
+
+stack_hostname_reservations() {
   local registry
   registry="$(read_hostname_registry)" || return 1
   jq -c --arg stack "$STACK_NAME" \
-    '[(.data // {} | to_entries[]) | (.value | fromjson) + {hostname: .key} |
-      select(.namespace == $stack)] |
-      if length > 1 then error("multiple hostname reservations for one stack")
-      else .[0] // empty end' <<< "$registry"
+    '[(.data // {} | to_entries[]) | (.value | fromjson) +
+      {hostname: .key, endpoint: (.value | fromjson | .endpoint // "web")} |
+      select(.namespace == $stack)] | sort_by(.endpoint, .hostname)[]' <<< "$registry"
 }
 
 check_existing_hostname_routes() {
@@ -91,7 +110,10 @@ check_existing_hostname_routes() {
     "Hostname '$hostname' conflicts with existing routing: $conflict"
 }
 
-reserve_stack_hostname() {
+reserve_stack_endpoint_hostname() {
+  local hostname="$1"
+  local endpoint="$2"
+  local reservation_annotation="$3"
   local namespace_json namespace_uid recorded_hostname namespaces conflict registry owner replacement attempt
   local previously_reserved
   require_command jq
@@ -100,9 +122,10 @@ reserve_stack_hostname() {
   # A newly created namespace can have no annotations map. Read optional values
   # through jq, which handles missing/null maps, rather than indexing a nil Go
   # template value. Reuse the same response for namespace identity below.
-  previously_reserved="$(jq -r '.metadata.annotations["openremote.io/reserved-hostname"] // empty' \
+  previously_reserved="$(jq -r --arg annotation "$reservation_annotation" \
+    '.metadata.annotations[$annotation] // empty' \
     <<< "$namespace_json")" || die "Unable to read the stack's hostname reservation metadata."
-  if [ -z "$previously_reserved" ] && { [ "$EXPOSURE" = none ] || \
+  if [ "$endpoint" = web ] && [ -z "$previously_reserved" ] && { [ "$EXPOSURE" = none ] || \
       { [ "$TARGET" = local ] && [ "$EXPOSURE" = haproxy ] && [ "$DNS_MODE" = none ]; }; }; then
     # The registry write may have succeeded before namespace annotation failed.
     # Changing to internal/local exposure must not bypass that retained claim.
@@ -114,44 +137,57 @@ reserve_stack_hostname() {
     .metadata.uid | select(type == "string" and length > 0)' <<< "$namespace_json")" || die \
       "The stack namespace has no verifiable identity."
   recorded_hostname="$previously_reserved"
-  [ -z "$recorded_hostname" ] || [ "$recorded_hostname" = "$HOSTNAME_VALUE" ] || die \
-    "Stack '$STACK_NAME' reserves '$recorded_hostname'; hostname changes require explicit migration."
+  [ -z "$recorded_hostname" ] || [ "$recorded_hostname" = "$hostname" ] || die \
+    "Stack '$STACK_NAME' reserves '$recorded_hostname' for its $endpoint endpoint; hostname changes require explicit migration."
 
   namespaces="$(kubectl --context "$KUBE_CONTEXT" get namespaces -o json)" || die \
     "Unable to inspect existing stack hostname ownership."
-  conflict="$(jq -r --arg host "$HOSTNAME_VALUE" --arg stack "$STACK_NAME" '
+  conflict="$(jq -r --arg host "$hostname" --arg stack "$STACK_NAME" '
     .items[] | select(.metadata.name != $stack) |
-    select((.metadata.annotations["openremote.io/reserved-hostname"] // "" |
-      ascii_downcase | rtrimstr(".")) == $host) |
+    select([.metadata.annotations["openremote.io/reserved-hostname"],
+      .metadata.annotations["openremote.io/reserved-mqtts-hostname"]] |
+      any((. // "" | ascii_downcase | rtrimstr(".")) == $host)) |
     .metadata.name' <<< "$namespaces")" || die "Unable to parse namespace hostname ownership."
-  [ -z "$conflict" ] || die "Hostname '$HOSTNAME_VALUE' is already recorded by stack '$conflict'."
-  check_existing_hostname_routes "$HOSTNAME_VALUE" "$STACK_NAME"
+  [ -z "$conflict" ] || die "Hostname '$hostname' is already recorded by stack '$conflict'."
+  check_existing_hostname_routes "$hostname" "$STACK_NAME"
 
   for attempt in {1..10}; do
     registry="$(read_hostname_registry)" || die "Unable to read hostname reservations."
-    owner="$(jq -r --arg host "$HOSTNAME_VALUE" --arg stack "$STACK_NAME" --arg uid "$namespace_uid" '
+    owner="$(jq -r --arg host "$hostname" --arg stack "$STACK_NAME" --arg uid "$namespace_uid" \
+      --arg endpoint "$endpoint" '
       (.data // {} | to_entries[]) | (.value | fromjson) + {hostname: .key} |
-      select((.hostname == $host or .namespace == $stack) and
-        (.hostname != $host or .namespace != $stack or .namespaceUID != $uid)) |
+      . + {endpoint: (.endpoint // "web")} |
+      select((.hostname == $host or (.namespace == $stack and .endpoint == $endpoint)) and
+        (.hostname != $host or .namespace != $stack or .namespaceUID != $uid or .endpoint != $endpoint)) |
       "\(.namespace) (namespace UID \(.namespaceUID), hostname \(.hostname))"' <<< "$registry")"
     [ -z "$owner" ] || die \
-      "Hostname '$HOSTNAME_VALUE' cannot be reserved by '$STACK_NAME'; conflicting reservation: $owner. Retained reservations require explicit cleanup."
+      "Hostname '$hostname' cannot be reserved by '$STACK_NAME'; conflicting reservation: $owner. Retained reservations require explicit cleanup."
     # Removing exposure or ExternalDNS annotations does not prove external DNS
     # has disappeared. Retain that cleanup obligation until explicit release.
-    replacement="$(jq -c --arg host "$HOSTNAME_VALUE" --arg stack "$STACK_NAME" \
-      --arg uid "$namespace_uid" --arg target "$TARGET" --arg dns "$DNS_MODE" --arg exposure "$EXPOSURE" '
+    replacement="$(jq -c --arg host "$hostname" --arg stack "$STACK_NAME" \
+      --arg uid "$namespace_uid" --arg target "$TARGET" --arg dns "$DNS_MODE" \
+      --arg exposure "$EXPOSURE" --arg endpoint "$endpoint" '
       (.data[$host] // "{}" | fromjson) as $previous |
       .data[$host] = ({namespace: $stack, namespaceUID: $uid, target: $target,
         dns: (if $previous.dns == "external-dns" then $previous.dns else $dns end),
-        exposure: (if $exposure == "none" then $previous.exposure else $exposure end)} | tojson)' <<< "$registry")"
+        exposure: (if $exposure == "none" then $previous.exposure else $exposure end),
+        endpoint: $endpoint} | tojson)' <<< "$registry")"
     if write_hostname_registry "$replacement"; then
       kubectl --context "$KUBE_CONTEXT" annotate namespace "$STACK_NAME" \
-        "openremote.io/reserved-hostname=$HOSTNAME_VALUE" --overwrite >/dev/null
-      log "Reserved hostname '$HOSTNAME_VALUE' for stack '$STACK_NAME'."
+        "$reservation_annotation=$hostname" --overwrite >/dev/null
+      log "Reserved $endpoint hostname '$hostname' for stack '$STACK_NAME'."
       return
     fi
   done
   die "Hostname reservations changed repeatedly; retry apply. No workloads were installed."
+}
+
+reserve_stack_hostname() {
+  reserve_stack_endpoint_hostname "$HOSTNAME_VALUE" web "openremote.io/reserved-hostname"
+}
+
+reserve_stack_mqtts_hostname() {
+  reserve_stack_endpoint_hostname "$MQTTS_HOSTNAME_VALUE" mqtts "openremote.io/reserved-mqtts-hostname"
 }
 
 require_reservation_namespace_identity() {

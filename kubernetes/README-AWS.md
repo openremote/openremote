@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Requirements: you need to have kubectl, helm, jq, curl, dig,
+Requirements: you need to have kubectl, helm, jq, curl, dig, Python 3 (for MQTTS readiness),
 [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html),
 and [eksctl](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html#eksctl-install-update)
 installed beforehand.
@@ -30,6 +30,13 @@ still inherited; an empty `AWS_PROFILE` is not the same as an unset variable.
 The CLI-specific `OR_EKS_AWS_PROFILE` and `OR_EKS_STACK_AWS_PROFILE` environment
 overrides are no longer used. See [credential configuration](cluster/eks/README.md#configuration)
 for details, including refreshing existing kubeconfig contexts.
+
+HAProxy stacks can additionally expose MQTTS on the same NLB, hostname, and
+certificate with `--mqtts`. Ingress stacks use `--mqtts` with a separate
+hostname and an existing user-owned, cluster-shared, or stack-managed ACM
+certificate; `or-eks-stack` coordinates the certificate, dedicated MQTTS NLB,
+ExternalDNS records, trusted endpoint readiness, and destruction. Plaintext
+MQTT is not supported.
 
 The `eks-setup*.sh` and `eks-cleanup*.sh` scripts below are the legacy combined
 cluster-and-stack workflow. They will be split further as part of multi-stack
@@ -164,6 +171,21 @@ reuses the HAProxy certificate, and waits for a trusted HTTPS response from
 Manager. After it succeeds, open `https://stack-a.example.com/manager/` and
 [retrieve the Manager credentials](#inspect-a-stack-and-retrieve-credentials).
 
+Enable MQTTS on the same hostname and NLB with:
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --hostname stack-a.example.com \
+  --mqtts
+```
+
+This adds public TCP port 8883 to the existing proxy Service. Use
+`--mqtts-port <port>` only when a different public port is required. Repeat
+`--mqtts` on later applies that should retain the MQTTS exposure.
+
 The automated HTTP-01 certificate flow requires public HTTP port 80. The
 default timeout is 20 minutes for each readiness phase. Reapply the same command
 to update the stack; retained certificates are reused. To deploy another stack,
@@ -206,7 +228,7 @@ both its certificate and validation records.
 The resolved AWS identity needs `acm:RequestCertificate`,
 `acm:ListCertificates`, `acm:DescribeCertificate`, and
 `acm:ListTagsForCertificate` in the EKS account. It also needs
-`acm:DeleteCertificate` when destroying a managed-certificate stack, in
+`acm:DeleteCertificate` when destroying a stack with either managed endpoint, in
 addition to the EKS access already required by the facade. Route 53 write
 permission remains confined to the ExternalDNS roles; `or-eks-stack` does not
 use DNS-account credentials.
@@ -294,6 +316,118 @@ Certificate rotation within a mode remains supported. Mode `existing` reuses
 its recorded ARN when omitted; supply `--certificate-mode existing` and a new
 `--certificate-arn` to replace it. Mode `shared` uses the cluster's current shared
 ARN on each apply. Mode `managed` reuses its owned certificate.
+
+#### MQTTS with Ingress
+
+Enable MQTTS for an Ingress stack with a second hostname. Its certificate mode
+is independent of the web certificate mode: either endpoint can use
+`existing`, `shared`, or `managed`. To select a dedicated stack-managed MQTTS
+certificate explicitly:
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode existing \
+  --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/web \
+  --mqtts \
+  --mqtts-hostname mqtt-stack-a.example.com \
+  --mqtts-certificate-mode managed
+```
+
+The MQTTS hostname must differ from the web hostname because it points to a
+dedicated per-stack NLB rather than the shared web ALB. Managed mode records its
+intent before requesting ACM, requests or recovers one exactly tagged
+certificate for the MQTTS endpoint, publishes ACM's validation CNAME through
+the namespace's `acm-validation-mqtts` `DNSEndpoint`, and installs workloads
+only after ACM reports `ISSUED`.
+
+If neither an MQTTS mode nor ARN is supplied on first apply, the facade uses
+the cluster certificate configured by `or-eks-cluster
+--shared-certificate-arn`. It validates that the shared certificate also covers
+the MQTTS hostname, attaches the same ARN to the stack's dedicated NLB, and
+never deletes it. If the cluster has no shared ARN, selection falls back to
+managed mode. Shared mode can also be requested explicitly:
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode shared \
+  --mqtts \
+  --mqtts-hostname mqtt-stack-a.example.com \
+  --mqtts-certificate-mode shared
+```
+
+To supply a user-owned certificate instead, use:
+
+```bash
+./or-eks-stack apply \
+  --name stack-a \
+  --cluster <cluster-name> \
+  --region eu-west-1 \
+  --exposure ingress \
+  --hostname stack-a.example.com \
+  --certificate-mode existing \
+  --certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/web \
+  --mqtts \
+  --mqtts-hostname mqtt-stack-a.example.com \
+  --mqtts-certificate-mode existing \
+  --mqtts-certificate-arn arn:aws:acm:eu-west-1:123456789012:certificate/mqtts
+```
+
+An explicit MQTTS ARN also implies `existing`, so its mode option may be
+omitted. The certificate must be in the EKS account and region, have status
+`ISSUED`, and cover the MQTTS hostname. It must be externally owned:
+certificates tagged as managed by `or-eks-stack` are rejected, and the facade
+never renews or deletes it. A single wildcard or multi-name existing
+certificate may be supplied for both web and MQTTS when it meets the ownership
+and hostname checks.
+
+Repeat `--mqtts` on every reapply. After first selection, the MQTTS mode is
+persistent and the hostname and certificate ARN may be omitted because they are
+read from namespace annotations. An explicit different mode is rejected.
+Existing mode can rotate its certificate reference by supplying a new ARN;
+shared mode follows the cluster's current shared ARN; managed mode reuses its
+owned certificate. Changing or disabling the MQTTS hostname in place is not
+supported. To change mode or hostname, back up any data to retain, destroy the
+stack, and recreate it. `or-eks-stack status` reports the recorded MQTTS
+hostname, certificate mode, ARN, and current ACM status.
+
+Apply waits for both the shared ALB and dedicated MQTTS NLB, verifies each DNS
+name points to its current load balancer, and verifies trusted HTTPS and MQTTS.
+Uninstall retains both endpoint reservations and the recorded certificate
+state. Destroy validates the MQTTS Service and its lifecycle metadata, removes
+the namespace, confirms the NLB and both public DNS names are gone, and then
+releases both reservations. Existing and shared MQTTS certificates are always
+retained. NLB deletion is checked using the controller's AWS identity tags:
+`elbv2.k8s.aws/cluster=<cluster>` and `service.k8s.aws/stack=<stack>/proxy-mqtts`.
+This check does not depend on the Service's last reported address and also
+runs when the Service or namespace is already gone, so an interrupted destroy
+or an earlier uninstall cannot bypass it. AWS lookup failures retain both
+reservations; retry destroy once the lookup succeeds and the NLB is deleted.
+For managed mode it also waits for NLB detachment and
+validation-CNAME removal, then deletes only the certificate carrying the exact
+cluster, stack, hostname, and `openremote.io/endpoint=mqtts` ownership tags.
+Apply records certificate mode before ACM requests or Helm installation. If it
+stops earlier, between hostname reservation and recording mode, destroy also
+accepts the incomplete preparation when no MQTTS Service, recorded certificate
+ARN, or validation DNSEndpoint exists. The hostname, if already recorded, must
+match its reservation. Normal certificate ownership, NLB deletion, and DNS
+cleanup checks still apply before releasing either hostname. A low-level
+`or-stack` MQTTS endpoint with deployed resources is not adopted automatically
+while its namespace still exists.
+
+Destroying an Ingress stack with MQTTS also uses
+`elasticloadbalancing:DescribeLoadBalancers` and
+`elasticloadbalancing:DescribeTags` to confirm deletion of the dedicated NLB,
+including on retries after namespace deletion.
 
 #### Inspect a stack and retrieve credentials
 
@@ -464,6 +598,39 @@ kubectl --context <cluster-name>@eu-west-1 \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 ```
 
+##### Ingress MQTTS with externally managed readiness
+
+The HTTP Ingress does not carry MQTT traffic. On EKS, `or-stack` can create a
+separate per-stack NLB for MQTTS while retaining the same private proxy gateway:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context <cluster>@eu-west-1 \
+  --target eks \
+  --exposure ingress \
+  --dns external-dns \
+  --hostname stack-a.example.com \
+  --certificate-arn <web-acm-certificate-arn> \
+  --mqtts \
+  --mqtts-hostname mqtt-stack-a.example.com \
+  --mqtts-certificate-arn <mqtts-acm-certificate-arn>
+```
+
+The dedicated `proxy-mqtts` LoadBalancer Service creates an IP-target NLB. ACM
+terminates TLS on public port 8883, then the NLB forwards plaintext TCP to port
+1883 on the namespace-local proxy, which forwards it to Manager. The MQTTS
+hostname must differ from the web hostname because their DNS records target
+different load balancers. `--mqtts-port` changes the public NLB listener port.
+
+This low-level workflow only declares the provided certificate ARN; it does not
+inspect, create, renew, or delete the certificate. When `--dns external-dns` is
+selected, it declares the MQTTS hostname on the NLB Service. Without it, DNS is
+also the caller's responsibility.
+
+For managed DNS, certificate lifecycle, and endpoint readiness, use
+[MQTTS with Ingress](#mqtts-with-ingress) through `or-eks-stack`.
+
 ##### Internal-only stacks
 
 Use `--exposure none` with `or-stack` for an internal-only EKS stack. It creates
@@ -507,11 +674,14 @@ Ingress gateway does not store certificates.
 Each stack applies an ingress NetworkPolicy that allows traffic from its own
 namespace and rejects traffic originating in other stack namespaces. Egress is
 not restricted. In HAProxy mode, a second policy permits external traffic only
-to the HAProxy Pod's HTTP and HTTPS ports; Manager, Keycloak, and PostgreSQL are
-not directly public. In Ingress mode, the second policy permits the ALB to
-reach only HTTP port 8080 on a private per-stack HAProxy gateway. That gateway
-then reaches Manager and Keycloak through the same-namespace rule, so neither
-application Pod is directly reachable from another stack namespace.
+to the HAProxy Pod's HTTP and HTTPS ports, plus its MQTTS port when enabled;
+Manager, Keycloak, PostgreSQL, and Manager's plaintext MQTT listener are not
+directly public. In Ingress mode, the second policy permits the ALB to reach
+HTTP port 8080 on a private per-stack HAProxy gateway. When low-level Ingress
+MQTTS is enabled, it also permits the dedicated NLB to reach the gateway's
+plaintext port 1883. That gateway then reaches Manager and Keycloak through the
+same-namespace rule, so neither application Pod is directly reachable from
+another stack namespace.
 `or-eks-cluster create` enables NetworkPolicy on the managed VPC CNI add-on,
 and `or-eks-cluster apply` reconciles that setting without changing the
 installed add-on version. New clusters give the VPC CNI add-on a dedicated IAM
@@ -549,18 +719,34 @@ lineage, while `renew` forces issuance rather than checking readiness.
 A Manager error or connection timeout therefore does not trigger certificate
 issuance or forced renewal.
 
+When `--mqtts` is enabled, it also completes a trusted TLS handshake with the
+MQTTS listener before reporting the stack ready. HTTPS and MQTTS use the same
+hostname and HAProxy certificate.
+
 The proxy readiness probe and certificate status are deliberately separate.
 The Pod must be ready and reachable for the HTTP ACME challenge before a
 production certificate can be issued; `or-stack status` shows the certificate
 issuer and expiry once managed or custom certificate material is present.
 
+##### MQTTS readiness
+
+MQTTS readiness requires Python 3 with its standard `ssl` module and a working
+CA trust store (using Python's default CA paths or `SSL_CERT_FILE`/`SSL_CERT_DIR`).
+The probe verifies the certificate chain and requested hostname
+through the TLS API: OpenSSL/LibreSSL diagnostic output alone can report a zero
+verification code even when no TLS session was established. Each probe is
+limited to ten seconds or the remaining readiness timeout, whichever is shorter.
+This verifies TLS readiness; MQTT authentication and publish/subscribe behavior
+still require an MQTT client test.
+
 ##### Managed-certificate lifecycle
 
-This lifecycle applies to Ingress stacks using `--certificate-mode managed`.
-The namespace annotations record the selected mode and certificate ARN. ACM
-tags identify the certificate's owner by deployment tool, cluster, stack, and
-exact hostname, allowing the CLI to verify ownership and recover interrupted
-operations.
+This lifecycle applies independently to managed web and MQTTS certificates
+on Ingress stacks. Namespace annotations record each endpoint's selected mode
+and certificate ARN. ACM tags identify ownership by deployment tool, cluster,
+stack, exact hostname, and endpoint, allowing the CLI to verify ownership and
+recover interrupted operations. Certificates created before endpoint tagging
+remain recognized as web certificates for upgrade compatibility.
 
 ###### Apply
 
@@ -570,10 +756,16 @@ operations.
    requests or installing workloads.
 2. Reuse the recorded certificate ARN, discover a uniquely tagged certificate,
    or request a new DNS-validated ACM certificate if none exists.
-3. Store the validation CNAME records in the namespace's `acm-validation`
-   `DNSEndpoint`. The cluster's ExternalDNS controller publishes them through
-   its restricted cross-account role.
-4. Wait for ACM to report `ISSUED` before installing workloads.
+3. Store validation CNAME records in the namespace's `acm-validation`
+   `DNSEndpoint` for web certificates and `acm-validation-mqtts` for MQTTS.
+   The latter certificate carries the `openremote.io/endpoint=mqtts` tag.
+   ExternalDNS publishes the records through its restricted cross-account role.
+4. Wait for every selected managed certificate to report `ISSUED` before
+   installing workloads.
+
+Both endpoints verify ownership before updating an existing validation
+`DNSEndpoint`. Only a confirmed missing resource permits creation; permission
+errors or API failures stop apply before writing validation records.
 
 ###### Retry after interruption
 
@@ -592,18 +784,20 @@ ACM can continue renewing the certificate, and a later `apply` can reuse it.
 
 ###### Destroy
 
-Before deleting anything, `destroy` validates the namespace, Ingress,
-validation `DNSEndpoint`, and exact ACM ownership tags. It then:
+Before deleting anything, `destroy` validates the namespace, Ingress, MQTTS
+Service when present, each validation `DNSEndpoint`, and exact ACM ownership
+tags. It then:
 
-1. Removes the Ingress.
-2. Waits for the public hostname to disappear from authoritative DNS and for
-   ACM to report that the certificate is detached.
-3. Destroys the namespace, including the validation `DNSEndpoint`.
-4. Waits for the validation CNAME records to disappear from DNS.
-5. Deletes the managed certificate.
+1. Removes the Ingress and waits for the web hostname to disappear from
+   authoritative DNS and for the managed web certificate to be detached.
+2. Destroys the namespace, including the MQTTS Service and validation resources.
+3. For MQTTS, waits for NLB deletion and managed-certificate detachment.
+4. Waits for public and validation DNS records to disappear from authoritative
+   DNS.
+5. Deletes the owned managed certificates.
 
 An interrupted `destroy` can be retried. The command can recover the certificate
-from its cluster and stack tags even after the namespace is gone. Existing and
+from its cluster, stack, and endpoint tags even after the namespace is gone. Existing and
 shared certificates are never deleted by stack destruction.
 
 ##### Shared ALB routing and gateway design
@@ -633,9 +827,8 @@ isolation.
 This design adds one internal HTTP hop and one small proxy Pod per stack. The
 reason to select it is ALB-managed web TLS and layer-7 integration: ACM, SNI,
 central HTTP redirects, and optional AWS features such as WAF. It does not
-reduce the final load-balancer count. The planned MQTT(S) support requires one
-additional NLB per ingress stack, while HAProxy exposure will reuse its existing
-per-stack NLB.
+reduce the final load-balancer count. MQTTS requires one additional NLB per
+Ingress stack, while HAProxy exposure reuses its existing per-stack NLB.
 
 Only namespaces carrying `app.kubernetes.io/part-of=openremote` may use this
 class. `or-stack` applies that label when it creates or reapplies a valid stack
@@ -713,9 +906,11 @@ HAProxy exposes a LoadBalancer service for communication from the outside world.
 We're using [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.7/) to automatically create a Network Load Balancer (NLB) based on that service.  
 One NLB is automatically created when a (LoadBalancer) Service object exists and destroyed when the Service is deleted.
 
-The current namespaced HAProxy profile exposes HTTP and HTTPS only. Port 8883
-is reserved but disabled until MQTT(S) hostname, certificate, policy, and
-lifecycle behavior are implemented together.
+The namespaced HAProxy profile exposes HTTP and HTTPS by default. `--mqtts`
+adds port 8883 to the same per-stack NLB and HAProxy terminates MQTTS with the
+same hostname and certificate used for HTTPS before forwarding to Manager's
+namespace-local port 1883. `--mqtts-port` can change the public Service port;
+the HAProxy container listener remains 8883. Plaintext MQTT is never exposed.
 
 #### Using Ingress with a per-stack gateway
 
@@ -737,11 +932,14 @@ To create the certificate, we use [AWS Certificate Manager](https://docs.aws.ama
 Domain ownership validation is performed via DNS record.
 
 The old combined scripts exposed MQTT(S) with additional Manager LoadBalancer
-services. The namespaced `or-stack` workflow does not enable those services
-yet. MQTT and MQTTS will be added as explicit options in a follow-up. Ingress
-stacks will need a per-stack NLB in addition to the shared web ALB; HAProxy
-stacks can reuse their existing NLB. Both paths must preserve the NetworkPolicy
-model.
+services. The namespaced HAProxy workflow instead keeps Manager private and
+reuses the existing proxy NLB when `--mqtts` is selected. Ingress stacks still
+use the proxy as their isolation gateway. `or-eks-stack` creates one dedicated
+MQTTS NLB per stack, with an existing, cluster-shared, or stack-managed ACM
+certificate terminating TLS before plaintext MQTT is forwarded to proxy port
+1883 and then Manager. The facade coordinates the endpoint's separate hostname,
+certificate lifecycle, readiness, and teardown. Plaintext MQTT is not publicly
+exposed.
 
 #### Annotations
 
