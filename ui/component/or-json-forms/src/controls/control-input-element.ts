@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { InputType, inputTypeIsJson, stringifyJson } from "@openremote/or-vaadin-components/util";
-import { OrVaadinInput } from "@openremote/or-vaadin-components/or-vaadin-input";
+import type { OrVaadinInput } from "@openremote/or-vaadin-components/or-vaadin-input";
 import type { SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
 import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import type { OrVaadinMultiSelectComboBox } from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
