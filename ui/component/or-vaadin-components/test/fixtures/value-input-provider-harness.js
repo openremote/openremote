@@ -33,13 +33,22 @@ export class ValueInputProviderHarness extends LitElement {
     value: {},
     constraints: { type: Array },
     format: { type: Object },
+    multiline: { type: Boolean },
+    options: { type: Object },
   };
 
   willUpdate(changed) {
-    if (changed.has("valueType") || changed.has("constraints") || changed.has("format")) {
+    if (
+      changed.has("valueType") ||
+      changed.has("constraints") ||
+      changed.has("format") ||
+      changed.has("multiline") ||
+      changed.has("options")
+    ) {
       const meta = {};
       if (this.constraints) meta.constraints = this.constraints;
       if (this.format) meta.format = this.format;
+      if (this.multiline) meta.multiline = true;
       const attribute = { name: "attribute", type: this.valueType, meta };
       const [attributeDescriptor, valueDescriptor] = AssetModelUtil.getAttributeAndValueDescriptors(
         "ThingAsset",
@@ -52,7 +61,7 @@ export class ValueInputProviderHarness extends LitElement {
         attributeDescriptor,
         valueDescriptor,
         (value) => this.dispatchEvent(new CustomEvent("value-change", { detail: value })),
-        { label: "Attribute" }
+        { label: "Attribute", ...this.options }
       );
     }
   }
