@@ -843,7 +843,7 @@ function getPanelContent(
     const attributePickerModalOpen = () => {
       const newlySelectedAttributes = [...selectedAttributes];
 
-      // TODO: Replace with or-vaadin-dialog, see https://github.com/openremote/openremote/issues/2594
+      // TODO: Replace with or-vaadin-dialog, see https://github.com/openremote/core/issues/2594
       showOkCancelDialog(
         i18next.t("addRemoveAttributes"),
         html`

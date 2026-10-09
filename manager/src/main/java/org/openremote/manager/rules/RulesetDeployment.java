@@ -87,7 +87,7 @@ public class RulesetDeployment {
      */
     groovyShell =
         new GroovyShell(
-            // See https://github.com/openremote/openremote/issues/2843, can't use
+            // See https://github.com/openremote/core/issues/2843, can't use
             // SandboxTransformer until it's Groovy 5 compatible
             //                new CompilerConfiguration().addCompilationCustomizers(new
             // SandboxTransformer())

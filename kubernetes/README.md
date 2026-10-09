@@ -85,7 +85,7 @@ Look at the commented `resources` section in the values files and provide actual
 
 Some configuration information (e.g. the database name) is duplicated between the values files of the different charts.  
 This is a conscious decision at this time to keep the charts independent.
-We'll be looking into improving on this in the future ([Have a mechanism to deploy the complete OR stack in a single operation · Issue #1651 · openremote/openremote](https://github.com/openremote/openremote/issues/1651))
+We'll be looking into improving on this in the future ([Have a mechanism to deploy the complete OR stack in a single operation · Issue #1651 · openremote/core](https://github.com/openremote/core/issues/1651))
 
 That being said, we are using a single Opaque secret to contain all secure information applicable to all charts instead of multiple kubernetes.io/basic-auth secrets for individual credentials.
 

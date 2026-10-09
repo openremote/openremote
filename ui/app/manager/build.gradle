@@ -28,7 +28,7 @@ publishing {
       pom {
         name = 'OpenRemote Manager UI'
         description = 'Provides the UI for the OpenRemote Manager'
-        url = 'https://github.com/openremote/openremote'
+        url = 'https://github.com/openremote/core'
         licenses {
           license {
             name = 'GNU Affero General Public License v3.0'
@@ -45,9 +45,9 @@ publishing {
           }
         }
         scm {
-          connection = 'scm:git:git://github.com/openremote/openremote.git'
-          developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
-          url = 'https://github.com/openremote/openremote/tree/master'
+          connection = 'scm:git:git://github.com/openremote/core.git'
+          developerConnection = 'scm:git:ssh://github.com:openremote/core.git'
+          url = 'https://github.com/openremote/core/tree/main'
         }
       }
     }

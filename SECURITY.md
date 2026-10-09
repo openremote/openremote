@@ -30,7 +30,7 @@ The rule of thumb is whether one change would fix everything you are describing.
 
 To report through email send an email to security@openremote.io
 
-To report through GitHub go to [https://github.com/openremote/openremote/security/advisories/new](https://github.com/openremote/openremote/security/advisories/new)
+To report through GitHub go to [https://github.com/openremote/core/security/advisories/new](https://github.com/openremote/core/security/advisories/new)
 
 If you have a patch for the issue please use `git format-patch` and attach to the email or issue. Please do not open a
 pull request on GitHub as that may disclose sensitive details around the vulnerability.

@@ -1,6 +1,6 @@
 {
   "push": {
-    "master": {
+    "main": {
       "distribute": {
         "docker": "develop-core",
         "npm": "$version-core-snapshot"

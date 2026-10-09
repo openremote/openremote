@@ -19,7 +19,7 @@
     "test": "echo \"No tests\" && exit 0"
   },
   "author": "OpenRemote",
-  "repository": "https://github.com/openremote/openremote",
+  "repository": "https://github.com/openremote/core",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@vaadin/vaadin-lumo-styles": "~25.3.0",

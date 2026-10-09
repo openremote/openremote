@@ -307,7 +307,7 @@ Resources:
           commands:
             01_openremote_installation:
               command: |
-                curl -sL https://raw.githubusercontent.com/openremote/openremote/refs/heads/master/docker-compose.yml -o /home/ec2-user/docker-compose.yml
+                curl -sL https://raw.githubusercontent.com/openremote/core/refs/heads/main/docker-compose.yml -o /home/ec2-user/docker-compose.yml
               test: ls /home/ec2-user/docker-compose.yml >/dev/null 2>&1; (( $? != 0 ))
 
         start_openremote:

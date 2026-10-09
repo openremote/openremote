@@ -106,7 +106,7 @@ public class TokenVerifierImpl implements TokenVerifier {
 
           // Fall back to aud - service users put the client in the aud claim not the azp claim
           if (claims.getAudience() == null || !claims.getAudience().contains(expectedClientId)) {
-            // TODO: Remove this once https://github.com/openremote/openremote/issues/2642 is
+            // TODO: Remove this once https://github.com/openremote/core/issues/2642 is
             // implemented
             try {
               String preferredUsername = claims.getStringClaim("preferred_username");
