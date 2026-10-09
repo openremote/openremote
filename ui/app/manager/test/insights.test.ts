@@ -297,6 +297,50 @@ test("Replace broken chart references while preserving custom colors", async ({
   expect(barColors[0][1]).toBe("#ffc400");
 });
 
+/**
+ * @given A dashboard with the widget browser showing its stack of cards
+ * @when A card is dragged from the browser onto the grid
+ * @then The cards respawn in their original order and grid slots
+ * @and The remaining cards can still be dragged onto the grid
+ */
+test("should keep widget cards in place and draggable after dragging one onto the grid", async ({
+  manager,
+  shared,
+  page,
+  insightsPage,
+}) => {
+  await shared.interceptResponse<Dashboard>("**/dashboard", (dashboard) => {
+    if (dashboard) manager.dashboards.push(dashboard.id!);
+  });
+
+  await manager.setup("smartcity", { assets });
+  await manager.goToRealmStartPage("smartcity");
+  await manager.navigateToTab("Insights");
+  await page.click(".mdi-plus >> nth=0");
+  await expect(insightsPage.getDashboardListItems()).toHaveCount(1);
+
+  // Snapshot the browser layout: card ids in DOM order plus the grid slot each card occupies
+  const getCardLayout = () =>
+    insightsPage
+      .getBrowserCards()
+      .evaluateAll((cards) =>
+        cards.map((card) => [card.getAttribute("gs-id"), card.getAttribute("gs-x"), card.getAttribute("gs-y")])
+      );
+  await expect(insightsPage.getBrowserCards().first()).toBeVisible();
+  const layoutBefore = await getCardLayout();
+
+  await insightsPage.dragAndDropWidget("Image", [0, 0]);
+  await expect(insightsPage.getWidgets()).toHaveCount(1);
+  await expect(insightsPage.getBrowserCards()).toHaveCount(layoutBefore.length);
+
+  // Cards used to reshuffle around their own slots after one had been dragged away,
+  // and some of them no longer responded to being picked up.
+  await expect.poll(() => getCardLayout()).toEqual(layoutBefore);
+
+  await insightsPage.dragAndDropWidget("Table", [6, 0]);
+  await expect(insightsPage.getWidgets()).toHaveCount(2);
+});
+
 test.afterEach(async ({ manager }) => {
   await manager.cleanUp();
 });
