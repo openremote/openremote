@@ -58,7 +58,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
               + "`COUNT` counts datapoints; `SUM` totals numeric values (or true values for booleans); `MODE` "
               + "selects the most frequent value; and `MEDIAN` selects the middle value. `DIFFERENCE` is numeric "
               + "only. For numeric and boolean attributes, MIN, AVG, MAX, SUM, MODE and MEDIAN ignore null values and return null "
-              + "for buckets with no available values.",
+              + "for buckets with no available values. MODE ties select the smaller numeric value or true for booleans.",
       requiredMode = Schema.RequiredMode.REQUIRED)
   public Formula formula;
 
@@ -145,28 +145,15 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? "
             + "GROUP BY x ORDER by x ASC";
       case MODE:
-        return "WITH bucketed AS ( "
-            + "  SELECT "
+        return "SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
-            + "         cast(nullif(value, 'null'::jsonb) as numeric) AS num_value "
-            + "  FROM "
+            + "MODE() WITHIN GROUP (ORDER BY cast(nullif(value, 'null'::jsonb) as numeric) ASC) AS mode_value "
+            + "FROM "
             + tableName
             + " "
-            + "  WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? "
-            + ") "
-            + "SELECT d.x, ( "
-            + "    SELECT num_value FROM ( "
-            + "         SELECT num_value, COUNT(*) AS freq "
-            + "         FROM bucketed b2 "
-            + "         WHERE b2.x = d.x AND num_value IS NOT NULL "
-            + "         GROUP BY num_value "
-            + "         ORDER BY freq DESC, num_value "
-            + "         LIMIT 1 "
-            + "    ) AS mode_sub "
-            + ") AS mode_value "
-            + "FROM (SELECT DISTINCT x FROM bucketed) d "
-            + "ORDER BY d.x ASC";
+            + "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? "
+            + "GROUP BY x ORDER by x ASC";
       case MEDIAN:
         return "SELECT "
             + function
@@ -219,28 +206,15 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? "
             + "GROUP BY x ORDER by x ASC";
       case MODE:
-        return "WITH bucketed AS ( "
-            + "   SELECT "
+        return "SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
-            + "          cast(nullif(value, 'null'::jsonb) as text)::boolean AS bool_value "
-            + "   FROM "
+            + "MODE() WITHIN GROUP (ORDER BY cast(nullif(value, 'null'::jsonb) as text)::boolean DESC)::integer AS mode_value "
+            + "FROM "
             + tableName
             + " "
-            + "   WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? "
-            + ") "
-            + "SELECT d.x, ( "
-            + "    SELECT bool_value::integer FROM ( "
-            + "         SELECT bool_value, COUNT(*) AS freq "
-            + "         FROM bucketed b2 "
-            + "         WHERE b2.x = d.x AND bool_value IS NOT NULL "
-            + "         GROUP BY bool_value "
-            + "         ORDER BY freq DESC, bool_value DESC "
-            + "         LIMIT 1 "
-            + "    ) AS mode_sub "
-            + ") AS mode_value "
-            + "FROM (SELECT DISTINCT x FROM bucketed) d "
-            + "ORDER BY d.x ASC";
+            + "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? "
+            + "GROUP BY x ORDER by x ASC";
       case MEDIAN:
         return "SELECT "
             + function

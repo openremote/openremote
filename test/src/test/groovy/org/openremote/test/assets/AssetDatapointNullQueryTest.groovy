@@ -278,8 +278,8 @@ class AssetDatapointNullQueryTest extends Specification implements ManagerContai
         new ValueDatapoint<>(bucketStart + bucket * 60_000L + index * 1_000L, value)
       }
     }
-    datapoints.add(new ValueDatapoint<>(bucketStart - 1_000L, high))
-    datapoints.add(new ValueDatapoint<>(bucketStart + 360_000L, low))
+    datapoints.add(new ValueDatapoint<>(bucketStart - 61_000L, high))
+    datapoints.add(new ValueDatapoint<>(bucketStart + 420_000L, low))
     service.upsertValues(asset.id, "value", datapoints)
 
     when: "the six-minute range is queried for its most frequent available values"
@@ -288,10 +288,32 @@ class AssetDatapointNullQueryTest extends Specification implements ManagerContai
             "1 minute", Formula.MODE, gapFill))
 
     then: "nulls cannot win and existing numeric and boolean tie-breaking is preserved"
-    // MODE currently omits empty buckets even with gapFill=true; fixing that is a separate step.
-    result.collect { it.timestamp } == [0L, 60_000L, 180_000L, 240_000L, 300_000L]
-    .collect { bucketStart + it }
-    result.collect { it.value } == [lowResult, null, tieResult, 0D, highResult]
+    result.collect { it.timestamp } == (gapFill
+    ? [0L, 60_000L, 120_000L, 180_000L, 240_000L, 300_000L]
+    : [0L, 60_000L, 180_000L, 240_000L, 300_000L]).collect { bucketStart + it }
+    result.collect { it.value } == (gapFill
+    ? [lowResult, null, null, tieResult, 0D, highResult]
+    : [lowResult, null, tieResult, 0D, highResult])
+
+    when: "the range includes empty leading and trailing buckets"
+    def extended = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointIntervalQuery(bucketStart - 60_000L, bucketStart + 419_999L,
+            "1 minute", Formula.MODE, gapFill))
+
+    then: "gap filling covers the requested range rather than just the observed timestamps"
+    extended.collect { [it.timestamp, it.value] } == (gapFill
+    ? [[bucketStart - 60_000L, null]] + result.collect {
+      [it.timestamp, it.value]
+    } + [[bucketStart + 360_000L, null]]
+    : result.collect { [it.timestamp, it.value] })
+
+    when: "only the empty bucket is queried"
+    def empty = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointIntervalQuery(bucketStart + 120_000L, bucketStart + 179_999L,
+            "1 minute", Formula.MODE, gapFill))
+
+    then: "an entirely empty range also follows the gap-fill setting"
+    empty.collect { [it.timestamp, it.value] } == (gapFill ? [[bucketStart + 120_000L, null]] : [])
 
     when: "only the entirely unavailable bucket is queried"
     def unavailable = service.queryDatapoints(asset.id, "value",
