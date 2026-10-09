@@ -112,17 +112,17 @@ in [load1](load1/README.md); for load2, use its
 
 All helper commands use the same `--config` file.
 
-| Command | What it does |
-| --- | --- |
-| `up` | Reconcile DNS IAM and cluster add-ons, then deploy and verify the stack |
-| `cluster-up` | Configure DNS IAM and the cluster only, then check DNS access |
-| `deploy` | Deploy and verify a stack on an already configured cluster, without changing DNS IAM or shared add-ons |
-| `status` | Show stack status |
-| `credentials` | Retrieve stack credentials |
-| `uninstall` | Stop the stack while retaining data, credentials, and certificate state |
-| `destroy-stack --confirm <stack-name>` | Delete one stack, its data, and its owned external resources |
-| `destroy-cluster --confirm <cluster-name>` | Delete a cluster after all its stacks have been destroyed |
-| `prepare --values-dir <new-directory>` | Write editable profile values locally, without contacting AWS |
+| Command                                    | What it does                                                                                           |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `up`                                       | Reconcile DNS IAM and cluster add-ons, then deploy and verify the stack                                |
+| `cluster-up`                               | Configure DNS IAM and the cluster only, then check DNS access                                          |
+| `deploy`                                   | Deploy and verify a stack on an already configured cluster, without changing DNS IAM or shared add-ons |
+| `status`                                   | Show stack status                                                                                      |
+| `credentials`                              | Retrieve stack credentials                                                                             |
+| `uninstall`                                | Stop the stack while retaining data, credentials, and certificate state                                |
+| `destroy-stack --confirm <stack-name>`     | Delete one stack, its data, and its owned external resources                                           |
+| `destroy-cluster --confirm <cluster-name>` | Delete a cluster after all its stacks have been destroyed                                              |
+| `prepare --values-dir <new-directory>`     | Write editable profile values locally, without contacting AWS                                          |
 
 Status, credentials, uninstall, and destruction use only cluster credentials.
 `deploy` also uses only cluster credentials: it reads the installed ExternalDNS
@@ -232,18 +232,18 @@ cluster is gone and its DNS cleanup has completed, you can separately delete
 
 ### Optional settings
 
-| Setting | Default / purpose |
-| --- | --- |
-| `CLUSTER_AWS_PROFILE` | Empty: use the normal AWS credential chain |
-| `DNS_AWS_PROFILE` | Empty: use cluster credentials |
-| `DNS_ZONE_ID` | Discover the most specific matching public hosted zone; set to disambiguate |
-| `DNS_DOMAIN` | Discovered zone name; set to constrain discovery |
-| `LOAD_VALUES_DIR` | Render the selected profile into a temporary directory |
-| `LOAD_TIMEOUT` | `90m`; increase for longer initialization |
-| `LOAD_EXPOSURE` | `haproxy`; `ingress` also supported |
-| `LOAD_MQTTS_HOSTNAME` | Required for ingress; a separate hostname in the same managed domain |
-| `CERTIFICATE_ARN` | Ingress only: use an existing web ACM certificate |
-| `MQTTS_CERTIFICATE_ARN` | Ingress only: use an existing MQTTS ACM certificate |
+| Setting                 | Default / purpose                                                           |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `CLUSTER_AWS_PROFILE`   | Empty: use the normal AWS credential chain                                  |
+| `DNS_AWS_PROFILE`       | Empty: use cluster credentials                                              |
+| `DNS_ZONE_ID`           | Discover the most specific matching public hosted zone; set to disambiguate |
+| `DNS_DOMAIN`            | Discovered zone name; set to constrain discovery                            |
+| `LOAD_VALUES_DIR`       | Render the selected profile into a temporary directory                      |
+| `LOAD_TIMEOUT`          | `90m`; increase for longer initialization                                   |
+| `LOAD_EXPOSURE`         | `haproxy`; `ingress` also supported                                         |
+| `LOAD_MQTTS_HOSTNAME`   | Required for ingress; a separate hostname in the same managed domain        |
+| `CERTIFICATE_ARN`       | Ingress only: use an existing web ACM certificate                           |
+| `MQTTS_CERTIFICATE_ARN` | Ingress only: use an existing MQTTS ACM certificate                         |
 
 Load1 has one fixed profile; omit `LOAD_PROFILE`. Load2 supports `large`
 (the fallback when omitted), `xlarge-minimal`, `xlarge`, `2xlarge`, `4xlarge`,
