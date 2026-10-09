@@ -29,7 +29,8 @@ import org.openremote.model.attribute.AttributeRef;
     description =
         "Returns every stored datapoint in the inclusive range, ordered from newest to oldest. "
             + "Use this when the complete series is needed without aggregation or downsampling. Supports numeric, "
-            + "boolean, text, and JSON-compatible complex attribute values.")
+            + "boolean, text, and JSON-compatible complex attribute values. "
+            + "Boolean values are returned as 1 for true, 0 for false, and null for unavailable values.")
 public class AssetDatapointAllQuery extends AssetDatapointQuery {
 
   public AssetDatapointAllQuery() {}
@@ -55,7 +56,8 @@ public class AssetDatapointAllQuery extends AssetDatapointQuery {
           + tableName
           + conditionSuffix;
     } else if (isBoolean) {
-      return "select timestamp as X, (case when cast(cast(value as text) as boolean) is true then 1 else 0 end) as Y from "
+      // Preserve unavailable values instead of treating SQL NULL as false.
+      return "select timestamp as X, (case cast(cast(nullif(value, 'null'::jsonb) as text) as boolean) when true then 1 when false then 0 else null end) as Y from "
           + tableName
           + conditionSuffix;
     } else {

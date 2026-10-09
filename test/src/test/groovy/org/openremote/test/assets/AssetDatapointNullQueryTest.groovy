@@ -97,6 +97,36 @@ class AssetDatapointNullQueryTest extends Specification implements ManagerContai
     }
   }
 
+  def "boolean All query preserves #description for #storage datapoints"() {
+    given: "boolean datapoints containing explicitly stored JSON nulls"
+    asset = assetStorageService.merge(new ThingAsset("Boolean null query test")
+            .setRealm(realm).addOrReplaceAttributes(new Attribute<>("value", ValueType.BOOLEAN)))
+    def service = storage == "historical" ? historicalService : predictedService
+    def timestamps = (0..<values.size()).collect { start + it * 60_000L }
+    def datapoints = values.withIndex().collect { value, index ->
+      new ValueDatapoint<>(timestamps[index], value)
+    }
+    datapoints.add(new ValueDatapoint<>(timestamps.first() - 60_000L, true))
+    datapoints.add(new ValueDatapoint<>(timestamps.last() + 60_000L, false))
+    service.upsertValues(asset.id, "value", datapoints)
+
+    when: "the inclusive range is queried without aggregation"
+    def result = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointAllQuery(timestamps.first(), timestamps.last()))
+
+    then: "true, false, and unavailable remain distinct at their original timestamps"
+    result.collect { it.timestamp } == timestamps.reverse()
+    result.collect { it.value } == expectedValues.reverse()
+
+    where:
+    [storage, description, values, expectedValues] << ["historical", "predicted"].collectMany { storage ->
+      [
+        [storage, "mixed values", [true, false, null], [1D, 0D, null]],
+        [storage, "an entirely null range", [null, null, null], [null, null, null]]
+      ]
+    }
+  }
+
   def "numeric Nearest query preserves unavailable values for #storage #valueType.name datapoints"() {
     given: "an unavailable datapoint between older and newer available prices"
     asset = assetStorageService.merge(new ThingAsset("Nearest null query test")
