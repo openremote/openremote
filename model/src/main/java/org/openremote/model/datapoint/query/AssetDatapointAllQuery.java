@@ -30,6 +30,7 @@ import org.openremote.model.attribute.AttributeRef;
         "Returns every stored datapoint in the inclusive range, ordered from newest to oldest. "
             + "Use this when the complete series is needed without aggregation or downsampling. Supports numeric, "
             + "boolean, text, and JSON-compatible complex attribute values. "
+            + "Unavailable values retain their stored timestamps and are returned as null. "
             + "Boolean values are returned as 1 for true, 0 for false, and null for unavailable values.")
 public class AssetDatapointAllQuery extends AssetDatapointQuery {
 
