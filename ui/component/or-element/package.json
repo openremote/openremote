@@ -19,7 +19,7 @@
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
-  "repository": "https://github.com/openremote/openremote",
+  "repository": "https://github.com/openremote/core",
   "dependencies": {
     "lit": "^3.3.1"
   },

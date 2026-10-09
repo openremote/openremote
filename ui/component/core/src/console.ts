@@ -463,7 +463,7 @@ export class Console {
 
   /**
    * Function that allows sending of custom types and messages towards the console.
-   * TODO: Will be improved in the future, see this GitHub issue; https://github.com/openremote/openremote/issues/1318
+   * TODO: Will be improved in the future, see this GitHub issue; https://github.com/openremote/core/issues/1318
    */
   public _doSendGenericMessage(type: string, msg: any) {
     const payload = { type, data: msg };

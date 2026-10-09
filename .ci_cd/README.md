@@ -16,7 +16,7 @@ docker image tag updates. The file layout is:
     // Name of branch to react to (exact match)
     "develop": {
       // Comma separated list of tags to push to openremote/manager docker hub image
-      // This can only be used on the main openremote repo (openremote/openremote)
+      // This can only be used on the OpenRemote Core repo (openremote/core)
       "distribute": {
         "docker": "develop"
       },
@@ -26,7 +26,7 @@ docker image tag updates. The file layout is:
         "environment": "staging"
       }
     },
-    "master": {
+    "main": {
       "distribute": {
         "docker": "latest"
       }
@@ -35,7 +35,7 @@ docker image tag updates. The file layout is:
   // Configure behaviour on release
   "release": {
     // Comma separated list of tags to push to openremote/manager docker hub image $version is replaced with release version
-    // This can only be used on the main openremote repo (openremote/openremote)
+    // This can only be used on the OpenRemote Core repo (openremote/core)
     "distribute": {
       "docker": "latest,$version",
       "maven": "$version"

@@ -28,11 +28,11 @@
 # found that is output to 'ssh.key' file (so it is not copied to the host). Sensitive credentials should always be stored
 # in github secrets so they are encrypted, do not store within repo files (even private repos as these are not encrypted).
 #
-# SEE https://github.com/openremote/openremote/tree/master/.ci_cd for details of standard variables and handling.
+# SEE https://github.com/openremote/core/tree/main/.ci_cd for details of standard variables and handling.
 #
 # MANUAL TRIGGER
 #
-# This workflow can be triggered by push, release, manually or schedule (from any repo other than openremote/openremote)
+# This workflow can be triggered by push, release, manually or schedule (from any repo other than openremote/core)
 # if triggered manually then the following inputs are available and these override any set in env files and/or secrets:
 #
 # Inputs:
