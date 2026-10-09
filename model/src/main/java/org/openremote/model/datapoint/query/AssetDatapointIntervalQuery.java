@@ -58,7 +58,11 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
               + "`COUNT` counts datapoints; `SUM` totals numeric values (or true values for booleans); `MODE` "
               + "selects the most frequent value; and `MEDIAN` selects the middle value. `DIFFERENCE` is numeric "
               + "only. For numeric and boolean attributes, MIN, AVG, MAX, SUM, MODE and MEDIAN ignore null values and return null "
-              + "for buckets with no available values. MODE ties select the smaller numeric value or true for booleans.",
+              + "for buckets with no available values. MODE ties select the smaller numeric value or true for booleans. "
+              + "DIFFERENCE uses the last stored value per bucket. With gap filling enabled, empty buckets carry "
+              + "the previous bucket value, while explicit null values interrupt carry-forward. A difference is "
+              + "null if either endpoint is unavailable. The first returned bucket has a difference of zero "
+              + "if its value is available; observations outside the query range are not used.",
       requiredMode = Schema.RequiredMode.REQUIRED)
   public Formula formula;
 
@@ -118,12 +122,12 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
         return "WITH interval_data AS ("
             + "SELECT "
             + function
-            + "(cast(? as interval), timestamp) AS x, public.locf(public.last(value::DOUBLE PRECISION, timestamp)) AS numeric_value "
+            + "(cast(? as interval), timestamp) AS x, public.locf(public.last(nullif(value, 'null'::jsonb)::DOUBLE PRECISION, timestamp)) AS numeric_value "
             + "FROM "
             + tableName
             + " "
             + "WHERE ENTITY_ID = ? AND ATTRIBUTE_NAME = ? AND TIMESTAMP >= ? AND TIMESTAMP <= ? GROUP BY x )"
-            + "SELECT x, COALESCE(numeric_value - LAG(numeric_value, 1, numeric_value) OVER (ORDER BY x), numeric_value) AS delta FROM interval_data ORDER BY x ASC";
+            + "SELECT x, numeric_value - LAG(numeric_value, 1, numeric_value) OVER (ORDER BY x) AS delta FROM interval_data ORDER BY x ASC";
       case COUNT:
         return "SELECT "
             + function

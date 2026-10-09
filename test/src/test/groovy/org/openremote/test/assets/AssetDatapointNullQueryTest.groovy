@@ -332,4 +332,67 @@ class AssetDatapointNullQueryTest extends Specification implements ManagerContai
       ].collect { [storage, gapFill, *it] }
     }
   }
+
+  def "DIFFERENCE preserves unavailable values for #storage #valueType.name with gapFill=#gapFill"() {
+    given: "last values, explicit unavailability, recovery, and empty minute buckets"
+    asset = assetStorageService.merge(new ThingAsset("Difference null query test")
+            .setRealm(realm).addOrReplaceAttributes(new Attribute<>("value", valueType)))
+    def service = storage == "historical" ? historicalService : predictedService
+    def bucketStart = Instant.ofEpochMilli(start).truncatedTo(ChronoUnit.MINUTES).toEpochMilli()
+    service.upsertValues(asset.id, "value", [
+      [-61_000L, 999G],
+      [0L, 75G],
+      [10_000L, 80G],
+      [120_000L, 90G],
+      [130_000L, null],
+      [240_000L, null],
+      [250_000L, 100G],
+      [300_000L, 110G],
+      [360_000L, 0G],
+      [420_000L, -5G],
+      [540_000L, -10G],
+      [660_000L, 999G]
+    ].collect { new ValueDatapoint<>(bucketStart + it[0], it[1]) })
+
+    when: "the eleven-minute range is queried for changes between bucket values"
+    def result = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointIntervalQuery(bucketStart, bucketStart + 659_999L,
+            "1 minute", Formula.DIFFERENCE, gapFill))
+
+    then: "explicit nulls interrupt differences while empty buckets carry forward when enabled"
+    result.collect { it.timestamp } == (gapFill
+    ? (0..10).toList() : [0, 2, 4, 5, 6, 7, 9]).collect { bucketStart + it * 60_000L }
+    result.collect { it.value } == (gapFill
+    ? [0D, 0D, null, null, null, 10D, -110D, -5D, 0D, -5D, 0D]
+    : [0D, null, null, 10D, -110D, -5D, -5D])
+
+    when: "the query starts with an empty bucket before the first available value"
+    def leadingGap = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointIntervalQuery(bucketStart - 60_000L, bucketStart + 119_999L,
+            "1 minute", Formula.DIFFERENCE, gapFill))
+
+    then: "an unavailable predecessor does not become an assumed zero baseline"
+    leadingGap.collect { [it.timestamp, it.value] } == (gapFill
+    ? [[bucketStart - 60_000L, null], [bucketStart, null], [bucketStart + 60_000L, 0D]]
+    : [[bucketStart, 0D]])
+
+    when: "only an empty bucket is requested"
+    def empty = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointIntervalQuery(bucketStart + 60_000L, bucketStart + 119_999L,
+            "1 minute", Formula.DIFFERENCE, gapFill))
+
+    then: "carry-forward does not read observations outside the query range"
+    empty.collect { [it.timestamp, it.value] } == (gapFill ? [[bucketStart + 60_000L, null]] : [])
+
+    when: "only explicitly unavailable observations are requested"
+    def unavailable = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointIntervalQuery(bucketStart + 130_000L, bucketStart + 179_999L,
+            "1 minute", Formula.DIFFERENCE, gapFill))
+
+    then: "the initial difference stays unavailable"
+    unavailable.collect { [it.timestamp, it.value] } == [[bucketStart + 120_000L, null]]
+
+    where:
+    [storage, valueType, gapFill] << [["historical", "predicted"], [ValueType.NUMBER, ValueType.BIG_NUMBER], [false, true]].combinations()
+  }
 }
