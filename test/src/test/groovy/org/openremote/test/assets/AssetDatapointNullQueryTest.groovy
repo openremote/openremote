@@ -28,6 +28,7 @@ import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery
 import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
 import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery.Formula
+import org.openremote.model.datapoint.query.AssetDatapointLTTBQuery
 import org.openremote.model.datapoint.query.AssetDatapointNearestQuery
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -394,5 +395,76 @@ class AssetDatapointNullQueryTest extends Specification implements ManagerContai
 
     where:
     [storage, valueType, gapFill] << [["historical", "predicted"], [ValueType.NUMBER, ValueType.BIG_NUMBER], [false, true]].combinations()
+  }
+
+  def "LTTB omits unavailable values in #description for #storage #valueType.name datapoints"() {
+    given: "datapoints with unavailable observations and out-of-range neighbours"
+    asset = assetStorageService.merge(new ThingAsset("LTTB null query test")
+            .setRealm(realm).addOrReplaceAttributes(new Attribute<>("value", valueType)))
+    def service = storage == "historical" ? historicalService : predictedService
+    def timestamps = (0..<values.size()).collect { start + it * 60_000L }
+    def datapoints = values.withIndex().collect { value, index ->
+      new ValueDatapoint<>(timestamps[index], value)
+    }
+    def outsideValue = valueType == ValueType.BOOLEAN ? true : 999G
+    datapoints.add(new ValueDatapoint<>(timestamps.first() - 60_000L, outsideValue))
+    datapoints.add(new ValueDatapoint<>(timestamps.last() + 60_000L, outsideValue))
+    service.upsertValues(asset.id, "value", datapoints)
+
+    when: "the requested resolution exceeds the available observations"
+    def result = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointLTTBQuery(timestamps.first(), timestamps.last(), 10))
+
+    then: "only available observations are returned, chronologically and at their original timestamps"
+    result.collect { [it.timestamp, it.value] } == expected.collect { index, value ->
+      [timestamps[index], value]
+    }
+
+    where:
+    [storage, valueType, description, values, expected] << [["historical", "predicted"], [ValueType.NUMBER, ValueType.BIG_NUMBER, ValueType.BOOLEAN]].combinations().collectMany { storage, type ->
+      def isBoolean = type == ValueType.BOOLEAN
+      [
+        [
+          storage,
+          type,
+          "a mixed range",
+          isBoolean ? [null, true, null, false, true, null, false, null] : [null, -5G, null, 0G, 90G, null, 40G, null],
+          isBoolean ? [[1, 1D], [3, 0D], [4, 1D], [6, 0D]] : [[1, -5D], [3, 0D], [4, 90D], [6, 40D]]
+        ],
+        [storage, type, "an entirely null range", [null, null, null], []],
+        [storage, type, "a single available observation", [null, isBoolean ? false : 0G, null], [[1, 0D]]]
+      ]
+    }
+  }
+
+  def "LTTB downsampling ignores unavailable observations for #storage #valueType.name datapoints"() {
+    given: "the same available series stored with and without null observations"
+    asset = assetStorageService.merge(new ThingAsset("LTTB downsampling null test")
+            .setRealm(realm).addOrReplaceAttributes(new Attribute<>("value", valueType), new Attribute<>("available", valueType)))
+    def service = storage == "historical" ? historicalService : predictedService
+    def values = valueType == ValueType.BOOLEAN
+            ? [null, false, true, null, false, true, null, true, false, null, true, false, null]
+            : [null, 0G, 12G, null, -4G, 50G, null, 3G, 0G, null, 9G, 2G, null]
+    def datapoints = values.withIndex().collect { value, index ->
+      new ValueDatapoint<>(start + index * 60_000L, value)
+    }
+    service.upsertValues(asset.id, "value", datapoints)
+    service.upsertValues(asset.id, "available", datapoints.findAll { it.value != null })
+
+    when: "both series are reduced from eight available points to four"
+    def query = new AssetDatapointLTTBQuery(start, start + 720_000L, 4)
+    def result = service.queryDatapoints(asset.id, "value", query)
+    def reference = service.queryDatapoints(asset.id, "available", query)
+
+    then: "null observations do not affect point selection or the first and last available points"
+    result.size() == 4
+    result.collect { [it.timestamp, it.value] } == reference.collect { [it.timestamp, it.value] }
+    result.first().timestamp == start + 60_000L
+    result.last().timestamp == start + 660_000L
+    result.every { it.value != null }
+    result.collect { it.timestamp } == result.collect { it.timestamp }.sort()
+
+    where:
+    [storage, valueType] << [["historical", "predicted"], [ValueType.NUMBER, ValueType.BIG_NUMBER, ValueType.BOOLEAN]].combinations()
   }
 }

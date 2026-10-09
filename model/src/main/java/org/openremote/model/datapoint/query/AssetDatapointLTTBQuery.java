@@ -30,13 +30,15 @@ import org.openremote.model.attribute.AttributeRef;
         "Downsamples numeric or boolean datapoints from the inclusive range with the "
             + "Largest-Triangle-Three-Buckets (LTTB) algorithm while preserving the series' visual shape. Use this "
             + "to reduce a large series for charts. Results are chronological; boolean values are processed as "
-            + "1 for true and 0 for false. Other attribute value types are rejected.")
+            + "1 for true and 0 for false. Null-valued observations are omitted before downsampling, so their "
+            + "timestamps are not returned as gap markers. A range with no available values returns no points. "
+            + "Other attribute value types are rejected.")
 public final class AssetDatapointLTTBQuery extends AssetDatapointQuery {
 
   @Schema(
       description =
           "Requested maximum number of representative datapoints after downsampling. Fewer "
-              + "points are returned when the range contains fewer datapoints.",
+              + "points are returned when the range contains fewer available datapoints.",
       example = "500",
       requiredMode = Schema.RequiredMode.REQUIRED)
   public int amountOfPoints;
@@ -60,11 +62,11 @@ public final class AssetDatapointLTTBQuery extends AssetDatapointQuery {
     boolean isNumber = Number.class.isAssignableFrom(attributeType);
     boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
     if (isNumber) {
-      return "select * from public.unnest((select public.lttb(cast(timestamp as timestamptz), cast(value as double precision), ?) from "
+      return "select * from public.unnest((select public.lttb(cast(timestamp as timestamptz), cast(nullif(value, 'null'::jsonb) as double precision), ?) from "
           + tableName
           + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
     } else if (isBoolean) {
-      return "select * from public.unnest((select public.lttb(cast(timestamp as timestamptz), (case when cast(cast(value as text) as boolean) is true then 1 else 0 end), ?) from "
+      return "select * from public.unnest((select public.lttb(cast(timestamp as timestamptz), (case cast(cast(nullif(value, 'null'::jsonb) as text) as boolean) when true then 1 when false then 0 else null end), ?) from "
           + tableName
           + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
     } else {
