@@ -400,12 +400,12 @@ export class PageGateway extends Page<AppStateKeyed> {
           required
           minlength="36"
           maxlength="36"
-          helper-text=${i18next.t("gateway.clientSecretHelper")}
           ?disabled=${disabled}
           value=${connection?.clientSecret}
           @change=${(ev: Event) => this._setConnectionProperty("clientSecret", (ev.currentTarget as HTMLInputElement).value)}
         >
           <or-translate slot="label" value="clientSecret"></or-translate>
+          <or-translate slot="helper" value="gateway.clientSecretHelper"></or-translate>
         </or-vaadin-text-field>
         <or-vaadin-checkbox
           id="gateway-secured"
@@ -691,38 +691,25 @@ export class PageGateway extends Page<AppStateKeyed> {
         if (response.status === 204) {
           this._loadData();
         } else {
-          showSnackbar(undefined, this._saveErrorMessage(response.statusText));
+          this._showSaveError(response.status);
         }
       })
       .catch((e) => {
-        showSnackbar(undefined, this._saveErrorMessage(undefined, e));
+        this._showSaveError(isAxiosError(e) ? e.response?.status : undefined);
       })
       .finally(() => {
         this._loading = false;
       });
   }
 
-  protected _saveErrorMessage(statusText?: string, error?: unknown): string {
-    if (isAxiosError(error)) {
-      const data = error.response?.data as unknown;
-      if (typeof data === "string" && data.trim()) {
-        return data;
-      }
-      if (data && typeof data === "object") {
-        const body = data as { message?: string; error?: string; exception?: string };
-        const detail = body.message || body.error || body.exception;
-        if (typeof detail === "string" && detail.trim()) {
-          return detail;
-        }
-      }
-      if (error.response?.statusText) {
-        return error.response.statusText;
-      }
+  protected _showSaveError(status?: number) {
+    if (status === 401) {
+      showSnackbar(undefined, i18next.t("gateway.saveUnauthorized"));
+    } else if (status === 400) {
+      showSnackbar(undefined, i18next.t("gateway.saveInvalidInput"));
+    } else {
+      showSnackbar(undefined, i18next.t("errorOccurred"));
     }
-    if (statusText && statusText.trim()) {
-      return statusText;
-    }
-    return i18next.t("errorOccurred");
   }
 
   protected _setConnection(connection: GatewayConnection) {

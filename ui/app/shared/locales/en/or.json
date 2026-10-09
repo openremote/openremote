@@ -436,7 +436,9 @@
     "limit_sharing_rate_suffix": "minutes interval",
     "assetSyncRulesEnable": "Customize asset synchronization",
     "assetSyncRulesInput": "Synchronization config",
-    "clientSecretHelper": "Must be exactly 36 characters"
+    "clientSecretHelper": "Must be exactly 36 characters",
+    "saveUnauthorized": "Unauthorized",
+    "saveInvalidInput": "Please double check the inputs"
   },
   "gatewayTunnel": "Gateway tunnels",
   "gatewayTunnels": {
