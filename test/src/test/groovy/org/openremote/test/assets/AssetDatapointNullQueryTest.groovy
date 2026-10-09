@@ -26,12 +26,15 @@ import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery
+import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
+import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery.Formula
 import org.openremote.model.datapoint.query.AssetDatapointNearestQuery
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
+import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 class AssetDatapointNullQueryTest extends Specification implements ManagerContainerTrait {
@@ -127,5 +130,52 @@ class AssetDatapointNullQueryTest extends Specification implements ManagerContai
 
     where:
     [storage, valueType] << [["historical", "predicted"], [ValueType.NUMBER, ValueType.BIG_NUMBER]].combinations()
+  }
+
+  def "numeric #formula handles unavailable values for #storage #valueType.name with gapFill=#gapFill"() {
+    given: "mixed, entirely null, empty, and zero-valued minute buckets"
+    asset = assetStorageService.merge(new ThingAsset("Interval null query test")
+            .setRealm(realm).addOrReplaceAttributes(new Attribute<>("value", valueType)))
+    def service = storage == "historical" ? historicalService : predictedService
+    def bucketStart = Instant.ofEpochMilli(start).truncatedTo(ChronoUnit.MINUTES).toEpochMilli()
+    service.upsertValues(asset.id, "value", [
+      [-1_000L, 999G],
+      [0L, -6G],
+      [10_000L, 0G],
+      [20_000L, null],
+      [30_000L, 6G],
+      [40_000L, 12G],
+      [70_000L, null],
+      [100_000L, null],
+      [190_000L, 0G],
+      [240_000L, 999G]
+    ].collect { new ValueDatapoint<>(bucketStart + it[0], it[1]) })
+
+    when: "the four-minute range is aggregated"
+    def result = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointIntervalQuery(bucketStart, bucketStart + 239_999L,
+            "1 minute", formula, gapFill))
+
+    then: "null-only buckets remain present and empty buckets follow the gap-fill setting"
+    result.collect {
+      it.timestamp
+    } == (gapFill ? [0L, 60_000L, 120_000L, 180_000L] : [0L, 60_000L, 180_000L])
+    .collect { bucketStart + it }
+    result.collect { it.value } == (gapFill
+    ? [mixedValue, nullBucketValue, null, zeroBucketValue]
+    : [mixedValue, nullBucketValue, zeroBucketValue])
+
+    where:
+    [storage, valueType, gapFill, formula, mixedValue, nullBucketValue, zeroBucketValue] << [["historical", "predicted"], [ValueType.NUMBER, ValueType.BIG_NUMBER], [false, true]].combinations().collectMany { storage, type, gapFill ->
+      [
+        [Formula.MIN, -6G, null, 0G],
+        [Formula.MAX, 12G, null, 0G],
+        [Formula.AVG, 3G, null, 0G],
+        [Formula.SUM, 12G, null, 0G],
+        [Formula.MEDIAN, 3G, null, 0G],
+        // COUNT retains row-count semantics, including stored nulls.
+        [Formula.COUNT, 5G, 2G, 1G]
+      ].collect { [storage, type, gapFill, *it] }
+    }
   }
 }
