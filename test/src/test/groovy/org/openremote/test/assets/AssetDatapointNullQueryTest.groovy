@@ -258,4 +258,56 @@ class AssetDatapointNullQueryTest extends Specification implements ManagerContai
       ].collect { [storage, gapFill, *it] }
     }
   }
+
+  def "MODE ignores unavailable values for #storage #valueType.name with gapFill=#gapFill"() {
+    given: "nulls outnumber available values, followed by null-only, empty, tied, zero, and high-value buckets"
+    asset = assetStorageService.merge(new ThingAsset("Mode null query test")
+            .setRealm(realm).addOrReplaceAttributes(new Attribute<>("value", valueType)))
+    def service = storage == "historical" ? historicalService : predictedService
+    def bucketStart = Instant.ofEpochMilli(start).truncatedTo(ChronoUnit.MINUTES).toEpochMilli()
+    def buckets = [
+      [low, low, high, null, null, null],
+      [null, null],
+      [],
+      [low, high, null],
+      [zero, null],
+      [high, high, low, null]
+    ]
+    def datapoints = buckets.withIndex().collectMany { values, bucket ->
+      values.withIndex().collect { value, index ->
+        new ValueDatapoint<>(bucketStart + bucket * 60_000L + index * 1_000L, value)
+      }
+    }
+    datapoints.add(new ValueDatapoint<>(bucketStart - 1_000L, high))
+    datapoints.add(new ValueDatapoint<>(bucketStart + 360_000L, low))
+    service.upsertValues(asset.id, "value", datapoints)
+
+    when: "the six-minute range is queried for its most frequent available values"
+    def result = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointIntervalQuery(bucketStart, bucketStart + 359_999L,
+            "1 minute", Formula.MODE, gapFill))
+
+    then: "nulls cannot win and existing numeric and boolean tie-breaking is preserved"
+    // MODE currently omits empty buckets even with gapFill=true; fixing that is a separate step.
+    result.collect { it.timestamp } == [0L, 60_000L, 180_000L, 240_000L, 300_000L]
+    .collect { bucketStart + it }
+    result.collect { it.value } == [lowResult, null, tieResult, 0D, highResult]
+
+    when: "only the entirely unavailable bucket is queried"
+    def unavailable = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointIntervalQuery(bucketStart + 60_000L, bucketStart + 119_999L,
+            "1 minute", Formula.MODE, gapFill))
+
+    then: "the bucket and its null result remain present"
+    unavailable.collect { [it.timestamp, it.value] } == [[bucketStart + 60_000L, null]]
+
+    where:
+    [storage, gapFill, valueType, low, high, zero, lowResult, highResult, tieResult] << [["historical", "predicted"], [false, true]].combinations().collectMany { storage, gapFill ->
+      [
+        [ValueType.NUMBER, -5G, 7G, 0G, -5D, 7D, -5D],
+        [ValueType.BIG_NUMBER, -5G, 7G, 0G, -5D, 7D, -5D],
+        [ValueType.BOOLEAN, false, true, false, 0D, 1D, 1D]
+      ].collect { [storage, gapFill, *it] }
+    }
+  }
 }

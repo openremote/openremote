@@ -57,7 +57,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
               + "value; `DIFFERENCE` calculates the change between the last values of consecutive buckets; "
               + "`COUNT` counts datapoints; `SUM` totals numeric values (or true values for booleans); `MODE` "
               + "selects the most frequent value; and `MEDIAN` selects the middle value. `DIFFERENCE` is numeric "
-              + "only. For numeric and boolean attributes, MIN, AVG, MAX, SUM and MEDIAN ignore null values and return null "
+              + "only. For numeric and boolean attributes, MIN, AVG, MAX, SUM, MODE and MEDIAN ignore null values and return null "
               + "for buckets with no available values.",
       requiredMode = Schema.RequiredMode.REQUIRED)
   public Formula formula;
@@ -149,7 +149,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + "  SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
-            + "         cast(value as numeric) AS num_value "
+            + "         cast(nullif(value, 'null'::jsonb) as numeric) AS num_value "
             + "  FROM "
             + tableName
             + " "
@@ -159,7 +159,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + "    SELECT num_value FROM ( "
             + "         SELECT num_value, COUNT(*) AS freq "
             + "         FROM bucketed b2 "
-            + "         WHERE b2.x = d.x "
+            + "         WHERE b2.x = d.x AND num_value IS NOT NULL "
             + "         GROUP BY num_value "
             + "         ORDER BY freq DESC, num_value "
             + "         LIMIT 1 "
@@ -223,17 +223,17 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + "   SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
-            + "          cast(value as text)::boolean AS bool_value "
+            + "          cast(nullif(value, 'null'::jsonb) as text)::boolean AS bool_value "
             + "   FROM "
             + tableName
             + " "
             + "   WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? "
             + ") "
             + "SELECT d.x, ( "
-            + "    SELECT bool_value FROM ( "
+            + "    SELECT bool_value::integer FROM ( "
             + "         SELECT bool_value, COUNT(*) AS freq "
             + "         FROM bucketed b2 "
-            + "         WHERE b2.x = d.x "
+            + "         WHERE b2.x = d.x AND bool_value IS NOT NULL "
             + "         GROUP BY bool_value "
             + "         ORDER BY freq DESC, bool_value DESC "
             + "         LIMIT 1 "
