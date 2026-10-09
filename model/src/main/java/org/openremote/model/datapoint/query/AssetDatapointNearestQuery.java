@@ -31,7 +31,8 @@ import org.openremote.model.attribute.AttributeRef;
     description =
         "Returns at most one numeric datapoint: the closest value at or before the requested "
             + "time. Use `fromTimestamp` as a Unix-seconds timestamp at the HTTP API boundary. `toTimestamp`, "
-            + "`fromTime`, and `toTime` are ignored. The equality boundary is inclusive.")
+            + "`fromTime`, and `toTime` are ignored. The equality boundary is inclusive. "
+            + "If the nearest datapoint has a null value, its timestamp and null value are returned.")
 public class AssetDatapointNearestQuery extends AssetDatapointQuery {
 
   public AssetDatapointNearestQuery() {}
@@ -43,7 +44,8 @@ public class AssetDatapointNearestQuery extends AssetDatapointQuery {
 
   @Override
   public String getSQLQuery(String tableName, Class<?> attributeType) throws IllegalStateException {
-    return "SELECT timestamp as X, cast(value as numeric) as Y "
+    // Preserve an unavailable nearest value instead of rejecting its JSON null.
+    return "SELECT timestamp as X, cast(nullif(value, 'null'::jsonb) as numeric) as Y "
         + "    FROM "
         + tableName
         + " "

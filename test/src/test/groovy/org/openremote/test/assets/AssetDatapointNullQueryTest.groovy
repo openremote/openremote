@@ -26,6 +26,7 @@ import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery
+import org.openremote.model.datapoint.query.AssetDatapointNearestQuery
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -43,6 +44,8 @@ class AssetDatapointNullQueryTest extends Specification implements ManagerContai
   long start
 
   def setup() {
+    // Match the pseudo clock's UTC zone before JDBC connections capture the JVM time zone.
+    TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
     def container = startContainer(defaultConfig(), defaultServices())
     stopPseudoClock()
     assetStorageService = container.getService(AssetStorageService.class)
@@ -89,5 +92,40 @@ class AssetDatapointNullQueryTest extends Specification implements ManagerContai
         ]
       }
     }
+  }
+
+  def "numeric Nearest query preserves unavailable values for #storage #valueType.name datapoints"() {
+    given: "an unavailable datapoint between older and newer available prices"
+    asset = assetStorageService.merge(new ThingAsset("Nearest null query test")
+            .setRealm(realm).addOrReplaceAttributes(new Attribute<>("value", valueType)))
+    def service = storage == "historical" ? historicalService : predictedService
+    service.upsertValues(asset.id, "value", [
+      new ValueDatapoint<>(start, -5G),
+      new ValueDatapoint<>(start + 60_000L, null),
+      new ValueDatapoint<>(start + 120_000L, 0G),
+      new ValueDatapoint<>(start + 180_000L, 90.125G)
+    ])
+    def queryAt = { long offset ->
+      service.queryDatapoints(asset.id, "value", new AssetDatapointNearestQuery(start + offset)).collect {
+        [it.timestamp, it.value]
+      }
+    }
+
+    expect: "an exact match retains the null value and its timestamp"
+    queryAt(60_000L) == [[start + 60_000L, null]]
+
+    and: "a query between observations returns the null row, not an older or newer price"
+    queryAt(90_000L) == [[start + 60_000L, null]]
+
+    and: "a query before the first observation returns no datapoint"
+    queryAt(-1_000L).isEmpty()
+
+    and: "available observations remain selectable at and after their timestamps"
+    queryAt(0) == [[start, -5G]]
+    queryAt(120_000L) == [[start + 120_000L, 0G]]
+    queryAt(240_000L) == [[start + 180_000L, 90.125G]]
+
+    where:
+    [storage, valueType] << [["historical", "predicted"], [ValueType.NUMBER, ValueType.BIG_NUMBER]].combinations()
   }
 }
