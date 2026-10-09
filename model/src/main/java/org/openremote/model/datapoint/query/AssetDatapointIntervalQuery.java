@@ -57,7 +57,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
               + "value; `DIFFERENCE` calculates the change between the last values of consecutive buckets; "
               + "`COUNT` counts datapoints; `SUM` totals numeric values (or true values for booleans); `MODE` "
               + "selects the most frequent value; and `MEDIAN` selects the middle value. `DIFFERENCE` is numeric "
-              + "only. Numeric MIN, AVG, MAX, SUM and MEDIAN ignore null values and return null "
+              + "only. For numeric and boolean attributes, MIN, AVG, MAX, SUM and MEDIAN ignore null values and return null "
               + "for buckets with no available values.",
       requiredMode = Schema.RequiredMode.REQUIRED)
   public Formula formula;
@@ -189,6 +189,9 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
   }
 
   protected String getSQLQueryForBooleans(String tableName, String function) {
+    // Keep unavailable values null so aggregates ignore them instead of counting them as false.
+    String booleanAsNumber =
+        "CASE cast(nullif(value, 'null'::jsonb) as text)::boolean WHEN true THEN 1 WHEN false THEN 0 ELSE NULL END";
     switch (this.formula) {
       case DIFFERENCE:
         throw new IllegalStateException(
@@ -207,7 +210,9 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
         return "SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
-            + "SUM(CASE WHEN cast(value as text)::boolean THEN 1 ELSE 0 END) AS true_count_sum "
+            + "SUM("
+            + booleanAsNumber
+            + ") AS true_count_sum "
             + "FROM "
             + tableName
             + " "
@@ -240,8 +245,9 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
         return "SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
-            + "CASE WHEN PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY (CASE WHEN cast(value as text)::boolean THEN 1 ELSE 0 END)) >= 0.5 "
-            + "THEN true ELSE false END AS median_value "
+            + "(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ("
+            + booleanAsNumber
+            + ")) >= 0.5)::integer AS median_value "
             + "FROM "
             + tableName
             + " "
@@ -252,7 +258,9 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + function
             + "(cast(? as interval), timestamp) AS x, "
             + this.formula.toString().toLowerCase()
-            + "(case when cast(cast(value as text) as boolean) is true then 1 else 0 end) FROM "
+            + "("
+            + booleanAsNumber
+            + ") FROM "
             + tableName
             + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
     }

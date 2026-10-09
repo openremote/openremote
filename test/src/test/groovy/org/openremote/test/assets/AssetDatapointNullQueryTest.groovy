@@ -208,4 +208,54 @@ class AssetDatapointNullQueryTest extends Specification implements ManagerContai
       ].collect { [storage, type, gapFill, *it] }
     }
   }
+
+  def "boolean #formula handles unavailable values for #storage with gapFill=#gapFill"() {
+    given: "mixed, entirely null, empty, false, and true minute buckets"
+    asset = assetStorageService.merge(new ThingAsset("Boolean interval null query test")
+            .setRealm(realm).addOrReplaceAttributes(new Attribute<>("value", ValueType.BOOLEAN)))
+    def service = storage == "historical" ? historicalService : predictedService
+    def bucketStart = Instant.ofEpochMilli(start).truncatedTo(ChronoUnit.MINUTES).toEpochMilli()
+    service.upsertValues(asset.id, "value", [
+      [-1_000L, true],
+      [0L, true],
+      [10_000L, false],
+      [20_000L, null],
+      [30_000L, null],
+      [40_000L, null],
+      [70_000L, null],
+      [100_000L, null],
+      [190_000L, false],
+      [200_000L, null],
+      [250_000L, true],
+      [260_000L, null],
+      [300_000L, false]
+    ].collect { new ValueDatapoint<>(bucketStart + it[0], it[1]) })
+
+    when: "the five-minute range is aggregated"
+    def result = service.queryDatapoints(asset.id, "value",
+            new AssetDatapointIntervalQuery(bucketStart, bucketStart + 299_999L,
+            "1 minute", formula, gapFill))
+
+    then: "unavailable values are distinct from false and empty buckets follow the gap-fill setting"
+    result.collect { it.timestamp } == (gapFill
+    ? [0L, 60_000L, 120_000L, 180_000L, 240_000L]
+    : [0L, 60_000L, 180_000L, 240_000L]).collect { bucketStart + it }
+    result.collect { it.value } == (gapFill
+    ? [mixedValue, nullBucketValue, null, falseBucketValue, trueBucketValue]
+    : [mixedValue, nullBucketValue, falseBucketValue, trueBucketValue])
+
+    where:
+    [storage, gapFill, formula, mixedValue, nullBucketValue, falseBucketValue, trueBucketValue] << [["historical", "predicted"], [false, true]].combinations().collectMany { storage, gapFill ->
+      [
+        [Formula.MIN, 0D, null, 0D, 1D],
+        [Formula.MAX, 1D, null, 0D, 1D],
+        [Formula.AVG, 0.5D, null, 0D, 1D],
+        [Formula.SUM, 1D, null, 0D, 1D],
+        // MEDIAN retains the existing true result when available values are tied.
+        [Formula.MEDIAN, 1D, null, 0D, 1D],
+        // COUNT retains row-count semantics, including stored nulls.
+        [Formula.COUNT, 5D, 2D, 2D, 2D]
+      ].collect { [storage, gapFill, *it] }
+    }
+  }
 }
