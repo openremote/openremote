@@ -148,6 +148,15 @@ export class AlarmsPage implements BasePage {
     return this.page.locator("#savebtn");
   }
 
+  /** The required title field in the details panel of the single-alarm view. */
+  getTitleInput(): Locator {
+    return this.page
+      .locator("#details-panel")
+      .locator("or-vaadin-text-field")
+      .filter({ has: this.page.locator('or-translate[value="alarm.title"]') })
+      .locator("input");
+  }
+
   /** Open the single-alarm view of the (first) row containing the given text. */
   async openAlarmByText(text: string) {
     await this.getRowByText(text).first().click();

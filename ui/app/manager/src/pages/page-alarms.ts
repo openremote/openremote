@@ -1084,7 +1084,12 @@ export class PageAlarms extends Page<AppStateKeyed> {
         .some((input) => !input.checkValidity());
     }
 
-    if (this.alarm && !this.alarm.title) {
+    // The title is required, and in the create state the model behind the button is
+    // this.creationState.alarmModel, which the edit-state guard (this.alarm) never saw.
+    // Without this check the create button stayed enabled with an empty title, and
+    // pressing it did nothing because the backend guard drops the request.
+    const model = this.alarm ?? this.creationState?.alarmModel;
+    if (!model?.title?.trim()) {
       saveBtn.disabled = true;
     }
   }
