@@ -30,14 +30,14 @@
     "eslint-plugin-promise": "6.6.0",
     "eslint-plugin-wc": "3.1.0",
     "html-webpack-plugin": "^5.6.6",
-    "moment": "^2.29.4",
+    "moment": "^2.31.0",
     "moment-locales-webpack-plugin": "^1.2.0",
     "prettier": "3.9.6",
     "querystring-es3": "^0.2.1",
     "shx": "~0.4.0",
     "source-map-loader": "^5.0.0",
     "ts-loader": "~9.5.2",
-    "typescript": "5.8.3",
+    "typescript": "~5.9.3",
     "webpack": "^5.108.3"
   },
   "publishConfig": {

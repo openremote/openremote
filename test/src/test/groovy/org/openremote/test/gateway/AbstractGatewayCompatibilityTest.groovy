@@ -136,21 +136,28 @@ abstract class AbstractGatewayCompatibilityTest extends Specification implements
 
   protected void assertCompatibilityConnected(GatewayAsset gateway, List<SharedEvent> receivedEvents, String version, boolean timeoutManagementSupported) {
     awaitGatewayEvent(receivedEvents, GatewayInitDoneEvent)
+
     def storage = container.getService(AssetStorageService)
+    def gatewayService = container.getService(GatewayService)
     def conditions = new PollingConditions(timeout: 15, delay: 0.1)
+
     conditions.eventually {
-      def connector = container.getService(GatewayService).gatewayConnectorMap.get(gateway.id.toLowerCase(Locale.ROOT))
+      def connector = gatewayService.gatewayConnectorMap.get(gateway.id.toLowerCase(Locale.ROOT))
+
       assert connector.isConnected()
       assert !connector.isInitialSyncInProgress()
       assert connector.isTunnellingSupported()
       assert connector.gatewayVersion == version
       assert connector.isTunnelTimeoutManagementSupported() == timeoutManagementSupported
+
       def connectedGateway = storage.find(gateway.id) as GatewayAsset
       assert connectedGateway.gatewayStatus.orElse(null) == ConnectionStatus.CONNECTED
       assert connectedGateway.tunnelingSupported.orElse(false)
 
       def syncedAssets = storage.findAll(new AssetQuery().parents(gateway.id).recursive(true))
+
       assert syncedAssets.size() == 1
+
       def asset = syncedAssets.first()
       assert asset.id == mapAssetId(gateway.id, "0123456789ABCDEFGHIJKL", false)
       assert asset.parentId == gateway.id
@@ -158,6 +165,9 @@ abstract class AbstractGatewayCompatibilityTest extends Specification implements
       assert asset.type == ThingAsset.DESCRIPTOR.name
       assert asset.name == "Compatibility asset"
       assert asset.getAttribute("temperature").flatMap { it.value }.orElse(null) == 21.5
+
+      // Ensure GatewayService has processed the asynchronous persistence event
+      assert gatewayService.getLocallyRegisteredGatewayId(asset.id, null) == gateway.id
     }
   }
 
@@ -165,7 +175,7 @@ abstract class AbstractGatewayCompatibilityTest extends Specification implements
     client?.disconnect()
     client?.removeAllMessageConsumers()
     if (gateway != null) {
-      container.getService(AssetStorageService).delete([gateway.id])
+      assert container.getService(AssetStorageService).delete([gateway.id])
       def conditions = new PollingConditions(timeout: 15, delay: 0.1)
       conditions.eventually {
         assert !container.getService(GatewayService).gatewayConnectorMap.containsKey(gateway.id.toLowerCase(Locale.ROOT))

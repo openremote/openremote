@@ -165,7 +165,6 @@ java {
   withSourcesJar()
 }
 
-def openApiJsonFile = layout.buildDirectory.file('openapi/openapi.json')
 def openApiYamlFile = layout.buildDirectory.file('openapi/openapi.yaml')
 
 publishing {
@@ -174,12 +173,6 @@ publishing {
       group = "io.openremote"
       artifactId = "openremote-${project.name}"
       from components.java
-
-      artifact(openApiJsonFile) {
-        classifier = 'openapi'
-        extension = 'json'
-        builtBy tasks.named('resolve')
-      }
 
       artifact(openApiYamlFile) {
         classifier = 'openapi'

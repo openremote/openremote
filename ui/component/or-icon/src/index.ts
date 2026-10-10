@@ -77,7 +77,6 @@ export function createMdiIconSet(managerUrl: string): IconSet {
     },
     onAdd(): void {
       // Load the material design font from the specified manager shared folder
-      // we don't use the MDI css as it contains all the icon CSS which won't be inherited by shadow DOM
       const style = document.createElement("style");
       style.id = "mdiFontStyle";
       style.textContent =
@@ -85,26 +84,11 @@ export function createMdiIconSet(managerUrl: string): IconSet {
         '  font-family: "Material Design Icons";\n' +
         '  src: url("' +
         managerUrl +
-        '/shared/fonts/Material Design Icons/fonts/materialdesignicons-webfont.eot");\n' +
-        '  src: url("' +
-        managerUrl +
-        '/shared/fonts/Material Design Icons/fonts/materialdesignicons-webfont.eot") format("embedded-opentype"), url("' +
-        managerUrl +
-        '/shared/fonts/Material Design Icons/fonts/materialdesignicons-webfont.woff2") format("woff2"), url("' +
-        managerUrl +
-        '/shared/fonts/Material Design Icons/fonts/materialdesignicons-webfont.woff") format("woff"), url("' +
-        managerUrl +
-        '/shared/fonts/Material Design Icons//fonts/materialdesignicons-webfont.ttf") format("truetype");\n' +
+        '/shared/fonts/Material Design Icons/fonts/materialdesignicons-webfont.woff2") format("woff2");\n' +
         "  font-weight: normal;\n" +
         "  font-style: normal;\n" +
         "}";
       document.head.appendChild(style);
-
-      // const styleElem = document.createElement("link") as HTMLLinkElement;
-      // styleElem.type = "text/css";
-      // styleElem.rel = "stylesheet";
-      // styleElem.href = managerUrl + "/shared/fonts/Material Design Icons/css/materialdesignicons.min.css";
-      // document.head.appendChild(styleElem);
     },
   };
 }

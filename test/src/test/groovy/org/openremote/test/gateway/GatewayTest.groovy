@@ -1533,14 +1533,29 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     given: "some polling conditions and services from the container"
     def gatewayService = container.getService(GatewayService.class)
     def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+    def identityProvider = container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider
 
-    and: "an authenticated user in the building realm"
+    and: "a user in the building realm holding the tunnel read role the endpoint requires"
+    def tunnelReader = identityProvider.createUpdateUser(
+            managerTestSetup.realmBuildingName,
+            new User().setUsername("gatewayrealmtunnelreader").setEnabled(true),
+            "gatewayrealmtunnelreader",
+            true
+            )
+    identityProvider.updateUserClientRoles(
+            managerTestSetup.realmBuildingName,
+            tunnelReader.id,
+            KEYCLOAK_CLIENT_ID,
+            READ_TUNNELS_ROLE
+            )
+
+    and: "an authenticated session for that user"
     def accessToken = authenticate(
             container,
             managerTestSetup.realmBuildingName,
             KEYCLOAK_CLIENT_ID,
-            "testuser2",
-            "testuser2"
+            "gatewayrealmtunnelreader",
+            "gatewayrealmtunnelreader"
             )
 
     and: "the gateway service resource"
@@ -1557,9 +1572,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     then: "the building user should not be able to see any tunnels for the fake gateway ID in the smart city realm"
     assert activeTunnels.length == 0
 
-    cleanup: "the fake tunnel is removed"
+    cleanup: "the fake tunnel and the user are removed"
     if (gatewayService != null) {
       gatewayService.@tunnelInfos.remove("fake-tunnel-id")
+    }
+    if (tunnelReader != null) {
+      identityProvider.deleteUser(managerTestSetup.realmBuildingName, tunnelReader.id)
     }
   }
 

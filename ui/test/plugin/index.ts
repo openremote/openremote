@@ -22,7 +22,7 @@ import rspack, { type DevServer, type Configuration } from "@rspack/core";
 import { RspackDevServer } from "@rspack/dev-server";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 
-// @ts-expect-error No declaration file available
+// @ts-ignore No declaration file available
 import { getStandardModuleRules } from "@openremote/util";
 import { isURLAvailable } from "playwright-core/lib/utils";
 

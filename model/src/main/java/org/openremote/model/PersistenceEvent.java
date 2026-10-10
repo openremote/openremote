@@ -26,7 +26,8 @@ public class PersistenceEvent<T> {
   public enum Cause {
     CREATE,
     UPDATE,
-    DELETE
+    DELETE,
+    DELETE_FINISHED
   }
 
   protected final Cause cause;
@@ -109,7 +110,7 @@ public class PersistenceEvent<T> {
         + ", entity="
         + entity
         + ", propertyNames="
-        + String.join(",", propertyNames)
+        + (propertyNames != null ? String.join(",", propertyNames) : "null")
         + ", currentState="
         + Arrays.toString(currentState)
         + ", previousState="

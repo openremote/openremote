@@ -41,7 +41,7 @@ If using the default namespace then the namespace prefix can be omitted:
 <or-translate value="asset" />
 ```
 
-It is also possible to pass an `TOptions<InitOptions>` object to the `18next.t` method by setting the
+It is also possible to pass a `TOptions` object to the `i18next.t` method by setting the
 `options` attribute.
 
 ### Translate mixin (`dist/translate-mixin`)
@@ -53,8 +53,7 @@ required. For usage example see the [or-translate source code](./src/index.ts).
 
 ## Supported Browsers
 
-The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition,
-Internet Explorer 11 is also supported.
+The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge.
 
 ## License
 

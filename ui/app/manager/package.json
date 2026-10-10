@@ -30,7 +30,7 @@
     "serve:experimental": "npx tsc -b --clean && npx shx rm -rf build && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild dev",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
     "serveNoModelBuild:experimental": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild dev",
-    "test": "npx playwright test",
+    "test": "npx tsc -p test && npx playwright test",
     "prepack": "npx tsc -b"
   },
   "dependencies": {
@@ -59,7 +59,7 @@
     "@reduxjs/toolkit": "^2.12.0",
     "lit": "^3.3.1",
     "maplibre-gl": "~6.8.0",
-    "moment": "^2.29.4",
+    "moment": "^2.31.0",
     "reselect": "^4.1.8"
   },
   "devDependencies": {

@@ -101,7 +101,7 @@
   "cancel": "Abbrechen",
   "discard": "Verwerfen",
   "createdOn": "Erstellt am:",
-  "createdOnWithDate": "Erstellt am: {{-date, LLLL}}",
+  "createdOnWithDate": "Erstellt am: {{-date, llll(weekday: long)}}",
   "updatedWithDate": "Aktualisiert am: {{-date, llll}}",
   "accessPublicRead": "Alle dürfen lesen",
   "type": "Typ",
