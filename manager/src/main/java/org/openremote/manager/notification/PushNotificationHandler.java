@@ -256,17 +256,12 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
           target -> {
             Notification.TargetType targetType = target.getType();
             String targetId = target.getId();
+            // Do not require an FCM token in the query; consoles without a token must still be
+            // mapped so sendMessage can record "No FCM token found" (see direct ASSET targets).
             AssetQuery assetQuery =
                 new AssetQuery()
                     .select(new AssetQuery.Select().excludeAttributes())
-                    .types(ConsoleAsset.class)
-                    .attributes(
-                        new AttributePredicate(
-                            ConsoleAsset.CONSOLE_PROVIDERS,
-                            new ValueEmptyPredicate().negate(true),
-                            false,
-                            new NameValuePredicate.Path(
-                                PushNotificationMessage.TYPE, "data", "token")));
+                    .types(ConsoleAsset.class);
 
             switch (targetType) {
               case REALM ->
@@ -386,6 +381,25 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
       AbstractNotificationMessage message)
       throws Exception {
 
+    Notification.TargetType targetType = target.getType();
+    String targetId = target.getId();
+
+    if (targetType != Notification.TargetType.ASSET
+        && targetType != Notification.TargetType.CUSTOM) {
+      String msg = "Target type not supported: " + targetType;
+      LOG.warning(msg);
+      throw new Exception(msg);
+    }
+
+    // A console without a token must fail even when FCM itself is not configured. Otherwise the
+    // dev-mode skip below hides the missing token and the API reports success.
+    String fcmToken = consoleFCMTokenMap.get(targetId);
+    if (targetType == Notification.TargetType.ASSET && TextUtil.isNullOrEmpty(fcmToken)) {
+      String msg = "No FCM token found for console: " + targetId;
+      LOG.finer(msg);
+      throw new Exception(msg);
+    }
+
     if (devMode && !valid) {
       // FCM not configured; log the notification instead of sending so the sent record is still
       // created
@@ -398,19 +412,6 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
               + message);
       return;
     }
-
-    Notification.TargetType targetType = target.getType();
-    String targetId = target.getId();
-
-    if (targetType != Notification.TargetType.ASSET
-        && targetType != Notification.TargetType.CUSTOM) {
-      String msg = "Target type not supported: " + targetType;
-      LOG.warning(msg);
-      throw new Exception(msg);
-    }
-
-    // Check this asset has an FCM token (i.e. it is registered for push notifications)
-    String fcmToken = consoleFCMTokenMap.get(targetId);
 
     if (TextUtil.isNullOrEmpty(fcmToken)) {
       String msg = "No FCM token found for console: " + targetId;
