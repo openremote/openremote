@@ -100,7 +100,7 @@ fi
 if [ "$SKIP_SSH_WHITELIST" != 'true' ] && [ -n "$AWS_ACCESS_KEY_ID" ]; then
 
   echo "Granting AWS SSH access to github runner"
-  
+
   source temp/aws/login.sh
 
   if [ -n "$CIDR" ]; then
@@ -273,6 +273,9 @@ else
   echo "Could not get token to query for private IP"
 fi
 echo "Private IP \$PRIVATE_IP"
+
+# Login to Private ECR Registry to download restricted images
+aws ecr get-login-password --region $AWS_ACCOUNT_ID | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
 # Start the stack, including any one-shot deployment service, and wait for readiness
 if ! bash temp/host_init/start.sh temp/docker-compose.yml or; then
