@@ -28,6 +28,9 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    # OR_MANAGER_URL is deliberately left unset: browsed through the proxy on 443, the login
+    # page and the manager share an origin, which is the arrangement production uses. Reaching
+    # keycloak directly on 8081 instead needs OR_MANAGER_URL=http://localhost:8080.
 
   postgresql:
     extends:

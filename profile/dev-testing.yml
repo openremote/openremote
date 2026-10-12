@@ -16,6 +16,10 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    environment:
+      # The login theme reads the realm's branding from the manager.
+      # Without this it would ask keycloak itself.
+      OR_MANAGER_URL: ${OR_MANAGER_URL:-http://localhost:8080}
 
   postgresql:
     extends:
