@@ -219,6 +219,9 @@ if [ -f "temp/deployment.tar.gz" ]; then
   docker load < temp/deployment.tar.gz
 fi
 
+# Login to Private ECR Registry to download restricted images
+aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
+
 # Make sure we have correct keycloak, proxy and postgres images
 echo "Pulling requested service versions from docker hub"
 docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
@@ -273,9 +276,6 @@ else
   echo "Could not get token to query for private IP"
 fi
 echo "Private IP \$PRIVATE_IP"
-
-# Login to Private ECR Registry to download restricted images
-aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
 
 # Start the stack, including any one-shot deployment service, and wait for readiness
 if ! bash temp/host_init/start.sh temp/docker-compose.yml or; then
@@ -363,6 +363,9 @@ if [ -f "temp/deployment.tar.gz" ]; then
   docker load < temp/deployment.tar.gz
 fi
 
+# Login to Private ECR Registry to download restricted images
+aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
+
 # Make sure we have correct keycloak, proxy and postgres images
 echo "Pulling requested service versions from docker hub"
 docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
@@ -399,9 +402,6 @@ fi
 # Delete any deployment volume so we get the latest
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
-
-# Login to Private ECR Registry to download restricted images
-aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
 
 # Start the stack, including any one-shot deployment service, and wait for readiness
 if ! bash temp/host_init/start.sh temp/docker-compose.yml or; then

@@ -120,6 +120,8 @@ Standard variables:
 - `AWS_KEY` - AWS access key ID (should be prefixed with `_TEMP_`
 - `AWS_SECRET` - AWS access key secret
 - `AWS_REGION` - AWS region to use
+- `OR_AWS_ECR_ACCOUNT_ID` - AWS Account ID associated with the ECR repository
+- `OR_AWS_ECR_REGION` - AWS Region where the ECR repository is located
 - `OR_ADMIN_PASSWORD` - Admin password to be set on deployment; sets the OR_ADMIN_PASSWORD env variable
 - `ENV_COMPOSE_FILE` - The full path to the docker compose file to use for the deployment
 - `SKIP_HOST_PING` - Will skip host ping check before deploying (default: false)
