@@ -81,11 +81,11 @@ jobs:
 
       - name: Check if core repo
         id: is_core_repo
-        uses: openremote/core/.github/actions/check-if-core-repo@5beec5454f28eda1dd25331c9ce1d5b430266f7e
+        uses: openremote/core/.github/actions/check-if-core-repo@357f1387fbc99e7a59752a62064f0bdade57612d
 
       - name: Process ci_cd.json file
         id: ci-cd-output
-        uses: openremote/core/.github/actions/process-cicd-json@9ea22e19db6711afd711f39517fe25509b018803
+        uses: openremote/core/.github/actions/process-cicd-json@357f1387fbc99e7a59752a62064f0bdade57612d
         with:
           IS_CORE_REPO: ${{ steps.is_core_repo.outputs.value }} # Shouldn't be needed in this context
           MANAGER_VERSION: ${{ steps.is_core_repo.outputs.version }}

@@ -32,7 +32,7 @@ jobs:
 
       - name: Check if core repo
         id: is_core_repo
-        uses: openremote/core/.github/actions/check-if-core-repo@5beec5454f28eda1dd25331c9ce1d5b430266f7e
+        uses: openremote/core/.github/actions/check-if-core-repo@357f1387fbc99e7a59752a62064f0bdade57612d
 
       - name: Set up JDK 21 and Gradle cache
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
