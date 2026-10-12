@@ -2319,7 +2319,7 @@ __metadata:
     "@openremote/util": "workspace:*"
     "@types/shortid": "npm:^0.0.29"
     ace-builds: "npm:^1.44.0"
-    iso-639-1: "npm:^3.1.3"
+    iso-639-1: "npm:^3.1.6"
     linqts: "npm:^3.2.0"
     lit: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
@@ -8217,10 +8217,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"iso-639-1@npm:^3.1.3":
-  version: 3.1.3
-  resolution: "iso-639-1@npm:3.1.3"
-  checksum: 10c0/416112e3df8b00efd4dabda33b581d3323e77c217a05b4c262dffacff89ee17b73debff2673a1ea0c7a36bd7dfb4f6d234249b1addacf36aa7bb70481a462cc0
+"iso-639-1@npm:^3.1.6":
+  version: 3.1.6
+  resolution: "iso-639-1@npm:3.1.6"
+  checksum: 10c0/5169ff6cf5365ead818ee32e82307b778d3a458316181e9e12e588680aa7482dbde692ca09a26ff3b9ad17c742cbfb7c16355bb02dadc683f0fbdd8587262c50
   languageName: node
   linkType: hard
 
