@@ -275,7 +275,7 @@ fi
 echo "Private IP \$PRIVATE_IP"
 
 # Login to Private ECR Registry to download restricted images
-aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com
+aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
 
 # Start the stack, including any one-shot deployment service, and wait for readiness
 if ! bash temp/host_init/start.sh temp/docker-compose.yml or; then
@@ -399,6 +399,9 @@ fi
 # Delete any deployment volume so we get the latest
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
+
+# Login to Private ECR Registry to download restricted images
+aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
 
 # Start the stack, including any one-shot deployment service, and wait for readiness
 if ! bash temp/host_init/start.sh temp/docker-compose.yml or; then
