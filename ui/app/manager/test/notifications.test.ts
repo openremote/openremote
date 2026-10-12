@@ -16,13 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { expect } from "@openremote/test";
+import { type Page, expect } from "@openremote/test";
 import {
   type Asset,
   ClientRole,
   type EmailNotificationMessage,
+  type LocalizedNotificationMessage,
   type Notification,
   NotificationTargetType,
+  type PushNotificationMessage,
 } from "@openremote/model";
 import type { AxiosRequestConfig } from "axios";
 import { type Manager, adminStatePath, test } from "./fixtures/manager.js";
@@ -127,6 +129,37 @@ async function createConsoleForUser(
     config
   );
   await linkUsersToAsset(manager, realm, consoleId, [userId], config);
+}
+
+/** Make the app start in `language`, the way the header's language picker stores the user's choice. */
+async function setAppLanguage(page: Page, language: string) {
+  await page.addInitScript((lang) => window.localStorage.setItem("LANGUAGE", JSON.stringify(lang)), language);
+}
+
+/**
+ * Persist a localized push notification via REST, holding the given push message per language, for a freshly
+ * provisioned user with a push-registered console so the push resolves to a target.
+ */
+async function seedLocalizedNotification(
+  manager: Manager,
+  defaultLanguage: string,
+  languages: { [language: string]: PushNotificationMessage },
+  stamp: number
+) {
+  const config = await manager.adminConfig();
+  const username = `e2e-localized-${stamp}`;
+  const user = await manager.provisionUser("master", { username }, config);
+  expect(user?.id).toBeTruthy();
+  await createConsoleForUser(manager, "master", user!.id!, username, config);
+
+  await manager.api.NotificationResource.sendNotification(
+    {
+      name: languages[defaultLanguage].title,
+      message: { type: "localized", defaultLanguage, languages } as LocalizedNotificationMessage,
+      targets: [{ type: NotificationTargetType.USER, id: user!.id! }],
+    } as Notification,
+    config
+  );
 }
 
 /** Format a Date as the local `YYYY-MM-DDTHH:mm` string the date-range pickers use. */
@@ -271,6 +304,105 @@ test("should show the correct data in the notification details dialog", async ({
 
   await notificationsPage.getDetailsCloseButton().click();
   await expect(details).not.toBeVisible();
+});
+
+test.describe("Localized Notifications", () => {
+  // A localized notification holds a message per language; the push handler rejects one without a title or
+  // data, so a language that is supported but not translated can only carry data.
+  const untranslated: PushNotificationMessage = { type: "push", data: {} };
+
+  /**
+   * @given Logged into the "master" realm as "admin", with the manager language set to Dutch
+   * @and A localized notification translated into English (its default language) and Dutch, supporting German
+   * @when Navigated to the "Notifications" page
+   * @then The row shows the Dutch message, under the icon of the message's own type
+   * @when The details dialog is opened and another language is selected
+   * @then The content follows the selected language, and German shows as untranslated
+   */
+  test("should show the user's language and switch language in the details dialog", async ({
+    manager,
+    notificationsPage,
+    page,
+  }) => {
+    const stamp = Date.now();
+    const enTitle = `E2E localized en ${stamp}`;
+    const nlTitle = `E2E localized nl ${stamp}`;
+    await seedLocalizedNotification(
+      manager,
+      "en",
+      {
+        en: { type: "push", title: enTitle, body: "English body" },
+        nl: { type: "push", title: nlTitle, body: "Nederlandse tekst" },
+        de: untranslated,
+      },
+      stamp
+    );
+    await setAppLanguage(page, "nl");
+
+    await notificationsPage.gotoUrl();
+
+    // the viewer's language is translated, so the row shows it instead of the default language
+    const row = notificationsPage.getRowByText(nlTitle);
+    await expect(row).toBeVisible();
+    await expect(row).toContainText("Nederlandse tekst");
+    await expect(notificationsPage.getRowByText(enTitle)).toHaveCount(0);
+
+    // the title and body used to be empty, and the icon fell back to the generic bell, as "localized" is
+    // neither of the message types the table knew
+    await expect(row.locator("or-icon.type-icon")).toHaveAttribute("icon", "cellphone-message");
+
+    await notificationsPage.openDetailsByText(nlTitle);
+    const details = notificationsPage.getDetailsForm();
+    await expect(details.locator("#notificationTitle input")).toHaveValue(nlTitle);
+
+    // the dialog switches language (its labels are Dutch here, as the app is)
+    await notificationsPage.selectMessageLanguage("Engels");
+    await expect(details.locator("#notificationTitle input")).toHaveValue(enTitle);
+    await expect(details.locator("#notificationBody textarea")).toHaveValue("English body");
+
+    // a supported language without a translation has nothing to show
+    await notificationsPage.selectMessageLanguage("Duits");
+    await expect(details.locator("#notificationTitle input")).toHaveValue("");
+    await expect(details.locator("#notificationBody textarea")).toHaveValue("");
+  });
+
+  /**
+   * @given Logged into the "master" realm as "admin", with the manager language set to Dutch
+   * @and A localized notification translated into English (its default language) only, supporting Dutch
+   * @when Navigated to the "Notifications" page
+   * @then The row shows the English message, as the viewer's language has no translation
+   * @and The details dialog opens on English and shows Dutch as untranslated
+   */
+  test("should show the default language when the user's language has no translation", async ({
+    manager,
+    notificationsPage,
+    page,
+  }) => {
+    const stamp = Date.now();
+    const enTitle = `E2E default only ${stamp}`;
+    await seedLocalizedNotification(
+      manager,
+      "en",
+      { en: { type: "push", title: enTitle, body: "English body" }, nl: untranslated },
+      stamp
+    );
+    await setAppLanguage(page, "nl");
+
+    await notificationsPage.gotoUrl();
+
+    // the default language stands in for the viewer's untranslated one, rather than showing an empty row
+    const row = notificationsPage.getRowByText(enTitle);
+    await expect(row).toBeVisible();
+    await expect(row).toContainText("English body");
+
+    await notificationsPage.openDetailsByText(enTitle);
+    const details = notificationsPage.getDetailsForm();
+    await expect(details.locator("#notificationTitle input")).toHaveValue(enTitle);
+
+    // the untranslated language is still offered, and shows that it carries no message
+    await notificationsPage.selectMessageLanguage("Nederlands");
+    await expect(details.locator("#notificationTitle input")).toHaveValue("");
+  });
 });
 
 /**

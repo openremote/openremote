@@ -34,6 +34,7 @@ import {
   type NotificationSource,
 } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
+import { resolveNotificationMessage } from "./notification-message";
 import { classMap } from "lit/directives/class-map.js";
 import type { NotificationService } from "../../pages/page-notifications";
 import { getAssetsRoute, getUsersRoute } from "../../routes";
@@ -302,7 +303,8 @@ export class OrNotificationsTable extends OrMwcTable {
 
   protected getTableRows(notifications: SentNotification[]): TableRow[] | undefined {
     return notifications.map((notification) => {
-      const message = notification.message as PushNotificationMessage | EmailNotificationMessage;
+      // A localized notification carries a message per language, so resolve the one it is shown for
+      const { message } = resolveNotificationMessage(notification.message, i18next.language);
       const isEmail = message?.type === "email";
       const title = isEmail
         ? (message as EmailNotificationMessage).subject
@@ -313,7 +315,7 @@ export class OrNotificationsTable extends OrMwcTable {
         : (message as PushNotificationMessage)?.body;
       return {
         content: [
-          this.getTitleContent(notification, title),
+          this.getTitleContent(notification, title, message?.type),
           this.getBodyContent(body),
           this.getStatusContent(notification),
           this.getSourceContent(notification.source),
@@ -328,7 +330,7 @@ export class OrNotificationsTable extends OrMwcTable {
     });
   }
 
-  protected getTitleContent(notification: SentNotification, title?: string): TemplateResult {
+  protected getTitleContent(notification: SentNotification, title?: string, messageType?: string): TemplateResult {
     const iconMap: { [type: string]: string } = {
       push: "cellphone-message",
       email: "email-outline",
@@ -337,7 +339,7 @@ export class OrNotificationsTable extends OrMwcTable {
     // The icon is nested in its own template so the title remains the first string value used for sorting
     return html`
       <div class="title-wrapper">
-        ${html`<or-icon class="type-icon" title="${notification.type || ""}" icon="${iconMap[notification.type] || "bell-outline"}"></or-icon>`}
+        ${html`<or-icon class="type-icon" title="${notification.type || ""}" icon="${iconMap[messageType ?? notification.type] || "bell-outline"}"></or-icon>`}
         <span>${title || "-"}</span>
       </div>
     `;

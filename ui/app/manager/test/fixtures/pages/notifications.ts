@@ -38,6 +38,12 @@ export class NotificationsPage implements BasePage {
     await expect(this.getTable()).toBeVisible();
   }
 
+  /** Navigate by URL, for tests whose app language makes the menu item's label unpredictable. */
+  async gotoUrl(realm = "master") {
+    await this.page.goto(this.manager.getAppUrl(realm) + "#/notifications");
+    await expect(this.getTable()).toBeVisible();
+  }
+
   // --- Table -------------------------------------------------------------
 
   getTable(): Locator {
@@ -189,6 +195,12 @@ export class NotificationsPage implements BasePage {
       .locator("or-vaadin-text-field, or-vaadin-text-area")
       .filter({ hasText: exact ? new RegExp(`^\\s*${label}\\s*$`) : label })
       .locator("input, textarea");
+  }
+
+  /** Pick the language a localized notification's content is shown for (by visible label). */
+  async selectMessageLanguage(label: string) {
+    await this.getDetailsForm().locator("#messageLanguage").click();
+    await this.pickOverlayOption(label);
   }
 
   /** Open the details dialog for the (first) row containing the given text. */

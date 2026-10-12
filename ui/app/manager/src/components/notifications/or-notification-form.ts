@@ -22,7 +22,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { classMap } from "lit/directives/class-map.js";
 import { i18next } from "@openremote/or-translate";
-import manager, { Util } from "@openremote/core";
+import manager, { DEFAULT_LANGUAGES, Util } from "@openremote/core";
 import {
   type Asset,
   ClientRole,
@@ -44,8 +44,13 @@ import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import "@openremote/or-vaadin-components/or-vaadin-text-field";
 import "@openremote/or-vaadin-components/or-vaadin-text-area";
 import "@openremote/or-vaadin-components/or-vaadin-toggle";
+import {
+  type NotificationMessage,
+  type NotificationMessages,
+  resolveNotificationMessage,
+} from "./notification-message";
 
-export type NotificationMessage = PushNotificationMessage | EmailNotificationMessage;
+export type { NotificationMessage };
 
 // Requires a scheme (e.g. https://) before the rest of the URL; shared by the actionUrl field's pattern attribute
 // and the create-validation check. The hyphen is escaped so it's valid under the pattern attribute's `v` flag.
@@ -214,6 +219,14 @@ export class OrNotificationForm extends OrElement {
 
   @state()
   protected _message: NotificationMessage = { type: "push" };
+
+  // The language of the message being displayed; only set for a localized notification, which holds one per language
+  @state()
+  protected _messageLanguage?: string;
+
+  // The messages of a localized notification, to switch the displayed language between
+  @state()
+  protected _messageLanguages?: NotificationMessages;
 
   @state()
   protected _targetType: NotificationTargetType = this._defaultTargetType();
@@ -433,7 +446,10 @@ export class OrNotificationForm extends OrElement {
   private async _populateFromNotification() {
     if (!this.notification) return;
 
-    this._message = (this.notification.message || { type: "push" }) as NotificationMessage;
+    const { message, language, languages } = resolveNotificationMessage(this.notification.message, i18next.language);
+    this._message = message || { type: "push" };
+    this._messageLanguage = language;
+    this._messageLanguages = languages;
     this._targetType = this.notification.target || NotificationTargetType.ASSET;
     this._targets = this.notification.targetId ? [this.notification.targetId] : [];
 
@@ -654,6 +670,7 @@ export class OrNotificationForm extends OrElement {
         >
           <or-translate slot="label" value="type"></or-translate>
         </or-vaadin-select>
+        ${when(this._messageLanguage, () => this._renderMessageLanguageSelect())}
         ${
           this._message.type === "push"
             ? this._renderPushContent(this._message as PushNotificationMessage, inputDisabled)
@@ -661,6 +678,37 @@ export class OrNotificationForm extends OrElement {
         }
       </div>
     `;
+  }
+
+  /**
+   * Picks which language of a localized notification is shown. Stays enabled while the rest of the form is
+   * readonly, as it selects between stored messages instead of editing one; a language that is supported but
+   * not translated shows empty content.
+   */
+  protected _renderMessageLanguageSelect() {
+    const items: SelectItem[] = Object.keys(this._messageLanguages || {}).map((language) => ({
+      label: i18next.t(DEFAULT_LANGUAGES[language] || language),
+      value: language,
+    }));
+
+    return html`
+      <or-vaadin-select
+        id="messageLanguage"
+        .items="${items}"
+        value="${this._messageLanguage}"
+        @change="${(ev: Event) => this._onMessageLanguageChanged((ev.currentTarget as OrVaadinSelect).value)}"
+      >
+        <or-translate slot="label" value="language"></or-translate>
+      </or-vaadin-select>
+    `;
+  }
+
+  protected _onMessageLanguageChanged(language: string) {
+    if (!this._messageLanguages || language === this._messageLanguage) {
+      return;
+    }
+    this._messageLanguage = language;
+    this._message = this._messageLanguages[language];
   }
 
   protected _renderPushContent(message: PushNotificationMessage, inputDisabled: boolean) {
