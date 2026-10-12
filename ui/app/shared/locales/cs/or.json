@@ -830,7 +830,7 @@
     "attributeValueLabel": "Hodnota atributu",
     "assetTypeDoesNotExist": "Filtr: Typ assetu neexistuje"
   },
-  "realmDeleteConfirm": "Varování! Tímto smažete vše v tomto realmu, pro potvrzení zadejte název realmu „{{realmName}}“.",
+  "realmDeleteConfirm": "Varování! Realm nesmí obsahovat žádná aktiva, aby jej bylo možné smazat, tímto automaticky smažete vše ostatní v tomto realmu, pro potvrzení zadejte název realmu „{{realmName}}“.",
   "realmDeleteFailed": "Nepodařilo se smazat realm",
   "addRule": "Přidat pravidlo",
   "rulesetStatus": {

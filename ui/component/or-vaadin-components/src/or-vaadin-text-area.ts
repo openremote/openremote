@@ -76,6 +76,11 @@ export class OrVaadinTextArea
     super.updated(changedProperties);
     // _updateHeight only runs on value changes; re-apply when the mode toggles.
     if (changedProperties.has("manualresize")) {
+      if (this.manualresize) {
+        // A value that arrived first was autoresized, so drop that inline height and let
+        // min-rows govern again. From here on only a resize drag writes one, and it stays.
+        this.inputElement?.style.removeProperty("height");
+      }
       this._updateHeight();
     }
   }

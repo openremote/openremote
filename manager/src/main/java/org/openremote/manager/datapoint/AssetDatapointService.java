@@ -118,7 +118,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     if (maxDatapointAgeWeeks <= 0) {
-      LOG.warning("Data point purge disabled");
+      LOG.info("Data point purge disabled");
     } else {
       LOG.log(Level.INFO, "Data point purge retention = " + maxDatapointAgeWeeks + " weeks");
     }

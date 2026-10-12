@@ -820,8 +820,9 @@
     "attributeValueLabel": "Attribuutwaarde",
     "assetTypeDoesNotExist": "Filter: Asset type bestaat niet"
   },
-  "realmDeleteConfirm": "Let op! Hiermee verwijder je alles in deze realm, typ de realm naam '{{realmName}}' om te bevestigen.",
+  "realmDeleteConfirm": "Let op! De realm mag geen assets bevatten om te kunnen worden verwijderd, hiermee verwijder je automatisch al het andere in deze realm, typ de realm naam '{{realmName}}' om te bevestigen.",
   "realmDeleteFailed": "Realm verwijderen mislukt",
+  "realmDeleteFailedHasAssets": "Realm verwijderen mislukt omdat deze nog assets bevat",
   "addRule": "Regel toevoegen",
   "rulesetStatus": {
     "DEPLOYED": "Succesvol aangemaakt",

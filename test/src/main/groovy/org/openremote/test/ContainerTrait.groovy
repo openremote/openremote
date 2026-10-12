@@ -64,6 +64,7 @@ import org.openremote.model.util.MapAccess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import spock.lang.Shared
+import spock.lang.Timeout
 
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -86,6 +87,7 @@ trait ContainerTrait {
 
   Logger LOG = LoggerFactory.getLogger(ContainerTrait.class)
 
+  @Timeout(120)
   Container startContainer(Map<String, String> config, Iterable<ContainerService> services) {
 
     // Reset and start clock in case any previous tests stopped/modified it (pseudo clock is static so shared between tests)
@@ -222,7 +224,7 @@ trait ContainerTrait {
 
             if (!currentAssets.isEmpty()) {
               LOG.info("Purging ${currentAssets.size()} asset(s)")
-              assetStorageService.delete(currentAssets, true)
+              assetStorageService.deleteUntilFinished(currentAssets, true).get(60, TimeUnit.SECONDS)
             }
 
             // Wait for all assets to be unlinked from protocols
