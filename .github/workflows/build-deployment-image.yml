@@ -1,4 +1,4 @@
-# Currently only used to test if it builds before merging to master
+# Currently only used to test if it builds before merging to main
 name: Build deployment image
 
 on:

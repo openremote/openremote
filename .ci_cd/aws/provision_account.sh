@@ -155,8 +155,8 @@ if [ "$VPCID" == 'None' ]; then
     TEMPLATE_PATH="${awsDir}cloudformation-create-vpc.yml"
   elif [ -f ".ci_cd/aws/cloudformation-create-vpc.yml" ]; then
     TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-vpc.yml"
-  elif [ -f "openremote/.ci_cd/aws/cloudformation-create-vpc.yml" ]; then
-    TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-vpc.yml"
+  elif [ -f "core/.ci_cd/aws/cloudformation-create-vpc.yml" ]; then
+    TEMPLATE_PATH="core/.ci_cd/aws/cloudformation-create-vpc.yml"
   else
     echo "Cannot determine location of cloudformation-create-vpc.yml"
     exit 1
@@ -292,8 +292,8 @@ else
     TEMPLATE_PATH="${awsDir}cloudformation-create-ssm-documents.yml"
   elif [ -f ".ci_cd/aws/cloudformation-create-ssm-documents.yml" ]; then
     TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-ssm-documents.yml"
-  elif [ -f "openremote/.ci_cd/aws/cloudformation-create-ssm-documents.yml" ]; then
-    TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-ssm-documents.yml"
+  elif [ -f "core/.ci_cd/aws/cloudformation-create-ssm-documents.yml" ]; then
+    TEMPLATE_PATH="core/.ci_cd/aws/cloudformation-create-ssm-documents.yml"
   else
     echo "Cannot determine location of cloudformation-create-ssm-documents.yml"
     exit 1
@@ -340,8 +340,8 @@ else
     TEMPLATE_PATH="${awsDir}cloudformation-create-dashboard.yml"
   elif [ -f ".ci_cd/aws/cloudformation-create-dashboard.yml" ]; then
     TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-dashboard.yml"
-  elif [ -f "openremote/.ci_cd/aws/cloudformation-create-dashboard.yml" ]; then
-    TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-dashboard.yml"
+  elif [ -f "core/.ci_cd/aws/cloudformation-create-dashboard.yml" ]; then
+    TEMPLATE_PATH="core/.ci_cd/aws/cloudformation-create-dashboard.yml"
   else
     echo "Cannot determine location of cloudformation-create-dashboard.yml"
     exit 1

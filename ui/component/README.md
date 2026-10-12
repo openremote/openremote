@@ -2,7 +2,7 @@
 
 Library of UI components that can be used to build web applications that communicate with an OpenRemote Manager.
 
-[Source](https://github.com/openremote/openremote) **·** [Documentation](https://docs.openremote.io) **·** [Community](https://forum.openremote.io) **·** [Issues](https://github.com/openremote/openremote/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](https://openremote.io)
+[Source](https://github.com/openremote/core) **·** [Documentation](https://docs.openremote.io) **·** [Community](https://forum.openremote.io) **·** [Issues](https://github.com/openremote/core/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](https://openremote.io)
 
 ## Contributing
 

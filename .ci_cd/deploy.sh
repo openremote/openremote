@@ -48,9 +48,9 @@ HOST="$OR_HOSTNAME"
 
 # Copy CI/CD files into temp dir
 echo "Copying CI/CD files into temp dir"
-if [ "$IS_MAIN_REPO" == 'false' ]; then
-  cp -r openremote/.ci_cd/host_init temp/
-  cp -r openremote/.ci_cd/aws temp/
+if [ "$IS_CORE_REPO" == 'false' ]; then
+  cp -r core/.ci_cd/host_init temp/
+  cp -r core/.ci_cd/aws temp/
 fi
 if [ -d ".ci_cd/host_init" ]; then
   cp -r .ci_cd/host_init temp/
