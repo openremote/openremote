@@ -30,7 +30,7 @@ import {
   SentNotificationSortField,
   type User,
 } from "@openremote/model";
-import manager, { DefaultColor3 } from "@openremote/core";
+import manager, { DefaultColor3, type NotificationConfigs, getRealmNotificationConfig } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import type { AxiosError } from "@openremote/rest";
@@ -191,6 +191,7 @@ export interface PageNotificationsConfig {
   targetType?: string;
   fromTimestamp?: number;
   toTimestamp?: number;
+  notifications?: NotificationConfigs;
 }
 
 export function pageNotificationsProvider(
@@ -201,7 +202,7 @@ export function pageNotificationsProvider(
     name: "notifications",
     routes: ["notifications"],
     pageCreator: () => {
-      return new PageNotifications(store);
+      return new PageNotifications(store, config);
     },
   };
 }
@@ -340,7 +341,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
   protected notificationService: NotificationService;
 
-  constructor(store: Store<AppStateKeyed>) {
+  constructor(
+    store: Store<AppStateKeyed>,
+    protected config?: PageNotificationsConfig
+  ) {
     super(store);
     this.notificationService = new NotificationService();
 
@@ -591,7 +595,13 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
   protected _renderDetailsForm(notification?: SentNotification) {
     return html`
-      <or-notification-form .realm=${this.realm} .notification=${notification} readonly> </or-notification-form>
+      <or-notification-form
+        .realm="${this.realm}"
+        .notification="${notification}"
+        .notificationConfig="${getRealmNotificationConfig(this.config?.notifications, this.realm)}"
+        readonly
+      >
+      </or-notification-form>
     `;
   }
 

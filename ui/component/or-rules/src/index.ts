@@ -27,6 +27,7 @@ import manager, {
   DefaultColor4,
   DefaultColor5,
   DefaultColor6,
+  type NotificationConfigs,
   Util,
 } from "@openremote/core";
 import { i18next, translate } from "@openremote/or-translate";
@@ -165,12 +166,7 @@ export interface RulesConfig {
     then?: RuleActionUnion;
     otherwise?: RuleActionUnion;
   };
-  notifications?: {
-    [realm: string]: {
-      defaultLanguage?: string;
-      languages?: string[];
-    };
-  };
+  notifications?: NotificationConfigs;
 }
 
 export interface RulesDescriptorSection {

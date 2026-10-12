@@ -76,7 +76,7 @@ import { pageConfigurationProvider } from "./pages/page-configuration";
 import { pageAlarmsProvider } from "./pages/page-alarms";
 import type { ManagerAppConfig } from "@openremote/model";
 import { pageGatewayTunnelProvider } from "./pages/page-gateway-tunnel";
-import { pageNotificationsProvider } from "./pages/page-notifications";
+import { type PageNotificationsConfig, pageNotificationsProvider } from "./pages/page-notifications";
 import "./pages/page-notifications";
 
 declare let MANAGER_URL: string | undefined;
@@ -218,6 +218,16 @@ fetch(configURL)
                 );
               }
               pageProvider = pageRulesProvider(store, newConfig);
+              break;
+            }
+            case "notifications": {
+              const newConfig = (config || {}) as PageNotificationsConfig;
+              if (!newConfig.notifications) {
+                newConfig.notifications = Object.fromEntries(
+                  Object.entries(appConfig.realms || {}).map((entry) => [entry[0], entry[1].notifications])
+                );
+              }
+              pageProvider = pageNotificationsProvider(store, newConfig);
               break;
             }
             case "insights": {

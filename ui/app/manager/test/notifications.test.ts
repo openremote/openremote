@@ -131,6 +131,19 @@ async function createConsoleForUser(
   await linkUsersToAsset(manager, realm, consoleId, [userId], config);
 }
 
+/**
+ * Serve the manager app config with `languages` declared for the realm's notifications, the way a deployment
+ * states which languages its notifications support, without persisting a config the other specs would see.
+ */
+async function withNotificationLanguages(page: Page, realm: string, languages: string[]) {
+  await page.route("**/api/master/configuration/manager", async (route) => {
+    const response = await route.fetch();
+    const config = await response.json();
+    config.realms = { ...config.realms, [realm]: { ...config.realms?.[realm], notifications: { languages } } };
+    await route.fulfill({ response, json: config });
+  });
+}
+
 /** Make the app start in `language`, the way the header's language picker stores the user's choice. */
 async function setAppLanguage(page: Page, language: string) {
   await page.addInitScript((lang) => window.localStorage.setItem("LANGUAGE", JSON.stringify(lang)), language);
@@ -307,8 +320,8 @@ test("should show the correct data in the notification details dialog", async ({
 });
 
 test.describe("Localized Notifications", () => {
-  // A localized notification holds a message per language; the push handler rejects one without a title or
-  // data, so a language that is supported but not translated can only carry data.
+  // A notification can hold a language it was never translated into; the push handler rejects a message
+  // without a title or data, so such a language can only carry data.
   const untranslated: PushNotificationMessage = { type: "push", data: {} };
 
   /**
@@ -368,7 +381,41 @@ test.describe("Localized Notifications", () => {
 
   /**
    * @given Logged into the "master" realm as "admin", with the manager language set to Dutch
-   * @and A localized notification translated into English (its default language) only, supporting Dutch
+   * @and A localized notification translated into English only, in a realm whose config supports Dutch too
+   * @when Navigated to the "Notifications" page and the details dialog is opened
+   * @then English is shown, and the Dutch the realm supports can be selected to see it carries no message
+   */
+  test("should offer the languages the realm supports but the notification never held", async ({
+    manager,
+    notificationsPage,
+    page,
+  }) => {
+    const stamp = Date.now();
+    const enTitle = `E2E realm languages ${stamp}`;
+    await seedLocalizedNotification(
+      manager,
+      "en",
+      { en: { type: "push", title: enTitle, body: "English body" } },
+      stamp
+    );
+    await withNotificationLanguages(page, "master", ["en", "nl"]);
+    await setAppLanguage(page, "nl");
+
+    await notificationsPage.gotoUrl();
+    await notificationsPage.openDetailsByText(enTitle);
+    const details = notificationsPage.getDetailsForm();
+
+    // the notification only holds English, so that is shown although the app is Dutch
+    await expect(details.locator("#notificationTitle input")).toHaveValue(enTitle);
+
+    // Dutch is offered because the realm supports it, and shows that the notification has no Dutch message
+    await notificationsPage.selectMessageLanguage("Nederlands");
+    await expect(details.locator("#notificationTitle input")).toHaveValue("");
+  });
+
+  /**
+   * @given Logged into the "master" realm as "admin", with the manager language set to Dutch
+   * @and A localized notification translated into English (its default language) only, holding Dutch
    * @when Navigated to the "Notifications" page
    * @then The row shows the English message, as the viewer's language has no translation
    * @and The details dialog opens on English and shows Dutch as untranslated

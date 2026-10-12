@@ -24,7 +24,7 @@ import {
   type TableConfig,
   type TableRow,
 } from "@openremote/or-mwc-components/or-mwc-table";
-import { DefaultColor4 } from "@openremote/core";
+import { DefaultColor4, resolveNotificationMessage } from "@openremote/core";
 import {
   type SentNotification,
   SentNotificationSortField,
@@ -34,7 +34,6 @@ import {
   type NotificationSource,
 } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
-import { resolveNotificationMessage } from "./notification-message";
 import { classMap } from "lit/directives/class-map.js";
 import type { NotificationService } from "../../pages/page-notifications";
 import { getAssetsRoute, getUsersRoute } from "../../routes";

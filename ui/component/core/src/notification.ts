@@ -19,6 +19,7 @@
 import type {
   AbstractNotificationMessageUnion,
   EmailNotificationMessage,
+  ManagerAppRealmNotificationConfig,
   PushNotificationMessage,
 } from "@openremote/model";
 
@@ -27,6 +28,29 @@ export type NotificationMessage = PushNotificationMessage | EmailNotificationMes
 
 /** The messages of a localized notification, keyed by language. */
 export type NotificationMessages = { [language: string]: NotificationMessage };
+
+/** Notification config per realm, as the manager app config holds it. */
+export type NotificationConfigs = { [realm: string]: ManagerAppRealmNotificationConfig };
+
+/** The notification config of `realm`, falling back to the `default` entry that stands in for every realm. */
+export function getRealmNotificationConfig(
+  configs?: NotificationConfigs,
+  realm?: string
+): ManagerAppRealmNotificationConfig | undefined {
+  return (realm ? configs?.[realm] : undefined) || configs?.default;
+}
+
+/**
+ * Every language a localized message can be shown for: those the realm supports and those the message holds,
+ * which can differ as the supported languages change independently of the messages already sent.
+ */
+export function getNotificationLanguages(
+  config?: ManagerAppRealmNotificationConfig,
+  message?: AbstractNotificationMessageUnion
+): string[] {
+  const held = message?.type === "localized" ? Object.keys(message.languages || {}) : [];
+  return [...new Set([...(config?.languages || []), ...held])];
+}
 
 /** Whether a message has anything to show; a language that is supported but not translated has not. */
 function isTranslated(message?: NotificationMessage): boolean {
@@ -51,11 +75,11 @@ export function resolveNotificationMessage(
   if (message?.type !== "localized") {
     return { message };
   }
-  const languages = (message.languages ?? {}) as NotificationMessages;
+  const languages = (message.languages || {}) as NotificationMessages;
   const codes = Object.keys(languages);
   // Fall through to any translated language, then to an untranslated one, so a language is always named
   const resolved =
-    [language, message.defaultLanguage, ...codes].find((code) => code && isTranslated(languages[code])) ??
+    [language, message.defaultLanguage, ...codes].find((code) => code && isTranslated(languages[code])) ||
     (message.defaultLanguage && languages[message.defaultLanguage] ? message.defaultLanguage : codes[0]);
 
   return { message: resolved ? languages[resolved] : undefined, language: resolved, languages };

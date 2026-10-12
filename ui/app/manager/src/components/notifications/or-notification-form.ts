@@ -22,11 +22,19 @@ import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { classMap } from "lit/directives/class-map.js";
 import { i18next } from "@openremote/or-translate";
-import manager, { DEFAULT_LANGUAGES, Util } from "@openremote/core";
+import manager, {
+  DEFAULT_LANGUAGES,
+  type NotificationMessage,
+  type NotificationMessages,
+  Util,
+  getNotificationLanguages,
+  resolveNotificationMessage,
+} from "@openremote/core";
 import {
   type Asset,
   ClientRole,
   type EmailNotificationMessage,
+  type ManagerAppRealmNotificationConfig,
   type Notification,
   NotificationTargetType,
   type PushNotificationButton,
@@ -44,12 +52,6 @@ import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import "@openremote/or-vaadin-components/or-vaadin-text-field";
 import "@openremote/or-vaadin-components/or-vaadin-text-area";
 import "@openremote/or-vaadin-components/or-vaadin-toggle";
-import {
-  type NotificationMessage,
-  type NotificationMessages,
-  resolveNotificationMessage,
-} from "./notification-message";
-
 export type { NotificationMessage };
 
 // Requires a scheme (e.g. https://) before the rest of the URL; shared by the actionUrl field's pattern attribute
@@ -261,6 +263,10 @@ export class OrNotificationForm extends OrElement {
   // The realm to load target data for; supplied by the page from the store so it stays in sync with the app realm
   @property({ type: String })
   public realm?: string;
+
+  // The realm's notification config, which decides the languages a localized notification can be shown for
+  @property({ type: Object })
+  public notificationConfig?: ManagerAppRealmNotificationConfig;
 
   async firstUpdated() {
     // In readonly (details) mode the form only displays an existing notification's stored values; the
@@ -686,10 +692,12 @@ export class OrNotificationForm extends OrElement {
    * not translated shows empty content.
    */
   protected _renderMessageLanguageSelect() {
-    const items: SelectItem[] = Object.keys(this._messageLanguages || {}).map((language) => ({
-      label: i18next.t(DEFAULT_LANGUAGES[language] || language),
-      value: language,
-    }));
+    const items: SelectItem[] = getNotificationLanguages(this.notificationConfig, this.notification?.message).map(
+      (language) => ({
+        label: i18next.t(DEFAULT_LANGUAGES[language] || language),
+        value: language,
+      })
+    );
 
     return html`
       <or-vaadin-select
@@ -704,11 +712,12 @@ export class OrNotificationForm extends OrElement {
   }
 
   protected _onMessageLanguageChanged(language: string) {
-    if (!this._messageLanguages || language === this._messageLanguage) {
+    if (language === this._messageLanguage) {
       return;
     }
     this._messageLanguage = language;
-    this._message = this._messageLanguages[language];
+    // A supported language the notification was never translated into holds no message of its own
+    this._message = this._messageLanguages?.[language] || { type: this._message.type };
   }
 
   protected _renderPushContent(message: PushNotificationMessage, inputDisabled: boolean) {
