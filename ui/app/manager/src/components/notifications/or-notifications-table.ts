@@ -33,7 +33,7 @@ import {
   NotificationTargetType,
   type NotificationSource,
 } from "@openremote/model";
-import { i18next } from "@openremote/or-translate";
+import { i18next, translate } from "@openremote/or-translate";
 import { classMap } from "lit/directives/class-map.js";
 import type { NotificationService } from "../../pages/page-notifications";
 import { getAssetsRoute, getUsersRoute } from "../../routes";
@@ -93,7 +93,7 @@ const SORT_FIELD_BY_COLUMN: Record<number, SentNotificationSortField> = {
 };
 
 @customElement("or-notifications-table")
-export class OrNotificationsTable extends OrMwcTable {
+export class OrNotificationsTable extends translate(i18next)(OrMwcTable) {
   static get styles() {
     return [
       ...super.styles,
@@ -261,15 +261,19 @@ export class OrNotificationsTable extends OrMwcTable {
     return `${targetType}:${targetId}`;
   }
 
-  public columns: TableColumn[] = [
-    { title: i18next.t("title"), isSortable: true },
-    { title: i18next.t("body") },
-    { title: i18next.t("status"), isSortable: true },
-    { title: i18next.t("notifications.source"), isSortable: true },
-    { title: i18next.t("notifications.target") },
-    { title: i18next.t("sentOn"), isSortable: true },
-    { title: i18next.t("deliveredOn"), isSortable: true },
-  ];
+  public columns: TableColumn[] = this.getColumns();
+
+  protected getColumns(): TableColumn[] {
+    return [
+      { title: i18next.t("title"), isSortable: true },
+      { title: i18next.t("body") },
+      { title: i18next.t("status"), isSortable: true },
+      { title: i18next.t("notifications.source"), isSortable: true },
+      { title: i18next.t("notifications.target") },
+      { title: i18next.t("sentOn"), isSortable: true },
+      { title: i18next.t("deliveredOn"), isSortable: true },
+    ];
+  }
 
   protected config: TableConfig = {
     columnFilter: [],
@@ -289,6 +293,10 @@ export class OrNotificationsTable extends OrMwcTable {
       if (this.notifications?.length) {
         await this.resolveAllTargetDetails(this.notifications);
       }
+      this.rows = this.getTableRows(this.notifications || []);
+    } else if (changedProps.has("_language")) {
+      // The column titles are translated, and a localized notification is shown for the app language
+      this.columns = this.getColumns();
       this.rows = this.getTableRows(this.notifications || []);
     }
 
