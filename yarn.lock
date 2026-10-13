@@ -2439,7 +2439,7 @@ __metadata:
   dependencies:
     "@openremote/theme": "workspace:*"
     "@rsbuild/core": "npm:~1.7.5"
-    "@storybook/addon-a11y": "npm:~10.4.6"
+    "@storybook/addon-a11y": "npm:~10.6.1"
     "@storybook/addon-docs": "npm:~10.4.6"
     "@storybook/web-components": "npm:~10.4.6"
     "@types/react": "npm:^18.3.12"
@@ -3731,15 +3731,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-a11y@npm:~10.4.6":
-  version: 10.4.6
-  resolution: "@storybook/addon-a11y@npm:10.4.6"
+"@storybook/addon-a11y@npm:~10.6.1":
+  version: 10.6.1
+  resolution: "@storybook/addon-a11y@npm:10.6.1"
   dependencies:
     "@storybook/global": "npm:^5.0.0"
     axe-core: "npm:^4.2.0"
   peerDependencies:
-    storybook: ^10.4.6
-  checksum: 10c0/cdb88829b82bb2f2caac363eb54981d1573161494da8ac2feb840e36a51951a4a97ecb7985ac152a450b580ec8323dac3fba98dc5533e8b1d32421eeabb42a5e
+    storybook: ^10.6.1
+  checksum: 10c0/24f6a256f281ed2e76126490331a797c7687eb6fc3be2807fc28cdedfb3a52ba5edb3a3d6a5c0055b64bd64d1d309c568f1b72987d472de7a6c8457d9bdc2ce1
   languageName: node
   linkType: hard
 
