@@ -126,9 +126,9 @@ or:
   # - name: foo
   #   value: bar
 
-  # Keycloak hostname or full public URL. Public stacks set a full HTTPS URL
-  # (including /auth and any custom port) so internal discovery and browser
-  # requests use the same token issuer.
+  # Bare hostnames become https://<hostname>/auth; full URLs are used unchanged.
+  # Public stacks set a full HTTPS URL (including /auth and any custom port)
+  # so internal discovery and browser requests use the same token issuer.
   hostname: "localhost"
   port: "-1"
 

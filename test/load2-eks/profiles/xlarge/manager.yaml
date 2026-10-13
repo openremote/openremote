@@ -1,4 +1,10 @@
+# Single-node load profiles cannot assume spare capacity for surge Pods.
+strategy:
+  type: Recreate
+
+# CLI: render LOAD_MANAGER_REPOSITORY; legacy scripts override image.repository.
 image:
+  repository: "${LOAD_MANAGER_REPOSITORY}"
   pullPolicy: Always
   tag: "load2"
 
@@ -25,13 +31,14 @@ service:
 
 resources:
   limits:
-    cpu: 400m
-    memory: 1792Mi
+    cpu: 1500m
+    memory: 8Gi
   requests:
-    cpu: 400m
-    memory: 1792Mi
+    cpu: 1500m
+    memory: 8Gi
 
-volumeSize: "16Gi"
+persistence:
+  size: "32Gi"
 
 or:
   env:

@@ -20,7 +20,7 @@ spec:
   selector:
     {{- include "manager.selectorLabels" . | nindent 4 }}
 ---
-{{- if .Values.service.mqtt.enabled -}}
+{{- if .Values.service.mqtt.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -43,7 +43,7 @@ spec:
       protocol: TCP
 ---
 {{- end }}
-{{- if .Values.service.mqtts.enabled -}}
+{{- if .Values.service.mqtts.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -86,7 +86,7 @@ spec:
     {{- include "manager.selectorLabels" . | nindent 4 }}
 {{- end }}
 ---
-{{- if .Values.service.jmx.enabled -}}
+{{- if .Values.service.jmx.enabled }}
 apiVersion: v1
 kind: Service
 metadata:

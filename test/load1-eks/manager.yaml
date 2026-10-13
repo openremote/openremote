@@ -1,4 +1,10 @@
+# Single-node load profiles cannot assume spare capacity for surge Pods.
+strategy:
+  type: Recreate
+
+# Render this template with LOAD_MANAGER_REPOSITORY before applying; see README.
 image:
+  repository: "${LOAD_MANAGER_REPOSITORY}"
   pullPolicy: Always
   tag: "load1"
 
@@ -27,7 +33,8 @@ resources:
     cpu: 3000m
     memory: 13Gi
 
-volumeSize: "16Gi"
+persistence:
+  size: "16Gi"
 
 or:
   env:
