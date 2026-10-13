@@ -1,5 +1,12 @@
 # OpenRemote AGENTS.md file
 
+## Code navigation
+
+If an IDE MCP server is connected (one that exposes IDE code intelligence such as symbol search, find references, call hierarchy, rename refactoring, diagnostics or build), use its tools before grep, find or reading whole files.
+They use the IDE's index or language server and cost fewer tokens. Use text or regex search only for non-code content, or when the IDE tools don't provide these tools or find nothing.
+If no IDE server is connected or a call fails, clearly say so briefly and fall back to normal search.
+If more than one IDE server is available, prefer the one whose project matches the current working directory.
+
 ## DB update scripts
 
 Flyway is used to automate execution of DB update scripts.  
