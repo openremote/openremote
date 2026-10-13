@@ -220,6 +220,7 @@ if [ -f "temp/deployment.tar.gz" ]; then
 fi
 
 # Login to Private ECR Registry to download restricted images
+echo "Logging in to AWS ECR registry"
 aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com
 
 # Make sure we have correct keycloak, proxy and postgres images
