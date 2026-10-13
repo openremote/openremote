@@ -77,7 +77,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     def regularMasterAccessToken = authenticate(
             container,
@@ -85,7 +85,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-            )
+    )
 
     def regularBuildingAccessToken = authenticate(
             container,
@@ -93,19 +93,19 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
 
     def adminBuildingRoles = identityProvider.getUserClientRoles(
             keycloakTestSetup.realmBuilding.name,
             keycloakTestSetup.testuser4Id,
             KEYCLOAK_CLIENT_ID
-            )
+    )
     identityProvider.updateUserClientRoles(
             keycloakTestSetup.realmBuilding.name,
             keycloakTestSetup.testuser4Id,
             KEYCLOAK_CLIENT_ID,
             ((adminBuildingRoles as List) + ClientRole.READ_ADMIN.value).unique() as String[]
-            )
+    )
 
     def adminBuildingAccessToken = authenticate(
             container,
@@ -113,7 +113,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser4",
             "testuser4"
-            )
+    )
 
     adminUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(UserResource.class)
     regularUserMasterResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, regularMasterAccessToken).proxy(UserResource.class)
@@ -228,7 +228,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             .attributes(
                     new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
                     new UserQuery.AttributeValuePredicate(true, new StringPredicate(EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
-                    ).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
+            ).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
 
     then: "only matching users of this realm should be returned"
     users.size() == 5
@@ -296,7 +296,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
                       roles.find {it.name == ClientRole.READ_LOGS.value}.id,
                       roles.find {it.name == ClientRole.READ_MAP.value}.id
                     ] as String[]
-                    ).setDescription("This is a test"))
+            ).setDescription("This is a test"))
     adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, updatedRoles as Role[])
     roles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
     def testRole = roles.find {it.name == "test"}
@@ -393,7 +393,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "newPassword"
-            )
+    )
     testUser2BuildingAccessToken != null
   }
 

@@ -93,7 +93,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
             attributeRef.getId(),
             attributeRef.getName(),
             predictedDatapoints
-            )
+    )
 
     and: "time advances to the first datapoint"
     awaitScheduled(applyService, attributeRef, conditions)
@@ -142,7 +142,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
     def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue2")
     assetProcessingService.sendAttributeEvent(
             new AttributeEvent(attributeRef, 1d, now)
-            )
+    )
     conditions.eventually {
       def asset = assetStorageService.find(attributeRef.getId(), true)
       def attribute = asset.getAttribute(attributeRef.getName()).get()
@@ -170,7 +170,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
               new ValueDatapoint<>(now - TimeUnit.MINUTES.toMillis(1), 5d),
               new ValueDatapoint<>(now - TimeUnit.SECONDS.toMillis(10), 7d)
             ]
-            )
+    )
 
     then: "the last predicted value should be applied immediately"
     conditions.eventually {
@@ -202,7 +202,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
     def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue3")
     assetProcessingService.sendAttributeEvent(
             new AttributeEvent(attributeRef, 99d, now)
-            )
+    )
     conditions.eventually {
       def asset = assetStorageService.find(attributeRef.getId(), true)
       def attribute = asset.getAttribute(attributeRef.getName()).get()
@@ -226,7 +226,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
               new ValueDatapoint<>(now - TimeUnit.MINUTES.toMillis(1), 5d),
               new ValueDatapoint<>(now - TimeUnit.SECONDS.toMillis(10), 7d)
             ]
-            )
+    )
 
     then: "the current attribute value should remain unchanged"
     conditions.eventually {
@@ -264,7 +264,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
             ]
-            )
+    )
 
     and: "time advances beyond the datapoints"
     advancePseudoClock(3, TimeUnit.MINUTES, container)
@@ -308,7 +308,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
             ]
-            )
+    )
 
     and: "time advances beyond the datapoints"
     advancePseudoClock(3, TimeUnit.MINUTES, container)
@@ -352,7 +352,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
             ]
-            )
+    )
 
     and: "time advances beyond the datapoints"
     advancePseudoClock(3, TimeUnit.MINUTES, container)
@@ -408,7 +408,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
             ]
-            )
+    )
 
     when: "time advances to the first datapoint"
     advancePseudoClock(1, TimeUnit.MINUTES, container)
@@ -460,7 +460,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
             ]
-            )
+    )
 
     and: "the first datapoint is scheduled"
     awaitScheduled(applyService, attributeRef, conditions)
@@ -468,7 +468,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
     when: "an event without the required meta is delivered, as can happen when events arrive out of order"
     applyService.onAttributeEvent(
             new AttributeEvent(attributeRef, 0d, now).setMeta(new MetaMap())
-            )
+    )
 
     then: "the schedule should be kept because the stored attribute still has the required meta"
     assert isScheduled(applyService, attributeRef)
@@ -513,7 +513,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
             ]
-            )
+    )
 
     when: "time advances to the first datapoint"
     awaitScheduled(applyService, attributeRef, conditions)
@@ -588,7 +588,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d),
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(3), 30d)
             ]
-            )
+    )
 
     when: "time advances to the middle of the predicted datapoints"
     advancePseudoClock(1, TimeUnit.MINUTES, container)
@@ -669,7 +669,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d),
               new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(3), 30d)
             ]
-            )
+    )
 
     when: "time advances to the middle of the predicted datapoints"
     advancePseudoClock(1, TimeUnit.MINUTES, container)
@@ -712,7 +712,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
     attribute.addOrReplaceMeta(
             new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true),
             new MetaItem<>(APPLY_PREDICTED_DATA_POINTS, true)
-            )
+    )
     assetStorageService.merge(asset)
   }
 
@@ -720,7 +720,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
     def asset = assetStorageService.find(assetId)
     asset.getAttributes().addOrReplace(
             new org.openremote.model.attribute.Attribute<>(attributeName, ValueType.NUMBER, 0d)
-            )
+    )
     assetStorageService.merge(asset)
     return new AttributeRef(assetId, attributeName)
   }
@@ -731,7 +731,7 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
     attribute.addOrReplaceMeta(
             new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true),
             new MetaItem<>(APPLY_PREDICTED_DATA_POINTS, true)
-            )
+    )
     asset.getAttributes().addOrReplace(attribute)
     assetStorageService.merge(asset)
     return new AttributeRef(assetId, attributeName)

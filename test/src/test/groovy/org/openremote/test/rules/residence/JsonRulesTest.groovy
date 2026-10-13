@@ -222,7 +222,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
 
     and: "another user authenticates"
     def accessToken2 = authenticate(
@@ -231,7 +231,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "building",
             "building"
-            )
+    )
 
     and: "a console is registered by the first user"
     def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(ConsoleResource.class)
@@ -317,7 +317,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
               new UserAssetLink(keycloakTestSetup.realmBuilding.getName(), keycloakTestSetup.testuser2Id, consoleRegistration.id),
               new UserAssetLink(keycloakTestSetup.realmBuilding.getName(), keycloakTestSetup.buildingUserId, consoleRegistration.id)
             ]
-            )
+    )
 
     and: "the console location is set to the apartment"
     assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION))
@@ -409,8 +409,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
     conditions.eventually {
       assert emailMessages.any {
         it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
-        && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "test@openremote.io"
-        && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"
+                && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "test@openremote.io"
+                && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"
       }
     }
 
@@ -418,8 +418,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
     conditions.eventually {
       assert emailMessages.any {
         it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
-        && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "testuser2@openremote.local"
-        && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"
+                && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "testuser2@openremote.local"
+                && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"
       }
     }
 
@@ -463,7 +463,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
       // Verify push notifications
       def assetIdPushNotification = pushMessages.find { localizedMsg ->
         localizedMsg.getMessages().get("en") instanceof PushNotificationMessage &&
-        ((PushNotificationMessage) localizedMsg.getMessages().get("en")).getBody()?.contains(consoleRegistration.id)
+                ((PushNotificationMessage) localizedMsg.getMessages().get("en")).getBody()?.contains(consoleRegistration.id)
       }
 
       assert assetIdPushNotification != null
@@ -483,7 +483,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
       // Count notifications for users with test-realm-role
       def linkedNotifications = pushTargetsAndMessages.findAll {
         it.v2.title == "Linked Asset ID Test" &&
-        it.v2.body == "This notification is about asset: ${consoleRegistration.id}"
+                it.v2.body == "This notification is about asset: ${consoleRegistration.id}"
       }
       assert linkedNotifications.size() == 2 // should be sent to both linked users
     }
@@ -511,8 +511,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
       assert pushTargetsAndMessages.any {
         it.v1.type == Notification.TargetType.ASSET &&
-        it.v2.title == "Asset ID Test" &&
-        it.v2.body == "Your asset ID is: ${consoleRegistration.id}"
+                it.v2.title == "Asset ID Test" &&
+                it.v2.body == "Your asset ID is: ${consoleRegistration.id}"
       }
     }
 
@@ -546,8 +546,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
     conditions.eventually {
       assert emailMessages.any {
         it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
-        && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "test@openremote.io"
-        && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(new GeoJSONPoint(-10d, -4d)).orElse("") + "</td></tr></table>"
+                && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "test@openremote.io"
+                && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(new GeoJSONPoint(-10d, -4d)).orElse("") + "</td></tr></table>"
       }
     }
 
@@ -1525,7 +1525,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             new Attribute<>("sunset", ValueType.INTEGER, null),
             new Attribute<>("sunriseWithOffset", ValueType.INTEGER, null),
             new Attribute<>("twilightHorizon", ValueType.INTEGER, null),
-            )
+    )
     thingAsset = assetStorageService.merge(thingAsset)
 
     and: "the pseudo clock is stopped"
@@ -1792,7 +1792,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             new Attribute<>("webhookAttribute", TEXT).addMeta(
                     new MetaItem<>(MetaItemType.RULE_STATE)
                     )
-            )
+    )
     thingAsset = assetStorageService.merge(thingAsset)
 
     and: "a ruleset with 'has value' condition is added whose action triggers the webhook"

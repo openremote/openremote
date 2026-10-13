@@ -76,7 +76,7 @@ class RulesEngineFiringTest extends Specification implements ManagerContainerTra
             .setRealm(Constants.MASTER_REALM)
             .addAttributes(
             new Attribute<>("count", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
-            )
+    )
     counterAsset = assetStorageService.merge(counterAsset)
 
     expect: "the rule engines to become available and be running"
@@ -198,7 +198,7 @@ class RulesEngineFiringTest extends Specification implements ManagerContainerTra
             .setRealm(Constants.MASTER_REALM)
             .addAttributes(
             new Attribute<>("count", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
-            )
+    )
     counterAsset = assetStorageService.merge(counterAsset)
 
     expect: "the rule engines to become available and be running"
@@ -283,7 +283,7 @@ class RulesEngineFiringTest extends Specification implements ManagerContainerTra
             .setRealm(Constants.MASTER_REALM)
             .addAttributes(
             new Attribute<>("count", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
-            )
+    )
     counterAsset = assetStorageService.merge(counterAsset)
 
     expect: "the rule engines to become available and be running"

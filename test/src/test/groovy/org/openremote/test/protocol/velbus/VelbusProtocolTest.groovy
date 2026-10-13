@@ -111,7 +111,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
                             new VelbusAgentLink(agent.id, 48, "CH1")
                             )
                     )
-            )
+    )
 
     and: "the device asset is added to the asset service"
     device = assetStorageService.merge(device)
@@ -145,7 +145,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
     and: "a VELBUS project file"
     def velbusProjectFileResource = getClass().getResourceAsStream(
             "/org/openremote/test/protocol/velbus/VelbusProject.vlp"
-            )
+    )
     def velbusProjectFile = IOUtils.toString(velbusProjectFileResource, "UTF-8")
 
     and: "an authenticated admin user"
@@ -155,7 +155,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the agent resource"
     def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
@@ -185,17 +185,17 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
     assert assets.length == 13
     assert assets.each {
       !TextUtil.isNullOrEmpty(it.asset.id) &&
-      !TextUtil.isNullOrEmpty(it.asset.getName()) &&
-      !it.asset.getAttributes().isEmpty() &&
-      it.asset.getAttributes().values().every {attr ->
-        attr.getMetaValue(AGENT_LINK).map{
-          ValueUtil.getValue(it, VelbusAgentLink.class)
-          .map({agentLink ->
-            agentLink.id == agent.id && agentLink.deviceAddress.isPresent() && agentLink.deviceValueLink.isPresent()
-          })
-          .orElse(false)
-        }.orElse(true)
-      }
+              !TextUtil.isNullOrEmpty(it.asset.getName()) &&
+              !it.asset.getAttributes().isEmpty() &&
+              it.asset.getAttributes().values().every {attr ->
+                attr.getMetaValue(AGENT_LINK).map{
+                  ValueUtil.getValue(it, VelbusAgentLink.class)
+                          .map({agentLink ->
+                            agentLink.id == agent.id && agentLink.deviceAddress.isPresent() && agentLink.deviceValueLink.isPresent()
+                          })
+                          .orElse(false)
+                }.orElse(true)
+              }
     }
 
     and: "a given asset should have the correct attributes (VMBGPOD)"
@@ -255,7 +255,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the agent resource"
     def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
@@ -313,7 +313,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
     and: "a VELBUS project file"
     def velbusProjectFileResource = getClass().getResourceAsStream(
             "/org/openremote/test/protocol/velbus/VelbusProject.vlp"
-            )
+    )
     def velbusProjectFile = IOUtils.toString(velbusProjectFileResource, "UTF-8")
 
     and: "a master realm user with read-only asset permission"
@@ -326,14 +326,14 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
             "agentimportreadonly@openremote.local",
             true,
             [ClientRole.READ_ASSETS] as ClientRole[]
-            )
+    )
     def accessToken = authenticate(
             container,
             MASTER_REALM,
             KEYCLOAK_CLIENT_ID,
             "agentimportreadonly",
             "agentimportreadonly"
-            )
+    )
 
     and: "the agent resource"
     def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
