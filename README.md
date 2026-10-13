@@ -10,7 +10,7 @@ Welcome to OpenRemote; an intuitive user-friendly 100% open source IoT platform.
 
 As the code base is 100% open source, applications are limitless. Here's an architecture overview:
 
-<img src="https://openremote.io/wp-content/uploads/2023/09/OpenRemote_Architecture-scaled.jpg" width="900">
+<img src="https://openremote.io/wp-content/uploads/2026/05/Infographic-1536x864.png" width="900">
 
 ## Quickstart
 
