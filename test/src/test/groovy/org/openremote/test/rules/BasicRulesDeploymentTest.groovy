@@ -74,7 +74,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
     def realmResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RealmResource.class)
 
     expect: "the rules engines to be ready"
@@ -86,7 +86,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
     def ruleset = new GlobalRuleset(
             "Some more global rules", GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text
-            )
+    )
     rulesetStorageService.merge(ruleset)
 
     then: "the global rules engine should load this definition and restart successfully"
@@ -198,7 +198,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
     ruleset = new GlobalRuleset(
             "Some broken global rules", GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text
-            )
+    )
     ruleset = rulesetStorageService.merge(ruleset)
 
     then: "the global rules engine should still run and the rule engine status should indicate the issue"

@@ -79,7 +79,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             .types(LightAsset.class)
             .realm(new RealmPredicate(keycloakTestSetup.realmCity.name))
             .names("Light 1")
-            )
+    )
 
     then: "asset should exist and be correct"
     def assetName = "Light 1"
@@ -106,14 +106,14 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
               new ValueDatapoint<>(dateTime.minusMinutes(10).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 20d),
               new ValueDatapoint<>(dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 10d),
             ]
-            )
+    )
 
     then: "the default CSV export should return a stream"
     def inputStream1 = assetDatapointService.exportDatapoints(
             [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
             dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            )
+    )
 
     and: "the CSV export should contain all 5 data points"
     def csvExport1Lines = inputStream1.readLines()
@@ -132,7 +132,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             DatapointExportFormat.CSV_CROSSTAB
-            )
+    )
 
     then: "the crosstab CSV export should contain all 5 data points in columnar format"
     def csvExport2Lines = inputStream2.readLines()
@@ -148,7 +148,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             DatapointExportFormat.CSV_CROSSTAB_MINUTE
-            )
+    )
 
     then: "the time-bucketed CSV export should contain aggregated data with correct values"
     def csvExport3Lines = inputStream3.readLines()
@@ -185,7 +185,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
             dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            )
+    )
 
     then: "the CSV export should throw an exception"
     thrown(DatapointQueryTooLargeException)
@@ -221,7 +221,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             .types(LightAsset.class)
             .realm(new RealmPredicate(keycloakTestSetup.realmCity.name))
             .names("Light 1")
-            )
+    )
 
     then: "asset should exist and be correct"
     assert asset != null
@@ -232,7 +232,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             [new AttributeRef(asset.id, injectedAttributeName)] as AttributeRef[],
             LocalDateTime.now().minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            )
+    )
 
     then: "the CSV export should not contain injected rows"
     assert csvExport != null
@@ -258,7 +258,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             .types(LightAsset.class)
             .realm(new RealmPredicate(keycloakTestSetup.realmCity.name))
             .names("Light 1")
-            )
+    )
     assert asset != null
     def originalName = asset.name
     def maliciousAssetName = 'SQL "delimiter" $cat$ -- label'
@@ -274,15 +274,15 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             [
               new ValueDatapoint<>(dateTime.minusMinutes(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 42d)
             ]
-            )
+    )
 
     expect: "both crosstab formats export the datapoint without treating the asset name as SQL"
     [DatapointExportFormat.CSV_CROSSTAB, DatapointExportFormat.CSV_CROSSTAB_MINUTE].each { format ->
       def csvExport = assetDatapointService.exportDatapoints(
-      [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
-      dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
-      dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
-      format
+              [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
+              dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+              dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+              format
       ).getText(StandardCharsets.UTF_8.name())
       def csvExportLines = csvExport.readLines()
 
@@ -323,7 +323,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             KEYCLOAK_CLIENT_ID,
             "smartcity",
             "smartcity"
-            )
+    )
     def response = null
 
     when: "exporting with a malicious attribute name via REST API"
@@ -332,7 +332,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             .types(LightAsset.class)
             .realm(new RealmPredicate(keycloakTestSetup.realmCity.name))
             .names("Light 1")
-            )
+    )
     assert asset != null
     def injectedAttributeName = "x')) UNION ((SELECT now()::timestamp, table_name::text, 'injected'::text, NULL::jsonb FROM information_schema.tables WHERE table_schema='public"
     def attributeRefsJson = "[{\"id\":\"${asset.id}\",\"name\":\"${injectedAttributeName}\"}]"
@@ -386,7 +386,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             [
               new ValueDatapoint<>(dateTime.minusMinutes(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 42d)
             ]
-            )
+    )
 
     and: "a restricted user is authenticated in the asset realm"
     def accessToken = authenticate(
@@ -395,7 +395,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
     when: "the restricted user exports the historical datapoints"
     def response = null
     def attributeRefsJson = "[{\"id\":\"${asset.id}\",\"name\":\"${attributeName}\"}]"
@@ -448,7 +448,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             [
               new ValueDatapoint<>(dateTime.minusMinutes(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 42d)
             ]
-            )
+    )
 
     and: "a restricted user is authenticated in the asset realm"
     def accessToken = authenticate(
@@ -457,7 +457,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
 
     when: "the restricted user requests the historical datapoint period"
     def response = null

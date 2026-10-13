@@ -146,7 +146,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
 
     and: "the notification and console resources"
     def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), realm, accessToken).proxy(ConsoleResource.class)
@@ -186,7 +186,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
     when: "the alarm is enabled"
     assetProcessingService.sendAttributeEvent(new AttributeEvent(
                     managerTestSetup.apartment1Id, "alarmEnabled", true
-                    ))
+            ))
 
     then: "that value should be stored"
     conditions.eventually {
@@ -197,7 +197,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
     when: "the presence is detected in Living room of apartment 1"
     ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(
             new AttributeEvent(managerTestSetup.apartment1LivingroomId, "presenceDetected", true)
-            )
+    )
 
     then: "that value should be stored"
     conditions.eventually {
@@ -232,7 +232,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
     advancePseudoClock(20, TimeUnit.MINUTES, container)
     ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(
             new AttributeEvent(managerTestSetup.apartment1LivingroomId, "co2Level", 444)
-            )
+    )
 
     then: "still only one notification should have been sent"
     conditions.eventually {
@@ -253,7 +253,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
     advancePseudoClock(5, TimeUnit.SECONDS, container)
     ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(
             new AttributeEvent(managerTestSetup.apartment1LivingroomId, "presenceDetected", false)
-            )
+    )
 
     then: "that value should be stored"
     conditions.eventually {

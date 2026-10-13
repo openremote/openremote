@@ -72,17 +72,17 @@ class TestUtil {
       def threads = []
       taskExecution.threadsPerInterval.times {
         threads << new Thread(new Runnable() {
-          @Override
-          void run() {
-            try {
-              taskExecution.task()
-            } catch (Throwable t) {
+                  @Override
+                  void run() {
+                    try {
+                      taskExecution.task()
+                    } catch (Throwable t) {
 
-              report.lastError = t
-              report.errorCount++
-            }
-          }
-        })
+                      report.lastError = t
+                      report.errorCount++
+                    }
+                  }
+                })
       }
       threads*.start()
       threads*.join()

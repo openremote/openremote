@@ -157,7 +157,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
                             new ValueAnyPredicate())
                     )
                     )
-            )
+    )
 
     and: "the asset is merged into the asset service"
     asset = assetStorageService.merge(asset)

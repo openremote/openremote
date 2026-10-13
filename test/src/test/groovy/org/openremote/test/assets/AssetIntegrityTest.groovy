@@ -65,7 +65,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the asset resource"
     def serverUri = serverUri(serverPort)
@@ -86,7 +86,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     testAsset = assetResource.get(null, testAsset.getId())
     testAsset.addOrReplaceAttributes(
             new Attribute<>("illegal- Attribute:name&&&", ValueType.TEXT)
-            )
+    )
     assetResource.update(null, testAsset.getId(), testAsset)
 
     then: "the request should fail validation and return a validation report indicating the failure(s)"
@@ -104,7 +104,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     testAsset = assetResource.get(null, testAsset.getId())
     testAsset.addOrReplaceAttributes(
             new Attribute<>("foo", ValueType.TEXT, "bar")
-            )
+    )
     assetResource.update(null, testAsset.id, testAsset)
     testAsset = assetResource.get(null, testAsset.getId())
 
@@ -230,7 +230,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there's an asset in the master realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -258,7 +258,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there's an asset in the master realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -286,7 +286,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there's an asset in the master realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -314,7 +314,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there are assets in the master and building realms"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -344,7 +344,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there's an asset in the master realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -379,7 +379,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there is an asset hierarchy in the master realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -410,7 +410,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there is a group parent that only accepts room assets"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -441,7 +441,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there is a locally registered gateway asset in the building realm"
     GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
@@ -478,7 +478,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there is a locally registered gateway asset and a gateway descendant in the building realm"
     GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
@@ -494,7 +494,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             false,
             gateway,
             null
-            )
+    )
 
     when: "an updateNoneParent call tries to clear the parent of the gateway descendant"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -597,7 +597,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the asset resource"
     def serverUri = serverUri(serverPort)

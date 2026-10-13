@@ -109,7 +109,7 @@ class RulesServiceStateOrderingTest extends Specification implements ManagerCont
             .addAttributes(
             new Attribute<>("count", ValueType.INTEGER, 0)
             .addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
-            )
+    )
     asset = assetStorageService.merge(asset)
 
     expect: "the rule-state cache contains the asset attribute"
@@ -127,7 +127,7 @@ class RulesServiceStateOrderingTest extends Specification implements ManagerCont
             "Rule state ordering",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text
-            )
+    )
     rulesetStorageService.merge(ruleset)
     RulesEngine engine = null
 
@@ -157,7 +157,7 @@ class RulesServiceStateOrderingTest extends Specification implements ManagerCont
             newerTimestamp,
             storedAttribute.getValue().orElse(null),
             initialTimestamp
-            )
+    )
     def olderEvent = new AttributeEvent(
             storedAsset,
             storedAttribute,
@@ -166,7 +166,7 @@ class RulesServiceStateOrderingTest extends Specification implements ManagerCont
             olderTimestamp,
             storedAttribute.getValue().orElse(null),
             initialTimestamp
-            )
+    )
 
     rulesService.onAttributeEvent(newerEvent)
     rulesService.onAttributeEvent(olderEvent)
@@ -209,7 +209,7 @@ class RulesServiceStateOrderingTest extends Specification implements ManagerCont
             .addAttributes(
             new Attribute<>("count", ValueType.INTEGER, 0)
             .addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
-            )
+    )
     asset = assetStorageService.merge(asset)
 
     expect: "the initial rule state is cached"
@@ -227,7 +227,7 @@ class RulesServiceStateOrderingTest extends Specification implements ManagerCont
             "Rule state retract ordering",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text
-            )
+    )
     rulesetStorageService.merge(ruleset)
     RulesEngine engine = null
 
@@ -257,7 +257,7 @@ class RulesServiceStateOrderingTest extends Specification implements ManagerCont
             newerTimestamp,
             storedAttribute.getValue().orElse(null),
             initialTimestamp
-            )
+    )
     rulesService.onAttributeEvent(newerEvent)
 
     and: "a delete for the same rule state arrives afterwards carrying an older value timestamp"
@@ -269,7 +269,7 @@ class RulesServiceStateOrderingTest extends Specification implements ManagerCont
             olderTimestamp,
             storedAttribute.getValue().orElse(null),
             initialTimestamp
-            ).setDeleted(true)
+    ).setDeleted(true)
     rulesService.onAttributeEvent(olderRetractEvent)
 
     then: "the cached rule state should be removed"

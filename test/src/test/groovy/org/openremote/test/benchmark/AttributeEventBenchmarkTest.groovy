@@ -85,7 +85,7 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
     for (i in 1..eventCount) {
       def asset = assetStorageService.merge(new ThingAsset("TestThing$i").setRealm(keycloakTestSetup.realmBuilding.name).addAttributes(
                       new Attribute<Object>("counter", ValueType.NUMBER)
-                      ))
+              ))
       assetIDs.add(asset.id)
     }
     and: "one asset is added with many attributes"
