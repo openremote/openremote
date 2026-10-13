@@ -1854,6 +1854,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@openremote/theme": "workspace:*"
     "@openremote/util": "workspace:*"
     "@reduxjs/toolkit": "npm:^2.12.0"
     "@rspack/core": "npm:~2.1.10"
