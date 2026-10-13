@@ -251,7 +251,7 @@ jobs:
         with:
           repository: ${{ steps.is_core_repo.outputs.repository }}
           path: core
-          ref: ${{ steps.is_core_repo.outputs.ref }}
+          ref: 4c0e664fc9f5dca9f4f8534cda878ecca10b7049
           sparse-checkout: .ci_cd
           sparse-checkout-cone-mode: false
 
