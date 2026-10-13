@@ -4,9 +4,17 @@ metadata:
   name: {{ include "proxy.fullname" . }}
   labels:
     {{- include "proxy.labels" . | nindent 4 }}
-  {{- with .Values.service.http.annotations }}
+    {{- if and .Values.dns.enabled (eq .Values.service.http.type "LoadBalancer") }}
+    openremote.io/managed-dns: "true"
+    {{- end }}
+  {{- if or .Values.service.http.annotations (and .Values.dns.enabled (eq .Values.service.http.type "LoadBalancer")) }}
   annotations:
+    {{- with .Values.service.http.annotations }}
     {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- if and .Values.dns.enabled (eq .Values.service.http.type "LoadBalancer") }}
+    external-dns.kubernetes.io/hostname: {{ required "dns.hostname is required when dns.enabled is true" .Values.dns.hostname | quote }}
+    {{- end }}
   {{- end }}
 spec:
   type: {{ .Values.service.http.type }}
@@ -15,14 +23,18 @@ spec:
       targetPort: {{ .Values.or.httpPort }}
       protocol: TCP
       name: http
-    - port: 443
+    {{- if .Values.service.https.enabled }}
+    - port: {{ .Values.service.https.port }}
       targetPort: {{ .Values.or.httpsPort }}
       protocol: TCP
       name: https
-    - port: 8883
+    {{- end }}
+    {{- if .Values.service.mqtts.enabled }}
+    - port: {{ .Values.service.mqtts.port }}
       targetPort: {{ .Values.or.mqttPort }}
       protocol: TCP
       name: mqtts
+    {{- end }}
   selector:
     {{- include "proxy.selectorLabels" . | nindent 4 }}
 ---

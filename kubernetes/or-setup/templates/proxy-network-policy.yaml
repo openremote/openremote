@@ -1,0 +1,16 @@
+{{- if and .Values.networkPolicy.enabled .Values.networkPolicy.proxy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openremote-proxy-ingress
+spec:
+  podSelector:
+    {{- toYaml .Values.networkPolicy.proxy.podSelector | nindent 4 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Omitting `from` permits load-balancer and local host traffic while this
+    # rule remains limited to HAProxy's HTTP(S) container ports.
+    - ports:
+        {{- toYaml .Values.networkPolicy.proxy.ports | nindent 8 }}
+{{- end }}
