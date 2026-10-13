@@ -20,30 +20,28 @@ jobs:
 
       - name: Get version details
         id: get-version-details
-        uses: openremote/openremote/.github/actions/get-version-details@3cde448ab3d2e825e7ab189881d0e6cf33a34486
+        uses: openremote/core/.github/actions/get-version-details@3cde448ab3d2e825e7ab189881d0e6cf33a34486
 
-      - name: Check if main repo
-        id: is_main_repo
-        uses: openremote/openremote/.github/actions/check-if-main-repo@5beec5454f28eda1dd25331c9ce1d5b430266f7e
+      - name: Check if core repo
+        id: is_core_repo
+        uses: openremote/core/.github/actions/check-if-core-repo@357f1387fbc99e7a59752a62064f0bdade57612d
 
-      - name: Checkout main repo
+      - name: Checkout core repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: ${{ steps.is_main_repo.outputs.value == 'false' }}
+        if: ${{ steps.is_core_repo.outputs.value == 'false' }}
         with:
-          repository: ${{ steps.is_main_repo.outputs.repository }}
-          path: openremote
-          ref: ${{ steps.is_main_repo.outputs.version }}
-          sparse-checkout: |
-            .ci_cd
-            profile
+          repository: ${{ steps.is_core_repo.outputs.repository }}
+          path: core
+          ref: ${{ steps.is_core_repo.outputs.version }}
+          sparse-checkout: .ci_cd
           sparse-checkout-cone-mode: false
 
       - name: Process ci_cd.json file
         id: ci-cd-output
-        uses: openremote/openremote/.github/actions/process-cicd-json@9ea22e19db6711afd711f39517fe25509b018803
+        uses: openremote/core/.github/actions/process-cicd-json@357f1387fbc99e7a59752a62064f0bdade57612d
         with:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
+          IS_CORE_REPO: ${{ steps.is_core_repo.outputs.value }}
+          MANAGER_VERSION: ${{ steps.is_core_repo.outputs.version }}
           IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}
           VERSION: ${{ steps.get-version-details.outputs.version }}
 
@@ -62,7 +60,7 @@ jobs:
 
       - name: Download manager build directory
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
+        if: ${{ steps.is_core_repo.outputs.value == 'true' }}
         with:
           name: or-manager-build
           path: manager/build
@@ -163,7 +161,7 @@ jobs:
           import sys
 
           repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
-          isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
+          isCoreRepo = os.getenv('IS_CORE_REPO') == 'true'
           deployments = os.getenv('DEPLOYMENTS')
           eventName = os.getenv('GITHUB_EVENT_NAME')
           refType = os.getenv('GITHUB_REF_TYPE')
@@ -172,7 +170,7 @@ jobs:
           managerVersion = os.getenv('MANAGER_VERSION')
 
           if eventName == 'workflow_dispatch' and refType != 'tag' and repoOwner == 'openremote':
-            if isMainRepo:
+            if isCoreRepo:
               tag=inputTag
               if not inputTag:
                 tag='#ref'
@@ -180,14 +178,14 @@ jobs:
               tag=managerVersion
             deployments=f'{inputEnv}:{tag}'
 
-          if not isMainRepo:
+          if not isCoreRepo:
             if "-SNAPSHOT" in deployments:
               os.system("echo 'SNAPSHOT manager docker images not currently supported for custom project deployment'")
               sys.exit(1)
           os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
         env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
+          IS_CORE_REPO: ${{ steps.is_core_repo.outputs.value }}
+          MANAGER_VERSION: ${{ steps.is_core_repo.outputs.version }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
           INPUT_ENVIRONMENT: ${{ steps.process-inputs.outputs.ENVIRONMENT }}
           INPUT_MANAGER_TAG: ${{ steps.process-inputs.outputs.MANAGER_TAG }}
@@ -210,7 +208,7 @@ jobs:
           deployments = deployments.split(";")
           managerRef = os.getenv("MANAGER_REF")
           deploymentRef = os.getenv("DEPLOYMENT_REF")
-          isMainRepo = os.getenv("IS_MAIN_REPO") == 'true'
+          isCoreRepo = os.getenv("IS_CORE_REPO") == 'true'
           inputs = json.loads(os.getenv("INPUTS", "{}"))
           secrets = json.loads(os.getenv("SECRETS", "{}"))
           inputsAndSecrets = secrets | inputs
@@ -227,8 +225,8 @@ jobs:
           # Determine deploy script to use
           deployScript = ".ci_cd/deploy.sh"
 
-          if not os.path.exists(deployScript) and not isMainRepo:
-            deployScript = "openremote/.ci_cd/deploy.sh"
+          if not os.path.exists(deployScript) and not isCoreRepo:
+            deployScript = "core/.ci_cd/deploy.sh"
 
           if not os.path.exists(deployScript):
             os.system(f"Deploy script not found '{deployScript}'")
@@ -326,7 +324,7 @@ jobs:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)
         env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          IS_CORE_REPO: ${{ steps.is_core_repo.outputs.value }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
           MANAGER_DOCKER_BUILD_PATH: manager/build/install/manager

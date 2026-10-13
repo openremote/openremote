@@ -2,10 +2,10 @@ name: Process ci_cd.json file
 description: Processes the ci_cd.json file to determine artifact publishing tags and deployments
 
 inputs:
-  IS_MAIN_REPO:
-    description: Whether this is the main repository that builds the manager
+  IS_CORE_REPO:
+    description: Whether this is the core repository that builds the manager
   MANAGER_VERSION:
-    description: The manager version specified in the main repository
+    description: The manager version specified in the core repository
   IS_RELEASE:
     description: Whether this is a release
   VERSION:
@@ -46,7 +46,7 @@ runs:
         refName = os.getenv('GITHUB_REF_NAME')
         refType = os.getenv('GITHUB_REF_TYPE')
         repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
-        isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
+        isCoreRepo = os.getenv('IS_CORE_REPO') == 'true'
         isRelease = os.getenv('IS_RELEASE') == 'true'
         managerVersion = os.getenv('MANAGER_VERSION')
         version = os.getenv('VERSION')
@@ -84,7 +84,7 @@ runs:
             if 'npm' in distributeConfig['distribute']:
               npmPublishTag = distributeConfig['distribute']['npm']
 
-        if isMainRepo:
+        if isCoreRepo:
 
           if dockerPublishTags is not None:
             dockerPublishTags = ",".join(map(lambda t: t.strip(), dockerPublishTags.split(",")))
@@ -118,13 +118,13 @@ runs:
               deployStr += deploy['environment']
             deployStr += ":"
             if 'managerTag' in deploy:
-              if isMainRepo:
+              if isCoreRepo:
                 deployStr += deploy['managerTag']
               else:
                 # Custom projects manager docker image must match the openremote version from gradle/libs.versions.toml
                 deployStr += managerVersion
             else:
-              if isMainRepo:
+              if isCoreRepo:
                 os.system("echo 'Manager tag not specified so using commit SHA'")
                 deployStr += managerTagDefault
               else:
@@ -139,7 +139,7 @@ runs:
           print(f"Deployments to deploy: {deployStr}")
           os.system(f"echo 'deploys={deployStr}' >> $GITHUB_OUTPUT")
       env:
-        IS_MAIN_REPO: ${{ inputs.IS_MAIN_REPO }}
+        IS_CORE_REPO: ${{ inputs.IS_CORE_REPO }}
         MANAGER_VERSION: ${{ inputs.MANAGER_VERSION }}
         IS_RELEASE: ${{ inputs.IS_RELEASE }}
         VERSION: ${{ inputs.VERSION }}

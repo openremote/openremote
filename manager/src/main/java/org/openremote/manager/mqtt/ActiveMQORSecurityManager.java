@@ -102,7 +102,7 @@ public class ActiveMQORSecurityManager implements ActiveMQSecurityManager5 {
 
       try {
         // TODO: Add support for bearer token authentication
-        // https://github.com/openremote/openremote/issues/2534
+        // https://github.com/openremote/core/issues/2534
         // Login service user
         if (user != null) {
           int delimIndex = user.indexOf(':');

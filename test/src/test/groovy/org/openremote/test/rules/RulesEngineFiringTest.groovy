@@ -47,7 +47,7 @@ import static org.openremote.model.rules.Ruleset.Lang.GROOVY
 class RulesEngineFiringTest extends Specification implements ManagerContainerTrait {
 
   /*
-   * See https://github.com/openremote/openremote/issues/1953
+   * See https://github.com/openremote/core/issues/1953
    * When rules evaluation takes longer than the firing period AND an attribute event occurs during that time,
    * the rules engine would fire even if rules where still being evaluated.
    */

@@ -30,9 +30,9 @@ jobs:
           ref: ${{ inputs.COMMIT }}
           lfs: true # Enable Git LFS plugin to fetch *.mbtiles
 
-      - name: Check if main repo
-        id: is_main_repo
-        uses: openremote/openremote/.github/actions/check-if-main-repo@5beec5454f28eda1dd25331c9ce1d5b430266f7e
+      - name: Check if core repo
+        id: is_core_repo
+        uses: openremote/core/.github/actions/check-if-core-repo@357f1387fbc99e7a59752a62064f0bdade57612d
 
       - name: Set up JDK 21 and Gradle cache
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
@@ -119,7 +119,7 @@ jobs:
 
       - name: Archive MDI fonts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
+        if: ${{ steps.is_core_repo.outputs.value == 'true' }}
         with:
           name: mdi-fonts
           if-no-files-found: error
