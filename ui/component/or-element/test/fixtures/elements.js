@@ -43,3 +43,82 @@ export class StyledElement extends OrElement {
   }
 }
 customElements.define("test-styled-element", StyledElement);
+
+/** Counts the lifecycle callbacks the platform delivers, without overriding connectedMoveCallback. */
+export class LifecycleElement extends OrElement {
+  constructor() {
+    super();
+    this.counts = { connected: 0, disconnected: 0 };
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.counts.connected++;
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.counts.disconnected++;
+  }
+
+  render() {
+    return html`<h4>Lifecycle</h4>`;
+  }
+
+  /**
+   * Relocates this element to a second parent, either as a move or as a plain re-insertion.
+   * @param how "move" for moveBefore, "reinsert" for appendChild
+   * @returns whether moveBefore exists, and the callback counts after relocating
+   */
+  async relocate(how) {
+    const from = this.parentElement;
+    const to = document.createElement("div");
+    from.parentElement.appendChild(to);
+    await this.updateComplete;
+
+    const supported = typeof to.moveBefore === "function";
+    if (how === "move" && supported) {
+      to.moveBefore(this, null);
+    } else {
+      to.appendChild(this);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    return { supported, ...this.counts };
+  }
+}
+customElements.define("test-lifecycle-element", LifecycleElement);
+
+/** Reproduces how a grid re-orders its children: the wrapper div moves, the component rides along. */
+export class NestedMoveFixture extends HTMLElement {
+  /**
+   * Builds parent > [itemA > component, itemB], then relocates itemA to the end of the same parent.
+   * @param how "move" for moveBefore, "reinsert" for appendChild
+   * @returns whether moveBefore exists, and the component callback counts after relocating
+   */
+  async run(how) {
+    const parent = document.createElement("div");
+    this.appendChild(parent);
+
+    const itemA = document.createElement("div");
+    const itemB = document.createElement("div");
+    parent.append(itemA, itemB);
+
+    const component = document.createElement("test-lifecycle-element");
+    itemA.appendChild(component);
+    while (!(await component.updateComplete)) {
+      /* keep waiting */
+    }
+
+    const supported = typeof parent.moveBefore === "function";
+    if (how === "move" && supported) {
+      parent.moveBefore(itemA, null);
+    } else {
+      parent.appendChild(itemA);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    return { supported, order: Array.from(parent.children).indexOf(itemA), ...component.counts };
+  }
+}
+customElements.define("nested-move-fixture", NestedMoveFixture);

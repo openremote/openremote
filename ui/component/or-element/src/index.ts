@@ -40,4 +40,15 @@ export class OrElement extends LitElement {
   protected static finalizeStyles(styles?: CSSResultGroup): CSSResultOrNative[] {
     return [globals, ...super.finalizeStyles(styles)];
   }
+
+  /**
+   * Declares that a state-preserving DOM move leaves the component alone.
+   *
+   * Defining this callback is what makes the platform treat a `moveBefore()` as a move instead of a
+   * removal followed by an insertion: `disconnectedCallback` and `connectedCallback` are not called,
+   * so the component keeps its loaded content, its subscriptions and whatever it has built in its
+   * shadow DOM rather than tearing all of it down and fetching it again. Engines that do not support the
+   * callback still disconnect and reconnect the component, so it has to rebuild correctly as well.
+   */
+  public connectedMoveCallback() {}
 }
