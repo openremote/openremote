@@ -269,6 +269,8 @@ export class OrAttributeCard extends OrElement {
   connectedCallback() {
     super.connectedCallback();
     this._style = window.getComputedStyle(this);
+    // The chart is destroyed on disconnect and updated() only builds it during an update
+    this.requestUpdate();
   }
 
   disconnectedCallback(): void {

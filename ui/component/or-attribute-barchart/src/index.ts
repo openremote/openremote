@@ -570,7 +570,9 @@ export class OrAttributeBarChart extends OrElement {
       return;
     }
     // Generate chart element if not done yet
-    if (!this._chart) {
+    // A new chart starts without series, so it is given the data already held
+    const chartCreated = !this._chart;
+    if (chartCreated) {
       console.debug("Initializing chart...");
       this.chartOptions = { ...this._getDefaultChartOptions(), ...this.chartOptions };
       this._chart = echarts.init(this._chartElem);
@@ -578,7 +580,7 @@ export class OrAttributeBarChart extends OrElement {
       this._toggleChartEventListeners(true);
     }
     // If data has changed (and there is data present), update the chart element.
-    if (changedProps.has("_data") && this._data?.[0]?.data?.length) {
+    if ((chartCreated || changedProps.has("_data")) && this._data?.[0]?.data?.length) {
       this._updateChartData();
     }
   }

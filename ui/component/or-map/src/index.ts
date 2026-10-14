@@ -380,7 +380,6 @@ export class OrMap extends OrElement {
 
   protected _initCallback?: EventCallback;
   protected _map?: AssetMap;
-  protected _loaded: boolean = false;
 
   protected _resizeObserver?: ResizeObserver;
 
@@ -417,9 +416,13 @@ export class OrMap extends OrElement {
 
   protected firstUpdated(_changedProperties: PropertyValues): void {
     super.firstUpdated(_changedProperties);
-    if (manager.ready) {
-      this.loadMap();
-    }
+    this.loadMap();
+  }
+
+  public connectedCallback() {
+    super.connectedCallback();
+    // Builds the map again when a detach unloaded it; before the first render there is nothing to build on
+    this.loadMap();
   }
 
   public disconnectedCallback() {
@@ -429,6 +432,8 @@ export class OrMap extends OrElement {
     }
     // Clean up of internal resources associated with the map
     this._map?.unload();
+    // An unloaded map cannot be used again, so drop it and let loadMap build a fresh one
+    this._map = undefined;
   }
 
   protected render() {
@@ -467,48 +472,44 @@ export class OrMap extends OrElement {
   }
 
   public loadMap() {
-    if (this._loaded) {
+    if (this._map || !manager.ready || !this._mapContainer || !this._slotElement) {
       return;
     }
 
-    if (this._mapContainer && this._slotElement) {
-      this._map = new AssetMap(
-        this.shadowRoot!,
-        this._mapContainer,
-        this,
-        this.showGeoCodingControl,
-        this.showBoundaryBoxControl,
-        this.useZoomControl,
-        this.showGeoJson,
-        this.cluster,
-        this.filters,
-        this.showLegend
-      )
-        .setCenter(this.center)
-        .setZoom(this.zoom)
-        .setControls(this.controls)
-        .setGeoJson(this.geoJson);
+    this._map = new AssetMap(
+      this.shadowRoot!,
+      this._mapContainer,
+      this,
+      this.showGeoCodingControl,
+      this.showBoundaryBoxControl,
+      this.useZoomControl,
+      this.showGeoJson,
+      this.cluster,
+      this.filters,
+      this.showLegend
+    )
+      .setCenter(this.center)
+      .setZoom(this.zoom)
+      .setControls(this.controls)
+      .setGeoJson(this.geoJson);
 
-      this._map.build().then(() => {
-        this._resizeObserver?.disconnect();
-        this._resizeObserver = new ResizeObserver(
-          debounce(() => {
-            this.resize();
-          }, 200)
-        );
-        const container = this._mapContainer?.parentElement;
-        if (container) {
-          this._resizeObserver.observe(container);
+    this._map.build().then(() => {
+      this._resizeObserver?.disconnect();
+      this._resizeObserver = new ResizeObserver(
+        debounce(() => {
+          this.resize();
+        }, 200)
+      );
+      const container = this._mapContainer?.parentElement;
+      if (container) {
+        this._resizeObserver.observe(container);
+      }
+      this._slotElement!.assignedNodes({ flatten: true }).forEach((node) => {
+        if (node instanceof OrMapMarker) {
+          this._map!.addMarker(node);
         }
-        this._slotElement!.assignedNodes({ flatten: true }).forEach((node) => {
-          if (node instanceof OrMapMarker) {
-            this._map!.addMarker(node);
-          }
-        });
       });
-    }
-
-    this._loaded = true;
+    });
   }
 
   public resize() {

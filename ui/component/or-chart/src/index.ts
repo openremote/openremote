@@ -596,7 +596,9 @@ export class OrChart extends translate(i18next)(OrElement) {
       return;
     }
 
-    if (!this._chart) {
+    // A new chart starts without series, so it is given the data already held
+    const chartCreated = !this._chart;
+    if (chartCreated) {
       // Parse the background color from CSS variables
       let bgColor = this._style.getPropertyValue("--internal-or-chart-graph-fill-color").trim();
       const opacity = Number(this._style.getPropertyValue("--internal-or-chart-graph-fill-opacity").trim());
@@ -738,7 +740,7 @@ export class OrChart extends translate(i18next)(OrElement) {
       this._toggleChartEventListeners(true);
     }
 
-    if (changedProperties.has("_data")) {
+    if (chartCreated || changedProperties.has("_data")) {
       // Update chart to data from set period
       this._updateChartData();
     }
