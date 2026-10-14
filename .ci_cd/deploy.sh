@@ -220,7 +220,9 @@ if [ -f "temp/deployment.tar.gz" ]; then
 fi
 
 # Login to Private ECR Registry to download restricted images
-aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
+if [ -n "$OR_AWS_ECR_ACCOUNT_ID" ] && [ -n "$OR_AWS_ECR_REGION" ]; then
+  aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
+fi
 
 # Make sure we have correct keycloak, proxy and postgres images
 echo "Pulling requested service versions from docker hub"
@@ -364,7 +366,9 @@ if [ -f "temp/deployment.tar.gz" ]; then
 fi
 
 # Login to Private ECR Registry to download restricted images
-aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
+if [ -n "$OR_AWS_ECR_ACCOUNT_ID" ] && [ -n "$OR_AWS_ECR_REGION" ]; then
+  aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
+fi
 
 # Make sure we have correct keycloak, proxy and postgres images
 echo "Pulling requested service versions from docker hub"
