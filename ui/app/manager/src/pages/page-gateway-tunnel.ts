@@ -323,7 +323,10 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         { actionName: "cancel", content: "cancel" },
         {
           actionName: "add",
-          disabled: !tunnel.gatewayId || (tunnel.hostname && tunnel.hostname.trim().length === 0) || (tunnel.targetPort !== undefined && (tunnel.targetPort <= 0 || tunnel.targetPort > 65535)),
+          disabled:
+            !tunnel.gatewayId ||
+            (tunnel.hostname && tunnel.hostname.trim().length === 0) ||
+            (tunnel.targetPort !== undefined && (tunnel.targetPort <= 0 || tunnel.targetPort > 65535)),
           content: "add",
           action: () => onAddClick(),
         },
