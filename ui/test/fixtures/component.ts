@@ -27,6 +27,7 @@ import type { Asset } from "@openremote/model";
 declare global {
   interface Window {
     _i18next: i18n;
+    _addTranslationFormats: (i18n: i18n) => void;
     _assets: Asset[];
   }
 }
@@ -105,6 +106,7 @@ export class CtShared extends Shared {
           loadPath: "/shared/locales/{{lng}}/{{ns}}.json",
         },
       });
+      window._addTranslationFormats(window._i18next);
       if (resources) {
         Object.entries(resources).forEach(([locale, r]) =>
           Object.entries(r).forEach(([ns, translations]) => {

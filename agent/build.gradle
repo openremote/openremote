@@ -103,6 +103,8 @@ base {
 
 javadoc {
   failOnError = false
+  // Exclude the generated TTN/ChirpStack protobuf classes from Javadoc to reduce the published artifact size
+  source = fileTree('src/main/java')
 }
 
 java {
@@ -119,7 +121,7 @@ publishing {
       pom {
         name = 'OpenRemote Agent'
         description = 'Provides agent SPI and built in agents; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
-        url = 'https://github.com/openremote/openremote'
+        url = 'https://github.com/openremote/core'
         licenses {
           license {
             name = 'GNU Affero General Public License v3.0'
@@ -136,9 +138,9 @@ publishing {
           }
         }
         scm {
-          connection = 'scm:git:git://github.com/openremote/openremote.git'
-          developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
-          url = 'https://github.com/openremote/openremote/tree/master'
+          connection = 'scm:git:git://github.com/openremote/core.git'
+          developerConnection = 'scm:git:ssh://github.com:openremote/core.git'
+          url = 'https://github.com/openremote/core/tree/main'
         }
       }
     }
@@ -164,4 +166,9 @@ signing {
     useInMemoryPgpKeys(signingKey, signingPassword)
     sign publishing.publications.maven
   }
+}
+
+tasks.named('sourcesJar') {
+  // Exclude the generated TTN/ChirpStack protobuf classes from sources to reduce the published artifact size
+  include 'org/openremote/**'
 }

@@ -18,7 +18,7 @@
  */
 import type { GeoJsonConfig } from "@openremote/model";
 import manager, { DefaultColor4 } from "@openremote/core";
-import maplibregl, {
+import {
   type AddLayerObject,
   AttributionControl,
   type IControl,
@@ -44,7 +44,7 @@ import {
 } from "./index";
 import { OrMapGeocoderControl } from "./controls/geocoder";
 import type { OrMapMarker } from "./markers/or-map-marker";
-import { getLngLat, isWebglSupported, metersToPixelsAtMaxZoom } from "./util";
+import { getLngLat, metersToPixelsAtMaxZoom } from "./util";
 import { isMapboxURL, transformMapboxUrl } from "./util/mapbox-url";
 import type { Feature, FeatureCollection } from "geojson";
 
@@ -273,13 +273,29 @@ export class BaseMap {
       options.zoom = this._zoom;
     }
 
+    // The worker and the shared module it imports are copied next to the app by its bundler config
+    if (!map.getWorkerUrl()) map.setWorkerUrl(new URL("maplibre/maplibre-gl-worker.mjs", document.baseURI).href);
+
     // Firefox headless mode does not support webgl, see https://bugzilla.mozilla.org/show_bug.cgi?id=1375585
-    if (!isWebglSupported()) {
-      console.warn("WebGL is not supported in this environment. The map cannot be initialized.");
+    try {
+      this._map = new map.Map(options);
+    } catch (error) {
+      // Creating the map fails where WebGL2 is unavailable, such as headless Firefox
+      if (!(error instanceof map.GPUInitializationError)) throw error;
+      console.warn(error.message);
       return;
     }
 
-    this._map = new map.Map(options);
+    // Recreating the context after it was lost and restored can also fail;
+    // that failure arrives through the error event since the map already exists.
+    // Source: https://maplibre.org/maplibre-gl-js/docs/examples/check-if-webgl-is-supported/
+    this._map.on("error", (e) => {
+      if (e.error instanceof map.GPUInitializationError) {
+        console.warn(e.error.message);
+        return;
+      }
+      console.error(e.error);
+    });
 
     await this._styleLoaded();
 
@@ -333,7 +349,7 @@ export class BaseMap {
   protected _styleLoaded(): Promise<void> {
     return new Promise((resolve) => {
       if (this._map) {
-        this._map.once("style.load", resolve);
+        this._map.once("style.load", () => resolve());
       }
     });
   }
@@ -805,9 +821,6 @@ export class BaseMap {
       this._map.on("touchcancel", clearTimeoutFunc);
       this._map.on("touchmove", clearTimeoutFunc);
       this._map.on("moveend", clearTimeoutFunc);
-      this._map.on("gesturestart", clearTimeoutFunc);
-      this._map.on("gesturechange", clearTimeoutFunc);
-      this._map.on("gestureend", clearTimeoutFunc);
     }
   }
 

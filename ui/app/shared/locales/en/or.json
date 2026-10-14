@@ -435,7 +435,10 @@
     "limit_sharing_rate": "Limit the rate of how often attribute value updates are shared",
     "limit_sharing_rate_suffix": "minutes interval",
     "assetSyncRulesEnable": "Customize asset synchronization",
-    "assetSyncRulesInput": "Synchronization config"
+    "assetSyncRulesInput": "Synchronization config",
+    "clientSecretHelper": "Must be exactly 36 characters",
+    "saveUnauthorized": "Unauthorized",
+    "saveInvalidInput": "Please double check the inputs"
   },
   "gatewayTunnel": "Gateway tunnels",
   "gatewayTunnels": {
@@ -809,10 +812,10 @@
   "savePasswordFailed": "Failed to set the password.",
   "userAlreadyExists": "Error occurred! This user already exists.",
   "realmAlreadyExists": "Realm name already exists",
-  "invalidUsername": "Username must be 3-255 alpha numerical characters",
   "invalidEmail": "Invalid email address",
   "invalidUrl": "Enter a valid URL, e.g. https://example.com",
   "invalidRealm": "Realm must be 2-255 alpha numerical characters",
+  "invalidCharacters": "Length invalid or invalid characters found",
   "yes": "Yes",
   "no": "No",
   "tag": "Tag",
@@ -830,8 +833,9 @@
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
   },
-  "realmDeleteConfirm": "Warning! this will delete everything in this realm, type the realm name '{{realmName}}' to confirm.",
+  "realmDeleteConfirm": "Warning! Realm must contain no assets to allow deletion, this will delete everything else in this realm automatically, type the realm name '{{realmName}}' to confirm.",
   "realmDeleteFailed": "Failed to delete realm",
+  "realmDeleteFailedHasAssets": "Failed to delete realm because it still contains assets",
   "addRule": "Add rule",
   "rulesetStatus": {
     "DEPLOYED": "Successfully deployed",
@@ -992,6 +996,7 @@
     "mapSettings": "Map settings",
     "maxZoom": "Maximal zoom",
     "minZoom": "Minimal zoom",
+    "boxZoom": "Box zoom",
     "geoJson": "GeoJSON",
     "geoJsonDescription": "Customize the GeoJSON; add points, lines and polygons to be drawn on the map.",
     "deleteMapCustomization": "Delete map settings",

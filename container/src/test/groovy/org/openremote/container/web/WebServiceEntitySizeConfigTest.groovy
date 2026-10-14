@@ -24,42 +24,42 @@ import spock.lang.Specification
 
 class WebServiceEntitySizeConfigTest extends Specification {
 
-    def "uses #scenario entity size limits"() {
-        given:
-        def config = [
-            (WebService.OR_WEBSERVER_LISTEN_HOST): "127.0.0.1",
-            (WebService.OR_WEBSERVER_LISTEN_PORT): "0"
-        ] + overrides
-        def container = Stub(Container) {
-            getConfig() >> config
-            getService(IdentityService) >> null
-            getService(_) >> { Class type ->
-                throw new IllegalStateException("Service not available in test container: ${type.name}")
-            }
-        }
-        def service = new TrackingWebService()
+  def "uses #scenario entity size limits"() {
+    given:
+    def config = [
+      (WebService.OR_WEBSERVER_LISTEN_HOST): "127.0.0.1",
+      (WebService.OR_WEBSERVER_LISTEN_PORT): "0"
+    ] + overrides
+    def container = Stub(Container) {
+      getConfig() >> config
+      getService(IdentityService) >> null
+      getService(_) >> { Class type ->
+        throw new IllegalStateException("Service not available in test container: ${type.name}")
+      }
+    }
+    def service = new TrackingWebService()
 
-        when:
-        service.init(container)
+    when:
+    service.init(container)
 
-        then:
-        service.multipartLimit == expectedMultipartLimit
-        service.maxLimit == expectedMaxLimit
+    then:
+    service.multipartLimit == expectedMultipartLimit
+    service.maxLimit == expectedMaxLimit
 
-        where:
-        scenario     | overrides                                                                                                                 || expectedMultipartLimit                                    | expectedMaxLimit
-        "default"    | [:]                                                                                                                       || WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT | WebService.OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT
-        "configured" | [(WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE): "1024", (WebService.OR_WEBSERVER_MAX_ENTITY_SIZE): "2048"]           || 1024L                                                     | 2048L
-        "invalid"    | [(WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE): "invalid", (WebService.OR_WEBSERVER_MAX_ENTITY_SIZE): "also_invalid"] || WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT | WebService.OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT
+    where:
+    scenario | overrides || expectedMultipartLimit | expectedMaxLimit
+    "default" | [:] || WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT | WebService.OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT
+    "configured" | [(WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE): "1024", (WebService.OR_WEBSERVER_MAX_ENTITY_SIZE): "2048"] || 1024L | 2048L
+    "invalid" | [(WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE): "invalid", (WebService.OR_WEBSERVER_MAX_ENTITY_SIZE): "also_invalid"] || WebService.OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT | WebService.OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT
+  }
+
+  static class TrackingWebService extends WebService {
+    long getMultipartLimit() {
+      multipartMaxEntitySize
     }
 
-    static class TrackingWebService extends WebService {
-        long getMultipartLimit() {
-            multipartMaxEntitySize
-        }
-
-        long getMaxLimit() {
-            maxEntitySize
-        }
+    long getMaxLimit() {
+      maxEntitySize
     }
+  }
 }

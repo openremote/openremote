@@ -8,7 +8,11 @@ plugins {
   id 'signing'
 }
 
-sourceSets.main.resources.srcDirs += layout.buildDirectory.dir('classes/main')
+sourceSets {
+  main {
+    output.dir(layout.buildDirectory.dir("classes/main"), builtBy: "generateSources")
+  }
+}
 
 base {
   archivesName = "openremote-${project.name}"
@@ -28,7 +32,7 @@ publishing {
       pom {
         name = 'OpenRemote Shared UI Files'
         description = 'Provides the files shared between OpenRemote UIs'
-        url = 'https://github.com/openremote/openremote'
+        url = 'https://github.com/openremote/core'
         licenses {
           license {
             name = 'GNU Affero General Public License v3.0'
@@ -45,9 +49,9 @@ publishing {
           }
         }
         scm {
-          connection = 'scm:git:git://github.com/openremote/openremote.git'
-          developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
-          url = 'https://github.com/openremote/openremote/tree/master'
+          connection = 'scm:git:git://github.com/openremote/core.git'
+          developerConnection = 'scm:git:ssh://github.com:openremote/core.git'
+          url = 'https://github.com/openremote/core/tree/main'
         }
       }
     }
@@ -196,7 +200,5 @@ tasks.register('processTranslations', JavaCompile) {
 }
 
 jar.dependsOn(generateSources)
-processResources.dependsOn(generateSources)
-sourcesJar.dependsOn(generateSources)
 
 gradle.startParameter.excludedTaskNames += ["${project.path}:test".toString()]

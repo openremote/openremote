@@ -227,7 +227,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
   public static final String OR_DB_VENDOR = "OR_DB_VENDOR";
   public static final String OR_DB_VENDOR_DEFAULT = Database.Product.POSTGRES.name();
   public static final String OR_DB_HOST = "OR_DB_HOST";
-  public static final String OR_DB_HOST_DEFAULT = "localhost";
+  public static final String OR_DB_HOST_DEFAULT = "127.0.0.1";
   public static final String OR_DB_PORT = "OR_DB_PORT";
   public static final int OR_DB_PORT_DEFAULT = 5432;
   public static final String OR_DB_NAME = "OR_DB_NAME";
@@ -355,6 +355,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     }
 
     openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
+
+    verifyTimescaleDbVersion();
+
     prepareSchema(container, connectionUrl, dbUsername, dbPassword, dbSchema, dbName);
   }
 
@@ -369,8 +372,6 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
   @Override
   public void start(Container container) throws Exception {
-    verifyTimescaleDbVersion();
-
     // Register standard entity classes and also any Entity ClassProviders
     List<String> entityClasses = new ArrayList<>(50);
     entityClasses.add(Asset.class.getName());
@@ -509,6 +510,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     switch (cause) {
       case CREATE -> publishPersistenceEvent(cause, currentEntity, null, null, null);
       case DELETE -> publishPersistenceEvent(cause, previousEntity, null, null, null);
+      case DELETE_FINISHED -> publishPersistenceEvent(cause, currentEntity, null, null, null);
       case UPDATE -> {
         List<String> propertyNames = new ArrayList<>(propertyFields.length);
         List<Object> currentState = new ArrayList<>(propertyFields.length);

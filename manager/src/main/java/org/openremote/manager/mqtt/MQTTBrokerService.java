@@ -610,6 +610,11 @@ public class MQTTBrokerService extends RouteBuilder
         .collect(Collectors.toSet());
   }
 
+  public String getConnectionUserId(String connectionID) {
+    RemotingConnection connection = connectionIDConnectionMap.get(connectionID);
+    return connection == null ? null : IdentityProvider.getSubjectId(connection.getSubject());
+  }
+
   protected void doForceDisconnect(RemotingConnection connection) {
     LOG.log(
         DEBUG, () -> "Force disconnecting client connection: " + connectionToString(connection));

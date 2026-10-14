@@ -19,7 +19,7 @@
 import { html } from "lit";
 import { setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/web-components";
 import { getORStorybookHelpers } from "../../storybook-utils.js";
-import customElements from "../custom-elements.json" with { type: "json" };
+import customElements from "../build/custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
 import manager from "@openremote/core";
 import { type Frequency, INTUITIVE_NOT_APPLICABLE, type RRulePartKeys } from "../src/index";
@@ -92,7 +92,7 @@ export { customElements, packageJson };
 /* ------------------------------------------------------- */
 
 async function loadOrManager() {
-  if (await manager.init({ managerUrl: "http://localhost:8080", realm: "master" })) {
+  if (await manager.init({ managerUrl: "http://127.0.0.1:8080", realm: "master" })) {
     if (!manager.authenticated) {
       manager.login();
     }

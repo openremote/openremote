@@ -6,21 +6,21 @@
   "license": "AGPL-3.0-or-later",
   "private": true,
   "exports": {
-    "./*": "./lib/*.js"
+    "./*": "./build/lib/*.js"
   },
   "typesVersions": {
     "*": {
       "*": [
-        "lib/*"
+        "build/lib/*"
       ]
     }
   },
   "scripts": {
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
+    "clean": "npx tsc -b --clean && npx shx rm -rf build",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
-    "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
+    "serve": "npx tsc -b --clean && npx shx rm -rf build && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
     "test": "echo \"No tests\" && exit 0"
   },
@@ -33,11 +33,12 @@
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/rest": "workspace:*",
+    "@openremote/theme": "workspace:*",
     "@reduxjs/toolkit": "^2.12.0",
     "lit": "^3.3.1"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
-    "@rspack/core": "~1.7.10"
+    "@rspack/core": "~2.1.10"
   }
 }

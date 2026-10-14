@@ -16,19 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { ResourceType } from "maplibre-gl";
-
 export function isMapboxURL(url: string) {
   return url.indexOf("mapbox:") === 0;
 }
 
-export function transformMapboxUrl(url: string, accessToken: string, resourceType?: ResourceType) {
+export function transformMapboxUrl(url: string, accessToken: string, resourceType?: string) {
   if (url.indexOf("/styles/") > -1 && url.indexOf("/sprite") === -1)
     return { url: normalizeStyleURL(url, accessToken) };
   if (url.indexOf("/sprites/") > -1) return { url: normalizeSpriteURL(url, accessToken) };
   if (url.indexOf("/fonts/") > -1) return { url: normalizeGlyphsURL(url, accessToken) };
   if (url.indexOf("/v4/") > -1) return { url: normalizeSourceURL(url, accessToken) };
-  if (resourceType === ResourceType.Source) return { url: normalizeSourceURL(url, accessToken) };
+  if (resourceType === "Source") return { url: normalizeSourceURL(url, accessToken) };
 }
 
 function parseUrl(url: string) {

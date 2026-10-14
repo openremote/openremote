@@ -661,7 +661,7 @@ public interface AssetResource {
   @Produces(APPLICATION_JSON)
   @Operation(
       operationId = "queryCount",
-      summary = "Count assets using a query",
+      summary = "Count assets using a query (can also be used to count assets pending deletion)",
       description =
           "Returns only the number of assets matching an AssetQuery after applying the caller's realm, public, and linked-asset access constraints.")
   @OpenApiResponses.Ok

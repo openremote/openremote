@@ -19,19 +19,23 @@
 import { html, css } from "lit";
 import { OrElement } from "@openremote/or-element";
 import { customElement, property } from "lit/decorators.js";
-import "@openremote/or-mwc-components/or-mwc-input";
 import type { RuleActionAlarm, Alarm, User } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { i18next } from "@openremote/or-translate";
-import type { OrVaadinSelect } from "@openremote/or-vaadin-components/or-vaadin-select";
+import "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import { isFormValid, type OrRuleForm } from "./or-rule-form";
 
 @customElement("or-rule-form-alarm")
-export class OrRuleFormAlarm extends OrElement {
+export class OrRuleFormAlarm extends OrElement implements OrRuleForm {
   @property({ type: Object, attribute: false })
   public action!: RuleActionAlarm;
 
   @property()
   public users: User[] = [];
+
+  @property({ type: Boolean })
+  public readonly?: boolean;
 
   static get styles() {
     return css`
@@ -44,6 +48,10 @@ export class OrRuleFormAlarm extends OrElement {
         width: 100%;
       }
     `;
+  }
+
+  checkValidity(): boolean {
+    return isFormValid(this.renderRoot);
   }
 
   protected render() {
@@ -60,6 +68,7 @@ export class OrRuleFormAlarm extends OrElement {
         <or-vaadin-text-field
           value=${alarm?.title}
           required
+          ?readonly=${this.readonly}
           @change=${(ev: Event) => this.setActionAlarmName((ev.currentTarget as HTMLInputElement).value, "title")}
         >
           <or-translate slot="label" value="alarm.title"></or-translate>
@@ -67,36 +76,40 @@ export class OrRuleFormAlarm extends OrElement {
         <or-vaadin-text-area
           value=${alarm?.content}
           required
+          ?readonly=${this.readonly}
           style="min-height: 200px;"
           @change=${(ev: Event) => this.setActionAlarmName((ev.currentTarget as HTMLInputElement).value, "content")}
         >
           <or-translate slot="label" value="alarm.content"></or-translate>
         </or-vaadin-text-area>
-        <or-vaadin-select
-          value=${this.action.assigneeId}
-          required
+        <or-vaadin-combo-box
           .items=${options}
-          @change=${(ev: Event) => {
-            const value = (ev.currentTarget as OrVaadinSelect).value;
-            this.action.assigneeId = value;
-            this.setActionAlarmName(value, undefined);
+          .selectedItem=${options.find((o) => o.value === this.action.assigneeId)}
+          ?readonly=${this.readonly}
+          @change=${(ev: CustomEvent) => {
+            // The 'none' option carries no value, which clears the assignee
+            this.setActionAssignee((ev.currentTarget as OrVaadinComboBox).selectedItem?.value);
           }}
         >
           <or-translate slot="label" value="alarm.assignee"></or-translate>
-        </or-vaadin-select>
+        </or-vaadin-combo-box>
       </div>
     `;
   }
 
-  protected setActionAlarmName(value: string | undefined, key?: string) {
-    if (key && this.action.alarm) {
+  protected setActionAlarmName(value: string | undefined, key: string) {
+    if (this.action.alarm) {
       const alarm: any = this.action.alarm;
       alarm[key] = value;
       this.action.alarm = { ...alarm };
     }
-    if (!key) {
-      this.action.assigneeId = this.users.filter((obj) => obj.username === value).map((obj) => obj.id)[0];
-    }
+
+    this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+    this.requestUpdate();
+  }
+
+  protected setActionAssignee(assigneeId: string | undefined) {
+    this.action.assigneeId = assigneeId;
 
     this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
     this.requestUpdate();

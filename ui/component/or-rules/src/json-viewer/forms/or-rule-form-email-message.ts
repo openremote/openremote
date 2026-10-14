@@ -22,13 +22,15 @@ import { customElement, property } from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
 import type { EmailNotificationMessage } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
-import "@openremote/or-mwc-components/or-mwc-input";
-import { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import { isFormValid, type OrRuleForm } from "./or-rule-form";
 
 @customElement("or-rule-form-email-message")
-export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) {
+export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) implements OrRuleForm {
   @property({ type: Object })
   public message?: EmailNotificationMessage;
+
+  @property({ type: Boolean })
+  public readonly?: boolean;
 
   static get styles() {
     return css`
@@ -43,6 +45,10 @@ export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) {
     `;
   }
 
+  checkValidity(): boolean {
+    return isFormValid(this.renderRoot);
+  }
+
   protected render() {
     if (!this.message) {
       return html`<or-translate .value="${"errorOccurred"}"></or-translate>`;
@@ -53,6 +59,7 @@ export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) {
         <or-vaadin-text-field
           value=${this.message?.subject}
           required
+          ?readonly=${this.readonly}
           @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "subject")}
         >
           <or-translate slot="label" value="subject"></or-translate>
@@ -60,6 +67,7 @@ export class OrRuleFormEmailMessage extends translate(i18next)(OrElement) {
         <or-vaadin-text-area
           value=${this.message?.html}
           required
+          ?readonly=${this.readonly}
           style="min-height: 200px;"
           @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "html")}
         >

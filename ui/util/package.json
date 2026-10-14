@@ -3,15 +3,15 @@
   "version": "1.28.0-snapshot",
   "description": "Build Util",
   "author": "OpenRemote",
-  "main": "webpack.util.js",
+  "main": "rspack.util.js",
   "bin": {
     "orutil": "./cli.js"
   },
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@custom-elements-manifest/analyzer": "^0.11.0",
-    "@rspack/cli": "~1.7.10",
-    "@rspack/core": "~1.7.10",
+    "@rspack/cli": "~2.1.10",
+    "@rspack/core": "~2.1.10",
     "@types/react": "^18",
     "@typescript-eslint/eslint-plugin": "8.40.0",
     "@typescript-eslint/parser": "8.40.0",
@@ -30,14 +30,14 @@
     "eslint-plugin-promise": "6.6.0",
     "eslint-plugin-wc": "3.1.0",
     "html-webpack-plugin": "^5.6.6",
-    "moment": "^2.29.4",
+    "moment": "^2.31.0",
     "moment-locales-webpack-plugin": "^1.2.0",
     "prettier": "3.9.6",
     "querystring-es3": "^0.2.1",
     "shx": "~0.4.0",
     "source-map-loader": "^5.0.0",
     "ts-loader": "~9.5.2",
-    "typescript": "5.8.3",
+    "typescript": "~5.9.3",
     "webpack": "^5.108.3"
   },
   "publishConfig": {

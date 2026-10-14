@@ -67,7 +67,7 @@ export function getWhenTypesMenu(
       component: createMenuBarItem(html`
         <div style="display: flex; align-items: center; gap: 6px;">
           <or-icon
-            style=${color ? `--or-icon-fill: #${color}` : undefined}
+            style="--or-icon-fill: ${color ? "#" + color : "unset"}"
             icon=${icon || AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}
           ></or-icon>
           <span>${Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!)}</span>

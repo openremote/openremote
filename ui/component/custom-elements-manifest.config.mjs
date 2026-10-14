@@ -20,10 +20,13 @@ import { jsxTypesPlugin } from "@wc-toolkit/jsx-types";
 
 export default {
   globs: ["src/**.ts"],
+  outdir: "build",
   litelement: true,
   plugins: [
     jsxTypesPlugin({
+      outdir: "build",
       fileName: "custom-elements-jsx.d.ts",
+      // Resolved relative to the emitted declaration file, which sits alongside the compiler output.
       componentTypePath: (_name, _tag, path) => {
         return path.toString().replace("src", "./lib").replace(".ts", ".d.ts");
       },

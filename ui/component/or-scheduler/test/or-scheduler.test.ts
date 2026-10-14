@@ -156,6 +156,29 @@ ct.describe("Period event type should", () => {
     await expect(component.getByRole("button", { name: "Active " + timeLabel })).toBeVisible();
   });
 
+  ct("return period with a changed start date", async ({ mount, shared, vaadinDialog, vaadinInput }) => {
+    const [promise, handler] = shared.promiseEventDispatch<OrSchedulerChangedEvent>();
+    const component = await mount(OrScheduler, {
+      props: { header: "Test Calendar Event Component" },
+      on: { "or-scheduler-changed": handler },
+    });
+
+    await component.click();
+    const dialog = vaadinDialog.getDialog();
+    await selectEventType("Plan an occurrence", dialog, vaadinInput);
+
+    await dialog.locator("or-vaadin-date-picker [slot=input]").first().fill("1/2/2020"); // M/D/YYYY
+    await dialog.locator("or-vaadin-date-picker [slot=input]").first().press("Enter");
+    await dialog.getByRole("button", { name: "Save schedule" }).click();
+
+    const actual = (await promise).value;
+    const { end } = getPeriodValues();
+
+    // Without a recurrence rule the start date was discarded, leaving the start on the current day
+    expect(actual).toStrictEqual({ end, start: new Date(2020, 0, 2).getTime(), recurrence: undefined });
+    await expect(component.getByRole("button", { name: /Active from 02-01-2020/ })).toBeVisible();
+  });
+
   ct("return period with time component", async ({ mount, shared, vaadinDialog, vaadinInput }) => {
     const [promise, handler] = shared.promiseEventDispatch<OrSchedulerChangedEvent>();
     const component = await mount(OrScheduler, {

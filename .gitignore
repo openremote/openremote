@@ -57,13 +57,7 @@ local.properties
 *.iml
 *.ipr
 *.iws
-*.tsbuildinfo
 *~
 *.tar.gz
 /balena/manager-build/
 
-# Playwright
-test-results
-app-test-report
-component-test-report
-.auth

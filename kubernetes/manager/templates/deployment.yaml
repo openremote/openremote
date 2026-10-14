@@ -1,4 +1,5 @@
 {{- include "manager.logging.validate" . }}
+{{- include "manager.otel.validate" . }}
 {{- $loggingInlineConfig := .Values.logging.config -}}
 {{- $loggingExistingConfigMap := .Values.logging.existingConfigMap -}}
 {{- $loggingEnabled := or $loggingInlineConfig $loggingExistingConfigMap -}}
@@ -11,6 +12,17 @@ metadata:
     {{- include "manager.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  {{- with .Values.strategy }}
+  strategy:
+    {{- if eq .type "Recreate" }}
+    type: Recreate
+    # Recreate cannot have rollingUpdate settings. Existing deployments may need
+    # a merge patch before a server-side apply upgrade (see test/load2-eks/README.md).
+    rollingUpdate: null
+    {{- else }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "manager.selectorLabels" . | nindent 6 }}
@@ -136,6 +148,25 @@ spec:
               value: "{{ .Values.or.metricsEnabled }}"
             - name: OR_METRICS_PORT
               value: "{{ .Values.or.metricsPort }}"
+
+            {{- if .Values.or.otel.enabled }}
+            - name: OTEL_JAVAAGENT_ENABLED
+              value: "true"
+            - name: OTEL_SERVICE_NAME
+              value: {{ .Values.or.otel.serviceName | quote }}
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.or.otel.endpoint | quote }}
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: {{ .Values.or.otel.protocol | quote }}
+            - name: OTEL_METRICS_EXPORTER
+              value: "none"
+            - name: OTEL_LOGS_EXPORTER
+              value: "none"
+            - name: OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED
+              value: "true"
+            {{- end }}
 
             {{- if $loggingEnabled }}
             - name: OR_LOGGING_CONFIG_FILE

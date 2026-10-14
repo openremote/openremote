@@ -10,4 +10,12 @@ if [ -n "$HEAP_DUMPS" ]; then
     echo "WARNING: Heap dump(s) found in /storage - remove them to free up disk space:"
     ls -lh /storage/dump_*.hprof
 fi
-exec java ${JAVA_OPTS} ${JAVA_OPTS_APPEND} -cp "/opt/app/lib/*:/deployment/manager/extensions/*:/extensions/*" org.openremote.manager.Main
+
+OTEL_JAVA_AGENT_OPTION=
+case "${OTEL_JAVAAGENT_ENABLED:-false}" in
+    [Tt][Rr][Uu][Ee])
+        OTEL_JAVA_AGENT_OPTION="-javaagent:/opt/opentelemetry/opentelemetry-javaagent.jar"
+        ;;
+esac
+
+exec java ${JAVA_OPTS} ${JAVA_OPTS_APPEND} ${OTEL_JAVA_AGENT_OPTION} -cp "/opt/app/lib/*:/deployment/manager/extensions/*:/extensions/*" org.openremote.manager.Main

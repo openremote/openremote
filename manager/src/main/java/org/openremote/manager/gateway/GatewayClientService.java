@@ -149,16 +149,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                         .getResultList())
             .stream()
             .collect(
-                Collectors.toMap(
-                    GatewayConnection::getLocalRealm,
-                    connection ->
-                        new GatewayClientConnector(
-                            connection,
-                            tunnelFactory,
-                            clientEventService,
-                            timerService,
-                            assetStorageService,
-                            assetProcessingService))));
+                Collectors.toMap(GatewayConnection::getLocalRealm, this::createClientConnector)));
   }
 
   @Override
@@ -210,16 +201,20 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
           }
 
           if (cause != PersistenceEvent.Cause.DELETE) {
-            return new GatewayClientConnector(
-                connection,
-                tunnelFactory,
-                clientEventService,
-                timerService,
-                assetStorageService,
-                assetProcessingService);
+            return createClientConnector(connection);
           }
           return null;
         });
+  }
+
+  protected GatewayClientConnector createClientConnector(GatewayConnection connection) {
+    return new GatewayClientConnector(
+        connection,
+        tunnelFactory,
+        clientEventService,
+        timerService,
+        assetStorageService,
+        assetProcessingService);
   }
 
   /** GATEWAY RESOURCE METHODS */

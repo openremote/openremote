@@ -43,13 +43,6 @@ tasks.named("npmBuild") {
   dependsOn generateTypeScriptTask
 }
 
-clean {
-  doLast {
-    delete "dist"
-    delete "lib"
-  }
-}
-
 tasks.register('prepareUi') {
   dependsOn clean, npmPrepare
 }

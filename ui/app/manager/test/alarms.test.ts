@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { expect } from "@openremote/test";
-import { type Alarm, AlarmSeverity, AlarmStatus } from "@openremote/model";
+import { type Alarm, AlarmSeverity, AlarmStatus, ClientRole } from "@openremote/model";
 import { type Manager, adminStatePath, test } from "./fixtures/manager.js";
 
 test.use({ storageState: adminStatePath });
@@ -158,7 +158,7 @@ test.describe("Filter alarms", () => {
   async function loginAsAlarmUser(manager: Manager, username: string) {
     await manager.provisionUserAndLogin("smartcity", {
       username,
-      roles: ["read:alarms", "write:alarms"],
+      roles: [ClientRole.READ_ALARMS, ClientRole.WRITE_ALARMS],
     });
   }
 
@@ -307,7 +307,7 @@ test.describe("Delete alarms", () => {
 
     await manager.provisionUserAndLogin("smartcity", {
       username: "e2e-alarm-editor",
-      roles: ["read:alarms", "write:alarms"],
+      roles: [ClientRole.READ_ALARMS, ClientRole.WRITE_ALARMS],
     });
     await alarmsPage.goto();
     await expect(alarmsPage.getRows()).toHaveCount(alarms.length);
@@ -346,7 +346,7 @@ test.describe("Role-Based Access Control", () => {
     const { title } = await seedAlarm(manager, { realm: "smartcity" });
     await manager.provisionUserAndLogin("smartcity", {
       username: "e2e-alarm-viewer",
-      roles: ["read:alarms"],
+      roles: [ClientRole.READ_ALARMS],
     });
 
     await alarmsPage.goto();

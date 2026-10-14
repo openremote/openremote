@@ -41,7 +41,7 @@ props.put(&quot;THREAD_COUNT&quot;, threadCount)
 
 log.info(&quot;&gt;&gt;&gt;Thread count ${threadCount}&quot;)
 
-def host = props.get(&quot;MANAGER_HOSTNAME&quot;) ?: &quot;localhost&quot;
+def host = props.get(&quot;MANAGER_HOSTNAME&quot;) ?: &quot;127.0.0.1&quot;
 log.info(&quot;&gt;&gt;&gt;Host ${host}&quot;)
 
 // Store global var for tracking device init successes - decrement this on each device start and increment on publish success
@@ -104,7 +104,7 @@ if (vars.getObject(&quot;threadEndTime&quot;) == null) {
         </JSR223Sampler>
         <hashTree/>
         <net.xmeter.samplers.ConnectSampler guiclass="net.xmeter.gui.ConnectSamplerUI" testclass="net.xmeter.samplers.ConnectSampler" testname="connect" enabled="true">
-          <stringProp name="mqtt.server">${__P(MANAGER_HOSTNAME,localhost)}</stringProp>
+          <stringProp name="mqtt.server">${__P(MANAGER_HOSTNAME,127.0.0.1)}</stringProp>
           <stringProp name="mqtt.port">8883</stringProp>
           <stringProp name="mqtt.version">3.1</stringProp>
           <stringProp name="mqtt.conn_timeout">10</stringProp>

@@ -5,6 +5,10 @@
 # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 replicaCount: 1
 
+# Optional Deployment strategy. Use type: Recreate when the cluster has no
+# spare capacity for overlapping old and new Pods; upgrades interrupt service.
+strategy: {}
+
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
   repository: openremote/manager
@@ -170,6 +174,14 @@ or:
   env: []
   # - name: foo
   #   value: bar
+
+  # OpenTelemetry Java agent tracing. The endpoint must be set when tracing is enabled.
+  # Additional agent settings, such as sampling, can be supplied through or.env.
+  otel:
+    enabled: false
+    serviceName: "openremote-manager"
+    endpoint: ""
+    protocol: "http/protobuf"
 
   # The public HOSTNAME and SSL PORT of this manager
   hostname: "localhost"

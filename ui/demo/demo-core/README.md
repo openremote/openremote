@@ -1,11 +1,11 @@
 # demo-core
 
 Provides a very basic app intended as a development harness for
-To run the demo you must have a running OpenRemote Manager backend with Demo assets (see [Quickstart](https://github.com/openremote/openremote/blob/master/README.md#quickstart)).
+To run the demo you must have a running OpenRemote Manager backend with Demo assets (see [Quickstart](https://github.com/openremote/core/blob/main/README.md#quickstart)).
 
 ## Supported Browsers
 
-The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition, Internet Explorer 11 is also supported.
+The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge.
 
 ## License
 

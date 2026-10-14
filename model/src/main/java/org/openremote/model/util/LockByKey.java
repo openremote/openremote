@@ -52,6 +52,7 @@ public class LockByKey {
   }
 
   public void lock(String key) {
+    LOG.log(System.Logger.Level.TRACE, () -> "Lock acquiring: key=" + key);
     LockWrapper lockWrapper =
         locks.compute(key, (k, v) -> v == null ? createLockWrapper() : v.addThreadInQueue());
     try {

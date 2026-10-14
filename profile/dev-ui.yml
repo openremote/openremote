@@ -13,8 +13,8 @@ services:
       file: deploy.yml
       service: keycloak
     #volumes:
-    #   Map custom themes
-    #  - ../deployment:/deployment
+    #   Map custom themes for theme development
+    #  - /path/to/theme/src/main/resources/theme/openremote:/opt/keycloak/themes/dev
     # Access directly if needed on localhost
     ports:
       - "8081:8080"
@@ -22,8 +22,6 @@ services:
       postgresql:
         condition: service_healthy
     environment:
-      KC_HOSTNAME_STRICT_HTTPS: "false"
-      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
       # Prevent theme caching during dev
       KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
 
@@ -31,9 +29,7 @@ services:
     extends:
       file: deploy.yml
       service: postgresql
-    volumes:
-      - manager-data:/storage
-      - ../tmp/datapoint:/storage/datapoint
+    # No volume is mapped at all with this configuration, DB is ephemeral
     # Access directly if needed on localhost
     ports:
       - "5432:5432"

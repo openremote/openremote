@@ -27,7 +27,6 @@ services:
     restart: always
     volumes:
       - postgresql-data:/var/lib/postgresql/data
-      - manager-data:/storage
     env_file:
       - env
 

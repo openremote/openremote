@@ -48,9 +48,9 @@ HOST="$OR_HOSTNAME"
 
 # Copy CI/CD files into temp dir
 echo "Copying CI/CD files into temp dir"
-if [ "$IS_MAIN_REPO" == 'false' ]; then
-  cp -r openremote/.ci_cd/host_init temp/
-  cp -r openremote/.ci_cd/aws temp/
+if [ "$IS_CORE_REPO" == 'false' ]; then
+  cp -r core/.ci_cd/host_init temp/
+  cp -r core/.ci_cd/aws temp/
 fi
 if [ -d ".ci_cd/host_init" ]; then
   cp -r .ci_cd/host_init temp/
@@ -100,7 +100,7 @@ fi
 if [ "$SKIP_SSH_WHITELIST" != 'true' ] && [ -n "$AWS_ACCESS_KEY_ID" ]; then
 
   echo "Granting AWS SSH access to github runner"
-  
+
   source temp/aws/login.sh
 
   if [ -n "$CIDR" ]; then
@@ -219,6 +219,11 @@ if [ -f "temp/deployment.tar.gz" ]; then
   docker load < temp/deployment.tar.gz
 fi
 
+# Login to Private ECR Registry to download restricted images
+if [ -n "$OR_AWS_ECR_ACCOUNT_ID" ] && [ -n "$OR_AWS_ECR_REGION" ]; then
+  aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
+fi
+
 # Make sure we have correct keycloak, proxy and postgres images
 echo "Pulling requested service versions from docker hub"
 docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
@@ -274,16 +279,10 @@ else
 fi
 echo "Private IP \$PRIVATE_IP"
 
-# Start the stack
-echo "Starting the stack"
-docker-compose -f temp/docker-compose.yml -p or up -d
-
-if [ \$? -ne 0 ]; then
-  echo "Deployment failed to start the stack"
+# Start the stack, including any one-shot deployment service, and wait for readiness
+if ! bash temp/host_init/start.sh temp/docker-compose.yml or; then
   exit 1
 fi
-
-temp/host_init/healthy.sh
 
 # Run host post init
 hostPostInitCmd=
@@ -366,6 +365,11 @@ if [ -f "temp/deployment.tar.gz" ]; then
   docker load < temp/deployment.tar.gz
 fi
 
+# Login to Private ECR Registry to download restricted images
+if [ -n "$OR_AWS_ECR_ACCOUNT_ID" ] && [ -n "$OR_AWS_ECR_REGION" ]; then
+  aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
+fi
+
 # Make sure we have correct keycloak, proxy and postgres images
 echo "Pulling requested service versions from docker hub"
 docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
@@ -403,16 +407,10 @@ fi
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
 
-# Start the stack
-echo "Starting the stack"
-docker-compose -f temp/docker-compose.yml -p or up -d
-
-if [ \$? -ne 0 ]; then
-  echo "Deployment failed to start the stack"
+# Start the stack, including any one-shot deployment service, and wait for readiness
+if ! bash temp/host_init/start.sh temp/docker-compose.yml or; then
   exit 1
 fi
-
-temp/host_init/healthy.sh
 
 # Run host post init
 hostPostInitCmd=

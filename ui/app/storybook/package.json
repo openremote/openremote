@@ -7,8 +7,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "clean": "npx shx rm -rf dist lib",
-    "build": "storybook build -o dist",
+    "clean": "npx shx rm -rf build",
+    "build": "storybook build -o build/dist",
     "serve": "storybook dev -p 9000 --no-open",
     "test": "echo \"No tests\" && exit 0"
   },

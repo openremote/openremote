@@ -19,6 +19,7 @@
 import { expect } from "@openremote/test";
 import {
   type Asset,
+  ClientRole,
   type EmailNotificationMessage,
   type Notification,
   NotificationTargetType,
@@ -396,7 +397,7 @@ test.describe("Role-Based Access Control", () => {
   test("should hide the send button for a user without write permission", async ({ manager, notificationsPage }) => {
     await manager.provisionUserAndLogin("smartcity", {
       username: "e2e-readonly",
-      roles: ["read:notifications"],
+      roles: [ClientRole.READ_NOTIFICATIONS],
     });
 
     await notificationsPage.goto();
@@ -413,7 +414,7 @@ test.describe("Role-Based Access Control", () => {
   }) => {
     await manager.provisionUserAndLogin("smartcity", {
       username: "e2e-sender",
-      roles: ["read:notifications", "write:notifications"],
+      roles: [ClientRole.READ_NOTIFICATIONS, ClientRole.WRITE_NOTIFICATIONS],
     });
 
     await notificationsPage.goto();
@@ -433,7 +434,7 @@ test.describe("Role-Based Access Control", () => {
     await ensureRecipient(manager, "smartcity", await manager.adminConfig());
     await manager.provisionUserAndLogin("smartcity", {
       username: "e2e-user-sender",
-      roles: ["read:notifications", "write:notifications", "read:users"],
+      roles: [ClientRole.READ_NOTIFICATIONS, ClientRole.WRITE_NOTIFICATIONS, ClientRole.READ_USERS],
     });
 
     await notificationsPage.goto();
@@ -455,7 +456,7 @@ test.describe("Role-Based Access Control", () => {
     const subject = await seedNotification(manager, "smartcity");
     await manager.provisionUserAndLogin("smartcity", {
       username: "e2e-viewer",
-      roles: ["read:notifications"],
+      roles: [ClientRole.READ_NOTIFICATIONS],
     });
 
     await notificationsPage.goto();

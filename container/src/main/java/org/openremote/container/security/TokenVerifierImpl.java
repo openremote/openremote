@@ -47,10 +47,13 @@ public class TokenVerifierImpl implements TokenVerifier {
   protected final String keycloakPublicUrl;
   protected final Map<String, JWTProcessor<SecurityContext>> processorCache =
       new ConcurrentHashMap<>();
+  protected final boolean disableIssuerValidation;
 
-  public TokenVerifierImpl(String keycloakUrl, String keycloakPublicUrl) {
+  public TokenVerifierImpl(
+      String keycloakUrl, String keycloakPublicUrl, boolean disableIssuerValidation) {
     keyResolverService = new KeyResolver(keycloakUrl);
     this.keycloakPublicUrl = keycloakPublicUrl;
+    this.disableIssuerValidation = disableIssuerValidation;
   }
 
   protected JWTProcessor<SecurityContext> getJwtProcessor(String realm) {
@@ -77,12 +80,14 @@ public class TokenVerifierImpl implements TokenVerifier {
 
     JWTClaimsSetVerifier<SecurityContext> verifier =
         (claims, context) -> {
-          // Preserve Nimbus built-in checks for exp / nbf validation.
+          // Preserve Nimbus built-in checks for exp / nbf validation
           defaultClaimsVerifier.verify(claims, context);
 
-          // 1) issuer check (keep/remove depending on your policy)
-          if (claims.getIssuer() == null || !expectedIssuer.equals(claims.getIssuer())) {
-            throw new BadJWTException("Invalid token issuer");
+          // Issuer check unless disabled
+          if (!disableIssuerValidation) {
+            if (claims.getIssuer() == null || !expectedIssuer.equals(claims.getIssuer())) {
+              throw new BadJWTException("Invalid token issuer");
+            }
           }
 
           // Keycloak uses azp to store client ID by default but we support aud for non keycloak
@@ -101,7 +106,7 @@ public class TokenVerifierImpl implements TokenVerifier {
 
           // Fall back to aud - service users put the client in the aud claim not the azp claim
           if (claims.getAudience() == null || !claims.getAudience().contains(expectedClientId)) {
-            // TODO: Remove this once https://github.com/openremote/openremote/issues/2642 is
+            // TODO: Remove this once https://github.com/openremote/core/issues/2642 is
             // implemented
             try {
               String preferredUsername = claims.getStringClaim("preferred_username");

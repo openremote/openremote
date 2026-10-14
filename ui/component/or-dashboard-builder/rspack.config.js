@@ -22,6 +22,9 @@ bundles = {
   index: {
     excludeOr: true,
   },
+  "index.bundle": {
+    excludeOr: true,
+  },
   "index.orbundle": undefined,
 };
 
