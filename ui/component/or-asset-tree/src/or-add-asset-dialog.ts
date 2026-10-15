@@ -113,7 +113,7 @@ export class OrAddAssetDialog extends OrElement {
                 border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
                 border-width: 1px 0;
             }
-            
+
             #name-wrapper {
                 display: flex;
                 flex-direction: column;
@@ -138,12 +138,12 @@ export class OrAddAssetDialog extends OrElement {
             #parent {
                 flex: 1 1 auto;
             }
-            
+
             #parent-selector {
                 max-width: 250px;
                 border-left: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
             }
-            
+
             #mdc-dialog-form-add {
                 display: flex;
                 height: 600px;
@@ -162,23 +162,40 @@ export class OrAddAssetDialog extends OrElement {
             }
 
             #asset-type-option-container {
-                padding: 15px;
+                padding: 7px;
                 flex: 1 1 auto;
                 overflow: auto;
                 max-width: 100%;
                 font-size: 16px;
             }
 
+            #asset-type-option-content {
+                padding: 7px 14px;
+                box-sizing: border-box;
+                height: 100%;
+                overflow: auto;
+                background: white;
+                border-radius: 7px;
+            }
+
             #type-list-filter {
                 padding: 7px;
-                background-color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)}))
             }
-            
+
             #filterInput{
                 width: 100%;
             }
 
+            #type-list-content {
+                padding: 0 7px;
+                overflow: hidden;
+            }
+
             #type-list {
+                padding: 0 7px;
+                background: white;
+                border-radius: 7px;
+                height: 100%;
                 overflow: auto;
                 text-transform: capitalize;
             }
@@ -186,8 +203,8 @@ export class OrAddAssetDialog extends OrElement {
             #type-list-container {
                 display: flex;
                 flex-direction: column;
-                width: 300px;
-                border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+                width: 320px;
+                gap: 4px;
             }
 
             #type-title {
@@ -291,19 +308,23 @@ export class OrAddAssetDialog extends OrElement {
                 <or-icon slot="suffix" icon="magnify"></or-icon>
               </or-vaadin-text-field>
             </div>
-            <div id="type-list">
-              ${when(agentItems.length > 0, () => getListTemplate(filteredAgentItems, true))}
-              <hr style="color: white;" />
-              ${when(assetItems.length > 0, () => getListTemplate(filteredAssetItems, false))}
+            <div id="type-list-content">
+              <div id="type-list">
+                ${when(agentItems.length > 0, () => getListTemplate(filteredAgentItems, true))}
+                <hr style="color: white;" />
+                ${when(assetItems.length > 0, () => getListTemplate(filteredAssetItems, false))}
+              </div>
             </div>
           </div>
 
           <div id="asset-type-option-container" class="col">
-            ${
-              !this.selectedType
-                ? html`<div class="msg"><or-translate value="noAssetTypeSelected"></or-translate></div>`
-                : this.getTypeTemplate(this.selectedType, parentStr)
-            }
+            <div id="asset-type-option-content">
+              ${
+                !this.selectedType
+                  ? html`<div class="msg"><or-translate value="noAssetTypeSelected"></or-translate></div>`
+                  : this.getTypeTemplate(this.selectedType, parentStr)
+              }
+            </div>
           </div>
           ${
             !this.showParentAssetSelector
