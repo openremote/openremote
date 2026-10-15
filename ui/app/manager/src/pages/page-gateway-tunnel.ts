@@ -390,8 +390,11 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
       this.shadowRoot!,
       html`
         <or-vaadin-dialog width="384px">
-          <h2 slot="header-content">${i18next.t("add")} ${i18next.t("tunnel")}</h2>
-          ${until(gatewayListTemplate(), html`${i18next.t("loading")}`)}
+          <h2 slot="header-content">
+            <or-translate value="add"></or-translate>
+            <or-translate value="tunnel"></or-translate>
+          </h2>
+          ${until(gatewayListTemplate(), html`<or-translate value="loading"></or-translate>`)}
           <div slot="footer" style="width: 100%; display: flex; justify-content: space-between">
             <or-vaadin-button theme="tertiary" @click=${() => dialog?.close()}>
               <or-translate value="cancel"></or-translate>
