@@ -108,136 +108,136 @@ export class OrAddAssetDialog extends OrElement {
   public static get styles() {
     // language=CSS
     return css`
-            :host{
-                border-style: solid;
-                border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-                border-width: 1px 0;
-            }
+      :host {
+        border-style: solid;
+        border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+        border-width: 1px 0;
+      }
 
-            #name-wrapper {
-                display: flex;
-                flex-direction: column;
-                margin-top: 12px;
-            }
+      #name-wrapper {
+        display: flex;
+        flex-direction: column;
+        margin-top: 12px;
+      }
 
-            #toggle-parent-selector,
-            #remove-parent {
-                margin: 4px 0 0 5px;
-            }
+      #toggle-parent-selector,
+      #remove-parent {
+        margin: 4px 0 0 5px;
+      }
 
-            #name-input,
-            #parent-wrapper {
-                margin: 10px 0;
-            }
+      #name-input,
+      #parent-wrapper {
+        margin: 10px 0;
+      }
 
-            #parent-wrapper {
-                display: flex;
-                align-items: end;
-            }
+      #parent-wrapper {
+        display: flex;
+        align-items: end;
+      }
 
-            #parent {
-                flex: 1 1 auto;
-            }
+      #parent {
+        flex: 1 1 auto;
+      }
 
-            #parent-selector {
-                max-width: 250px;
-                border-left: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-            }
+      #parent-selector {
+        max-width: 250px;
+        border-left: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+      }
 
-            #mdc-dialog-form-add {
-                display: flex;
-                height: 600px;
-                max-height: 600px;
-                width: 1000px;
-            }
+      #mdc-dialog-form-add {
+        display: flex;
+        height: 600px;
+        max-height: 600px;
+        width: 1000px;
+      }
 
-            .msg {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                text-align: center;
-                height: 100%;
-                font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
-                font-size: 14px;
-            }
+      .msg {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        height: 100%;
+        font-family: "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        font-size: 14px;
+      }
 
-            #asset-type-option-container {
-                padding: 7px;
-                flex: 1 1 auto;
-                overflow: auto;
-                max-width: 100%;
-                font-size: 16px;
-            }
+      #asset-type-option-container {
+        padding: 7px;
+        flex: 1 1 auto;
+        overflow: auto;
+        max-width: 100%;
+        font-size: 16px;
+      }
 
-            #asset-type-option-content {
-                padding: 7px 14px;
-                box-sizing: border-box;
-                height: 100%;
-                overflow: auto;
-                background: white;
-                border-radius: 7px;
-            }
+      #asset-type-option-content {
+        padding: 7px 14px;
+        box-sizing: border-box;
+        height: 100%;
+        overflow: auto;
+        background: white;
+        border-radius: 7px;
+      }
 
-            #type-list-filter {
-                padding: 7px;
-            }
+      #type-list-filter {
+        padding: 7px;
+      }
 
-            #filterInput{
-                width: 100%;
-            }
+      #filterInput {
+        width: 100%;
+      }
 
-            #type-list-content {
-                padding: 0 7px;
-                overflow: hidden;
-            }
+      #type-list-content {
+        padding: 0 7px;
+        overflow: hidden;
+      }
 
-            #type-list {
-                padding: 0 7px;
-                background: white;
-                border-radius: 7px;
-                height: 100%;
-                overflow: auto;
-                text-transform: capitalize;
-            }
+      #type-list {
+        padding: 0 7px;
+        background: white;
+        border-radius: 7px;
+        height: 100%;
+        overflow: auto;
+        text-transform: capitalize;
+      }
 
-            #type-list-container {
-                display: flex;
-                flex-direction: column;
-                width: 320px;
-                gap: 4px;
-            }
+      #type-list-container {
+        display: flex;
+        flex-direction: column;
+        width: 320px;
+        gap: 4px;
+      }
 
-            #type-title {
-                display: flex;
-                align-items: center;
-                margin: 9px 4px;
-            }
+      #type-title {
+        display: flex;
+        align-items: center;
+        margin: 9px 4px;
+      }
 
-            #type-description {
-                text-transform: capitalize;
-                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-                margin-left: 10px;
-                font-size: 18px;
-                font-weight: bold;
-                font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
-            }
+      #type-description {
+        text-transform: capitalize;
+        color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+        margin-left: 10px;
+        font-size: 18px;
+        font-weight: bold;
+        font-family: "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      }
 
-            .heading,
-            .mdc-list-group__subheader {
-                text-transform: uppercase;
-                font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
-                font-weight: bolder;
-                line-height: 1em;
-                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-                letter-spacing: 0.025em;
-                font-size: 14px;
-                margin: 20px 0 10px;
-            }
+      .heading,
+      .mdc-list-group__subheader {
+        text-transform: uppercase;
+        font-family: "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        font-weight: bolder;
+        line-height: 1em;
+        color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+        letter-spacing: 0.025em;
+        font-size: 14px;
+        margin: 20px 0 10px;
+      }
 
-            .mdc-list-group__subheader {
-                margin: 20px 0 0 16px;
-            }
-        `;
+      .mdc-list-group__subheader {
+        margin: 20px 0 0 16px;
+      }
+    `;
   }
 
   constructor() {

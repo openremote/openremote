@@ -37,8 +37,8 @@ import { DefaultColor5, DefaultColor3, Util } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import type { OrIcon } from "@openremote/or-icon";
 import { showDialog, type OrVaadinDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
+import type { OrVaadinCheckboxGroup } from "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import type { OrVaadinButton } from "@openremote/or-vaadin-components/or-vaadin-button";
-import { type ListItem, ListType, type OrMwcList } from "@openremote/or-mwc-components/or-mwc-list";
 import "./or-add-attribute-panel";
 import { getField, getPanel, getPropertyTemplate } from "./index";
 import type { OrAddAttributePanelAttributeChangedEvent } from "./or-add-attribute-panel";
@@ -651,30 +651,15 @@ export class OrEditAssetPanel extends OrElement {
 
     const meta = attribute.meta || {};
 
-    const metaItemList: (ListItem | null)[] = assetTypeInfo.metaItemDescriptors
-      .map((metaName) => AssetModelUtil.getMetaItemDescriptor(metaName)!)
-      .filter((descriptor) => !meta.hasOwnProperty(descriptor.name!))
-      .map((descriptor) => {
-        return {
-          text: Util.getMetaLabel(undefined, descriptor, this.asset!.type!, true),
-          value: descriptor.name!,
-          translate: false,
-        };
-      })
-      .sort(Util.sortByString((item) => item.text));
-
-    const listRef: Ref<OrMwcList> = createRef();
+    const listRef: Ref<OrVaadinCheckboxGroup> = createRef();
     const onOk = () => {
-      const list = listRef.value;
-      const selectedItems = list ? list.selectedItems : undefined;
+      const selectedItems = listRef.value?.value;
       if (selectedItems) {
         if (!attribute.meta) {
           attribute.meta = {};
         }
         selectedItems.forEach((item) => {
-          const descriptor = AssetModelUtil.getMetaItemDescriptors().find(
-            (descriptor) => descriptor.name === item.value
-          );
+          const descriptor = AssetModelUtil.getMetaItemDescriptors().find((descriptor) => descriptor.name === item);
           if (descriptor) {
             attribute.meta![descriptor.name!] = descriptor.type === "boolean" ? true : null;
             this._onModified();
@@ -688,11 +673,25 @@ export class OrEditAssetPanel extends OrElement {
     const dialog = showDialog(
       this.shadowRoot!,
       html`
-        <or-vaadin-dialog width="384px" height="75vh">
+        <or-vaadin-dialog width="384px">
           <h2 slot="header-content">
             <or-translate value="addMetaItems"></or-translate>
           </h2>
-          <or-mwc-list ${ref(listRef)} .type="${ListType.MULTI_CHECKBOX}" .listItems="${metaItemList}"></or-mwc-list>
+          <or-vaadin-checkbox-group theme="vertical" ${ref(listRef)}>
+            ${assetTypeInfo.metaItemDescriptors
+              .map((metaName) => AssetModelUtil.getMetaItemDescriptor(metaName)!)
+              .filter((descriptor) => !meta.hasOwnProperty(descriptor.name!))
+              .map((descriptor) => ({
+                descriptor,
+                label: Util.getMetaLabel(undefined, descriptor, this.asset!.type!, true),
+              }))
+              .sort(Util.sortByString((item) => item.label))
+              .map(
+                (item) => html`
+                  <or-vaadin-checkbox value=${item.descriptor.name!} label=${item.label}></or-vaadin-checkbox>
+                `
+              )}
+          </or-vaadin-checkbox-group>
           <div slot="footer" style="width: 100%; display: flex; justify-content: space-between">
             <or-vaadin-button theme="tertiary" @click=${() => dialog?.close()}>
               <or-translate value="cancel"></or-translate>
