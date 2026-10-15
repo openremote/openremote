@@ -38,7 +38,7 @@ certificate, see [here](https://www.technipages.com/google-chrome-bypass-your-co
 Username: admin  
 Password: secret
 
-### Changing host and/or port
+### Changing host
 
 The URL you use to access the system is important, the default is configured as `https://127.0.0.1` if you are using a VM then you will need to set the `OR_HOSTNAME` environment variable, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command:
 
