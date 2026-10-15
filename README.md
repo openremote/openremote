@@ -1,6 +1,6 @@
 # OpenRemote Core
 
-[![CI/CD](https://github.com/openremote/core/actions/workflows/ci_cd.yml/badge.svg?branch=main&event=push)](https://github.com/openremote/core/actions/workflows/ci_cd.yml?query=event%3Apush+branch%3Amain)
+[![CI/CD](https://github.com/openremote/core/actions/workflows/staging.yml/badge.svg?branch=main&event=push)](https://github.com/openremote/core/actions/workflows/staging.yml?query=event%3Apush+branch%3Amain)
 [![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/Naereen/badges/)
 <!-- ![tests](https://github.com/openremote/core/workflows/tests/badge.svg) -->
 
@@ -38,14 +38,14 @@ certificate, see [here](https://www.technipages.com/google-chrome-bypass-your-co
 Username: admin  
 Password: secret
 
-### Changing host and/or port
+### Changing host
 
 The URL you use to access the system is important, the default is configured as `https://127.0.0.1` if you are using a VM then you will need to set the `OR_HOSTNAME` environment variable, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command:
 
 BASH:
 
 ```shell
-OR_HOSTNAME=192.168.1.1 docker-compose -p openremote up -d
+OR_HOSTNAME=192.168.1.1 docker compose -p openremote up -d
 ```
 
 or
@@ -53,7 +53,7 @@ or
 CMD:
 
 ```shell
-cmd /C "set OR_HOSTNAME=192.168.1.1 && docker-compose -p openremote up -d"
+cmd /C "set OR_HOSTNAME=192.168.1.1 && docker compose -p openremote up -d"
 ```
 
 ## What next
