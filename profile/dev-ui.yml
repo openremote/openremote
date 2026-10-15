@@ -24,6 +24,8 @@ services:
     environment:
       # Prevent theme caching during dev
       KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+      # manager has a different base URL and is assumed to be reachable at this URL
+      OR_MANAGER_URL: ${OR_MANAGER_URL:-http://127.0.0.1:8080}
 
   postgresql:
     extends:
