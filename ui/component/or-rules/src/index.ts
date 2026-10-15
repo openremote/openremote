@@ -27,7 +27,6 @@ import manager, {
   DefaultColor4,
   DefaultColor5,
   DefaultColor6,
-  type NotificationConfigs,
   Util,
 } from "@openremote/core";
 import { i18next, translate } from "@openremote/or-translate";
@@ -41,6 +40,7 @@ import {
   ClientRole,
   type JsonRule,
   type LogicGroup,
+  type ManagerAppRealmNotificationConfig,
   type NotificationTargetType,
   type RuleActionUnion,
   type RuleCondition,
@@ -166,7 +166,7 @@ export interface RulesConfig {
     then?: RuleActionUnion;
     otherwise?: RuleActionUnion;
   };
-  notifications?: NotificationConfigs;
+  notifications?: { [realm: string]: ManagerAppRealmNotificationConfig };
 }
 
 export interface RulesDescriptorSection {

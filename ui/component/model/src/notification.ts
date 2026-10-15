@@ -18,23 +18,13 @@
  */
 import type {
   AbstractNotificationMessageUnion,
-  EmailNotificationMessage,
+  LocalizedNotificationMessage,
   ManagerAppRealmNotificationConfig,
-  PushNotificationMessage,
-} from "@openremote/model";
-
-/** A message that carries its own content, as opposed to a localized one holding one of these per language. */
-export type NotificationMessage = PushNotificationMessage | EmailNotificationMessage;
-
-/** The messages of a localized notification, keyed by language. */
-export type NotificationMessages = { [language: string]: NotificationMessage };
-
-/** Notification config per realm, as the manager app config holds it. */
-export type NotificationConfigs = { [realm: string]: ManagerAppRealmNotificationConfig };
+} from "./model";
 
 /** The notification config of `realm`, falling back to the `default` entry that stands in for every realm. */
 export function getRealmNotificationConfig(
-  configs?: NotificationConfigs,
+  configs?: { [realm: string]: ManagerAppRealmNotificationConfig | undefined },
   realm?: string
 ): ManagerAppRealmNotificationConfig | undefined {
   return (realm ? configs?.[realm] : undefined) || configs?.default;
@@ -53,13 +43,15 @@ export function getNotificationLanguages(
 }
 
 /** Whether a message has anything to show; a language that is supported but not translated has not. */
-function isTranslated(message?: NotificationMessage): boolean {
-  if (!message) {
-    return false;
+function isTranslated(message?: AbstractNotificationMessageUnion): boolean {
+  switch (message?.type) {
+    case "email":
+      return !!(message.subject || message.html || message.text);
+    case "push":
+      return !!(message.title || message.body);
+    default:
+      return false;
   }
-  return message.type === "email"
-    ? !!(message.subject || message.html || message.text)
-    : !!(message.title || message.body);
 }
 
 /**
@@ -71,16 +63,26 @@ function isTranslated(message?: NotificationMessage): boolean {
 export function resolveNotificationMessage(
   message?: AbstractNotificationMessageUnion,
   language?: string
-): { message?: NotificationMessage; language?: string; languages?: NotificationMessages } {
+): {
+  message?: Exclude<AbstractNotificationMessageUnion, LocalizedNotificationMessage>;
+  language?: string;
+  languages?: LocalizedNotificationMessage["languages"];
+} {
   if (message?.type !== "localized") {
     return { message };
   }
-  const languages = (message.languages || {}) as NotificationMessages;
+  const languages = message.languages || {};
   const codes = Object.keys(languages);
   // Fall through to any translated language, then to an untranslated one, so a language is always named
   const resolved =
     [language, message.defaultLanguage, ...codes].find((code) => code && isTranslated(languages[code])) ||
     (message.defaultLanguage && languages[message.defaultLanguage] ? message.defaultLanguage : codes[0]);
 
-  return { message: resolved ? languages[resolved] : undefined, language: resolved, languages };
+  return {
+    message: resolved
+      ? (languages[resolved] as Exclude<AbstractNotificationMessageUnion, LocalizedNotificationMessage>)
+      : undefined,
+    language: resolved,
+    languages,
+  };
 }

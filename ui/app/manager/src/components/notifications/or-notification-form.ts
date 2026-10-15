@@ -22,18 +22,12 @@ import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { classMap } from "lit/directives/class-map.js";
 import { i18next } from "@openremote/or-translate";
-import manager, {
-  DEFAULT_LANGUAGES,
-  type NotificationMessage,
-  type NotificationMessages,
-  Util,
-  getNotificationLanguages,
-  resolveNotificationMessage,
-} from "@openremote/core";
+import manager, { DEFAULT_LANGUAGES, Util } from "@openremote/core";
 import {
   type Asset,
   ClientRole,
   type EmailNotificationMessage,
+  type LocalizedNotificationMessage,
   type ManagerAppRealmNotificationConfig,
   type Notification,
   NotificationTargetType,
@@ -42,6 +36,8 @@ import {
   PushNotificationMessageMessagePriority,
   type SentNotification,
   type User,
+  getNotificationLanguages,
+  resolveNotificationMessage,
 } from "@openremote/model";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import type { OrAssetTree, OrAssetTreeSelectionEvent } from "@openremote/or-asset-tree";
@@ -52,6 +48,8 @@ import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import "@openremote/or-vaadin-components/or-vaadin-text-field";
 import "@openremote/or-vaadin-components/or-vaadin-text-area";
 import "@openremote/or-vaadin-components/or-vaadin-toggle";
+
+type NotificationMessage = PushNotificationMessage | EmailNotificationMessage;
 
 // Requires a scheme (e.g. https://) before the rest of the URL; shared by the actionUrl field's pattern attribute
 // and the create-validation check. The hyphen is escaped so it's valid under the pattern attribute's `v` flag.
@@ -226,7 +224,7 @@ export class OrNotificationForm extends OrElement {
   protected _messageLanguage?: string;
 
   // The messages of a localized notification, to switch the displayed language between
-  protected _messageLanguages?: NotificationMessages;
+  protected _messageLanguages?: LocalizedNotificationMessage["languages"];
 
   @state()
   protected _targetType: NotificationTargetType = this._defaultTargetType();
@@ -715,7 +713,7 @@ export class OrNotificationForm extends OrElement {
     }
     this._messageLanguage = language;
     // A supported language the notification was never translated into holds no message of its own
-    this._message = this._messageLanguages?.[language] || { type: this._message.type };
+    this._message = (this._messageLanguages?.[language] as NotificationMessage) || { type: this._message.type };
   }
 
   protected _renderPushContent(message: PushNotificationMessage, inputDisabled: boolean) {

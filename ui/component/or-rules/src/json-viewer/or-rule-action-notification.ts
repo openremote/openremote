@@ -34,6 +34,8 @@ import {
   type PushNotificationMessage,
   type EmailNotificationMessage,
   type LocalizedNotificationMessage,
+  getNotificationLanguages,
+  getRealmNotificationConfig,
 } from "@openremote/model";
 import { getTargetTypeMap, OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
 import "./or-rule-json-dialog";
@@ -42,7 +44,7 @@ import "./forms/or-rule-form-push-notification";
 import "./forms/or-rule-form-localized";
 import "./or-rule-action-attribute";
 import { i18next } from "@openremote/or-translate";
-import manager, { Util, getNotificationLanguages, getRealmNotificationConfig } from "@openremote/core";
+import manager, { Util } from "@openremote/core";
 import type { OrRulesActionDialogCancelEvent, OrRulesActionDialogOkEvent } from "./or-rule-json-dialog";
 import type { OrVaadinComboBox } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 

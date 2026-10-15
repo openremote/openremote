@@ -28,9 +28,11 @@ import {
   NotificationTargetType,
   type SentNotification,
   SentNotificationSortField,
+  type ManagerAppRealmNotificationConfig,
   type User,
+  getRealmNotificationConfig,
 } from "@openremote/model";
-import manager, { DefaultColor3, type NotificationConfigs, getRealmNotificationConfig } from "@openremote/core";
+import manager, { DefaultColor3 } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import type { AxiosError } from "@openremote/rest";
@@ -191,7 +193,7 @@ export interface PageNotificationsConfig {
   targetType?: string;
   fromTimestamp?: number;
   toTimestamp?: number;
-  notifications?: NotificationConfigs;
+  notifications?: { [realm: string]: ManagerAppRealmNotificationConfig };
 }
 
 export function pageNotificationsProvider(
