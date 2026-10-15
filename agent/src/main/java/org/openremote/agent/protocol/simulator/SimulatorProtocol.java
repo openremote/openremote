@@ -212,7 +212,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     long nowUTC = timerService.getNow().toEpochMilli(); // UTC
     long now = toLocalMillis(nowUTC, timezone);
 
-    long timeSinceOccurrenceStart = now - schedule.tryAdvanceActive(now);
+    long timeSinceOccurrenceStart = now - schedule.tryAdvanceActive(now, timezone);
 
     // Find datapoint with timestamp after the current occurrence
     SimulatorReplayDatapoint nextDatapoint =
@@ -508,11 +508,19 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
      *     the schedule is returned.
      */
     public long tryAdvanceActive(long millisSinceEpoch) {
+      return tryAdvanceActive(millisSinceEpoch, ZoneOffset.UTC);
+    }
+
+    /**
+     * Same as {@link #tryAdvanceActive(long)}, except that an occurrence starting at a local time
+     * skipped by a daylight saving transition of the timezone starts where the clocks land.
+     */
+    public long tryAdvanceActive(long millisSinceEpoch, ZoneId timezone) {
       long startInMillis = start.toInstant(ZoneOffset.UTC).toEpochMilli();
 
       if (recurrence == null) {
-        current = start;
-        return startInMillis;
+        current = skipGap(start, timezone);
+        return current.toInstant(ZoneOffset.UTC).toEpochMilli();
       }
 
       LocalDateTime now =
@@ -524,8 +532,9 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         // this method is called
         List<LocalDateTime> dates = recurrence.getDates(start, start, now);
         if (!dates.isEmpty()) {
-          current = dates.getLast();
-          upcoming = recurrence.getNextDate(start, current);
+          LocalDateTime last = dates.getLast();
+          current = skipGap(last, timezone);
+          upcoming = skipGap(recurrence.getNextDate(start, last), timezone);
           return current.toInstant(ZoneOffset.UTC).toEpochMilli();
         }
         LocalDateTime epoch = LocalDateTime.ofEpochSecond(0, 0, ZoneOffset.UTC);
@@ -533,17 +542,18 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         // If the first occurrence does not equal 'start' when using a BYxxx rule part
         if (firstOccurrence != null
             && startInMillis != firstOccurrence.toInstant(ZoneOffset.UTC).toEpochMilli()) {
-          current = firstOccurrence;
-          upcoming = recurrence.getNextDate(start, current);
+          current = skipGap(firstOccurrence, timezone);
+          upcoming = skipGap(recurrence.getNextDate(start, firstOccurrence), timezone);
           return current.toInstant(ZoneOffset.UTC).toEpochMilli();
         }
         // The first occurrence hasn't started
-        current = start;
-        return startInMillis;
+        current = skipGap(start, timezone);
+        upcoming = current;
+        return current.toInstant(ZoneOffset.UTC).toEpochMilli();
       }
 
       // Preemptively get next to determine whether to advance the occurrence
-      LocalDateTime next = recurrence.getNextDate(start, now);
+      LocalDateTime next = skipGap(recurrence.getNextDate(start, now), timezone);
 
       if (next == null) {
         current = upcoming; // Update current 1 final time
@@ -558,6 +568,13 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
       upcoming = next;
 
       return current.toInstant(ZoneOffset.UTC).toEpochMilli();
+    }
+
+    /**
+     * Moves a local time skipped by a daylight saving transition forward to where the clocks land.
+     */
+    private static LocalDateTime skipGap(LocalDateTime localDateTime, ZoneId timezone) {
+      return localDateTime == null ? null : localDateTime.atZone(timezone).toLocalDateTime();
     }
 
     /**

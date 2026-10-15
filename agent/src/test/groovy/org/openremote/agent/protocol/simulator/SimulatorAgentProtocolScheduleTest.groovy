@@ -22,6 +22,7 @@ import spock.lang.Specification
 
 import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 
 class SimulatorAgentProtocolScheduleTest extends Specification {
@@ -194,6 +195,38 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
 
     expect:
     delays(schedule, recurringDelayExpectations())
+  }
+
+  def "a daily recurrence starting in an hour skipped by daylight saving starts where the clocks land"() {
+    given: "a daily occurrence at 02:30, which Europe/Amsterdam skips on the 29th of March 2026"
+    def timezone = ZoneId.of("Europe/Amsterdam")
+    def schedule = schedule(instant("2026-03-01T02:30:00.000Z"), null, "FREQ=DAILY")
+
+    expect: "the occurrence of the 29th starts at 03:30, after the clocks move from 02:00 to 03:00"
+    schedule.tryAdvanceActive(instant("2026-03-28T12:00:00.000Z"), timezone) == instant("2026-03-28T02:30:00.000Z")
+    schedule.tryAdvanceActive(instant("2026-03-29T03:10:00.000Z"), timezone) == instant("2026-03-29T03:30:00.000Z")
+    schedule.tryAdvanceActive(instant("2026-03-29T12:00:00.000Z"), timezone) == instant("2026-03-29T03:30:00.000Z")
+    schedule.tryAdvanceActive(instant("2026-03-30T12:00:00.000Z"), timezone) == instant("2026-03-30T02:30:00.000Z")
+  }
+
+  def "datapoints of an occurrence starting in a skipped hour keep their offsets from #now"() {
+    given: "a daily occurrence at 02:30, which Europe/Amsterdam skips on the 29th of March 2026"
+    def timezone = ZoneId.of("Europe/Amsterdam")
+    def schedule = schedule(instant("2026-03-01T02:30:00.000Z"), null, "FREQ=DAILY")
+
+    expect: "datapoints 0, 10 and 40 minutes into the occurrence follow its start at 03:30"
+    def timeSinceOccurrenceStarted = instant(now) - schedule.tryAdvanceActive(instant(now), timezone)
+    [0, 600, 2400].collect {
+      instant(now) + schedule.getDelay(it, timeSinceOccurrenceStarted).asLong
+    } == expected.collect { instant(it) }
+
+    where:
+    // spotless:off
+    now                        || expected
+    "2026-03-28T12:00:00.000Z" || ["2026-03-29T03:30:00.000Z", "2026-03-29T03:40:00.000Z", "2026-03-29T04:10:00.000Z"]
+    "2026-03-29T03:10:00.000Z" || ["2026-03-29T03:30:00.000Z", "2026-03-29T03:40:00.000Z", "2026-03-29T04:10:00.000Z"]
+    "2026-03-29T03:35:00.000Z" || ["2026-03-30T02:30:00.000Z", "2026-03-29T03:40:00.000Z", "2026-03-29T04:10:00.000Z"]
+    // spotless:on
   }
 
   private static void delays(
