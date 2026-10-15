@@ -195,6 +195,10 @@ fetch(configURL)
         appConfig.manager.applyConfigToAdmin !== undefined ? appConfig.manager.applyConfigToAdmin : true;
 
       if ((!isAdmin || applyConfigToAdmin) && appConfig.pages) {
+        // The rules and notifications pages both read the notification languages each realm supports
+        const notificationConfigs = Object.fromEntries(
+          Object.entries(appConfig.realms || {}).map(([realm, realmConfig]) => [realm, realmConfig.notifications])
+        );
         // Replace any supplied page configs
         pages = pages.map((pageProvider) => {
           const config: { [p: string]: any } | undefined = appConfig.pages[pageProvider.name];
@@ -213,9 +217,7 @@ fetch(configURL)
                 rules: {},
               }) as PageRulesConfig;
               if (!newConfig.rules?.notifications) {
-                newConfig.rules.notifications = Object.fromEntries(
-                  Object.entries(appConfig.realms).map((entry) => [entry[0], entry[1].notifications])
-                );
+                newConfig.rules.notifications = notificationConfigs;
               }
               pageProvider = pageRulesProvider(store, newConfig);
               break;
@@ -223,9 +225,7 @@ fetch(configURL)
             case "notifications": {
               const newConfig = (config || {}) as PageNotificationsConfig;
               if (!newConfig.notifications) {
-                newConfig.notifications = Object.fromEntries(
-                  Object.entries(appConfig.realms || {}).map((entry) => [entry[0], entry[1].notifications])
-                );
+                newConfig.notifications = notificationConfigs;
               }
               pageProvider = pageNotificationsProvider(store, newConfig);
               break;
