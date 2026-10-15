@@ -324,21 +324,10 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
     };
 
     const checkValidity = () => {
-      buttonRef.value!.disabled = !tunnel.gatewayId || !tunnel.target || !tunnel.targetPort;
-    }
-    const updateActions = () => {
-      dialog.setActions([
-        { actionName: "cancel", content: "cancel" },
-        {
-          actionName: "add",
-          disabled:
-            !tunnel.gatewayId ||
-            (tunnel.hostname && tunnel.hostname.trim().length === 0) ||
-            (tunnel.targetPort !== undefined && (tunnel.targetPort <= 0 || tunnel.targetPort > 65535)),
-          content: "add",
-          action: () => onAddClick(),
-        },
-      ]);
+      buttonRef.value!.disabled =
+        !tunnel.gatewayId ||
+        (tunnel.hostname && tunnel.hostname.trim().length === 0) ||
+        (tunnel.targetPort !== undefined && (tunnel.targetPort <= 0 || tunnel.targetPort > 65535));
     };
 
     const gatewayListTemplate = async (): Promise<TemplateResult> => {
