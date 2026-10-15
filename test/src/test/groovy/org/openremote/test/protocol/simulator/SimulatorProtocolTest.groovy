@@ -924,7 +924,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                             "FREQ=DAILY"
                             )).setTimezone(TimeZone.getTimeZone(timezone))),
                     new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
-            )
+    )
     asset = assetStorageService.merge(asset)
     def attribute = asset.getAttribute("test7").get()
     def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
@@ -992,6 +992,69 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     "Europe/Amsterdam" || HOUR_IN_MILLIS * 5    | HOUR_IN_MILLIS * 22   | "1970-04-25T17:00:00Z"  | "1970-04-25T19:00:00Z"  | "1970-04-26T17:00:00Z"  | "1970-04-26T19:00:00Z"
     // Kolkata has not shifted its clocks since 1945
     "Asia/Kolkata"     || MINUTE_IN_MILLIS * 30 | HOUR_IN_MILLIS * 22   | "1970-04-25T12:30:00Z"  | "1970-04-25T14:30:00Z"  | "1970-04-26T12:30:00Z"  | "1970-04-26T14:30:00Z"
+    // spotless:on
+  }
+
+  def "Check Simulator Agent protocol replays from the #pass pass of the hour Europe/Amsterdam repeats on the 25th of October 2026"() {
+    when: "the clock is at 02:10 local time in the #pass pass of the hour repeated when Europe/Amsterdam moves from CEST to CET"
+    setPseudoClock(clock)
+
+    and: "replayData is configured to add a datapoint at 02:30 and 03:30 every day, local time in Europe/Amsterdam"
+    asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
+                    new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 2 + 1800, "test"),
+                            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 3 + 1800, "test"),
+                            ).setSchedule(new SimulatorProtocol.Schedule(
+                            LocalDateTime.ofInstant(Instant.parse("2026-10-01T00:00:00.000Z"), ZoneOffset.UTC),
+                            null,
+                            "FREQ=DAILY"
+                            )).setTimezone(TimeZone.getTimeZone("Europe/Amsterdam"))),
+                    new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
+    )
+    asset = assetStorageService.merge(asset)
+    def attribute = asset.getAttribute("test7").get()
+    def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
+
+    then: "the agent status should become CONNECTED and the attribute linked to the protocol"
+    conditions.eventually {
+      assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+      protocol.linkedAttributes.get(attributeRef) == attribute
+    }
+
+    and: "the delay counts down to the 02:30 local time that is still ahead"
+    conditions.eventually {
+      scheduledFor(attributeRef)?.delay == MINUTE_IN_MILLIS * 20
+    }
+
+    and: "the predicted datapoints are the UTC instants of 02:30 and 03:30 local time on the 25th and 26th"
+    conditions.eventually {
+      def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+      datapoints.size() == 4
+      datapoints.get(3).getTimestamp() == instant(first)
+      datapoints.get(2).getTimestamp() == instant("2026-10-25T02:30:00Z")
+      datapoints.get(1).getTimestamp() == instant("2026-10-26T01:30:00Z")
+      datapoints.get(0).getTimestamp() == instant("2026-10-26T02:30:00Z")
+    }
+
+    when: "fast forward to 02:30 on the 25th"
+    fastForwardToScheduled(attributeRef)
+
+    then: "the replay lands on the 02:30 local time that was ahead"
+    conditions.eventually {
+      getClockTimeOf(container) == instant(first)
+    }
+
+    and: "the delay counts down to 03:30 local time on the 25th"
+    conditions.eventually {
+      scheduledFor(attributeRef)?.delay == nextDelay
+    }
+
+    where: "02:30 local time happens at 00:30 UTC in CEST and again at 01:30 UTC in CET"
+    // spotless:off
+    pass     || clock                      | first                  | nextDelay
+    // The repeat of 02:00 to 03:00 is skipped once its first pass has been replayed
+    "first"  || "2026-10-25T00:10:00.000Z" | "2026-10-25T00:30:00Z" | HOUR_IN_MILLIS * 2
+    "second" || "2026-10-25T01:10:00.000Z" | "2026-10-25T01:30:00Z" | HOUR_IN_MILLIS
     // spotless:on
   }
 

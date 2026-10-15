@@ -244,7 +244,12 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
       PredictedDatapointWindow status = predictedDatapointWindowMap.get(attributeRef);
       List<ValueDatapoint<?>> predictedDatapoints =
           calculatePredictedDatapoints(
-              simulatorReplayDatapoints, schedule, status, timeSinceOccurrenceStart, now, timezone);
+              simulatorReplayDatapoints,
+              schedule,
+              status,
+              timeSinceOccurrenceStart,
+              nowUTC,
+              timezone);
       try {
         updateLinkedAttributePredictedDataPoints(attributeRef, predictedDatapoints);
       } catch (Exception e) {
@@ -263,7 +268,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
     // The next run is a distance between local times, which is an hour short or long across a
     // daylight saving transition, so it is resolved to the instant it occurs on
-    long nextRunUTC = toEpochMillis(now + nextRun.getAsLong(), timezone);
+    long nextRunUTC = toEpochMillis(now + nextRun.getAsLong(), timezone, nowUTC);
     long delay = nextRunUTC - nowUTC;
 
     LOG.fine(
@@ -316,13 +321,17 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
    * instant applies instead of the one that happens to be active now.
    *
    * <p>A local time skipped by a daylight saving transition shifts forward by the length of the gap
-   * and a local time that happens twice takes the first of the two.
+   * and a local time that happens twice takes the first of the two, unless that one is before
+   * {@code notBeforeUTC}.
    */
-  private static long toEpochMillis(long localMillis, ZoneId timezone) {
-    return LocalDateTime.ofInstant(Instant.ofEpochMilli(localMillis), ZoneOffset.UTC)
-        .atZone(timezone)
-        .toInstant()
-        .toEpochMilli();
+  private static long toEpochMillis(long localMillis, ZoneId timezone, long notBeforeUTC) {
+    ZonedDateTime zoned =
+        LocalDateTime.ofInstant(Instant.ofEpochMilli(localMillis), ZoneOffset.UTC).atZone(timezone);
+    long millis = zoned.toInstant().toEpochMilli();
+    if (millis < notBeforeUTC) {
+      millis = zoned.withLaterOffsetAtOverlap().toInstant().toEpochMilli();
+    }
+    return millis;
   }
 
   public List<ValueDatapoint<?>> calculatePredictedDatapoints(
@@ -330,9 +339,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
       Schedule schedule,
       PredictedDatapointWindow status,
       long timeSinceOccurrenceStart,
-      long now,
+      long nowUTC,
       ZoneId timezone) {
     List<ValueDatapoint<?>> predictedDatapoints = new ArrayList<>();
+    long now = toLocalMillis(nowUTC, timezone);
 
     if (status.equals(PredictedDatapointWindow.NONE) || !schedule.hasCurrent()) {
       return predictedDatapoints;
@@ -355,7 +365,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
           if (schedule.isAfterScheduleEnd(timestamp)) {
             return predictedDatapoints;
           }
-          long UTCTimestamp = toEpochMillis(timestamp, timezone);
+          long UTCTimestamp = toEpochMillis(timestamp, timezone, nowUTC);
           predictedDatapoints.add(
               new SimulatorReplayDatapoint(UTCTimestamp, datapoint.value).toValueDatapoint());
         }
@@ -381,7 +391,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         if (schedule.isAfterScheduleEnd(timestamp)) {
           return predictedDatapoints;
         }
-        long UTCTimestamp = toEpochMillis(timestamp, timezone);
+        long UTCTimestamp = toEpochMillis(timestamp, timezone, nowUTC);
         predictedDatapoints.add(
             new SimulatorReplayDatapoint(UTCTimestamp, datapoint.value).toValueDatapoint());
       }
