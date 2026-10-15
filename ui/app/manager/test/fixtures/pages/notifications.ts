@@ -38,12 +38,6 @@ export class NotificationsPage implements BasePage {
     await expect(this.getTable()).toBeVisible();
   }
 
-  /** Navigate by URL, for tests whose app language makes the menu item's label unpredictable. */
-  async gotoUrl(realm = "master") {
-    await this.page.goto(this.manager.getAppUrl(realm) + "#/notifications");
-    await expect(this.getTable()).toBeVisible();
-  }
-
   // --- Table -------------------------------------------------------------
 
   getTable(): Locator {
