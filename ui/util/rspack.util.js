@@ -26,6 +26,11 @@ function getStandardModuleRules() {
   return {
     rules: [
       {
+        // moment resolves its locale data through a require it has assigned to a variable
+        test: /moment[\\/]moment\.js$/,
+        parser: { requireAlias: true },
+      },
+      {
         test: /(maplibre|@material|gridstack|@mdi).*\.css$/, // output css as strings
         type: "asset/source",
       },

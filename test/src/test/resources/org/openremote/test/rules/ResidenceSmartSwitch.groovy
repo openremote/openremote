@@ -53,7 +53,7 @@ enum SmartSwitchMode {
 
 Closure<Stream<AssetState<?>>> smartSwitchAttributesMatch = { RulesFacts facts, SmartSwitchAttribute attribute ->
   facts.matchAssetState(
-  new AssetQuery().types(RoomAsset).attributes(new AttributePredicate(new StringPredicate(BEGIN, "smartSwitch" + attribute.name()), null))
+          new AssetQuery().types(RoomAsset).attributes(new AttributePredicate(new StringPredicate(BEGIN, "smartSwitch" + attribute.name()), null))
   )
 }
 
@@ -63,7 +63,7 @@ Closure<Character> getSmartSwitchName = { AssetState attribute ->
 
 Closure<Optional<AssetState<?>>> smartSwitchAttributeMatch = { RulesFacts facts, AssetState smartSwitch, SmartSwitchAttribute attribute ->
   facts.matchFirstAssetState(
-  new AssetQuery().types(RoomAsset).attributeName("smartSwitch" + attribute.name() + getSmartSwitchName(smartSwitch))
+          new AssetQuery().types(RoomAsset).attributeName("smartSwitch" + attribute.name() + getSmartSwitchName(smartSwitch))
   )
 }
 
@@ -71,21 +71,21 @@ rules.add()
         .name("Clear start/stop time and disable actuator when begin/end of cycle is empty")
         .when({ facts ->
           smartSwitchAttributesMatch(
-                  facts, SmartSwitchAttribute.BeginEnd
-                  ).filter { beginEnd ->
-            !beginEnd.value.isPresent()
-          }.filter { emptyBeginEnd ->
-            // Any of start time, stop time, or enabled is greater than zero
-            def startTime = smartSwitchAttributeMatch(facts, emptyBeginEnd, SmartSwitchAttribute.StartTime)
-            def stopTime = smartSwitchAttributeMatch(facts, emptyBeginEnd, SmartSwitchAttribute.StopTime)
-            def enabled = smartSwitchAttributeMatch(facts, emptyBeginEnd, SmartSwitchAttribute.Enabled)
-            (startTime.isPresent() && startTime.get().value.orElse(0l) > 0l) ||
-                    (stopTime.isPresent() && stopTime.get().value.orElse(0l) > 0l) ||
-                    (enabled.isPresent() && enabled.get().value.orElse(0l) > 0l)
-          }.findFirst().map { emptyBeginEnd ->
-            facts.bind("beginEnd", emptyBeginEnd)
-            true
-          }.orElse(false)
+                          facts, SmartSwitchAttribute.BeginEnd
+                          ).filter { beginEnd ->
+                    !beginEnd.value.isPresent()
+                  }.filter { emptyBeginEnd ->
+                    // Any of start time, stop time, or enabled is greater than zero
+                    def startTime = smartSwitchAttributeMatch(facts, emptyBeginEnd, SmartSwitchAttribute.StartTime)
+                    def stopTime = smartSwitchAttributeMatch(facts, emptyBeginEnd, SmartSwitchAttribute.StopTime)
+                    def enabled = smartSwitchAttributeMatch(facts, emptyBeginEnd, SmartSwitchAttribute.Enabled)
+                    (startTime.isPresent() && startTime.get().value.orElse(0l) > 0l) ||
+                            (stopTime.isPresent() && stopTime.get().value.orElse(0l) > 0l) ||
+                            (enabled.isPresent() && enabled.get().value.orElse(0l) > 0l)
+                  }.findFirst().map { emptyBeginEnd ->
+                    facts.bind("beginEnd", emptyBeginEnd)
+                    true
+                  }.orElse(false)
         })
         .then({ facts ->
           AssetState beginEnd = facts.bound("beginEnd")
@@ -100,19 +100,19 @@ rules.add()
         .name("Clear begin/end of cycle when mode is NOW_ON")
         .when({ facts ->
           smartSwitchAttributesMatch(
-                  facts, SmartSwitchAttribute.Mode
-                  ).filter { mode ->
-            SmartSwitchMode.matches(mode, SmartSwitchMode.NOW_ON)
-          }.filter { modeNowOn ->
-            // Begin/end time of cycle is greater than zero
-            smartSwitchAttributeMatch(facts, modeNowOn, SmartSwitchAttribute.BeginEnd)
-            .flatMap { it.getValue(Long.class) }
-            .map { it> 0 }
-            .orElse(false)
-          }.findFirst().map { modeNowOn ->
-            facts.bind("mode", modeNowOn)
-            true
-          }.orElse(false)
+                          facts, SmartSwitchAttribute.Mode
+                          ).filter { mode ->
+                    SmartSwitchMode.matches(mode, SmartSwitchMode.NOW_ON)
+                  }.filter { modeNowOn ->
+                    // Begin/end time of cycle is greater than zero
+                    smartSwitchAttributeMatch(facts, modeNowOn, SmartSwitchAttribute.BeginEnd)
+                            .flatMap { it.getValue(Long.class) }
+                            .map { it> 0 }
+                            .orElse(false)
+                  }.findFirst().map { modeNowOn ->
+                    facts.bind("mode", modeNowOn)
+                    true
+                  }.orElse(false)
         })
         .then({ facts ->
           AssetState mode = facts.bound("mode")
@@ -125,34 +125,34 @@ rules.add()
         .name("Enable actuator when mode is ON_AT and begin/end of cycle is now or in future and different than actuator start time")
         .when({ facts ->
           smartSwitchAttributesMatch(
-                  facts, SmartSwitchAttribute.Mode
-                  ).filter { mode ->
-            SmartSwitchMode.matches(mode, SmartSwitchMode.ON_AT)
-          }.map { modeOnAt ->
-            smartSwitchAttributeMatch(facts, modeOnAt, SmartSwitchAttribute.BeginEnd)
-          }.filter { beginEnd ->
-            // User-provided begin/end time of cycle
-            beginEnd.flatMap { it.value}.filter {
-              // is now or in future
-              it >= facts.clock.currentTimeMillis
-            }.map { expectedStartTime ->
-              // and actuator start time attribute
-              def startTime = beginEnd.flatMap {
-                smartSwitchAttributeMatch(facts, it, SmartSwitchAttribute.StartTime)
-              }
-              // is present
-              startTime.isPresent() &&
-                      // the value is not the same as the expected start time
-                      startTime.map {
-                        it.value.map {
-                          it != expectedStartTime
-                        }.orElse(true) // or actuator start time is empty
+                          facts, SmartSwitchAttribute.Mode
+                          ).filter { mode ->
+                    SmartSwitchMode.matches(mode, SmartSwitchMode.ON_AT)
+                  }.map { modeOnAt ->
+                    smartSwitchAttributeMatch(facts, modeOnAt, SmartSwitchAttribute.BeginEnd)
+                  }.filter { beginEnd ->
+                    // User-provided begin/end time of cycle
+                    beginEnd.flatMap { it.value}.filter {
+                      // is now or in future
+                      it >= facts.clock.currentTimeMillis
+                    }.map { expectedStartTime ->
+                      // and actuator start time attribute
+                      def startTime = beginEnd.flatMap {
+                        smartSwitchAttributeMatch(facts, it, SmartSwitchAttribute.StartTime)
                       }
-            }.orElse(false)
-          }.findFirst().map {beginEnd ->
-            facts.bind("beginEnd", beginEnd.get())
-            true
-          }.orElse(false)
+                      // is present
+                      startTime.isPresent() &&
+                              // the value is not the same as the expected start time
+                              startTime.map {
+                                it.value.map {
+                                  it != expectedStartTime
+                                }.orElse(true) // or actuator start time is empty
+                              }
+                    }.orElse(false)
+                  }.findFirst().map {beginEnd ->
+                    facts.bind("beginEnd", beginEnd.get())
+                    true
+                  }.orElse(false)
         })
         .then({ facts ->
           AssetState<Long> beginEnd = facts.bound("beginEnd")
@@ -175,32 +175,32 @@ rules.add()
         .name("Enable actuator when mode is READY_AT and cycle will complete in future and different than actuator stop time")
         .when({ facts ->
           smartSwitchAttributesMatch(
-                  facts, SmartSwitchAttribute.Mode
-                  ).filter { mode ->
-            SmartSwitchMode.matches(mode, SmartSwitchMode.READY_AT)
-          }.map { modeReadyAt ->
-            smartSwitchAttributeMatch(facts, modeReadyAt, SmartSwitchAttribute.BeginEnd)
-          }.filter { beginEnd ->
-            // User-provided begin/end time of cycle
-            beginEnd.flatMap { it.value}.filter {
-              // allows the cycle to complete in future
-              (it - CYCLE_TIME_MILLISECONDS) >= facts.clock.currentTimeMillis
-            }.map { expectedStopTime ->
-              // and actuator stop time attribute
-              def stopTime = beginEnd.flatMap {
-                smartSwitchAttributeMatch(facts, it, SmartSwitchAttribute.StopTime)
-              }
-              // is present
-              stopTime.isPresent() &&
-                      // the value is not the same as the expected stop time
-                      stopTime.flatMap { it.value}.map {
-                        it != expectedStopTime
-                      }.orElse(true) // or actuator stop time is empty
-            }.orElse(false)
-          }.findFirst().map { beginEnd ->
-            facts.bind("beginEnd", beginEnd.get())
-            true
-          }.orElse(false)
+                          facts, SmartSwitchAttribute.Mode
+                          ).filter { mode ->
+                    SmartSwitchMode.matches(mode, SmartSwitchMode.READY_AT)
+                  }.map { modeReadyAt ->
+                    smartSwitchAttributeMatch(facts, modeReadyAt, SmartSwitchAttribute.BeginEnd)
+                  }.filter { beginEnd ->
+                    // User-provided begin/end time of cycle
+                    beginEnd.flatMap { it.value}.filter {
+                      // allows the cycle to complete in future
+                      (it - CYCLE_TIME_MILLISECONDS) >= facts.clock.currentTimeMillis
+                    }.map { expectedStopTime ->
+                      // and actuator stop time attribute
+                      def stopTime = beginEnd.flatMap {
+                        smartSwitchAttributeMatch(facts, it, SmartSwitchAttribute.StopTime)
+                      }
+                      // is present
+                      stopTime.isPresent() &&
+                              // the value is not the same as the expected stop time
+                              stopTime.flatMap { it.value}.map {
+                                it != expectedStopTime
+                              }.orElse(true) // or actuator stop time is empty
+                    }.orElse(false)
+                  }.findFirst().map { beginEnd ->
+                    facts.bind("beginEnd", beginEnd.get())
+                    true
+                  }.orElse(false)
         })
         .then({ facts ->
           AssetState<Long> beginEnd = facts.bound("beginEnd")
@@ -223,20 +223,20 @@ rules.add()
         .name("Set mode NOW_ON when mode is ON_AT or READY_AT and actuator stop time is in the past")
         .when({ facts ->
           smartSwitchAttributesMatch(
-                  facts, SmartSwitchAttribute.Mode
-                  ).filter { mode ->
-            SmartSwitchMode.matches(mode, SmartSwitchMode.ON_AT) || SmartSwitchMode.matches(mode, SmartSwitchMode.READY_AT)
-          }.map { modeOnAtOrReadyAt ->
-            smartSwitchAttributeMatch(facts, modeOnAtOrReadyAt, SmartSwitchAttribute.StopTime)
-          }.filter { stopTime ->
-            // Actuator stop time attribute is present and value (in seconds) is not zero and in the past
-            stopTime.flatMap { it.value}.map {
-              it> 0 && it <facts.clock.currentTimeMillis
-            }.orElse(false)
-          }.findFirst().map { stopTime ->
-            facts.bind("stopTime", stopTime.get())
-            true
-          }.orElse(false)
+                          facts, SmartSwitchAttribute.Mode
+                          ).filter { mode ->
+                    SmartSwitchMode.matches(mode, SmartSwitchMode.ON_AT) || SmartSwitchMode.matches(mode, SmartSwitchMode.READY_AT)
+                  }.map { modeOnAtOrReadyAt ->
+                    smartSwitchAttributeMatch(facts, modeOnAtOrReadyAt, SmartSwitchAttribute.StopTime)
+                  }.filter { stopTime ->
+                    // Actuator stop time attribute is present and value (in seconds) is not zero and in the past
+                    stopTime.flatMap { it.value}.map {
+                      it> 0 && it <facts.clock.currentTimeMillis
+                    }.orElse(false)
+                  }.findFirst().map { stopTime ->
+                    facts.bind("stopTime", stopTime.get())
+                    true
+                  }.orElse(false)
         })
         .then({ facts ->
           AssetState stopTime = facts.bound("stopTime")
@@ -246,5 +246,5 @@ rules.add()
                           stopTime.id,
                           "smartSwitch" + SmartSwitchAttribute.Mode + smartSwitchName,
                           SmartSwitchMode.NOW_ON.name()
-                          )
+                  )
         })

@@ -434,6 +434,14 @@ services:
       KEYCLOAK_START_COMMAND:
       KEYCLOAK_START_OPTS:
 
+      # Origin of the manager whose manager_config.json the login theme reads each realm's
+      # branding from (logo, application title, brand color, favicon). Empty means the origin
+      # that served the login page, which is what the proxy gives you: it serves the manager at
+      # / and keycloak at /auth. Set it where keycloak has an origin of its own, as it does in
+      # the dev profiles. A deployment that sets it also needs the keycloak origin in the
+      # manager's OR_WEBSERVER_ALLOWED_ORIGINS, unless the manager is in dev mode.
+      OR_MANAGER_URL: ${OR_MANAGER_URL:-}
+
       # Configuration for roles to be assigned to self-registered users (when the listener is enabled)
       # Example is "{\"realmRoles\":[\"restricted_user\"],\"clientRoles\":[{\"client\":\"openremote\",\"roles\":[\"read:assets\",\"write:attributes\"]}]}"
       KEYCLOAK_SELF_REGISTERED_USER_ROLES: "{ }"

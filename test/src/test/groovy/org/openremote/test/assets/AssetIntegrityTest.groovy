@@ -34,6 +34,7 @@ import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeState
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.query.AssetQuery
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -64,7 +65,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the asset resource"
     def serverUri = serverUri(serverPort)
@@ -85,7 +86,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     testAsset = assetResource.get(null, testAsset.getId())
     testAsset.addOrReplaceAttributes(
             new Attribute<>("illegal- Attribute:name&&&", ValueType.TEXT)
-            )
+    )
     assetResource.update(null, testAsset.getId(), testAsset)
 
     then: "the request should fail validation and return a validation report indicating the failure(s)"
@@ -103,7 +104,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     testAsset = assetResource.get(null, testAsset.getId())
     testAsset.addOrReplaceAttributes(
             new Attribute<>("foo", ValueType.TEXT, "bar")
-            )
+    )
     assetResource.update(null, testAsset.id, testAsset)
     testAsset = assetResource.get(null, testAsset.getId())
 
@@ -229,7 +230,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there's an asset in the master realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -257,7 +258,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there's an asset in the master realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -285,7 +286,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there's an asset in the master realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -313,7 +314,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there are assets in the master and building realms"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -343,7 +344,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there's an asset in the master realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -378,7 +379,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there is an asset hierarchy in the master realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -409,7 +410,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there is a group parent that only accepts room assets"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -440,7 +441,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there is a locally registered gateway asset in the building realm"
     GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
@@ -477,7 +478,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there is a locally registered gateway asset and a gateway descendant in the building realm"
     GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
@@ -493,7 +494,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             false,
             gateway,
             null
-            )
+    )
 
     when: "an updateNoneParent call tries to clear the parent of the gateway descendant"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -503,6 +504,81 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     WebApplicationException ex = thrown()
     ex.response.status == 400
     (assetStorageService.find(gatewayDescendant.id, true) as RoomAsset).parentId == gateway.id
+  }
+
+  def "Asset deletion allows children that are already pending deletion"() {
+    given: "the server container is started"
+    def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def originalAssetStorageService = container.getService(AssetStorageService.class)
+    def assetStorageService = Spy(originalAssetStorageService)
+    container.@services.put(AssetStorageService.class, assetStorageService)
+
+    and: "physical deletion is held back for selected assets"
+    def failedDeleteAssetIds = Collections.synchronizedSet(new HashSet<String>())
+    assetStorageService.deletePendingAsset(_) >> { String assetId ->
+      if (failedDeleteAssetIds.contains(assetId)) {
+        assetStorageService.failedAssetDeleteIds.add(assetId)
+        return false
+      }
+      callRealMethod()
+    }
+
+    and: "there is a parent with a child"
+    def parentAsset = assetStorageService.merge(new RoomAsset("Pending delete parent")
+            .setRealm(keycloakTestSetup.realmMaster.name))
+    def childAsset = assetStorageService.merge(new RoomAsset("Pending delete child")
+            .setRealm(keycloakTestSetup.realmMaster.name)
+            .setParentId(parentAsset.id))
+
+    when: "the child is marked for deletion but physical deletion has not completed"
+    failedDeleteAssetIds.add(childAsset.id)
+    def childAccepted = assetStorageService.delete([childAsset.id])
+
+    then: "the child is pending deletion so can only be queried through the count include delete pending endpoint"
+    childAccepted
+    conditions.eventually {
+      assert assetStorageService.count(new AssetQuery().ids(childAsset.id)) == 0
+      assert assetStorageService.count(new AssetQuery().includeDeletePending(true).ids(childAsset.id)) == 1
+    }
+
+    when: "the parent is deleted while the child is still pending deletion"
+    failedDeleteAssetIds.add(parentAsset.id)
+    def parentAccepted = assetStorageService.delete([parentAsset.id])
+
+    then: "the parent is accepted for deletion"
+    parentAccepted
+    conditions.eventually {
+      assert assetStorageService.count(new AssetQuery().ids(parentAsset.id)) == 0
+      assert assetStorageService.count(new AssetQuery().includeDeletePending(true).ids(parentAsset.id)) == 1
+    }
+
+    when: "the child asset is re-merged while it is still pending deletion"
+    failedDeleteAssetIds.remove(childAsset.id)
+    childAsset.setName("Restored pending delete child")
+    def restoredChildAsset = assetStorageService.merge(childAsset)
+
+    then: "the child deletion is cancelled and the asset is visible again"
+    restoredChildAsset.id == childAsset.id
+    restoredChildAsset.name == "Restored pending delete child"
+    !restoredChildAsset.isDeletePending()
+    conditions.eventually {
+      assert assetStorageService.count(new AssetQuery().ids(childAsset.id)) == 1
+      assert !assetStorageService.failedAssetDeleteIds.contains(childAsset.id)
+    }
+
+    when: "pending asset deletion is retried"
+    assetStorageService.requestPendingAssetDeletionRetry([childAsset.id])
+    TimeUnit.MILLISECONDS.sleep(500)
+
+    then: "the restored child is not physically deleted by the background deletion task"
+    assetStorageService.count(new AssetQuery().ids(childAsset.id)) == 1
+    assetStorageService.count(new AssetQuery().includeDeletePending(true).ids(childAsset.id)) == 1
+
+    and: "the parent remains pending deletion"
+    assetStorageService.count(new AssetQuery().ids(parentAsset.id)) == 0
+    assetStorageService.count(new AssetQuery().includeDeletePending(true).ids(parentAsset.id)) == 1
   }
 
   def "Test writing attributes with timestamps"() {
@@ -521,7 +597,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the asset resource"
     def serverUri = serverUri(serverPort)

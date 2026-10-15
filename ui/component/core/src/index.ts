@@ -21,7 +21,7 @@ import { Console } from "./console";
 import rest from "@openremote/rest";
 import type { InternalAxiosRequestConfig } from "axios";
 import { type EventProvider, type EventProviderFactory, EventProviderStatus, WebSocketEventProvider } from "./event";
-import i18next, { type InitOptions } from "i18next";
+import i18next, { type i18n, type InitOptions } from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
 import { AssetModelUtil, Auth, type ConsoleAppConfig, EventProviderType, type ManagerConfig } from "@openremote/model";
@@ -102,6 +102,26 @@ export const DEFAULT_LANGUAGES: Languages = {
 export const I18NEXT_TO_MOMENT_LOCALE: Record<string, string> = {
   cn: "zh-cn",
 };
+
+/**
+ * Registers the formats the translations interpolate with on an initialised i18next instance.
+ * i18next lowercases a format name, so the Moment formats that only differ in case take an option.
+ */
+export function addTranslationFormats(i18n: i18n): void {
+  i18n.services.formatter!.add("uppercase", (value: unknown) =>
+    typeof value === "string" ? value.toUpperCase() : String(value)
+  );
+  i18n.services.formatter!.add("lll", (value, lng: string | undefined) =>
+    moment(value)
+      .locale(I18NEXT_TO_MOMENT_LOCALE[lng!] ?? lng!)
+      .format("lll")
+  );
+  i18n.services.formatter!.add("llll", (value, lng: string | undefined, options: { weekday?: string }) =>
+    moment(value)
+      .locale(I18NEXT_TO_MOMENT_LOCALE[lng!] ?? lng!)
+      .format(options?.weekday === "long" ? "LLLL" : "llll")
+  );
+}
 
 export function normaliseConfig(config: ManagerConfig): ManagerConfig {
   const normalisedConfig: ManagerConfig = config ? Object.assign({}, config) : {};
@@ -482,15 +502,6 @@ export class Manager implements EventProviderFactory {
       defaultNS: "app",
       fallbackNS: "or",
       ns: this.config.loadTranslations,
-      interpolation: {
-        format: (value, format, lng) => {
-          if (format === "uppercase") return value.toUpperCase();
-          if (value instanceof Date) {
-            return moment(value).format(format);
-          }
-          return value;
-        },
-      },
       backend: {
         loadPath: (langs: string[], namespaces: string[]) => {
           if (namespaces.length === 1 && namespaces[0] === "or") {
@@ -512,6 +523,7 @@ export class Manager implements EventProviderFactory {
 
     try {
       await i18next.use(i18nextBackend).init(initOptions);
+      addTranslationFormats(i18next);
     } catch (e) {
       console.error(e);
       this._setError(ORError.TRANSLATION_ERROR);

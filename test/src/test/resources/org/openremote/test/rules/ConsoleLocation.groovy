@@ -43,12 +43,12 @@ rules.add()
         .when({ facts ->
 
           def consoleIds = facts.matchAssetState(new AssetQuery()
-          .types(ConsoleAsset.class)
-          .attributes(new LocationAttributePredicate(
-                  new RadialGeofencePredicate(100, ManagerTestSetup.SMART_BUILDING_LOCATION.y, ManagerTestSetup.SMART_BUILDING_LOCATION.x))))
-          .filter({ !facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
-          .map({ it.id })
-          .collect()
+                  .types(ConsoleAsset.class)
+                  .attributes(new LocationAttributePredicate(
+                          new RadialGeofencePredicate(100, ManagerTestSetup.SMART_BUILDING_LOCATION.y, ManagerTestSetup.SMART_BUILDING_LOCATION.x))))
+                  .filter({ !facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
+                  .map({ it.id })
+                  .collect()
 
           if (consoleIds.size() > 0) {
             facts.bind("consoleIds", consoleIds)
@@ -82,11 +82,11 @@ rules.add()
         .when({ facts ->
 
           def consoleIds = facts.matchAssetState(new AssetQuery()
-          .types(ConsoleAsset.class)
-          .attributeValue(Asset.LOCATION.name, new ValueEmptyPredicate()))
-          .filter({ facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
-          .map({ it.id })
-          .collect()
+                  .types(ConsoleAsset.class)
+                  .attributeValue(Asset.LOCATION.name, new ValueEmptyPredicate()))
+                  .filter({ facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
+                  .map({ it.id })
+                  .collect()
 
           if (consoleIds.size() > 0) {
             facts.bind("consoleIds", consoleIds)

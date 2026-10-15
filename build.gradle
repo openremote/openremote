@@ -193,7 +193,7 @@ tasks.register('combinedCoverageReport', JacocoReport) {
 // Configure version based on Git tags
 scmVersion {
   releaseOnlyOnReleaseBranches = true
-  releaseBranchNames = ['main', 'master']
+  releaseBranchNames = ['main']
   unshallowRepoOnCI.set(true)
   versionCreator('simple')
   versionIncrementer('incrementMinor')

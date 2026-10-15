@@ -113,7 +113,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                     username,
                     password
                     )
-            )
+    )
     client.setEncoderDecoderProvider({
       [
         new StringEncoder(CharsetUtil.UTF_8),
@@ -149,7 +149,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-            )
+    )
     // Resteasy client has issues with @Suspended annotation so not used for now
     //def datapointResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetDatapointResource.class)
     def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetPredictedDatapointResource.class)
@@ -259,7 +259,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                       AssetDatapointIntervalQuery.Formula.AVG,
                       true
                       )
-              )
+      )
       assert aggregatedDatapoints.size() == 61
       assert aggregatedDatapoints[54].value == 13.3
       assert aggregatedDatapoints[55].value == null
@@ -284,7 +284,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                       AssetDatapointIntervalQuery.Formula.AVG,
                       true
                       )
-              )
+      )
       assert aggregatedDatapoints.size() == 13
       assert aggregatedDatapoints[11].value, closeTo(13.36666, 0.0001)
       assert aggregatedDatapoints[12].value == 14.95
@@ -368,7 +368,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                       AssetDatapointIntervalQuery.Formula.AVG,
                       true
                       )
-              )
+      )
       assert aggregatedDatapoints.size() == 61
       assert aggregatedDatapoints[58].value == 0
       assert aggregatedDatapoints[59].value == 1d
@@ -417,7 +417,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
               new ValueDatapoint<>(getClockTimeOf(container)+240000, 40d),
               new ValueDatapoint<>(getClockTimeOf(container)+300000, 50d)
             ] as ValueDatapoint<?>[]
-            )
+    )
     predictedDatapointResource.writePredictedDatapoints(null, managerTestSetup.thingId, thingLightToggleAttributeName,
             [
               new ValueDatapoint<>(getClockTimeOf(container)+60000, true),
@@ -426,7 +426,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
               new ValueDatapoint<>(getClockTimeOf(container)+240000, false),
               new ValueDatapoint<>(getClockTimeOf(container)+300000, false)
             ] as ValueDatapoint<?>[]
-            )
+    )
 
     then: "the predicted data should be available"
     def predictedData = assetPredictedDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
@@ -437,11 +437,11 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
     conditions.eventually {
       assert predictedEvents.any {
         it.ref.id == managerTestSetup.thingId &&
-        it.ref.name == "light1PowerConsumption"
+                it.ref.name == "light1PowerConsumption"
       }
       assert predictedEvents.any {
         it.ref.id == managerTestSetup.thingId &&
-        it.ref.name == thingLightToggleAttributeName
+                it.ref.name == thingLightToggleAttributeName
       }
     }
 
@@ -456,7 +456,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
     conditions.eventually {
       assert predictedEvents.any {
         it.ref.id == managerTestSetup.thingId &&
-        it.ref.name == "light1PowerConsumption"
+                it.ref.name == "light1PowerConsumption"
       }
     }
 
@@ -485,7 +485,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
     apartment1.getAttributes().addOrReplace(
             new Attribute<>(attributeName, ValueType.NUMBER, 0d)
             .addMeta(new MetaItem<>(ACCESS_PUBLIC_WRITE, true))
-            )
+    )
     assetStorageService.merge(apartment1)
 
     and: "an anonymous predicted datapoint API client"
@@ -497,7 +497,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             managerTestSetup.apartment1Id,
             attributeName,
             [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 12d)] as ValueDatapoint<?>[]
-            )
+    )
 
     then: "the predicted datapoint should be stored"
     conditions.eventually {
@@ -520,7 +520,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "testuser2"
-            )
+    )
     def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetPredictedDatapointResource.class)
 
     when: "the user writes predicted datapoints"
@@ -529,7 +529,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             managerTestSetup.apartment1LivingroomId,
             "targetTemperature",
             [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 19d)] as ValueDatapoint<?>[]
-            )
+    )
 
     then: "access should be forbidden"
     WebApplicationException ex = thrown()
@@ -552,7 +552,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
     def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetPredictedDatapointResource.class)
 
     when: "the restricted user writes a predicted datapoint for an attribute without restricted write access"
@@ -561,7 +561,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             managerTestSetup.apartment1Id,
             BuildingAsset.STREET.name,
             [new ValueDatapoint<>(getClockTimeOf(container) + 60000, "should fail")] as ValueDatapoint<?>[]
-            )
+    )
 
     then: "access should be forbidden"
     WebApplicationException ex = thrown()
@@ -587,7 +587,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-            )
+    )
     def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetPredictedDatapointResource.class)
 
     and: "a websocket client authenticated in the same realm"
@@ -602,7 +602,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                     "testuser1",
                     "testuser1"
                     )
-            )
+    )
     client.setEncoderDecoderProvider({
       [
         new StringEncoder(CharsetUtil.UTF_8),
@@ -630,13 +630,13 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
     client.sendMessage(messageToString(
                     EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
                     new EventSubscription(AssetPredictedDatapointEvent.class, null, "predicted-datapoints")
-                    ))
+            ))
 
     then: "the server should confirm subscription"
     conditions.eventually {
       assert receivedMessages.any {
         it instanceof EventSubscription &&
-        it.subscriptionId == "predicted-datapoints"
+                it.subscriptionId == "predicted-datapoints"
       }
     }
 
@@ -647,18 +647,18 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             managerTestSetup.thingId,
             "light1PowerConsumption",
             [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 42d)] as ValueDatapoint<?>[]
-            )
+    )
 
     then: "the websocket subscription should receive the corresponding triggered event"
     conditions.eventually {
       assert receivedMessages.any {
         it instanceof TriggeredEventSubscription &&
-        it.subscriptionId == "predicted-datapoints" &&
-        it.events.any { event ->
-          event instanceof AssetPredictedDatapointEvent &&
-          event.ref.id == managerTestSetup.thingId &&
-          event.ref.name == "light1PowerConsumption"
-        }
+                it.subscriptionId == "predicted-datapoints" &&
+                it.events.any { event ->
+                  event instanceof AssetPredictedDatapointEvent &&
+                          event.ref.id == managerTestSetup.thingId &&
+                          event.ref.name == "light1PowerConsumption"
+                }
       }
     }
 
@@ -685,7 +685,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             ClientRole.WRITE_USER.value,
             ClientRole.READ_MAP.value
-            )
+    )
 
     and: "a websocket client authenticated as that user"
     def client = createPredictedDatapointWebsocketClient(serverPort, "building", "building", "testuser2", "testuser2")
@@ -701,13 +701,13 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
     client.sendMessage(messageToString(
                     EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
                     new EventSubscription(AssetPredictedDatapointEvent.class, null, "predicted-no-read-assets")
-                    ))
+            ))
 
     then: "the server should reject subscription"
     conditions.eventually {
       assert receivedMessages.any {
         it instanceof UnauthorizedEventSubscription &&
-        it.subscription.subscriptionId == "predicted-no-read-assets"
+                it.subscription.subscriptionId == "predicted-no-read-assets"
       }
     }
 
@@ -719,7 +719,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             ClientRole.WRITE_USER.value,
             ClientRole.READ_MAP.value,
             ClientRole.READ_ASSETS.value
-            )
+    )
     if (client != null) {
       client.disconnect()
     }
@@ -771,7 +771,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             ClientRole.READ_MAP.value,
             ClientRole.READ_ASSETS.value,
             ClientRole.WRITE_ATTRIBUTES.value
-            )
+    )
 
     and: "a limited building realm predicted datapoint API client"
     def accessToken = authenticate(
@@ -780,7 +780,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "testuser2"
-            )
+    )
     def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), "building", accessToken).proxy(AssetPredictedDatapointResource.class)
 
     and: "a restricted websocket client in the same realm"
@@ -797,7 +797,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
     client.sendMessage(messageToString(
                     EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
                     new EventSubscription(AssetPredictedDatapointEvent.class, null, "predicted-restricted-unlinked")
-                    ))
+            ))
 
     and: "a predicted datapoint update is written on a linked and restricted attribute"
     receivedMessages.clear()
@@ -806,18 +806,18 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             managerTestSetup.apartment1LivingroomId,
             "targetTemperature",
             [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 22d)] as ValueDatapoint<?>[]
-            )
+    )
 
     then: "the restricted user should receive the linked attribute event"
     conditions.eventually {
       assert receivedMessages.any {
         it instanceof TriggeredEventSubscription &&
-        it.subscriptionId == "predicted-restricted-unlinked" &&
-        it.events.any { event ->
-          event instanceof AssetPredictedDatapointEvent &&
-          event.ref.id == managerTestSetup.apartment1LivingroomId &&
-          event.ref.name == "targetTemperature"
-        }
+                it.subscriptionId == "predicted-restricted-unlinked" &&
+                it.events.any { event ->
+                  event instanceof AssetPredictedDatapointEvent &&
+                          event.ref.id == managerTestSetup.apartment1LivingroomId &&
+                          event.ref.name == "targetTemperature"
+                }
       }
     }
 
@@ -828,7 +828,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             managerTestSetup.apartment2LivingroomId,
             "targetTemperature",
             [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 21d)] as ValueDatapoint<?>[]
-            )
+    )
 
     then: "no triggered event should be received by the restricted user"
     assert receivedMessages.every {
@@ -843,7 +843,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             ClientRole.WRITE_USER.value,
             ClientRole.READ_MAP.value,
             ClientRole.READ_ASSETS.value
-            )
+    )
     if (client != null) {
       client.disconnect()
     }
@@ -875,7 +875,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             ClientRole.READ_MAP.value,
             ClientRole.READ_ASSETS.value,
             ClientRole.WRITE_ATTRIBUTES.value
-            )
+    )
 
     and: "a limited building realm predicted datapoint API client"
     def accessToken = authenticate(
@@ -884,7 +884,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "testuser2"
-            )
+    )
     def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), "building", accessToken).proxy(AssetPredictedDatapointResource.class)
 
     and: "a restricted websocket client in the same realm"
@@ -901,7 +901,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
     client.sendMessage(messageToString(
                     EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
                     new EventSubscription(AssetPredictedDatapointEvent.class, null, "predicted-restricted-attr")
-                    ))
+            ))
 
     and: "a predicted datapoint update is written on a linked restricted attribute"
     receivedMessages.clear()
@@ -910,18 +910,18 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             managerTestSetup.apartment1LivingroomId,
             "targetTemperature",
             [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 19d)] as ValueDatapoint<?>[]
-            )
+    )
 
     then: "the restricted user should receive the restricted attribute event"
     conditions.eventually {
       assert receivedMessages.any {
         it instanceof TriggeredEventSubscription &&
-        it.subscriptionId == "predicted-restricted-attr" &&
-        it.events.any { event ->
-          event instanceof AssetPredictedDatapointEvent &&
-          event.ref.id == managerTestSetup.apartment1LivingroomId &&
-          event.ref.name == "targetTemperature"
-        }
+                it.subscriptionId == "predicted-restricted-attr" &&
+                it.events.any { event ->
+                  event instanceof AssetPredictedDatapointEvent &&
+                          event.ref.id == managerTestSetup.apartment1LivingroomId &&
+                          event.ref.name == "targetTemperature"
+                }
       }
     }
 
@@ -932,7 +932,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             managerTestSetup.apartment1Id,
             "predictedNonRestricted",
             [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 10d)] as ValueDatapoint<?>[]
-            )
+    )
 
     then: "no triggered event should be received by the restricted user"
     assert receivedMessages.every {
@@ -947,7 +947,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             ClientRole.WRITE_USER.value,
             ClientRole.READ_MAP.value,
             ClientRole.READ_ASSETS.value
-            )
+    )
     if (client != null) {
       client.disconnect()
     }

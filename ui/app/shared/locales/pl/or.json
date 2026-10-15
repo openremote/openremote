@@ -1102,7 +1102,7 @@
     "attributeValueLabel": "Wartość atrybutu",
     "assetTypeDoesNotExist": "Filtr: typ zasobu nie istnieje"
   },
-  "realmDeleteConfirm": "Uwaga! Spowoduje to usunięcie wszystkich danych w tym obszarze. Wpisz nazwę obszaru '{{realmName}}', aby potwierdzić.",
+  "realmDeleteConfirm": "Uwaga! Obszar nie może zawierać żadnych zasobów, aby można go było usunąć. Spowoduje to automatyczne usunięcie wszystkich pozostałych elementów w tym obszarze, wpisz nazwę obszaru '{{realmName}}', aby potwierdzić.",
   "realmDeleteFailed": "Nie udało się usunąć obszaru",
   "addRule": "Dodaj regułę",
   "rulesetStatus": {

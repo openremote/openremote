@@ -15,7 +15,20 @@ In sandboxed environments, add `--offline` (requires dependencies to already be 
 
 ### Writing tests
 
+All backend tests are Groovy Spock specifications. Unit tests live in the project that holds the code, under `<project>/src/test/groovy`. Use an integration test in the `test` project only when the behaviour needs a running manager. Tests for anything under `ui/` follow `ui/AGENTS.md`.
+
 Since Spock 2.0, unrolling is the default, don't add un-necessary @Unroll annotations.
+
+A `WebApplicationException` thrown by a JAX-RS proxy carries a response that holds its connection open until it is closed. Read the status through `ex.response.withCloseable`, so a spec that asserts on many rejections does not run the connection pool dry. The closure result becomes the condition, so assert inside it and return `true`:
+
+```groovy
+then: "the request should be forbidden"
+WebApplicationException ex = thrown()
+ex.response.withCloseable { r ->
+  assert r.status == 403
+  return true
+}
+```
 
 ### Running tests
 

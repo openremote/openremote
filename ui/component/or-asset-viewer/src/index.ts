@@ -54,7 +54,7 @@ import {
   WellknownMetaItems,
 } from "@openremote/model";
 import { panelStyles, style } from "./style";
-import i18next, { type InitOptions, type TOptions } from "i18next";
+import i18next, { type TOptions } from "i18next";
 import { styleMap } from "lit/directives/style-map.js";
 import { classMap } from "lit/directives/class-map.js";
 import type { GenericAxiosResponse } from "axios";
@@ -66,6 +66,7 @@ import { progressCircular } from "@openremote/or-mwc-components/style";
 import { when } from "lit/directives/when.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 import type { OrVaadinInput } from "@openremote/or-vaadin-components/or-vaadin-input";
+import { OrVaadinDateTimePicker } from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import { getConfirmDialogContent, showConfirmDialog } from "@openremote/or-vaadin-components/or-vaadin-confirm-dialog";
 import type { OrVaadinCheckboxGroup } from "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import { createRef, type Ref, ref } from "lit/directives/ref.js";
@@ -1059,6 +1060,7 @@ export function getPropertyTemplate(
       break;
     case "createdOn":
       type = InputType.DATETIME;
+      value = OrVaadinDateTimePicker.getLocalizedISOString(new Date(value));
       break;
     case "accessPublicRead":
       type = InputType.CHECKBOX;
@@ -1578,7 +1580,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
             )}
           </div>
           <div id="right-wrapper" class="mobileHidden">
-            ${validationErrors.length === 0 ? (asset!.createdOn ? html`<or-translate id="created-time" class="tabletHidden" value="createdOnWithDate" .options="${{ date: new Date(asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``) : html`<span id="error-wrapper" .title="${validationErrors.join("\n")}"><or-icon icon="alert"></or-icon><or-translate class="tabletHidden" value="validation.invalidAsset"></or-translate></span>`}
+            ${validationErrors.length === 0 ? (asset!.createdOn ? html`<or-translate id="created-time" class="tabletHidden" value="createdOnWithDate" .options="${{ date: new Date(asset!.createdOn!) } as TOptions}"></or-translate>` : ``) : html`<span id="error-wrapper" .title="${validationErrors.join("\n")}"><or-icon icon="alert"></or-icon><or-translate class="tabletHidden" value="validation.invalidAsset"></or-translate></span>`}
             ${when(
               editMode,
               () => html`

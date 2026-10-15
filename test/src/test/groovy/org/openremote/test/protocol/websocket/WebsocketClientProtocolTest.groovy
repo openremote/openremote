@@ -97,9 +97,9 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
 
         case "https://mockapi/assets":
           if (requestContext.method == HttpMethod.POST
-          && requestContext.getHeaderString("header1") == "header1Value1"
-          && requestContext.getHeaderString("header2") == "header2Value1,header2Value2"
-          && requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON) {
+                  && requestContext.getHeaderString("header1") == "header1Value1"
+                  && requestContext.getHeaderString("header2") == "header2Value1,header2Value2"
+                  && requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON) {
 
             String bodyStr = (String)requestContext.getEntity()
             AssetQuery assetQuery = ValueUtil.JSON.readValue(bodyStr, AssetQuery.class)
@@ -169,7 +169,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                       ValueUtil.asJSON(new AssetQuery().ids(managerTestSetup.apartment1LivingroomId)).orElse(null)
                       )
             ] as WebsocketSubscription[]
-            )
+    )
 
     when: "the agent is added to the asset service"
     agent = assetStorageService.merge(agent)
@@ -258,7 +258,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             ] as WebsocketSubscription[]
                             ))
                     )
-            )
+    )
 
     and: "the asset is merged into the asset service"
     asset = assetStorageService.merge(asset)
@@ -305,7 +305,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
     when: "the co2level changes"
     def co2LevelIncrement = new AttributeEvent(
             managerTestSetup.apartment1LivingroomId, "co2Level", 600
-            )
+    )
     ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(co2LevelIncrement)
 
     then: "the linked co2Level attribute should get the new value"

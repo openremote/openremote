@@ -41,12 +41,12 @@
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-vaadin-components": "workspace:*",
-    "i18next": "^21.5.3",
+    "i18next": "^26.3.6",
     "lit": "^3.3.1"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
-    "axios": "1.18.1"
+    "axios": "1.20.0"
   },
   "publishConfig": {
     "access": "public"

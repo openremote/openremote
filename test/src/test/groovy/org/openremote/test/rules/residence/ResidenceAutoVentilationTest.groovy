@@ -82,7 +82,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
     when: "auto ventilation is turned on"
     assetProcessingService.sendAttributeEvent(
             new AttributeEvent(managerTestSetup.apartment1Id, "ventilationAuto", true)
-            )
+    )
 
     then: "auto ventilation should be on"
     conditions.eventually {
@@ -97,7 +97,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
 
       def co2LevelIncrement = new AttributeEvent(
               managerTestSetup.apartment1LivingroomId, "co2Level", 700 + i
-              )
+      )
       simulatorProtocol.putValue(co2LevelIncrement)
 
       // Wait for event to be processed
@@ -120,7 +120,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
     when: "CO2 is decreasing in a room"
     def co2LevelDecrement = new AttributeEvent(
             managerTestSetup.apartment1LivingroomId, "co2Level", 500
-            )
+    )
     simulatorProtocol.putValue(co2LevelDecrement)
 
     then: "the decreasing CO2 should have been detected in rules"
@@ -146,7 +146,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
 
       def co2LevelIncrement = new AttributeEvent(
               managerTestSetup.apartment1LivingroomId, "co2Level", 1000 + i
-              )
+      )
       simulatorProtocol.putValue(co2LevelIncrement)
 
       // Wait for event to be processed
@@ -169,7 +169,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
     when: "CO2 is decreasing in a room"
     def co2LevelDecrement2 = new AttributeEvent(
             managerTestSetup.apartment1LivingroomId, "co2Level", 800
-            )
+    )
     simulatorProtocol.putValue(co2LevelDecrement2)
     conditions.eventually {
       assert apartment1Engine.facts.assetEvents.any() {
@@ -190,7 +190,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
     when: "CO2 is decreasing in a room"
     def co2LevelDecrement3 = new AttributeEvent(
             managerTestSetup.apartment1LivingroomId, "co2Level", 500
-            )
+    )
     simulatorProtocol.putValue(co2LevelDecrement3)
     conditions.eventually {
       assert apartment1Engine.facts.assetEvents.any() {

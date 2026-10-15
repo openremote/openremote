@@ -66,13 +66,13 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
                     managerTestSetup.apartment1LivingroomId,
                     "targetTemperature",
                     startTemperature
-                    ))
+            ))
 
     assetProcessingService.sendAttributeEvent(new AttributeEvent(
                     managerTestSetup.apartment1Bedroom1Id,
                     "targetTemperature",
                     0
-                    ))
+            ))
 
     when: "a valid node collection is added"
     String json = getClass().getResource("/org/openremote/test/rules/BasicFlowRules.json").text
@@ -83,7 +83,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
                     realCollection.name,
                     Ruleset.Lang.FLOW,
                     json
-                    ))
+            ))
     rulesetStorageService.merge(ruleset)
 
     then: "the flow should be deployed"
@@ -98,8 +98,8 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
     and: "the flow should be executed correctly"
     conditions.eventually {
       def bedroomTargetTemp = assetStorageService.
-      find(managerTestSetup.apartment1Bedroom1Id).
-      getAttribute("targetTemperature").flatMap{it.value}.orElse(0d)
+              find(managerTestSetup.apartment1Bedroom1Id).
+              getAttribute("targetTemperature").flatMap{it.value}.orElse(0d)
       assert bedroomTargetTemp.intValue() == (startTemperature.intValue() + 10) : ("it was actually " + bedroomTargetTemp.intValue())//convert to int considering floating point inaccuracy
     }
   }
@@ -130,7 +130,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
             new Attribute<Object>("maxOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
             new Attribute<Object>("derOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
             new Attribute<Object>("intOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true))
-            )
+    )
     asset = assetStorageService.merge(asset)
 
     and: "Some datapoints are added to the living room"
@@ -171,7 +171,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
                     "HistoricValueAndProcessorsTest",
                     Ruleset.Lang.FLOW,
                     json
-                    ))
+            ))
     rulesetStorageService.merge(ruleset)
 
     and: "the integral and derivative values are calculated"

@@ -506,6 +506,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
       <or-vaadin-dialog
         id="createDialog"
         width="1024px"
+        height="976px"
         no-close-on-outside-click
         no-close-on-esc
         header-title="${i18next.t("notifications.createNotification")}"

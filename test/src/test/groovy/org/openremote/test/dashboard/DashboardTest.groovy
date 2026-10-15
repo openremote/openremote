@@ -58,21 +58,21 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
     def privateUser1AccessToken = authenticate(
             container,
             MASTER_REALM,
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-            )
+    )
     def smartcityUserAccessToken = authenticate(
             container,
             keycloakTestSetup.realmCity.name,
             KEYCLOAK_CLIENT_ID,
             "smartcity",
             "smartcity"
-            )
+    )
 
     and: "the admin user has been retrieved"
     def serverUri = serverUri(serverPort)
@@ -340,7 +340,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
     def restrictedUserDashboardResource = getClientApiTarget(serverUri, keycloakTestSetup.realmBuilding.name, restrictedUser1AccessToken).proxy(DashboardResource.class)
 
     and: "a restricted user tries to query a dashboard without access to the assets shown"
@@ -353,7 +353,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
     def assetStorageService = container.getService(AssetStorageService.class)
     assetStorageService.storeUserAssetLinks(Arrays.asList(
                     new UserAssetLink(keycloakTestSetup.realmBuilding.getName(), keycloakTestSetup.testuser3Id, adminLightAsset.getId())
-                    ))
+            ))
 
     then: "the user is able to request the dashboard"
     def restrictedDashboards2 = restrictedUserDashboardResource.getAllRealmDashboards(null, keycloakTestSetup.realmBuilding.name)

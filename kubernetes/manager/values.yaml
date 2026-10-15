@@ -5,6 +5,10 @@
 # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 replicaCount: 1
 
+# Optional Deployment strategy. Use type: Recreate when the cluster has no
+# spare capacity for overlapping old and new Pods; upgrades interrupt service.
+strategy: {}
+
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
   repository: openremote/manager

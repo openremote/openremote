@@ -192,6 +192,16 @@ export class OrNotificationsTable extends OrMwcTable {
           flex: 0 0 auto;
         }
 
+        /* Caps what the body contributes to the column's content width, which a percentage cannot do
+           since that resolves against the width being computed; the other columns keep sizing to their
+           content. Raise this to show more of the body before it truncates. */
+        .body-text {
+          max-width: 40ch;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
         .target-wrapper {
           display: flex;
           align-items: center;
@@ -304,7 +314,7 @@ export class OrNotificationsTable extends OrMwcTable {
       return {
         content: [
           this.getTitleContent(notification, title),
-          body,
+          this.getBodyContent(body),
           this.getStatusContent(notification),
           this.getSourceContent(notification.source),
           this.getTargetContent(notification),
@@ -331,6 +341,11 @@ export class OrNotificationsTable extends OrMwcTable {
         <span>${title || "-"}</span>
       </div>
     `;
+  }
+
+  // The wrapper carries the title attribute the cell would otherwise get from a plain string value
+  protected getBodyContent(body?: string): TemplateResult {
+    return html`<div class="body-text" title="${body ?? ""}">${body}</div>`;
   }
 
   protected getSourceContent(source: NotificationSource): TemplateResult {

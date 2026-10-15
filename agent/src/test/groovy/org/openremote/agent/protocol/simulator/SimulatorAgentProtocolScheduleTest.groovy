@@ -106,7 +106,7 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
     schedule.tryAdvanceActive(
             instant("1999-01-01T00:00:00.000Z") + DAY - 1,
             0
-            ) == start + 17 * HOUR + 30 * MINUTE
+    ) == start + 17 * HOUR + 30 * MINUTE
   }
 
   def "a minutely recurrence returns its last occurrence after UNTIL"() {
@@ -160,7 +160,7 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
             instant("2000-01-02T00:00:00.000Z"),
             null,
             "FREQ=HOURLY"
-            )
+    )
 
     expect:
     delays(schedule, [
@@ -176,7 +176,7 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
             instant("2000-01-01T00:00:00.000Z"),
             null,
             "FREQ=HOURLY;UNTIL=20000101T020000"
-            )
+    )
 
     expect:
     delays(schedule, recurringDelayExpectations())
@@ -191,7 +191,7 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
             instant("2000-01-01T00:00:00.000Z"),
             null,
             "FREQ=HOURLY;COUNT=3"
-            )
+    )
 
     expect:
     delays(schedule, recurringDelayExpectations())
@@ -231,7 +231,7 @@ class SimulatorAgentProtocolScheduleTest extends Specification {
             LocalDateTime.ofInstant(Instant.ofEpochMilli(start), ZoneOffset.UTC),
             end == null ? null : LocalDateTime.ofInstant(Instant.ofEpochMilli(end), ZoneOffset.UTC),
             recurrence
-            )
+    )
   }
 
   private static long instant(String value) {

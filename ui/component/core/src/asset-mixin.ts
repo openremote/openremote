@@ -23,14 +23,14 @@ import { Util } from ".";
 
 declare type Constructor<T = {}> = new (...args: any[]) => T;
 
-interface CustomElement {
+export interface CustomElement {
   requestUpdate(name?: PropertyKey, oldValue?: unknown): void;
   connectedCallback?(): void;
   disconnectedCallback?(): void;
   readonly isConnected: boolean;
 }
 
-export const subscribe =
+const subscribeMixin =
   (eventProviderFactory: EventProviderFactory) =>
   <T extends Constructor<CustomElement>>(base: T) =>
     class extends base {
@@ -38,7 +38,6 @@ export const subscribe =
       public _subscriptionIds?: string[];
       public _assetIds?: string[];
       public _attributeRefs?: AttributeRef[];
-      public _status: EventProviderStatus = EventProviderStatus.DISCONNECTED;
       public _statusCallback = (status: EventProviderStatus) => this._onEventProviderStatusChanged(status);
 
       connectedCallback() {
@@ -219,3 +218,14 @@ export const subscribe =
       // noinspection JSUnusedLocalSymbols
       public _onEvent(event: SharedEvent) {}
     };
+
+/**
+ * Instance API that {@link subscribe} adds to the base class, derived from the mixin so it cannot
+ * drift from the implementation.
+ */
+export interface SubscribedElement extends InstanceType<ReturnType<ReturnType<typeof subscribeMixin>>> {}
+
+export const subscribe =
+  (eventProviderFactory: EventProviderFactory) =>
+  <T extends Constructor<CustomElement>>(base: T): T & Constructor<SubscribedElement> =>
+    subscribeMixin(eventProviderFactory)(base);

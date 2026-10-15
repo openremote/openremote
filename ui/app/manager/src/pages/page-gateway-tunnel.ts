@@ -314,7 +314,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
    * meant to start a tunnel towards that instance.
    */
   protected _onAddTunnelClick() {
-    const tunnel = this._getDefaultTunnelToAdd();
+    const tunnel = {} as GatewayTunnelInfo;
     let dialog: OrVaadinDialog | undefined;
     const buttonRef: Ref<OrVaadinButton> = createRef();
 
@@ -322,8 +322,23 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
       this._tryStartTunnel(tunnel);
       dialog?.close();
     };
+
     const checkValidity = () => {
       buttonRef.value!.disabled = !tunnel.gatewayId || !tunnel.target || !tunnel.targetPort;
+    }
+    const updateActions = () => {
+      dialog.setActions([
+        { actionName: "cancel", content: "cancel" },
+        {
+          actionName: "add",
+          disabled:
+            !tunnel.gatewayId ||
+            (tunnel.hostname && tunnel.hostname.trim().length === 0) ||
+            (tunnel.targetPort !== undefined && (tunnel.targetPort <= 0 || tunnel.targetPort > 65535)),
+          content: "add",
+          action: () => onAddClick(),
+        },
+      ]);
     };
 
     const gatewayListTemplate = async (): Promise<TemplateResult> => {
@@ -348,6 +363,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
           <or-vaadin-select
             .items=${types}
             value=${tunnel.type}
+            placeholder=${this.GATEWAY_TUNNEL_PROTOCOL_TYPES?.[0]}
             @change=${(ev: Event) => {
               tunnel.type = (ev.currentTarget as OrVaadinSelect).value as GatewayTunnelInfoType;
               checkValidity();
@@ -357,6 +373,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
           </or-vaadin-select>
           <or-vaadin-text-field
             value=${tunnel.target}
+            placeholder="localhost"
             @change=${(ev: Event) => {
               tunnel.target = (ev.currentTarget as HTMLInputElement).value;
               checkValidity();
@@ -366,6 +383,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
           </or-vaadin-text-field>
           <or-vaadin-number-field
             value=${tunnel.targetPort}
+            placeholder="443"
             min="0"
             step="1"
             @change=${(ev: Event) => {
@@ -407,8 +425,8 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
       console.warn("Tried to add tunnel, but failed.");
       return;
     }
-    if (!tunnel.gatewayId || !tunnel.target || !tunnel.targetPort) {
-      console.warn("Tried to add tunnel, but not all fields were filled in!");
+    if (!tunnel.gatewayId) {
+      console.warn("Tried to add tunnel, but gateway ID missing!");
       return;
     }
     if (!tunnel.realm) {
@@ -557,16 +575,5 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         : undefined,
     } as AssetQuery;
     return (await manager.rest.api.AssetResource.queryAssets(query)).data;
-  }
-
-  /**
-   * Utility function that returns the default values of a new tunnel.
-   */
-  protected _getDefaultTunnelToAdd(): GatewayTunnelInfo {
-    return {
-      target: "127.0.0.1",
-      targetPort: 443,
-      type: this.GATEWAY_TUNNEL_PROTOCOL_TYPES?.[0],
-    };
   }
 }

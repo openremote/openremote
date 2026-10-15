@@ -81,47 +81,47 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
     server.setMessageHandler((msg, sender) -> {
       ModbusMessage modbusMessage = null
       switch (msg.getFunction().blockType()) {
-                case ModbusBlockType.Coil -> {
-                  BitsModbusMessage tcpRequest = msg.unwrap(BitsModbusMessage.class)
-                  if (msg.getFunction().isReadFunction()) {
-                    modbusMessage = readCoilsResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount(), BigInteger.valueOf(0xFFFF))
-                  } else {
-                    if (tcpRequest.getFunction().getCode() == WRITE_COILS) {
-                      modbusMessage = writeCoilsResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount())
-                    } else if (tcpRequest.getFunction().getCode() == WRITE_COIL) {
-                      modbusMessage = writeCoilResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), true)
-                    }
-                  }
-                }
-                case ModbusBlockType.Discrete -> {
-                  BitsModbusMessage tcpRequest = msg.unwrap(BitsModbusMessage.class)
-                  modbusMessage = readDiscretesResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount(), BigInteger.valueOf(0xFFFF))
-                }
-                case ModbusBlockType.Holding -> {
-                  RegistersModbusMessage registerRequest = msg.unwrap(RegistersModbusMessage.class)
-                  if (msg.getFunction().isReadFunction()) {
-                    // Generate mock data based on address and count
-                    short[] mockData = generateMockHoldingData(registerRequest.getAddress(), registerRequest.getCount())
-                    println("TCP Mock: address=${registerRequest.getAddress()}, count=${registerRequest.getCount()}, data=${mockData.collect{String.format('0x%04X', it & 0xFFFF)}}")
-                    modbusMessage = readHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), mockData)
-                  } else {
-                    if (registerRequest.getFunction().getCode() == WRITE_HOLDING_REGISTERS) {
-                      modbusMessage = writeHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), registerRequest.getCount())
-                    } else if (registerRequest.getFunction().getCode() == WRITE_HOLDING_REGISTER) {
-                      modbusMessage = writeHoldingResponse(registerRequest.getUnitId(), registerRequest.getAddress(), 21)
-                    }
-                  }
-                }
-                case ModbusBlockType.Input -> {
-                  RegistersModbusMessage registerRequest = msg.unwrap(RegistersModbusMessage.class)
-                  modbusMessage = readInputsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), new short[]{
-                            11, 12, 13, 14, 15, 16, 17, 18, 19, 20
-                          })
-                }
-                case ModbusBlockType.Diagnostic -> {
-                  modbusMessage = new BaseModbusMessage(msg.getUnitId(), msg.getFunction(), ModbusErrorCode.Acknowledge)
-                }
-              }
+        case ModbusBlockType.Coil -> {
+          BitsModbusMessage tcpRequest = msg.unwrap(BitsModbusMessage.class)
+          if (msg.getFunction().isReadFunction()) {
+            modbusMessage = readCoilsResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount(), BigInteger.valueOf(0xFFFF))
+          } else {
+            if (tcpRequest.getFunction().getCode() == WRITE_COILS) {
+              modbusMessage = writeCoilsResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount())
+            } else if (tcpRequest.getFunction().getCode() == WRITE_COIL) {
+              modbusMessage = writeCoilResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), true)
+            }
+          }
+        }
+        case ModbusBlockType.Discrete -> {
+          BitsModbusMessage tcpRequest = msg.unwrap(BitsModbusMessage.class)
+          modbusMessage = readDiscretesResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount(), BigInteger.valueOf(0xFFFF))
+        }
+        case ModbusBlockType.Holding -> {
+          RegistersModbusMessage registerRequest = msg.unwrap(RegistersModbusMessage.class)
+          if (msg.getFunction().isReadFunction()) {
+            // Generate mock data based on address and count
+            short[] mockData = generateMockHoldingData(registerRequest.getAddress(), registerRequest.getCount())
+            println("TCP Mock: address=${registerRequest.getAddress()}, count=${registerRequest.getCount()}, data=${mockData.collect{String.format('0x%04X', it & 0xFFFF)}}")
+            modbusMessage = readHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), mockData)
+          } else {
+            if (registerRequest.getFunction().getCode() == WRITE_HOLDING_REGISTERS) {
+              modbusMessage = writeHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), registerRequest.getCount())
+            } else if (registerRequest.getFunction().getCode() == WRITE_HOLDING_REGISTER) {
+              modbusMessage = writeHoldingResponse(registerRequest.getUnitId(), registerRequest.getAddress(), 21)
+            }
+          }
+        }
+        case ModbusBlockType.Input -> {
+          RegistersModbusMessage registerRequest = msg.unwrap(RegistersModbusMessage.class)
+          modbusMessage = readInputsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), new short[]{
+                    11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+                  })
+        }
+        case ModbusBlockType.Diagnostic -> {
+          modbusMessage = new BaseModbusMessage(msg.getUnitId(), msg.getFunction(), ModbusErrorCode.Acknowledge)
+        }
+      }
 
       if (msg.getFunction().isReadFunction()) {
         latestReadMessage.set(msg)
@@ -252,7 +252,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                     }
                     )
                     )
-            )
+    )
     device = assetStorageService.merge(device)
 
     then: "the attribute should be linked without creating read polling tasks"
@@ -278,7 +278,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                             writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
                             writeAddress: 3
                             )
-                    )))
+            )))
     ship = assetStorageService.merge(ship)
     ModbusAgentLink agentLink
 
@@ -328,7 +328,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                             writeMemoryArea: ModbusAgentLink.WriteMemoryArea.COIL,
                             writeAddress: 6
                             )
-                    )))
+            )))
     ship.addOrReplaceAttributes(new Attribute<Object>(ShipAsset.SPEED).setMeta(Map.of() as MetaMap))
     latestReadMessage.set(null)
     latestWriteMessage.set(null)
@@ -389,7 +389,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
               "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 50)
             ] as ModbusAgent.DeviceConfigMap) // Enable batching
-            )
+    )
     agent = assetStorageService.merge(agent)
 
     then: "the protocol instance should be created and connected"
@@ -436,7 +436,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                     }
                     )
                     )
-            )
+    )
     device = assetStorageService.merge(device)
 
     then: "batch groups should be created and attributes should receive values"
@@ -479,7 +479,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
               "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 50)
             ] as ModbusAgent.DeviceConfigMap)
-            )
+    )
     agent = assetStorageService.merge(agent)
 
     then: "the agent should connect successfully"
@@ -531,7 +531,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                     }
                     )
                     )
-            )
+    )
     device = assetStorageService.merge(device)
 
     then: "all 64-bit attributes should receive values"
@@ -581,7 +581,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
               "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 1)
             ] as ModbusAgent.DeviceConfigMap)
-            )
+    )
     agent = assetStorageService.merge(agent)
 
     then: "the agent should connect successfully"
@@ -618,7 +618,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                     }
                     )
                     )
-            )
+    )
     device = assetStorageService.merge(device)
 
     then: "the values should be read correctly with BIG-BIG order"
@@ -697,7 +697,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                     }
                     )
                     )
-            )
+    )
     device = assetStorageService.merge(device)
 
     then: "device should be linked"
@@ -784,7 +784,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                     }
                     )
                     )
-            )
+    )
     device = assetStorageService.merge(device)
 
     then: "write polling task should be created"
@@ -877,7 +877,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                     }
                     )
                     )
-            )
+    )
     device = assetStorageService.merge(device)
 
     then: "the attribute should be linked without errors"

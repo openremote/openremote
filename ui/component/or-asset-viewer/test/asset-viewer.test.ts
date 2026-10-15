@@ -40,6 +40,26 @@ ct("Should not show asset invalid error", async ({ mount }) => {
   await expect(component).not.toContainText("Asset is not valid");
 });
 
+ct.describe("Created on", () => {
+  // The picker shows local time in the format of the browser locale, so both are pinned for the expected value.
+  ct.use({ timezoneId: "Europe/Amsterdam", locale: "en-US" });
+
+  ct("should show the date and time the asset was created", async ({ mount }) => {
+    const component = await mount(OrAssetViewer, {
+      props: {
+        assetId: validId,
+        // The default config shows no properties.
+        config: { default: { panels: [{ type: "info", properties: { include: ["createdOn"] }, attributes: {} }] } },
+      },
+    });
+
+    const createdOn = component.locator("#property-createdOn");
+    // The timestamp used to reach the picker as is, which only takes local ISO strings, leaving it empty.
+    await expect(createdOn.getByRole("combobox").first()).toHaveValue("01/02/2026");
+    await expect(createdOn.getByRole("combobox").last()).toHaveValue("10:30 AM");
+  });
+});
+
 // Due to how the component tests resolve imports, imported data with an object reference gets
 // confused for a component that is meant to be registered in the playwright component test app.
 // Which causes the data to be transformed to an intermediate object referencing the data.

@@ -26,10 +26,10 @@ service:
 resources:
   limits:
     cpu: 400m
-    memory: 2Gi
+    memory: 1792Mi
   requests:
     cpu: 400m
-    memory: 2Gi
+    memory: 1792Mi
 
 volumeSize: "16Gi"
 

@@ -1,22 +1,22 @@
-name: Check if main repo
-description: Resolves- and checks if it is run from the main repository, and resolves the OpenRemote version
+name: Check if core repo
+description: Resolves- and checks if it is run from the core repository, and resolves the OpenRemote version
 
 outputs:
   value:
-    description: Whether this is the main repository which builds the manager
-    value: ${{ steps.is_main_repo.outputs.value }}
+    description: Whether this is the core repository which builds the manager
+    value: ${{ steps.is_core_repo.outputs.value }}
   repository:
-    description: The main GitHub repository name
-    value: ${{ steps.is_main_repo.outputs.repository }}
+    description: The core GitHub repository name
+    value: ${{ steps.is_core_repo.outputs.repository }}
   version:
-    description: The openremote version defined in the main repo
-    value: ${{ steps.is_main_repo.outputs.version }}
+    description: The openremote version defined in the core repo
+    value: ${{ steps.is_core_repo.outputs.version }}
 
 runs:
   using: composite
   steps:
-    - name: Check if main repo
-      id: is_main_repo
+    - name: Check if core repo
+      id: is_core_repo
       shell: bash
       run: |
         if [ -f manager/src/main/java/org/openremote/manager/Main.java ]; then
@@ -28,7 +28,7 @@ runs:
           fi
 
           echo "value=false" >> $GITHUB_OUTPUT
-          echo "repository=$(sed -E 's#(.+)/.+#\1/openremote#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
+          echo "repository=$(sed -E 's#(.+)/.+#\1/core#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
 
           version=""
           if [ -f gradle/libs.versions.toml ]; then

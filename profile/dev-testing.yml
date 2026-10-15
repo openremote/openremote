@@ -16,6 +16,9 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    environment:
+      # manager has a different base URL and is assumed to be reachable at this URL
+      OR_MANAGER_URL: ${OR_MANAGER_URL:-http://127.0.0.1:8080}
 
   postgresql:
     extends:
