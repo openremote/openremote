@@ -52,7 +52,6 @@ import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import "@openremote/or-vaadin-components/or-vaadin-text-field";
 import "@openremote/or-vaadin-components/or-vaadin-text-area";
 import "@openremote/or-vaadin-components/or-vaadin-toggle";
-export type { NotificationMessage };
 
 // Requires a scheme (e.g. https://) before the rest of the URL; shared by the actionUrl field's pattern attribute
 // and the create-validation check. The hyphen is escaped so it's valid under the pattern attribute's `v` flag.
@@ -227,7 +226,6 @@ export class OrNotificationForm extends OrElement {
   protected _messageLanguage?: string;
 
   // The messages of a localized notification, to switch the displayed language between
-  @state()
   protected _messageLanguages?: NotificationMessages;
 
   @state()
