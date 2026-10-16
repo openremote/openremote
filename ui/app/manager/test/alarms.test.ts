@@ -97,6 +97,30 @@ test("should change the status of an existing alarm", async ({ manager, alarmsPa
 
 /**
  * @given Logged into the "master" realm as "admin"
+ * @when A new alarm is started and a property is changed before the required title is filled in
+ * @then The create button stays disabled until the title has content
+ */
+test("should keep the create button disabled while the required title is empty", async ({ manager, alarmsPage }) => {
+  await manager.goToRealmStartPage("master");
+  await alarmsPage.goto();
+  await alarmsPage.getAddButton().click();
+
+  // Changing a property fired onAlarmChanged, which used to re-enable the button even with an
+  // empty title, because the guard only looked at the model of an edited alarm and never at the
+  // model being created.
+  await alarmsPage.setStatus("Resolved");
+  await expect(alarmsPage.getSaveButton()).toBeDisabled();
+
+  // Filling in the title unlocks the button, and emptying it again locks it back down
+  await alarmsPage.getTitleInput().fill("E2E alarm with a title");
+  await expect(alarmsPage.getSaveButton()).toBeEnabled();
+
+  await alarmsPage.getTitleInput().fill("");
+  await expect(alarmsPage.getSaveButton()).toBeDisabled();
+});
+
+/**
+ * @given Logged into the "master" realm as "admin"
  * @and An open alarm seeded via REST
  * @when The alarm is resolved through the single-alarm view
  * @then It drops out of the overview, which defaults to showing active alarms only
