@@ -127,7 +127,6 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     // A combo box rather than a select, so the list can be filtered and the agent id copied out of the field
     return html`
       <or-vaadin-combo-box
-        label="${i18next.t("agentId")}"
         required
         class="agent-id-picker"
         @change="${(ev: Event) =>
@@ -135,7 +134,9 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
         placeholder="${i18next.t("selectAgent")}"
         .items="${options}"
         .value="${props.data ?? ""}"
-      ></or-vaadin-combo-box>
+      >
+        <or-translate slot="label" value="agentId"></or-translate>
+      </or-vaadin-combo-box>
     `;
   });
 
