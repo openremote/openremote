@@ -75,7 +75,7 @@ jobs:
   install-dist:
     name: Build
     needs: detect-changes
-    uses: "./.github/workflows/install-dist.yml"
+    uses: "./.github/workflows/custom-install-dist.yml"
 
   unit-tests:
     name: Test
