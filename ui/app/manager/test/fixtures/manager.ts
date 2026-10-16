@@ -138,6 +138,16 @@ export class Manager {
   }
 
   /**
+   * Switch the app language using the language dialog in the settings menu at the top right.
+   * This also stores it as the user's locale, so reset it with {@link resetLocale} afterwards.
+   * @param language Name of the language as the dialog lists it, in the current app language
+   */
+  async switchLanguage(language: string) {
+    await this.navigateToMenuItem("Language");
+    await this.page.locator("or-vaadin-list-box:visible").getByRole("option").filter({ hasText: language }).click();
+  }
+
+  /**
    * Switch to a realm using the realm picker
    * @param name Name of the realm
    */

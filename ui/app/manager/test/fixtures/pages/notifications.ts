@@ -191,6 +191,12 @@ export class NotificationsPage implements BasePage {
       .locator("input, textarea");
   }
 
+  /** Pick the language a localized notification's content is shown for (by visible label). */
+  async selectMessageLanguage(label: string) {
+    await this.getDetailsForm().locator("#messageLanguage").click();
+    await this.pickOverlayOption(label);
+  }
+
   /** Open the details dialog for the (first) row containing the given text. */
   async openDetailsByText(text: string) {
     await this.getRowByText(text).first().click();
