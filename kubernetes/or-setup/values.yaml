@@ -30,3 +30,8 @@ networkPolicy:
         port: 8080
       - protocol: TCP
         port: 8443
+    # HAProxy MQTTS is opt-in. This is the proxy container listener, not the
+    # configurable public Service port.
+    mqtts:
+      enabled: false
+      port: 8883

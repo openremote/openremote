@@ -66,9 +66,18 @@ service:
     enabled: true
     port: 443
   mqtts:
-    # MQTT(S) exposure is intentionally reserved for a later phase.
+    # MQTTS is opt-in. In HAProxy exposure mode this port is added to the main
+    # Service and HAProxy terminates TLS. In EKS Ingress mode, separate creates
+    # a dedicated NLB Service whose listener terminates TLS before forwarding
+    # plaintext MQTT to the namespace-local proxy gateway.
     enabled: false
+    separate: false
+    type: LoadBalancer
     port: 8883
+    annotations: {}
+    dns:
+      enabled: false
+      hostname: ""
   metrics:
     enabled: true
     # Service type, typically use ClusterIP for local deployment and LoadBalancer for cloud deployments

@@ -96,6 +96,12 @@ The Managers are then available at `https://localhost:8443/manager` and
 `https://localhost:9443/manager`, using the proxy's locally generated
 certificates. Browser warnings for those local certificates are expected.
 
+MQTTS is disabled by default. To expose it through the same HAProxy and
+certificate, add `--mqtts`; for multiple local stacks, also give each Service a
+different public port, for example `--mqtts-port 18883` for stack A and
+`--mqtts-port 28883` for stack B. The HAProxy container continues to listen on
+8883 inside each namespace.
+
 #### Without LoadBalancer support
 
 For kind, kubeadm, or another cluster without a LoadBalancer implementation,
@@ -296,11 +302,13 @@ kubectl delete deployment network-policy-test --namespace stack-a
 Set `networkPolicy.enabled: false` in a stack's `or-setup.yaml` only when
 isolation is deliberately not required. `networkPolicy.additionalIngressFrom`
 accepts additional Kubernetes `NetworkPolicyPeer` entries for trusted sources.
-Ingress exposure permits external traffic only to port 8080 on the stack's
-proxy Pod. HAProxy exposure permits external traffic only to ports 8080 and
-8443 on that Pod. In both modes, the proxy reaches Manager and Keycloak through
-the same-namespace rule, while direct access from other namespaces to Manager,
-Keycloak, and PostgreSQL remains denied. `none` adds no public ingress rule.
+Ingress exposure permits external traffic to port 8080 on the stack's proxy
+Pod and, for EKS Ingress MQTTS, to its edge-terminated port 1883. HAProxy
+exposure permits external traffic only to ports 8080 and 8443 on that Pod, plus
+port 8883 when MQTTS is explicitly enabled. In both modes, the proxy reaches
+Manager and Keycloak through the same-namespace rule, while direct access from
+other namespaces to Manager, Keycloak, PostgreSQL, and Manager's MQTT listener
+remains denied. `none` adds no public ingress rule.
 
 ### Exclusive public hostnames
 
@@ -317,12 +325,14 @@ Local HAProxy with unmanaged DNS remains exempt, allowing the localhost:8443 / l
 Hostnames are normalized to lowercase without a trailing dot. For EKS-specific behavior, see Hostname ownership (README-AWS.md#hostname-ownership)
 
 The reservation registry is ConfigMap `kube-system/openremote-hostnames`. Each
-entry records the owning stack namespace and its Kubernetes UID. Conditional
-Kubernetes updates reserve the hostname and the stack's fixed hostname together:
-two concurrent applies cannot both acquire the same hostname, and one stack
-cannot concurrently acquire two different hostnames. Retrying with the same
-namespace UID and hostname is safe. Changing the hostname or recreating a
-namespace under the same name does not transfer ownership.
+entry records the owning stack namespace, its Kubernetes UID, and the endpoint
+role (`web` or `mqtts`). Conditional Kubernetes updates reserve each hostname
+and the stack's fixed hostname for that role together: two concurrent applies
+cannot both acquire the same hostname, and one stack cannot concurrently
+acquire two different hostnames for the same endpoint. An Ingress stack may
+therefore own one web hostname and one distinct MQTTS hostname. Retrying with
+the same namespace UID and hostname is safe. Changing either hostname or
+recreating a namespace under the same name does not transfer ownership.
 
 Stack operators need `jq`, permission to get/create/update that ConfigMap,
 and cluster-wide read access to namespaces, Ingresses and Services, in addition
@@ -661,9 +671,28 @@ and port forwarding, this is the hostname you need to use for the JMX configurat
 
 #### Accessing MQTT
 
-MQTT(S) is intentionally disabled in the current namespaced exposure profiles.
-It will be added as a separate option with its DNS, certificate, load-balancer,
-and NetworkPolicy lifecycle handled together.
+MQTTS is disabled by default. Enable it with `--mqtts` when applying an HAProxy
+stack:
+
+```bash
+./or-stack apply \
+  --name stack-a \
+  --kube-context docker-desktop \
+  --target local \
+  --hostname localhost \
+  --http-port 8080 \
+  --https-port 8443 \
+  --mqtts \
+  --mqtts-port 18883
+```
+
+The public endpoint is `mqtts://localhost:18883` in this example. HAProxy
+terminates TLS with the same certificate used for HTTPS and forwards the
+connection to Manager port 1883 inside the stack namespace. Repeat `--mqtts`
+on later applies that should retain this exposure. Plaintext MQTT is not
+publicly exposed. On clusters without LoadBalancer support, include the MQTTS
+mapping when port-forwarding, for example `18883:18883` when the Service port is
+18883.
 
 #### Using with IDE for development
 
@@ -692,8 +721,8 @@ certificate persistence are disabled in the proxy, and HAProxy receives plain
 HTTP before routing `/auth` to Keycloak and other paths to Manager.
 
 This gateway provides a consistent NetworkPolicy boundary across Ingress
-implementations. The default policy allows traffic from outside the stack
-namespace only to the proxy's HTTP port. HAProxy then reaches Manager and
+implementations. For web traffic, the default policy allows access from outside
+the stack namespace only to the proxy's HTTP port. HAProxy then reaches Manager and
 Keycloak within the same namespace, keeping their ports inaccessible directly
 from other namespaces. This also works when the Ingress traffic comes from an
 external load balancer without Kubernetes Pod or namespace labels.
@@ -718,9 +747,14 @@ NetworkPolicy are configured consistently:
 
 #### Accessing MQTT
 
-The HTTP Ingress does not carry MQTT traffic. MQTT(S) remains disabled pending
-the dedicated per-stack NLB implementation. A development-only plaintext MQTT
-connection can still use a manual port-forward to Manager port 1883.
+The HTTP Ingress does not carry MQTT traffic. `--mqtts` with Ingress exposure
+is supported only on EKS; see [MQTTS with Ingress](README-AWS.md#mqtts-with-ingress)
+for deployment and lifecycle management, or the
+[portable workflow](README-AWS.md#ingress-mqtts-with-externally-managed-readiness)
+when DNS and certificates are managed separately.
+
+For local Ingress development, a plaintext MQTT connection can use a manual
+port-forward to Manager port 1883. Plaintext MQTT is never publicly exposed.
 
 #### Running a custom project
 
@@ -852,8 +886,9 @@ AWS operations; no running cluster or AWS credentials are required.
 `or-setup-test` uses the real Helm executable to lint and render the charts.
 
 To run the full set below, install Bash, Helm, jq, and Python 3.9 or newer,
-along with standard Unix command-line utilities. Run these commands from the
-repository root:
+along with standard Unix command-line utilities. The MQTTS readiness tests
+also need OpenSSL or LibreSSL to generate temporary certificates and permission
+to listen on loopback sockets. Run these commands from the repository root:
 
 ```bash
 bash kubernetes/test/or-setup-test
@@ -862,6 +897,7 @@ python3 kubernetes/test/hostname-reservations-test
 bash kubernetes/test/or-eks-cluster-test
 bash kubernetes/test/or-eks-stack-test
 bash kubernetes/test/aws-profile-test
+python3 kubernetes/test/mqtts-readiness-test
 ```
 
 | Test                         | Coverage                                                                                                          |
@@ -872,6 +908,7 @@ bash kubernetes/test/aws-profile-test
 | `or-eks-cluster-test`        | EKS cluster add-on configuration and destruction safeguards.                                                      |
 | `or-eks-stack-test`          | EKS stack orchestration, DNS and certificate handling, and cleanup safeguards.                                    |
 | `aws-profile-test`           | Default credential behavior and explicit AWS profile selection in both EKS CLIs.                                  |
+| `mqtts-readiness-test` | TLS handshake verification, hostname and trust checks, and timeout handling using local test servers. |
 
 These tests do not verify a live cluster's routing, certificate issuance, or
 NetworkPolicy enforcement. After deploying, use the connectivity checks in
