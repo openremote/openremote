@@ -8893,21 +8893,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nanoid@npm:^3.3.12":
-  version: 3.3.12
-  resolution: "nanoid@npm:3.3.12"
+"nanoid@npm:^3.3.12, nanoid@npm:^3.3.8":
+  version: 3.3.20
+  resolution: "nanoid@npm:3.3.20"
   bin:
     nanoid: bin/nanoid.cjs
-  checksum: 10c0/ba142b7b39e11e80c16dd74b0365d407880c87c1cf7e1480956981ae940ee36060fa5b6f092cd1e315184dd19244c657bd017d03327bd3c62247d691c5e8edfb
-  languageName: node
-  linkType: hard
-
-"nanoid@npm:^3.3.8":
-  version: 3.3.15
-  resolution: "nanoid@npm:3.3.15"
-  bin:
-    nanoid: bin/nanoid.cjs
-  checksum: 10c0/e0b12e3a1d361f74150fa4b25631d0ae29f7162dab01a12f0f1be1f53b7a2a219f9b729504e474d4821207d0fe349bd3c97569ab5cf7ec2fff6aa94711956c93
+  checksum: 10c0/856e8bf3bddb959d65997bd94908be030dbc5e6ed88fb3af2a638e51d1938f4d4f454c7c7231aba340775224f88b8cfd3ce1693c70471bfd05f5b6a2227c0c1e
   languageName: node
   linkType: hard
 
