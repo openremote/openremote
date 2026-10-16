@@ -29,6 +29,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Request;
+import org.jboss.resteasy.annotations.cache.Cache;
 import org.openremote.model.Constants;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.OpenApiResponses;
@@ -103,6 +106,10 @@ public interface ConfigurationResource {
 
   @GET
   @Path("manager/image/{filename: .+}")
+  // Five minutes of freshness, then a conditional request: an image is fetched on every page
+  // load that shows branding, and an admin replacing one through fileUpload should still appear
+  // promptly.
+  @Cache(maxAge = 300, mustRevalidate = true)
   @Operation(
       operationId = "getManagerConfigImage",
       summary = "Retrieve a Manager configuration image",
@@ -115,6 +122,9 @@ public interface ConfigurationResource {
           @Content(
               mediaType = "application/octet-stream",
               schema = @Schema(type = "string", format = "binary")))
+  @ApiResponse(
+      responseCode = "304",
+      description = "The image has not changed since the date the client supplied")
   @OpenApiResponses.NotFound
   @OpenApiResponses.ServerError
   Object getManagerConfigImage(
@@ -122,5 +132,6 @@ public interface ConfigurationResource {
               description = "Relative image path below the Manager configuration image directory.",
               example = "images/logo.svg")
           @PathParam("filename")
-          String fileName);
+          String fileName,
+      @Context Request request);
 }
