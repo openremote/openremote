@@ -102,8 +102,10 @@ public final class MetaItemType {
    *
    * @deprecated Per-attribute retention is no longer supported. Purging now uses TimescaleDB
    *     drop_chunks with a global week-based retention period configured via
-   *     OR_DATA_POINTS_MAX_AGE_WEEKS. This meta item is retained for backward compatibility but has
-   *     no effect.
+   *     OR_DATA_POINTS_MAX_AGE_WEEKS. For backward compatibility, the largest value of this meta
+   *     item across all attributes (rounded up to whole weeks) is used as a minimum for the global
+   *     retention period, so it can only extend how long data is kept for all attributes; it never
+   *     shortens it and has no effect when purging is disabled.
    */
   @Deprecated
   public static final MetaItemDescriptor<Integer> DATA_POINTS_MAX_AGE_DAYS =
