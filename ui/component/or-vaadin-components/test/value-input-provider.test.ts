@@ -160,3 +160,20 @@ ct("should round up a minimum that falls between two picker values", async ({ mo
   // The minimum used to round down to 10:30, which the picker then allowed although it is before the minimum.
   await expect.poll(() => values).toEqual([localTime(10, 31)]);
 });
+
+ct("should keep a manually resizable text area at its min-rows height", async ({ mount }) => {
+  const component = await mount(ValueInputProviderHarness, {
+    props: {
+      valueType: "text",
+      multiline: true,
+      options: { minRows: 5, manualresize: true },
+      value: Array.from({ length: 30 }, (_, i) => `line ${i + 1}`).join("\n"),
+    },
+  });
+
+  // The template sets the value before manualresize, so a value that is already set reaches
+  // autoresize first. The thirty lines have to scroll inside the five rows.
+  const textArea = component.getByRole("textbox", { name: "Attribute" });
+  await expect(textArea).toHaveAttribute("rows", "5");
+  await expect.poll(() => textArea.evaluate((el: HTMLTextAreaElement) => el.scrollHeight > el.clientHeight)).toBe(true);
+});

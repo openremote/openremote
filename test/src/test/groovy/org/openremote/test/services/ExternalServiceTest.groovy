@@ -55,7 +55,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-            )
+    )
 
     // building service user for single tenant logic
     def buildingServiceUserAccessToken = authenticate(
@@ -63,14 +63,14 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
             keycloakTestSetup.realmBuilding.getName(),
             keycloakTestSetup.serviceUser.username,
             keycloakTestSetup.serviceUser.secret
-            )
+    )
 
     def buildingServiceUser2AccessToken = authenticate(
             container,
             keycloakTestSetup.realmBuilding.getName(),
             keycloakTestSetup.serviceUser2.username,
             keycloakTestSetup.serviceUser2.secret
-            )
+    )
 
     // master service user for multi-tenant logic
     def superServiceUserAccessToken = authenticate(
@@ -78,7 +78,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
             MASTER_REALM,
             keycloakTestSetup.superServiceUser.username,
             keycloakTestSetup.superServiceUser.secret
-            )
+    )
 
     then: "the users have been authenticated and the tokens are retrieved"
     conditions.eventually {
@@ -108,7 +108,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
             label: "Building Energy Management Service",
             homepageUrl: "https://local.test/services/building-energy-management/ui",
             status: ExternalServiceStatus.AVAILABLE,
-            )
+    )
     def registeredBuildingExternalService = buildingExternalServiceResource.registerService(null, buildingExternalService)
 
     then: "the building external service should be registered and the registered external service should have an instanceId assigned"
@@ -194,7 +194,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
             label: "Forecasting Service",
             homepageUrl: "https://local.test/services/forecasting-service/ui",
             status: ExternalServiceStatus.AVAILABLE,
-            )
+    )
     def registeredGlobalExternalService = superServiceUserExternalServiceResource.registerGlobalService(null, globalExternalService)
 
     then: "the global external service should be registered and the registered external service should have an instanceId assigned"
@@ -238,7 +238,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
             label: "Building Energy Management Service 2",
             homepageUrl: "https://local.test/services/building-energy-management-2/ui",
             status: ExternalServiceStatus.AVAILABLE,
-            )
+    )
     def registeredBuildingExternalService2 = buildingExternalServiceResource.registerService(null, buildingExternalService2)
 
     then: "the building service user should receive the new realm-bound external service"
@@ -335,7 +335,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
             label: "Regular User New Service",
             homepageUrl: "https://local.test/services/regular-user-new-service/ui",
             status: ExternalServiceStatus.AVAILABLE,
-            )
+    )
     regularUserExternalServiceResource.registerService(null, regularUserNewService)
 
     then: "the regular user should receive a 401 unauthorized response"

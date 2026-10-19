@@ -55,7 +55,7 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the asset resource is available"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -66,7 +66,7 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
             .realm(new RealmPredicate(managerTestSetup.realmBuildingName))
             .limit(10)
             .offset(0)
-            )
+    )
 
     then: "the asset tree should be returned"
     assert assetTree != null
@@ -83,7 +83,7 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
             .realm(new RealmPredicate(managerTestSetup.realmBuildingName))
             .limit(10)
             .offset(10)
-            )
+    )
 
     then: "the asset tree should be returned"
     assert assetTree != null
@@ -98,7 +98,7 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
     assetTree = assetResource.queryAssetTree(null,
             new AssetQuery()
             .realm(new RealmPredicate(managerTestSetup.realmBuildingName))
-            )
+    )
 
     then: "the asset tree should be returned"
     assert assetTree != null

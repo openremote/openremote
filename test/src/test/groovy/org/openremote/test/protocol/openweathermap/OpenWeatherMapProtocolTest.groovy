@@ -222,7 +222,7 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             def responseBody = ValueUtil.JSON.readValue(content, OpenWeatherMapResponse.class)
             requestContext.abortWith(
                     Response.ok(responseBody, MediaType.APPLICATION_JSON_TYPE).build()
-                    )
+            )
             return
           }
           break

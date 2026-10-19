@@ -48,9 +48,9 @@ HOST="$OR_HOSTNAME"
 
 # Copy CI/CD files into temp dir
 echo "Copying CI/CD files into temp dir"
-if [ "$IS_MAIN_REPO" == 'false' ]; then
-  cp -r openremote/.ci_cd/host_init temp/
-  cp -r openremote/.ci_cd/aws temp/
+if [ "$IS_CORE_REPO" == 'false' ]; then
+  cp -r core/.ci_cd/host_init temp/
+  cp -r core/.ci_cd/aws temp/
 fi
 if [ -d ".ci_cd/host_init" ]; then
   cp -r .ci_cd/host_init temp/
@@ -100,7 +100,7 @@ fi
 if [ "$SKIP_SSH_WHITELIST" != 'true' ] && [ -n "$AWS_ACCESS_KEY_ID" ]; then
 
   echo "Granting AWS SSH access to github runner"
-  
+
   source temp/aws/login.sh
 
   if [ -n "$CIDR" ]; then
@@ -217,6 +217,11 @@ fi
 if [ -f "temp/deployment.tar.gz" ]; then
   echo "Loading deployment docker image"
   docker load < temp/deployment.tar.gz
+fi
+
+# Login to Private ECR Registry to download restricted images
+if [ -n "$OR_AWS_ECR_ACCOUNT_ID" ] && [ -n "$OR_AWS_ECR_REGION" ]; then
+  aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
 fi
 
 # Make sure we have correct keycloak, proxy and postgres images
@@ -358,6 +363,11 @@ set +a
 if [ -f "temp/deployment.tar.gz" ]; then
   echo "Loading deployment docker image"
   docker load < temp/deployment.tar.gz
+fi
+
+# Login to Private ECR Registry to download restricted images
+if [ -n "$OR_AWS_ECR_ACCOUNT_ID" ] && [ -n "$OR_AWS_ECR_REGION" ]; then
+  aws ecr get-login-password --region $OR_AWS_ECR_REGION | docker login --username AWS --password-stdin $OR_AWS_ECR_ACCOUNT_ID.dkr.ecr.$OR_AWS_ECR_REGION.amazonaws.com &>/dev/null
 fi
 
 # Make sure we have correct keycloak, proxy and postgres images

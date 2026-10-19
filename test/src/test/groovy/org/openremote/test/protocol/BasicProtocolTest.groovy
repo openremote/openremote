@@ -263,7 +263,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                     )
                             )
                     )
-            )
+    )
 
     mockThing = assetStorageService.merge(mockThing)
 
@@ -527,7 +527,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             "${username}@openremote.local",
             true,
             [ClientRole.READ_ASSETS] as ClientRole[]
-            )
+    )
     def accessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, username, username)
 
     and: "a running mock protocol agent"
@@ -583,7 +583,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             "${username}@openremote.local",
             true,
             [ClientRole.WRITE_ASSETS] as ClientRole[]
-            )
+    )
     def accessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, username, username)
 
     and: "a running mock protocol agent"

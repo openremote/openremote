@@ -52,7 +52,7 @@ class KNXImportXXETest extends Specification {
     assets.size() == 12
     assets.every {
       it.asset.name != null &&
-      !it.asset.attributes.isEmpty()
+              !it.asset.attributes.isEmpty()
     }
 
     cleanup:

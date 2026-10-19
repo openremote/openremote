@@ -59,7 +59,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the asset resource"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -77,7 +77,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             new AssetQuery()
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "result should match"
     assets.length == 1
@@ -87,7 +87,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     assets = assetResource.queryAssets(null,
             new AssetQuery()
             .parents(new ParentPredicate(assets[0].id))
-            )
+    )
 
     then: "result should match"
     assets.length == 1
@@ -98,7 +98,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             new AssetQuery()
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "result should match"
     assets.length == 1
@@ -109,7 +109,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             new AssetQuery()
             .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "result should match"
     assets.length == 1
@@ -119,7 +119,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     assets = assetResource.queryAssets(null,
             new AssetQuery()
             .parents(new ParentPredicate(assets[0].id))
-            )
+    )
 
     then: "result should match"
     assets.length == 3
@@ -258,7 +258,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-            )
+    )
 
     and: "the asset resource"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -276,7 +276,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             new AssetQuery()
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "result should match"
     assets.length == 1
@@ -286,7 +286,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     assets = assetResource.queryAssets(null,
             new AssetQuery()
             .parents(new ParentPredicate(assets[0].id))
-            )
+    )
 
     then: "result should match"
     assets.length == 1
@@ -296,7 +296,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     assets = assetResource.queryAssets(null,
             new AssetQuery()
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "result should match"
     assets.length == 1
@@ -308,7 +308,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             new AssetQuery()
             .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "a not authorized exception should be thrown"
     WebApplicationException ex = thrown()
@@ -318,7 +318,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     assets = assetResource.queryAssets(null,
             new AssetQuery()
             .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
-            )
+    )
 
     then: "result should be empty"
     assets.length == 0
@@ -437,7 +437,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "testuser2"
-            )
+    )
 
     and: "the asset resource"
     def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)
@@ -455,7 +455,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             new AssetQuery()
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "a not authorized exception should be thrown"
     thrown(ForbiddenException)
@@ -464,7 +464,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     assets = assetResource.queryAssets(null,
             new AssetQuery()
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "result should match"
     assets.length == 1
@@ -476,7 +476,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             new AssetQuery()
             .realm(new RealmPredicate(keycloakTestSetup.realmCity.name))
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "a forbidden exception should be thrown"
     thrown(ForbiddenException)
@@ -485,7 +485,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     assets = assetResource.queryAssets(null,
             new AssetQuery()
             .parents(new ParentPredicate(managerTestSetup.thingId))
-            )
+    )
 
     then: "result should be empty"
     assets.length == 0
@@ -599,7 +599,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
 
     and: "the asset resource"
     def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)
@@ -647,7 +647,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             new AssetQuery()
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "a forbidden exception should be thrown"
     thrown(ForbiddenException)
@@ -656,7 +656,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     assets = assetResource.queryAssets(null,
             new AssetQuery()
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "result should match"
     assets.length == 0
@@ -666,7 +666,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             new AssetQuery()
             .realm(new RealmPredicate(keycloakTestSetup.realmCity.name))
             .parents(new ParentPredicate(null))
-            )
+    )
 
     then: "a forbidden exception should be thrown"
     thrown(ForbiddenException)
@@ -675,7 +675,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     assets = assetResource.queryAssets(null,
             new AssetQuery()
             .parents(new ParentPredicate(managerTestSetup.apartment1Id))
-            )
+    )
 
     then: "result should match"
     assets.length == 5
@@ -684,7 +684,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     assets = assetResource.queryAssets(null,
             new AssetQuery()
             .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
-            )
+    )
 
     then: "result should match"
     assets.length == 1
@@ -693,7 +693,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     assets = assetResource.queryAssets(null,
             new AssetQuery()
             .parents(new ParentPredicate(managerTestSetup.thingId))
-            )
+    )
 
     then: "result should be empty"
     assets.length == 0
@@ -946,7 +946,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-            )
+    )
 
     and: "there are assets in the authenticated realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -981,7 +981,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "there are child assets with parents in different accessible realms"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -1009,7 +1009,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-            )
+    )
 
     and: "there is an asset in the authenticated realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -1037,7 +1037,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-            )
+    )
 
     and: "there's an asset in the authenticated realm"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -1065,7 +1065,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
 
     when: "a restricted user tries to move a linked asset"
     def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)
@@ -1090,7 +1090,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
 
     when: "a restricted user tries to clear the parent of a linked asset"
     def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)

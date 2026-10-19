@@ -8,7 +8,7 @@ updates:
     schedule:
       interval: "daily"
     ignore:
-      - dependency-name: "openremote/openremote"
+      - dependency-name: "openremote/core"
 
   # Maintain npm/Yarn dependencies
   - package-ecosystem: "npm"

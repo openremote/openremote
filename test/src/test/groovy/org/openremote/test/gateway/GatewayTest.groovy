@@ -152,7 +152,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             managerTestSetup.realmBuildingName,
             gateway.getClientId().orElse(""),
             gateway.getClientSecret().orElse("")
-            )
+    )
     def assetResource = getClientApiTarget(serverUri(serverPort), managerTestSetup.realmBuildingName, accessToken).proxy(AssetResource.class)
 
     and: "the realm assets are requested"
@@ -258,7 +258,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                         .setPath("")),
                         new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS))
                         )
-                )
+        )
 
         assets.add(roomAsset)
       }
@@ -274,7 +274,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
               new Attribute<>(Asset.LOCATION, new GeoJSONPoint(10, 11)).addMeta(
                       new MetaItem<>(ACCESS_PUBLIC_READ)
                       )
-              )
+      )
 
       assets.add(buildingAsset)
     }
@@ -577,7 +577,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                     .setPath("")),
                     new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS))
                     )
-            )
+    )
 
     gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(new AssetEvent(AssetEvent.Cause.CREATE, building1Room5Asset, null)).get())
 
@@ -602,7 +602,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                     new MetaItem<>(UNITS, Constants.units(UNITS_PART_PER_MILLION)),
                     new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agentAssetIds[0]).setPath(""))
                     )
-            )
+    )
     gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(new AssetEvent(AssetEvent.Cause.UPDATE, building1Room5Asset, (String[]) ["name", "attributes"].toArray(new String[0]))).get())
 
     then: "the asset should also be updated in the local manager"
@@ -738,7 +738,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             new Attribute<>(Asset.LOCATION, new GeoJSONPoint(10, 11)).addMeta(
                     new MetaItem<>(ACCESS_PUBLIC_READ)
                     )
-            )
+    )
     assetStorageService.merge(failedAsset)
 
     then: "an error should occur"
@@ -883,7 +883,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                     .setPath("")),
                     new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS))
                     )
-            )
+    )
 
     gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(new AssetEvent(AssetEvent.Cause.CREATE, building2Room5Asset, null)).get())
 
@@ -1020,7 +1020,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
 
     and: "the gateway client resource"
@@ -1060,7 +1060,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             null,
             Map.of("test", new GatewayAssetSyncRule()),
             false
-            )
+    )
     gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
 
     then: "the gateway client should become connected"
@@ -1106,7 +1106,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     microphone1.setName("Microphone 1 Updated")
     microphone1.addAttributes(
             new Attribute<>("test", NUMBER, 100d)
-            )
+    )
     microphone1 = assetStorageService.merge(microphone1)
 
     then: "the mirrored asset under the gateway should have also been updated"
@@ -1130,7 +1130,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             .setParentId(managerTestSetup.area1Id)
             .addAttributes(
             new Attribute<>("test", TEXT, "testValue")
-            )
+    )
     microphone2 = assetStorageService.merge(microphone2)
 
     then: "the new asset should have been created in the gateway and also mirrored under the gateway asset"
@@ -1162,7 +1162,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             new BuildingAsset("UnknownAssetType")
             .setId(UniqueIdentifierGenerator.generateId()),
             null
-            )
+    )
     msgEvent.asset.type = "CustomBuildingAsset"
     gatewayClientService.connectionRealmMap.get(gatewayConnection.getLocalRealm()).sendCentralManagerMessage(msgEvent)
 
@@ -1405,7 +1405,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the gateway client resource"
     def gatewayClientResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(GatewayClientResource.class)
@@ -1463,7 +1463,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
               ]).setExcludeAttributes([LightAsset.COLOUR_RGB.name]).setAccessPublicRead(false)
             ] as Map<String, GatewayAssetSyncRule>,
             false
-            )
+    )
     gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
 
     then: "the gateway client should become connected"
@@ -1541,13 +1541,13 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             new User().setUsername("gatewayrealmtunnelreader").setEnabled(true),
             "gatewayrealmtunnelreader",
             true
-            )
+    )
     identityProvider.updateUserClientRoles(
             managerTestSetup.realmBuildingName,
             tunnelReader.id,
             KEYCLOAK_CLIENT_ID,
             READ_TUNNELS_ROLE
-            )
+    )
 
     and: "an authenticated session for that user"
     def accessToken = authenticate(
@@ -1556,7 +1556,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "gatewayrealmtunnelreader",
             "gatewayrealmtunnelreader"
-            )
+    )
 
     and: "the gateway service resource"
     def gatewayResource = getClientApiTarget(serverUri(serverPort), managerTestSetup.realmBuildingName, accessToken).proxy(GatewayServiceResource.class)
@@ -1564,7 +1564,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     when: "a fake tunnel for a fake gateway ID in the smart city realm is injected into the gateway service"
     gatewayService.@tunnelInfos.put("fake-tunnel-id",
             new GatewayTunnelInfo(managerTestSetup.realmCityName, "fake-gateway-id", GatewayTunnelInfo.Type.HTTPS, "127.0.0.1", 443)
-            )
+    )
 
     and: "the building user then retrieves the list of tunnels for the fake gateway ID"
     def activeTunnels = gatewayResource.getGatewayActiveTunnelInfos(null, managerTestSetup.realmBuildingName, "fake-gateway-id")
@@ -1624,7 +1624,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             null,
             Map.of("test", new GatewayAssetSyncRule()),
             false
-            )
+    )
     gatewayClientService.setConnection(gatewayConnection)
 
     then: "the gateway client connector should be created"
@@ -1801,7 +1801,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the gateway client resource"
     def gatewayResource = getClientApiTarget(serverUri((isCentralInstanceSecure), centralInstanceHostname, centralInstancePort), MASTER_REALM, accessToken).proxy(GatewayServiceResource.class)
@@ -1819,7 +1819,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             null,
             Map.of("test", new GatewayAssetSyncRule()),
             false
-            )
+    )
 
     gatewayClientService.setConnection(gatewayConnection)
 

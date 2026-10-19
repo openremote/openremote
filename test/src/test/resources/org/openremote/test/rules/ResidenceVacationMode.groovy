@@ -48,22 +48,22 @@ rules.add()
         .name("When residence has vacation until in future, add vacation mode, execute DAY scene and disable scene timers")
         .when({ facts ->
           facts.matchAssetState(
-                  new AssetQuery().types(BuildingAsset)
-                  .attributeValue("vacationUntil", GREATER_THAN, facts.clock.currentTimeMillis)
-                  ).filter { residenceWithVacationUntil ->
-            facts.match(VacationMode).noneMatch { vacationMode ->
-              vacationMode.residenceId == residenceWithVacationUntil.id
-            }
-          }.findFirst().map { residenceWithoutVacationMode ->
-            facts.bind("residenceId", residenceWithoutVacationMode.id)
-            .bind("vacationUntil", residenceWithoutVacationMode.value.get())
-            true
-          }.orElse(false)
+                          new AssetQuery().types(BuildingAsset)
+                          .attributeValue("vacationUntil", GREATER_THAN, facts.clock.currentTimeMillis)
+                          ).filter { residenceWithVacationUntil ->
+                    facts.match(VacationMode).noneMatch { vacationMode ->
+                      vacationMode.residenceId == residenceWithVacationUntil.id
+                    }
+                  }.findFirst().map { residenceWithoutVacationMode ->
+                    facts.bind("residenceId", residenceWithoutVacationMode.id)
+                            .bind("vacationUntil", residenceWithoutVacationMode.value.get())
+                    true
+                  }.orElse(false)
         })
         .then({ facts ->
           VacationMode vacationMode = new VacationMode(
-                  residenceId: facts.bound("residenceId"),
-                  until: facts.bound("vacationUntil")
+                          residenceId: facts.bound("residenceId"),
+                          until: facts.bound("vacationUntil")
                   )
           LOG.info("Vacation mode enabled: " + vacationMode)
 
@@ -78,18 +78,18 @@ rules.add()
         .name("When residence has vacation until in past, clear it and enable scene timers")
         .when({ facts ->
           facts.matchAssetState(
-                  new AssetQuery().types(BuildingAsset)
-                  .attributeValue("vacationUntil", LESS_EQUALS, facts.clock.currentTimeMillis)
-                  ).filter { residenceWithVacationUntilInPast ->
-            residenceWithVacationUntilInPast.getValue(Double.class).isPresent()
-          }.filter { residenceWithVacationUntilInPast ->
-            facts.match(VacationMode).noneMatch { vacationMode ->
-              vacationMode.residenceId == residenceWithVacationUntilInPast.id
-            }
-          }.findFirst().map { residenceWithVacationUntilInPastWithoutVacationMode ->
-            facts.bind("residence", residenceWithVacationUntilInPastWithoutVacationMode)
-            true
-          }.orElse(false)
+                          new AssetQuery().types(BuildingAsset)
+                          .attributeValue("vacationUntil", LESS_EQUALS, facts.clock.currentTimeMillis)
+                          ).filter { residenceWithVacationUntilInPast ->
+                    residenceWithVacationUntilInPast.getValue(Double.class).isPresent()
+                  }.filter { residenceWithVacationUntilInPast ->
+                    facts.match(VacationMode).noneMatch { vacationMode ->
+                      vacationMode.residenceId == residenceWithVacationUntilInPast.id
+                    }
+                  }.findFirst().map { residenceWithVacationUntilInPastWithoutVacationMode ->
+                    facts.bind("residence", residenceWithVacationUntilInPastWithoutVacationMode)
+                    true
+                  }.orElse(false)
         })
         .then({ facts ->
           AssetState residence = facts.bound("residence")
@@ -103,12 +103,12 @@ rules.add()
         .when({ facts ->
           facts.matchFirst(VacationMode) { vacationMode ->
             facts.matchFirstAssetState(
-                    new AssetQuery().types(BuildingAsset)
-                    .ids(vacationMode.residenceId)
-                    .attributes(new AttributePredicate(new StringPredicate("vacationUntil"), new ValueEmptyPredicate().negate(true)))
-                    ).map { residence ->
-              vacationMode.until != residence.value.get()
-            }.orElse(false)
+                            new AssetQuery().types(BuildingAsset)
+                            .ids(vacationMode.residenceId)
+                            .attributes(new AttributePredicate(new StringPredicate("vacationUntil"), new ValueEmptyPredicate().negate(true)))
+                            ).map { residence ->
+                      vacationMode.until != residence.value.get()
+                    }.orElse(false)
           }.map { vacationMode ->
             facts.bind("vacationMode", vacationMode)
             true
@@ -125,9 +125,9 @@ rules.add()
         .when({ facts ->
           facts.matchFirst(VacationMode) { vacationMode ->
             !facts.matchFirstAssetState(
-                    new AssetQuery().types(BuildingAsset)
-                    .ids(vacationMode.residenceId)
-                    .attributes(new AttributePredicate(new StringPredicate("vacationUntil"), new ValueEmptyPredicate().negate(true)))).isPresent()
+                            new AssetQuery().types(BuildingAsset)
+                            .ids(vacationMode.residenceId)
+                            .attributes(new AttributePredicate(new StringPredicate("vacationUntil"), new ValueEmptyPredicate().negate(true)))).isPresent()
           }.map { vacationMode ->
             facts.bind("vacationMode", vacationMode)
             true

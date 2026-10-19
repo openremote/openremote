@@ -56,11 +56,11 @@ class ValueUtilTest extends Specification {
     }
     ValueUtil.ConstraintViolationPathProvider pathProvider = { constraintViolationBuilder ->
       constraintViolationBuilder
-      .addPropertyNode("attributes")
-      .addPropertyNode("value")
-      .inContainer(Map, 1)
-      .inIterable()
-      .atKey(attribute.name)
+              .addPropertyNode("attributes")
+              .addPropertyNode("value")
+              .inContainer(Map, 1)
+              .inIterable()
+              .atKey(attribute.name)
     }
 
     expect:
@@ -72,7 +72,7 @@ class ValueUtilTest extends Specification {
             context,
             pathProvider,
             attribute.value.orElse(null)
-            ) == expected
+    ) == expected
 
     where:
     description | attributeName | valueType | value || expected

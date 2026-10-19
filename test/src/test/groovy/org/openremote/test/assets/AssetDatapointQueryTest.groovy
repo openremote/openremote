@@ -69,7 +69,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
             .types(LightAsset.class)
             .realm(new RealmPredicate(keycloakTestSetup.realmCity.name))
             .names("Light 1")
-            )
+    )
 
     then: "asset should exist and be correct"
     def assetName = "Light 1"
@@ -97,7 +97,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new ValueDatapoint<>(dateTime.minusMinutes(10).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 20d),
               new ValueDatapoint<>(dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 10d),
             ]
-            )
+    )
 
     then: "datapoints should exist"
     def allDatapoints = new ArrayList<ValueDatapoint>()
@@ -115,7 +115,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointLTTBQuery(dateTime.minusMinutes(30), dateTime, 5)
-            )
+    )
     assert lttbDatapoints1.size() == 5
 
     and: "the 5 values are equal to 5 values in 'allDatapoints'"
@@ -135,7 +135,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointLTTBQuery(dateTime.minusMinutes(30), dateTime, 3)
-            )
+    )
     assert lttbDatapoints2.size() == 3
     assert lttbDatapoints2[0].value == 50d
     assert lttbDatapoints2[1].value == 40d
@@ -158,7 +158,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new ValueDatapoint<>(dateTime.minusMinutes(25).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 15d),
               new ValueDatapoint<>(dateTime.minusMinutes(15).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 20d),
             ]
-            )
+    )
 
     then: "the spike should be present as the 2nd value"
     def lttbDatapoints3 = assetDatapointService.queryDatapoints(
@@ -167,7 +167,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointLTTBQuery(dateTime.minusMinutes(60), dateTime, 4)
-            )
+    )
     assert lttbDatapoints3.size() == 4
     assert lttbDatapoints3[0].value == 10d
     assert lttbDatapoints3[1].value == 90d
@@ -208,7 +208,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
             .addAttributes(
             new Attribute<>("status", ValueType.BOOLEAN, null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS)),
             new Attribute<>("deviceId", ValueType.TEXT, null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS)),
-            )
+    )
     thingAsset = assetStorageService.merge(thingAsset)
 
     and: "add datapoints to the attributes"
@@ -227,11 +227,11 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
     and: "lttbQuery with boolean should not throw exception"
     conditions.eventually {
       def lttbDatapoints = assetDatapointService.queryDatapoints(
-      thingAsset.getId(),
-      thingAsset.getAttribute("status").orElseThrow({
-        new RuntimeException("Missing attribute")
-      }),
-      new AssetDatapointLTTBQuery(LocalDateTime.now().minusMinutes(5), LocalDateTime.now(), 3)
+              thingAsset.getId(),
+              thingAsset.getAttribute("status").orElseThrow({
+                new RuntimeException("Missing attribute")
+              }),
+              new AssetDatapointLTTBQuery(LocalDateTime.now().minusMinutes(5), LocalDateTime.now(), 3)
       )
       assert lttbDatapoints.size() == 1
       assert lttbDatapoints[0].value == 1.0 // Aka true as boolean
@@ -244,7 +244,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointLTTBQuery(LocalDateTime.now().minusMinutes(5), LocalDateTime.now(), 3)
-            )
+    )
 
     then: "exception to be thrown"
     IllegalStateException ex = thrown(IllegalStateException)
@@ -272,7 +272,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
             .types(LightAsset.class)
             .realm(new RealmPredicate(keycloakTestSetup.realmCity.name))
             .names("Light 1")
-            )
+    )
 
     then: "asset should exist and be correct"
     def assetName = "Light 1"
@@ -321,7 +321,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointIntervalQuery(queryTime60, queryTimeNow, "1 minute", AssetDatapointIntervalQuery.Formula.AVG, false)
-            )
+    )
     assert intervalDatapoints1.size() == 6
     def index = 0
     intervalDatapoints1.toList().stream().forEach { dp -> {
@@ -339,7 +339,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointIntervalQuery(queryTime60, queryTimeNow, "1 minute", AssetDatapointIntervalQuery.Formula.AVG, true)
-            )
+    )
     assert intervalDatapoints2.size() == 61 // because 60/1=60, plus an extra datapoint for the spare milliseconds of time
     def index2 = 0
     intervalDatapoints2.toList().stream().forEach { dp -> {
@@ -357,7 +357,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "5 minutes", AssetDatapointIntervalQuery.Formula.DIFFERENCE, true)
-            )
+    )
 
     then: "DIFFERENCE datapoints should be correct"
     assert diffDatapoints1.size() == 7 // Because 30/5=6, plus an extra datapoint for the spare milliseconds of time.
@@ -383,7 +383,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointIntervalQuery(queryTime60, queryTimeNow, "5 minutes", AssetDatapointIntervalQuery.Formula.COUNT, true)
-            )
+    )
 
     then: "COUNT datapoints should be correct"
     assert countDatapoints1.size() == 13 // Because 60/5=12, plus an extra datapoint for the spare milliseconds of time.
@@ -421,7 +421,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "10 minutes", AssetDatapointIntervalQuery.Formula.SUM, true)
-            )
+    )
 
     then: "SUM datapoints should be correct"
     assert sumDatapoints1.size() == 4 // Because 30/10=3, plus an extra datapoint for the spare milliseconds of time.
@@ -441,7 +441,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "5 minutes", AssetDatapointIntervalQuery.Formula.MODE, true)
-            )
+    )
 
     then: "MODE datapoints should be correct"
     assert modeDatapoints1.size() == 6
@@ -465,7 +465,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "15 minutes", AssetDatapointIntervalQuery.Formula.MEDIAN, true)
-            )
+    )
 
     then: "MEDIAN datapoints should be correct"
     assert medianDatapoints1.size() == 3 // Because 30/15=2, plus an extra datapoint for the spare milliseconds of time.
@@ -486,7 +486,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "60 minutes", AssetDatapointIntervalQuery.Formula.MODE, true)
-            )
+    )
 
     then: "MODE datapoints should return 90, because it is most common within the interval"
     assert modeDatapoints2.size() == 1
@@ -512,7 +512,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
             .types(LightAsset.class)
             .realm(new RealmPredicate(keycloakTestSetup.realmCity.name))
             .names("Light 1")
-            )
+    )
 
     then: "asset should exist and be correct"
     def assetName = "Light 1"
@@ -540,7 +540,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new ValueDatapoint<>(dateTime.minusMinutes(10).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 20d),
               new ValueDatapoint<>(dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 10d),
             ]
-            )
+    )
 
     then: "datapoints should exist"
     def allDatapoints = new ArrayList<ValueDatapoint>()
@@ -558,7 +558,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointAllQuery(dateTime.minusMinutes(30), dateTime)
-            )
+    )
     assert allDatapoints1.size() == 5
 
     /* ------------------------- */
@@ -573,7 +573,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
               new RuntimeException("Missing attribute")
             }),
             new AssetDatapointAllQuery(dateTime.minusMinutes(30), dateTime)
-            )
+    )
 
     then: "no points should be returned"
     thrown(DatapointQueryTooLargeException)

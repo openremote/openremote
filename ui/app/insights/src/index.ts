@@ -20,6 +20,7 @@ import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { type AppConfig, appReducer, OrApp, type PageProvider, type RealmAppConfig } from "@openremote/or-app";
 import { pageViewProvider } from "./pages/page-view";
 import type { ManagerAppConfig } from "@openremote/model";
+import themeCss from "@openremote/theme";
 
 declare const MANAGER_URL: string | undefined;
 
@@ -129,5 +130,12 @@ fetch(configURL)
       return orAppConfig;
     };
 
+    // Apply theme to the Insights app
+    const style = document.createElement("style");
+    style.id = "orDefaultTheme";
+    style.textContent = themeCss;
+    document.head.appendChild(style);
+
+    // Load app
     document.body.appendChild(orApp);
   });
