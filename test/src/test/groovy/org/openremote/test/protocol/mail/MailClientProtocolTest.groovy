@@ -166,7 +166,7 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
                     .setUseSubject(true)
                     )
                     )
-            )
+    )
 
     and: "the asset is merged into the asset service"
     asset = assetStorageService.merge(asset)

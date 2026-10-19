@@ -40,6 +40,7 @@ import {
   ClientRole,
   type JsonRule,
   type LogicGroup,
+  type ManagerAppRealmNotificationConfig,
   type NotificationTargetType,
   type RuleActionUnion,
   type RuleCondition,
@@ -165,12 +166,7 @@ export interface RulesConfig {
     then?: RuleActionUnion;
     otherwise?: RuleActionUnion;
   };
-  notifications?: {
-    [realm: string]: {
-      defaultLanguage?: string;
-      languages?: string[];
-    };
-  };
+  notifications?: { [realm: string]: ManagerAppRealmNotificationConfig };
 }
 
 export interface RulesDescriptorSection {

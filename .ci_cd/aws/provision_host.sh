@@ -52,8 +52,8 @@ if [ -f "${awsDir}cloudformation-create-ec2.yml" ]; then
   TEMPLATE_PATH="${awsDir}cloudformation-create-ec2.yml"
 elif [ -f ".ci_cd/aws/cloudformation-create-ec2.yml" ]; then
   TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-ec2.yml"
-elif [ -f "openremote/.ci_cd/aws/cloudformation-create-ec2.yml" ]; then
-  TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-ec2.yml"
+elif [ -f "core/.ci_cd/aws/cloudformation-create-ec2.yml" ]; then
+  TEMPLATE_PATH="core/.ci_cd/aws/cloudformation-create-ec2.yml"
 else
   echo "Cannot determine location of cloudformation-create-ec2.yml"
   exit 1
@@ -86,8 +86,8 @@ else
     SMTP_TEMPLATE_PATH="${awsDir}cloudformation-create-smtp-user.yml"
   elif [ -f ".ci_cd/aws/cloudformation-create-smtp-user.yml" ]; then
     SMTP_TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-smtp-user.yml"
-  elif [ -f "openremote/.ci_cd/aws/cloudformation-create-smtp-user.yml" ]; then
-    SMTP_TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-smtp-user.yml"
+  elif [ -f "core/.ci_cd/aws/cloudformation-create-smtp-user.yml" ]; then
+    SMTP_TEMPLATE_PATH="core/.ci_cd/aws/cloudformation-create-smtp-user.yml"
   else
     echo "Cannot determine location of cloudformation-create-smtp-user.yml"
     exit 1
@@ -347,8 +347,8 @@ else
     HEALTH_TEMPLATE_PATH="${awsDir}cloudformation-healthcheck-alarm.yml"
   elif [ -f ".ci_cd/aws/cloudformation-healthcheck-alarm.yml" ]; then
     HEALTH_TEMPLATE_PATH=".ci_cd/aws/cloudformation-healthcheck-alarm.yml"
-  elif [ -f "openremote/.ci_cd/aws/cloudformation-healthcheck-alarm.yml" ]; then
-    HEALTH_TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-healthcheck-alarm.yml"
+  elif [ -f "core/.ci_cd/aws/cloudformation-healthcheck-alarm.yml" ]; then
+    HEALTH_TEMPLATE_PATH="core/.ci_cd/aws/cloudformation-healthcheck-alarm.yml"
   else
     echo "Cannot determine location of cloudformation-healthcheck-alarm.yml"
     exit 1

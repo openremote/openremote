@@ -32,21 +32,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  is-main-repo:
-    name: Is main repository
+  is-core-repo:
+    name: Is core repository
     runs-on: ubuntu-latest
     outputs:
-      value: ${{ steps.is_main_repo.outputs.value }}
+      value: ${{ steps.is_core_repo.outputs.value }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Check if main repo
-        id: is_main_repo
-        uses: openremote/openremote/.github/actions/check-if-main-repo@5beec5454f28eda1dd25331c9ce1d5b430266f7e
+      - name: Check if core repo
+        id: is_core_repo
+        uses: openremote/core/.github/actions/check-if-core-repo@357f1387fbc99e7a59752a62064f0bdade57612d
 
   install-dist:
     name: Build
-    needs: is-main-repo
-    if: ${{ needs.is-main-repo.outputs.value == 'true' }}
+    needs: is-core-repo
+    if: ${{ needs.is-core-repo.outputs.value == 'true' }}
     uses: "./.github/workflows/install-dist.yml"
     with:
       COMMIT: ${{ inputs.COMMIT }}

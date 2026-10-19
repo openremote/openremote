@@ -65,7 +65,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
     Ruleset ruleset = new GlobalRuleset(
             "Some timer rules",
             getClass().getResource("/org/openremote/test/rules/BasicTimedExecutionRules.drl").text
-            )
+    )
     rulesetStorageService.merge(ruleset)
 
     expect: "the rule engines to become available and be running"
@@ -103,7 +103,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
     Ruleset ruleset = new GlobalRuleset(
             "Some timer rules",
             getClass().getResource("/org/openremote/test/rules/BasicTimedExecutionRules.drl").text
-            )
+    )
     rulesetStorageService.merge(ruleset)
 
     expect: "the rule engines to become available and be running"

@@ -71,7 +71,7 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the agent resource"
     def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
@@ -85,7 +85,7 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
     when: "discovery is requested with a ETS project file"
     def knxProjectFileResource = getClass().getResourceAsStream(
             "/org/openremote/test/protocol/knx/knx-import-testproject.knxproj"
-            )
+    )
     String base64Content = Base64.getEncoder().encodeToString(knxProjectFileResource.bytes)
     def fileInfo = new FileInfo("knx-import-testproject.knxproj", base64Content, true)
     def assets = agentResource.doProtocolAssetImport(null, knxAgent.getId(), null, fileInfo)
@@ -96,14 +96,14 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
       assert assets.length == 12
       assert assets.each {
         !TextUtil.isNullOrEmpty(it.asset.id) &&
-        !TextUtil.isNullOrEmpty(it.asset.getName()) &&
-        !it.asset.attributes().isEmpty() &&
-        it.asset.getAttributes().stream().allMatch({attr ->
-          attr.getMetaValue(AGENT_LINK).map({agentLink ->
-            agentLink.id == knxAgent.id
-          })
-          .orElse(false)
-        })
+                !TextUtil.isNullOrEmpty(it.asset.getName()) &&
+                !it.asset.attributes().isEmpty() &&
+                it.asset.getAttributes().stream().allMatch({attr ->
+                  attr.getMetaValue(AGENT_LINK).map({agentLink ->
+                    agentLink.id == knxAgent.id
+                  })
+                  .orElse(false)
+                })
       }
     }
 

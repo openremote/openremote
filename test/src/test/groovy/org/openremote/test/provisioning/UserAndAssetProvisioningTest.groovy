@@ -242,7 +242,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic a success message containing the provisioned asset"
     String weatherAssetID
@@ -290,7 +290,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic a success message containing the provisioned asset"
     conditions.eventually {
@@ -370,7 +370,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
                     "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/customAttribute/${asset.id}",
                     "99"
                     )
-            )
+    )
 
     then: "the attribute should have been updated"
     conditions.eventually {
@@ -459,7 +459,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic a success message containing the provisioned asset"
     conditions.eventually {
@@ -531,7 +531,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(deviceNRequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device2_expired.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic an error message"
     conditions.eventually {
@@ -581,7 +581,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(deviceNRequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device4_forged.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic an error message"
     conditions.eventually {
@@ -631,7 +631,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(deviceNRequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device3_caexpired.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic a success message containing the provisioned asset"
     conditions.eventually {
@@ -682,7 +682,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic an error message"
     conditions.eventually {
@@ -719,7 +719,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(deviceNRequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device3_caexpired.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic an error message"
     conditions.eventually {
@@ -751,7 +751,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic a success message containing the provisioned asset"
     conditions.eventually {
@@ -789,7 +789,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic an error message"
     conditions.eventually {
@@ -826,7 +826,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(deviceNRequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device3_caexpired.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic an error message"
     conditions.eventually {
@@ -847,7 +847,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
                     ).orElse(null))
-            )
+    )
 
     then: "the broker should have published to the response topic a success message containing the provisioned asset"
     conditions.eventually {

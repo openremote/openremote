@@ -58,7 +58,7 @@ class ChildAssetControlRulesTest extends Specification implements ManagerContain
             new Attribute<>(LightAsset.BRIGHTNESS).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
             new Attribute<>(LightAsset.COLOUR_RGB).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
             new Attribute<>(LightAsset.COLOUR_TEMPERATURE).addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
-            )
+    )
     parentAsset = assetStorageService.merge(parentAsset)
 
     for (int i = 1; i <= 100; i++) {
@@ -102,7 +102,7 @@ class ChildAssetControlRulesTest extends Specification implements ManagerContain
     when: "The on/off attribute of the parent asset is written to"
     assetProcessingService.sendAttributeEvent(
             new AttributeEvent(parentAsset.id, LightAsset.ON_OFF, true)
-            )
+    )
 
     then: "the parent asset attribute should be updated"
     conditions.eventually {
@@ -162,7 +162,7 @@ class ChildAssetControlRulesTest extends Specification implements ManagerContain
     when: "The on/off attribute of the parent asset is written to"
     assetProcessingService.sendAttributeEvent(
             new AttributeEvent(parentAsset.id, LightAsset.ON_OFF, false)
-            )
+    )
 
     then: "the parent asset attribute should be updated"
     conditions.eventually {

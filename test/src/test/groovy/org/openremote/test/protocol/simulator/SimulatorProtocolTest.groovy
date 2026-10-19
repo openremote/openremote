@@ -151,11 +151,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
   private getDataPoints = {
     def now = Instant
-    .ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.of("UTC")).toLocalDateTime()
+            .ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.of("UTC")).toLocalDateTime()
     new AssetDatapointAllQuery(
             now.minus(1, ChronoUnit.HOURS),
             now.plus(1, ChronoUnit.HOURS),
-            )
+    )
   }
 
   /**
@@ -173,7 +173,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             asset.getId(),
             attribute.getName(),
             getDataPoints.call()
-            )
+    )
     assert !datapoints.isEmpty()
     return datapoints.get(0).getTimestamp()
   }
@@ -182,7 +182,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     when: "nothing is configured"
     asset.addOrReplaceAttributes(new Attribute<>("test1", ValueType.TEXT)
             .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())))
-            )
+    )
     asset = assetStorageService.merge(asset)
     def attribute = asset.getAttribute("test1").get()
     def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
@@ -214,7 +214,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             }
     asset.addOrReplaceAttributes(new Attribute<>("test1", ValueType.TEXT).addMeta(
                     new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId(), replayData, null, null))
-                    ))
+            ))
     asset = assetStorageService.merge(asset)
     def attribute = asset.getAttribute("test1").get()
     def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
@@ -245,7 +245,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                     // We manually set the schedule so it starts when we want, as AgentLinks don't have access to the timer service
                     LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC), null, "FREQ=DAILY"
                     ))))
-            )
+    )
     asset = assetStorageService.merge(asset)
     def attribute = asset.getAttribute("test2").get()
     def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
@@ -323,7 +323,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                             LocalDateTime.ofInstant(Instant.parse("1970-01-02T00:00:00.000Z"), ZoneOffset.UTC), null, null
                             )))
                     )
-            )
+    )
     asset = assetStorageService.merge(asset)
     def attribute1 = asset.getAttribute("test8").get()
     def attribute2 = asset.getAttribute("test9").get()
@@ -383,7 +383,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                     ).setSchedule(new SimulatorProtocol.Schedule(
                     LocalDateTime.ofInstant(Instant.parse("1970-01-02T00:00:00.000Z"), ZoneOffset.UTC), null, null
                     ))
-            )))
+    )))
     asset = assetStorageService.merge(asset)
     def attribute = asset.getAttribute("test3").get()
     def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
@@ -447,7 +447,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                             // Recur every Monday until 1970-01-31
                             "FREQ=WEEKLY;UNTIL=19700131T000000;BYDAY=MO"
                             ))
-                    )))
+            )))
     asset = assetStorageService.merge(asset)
     def attribute = asset.getAttribute("test5").get()
     def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
@@ -542,7 +542,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                             LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC), null, "FREQ=DAILY"
                             ))),
                     new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
-            )
+    )
     asset = assetStorageService.merge(asset)
     def attribute = asset.getAttribute("test6").get()
     def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
@@ -610,7 +610,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     when: "reset agentLink"
     attribute.addOrReplaceMeta(
             new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())),
-            )
+    )
     assetStorageService.merge(asset)
 
     then: "purge datapoints"
@@ -629,7 +629,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                             LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC), null, null
                             ))),
                     new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
-            )
+    )
     asset = assetStorageService.merge(asset)
     def attribute = asset.getAttribute("test7").get()
     def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
@@ -678,7 +678,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                             "FREQ=DAILY;UNTIL=19700101T030000"
                             ))),
                     new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
-            )
+    )
     asset = assetStorageService.merge(asset)
     def attribute = asset.getAttribute("test7").get()
     def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
@@ -717,7 +717,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                             "FREQ=DAILY;UNTIL=19700102T010000"
                             )).setTimezone(TimeZone.getTimeZone("Europe/Amsterdam"))),
                     new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
-            )
+    )
     asset = assetStorageService.merge(asset)
     def attribute = asset.getAttribute("test7").get()
     def attributeRef = new AttributeRef(asset.getId(), attribute.getName())

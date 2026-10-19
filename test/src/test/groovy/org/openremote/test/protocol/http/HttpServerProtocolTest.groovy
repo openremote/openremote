@@ -86,7 +86,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     when: "a test HTTP server agent with a test deployment is created"
     def agent = new HTTPServerTestAgent("Test agent")
@@ -193,7 +193,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
     testAsset.setId(UniqueIdentifierGenerator.generateId())
     testAsset.addOrReplaceAttributes(
             new Attribute<>("attribute2", TEXT, "Test")
-            )
+    )
     testAsset.setLocation(new GeoJSONPoint(3d, 4d))
     testResource2.postAsset(testAsset)
 

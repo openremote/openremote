@@ -86,11 +86,11 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
     double expectedLastPresenceDetected = getClockTimeOf(container)
     def kitchenMotionSensorEvent = new AttributeEvent(
             managerTestSetup.apartment1KitchenId, "motionSensor", 1
-            )
+    )
     simulatorProtocol.updateSensor(kitchenMotionSensorEvent)
     def hallwayMotionSensorEvent = new AttributeEvent(
             managerTestSetup.apartment1HallwayId, "motionSensor", 1
-            )
+    )
     simulatorProtocol.updateSensor(hallwayMotionSensorEvent)
 
     then: "presence should be detected in all rooms"
@@ -116,7 +116,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
     double expectedLastPresenceDetected2 = getClockTimeOf(container)
     kitchenMotionSensorEvent = new AttributeEvent(
             managerTestSetup.apartment1KitchenId, "motionSensor", 1
-            )
+    )
     simulatorProtocol.updateSensor(kitchenMotionSensorEvent)
 
     then: "presence should be detected in all rooms and timestamp should be updated of one room"
@@ -141,7 +141,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
     and: "motion sensor is not triggered in a room"
     kitchenMotionSensorEvent = new AttributeEvent(
             managerTestSetup.apartment1KitchenId, "motionSensor", 0
-            )
+    )
     simulatorProtocol.updateSensor(kitchenMotionSensorEvent)
 
     then: "some presence should still be detected and timestamps are still available"
@@ -166,7 +166,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
     and: "motion sensor is not triggered in another room"
     hallwayMotionSensorEvent = new AttributeEvent(
             managerTestSetup.apartment1HallwayId, "motionSensor", 0
-            )
+    )
     simulatorProtocol.updateSensor(hallwayMotionSensorEvent)
 
     then: "no presence should be detected but the last timestamp still available"
@@ -226,7 +226,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
     double expectedLastPresenceDetected = getClockTimeOf(container)
     def motionSensorTrigger = new AttributeEvent(
             managerTestSetup.apartment1LivingroomId, "motionSensor", 1
-            )
+    )
     simulatorProtocol.updateSensor(motionSensorTrigger)
 
     /* See rules, this leads to many false negatives when windows are open in the room
@@ -268,7 +268,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
     when: "motion sensor is not triggered (someone might be resting in the room)"
     def motionSensorNoTrigger = new AttributeEvent(
             managerTestSetup.apartment1LivingroomId, "motionSensor", 0
-            )
+    )
     simulatorProtocol.updateSensor(motionSensorNoTrigger)
 
     and: "the CO2 level increases (someone breathing in the room)"
@@ -277,7 +277,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
 
       def co2LevelIncrement = new AttributeEvent(
               managerTestSetup.apartment1LivingroomId, "co2Level", 400 + i
-              )
+      )
       simulatorProtocol.updateSensor(co2LevelIncrement)
 
       // Wait for event to be processed

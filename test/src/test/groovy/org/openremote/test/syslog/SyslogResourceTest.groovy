@@ -93,7 +93,7 @@ class SyslogResourceTest extends Specification implements ManagerContainerTrait 
             "${username}@openremote.local",
             true,
             [role] as ClientRole[]
-            )
+    )
 
     userId = user.id
     authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, username, username)

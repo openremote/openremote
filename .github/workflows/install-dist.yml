@@ -30,9 +30,9 @@ jobs:
           ref: ${{ inputs.COMMIT }}
           lfs: true # Enable Git LFS plugin to fetch *.mbtiles
 
-      - name: Check if main repo
-        id: is_main_repo
-        uses: openremote/openremote/.github/actions/check-if-main-repo@5beec5454f28eda1dd25331c9ce1d5b430266f7e
+      - name: Check if core repo
+        id: is_core_repo
+        uses: openremote/core/.github/actions/check-if-core-repo@357f1387fbc99e7a59752a62064f0bdade57612d
 
       - name: Set up JDK 21 and Gradle cache
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
@@ -76,7 +76,7 @@ jobs:
         run: ./gradlew installDist -x :deployment:installDist
 
       - name: Archive manager build
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: or-manager-build
           if-no-files-found: error
@@ -84,7 +84,7 @@ jobs:
             manager/build
 
       - name: Archive UI component build
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: or-ui-component-build
           if-no-files-found: error
@@ -100,7 +100,7 @@ jobs:
             ui/component/**/package.json
 
       - name: Archive UI app build
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: or-ui-app-build
           if-no-files-found: error
@@ -110,7 +110,7 @@ jobs:
             ui/app/**/package.json
 
       - name: Archive UI util build
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: or-ui-util-build
           if-no-files-found: error
@@ -118,8 +118,8 @@ jobs:
             ui/util/package.json
 
       - name: Archive MDI fonts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ steps.is_core_repo.outputs.value == 'true' }}
         with:
           name: mdi-fonts
           if-no-files-found: error

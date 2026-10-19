@@ -26,7 +26,7 @@ dependencies {
 generateTypeScript createTSGeneratorConfigForClient(
         "src/restclient.ts",
         new File("${project(":ui:component:model").projectDir}/src/typescript-generator-info.json")
-        )
+)
 
 def generateTypeScriptTask = tasks.named("generateTypeScript") {
   // Work around typescript-generator exposing non-serializable configuration objects as Gradle task inputs.
