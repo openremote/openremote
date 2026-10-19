@@ -63,7 +63,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
             new Attribute<>("button", TEXT, "RELEASED"),
             new Attribute<>("array", null, null),
             new Attribute<>("crossRealm", TEXT, null)
-            )
+    )
     asset1 = assetStorageService.merge(asset1)
 
     def asset2 = new ThingAsset("Asset 2")
@@ -72,7 +72,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
             new Attribute<>("lightOnOff", BOOLEAN, false),
             new Attribute<>("counter", NUMBER, 0d),
             new Attribute<>("item2Prop1", BOOLEAN, null)
-            )
+    )
     asset2 = assetStorageService.merge(asset2)
 
     then: "the assets should be saved to the DB"
@@ -84,14 +84,14 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
             "PRESSED", "@TOGGLE",
             "RELEASED", "@IGNORE",
             "LONG_PRESSED", "@IGNORE"
-            )
+    )
     def attributeLinkOnOff = new AttributeLink(new AttributeRef(asset2.id, "lightOnOff"), converterOnOff, null)
 
     def converterCounter = Map.of(
             "PRESSED", "@INCREMENT",
             "RELEASED", "@DECREMENT",
             "LONG_PRESSED", "@IGNORE"
-            )
+    )
     def attributeLinkCounter = new AttributeLink(new AttributeRef(asset2.id, "counter"), converterCounter, null)
 
     def attributeLinkProp = new AttributeLink(new AttributeRef(asset2.id, "item2Prop1"), null, [new JsonPathFilter("\$[1].prop1", true, false)] as ValueFilter[])
@@ -106,13 +106,13 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
     and: "the button is pressed for a short period"
     def buttonPressed = new AttributeEvent(
             new AttributeState(new AttributeRef(asset1.id, "button"), "PRESSED")
-            )
+    )
     assetProcessingService.sendAttributeEvent(buttonPressed)
     Thread.sleep(200)
     advancePseudoClock(1, TimeUnit.SECONDS, container)
     def buttonReleased = new AttributeEvent(
             new AttributeState(new AttributeRef(asset1.id, "button"), "RELEASED")
-            )
+    )
     assetProcessingService.sendAttributeEvent(buttonReleased)
 
     then: "the linked attribute value should be toggled on"
@@ -124,13 +124,13 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
     when: "the button is pressed again for a short period"
     buttonPressed = new AttributeEvent(
             new AttributeState(new AttributeRef(asset1.id, "button"), "PRESSED")
-            )
+    )
     assetProcessingService.sendAttributeEvent(buttonPressed)
     Thread.sleep(200)
     advancePseudoClock(1, TimeUnit.SECONDS, container)
     buttonReleased = new AttributeEvent(
             new AttributeState(new AttributeRef(asset1.id, "button"), "RELEASED")
-            )
+    )
     assetProcessingService.sendAttributeEvent(buttonReleased)
 
     then: "the linked attribute value should be toggled off"
@@ -141,12 +141,12 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
     when: "a long button press occurs"
     def buttonLongPressed = new AttributeEvent(
             new AttributeState(new AttributeRef(asset1.id, "button"), "LONG_PRESSED")
-            )
+    )
     assetProcessingService.sendAttributeEvent(buttonLongPressed)
     advancePseudoClock(1, TimeUnit.SECONDS, container)
     buttonReleased = new AttributeEvent(
             new AttributeState(new AttributeRef(asset1.id, "button"), "RELEASED")
-            )
+    )
     assetProcessingService.sendAttributeEvent(buttonReleased)
 
     then: "the linked attribute value should not have changed and the system has settled down"
@@ -167,7 +167,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
     and: "A button press event occurs without a release event"
     buttonPressed = new AttributeEvent(
             new AttributeState(new AttributeRef(asset1.id, "button"), "PRESSED")
-            )
+    )
     assetProcessingService.sendAttributeEvent(buttonPressed)
 
     then: "the counter should increment"
@@ -179,7 +179,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
     when: "A button release event occur"
     buttonReleased = new AttributeEvent(
             new AttributeState(new AttributeRef(asset1.id, "button"), "RELEASED")
-            )
+    )
     assetProcessingService.sendAttributeEvent(buttonReleased)
 
     then: "the counter should decrement"

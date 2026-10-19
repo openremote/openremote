@@ -68,7 +68,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             .type(ElementMatchers.is(SerialIOClient.class))
             .transform { builder, typeDescription, classLoader, module, protectionDomain ->
               builder.visit(Advice.to(MockSerialChannel.GetChannelClassAdvice.class)
-              .on(ElementMatchers.named("getChannelClass")))
+                      .on(ElementMatchers.named("getChannelClass")))
             }
             .installOn(instrumentation)
 
@@ -137,7 +137,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
               "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "101,151-161", 30)
             ] as ModbusAgent.DeviceConfigMap)
-            )
+    )
 
     agent = assetStorageService.merge(agent)
 
@@ -169,7 +169,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                       // Missing: readValueType
                     }
                     ))
-            )
+    )
     device0 = assetStorageService.merge(device0)
 
     then: "the attribute should be linked without creating read polling tasks"
@@ -245,7 +245,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                       it.setWriteAddress(6)
                     }
                     ))
-            )
+    )
 
     device = assetStorageService.merge(device)
 
@@ -304,7 +304,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
               "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "6-11,21-26", 30)
             ] as ModbusAgent.DeviceConfigMap)
-            )
+    )
 
     agent = assetStorageService.merge(agent)
 
@@ -349,7 +349,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                       it.setRegistersAmount(2)
                     }
                     ))
-            )
+    )
 
     device = assetStorageService.merge(device)
 
@@ -392,7 +392,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
               "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 30)
             ] as ModbusAgent.DeviceConfigMap)
-            )
+    )
 
     agent = assetStorageService.merge(agent)
 
@@ -420,7 +420,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                       it.setRegistersAmount(1)
                     }
                     ))
-            )
+    )
 
     ThingAsset device2 = new ThingAsset("Device on Unit 2")
     device2.setRealm(MASTER_REALM)
@@ -437,7 +437,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                       it.setRegistersAmount(1)
                     }
                     ))
-            )
+    )
 
     device1 = assetStorageService.merge(device1)
     device2 = assetStorageService.merge(device2)
@@ -594,7 +594,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
               "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 50)
             ] as ModbusAgent.DeviceConfigMap)
-            )
+    )
 
     agent = assetStorageService.merge(agent)
 
@@ -639,7 +639,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                     }
                     )
                     )
-            )
+    )
 
     device = assetStorageService.merge(device)
 
@@ -705,7 +705,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
             new Attribute<>(ModbusSerialAgent.STOP_BITS, Stopbits.STOPBITS_1),
             new Attribute<>(ModbusSerialAgent.PARITY, Paritybit.EVEN)
-            )
+    )
     agent = assetStorageService.merge(agent)
 
     then: "the agent should connect successfully"
@@ -733,7 +733,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                       it.setWriteAddress(51)
                     }
                     ))
-            )
+    )
     device = assetStorageService.merge(device)
 
     then: "device should be linked"
@@ -778,7 +778,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
             new Attribute<>(ModbusSerialAgent.STOP_BITS, Stopbits.STOPBITS_1),
             new Attribute<>(ModbusSerialAgent.PARITY, Paritybit.EVEN)
-            )
+    )
     agent = assetStorageService.merge(agent)
 
     then: "the agent should connect successfully"
@@ -805,7 +805,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                             ),
                     new MetaItem<>(STORE_DATA_POINTS)
                     )
-            )
+    )
     device = assetStorageService.merge(device)
 
     then: "write request task should be created"
@@ -861,7 +861,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
               "default": new ModbusAgent.ModbusDeviceConfig(endianFormat, "", 50)
             ] as ModbusAgent.DeviceConfigMap)
-            )
+    )
     return assetStorageService.merge(agent)
   }
 
@@ -884,7 +884,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                     }
                     )
                     )
-            )
+    )
     return assetStorageService.merge(device)
   }
 
@@ -907,7 +907,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                     }
                     )
                     )
-            )
+    )
     return assetStorageService.merge(device)
   }
 

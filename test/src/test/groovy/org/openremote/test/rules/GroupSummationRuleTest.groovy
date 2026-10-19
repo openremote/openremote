@@ -58,7 +58,7 @@ class GroupSummationRuleTest extends Specification implements ManagerContainerTr
             new Attribute<>("boolean", ValueType.BOOLEAN, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
             new Attribute<>("integer", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
             new Attribute<>("number", ValueType.NUMBER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
-            )
+    )
     parentAsset = assetStorageService.merge(parentAsset)
 
     def childAsset1 = new ThingAsset("childAsset1")
@@ -68,7 +68,7 @@ class GroupSummationRuleTest extends Specification implements ManagerContainerTr
             new Attribute<>("boolean", ValueType.BOOLEAN, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
             new Attribute<>("integer", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
             new Attribute<>("number", ValueType.NUMBER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
-            )
+    )
     childAsset1 = assetStorageService.merge(childAsset1)
 
     def childAsset2 = new ThingAsset("childAsset2")
@@ -78,7 +78,7 @@ class GroupSummationRuleTest extends Specification implements ManagerContainerTr
             new Attribute<>("boolean", ValueType.BOOLEAN, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
             new Attribute<>("integer", ValueType.INTEGER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE)),
             new Attribute<>("number", ValueType.NUMBER, null).addMeta(new MetaItem<>(MetaItemType.RULE_STATE))
-            )
+    )
     childAsset2 = assetStorageService.merge(childAsset2)
 
     and: "the group summation ruleset is added"

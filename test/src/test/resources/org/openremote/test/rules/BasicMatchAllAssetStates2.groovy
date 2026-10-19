@@ -29,7 +29,7 @@ rules.add()
         .name("All")
         .when({ facts ->
           !facts.matchFirst("All").isPresent() &&
-          facts.matchFirstAssetState(new AssetQuery()).isPresent()
+                  facts.matchFirstAssetState(new AssetQuery()).isPresent()
         })
         .then({ facts ->
           facts.put("All", "fired")

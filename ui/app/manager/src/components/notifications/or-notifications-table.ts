@@ -32,8 +32,9 @@ import {
   type EmailNotificationMessage,
   NotificationTargetType,
   type NotificationSource,
+  resolveNotificationMessage,
 } from "@openremote/model";
-import { i18next } from "@openremote/or-translate";
+import { i18next, translate } from "@openremote/or-translate";
 import { classMap } from "lit/directives/class-map.js";
 import type { NotificationService } from "../../pages/page-notifications";
 import { getAssetsRoute, getUsersRoute } from "../../routes";
@@ -93,7 +94,7 @@ const SORT_FIELD_BY_COLUMN: Record<number, SentNotificationSortField> = {
 };
 
 @customElement("or-notifications-table")
-export class OrNotificationsTable extends OrMwcTable {
+export class OrNotificationsTable extends translate(i18next)(OrMwcTable) {
   static get styles() {
     return [
       ...super.styles,
@@ -261,15 +262,19 @@ export class OrNotificationsTable extends OrMwcTable {
     return `${targetType}:${targetId}`;
   }
 
-  public columns: TableColumn[] = [
-    { title: i18next.t("title"), isSortable: true },
-    { title: i18next.t("body") },
-    { title: i18next.t("status"), isSortable: true },
-    { title: i18next.t("notifications.source"), isSortable: true },
-    { title: i18next.t("notifications.target") },
-    { title: i18next.t("sentOn"), isSortable: true },
-    { title: i18next.t("deliveredOn"), isSortable: true },
-  ];
+  public columns: TableColumn[] = this.getColumns();
+
+  protected getColumns(): TableColumn[] {
+    return [
+      { title: i18next.t("title"), isSortable: true },
+      { title: i18next.t("body") },
+      { title: i18next.t("status"), isSortable: true },
+      { title: i18next.t("notifications.source"), isSortable: true },
+      { title: i18next.t("notifications.target") },
+      { title: i18next.t("sentOn"), isSortable: true },
+      { title: i18next.t("deliveredOn"), isSortable: true },
+    ];
+  }
 
   protected config: TableConfig = {
     columnFilter: [],
@@ -290,6 +295,10 @@ export class OrNotificationsTable extends OrMwcTable {
         await this.resolveAllTargetDetails(this.notifications);
       }
       this.rows = this.getTableRows(this.notifications || []);
+    } else if (changedProps.has("_language")) {
+      // The column titles are translated, and a localized notification is shown for the app language
+      this.columns = this.getColumns();
+      this.rows = this.getTableRows(this.notifications || []);
     }
 
     // handle readonly state changes
@@ -302,7 +311,8 @@ export class OrNotificationsTable extends OrMwcTable {
 
   protected getTableRows(notifications: SentNotification[]): TableRow[] | undefined {
     return notifications.map((notification) => {
-      const message = notification.message as PushNotificationMessage | EmailNotificationMessage;
+      // A localized notification carries a message per language, so resolve the one it is shown for
+      const { message } = resolveNotificationMessage(notification.message, i18next.language);
       const isEmail = message?.type === "email";
       const title = isEmail
         ? (message as EmailNotificationMessage).subject
@@ -313,7 +323,7 @@ export class OrNotificationsTable extends OrMwcTable {
         : (message as PushNotificationMessage)?.body;
       return {
         content: [
-          this.getTitleContent(notification, title),
+          this.getTitleContent(notification, title, message?.type),
           this.getBodyContent(body),
           this.getStatusContent(notification),
           this.getSourceContent(notification.source),
@@ -328,7 +338,7 @@ export class OrNotificationsTable extends OrMwcTable {
     });
   }
 
-  protected getTitleContent(notification: SentNotification, title?: string): TemplateResult {
+  protected getTitleContent(notification: SentNotification, title?: string, messageType?: string): TemplateResult {
     const iconMap: { [type: string]: string } = {
       push: "cellphone-message",
       email: "email-outline",
@@ -337,7 +347,7 @@ export class OrNotificationsTable extends OrMwcTable {
     // The icon is nested in its own template so the title remains the first string value used for sorting
     return html`
       <div class="title-wrapper">
-        ${html`<or-icon class="type-icon" title="${notification.type || ""}" icon="${iconMap[notification.type] || "bell-outline"}"></or-icon>`}
+        ${html`<or-icon class="type-icon" title="${notification.type || ""}" icon="${iconMap[messageType ?? notification.type] || "bell-outline"}"></or-icon>`}
         <span>${title || "-"}</span>
       </div>
     `;

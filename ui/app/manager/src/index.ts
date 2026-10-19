@@ -76,7 +76,7 @@ import { pageConfigurationProvider } from "./pages/page-configuration";
 import { pageAlarmsProvider } from "./pages/page-alarms";
 import type { ManagerAppConfig } from "@openremote/model";
 import { pageGatewayTunnelProvider } from "./pages/page-gateway-tunnel";
-import { pageNotificationsProvider } from "./pages/page-notifications";
+import { type PageNotificationsConfig, pageNotificationsProvider } from "./pages/page-notifications";
 import "./pages/page-notifications";
 
 declare let MANAGER_URL: string | undefined;
@@ -195,6 +195,10 @@ fetch(configURL)
         appConfig.manager.applyConfigToAdmin !== undefined ? appConfig.manager.applyConfigToAdmin : true;
 
       if ((!isAdmin || applyConfigToAdmin) && appConfig.pages) {
+        // The rules and notifications pages both read the notification languages each realm supports
+        const notificationConfigs = Object.fromEntries(
+          Object.entries(appConfig.realms || {}).map(([realm, realmConfig]) => [realm, realmConfig.notifications])
+        );
         // Replace any supplied page configs
         pages = pages.map((pageProvider) => {
           const config: { [p: string]: any } | undefined = appConfig.pages[pageProvider.name];
@@ -213,11 +217,17 @@ fetch(configURL)
                 rules: {},
               }) as PageRulesConfig;
               if (!newConfig.rules?.notifications) {
-                newConfig.rules.notifications = Object.fromEntries(
-                  Object.entries(appConfig.realms).map((entry) => [entry[0], entry[1].notifications])
-                );
+                newConfig.rules.notifications = notificationConfigs;
               }
               pageProvider = pageRulesProvider(store, newConfig);
+              break;
+            }
+            case "notifications": {
+              const newConfig = (config || {}) as PageNotificationsConfig;
+              if (!newConfig.notifications) {
+                newConfig.notifications = notificationConfigs;
+              }
+              pageProvider = pageNotificationsProvider(store, newConfig);
               break;
             }
             case "insights": {

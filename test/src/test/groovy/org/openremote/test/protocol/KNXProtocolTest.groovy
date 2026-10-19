@@ -130,7 +130,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
                     new MetaItem<>(LABEL, "Light 1 Toggle On/Off"),
                     new MetaItem<>(AGENT_LINK, new KNXAgentLink(knxAgent1.id, "1.001", "1/0/17", "0/4/14"))
                     )
-            )
+    )
     knxThing = assetStorageService.merge(knxThing)
 
     then: "the living room thing to be fully deployed"

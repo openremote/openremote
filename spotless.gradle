@@ -16,10 +16,10 @@ Map<String, String> devDependencies =
         }
 Map<String, String> eslintDependencies = devDependencies.findAll { String name, String ignored ->
   name == 'eslint' ||
-  name == 'typescript' ||
-  name.startsWith('@typescript-eslint/') ||
-  name.startsWith('eslint-config-') ||
-  name.startsWith('eslint-plugin-')
+          name == 'typescript' ||
+          name.startsWith('@typescript-eslint/') ||
+          name.startsWith('eslint-config-') ||
+          name.startsWith('eslint-plugin-')
 }
 ['eslint', 'prettier', 'typescript'].each { String dependency ->
   if (!devDependencies.containsKey(dependency)) {
@@ -32,9 +32,9 @@ String prettierVersion = devDependencies.prettier
 
 def readIgnorePatterns = { File ignoreFile ->
   List<String> patterns = ignoreFile
-  .readLines('UTF-8')
-  .collect { it.trim() }
-  .findAll { it && !it.startsWith('#') }
+          .readLines('UTF-8')
+          .collect { it.trim() }
+          .findAll { it && !it.startsWith('#') }
   List<String> unsupported = patterns.findAll {
     it.startsWith('!') || it.startsWith('/') || it.contains('\\')
   }
@@ -175,7 +175,7 @@ spotless {
         int end = source.indexOf(
                 prettierIgnoreEnd,
                 prettierIgnoreStart.length()
-                )
+        )
         if (end >= 0) {
           candidateEnd = end + prettierIgnoreEnd.length()
           candidate = source.substring(0, candidateEnd)

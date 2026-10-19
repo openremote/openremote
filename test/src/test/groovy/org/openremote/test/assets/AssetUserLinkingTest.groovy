@@ -51,7 +51,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
 
     and: "the asset resource"
     def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessTokenString).proxy(AssetResource.class)
@@ -79,51 +79,51 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
     userAssetLinks.length == 13
     userAssetLinks.any {
       it.id.realm == keycloakTestSetup.realmBuilding.name &&
-      it.id.userId == keycloakTestSetup.testuser3Id &&
-      it.id.assetId == managerTestSetup.apartment1Id &&
-      it.assetName == "Apartment 1" &&
-      it.parentAssetName == "Smart building" &&
-      it.userFullName == "testuser3 (DemoA3 DemoLast)"
+              it.id.userId == keycloakTestSetup.testuser3Id &&
+              it.id.assetId == managerTestSetup.apartment1Id &&
+              it.assetName == "Apartment 1" &&
+              it.parentAssetName == "Smart building" &&
+              it.userFullName == "testuser3 (DemoA3 DemoLast)"
     }
     userAssetLinks.any {
       it.id.realm == keycloakTestSetup.realmBuilding.name &&
-      it.id.userId == keycloakTestSetup.testuser3Id &&
-      it.id.assetId == managerTestSetup.apartment1LivingroomId &&
-      it.assetName == "Living Room 1" &&
-      it.parentAssetName == "Apartment 1" &&
-      it.userFullName == "testuser3 (DemoA3 DemoLast)"
+              it.id.userId == keycloakTestSetup.testuser3Id &&
+              it.id.assetId == managerTestSetup.apartment1LivingroomId &&
+              it.assetName == "Living Room 1" &&
+              it.parentAssetName == "Apartment 1" &&
+              it.userFullName == "testuser3 (DemoA3 DemoLast)"
     }
     userAssetLinks.any {
       it.id.realm == keycloakTestSetup.realmBuilding.name &&
-      it.id.userId == keycloakTestSetup.testuser3Id &&
-      it.id.assetId == managerTestSetup.apartment1KitchenId &&
-      it.assetName == "Kitchen 1" &&
-      it.parentAssetName == "Apartment 1" &&
-      it.userFullName == "testuser3 (DemoA3 DemoLast)"
+              it.id.userId == keycloakTestSetup.testuser3Id &&
+              it.id.assetId == managerTestSetup.apartment1KitchenId &&
+              it.assetName == "Kitchen 1" &&
+              it.parentAssetName == "Apartment 1" &&
+              it.userFullName == "testuser3 (DemoA3 DemoLast)"
     }
     userAssetLinks.any {
       it.id.realm == keycloakTestSetup.realmBuilding.name &&
-      it.id.userId == keycloakTestSetup.testuser3Id &&
-      it.id.assetId == managerTestSetup.apartment1HallwayId &&
-      it.assetName == "Hallway 1" &&
-      it.parentAssetName == "Apartment 1" &&
-      it.userFullName == "testuser3 (DemoA3 DemoLast)"
+              it.id.userId == keycloakTestSetup.testuser3Id &&
+              it.id.assetId == managerTestSetup.apartment1HallwayId &&
+              it.assetName == "Hallway 1" &&
+              it.parentAssetName == "Apartment 1" &&
+              it.userFullName == "testuser3 (DemoA3 DemoLast)"
     }
     userAssetLinks.any {
       it.id.realm == keycloakTestSetup.realmBuilding.name &&
-      it.id.userId == keycloakTestSetup.testuser3Id &&
-      it.id.assetId == managerTestSetup.apartment1Bedroom1Id &&
-      it.assetName == "Bedroom 1" &&
-      it.parentAssetName == "Apartment 1" &&
-      it.userFullName == "testuser3 (DemoA3 DemoLast)"
+              it.id.userId == keycloakTestSetup.testuser3Id &&
+              it.id.assetId == managerTestSetup.apartment1Bedroom1Id &&
+              it.assetName == "Bedroom 1" &&
+              it.parentAssetName == "Apartment 1" &&
+              it.userFullName == "testuser3 (DemoA3 DemoLast)"
     }
     userAssetLinks.any {
       it.id.realm == keycloakTestSetup.realmBuilding.name &&
-      it.id.userId == keycloakTestSetup.testuser3Id &&
-      it.id.assetId == managerTestSetup.apartment1BathroomId &&
-      it.assetName == "Bathroom 1" &&
-      it.parentAssetName == "Apartment 1" &&
-      it.userFullName == "testuser3 (DemoA3 DemoLast)"
+              it.id.userId == keycloakTestSetup.testuser3Id &&
+              it.id.assetId == managerTestSetup.apartment1BathroomId &&
+              it.assetName == "Bathroom 1" &&
+              it.parentAssetName == "Apartment 1" &&
+              it.userFullName == "testuser3 (DemoA3 DemoLast)"
     }
 
     when: "all user assets are retrieved of a realm and user"
@@ -159,11 +159,11 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
     userAssetLinks.length == 1
     userAssetLinks.any {
       it.id.realm == keycloakTestSetup.realmBuilding.name &&
-      it.id.userId == keycloakTestSetup.testuser3Id &&
-      it.id.assetId == managerTestSetup.apartment1Id &&
-      it.assetName == "Apartment 1" &&
-      it.parentAssetName == "Smart building" &&
-      it.userFullName == "testuser3 (DemoA3 DemoLast)"
+              it.id.userId == keycloakTestSetup.testuser3Id &&
+              it.id.assetId == managerTestSetup.apartment1Id &&
+              it.assetName == "Apartment 1" &&
+              it.parentAssetName == "Smart building" &&
+              it.userFullName == "testuser3 (DemoA3 DemoLast)"
     }
 
     when: "all user assets are retrieved of a realm and user and asset"
@@ -173,11 +173,11 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
     userAssetLinks.length == 1
     userAssetLinks.any {
       it.id.realm == keycloakTestSetup.realmBuilding.name &&
-      it.id.userId == keycloakTestSetup.testuser3Id &&
-      it.id.assetId == managerTestSetup.apartment1Id &&
-      it.assetName == "Apartment 1" &&
-      it.parentAssetName == "Smart building" &&
-      it.userFullName == "testuser3 (DemoA3 DemoLast)"
+              it.id.userId == keycloakTestSetup.testuser3Id &&
+              it.id.assetId == managerTestSetup.apartment1Id &&
+              it.assetName == "Apartment 1" &&
+              it.parentAssetName == "Smart building" &&
+              it.userFullName == "testuser3 (DemoA3 DemoLast)"
     }
 
     when: "all user assets are retrieved of a realm and user and asset"
@@ -197,12 +197,12 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
     userAssetLinks.length == 1
     userAssetLinks.any {
       it.id.realm == keycloakTestSetup.realmBuilding.name &&
-      it.id.userId == keycloakTestSetup.testuser2Id &&
-      it.id.assetId == managerTestSetup.apartment2Id &&
-      it.assetName == "Apartment 2" &&
-      it.parentAssetName == "Smart building" &&
-      it.userFullName == "testuser2 (DemoA2 DemoLast)" &&
-      it.createdOn.toEpochMilli() <= timerService.currentTimeMillis
+              it.id.userId == keycloakTestSetup.testuser2Id &&
+              it.id.assetId == managerTestSetup.apartment2Id &&
+              it.assetName == "Apartment 2" &&
+              it.parentAssetName == "Smart building" &&
+              it.userFullName == "testuser2 (DemoA2 DemoLast)" &&
+              it.createdOn.toEpochMilli() <= timerService.currentTimeMillis
     }
 
     when: "an asset link is deleted"

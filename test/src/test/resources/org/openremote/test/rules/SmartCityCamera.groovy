@@ -40,22 +40,22 @@ rules.add()
         .when({ facts ->
 
           def totals = facts.matchAssetState(new AssetQuery()
-          .names(new StringPredicate(AssetQuery.Match.BEGIN, "Camera"))
-          .attributeName("cameraCountIn"))
-          .map({
-            new Tuple(it.id, it.getValue(Double.class).orElse(0d) - facts.matchFirstAssetState(new AssetQuery()
-            .names(new StringPredicate(AssetQuery.Match.BEGIN, "Camera"))
-            .attributeName("cameraCountOut"))
-            .map({ it.getValue(Double.class).orElse(0d)}).orElse(0d))
-          })
-          .filter({
-            cameraTotals.getOrDefault(it.get(0), new Integer(0)) != it.get(1)
-          })
-          .collect(Collectors.toMap({ Tuple tuple ->
-            tuple.get(0) as String
-          }, { Tuple tuple ->
-            tuple.get(1) as Integer
-          }))
+                  .names(new StringPredicate(AssetQuery.Match.BEGIN, "Camera"))
+                  .attributeName("cameraCountIn"))
+                  .map({
+                    new Tuple(it.id, it.getValue(Double.class).orElse(0d) - facts.matchFirstAssetState(new AssetQuery()
+                            .names(new StringPredicate(AssetQuery.Match.BEGIN, "Camera"))
+                            .attributeName("cameraCountOut"))
+                            .map({ it.getValue(Double.class).orElse(0d)}).orElse(0d))
+                  })
+                  .filter({
+                    cameraTotals.getOrDefault(it.get(0), new Integer(0)) != it.get(1)
+                  })
+                  .collect(Collectors.toMap({ Tuple tuple ->
+                    tuple.get(0) as String
+                  }, { Tuple tuple ->
+                    tuple.get(1) as Integer
+                  }))
 
           if (!totals.isEmpty()) {
             facts.bind("totals", totals)
@@ -78,23 +78,23 @@ rules.add()
         .when({ facts ->
 
           def cameraIds = facts.matchAssetState(new AssetQuery()
-          .names(new StringPredicate(AssetQuery.Match.BEGIN, "Camera"))
-          .attributeName("cameraCountTotalAlert"))
-          .filter({
-            !it.value.orElse(false) &&
-            facts.matchFirstAssetState(new AssetQuery()
-            .ids(it.id)
-            .attributeName("cameraCountTotal"))
-            .map({ it.value.orElse(-1) })
-            .orElse(-1) >
-            facts.matchFirstAssetState(new AssetQuery()
-            .ids(it.id)
-            .attributeName("cameraCountTotalAlertLevel"))
-            .map({ it.value.orElse(-1) })
-            .orElse(-1)
-          })
-          .map({ it.id })
-          .collect()
+                  .names(new StringPredicate(AssetQuery.Match.BEGIN, "Camera"))
+                  .attributeName("cameraCountTotalAlert"))
+                  .filter({
+                    !it.value.orElse(false) &&
+                            facts.matchFirstAssetState(new AssetQuery()
+                            .ids(it.id)
+                            .attributeName("cameraCountTotal"))
+                            .map({ it.value.orElse(-1) })
+                            .orElse(-1) >
+                            facts.matchFirstAssetState(new AssetQuery()
+                            .ids(it.id)
+                            .attributeName("cameraCountTotalAlertLevel"))
+                            .map({ it.value.orElse(-1) })
+                            .orElse(-1)
+                  })
+                  .map({ it.id })
+                  .collect()
 
           if (cameraIds.size() > 0) {
             facts.bind("cameraIds", cameraIds)

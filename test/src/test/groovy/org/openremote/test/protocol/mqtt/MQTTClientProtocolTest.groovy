@@ -133,7 +133,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/${clientId}/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/notes/${managerTestSetup.apartment1HallwayId}".toString(), "\"LAST WILL\"".toString(), false),
             null,
             null
-            )
+    )
     client.setResubscribeIfSessionPresent(false)
     client.setTopicSubscribeFailureConsumer {
       LOG.info("Subscription failed: $it")
@@ -201,7 +201,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                     new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                     keycloakTestSetup.serviceUser2.getId(),
                     managerTestSetup.apartment1BathroomId)
-                    ))
+            ))
 
     then: "the client should have disconnected and reconnected"
     conditions.eventually {
@@ -362,7 +362,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                     .setPublishTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC}/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
                     .setWriteValue("%VALUE%")
                     ))
-            )
+    )
 
     and: "the asset is merged into the asset service"
     asset = assetStorageService.merge(asset)
@@ -414,7 +414,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             .setPublishTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC}/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
             .setQos(2)
             .setWriteValue("%VALUE%")
-            ))
+    ))
 
     and: "the asset is merged into the asset service"
     asset = assetStorageService.merge(asset)
@@ -460,7 +460,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             .setRealm(keycloakTestSetup.realmBuilding.name)
             .addOrReplaceAttributes(
             new Attribute<Object>("test", JSON)
-            )
+    )
 
     and: "the test asset is added to the asset service"
     testThing = assetStorageService.merge(testThing)
@@ -507,7 +507,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                       SWITCH_OFF: false
                     ])
                     ))
-            )
+    )
 
     and: "the asset is merged into the asset service"
     asset = assetStorageService.merge(asset)
@@ -629,17 +629,17 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             )
             .addOrReplaceAttributes(
             new Attribute<Object>("humidity", NUMBER)
-            )
+    )
     def testThing2 = new ThingAsset("Test thing 2")
             .setRealm(keycloakTestSetup.realmBuilding.name)
             .addOrReplaceAttributes(
             new Attribute<Object>("pressure", NUMBER)
-            )
+    )
     def testThing3 = new ThingAsset("Test thing 3")
             .setRealm(keycloakTestSetup.realmBuilding.name)
             .addOrReplaceAttributes(
             new Attribute<Object>("uvIndex", NUMBER)
-            )
+    )
 
     and: "the test assets are added to the asset service"
     testThing1 = assetStorageService.merge(testThing1)
@@ -707,7 +707,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                     new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
                     .setSubscriptionTopic(uvIndexTopic)
                     ))
-            )
+    )
 
     and: "the asset is merged into the asset service"
     asset = assetStorageService.merge(asset)
@@ -982,7 +982,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             endDate,
             subject,
             keyPair.getPublic()
-            )
+    )
 
 
     ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256WithRSA").build(keyPair.getPrivate())

@@ -16,7 +16,7 @@ docker image tag updates. The file layout is:
     // Name of branch to react to (exact match)
     "develop": {
       // Comma separated list of tags to push to openremote/manager docker hub image
-      // This can only be used on the main openremote repo (openremote/openremote)
+      // This can only be used on the OpenRemote Core repo (openremote/core)
       "distribute": {
         "docker": "develop"
       },
@@ -26,7 +26,7 @@ docker image tag updates. The file layout is:
         "environment": "staging"
       }
     },
-    "master": {
+    "main": {
       "distribute": {
         "docker": "latest"
       }
@@ -35,7 +35,7 @@ docker image tag updates. The file layout is:
   // Configure behaviour on release
   "release": {
     // Comma separated list of tags to push to openremote/manager docker hub image $version is replaced with release version
-    // This can only be used on the main openremote repo (openremote/openremote)
+    // This can only be used on the OpenRemote Core repo (openremote/core)
     "distribute": {
       "docker": "latest,$version",
       "maven": "$version"
@@ -120,6 +120,8 @@ Standard variables:
 - `AWS_KEY` - AWS access key ID (should be prefixed with `_TEMP_`
 - `AWS_SECRET` - AWS access key secret
 - `AWS_REGION` - AWS region to use
+- `OR_AWS_ECR_ACCOUNT_ID` - AWS Account ID associated with the ECR repository
+- `OR_AWS_ECR_REGION` - AWS Region where the ECR repository is located
 - `OR_ADMIN_PASSWORD` - Admin password to be set on deployment; sets the OR_ADMIN_PASSWORD env variable
 - `ENV_COMPOSE_FILE` - The full path to the docker compose file to use for the deployment
 - `SKIP_HOST_PING` - Will skip host ping check before deploying (default: false)

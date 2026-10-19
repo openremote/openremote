@@ -37,6 +37,7 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.EmailNotificationMessage;
+import org.openremote.model.notification.LocalizedNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.notification.SentNotification;
@@ -174,6 +175,12 @@ public class ManagerNotificationSetup extends ManagerSetup {
         smartCityAssetId,
         KeycloakNotificationSetup.SMARTCITY_REALM,
         base.minus(++slot, ChronoUnit.MINUTES));
+
+    // Localized notifications are sent at the base instant, the newest of all records above, so
+    // they are listed first
+    for (User user : users) {
+      persistLocalizedNotification(user.getId(), assetId, MASTER_REALM, base);
+    }
   }
 
   /**
@@ -298,6 +305,36 @@ public class ManagerNotificationSetup extends ManagerSetup {
 
     persistNotification(
         subject, EmailNotificationMessage.TYPE, message, userId, assetId, realm, sentOn);
+  }
+
+  /**
+   * Persists a localized notification record holding one push message per language, as a localized
+   * rule action produces. The default language decides which of them a target without a locale of
+   * its own receives.
+   */
+  private void persistLocalizedNotification(
+      String userId, String assetId, String realm, Instant sentOn) {
+    LocalizedNotificationMessage message =
+        new LocalizedNotificationMessage(
+            "en",
+            Map.<String, AbstractNotificationMessage>of(
+                "en",
+                new PushNotificationMessage()
+                    .setTitle("Localized Alert")
+                    .setBody("This is a localized test notification"),
+                "nl",
+                new PushNotificationMessage()
+                    .setTitle("Gelokaliseerde melding")
+                    .setBody("Dit is een gelokaliseerde testmelding")));
+
+    persistNotification(
+        "Localized Alert",
+        LocalizedNotificationMessage.TYPE,
+        message,
+        userId,
+        assetId,
+        realm,
+        sentOn);
   }
 
   private void persistNotification(

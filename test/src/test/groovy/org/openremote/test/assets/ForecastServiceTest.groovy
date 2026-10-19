@@ -123,8 +123,8 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
     and: "initial forecast values have been calculated"
     conditions.eventually {
       List<AssetPredictedDatapoint> predictedDatapoints = assetPredictedDatapointService
-      .getDatapoints(attributeRef)
-      .sort {it.timestamp}
+              .getDatapoints(attributeRef)
+              .sort {it.timestamp}
       assert predictedDatapoints.size() == config.forecastCount
       for (int i = 0; i <predictedDatapoints.size(); i++) {
         assert predictedDatapoints[i].value == calculateForecast(managerTestSetup.forecastTestHistoryData[i][0..config.pastCount - 1]).get()
@@ -157,8 +157,8 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
     and: "partially existing forecast values should have have been completed and updated"
     conditions.eventually {
       List<AssetPredictedDatapoint> predictedDatapoints = assetPredictedDatapointService
-      .getDatapoints(attributeRef)
-      .sort {it.timestamp}
+              .getDatapoints(attributeRef)
+              .sort {it.timestamp}
       assert predictedDatapoints.size() == config.forecastCount
       Long offset = ((config.forecastPeriod.toMillis() * 2) / 3) * (-1)
       for (int i = 0; i <predictedDatapoints.size(); i++) {
@@ -204,7 +204,7 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
     and: "time has passed"
     advancePseudoClock(
             forecastConfig.forecastPeriod.toMillis(), MILLISECONDS, container
-            )
+    )
 
     and: "the forecast service is started again"
     forecastService.forecastTaskManager.start(timerService.currentTimeMillis)
@@ -212,8 +212,8 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
     then: "initial forecast values should be calculated"
     conditions.eventually {
       List<AssetPredictedDatapoint> predictedDatapoints = assetPredictedDatapointService
-      .getDatapoints(attributeRef)
-      .sort {it.timestamp}
+              .getDatapoints(attributeRef)
+              .sort {it.timestamp}
       assert predictedDatapoints.size() == forecastConfig.forecastCount
       for (int i = 0; i <predictedDatapoints.size(); i++) {
         assert predictedDatapoints[i].value == calculateForecast(forecastHistoricalData[i][0..forecastConfig.pastCount - 1]).get()
@@ -231,7 +231,7 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
                             forecastConfig
                             )
                     )
-            )
+    )
     forecastThing1 = assetStorageService.merge(forecastThing1)
     def newAttributeRef = new AttributeRef(forecastThing1.id, "newForecastAttribute")
 
@@ -245,7 +245,7 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
     def updatedPastCount = forecastConfig.pastCount + 1
     def updatedConfig = new ForecastConfigurationWeightedExponentialAverage(
             forecastConfig.pastPeriod, updatedPastCount, forecastConfig.forecastPeriod, forecastConfig.forecastCount
-            )
+    )
     forecastThing1.getAttributes().addOrReplace(
             new Attribute<>("newForecastAttribute", NUMBER)
             .addOrReplaceMeta(
@@ -254,7 +254,7 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
                             updatedConfig
                             )
                     )
-            )
+    )
     forecastThing1 = assetStorageService.merge(forecastThing1)
 
     then: "forecast service should contain updated forecast configuration"
@@ -268,7 +268,7 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
     forecastThing1 = assetStorageService.find(forecastThing1.id)
     forecastThing1.getAttributes().addOrReplace(
             new Attribute<>("newForecastAttribute", NUMBER)
-            )
+    )
     forecastThing1 = assetStorageService.merge(forecastThing1)
 
     then: "attribute should be unregistered from forecast service"
@@ -302,7 +302,7 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
                             config
                             )
                     )
-            )
+    )
     thing = assetStorageService.merge(thing)
     return thing
   }

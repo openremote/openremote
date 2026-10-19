@@ -90,7 +90,7 @@ class WebTargetTest extends Specification {
 
             requestContext.abortWith(
                     Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
-                    )
+            )
             return
           } else if (grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "client_credentials"
                   && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "client1"
@@ -104,7 +104,7 @@ class WebTargetTest extends Specification {
 
             requestContext.abortWith(
                     Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
-                    )
+            )
             return
           } else if (supportsRefresh && grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "refresh_token"
                   && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "client1"
@@ -122,7 +122,7 @@ class WebTargetTest extends Specification {
 
             requestContext.abortWith(
                     Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
-                    )
+            )
             return
           }
           break
@@ -140,19 +140,19 @@ class WebTargetTest extends Specification {
           accessTokenCount++
           requestContext.abortWith(
                   Response.status(Response.Status.FORBIDDEN).build()
-                  )
+          )
           return
         case "https://headerserver":
           if (requestContext.getHeaderString("MyHeader") == "MyHeaderValue"
-          && requestContext.getHeaderString("MyMultiHeader") == "MyMultiHeaderValue1,MyMultiHeaderValue2") {
+                  && requestContext.getHeaderString("MyMultiHeader") == "MyMultiHeaderValue1,MyMultiHeaderValue2") {
             requestContext.abortWith(Response.ok().build())
             return
           }
           break
         case "https://headerserver/get":
           if (requestContext.getHeaderString("MyHeader") == "MyHeaderValue"
-          && requestContext.getHeaderString("MyHeaderNew") == "MyHeaderNewValue"
-          && requestContext.getHeaderString("MyMultiHeader") == "MyMultiHeaderValue1,MyMultiHeaderValue2,MyMultiHeaderValue3") {
+                  && requestContext.getHeaderString("MyHeaderNew") == "MyHeaderNewValue"
+                  && requestContext.getHeaderString("MyMultiHeader") == "MyMultiHeaderValue1,MyMultiHeaderValue2,MyMultiHeaderValue3") {
             requestContext.abortWith(Response.ok().build())
             return
           }

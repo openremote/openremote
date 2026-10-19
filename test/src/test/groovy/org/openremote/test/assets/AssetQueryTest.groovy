@@ -94,7 +94,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
             .types(Agent.class)
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
-            )
+    )
 
     then: "agent assets should be retrieved"
     assets.size() == 1
@@ -209,7 +209,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
             .select(new Select().excludeAttributes())
             .ids(managerTestSetup.smartOfficeId)
-            )
+    )
 
     then: "result should match"
     asset.id == managerTestSetup.smartOfficeId
@@ -224,7 +224,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
     asset = assetStorageService.find(
             new AssetQuery()
             .ids(managerTestSetup.smartOfficeId)
-            )
+    )
 
     then: "result should match"
     asset.id == managerTestSetup.smartOfficeId
@@ -243,7 +243,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .select(new Select().excludeAttributes())
             .parents(new ParentPredicate(null))
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
-            )
+    )
 
     then: "result should match"
     assets.size() == 1
@@ -260,7 +260,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
             .parents(new ParentPredicate(null))
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
-            )
+    )
 
     then: "result should match"
     assets.size() == 1
@@ -314,7 +314,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
             .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
             .orderBy(new OrderBy(NAME, true))
-            )
+    )
 
     then: "result should match"
     assets.size() == 3
@@ -328,7 +328,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .select(new Select().excludeAttributes())
             .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
-            )
+    )
 
     then: "result should match"
     assets.size() == 0
@@ -338,7 +338,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
             .select(new Select().excludeAttributes())
             .paths(new PathPredicate(assetStorageService.find(managerTestSetup.apartment1Id, true).getPath()))
-            )
+    )
 
     then: "result should match"
     assets.size() == 7
@@ -356,7 +356,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .select(new Select().excludeAttributes())
             .paths(new PathPredicate(assetStorageService.find(managerTestSetup.apartment1Id, true).getPath()))
             .types(RoomAsset.class)
-            )
+    )
 
     then: "result should match"
     assets.size() == 5
@@ -371,7 +371,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
             .userIds(keycloakTestSetup.testuser3Id)
             .access(PROTECTED)
-            )
+    )
 
     then: "result should match"
     assets.size() == 6
@@ -393,7 +393,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
             .userIds(keycloakTestSetup.testuser2Id)
             .access(PROTECTED)
-            )
+    )
 
     then: "result should match"
     assets.size() == 0
@@ -418,7 +418,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
             .select(new Select().excludeAttributes())
             .types(Agent.class)
-            )
+    )
 
     then: "result should match"
     assets.size() == 3
@@ -432,7 +432,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .select(new Select().excludeAttributes())
             .types(ThingAsset.class)
             .parents(new ParentPredicate(managerTestSetup.agentId))
-            )
+    )
 
     then: "result should match"
     assets.size() == 1
@@ -444,7 +444,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .select(new Select().excludeAttributes())
             .types(ThingAsset)
             .parents(new ParentPredicate(managerTestSetup.agentId))
-            )
+    )
 
     then: "result should match"
     assets.size() == 1
@@ -461,7 +461,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                             new NameValuePredicate(READ_ONLY, new BooleanPredicate(true))
                             )
                     )
-            )
+    )
 
     then: "result should match"
     assets.size() == 2
@@ -477,7 +477,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                             new NameValuePredicate(UNITS.name, new ArrayPredicate(Constants.UNITS_KILO, 0, 3, null, null, false))
                             )
                     )
-            )
+    )
 
     then: "result should match"
     assets.size() == 1
@@ -488,7 +488,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
             .select(new Select().excludeAttributes())
             .attributes(new AttributePredicate().meta(new NameValuePredicate(AGENT_LINK, new StringPredicate(managerTestSetup.agentId), false, new NameValuePredicate.Path("id"))))
-            )
+    )
 
     then: "result should match"
     assets.size() == 1
@@ -500,7 +500,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .select(new Select().excludeAttributes())
             .attributes(new AttributePredicate().meta(new NameValuePredicate(AGENT_LINK, new StringPredicate(managerTestSetup.agentId), false, new NameValuePredicate.Path("id"))))
             .names(new StringPredicate(Match.CONTAINS, false, "thing"))
-            )
+    )
 
     then: "result should match"
     assets.size() == 1
@@ -512,7 +512,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .select(new Select().excludeAttributes())
             .attributes(new AttributePredicate().meta(new NameValuePredicate(AGENT_LINK, new StringPredicate(managerTestSetup.agentId), false, new NameValuePredicate.Path("id"))))
             .names(new StringPredicate(Match.CONTAINS, true, "thing"))
-            )
+    )
 
     then: "result should match"
     assets.size() == 0
@@ -523,7 +523,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .select(new Select().excludeAttributes())
             .attributes(new AttributePredicate().meta(new NameValuePredicate(AGENT_LINK, new StringPredicate(managerTestSetup.agentId), false, new NameValuePredicate.Path("id"))))
             .parents(new ParentPredicate(managerTestSetup.agentId))
-            )
+    )
 
     then: "result should match"
     assets.size() == 1
@@ -535,7 +535,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .select(new Select().excludeAttributes())
             .attributes(new AttributePredicate().meta(new NameValuePredicate(AGENT_LINK, new StringPredicate(managerTestSetup.agentId), false, new NameValuePredicate.Path("id"))))
             .parents(new ParentPredicate(managerTestSetup.apartment1LivingroomId))
-            )
+    )
 
     then: "result should match"
     assets.size() == 0
@@ -546,7 +546,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .select(new Select().excludeAttributes())
             .attributes(new AttributePredicate().meta(new NameValuePredicate(AGENT_LINK, new StringPredicate(managerTestSetup.agentId), false, new NameValuePredicate.Path("id"))))
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
-            )
+    )
 
     then: "result should match"
     assets.size() == 1
@@ -558,7 +558,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .ids(managerTestSetup.apartment1LivingroomId)
             .select(new Select().attributes("co2Level", "lastPresenceDetected", "motionSensor"))
             .access(PRIVATE)
-            )
+    )
 
     then: "result should match"
     asset.id == managerTestSetup.apartment1LivingroomId
@@ -582,7 +582,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .ids(managerTestSetup.apartment1LivingroomId)
             .select(new Select().attributes("co2Level", "lastPresenceDetected", "motionSensor"))
             .access(PROTECTED)
-            )
+    )
 
     then: "result should contain only matches that are protected"
     asset.id == managerTestSetup.apartment1LivingroomId
@@ -608,7 +608,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                             new StringPredicate("co2Level"), new NumberPredicate(340, Operator.GREATER_THAN)
                             )
                     )
-            )
+    )
 
     then: "result should contain an Asset with the expected values"
     assert asset != null
@@ -627,7 +627,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                             new StringPredicate("co2Level"), new NumberPredicate(360, Operator.GREATER_THAN)
                             )
                     )
-            )
+    )
 
     then: "no assets should match"
     assert asset == null
@@ -645,7 +645,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                             new StringPredicate("co2Level"), new NumberPredicate(50, Operator.GREATER_THAN)
                             )
                     )
-            )
+    )
 
     then: "result should contain an Asset with the expected values"
     assert asset != null
@@ -672,7 +672,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                               )
                     ])
                     )
-            )
+    )
 
     then: "result should contain an Asset with the expected values"
     assert asset != null
@@ -699,7 +699,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                               )
                     ])
                     )
-            )
+    )
 
     then: "no assets should match"
     assert asset == null
@@ -722,7 +722,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                               )
                     ])
                     )
-            )
+    )
 
     then: "no assets should match"
     assert asset == null
@@ -740,7 +740,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .attributes(new LocationAttributePredicate(new RadialGeofencePredicate(10, 51.44541688237109d, 5.460315214821094d)))
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "assets in the queried region should be retrieved"
     assets.size() == 5
@@ -767,7 +767,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .attributes(new LocationAttributePredicate(new RadialGeofencePredicate(10, 51.44541688237109d, 5.460315214821094d)))
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "the moved asset should not be included"
     assets.size() == 4
@@ -780,7 +780,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44540d, 5.46031d, 51.44594d, 5.46110d)))
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "all 5 assets should be returned"
     assets.size() == 5
@@ -797,7 +797,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44542d, 5.46032d, 51.44590d, 5.46100d)))
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "no assets should be returned"
     assets.size() == 0
@@ -809,7 +809,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44542d, 5.46032d, 51.44590d, 5.46100d).negate()))
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "all 5 realm assets should be returned"
     assets.size() == 5
@@ -838,7 +838,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
     lobby.addAttributes(
             new Attribute<>("test", CALENDAR_EVENT, new CalendarEvent(start, end, recur))
-            )
+    )
     lobby = assetStorageService.merge(lobby)
 
     recur = new Recur(Frequency.DAILY, 3)
@@ -846,11 +846,11 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
     floor.addAttributes(
             new Attribute<>("test", CALENDAR_EVENT, new CalendarEvent(start, end, recur))
-            )
+    )
     floor = assetStorageService.merge(floor)
     office.addAttributes(
             new Attribute<>("test", CALENDAR_EVENT, new CalendarEvent(start, end))
-            )
+    )
     office = assetStorageService.merge(office)
 
     then: "the system should settle down"
@@ -864,7 +864,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517155200000)))) // 28/01/2018 @ 4:00pm (UTC)
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "all 3 assets should be returned"
     assets.size() == 3
@@ -881,7 +881,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517335200000)))) // 30/01/2018 @ 6:00pm (UTC)
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "no assets should be returned"
     assets.size() == 0
@@ -892,7 +892,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517238600000)))) // 29/01/2018 @ 3:10pm (UTC)
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "no assets should be returned"
     assets.size() == 0
@@ -903,7 +903,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517503800000)))) // 01/02/2018 @ 4:50pm (UTC))
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "the lobby and ground floor assets should be returned"
     assets.size() == 2
@@ -918,7 +918,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517849400000)))) // 05/02/2018 @ 4:50pm (UTC))
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "the lobby and ground floor assets should be returned"
     assets.size() == 1
@@ -931,7 +931,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
             .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1518017520000)))) // 02/07/2018 @ 3:32pm (UTC)
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "no assets should be returned"
     assets.size() == 0
@@ -942,7 +942,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
     def lobby = assetStorageService.find(managerTestSetup.lobbyId, true)
     lobby.addAttributes(
             new Attribute<>("openingDate", TIMESTAMP_ISO8601, Instant.ofEpochMilli(1517151600000).atZone(ZoneId.systemDefault()).format(ISO_OFFSET_DATE_TIME)) // 28/01/2018 @ 2:00pm (UTC)
-            )
+    )
     lobby = assetStorageService.merge(lobby)
 
     def rangeStart = Instant.ofEpochMilli(1517151600000).atZone(ZoneId.systemDefault()).minusHours(2) // 28/01/2018 @ 1:00pm (UTC)
@@ -956,7 +956,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                     "openingDate",
                     new DateTimePredicate(rangeStart.format(ISO_OFFSET_DATE_TIME), rangeEnd.format(ISO_OFFSET_DATE_TIME))
                     .operator(Operator.BETWEEN))
-            )
+    )
 
 
     then: "the lobby asset should be retrieved"
@@ -971,7 +971,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .attributeValue(
                     "openingDate",
                     new DateTimePredicate(Operator.GREATER_THAN, rangeStart.format(ISO_OFFSET_DATE_TIME)))
-            )
+    )
 
 
     then: "the lobby asset should be retrieved"
@@ -986,7 +986,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .attributeValue(
                     "openingDate",
                     new DateTimePredicate(Operator.LESS_THAN, rangeEnd.format(ISO_OFFSET_DATE_TIME)))
-            )
+    )
 
 
     then: "the lobby asset should be retrieved"
@@ -1003,7 +1003,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .attributeValue(
                     "openingDate",
                     new DateTimePredicate(Operator.EQUALS, rangeStart.format(ISO_OFFSET_DATE_TIME)))
-            )
+    )
 
 
     then: "the lobby asset should be retrieved"
@@ -1020,7 +1020,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .ids(managerTestSetup.smartBuildingId)
             .recursive(true)
             .orderBy(new OrderBy(NAME))
-            )
+    )
 
     then: "all assets should be returned"
     allAssets.size() > 0
@@ -1034,7 +1034,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .recursive(true)
             .orderBy(new OrderBy(NAME))
             .limit(0)
-            )
+    )
 
     then: "all assets should be returned"
     zeroLimitAssets.size() == allAssetsSize
@@ -1048,7 +1048,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .recursive(true)
             .orderBy(new OrderBy(NAME))
             .limit(3)
-            )
+    )
 
     then: "only 3 assets should be returned"
     limitedAssets.size() == 3
@@ -1062,7 +1062,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .recursive(true)
             .orderBy(new OrderBy(NAME))
             .limit(5)
-            )
+    )
 
     then: "then  5 assets should be returned"
     higherLimitAssets.size() == 5
@@ -1075,7 +1075,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .recursive(true)
             .orderBy(new OrderBy(NAME))
             .offset(2)
-            )
+    )
 
     then: "all assets after the offset should be returned"
     offsetAssets.size() == allAssetsSize - 2
@@ -1093,7 +1093,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .orderBy(new OrderBy(NAME))
             .limit(2)
             .offset(3)
-            )
+    )
 
     then: "the assets from the offset should be returned"
     offsetLimitAssets.collect { it.id } == allAssets.drop(3).take(2).collect { it.id }
@@ -1112,7 +1112,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             .recursive(true)
             .orderBy(new OrderBy(NAME))
             .offset(allAssets.size() + 1)
-            )
+    )
 
     then: "no assets should be returned"
     offsetHigherThanAssets.size() == 0
