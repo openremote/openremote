@@ -19,10 +19,12 @@
 package org.openremote.manager.app;
 
 import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.logging.Logger;
 import org.openremote.container.timer.TimerService;
@@ -84,7 +86,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
   }
 
   @Override
-  public Object getManagerConfigImage(String fileName) {
+  public Object getManagerConfigImage(String fileName, Request request) {
     try {
       File imageFile = configurationService.getManagerConfigImage(fileName).orElseThrow();
       if (!imageFile.exists()) {
@@ -96,8 +98,20 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
         mimeType = "application/octet-stream";
       }
 
-      Response.ResponseBuilder response = Response.ok(imageFile, mimeType);
-      return response.build();
+      /*
+       * Every page that shows branding fetches these, the login page included, and it is held
+       * back until the logo has painted. Without a validator each of those is a full download;
+       * with one, an image that has not changed is a 304 with no body. The file's own timestamp
+       * is the validator, so replacing it through fileUpload invalidates what clients hold.
+       */
+      Date lastModified = new Date(imageFile.lastModified());
+      Response.ResponseBuilder notModified = request.evaluatePreconditions(lastModified);
+
+      if (notModified != null) {
+        return notModified.build();
+      }
+
+      return Response.ok(imageFile, mimeType).lastModified(lastModified).build();
     } catch (NoSuchElementException e) {
       return Response.status(Response.Status.NOT_FOUND).entity("Image not Found").build();
     } catch (Exception e) {
