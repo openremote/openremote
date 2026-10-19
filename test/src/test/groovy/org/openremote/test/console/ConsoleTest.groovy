@@ -237,14 +237,14 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
     def testUser2AccessToken = authenticate(
             container,
             keycloakTestSetup.realmBuilding.name,
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "testuser2"
-            )
+    )
     def testUser3ConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, testUser3AccessToken).proxy(ConsoleResource.class)
     def testUser2ConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, testUser2AccessToken).proxy(ConsoleResource.class)
     def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(ConsoleResource.class)
@@ -310,7 +310,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
     def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(ConsoleResource.class)
 
     when: "a client tries to create a console with its own unused ID"
@@ -395,7 +395,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-            )
+    )
 
     and: "authenticated and anonymous console, rules and asset resources"
     def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(ConsoleResource.class)
@@ -472,7 +472,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                     false,
                     true,
                     null,
-                    ))
+            ))
     returnedConsoleRegistration = authenticatedConsoleResource.register(null, returnedConsoleRegistration)
     console = assetStorageService.find(consoleId, true)
     testUser3Console1 = console
@@ -635,25 +635,25 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
     when: "the location of each console is marked as RULE_STATE"
     testUser3Console1.getAttribute(Asset.LOCATION).ifPresent {it ->
       it.addMeta(
-      new MetaItem<>(MetaItemType.RULE_STATE),
-      new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_WRITE),
-      new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_READ)
+              new MetaItem<>(MetaItemType.RULE_STATE),
+              new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_WRITE),
+              new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_READ)
       )
     }
     testUser3Console1 = assetStorageService.merge(testUser3Console1)
     testUser3Console2.getAttribute(Asset.LOCATION).ifPresent {it ->
       it.addMeta(
-      new MetaItem<>(MetaItemType.RULE_STATE),
-      new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_WRITE),
-      new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_READ)
+              new MetaItem<>(MetaItemType.RULE_STATE),
+              new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_WRITE),
+              new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_READ)
       )
     }
     testUser3Console2 = assetStorageService.merge(testUser3Console2)
     anonymousConsole1.getAttribute(Asset.LOCATION).ifPresent {it ->
       it.addMeta(
-      new MetaItem<>(MetaItemType.RULE_STATE),
-      new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_WRITE),
-      new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_READ)
+              new MetaItem<>(MetaItemType.RULE_STATE),
+              new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_WRITE),
+              new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_READ)
       )
     }
     anonymousConsole1 = assetStorageService.merge(anonymousConsole1)
@@ -877,11 +877,11 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
       assert geofences.size() == 2
       def geofence1 = geofences.find {
         it.id == testUser3Console1.id + "_" + Integer.toString(
-        expectedLocationPredicate.hashCode())
+                expectedLocationPredicate.hashCode())
       }
       def geofence2 = geofences.find {
         it.id == testUser3Console1.id + "_" + Integer.toString(
-        newLocationPredicate.hashCode())
+                newLocationPredicate.hashCode())
       }
       assert geofence1 != null && geofence2 != null
       assert geofence1.lat == expectedLocationPredicate.lat
@@ -917,11 +917,11 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
       assert geofences.size() == 2
       def geofence1 = geofences.find {
         it.id == testUser3Console1.id + "_" + Integer.toString(
-        expectedLocationPredicate.hashCode())
+                expectedLocationPredicate.hashCode())
       }
       def geofence2 = geofences.find {
         it.id == testUser3Console1.id + "_" + Integer.toString(
-        newLocationPredicate.hashCode())
+                newLocationPredicate.hashCode())
       }
       assert geofence1 != null && geofence2 != null
       assert geofence1.lat == expectedLocationPredicate.lat
@@ -1058,7 +1058,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                     ),
             "",
             ["manager"] as String[]
-            )
+    )
   }
 
   protected static String getPushToken(ConsoleAsset console) {

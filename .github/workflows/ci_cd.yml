@@ -28,11 +28,11 @@
 # found that is output to 'ssh.key' file (so it is not copied to the host). Sensitive credentials should always be stored
 # in github secrets so they are encrypted, do not store within repo files (even private repos as these are not encrypted).
 #
-# SEE https://github.com/openremote/openremote/tree/master/.ci_cd for details of standard variables and handling.
+# SEE https://github.com/openremote/core/tree/main/.ci_cd for details of standard variables and handling.
 #
 # MANUAL TRIGGER
 #
-# This workflow can be triggered by push, release, manually or schedule (from any repo other than openremote/openremote)
+# This workflow can be triggered by push, release, manually or schedule (from any repo other than openremote/core)
 # if triggered manually then the following inputs are available and these override any set in env files and/or secrets:
 #
 # Inputs:
@@ -55,10 +55,10 @@
 name: CI/CD
 
 on:
-  # Push on master excluding tags
+  # Push on main excluding tags
   # push:
   #   branches:
-  #     - 'master'
+  #     - 'main'
   #   tags:
   #     - '[0-9]+.[0-9]+.[0-9]+'
 
@@ -211,8 +211,8 @@ jobs:
         if: steps.ui-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
 
-      - name: Check if main repo
-        id: is_main_repo
+      - name: Check if core repo
+        id: is_core_repo
         run: |
           if [ -f manager/src/main/java/org/openremote/manager/Main.java ]; then
             echo "value=true" >> $GITHUB_OUTPUT
@@ -223,7 +223,7 @@ jobs:
             fi
 
             echo "value=false" >> $GITHUB_OUTPUT
-            echo "repository=$(sed -E 's#(.+)/.+#\1/openremote#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
+            echo "repository=$(sed -E 's#(.+)/.+#\1/core#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
 
             version=""
             if [ -f gradle/libs.versions.toml ]; then
@@ -245,24 +245,27 @@ jobs:
             echo "ref=$version" >> $GITHUB_OUTPUT
           fi
 
-      - name: Checkout main repo
+      - name: Checkout core repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: ${{ steps.is_main_repo.outputs.value == 'false' }}
+        if: ${{ steps.is_core_repo.outputs.value == 'false' }}
         with:
-          repository: ${{ steps.is_main_repo.outputs.repository }}
-          path: openremote
-          ref: ${{ steps.is_main_repo.outputs.ref }}
-          sparse-checkout: |
-            .ci_cd
-            profile
+          repository: ${{ steps.is_core_repo.outputs.repository }}
+          path: core
+          ref: ${{ steps.is_core_repo.outputs.ref }}
+          sparse-checkout: .ci_cd
           sparse-checkout-cone-mode: false
+
+      # Compatibility with released scripts
+      - name: Provide legacy core repo checkout path
+        if: steps.is_core_repo.outputs.value == 'false'
+        run: ln -s core openremote
 
       - name: Install node_modules
         if: steps.ui-files-changed.outputs.any_modified == 'true'
         run: yarn --immutable
 
       - name: Check UI dependencies
-        if: steps.ui-files-changed.outputs.any_modified == 'true' && steps.is_main_repo.outputs.value == 'true'
+        if: steps.ui-files-changed.outputs.any_modified == 'true' && steps.is_core_repo.outputs.value == 'true'
         run: npx knip@5.88.0 -c ui/knip.jsonc
 
       - name: Check deployment build.gradle
@@ -318,7 +321,7 @@ jobs:
           refName = os.getenv('GITHUB_REF_NAME')
           refType = os.getenv('GITHUB_REF_TYPE')
           repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
-          isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
+          isCoreRepo = os.getenv('IS_CORE_REPO') == 'true'
           isRelease = os.getenv('IS_RELEASE') == 'true'
           managerVersion = os.getenv('MANAGER_VERSION')
           version = os.getenv('VERSION')
@@ -352,7 +355,7 @@ jobs:
               if 'npm' in eventConfig['distribute']:
                  npmPublishTag = eventConfig['distribute']['npm']
 
-          if isMainRepo and ((eventName == "release" and isRelease) or (eventName != "release" and not isRelease)):
+          if isCoreRepo and ((eventName == "release" and isRelease) or (eventName != "release" and not isRelease)):
 
             if dockerPublishTags is not None:
               if "$version" in dockerPublishTags:
@@ -391,13 +394,13 @@ jobs:
                 deployStr += deploy['environment']
               deployStr += ":"
               if 'managerTag' in deploy:
-                if isMainRepo:
+                if isCoreRepo:
                   deployStr += deploy['managerTag']
                 else:
                   # Custom projects manager docker image must match the openremote version from gradle/libs.versions.toml
                   deployStr += managerVersion
               else:
-                if isMainRepo:
+                if isCoreRepo:
                   os.system("echo 'Manager tag not specified so using commit SHA'")
                   deployStr += managerTagDefault
                 else:
@@ -412,8 +415,8 @@ jobs:
             print(f"Deployments to deploy: {deployStr}")
             os.system(f"echo 'deploys={deployStr}' >> $GITHUB_OUTPUT")
         env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
+          IS_CORE_REPO: ${{ steps.is_core_repo.outputs.value }}
+          MANAGER_VERSION: ${{ steps.is_core_repo.outputs.ref }}
           IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}
           VERSION: ${{ steps.get-version-details.outputs.version }}
 
@@ -425,7 +428,7 @@ jobs:
           import sys
 
           repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
-          isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
+          isCoreRepo = os.getenv('IS_CORE_REPO') == 'true'
           deployments = os.getenv('DEPLOYMENTS')
           eventName = os.getenv('GITHUB_EVENT_NAME')
           refType = os.getenv('GITHUB_REF_TYPE')
@@ -434,7 +437,7 @@ jobs:
           managerVersion = os.getenv('MANAGER_VERSION')
 
           if eventName == 'workflow_dispatch' and refType != 'tag' and repoOwner == 'openremote':
-            if isMainRepo:
+            if isCoreRepo:
               tag=inputTag
               if not inputTag:
                 tag='#ref'
@@ -442,7 +445,7 @@ jobs:
               tag=managerVersion
             deployments=f'{inputEnv}:{tag}'
 
-          if not isMainRepo:
+          if not isCoreRepo:
             if "-SNAPSHOT" in deployments:
               os.system("echo 'SNAPSHOT manager docker images not currently supported for custom project deployment'")
               sys.exit(1)
@@ -455,8 +458,8 @@ jobs:
           else:
             os.system(f"echo 'pushSnapshot={pushSnapshot}' >> $GITHUB_OUTPUT")
         env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
+          IS_CORE_REPO: ${{ steps.is_core_repo.outputs.value }}
+          MANAGER_VERSION: ${{ steps.is_core_repo.outputs.ref }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
           INPUT_ENVIRONMENT: ${{ steps.process-inputs.outputs.ENVIRONMENT }}
           INPUT_MANAGER_TAG: ${{steps.process-inputs.outputs.MANAGER_TAG }}
@@ -478,7 +481,7 @@ jobs:
 
       - name: Define manager docker build command
         id: manager-docker-command
-        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
+        if: ${{ steps.is_core_repo.outputs.value == 'true' }}
         shell: bash
         run: |
           buildPath="manager/build/install/manager"
@@ -627,9 +630,9 @@ jobs:
           echo "**************            INFO           *******************"
           echo "************************************************************"
           echo 'Trigger event: ${{ github.event_name }}'
-          echo 'Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}'
+          echo 'Is core repo: ${{ steps.is_core_repo.outputs.value == 'true' }}'
           echo 'Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}'
-          echo 'OpenRemote version: ${{ steps.is_main_repo.outputs.ref }}'
+          echo 'OpenRemote version: ${{ steps.is_core_repo.outputs.ref }}'
           echo 'Manager commit SHA: ${{ steps.manager-docker-command.outputs.refTag }}'
           echo 'Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}'
           echo 'Deployments: ${{ steps.deployments.outputs.value }}'
@@ -701,7 +704,7 @@ jobs:
         run: ./gradlew spotlessUiCheck
 
       - name: Check for outdated translations
-        if: steps.is_main_repo.outputs.value == 'true'
+        if: steps.is_core_repo.outputs.value == 'true'
         run: |
           set -e
 
@@ -739,31 +742,31 @@ jobs:
       - name: Generate backend test reports
         id: backend-test-reports
         run: |
-          if [ "$IS_MAIN" = "true" ]; then
+          if [ "$IS_CORE_REPO" = "true" ]; then
             ./gradlew unitTestReport combinedCoverageReport -x test
             echo "coverage=build/reports/jacoco/combinedCoverageReport/html" >> $GITHUB_OUTPUT
           else
             echo "coverage=test/build/reports/jacoco/test/html" >> $GITHUB_OUTPUT
           fi
         env:
-          IS_MAIN: ${{ steps.is_main_repo.outputs.value }}
+          IS_CORE_REPO: ${{ steps.is_core_repo.outputs.value }}
 
       - name: Archive integration test results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: integration-test-results
           path: test/build/reports/tests/test
 
       - name: Archive unit test results
-        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ steps.is_core_repo.outputs.value == 'true' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unit-test-results
           path: build/reports/tests/test/aggregated-results
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-report
           path: ${{ steps.backend-test-reports.outputs.coverage }}
@@ -782,24 +785,24 @@ jobs:
         timeout-minutes: 20
 
       - name: Run NPM publish dry run
-        if: steps.is_main_repo.outputs.value == 'true' && github.ref != 'refs/heads/master'
+        if: steps.is_core_repo.outputs.value == 'true' && github.ref != 'refs/heads/main'
         run: yarn workspaces foreach --all --no-private --topological npm publish --dry-run
         timeout-minutes: 20
 
       - name: Run install playwright browser(s)
-        if: (steps.test-ui-components-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '') && steps.is_main_repo.outputs.value == 'true'
+        if: (steps.test-ui-components-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '') && steps.is_core_repo.outputs.value == 'true'
         run: npx playwright install chromium-headless-shell
         timeout-minutes: 20
 
       - name: Run UI component tests
-        if: steps.test-ui-components-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
+        if: steps.test-ui-components-command.outputs.value != '' && steps.is_core_repo.outputs.value == 'true'
         run: ${{ steps.test-ui-components-command.outputs.value }}
         timeout-minutes: 20
         # continue-on-error: true
 
       - name: Archive UI component test results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ui-component-test-results
           path: ui/component/*/build/component-test-report/**
@@ -807,7 +810,7 @@ jobs:
       - name: Run UI app tests
         id: run-ui-app-tests
         # Skip UI app tests for custom projects until we want to use them there
-        if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
+        if: steps.test-ui-apps-command.outputs.value != '' && steps.is_core_repo.outputs.value == 'true'
         run: |
           composeProfile='profile/dev-testing.yml'
 
@@ -821,14 +824,14 @@ jobs:
           # Run the tests
           ${{ steps.test-ui-apps-command.outputs.value }}
         env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          IS_CORE_REPO: ${{ steps.is_core_repo.outputs.value }}
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
         timeout-minutes: 20
         # continue-on-error: true
 
       - name: Archive UI app test results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ui-app-test-results
           path: ui/app/*/build/app-test-report/**
@@ -857,7 +860,7 @@ jobs:
         if: |
           !cancelled() &&
           steps.manager-docker-command.outputs.pushToDockerHub == 'true'
-        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
           category: grype-manager
@@ -911,7 +914,7 @@ jobs:
           deployments = deployments.split(";")
           managerRef = os.getenv("MANAGER_REF")
           deploymentRef = os.getenv("DEPLOYMENT_REF")
-          isMainRepo = os.getenv("IS_MAIN_REPO") == 'true'
+          isCoreRepo = os.getenv("IS_CORE_REPO") == 'true'
           inputs = json.loads(os.getenv("INPUTS", "{}"))
           secrets = json.loads(os.getenv("SECRETS", "{}"))
           inputsAndSecrets = secrets | inputs
@@ -928,8 +931,8 @@ jobs:
           # Determine deploy script to use
           deployScript = ".ci_cd/deploy.sh"
 
-          if not os.path.exists(deployScript) and not isMainRepo:
-            deployScript = "openremote/.ci_cd/deploy.sh"
+          if not os.path.exists(deployScript) and not isCoreRepo:
+            deployScript = "core/.ci_cd/deploy.sh"
 
           if not os.path.exists(deployScript):
             os.system(f"Deploy script not found '{deployScript}'")
@@ -1027,7 +1030,8 @@ jobs:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)
         env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          IS_CORE_REPO: ${{ steps.is_core_repo.outputs.value }}
+          IS_MAIN_REPO: ${{ steps.is_core_repo.outputs.value }} # Compatibility with released scripts
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
           MANAGER_DOCKER_BUILD_PATH: ${{ steps.manager-docker-command.outputs.buildPath }}

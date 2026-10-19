@@ -537,8 +537,8 @@ trait ContainerTrait {
   ResteasyClient createClient(String accessToken) {
     testClient.updateAndGet {
       it != null ? it :
-      // Use a long timeout to make debugging a bit easier
-      WebTargetBuilder.createClient(Container.EXECUTOR, 1, 120000, null)
+              // Use a long timeout to make debugging a bit easier
+              WebTargetBuilder.createClient(Container.EXECUTOR, 1, 120000, null)
     }
   }
 

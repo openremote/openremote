@@ -121,7 +121,7 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
     when: "ten assets for segment delete verification are created with the same attributes"
     def segmentDeleteAssets = (1..10).collect { index ->
       def asset = new ThingAsset("Hypercore Segment Delete Asset ${index}")
-      .setRealm(keycloakTestSetup.realmMaster.name)
+              .setRealm(keycloakTestSetup.realmMaster.name)
       asset.addOrReplaceAttributes(numberAttributes(attributeNames))
       assetStorageService.merge(asset)
     }

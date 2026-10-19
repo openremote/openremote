@@ -869,7 +869,14 @@ public class JSONSchemaUtil {
                     .collect(Collectors.toSet());
 
             return found.stream()
-                .map(sub -> context.getTypeContext().resolveSubtype(resolvedType, sub))
+                .map(
+                    sub -> {
+                      try {
+                        return context.getTypeContext().resolveSubtype(resolvedType, sub);
+                      } catch (IllegalArgumentException e) {
+                        return context.getTypeContext().resolve(sub);
+                      }
+                    })
                 .collect(Collectors.toList());
           });
     }

@@ -120,7 +120,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
 
             requestContext.abortWith(
                     Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
-                    )
+            )
             return
           } else if (grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "refresh_token"
                   && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
@@ -138,7 +138,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
 
             requestContext.abortWith(
                     Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
-                    )
+            )
             return
           }
           break
@@ -197,7 +197,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                   Response
                   .ok("This is an example response where the value of 100% is in the body of the message.", MediaType.TEXT_PLAIN)
                   .build()
-                  )
+          )
           return
         case "https://mockapi/get_poll_fast":
           pollCountFast++
@@ -205,7 +205,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                   Response
                   .ok("This is an example response where there are multiple values of 100% 60% in the body of the message.", MediaType.TEXT_PLAIN)
                   .build()
-                  )
+          )
           return
         case "https://mockapi/get_success_200":
         case "https://redirected.mockapi/get_success_200":
@@ -222,11 +222,11 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
           return
         case "https://mockapi/binary":
           requestContext.abortWith(
-          Response.ok(
-                  new byte[] {
-                    (byte)0x1F & 0xFF, (byte)0x56 & 0xFF, (byte)0x01 & 0xFF, (byte)0xAE & 0xFF, (byte)0x12 & 0xFF
-                  }, MediaType.APPLICATION_OCTET_STREAM_TYPE
-                  ).build()
+                  Response.ok(
+                          new byte[] {
+                            (byte)0x1F & 0xFF, (byte)0x56 & 0xFF, (byte)0x01 & 0xFF, (byte)0xAE & 0xFF, (byte)0x12 & 0xFF
+                          }, MediaType.APPLICATION_OCTET_STREAM_TYPE
+                          ).build()
           )
           return
         case "https://mockapi/dynamic_time_1":
@@ -262,7 +262,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                       Response
                       .ok(requestContext.getEntity() as String, MediaType.APPLICATION_JSON_TYPE)
                       .build()
-                      )
+              )
               return
             }
           }
@@ -317,7 +317,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             )
             .setRequestQueryParameters(
             ValueUtil.parse(/{"param1": ["param1Value1"], "param2": ["param2Value1","param2Value2"]}/, MultivaluedStringMap.class).orElseThrow()
-            )
+    )
 
     and: "the agent is added to the asset service"
     agent = assetStorageService.merge(agent)
@@ -427,7 +427,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     )
                     )
                     )
-            )
+    )
 
     and: "the asset is merged into the asset service"
     asset = assetStorageService.merge(asset)
@@ -561,7 +561,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     .setPath("redirect")
                     )
                     )
-            )
+    )
 
     and: "the asset is merged into the asset service"
     asset2 = assetStorageService.merge(asset2)
@@ -660,7 +660,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                             ))
                     )
                     )
-            )
+    )
 
     and: "the clock is stopped"
     stopPseudoClock()

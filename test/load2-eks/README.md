@@ -181,7 +181,7 @@ MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration. Default is 30
 
 ## Multi-proxy test
 
-As part of [Test using multiple HAProxy replicas under EKS · Issue #2568 · openremote/openremote](https://github.com/openremote/openremote/issues/2568),
+As part of [Test using multiple HAProxy replicas under EKS · Issue #2568 · openremote/core](https://github.com/openremote/core/issues/2568),
 a setup terminating TLS at the AWS NLB level and using ACM to manage certificates, while still using HAProxy pod(s) has been implemented.  
 This can be installed using the `eks-setup-load-acm.sh` script.  
 This is really for testing purposes and clarification on how we deploy our stack is required to move further.

@@ -128,7 +128,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-            )
+    )
     stopPseudoClock()
 
     and: "the asset resource"
@@ -202,7 +202,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
             new Attribute<>("custom2", ValueType.GEO_JSON_POINT, new GeoJSONPoint(1.234, 5.678)).addMeta(
                     new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotNull()))
                     )
-            )
+    )
     def updatedModelTestAsset = assetResource.update(null, modelTestAsset.id, modelTestAsset)
 
     then: "the save should succeed and correct values should be stored"
@@ -527,7 +527,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
             .addAttributes(
             new Attribute<>("attr1", ValueType.TIMESTAMP, getClockTimeOf(container)),
             new Attribute<>("attr2", ValueType.POSITIVE_INTEGER, 3)
-            )
+    )
     customAsset.type = CUSTOM_ASSET_TYPE
     customAsset = assetResource.create(null, customAsset)
 
@@ -552,7 +552,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
     when: "the issue is resolved"
     customAsset.addAttributes(
             new Attribute<>("dynamic1", dynamicValueDescriptors[0], "value1")
-            )
+    )
     customAsset = assetResource.create(null, customAsset)
 
     then: "it should have been persisted"
@@ -704,14 +704,14 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
                     .setPath("test_path")
                     .setPagingMode(true))
                     )
-            )
+    )
     asset.getAttribute(LightAsset.COLOUR_RGB).ifPresent({
       it.addOrReplaceMeta(
-              new MetaItem<>(MetaItemType.AGENT_LINK, new DefaultAgentLink("agent_id")
-              .setValueFilters(
-                      [new SubStringValueFilter(0,10)] as ValueFilter[]
+                      new MetaItem<>(MetaItemType.AGENT_LINK, new DefaultAgentLink("agent_id")
+                      .setValueFilters(
+                              [new SubStringValueFilter(0,10)] as ValueFilter[]
+                              )
                       )
-              )
               )
     })
     // Inject properties which are normally done by the backend on retrieval

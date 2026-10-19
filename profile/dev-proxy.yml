@@ -28,6 +28,7 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    # OR_MANAGER_URL is not set: the manager is expected on the same base URL as keycloak.
 
   postgresql:
     extends:

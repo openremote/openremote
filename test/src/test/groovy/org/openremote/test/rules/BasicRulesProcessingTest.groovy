@@ -114,7 +114,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
     rulesImport.resetRulesFired(smartHomeEngine)
     def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
             managerTestSetup.apartment2LivingroomId, "presenceDetected", true
-            )
+    )
     assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
     then: "the engines in scope should have fired"
@@ -169,7 +169,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             .addOrReplaceMeta(
                     new MetaItem<>(MetaItemType.RULE_STATE, true)
                     )
-            )
+    )
     asset = assetStorageService.merge(asset)
 
     then: "the rules engines should have executed at least once"
@@ -215,7 +215,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
                     new MetaItem<>(MetaItemType.RULE_STATE, true)
                     ),
             new Attribute<>("testInteger", ValueType.NUMBER, 0d)
-            )
+    )
     asset = assetStorageService.merge(asset)
 
     then: "the rules engines should have executed at least one more time"
@@ -250,7 +250,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
                     new MetaItem<>(MetaItemType.RULE_STATE, false)
                     ),
             new Attribute<>("testInteger", ValueType.NUMBER, 0d)
-            )
+    )
     asset = assetStorageService.merge(asset)
 
     then: "the facts should be removed from the rule engines and rules should have fired"
@@ -281,7 +281,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             .addOrReplaceMeta(
                     new MetaItem<>(MetaItemType.RULE_STATE, true)
                     )
-            )
+    )
     asset = assetStorageService.merge(asset)
 
     then: "the facts should be added to the rule engines and rules should have fired"
@@ -373,7 +373,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
     def apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
     def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
             managerTestSetup.apartment2LivingroomId, "presenceDetected", true
-            )
+    )
     assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
     then: "the rules engines should have executed at least one more time"
