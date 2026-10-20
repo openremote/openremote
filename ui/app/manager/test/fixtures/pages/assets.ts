@@ -31,8 +31,16 @@ export class AssetsPage implements BasePage {
     this.manager.navigateToTab("Assets");
   }
 
+  /**
+   * Navigate to an asset's page, as when opening its URL in a new tab.
+   *
+   * The manager signs in through a full page redirect after loading, which drops the #-route and
+   * aborts any navigation started in the meantime, so sign in first and apply the route afterwards.
+   */
   async gotoAssetId(realm: string, id: string, editor = false) {
-    this.page.goto(this.manager.getAppUrl(realm) + `#/assets/${editor}/${id}`);
+    await this.page.goto(this.manager.getAppUrl(realm));
+    await this.page.locator("#desktop-left").waitFor({ state: "visible" });
+    await this.page.goto(this.manager.getAppUrl(realm) + `#/assets/${editor}/${id}`);
   }
 
   /**
