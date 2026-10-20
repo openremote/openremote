@@ -210,4 +210,3 @@ As part of [Test using multiple HAProxy replicas under EKS · Issue #2568 · ope
 a setup terminating TLS at the AWS NLB level and using ACM to manage certificates, while still using HAProxy pod(s) has been implemented.  
 This can be installed using the `eks-setup-load-acm.sh` script.  
 This is really for testing purposes and clarification on how we deploy our stack is required to move further.
-

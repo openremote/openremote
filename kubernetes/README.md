@@ -909,16 +909,16 @@ bash kubernetes/test/aws-profile-test
 python3 kubernetes/test/mqtts-readiness-test
 ```
 
-| Test                         | Coverage                                                                                                          |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `or-setup-test`              | Helm chart linting and rendered resources for the supported targets and exposure modes.                           |
-| `legacy-haproxy-cleanup-test` | Legacy EKS HAProxy cleanup deletes retained claims and waits for their volumes before removing the EBS driver.   |
-| `or-stack-test`              | Portable stack commands, values selection, credentials, and lifecycle safeguards.                                 |
-| `hostname-reservations-test` | Hostname ownership, concurrent reservations, and cleanup/recovery using a persistent, atomic Kubernetes API stub. |
-| `or-eks-cluster-test`        | EKS cluster add-on configuration and destruction safeguards.                                                      |
-| `or-eks-stack-test`          | EKS stack orchestration, DNS and certificate handling, and cleanup safeguards.                                    |
-| `aws-profile-test`           | Default credential behavior and explicit AWS profile selection in both EKS CLIs.                                  |
-| `mqtts-readiness-test`       | TLS handshake verification, hostname and trust checks, and timeout handling using local test servers.             |
+| Test                          | Coverage                                                                                                          |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `or-setup-test`               | Helm chart linting and rendered resources for the supported targets and exposure modes.                           |
+| `legacy-haproxy-cleanup-test` | Legacy EKS HAProxy cleanup deletes retained claims and waits for their volumes before removing the EBS driver.    |
+| `or-stack-test`               | Portable stack commands, values selection, credentials, and lifecycle safeguards.                                 |
+| `hostname-reservations-test`  | Hostname ownership, concurrent reservations, and cleanup/recovery using a persistent, atomic Kubernetes API stub. |
+| `or-eks-cluster-test`         | EKS cluster add-on configuration and destruction safeguards.                                                      |
+| `or-eks-stack-test`           | EKS stack orchestration, DNS and certificate handling, and cleanup safeguards.                                    |
+| `aws-profile-test`            | Default credential behavior and explicit AWS profile selection in both EKS CLIs.                                  |
+| `mqtts-readiness-test`        | TLS handshake verification, hostname and trust checks, and timeout handling using local test servers.             |
 
 These tests do not verify a live cluster's routing, certificate issuance, or
 NetworkPolicy enforcement. After deploying, use the connectivity checks in
