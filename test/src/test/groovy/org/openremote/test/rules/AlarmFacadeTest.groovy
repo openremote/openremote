@@ -176,6 +176,46 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     "asset" | "unrelated"  | false
   }
 
+  def "#scope scope creating an alarm without targets #targetIds for #assignee is allowed: #allowed"() {
+    given:
+    def user = assignee == "none" ? null : testUsers[assignee]
+    if (assignee == "restricted") {
+      // Access to the engine's asset does not make it an implicit alarm target.
+      linkNotificationRecipient(["scoped"])
+    }
+    def alarm = newAlarm(user?.id, Alarm.Severity.HIGH)
+
+    when:
+    def alarmId = facadeFor(scope).create(alarm, targetIds)
+
+    then:
+    if (allowed) {
+      assertCreated(alarmId, scope, user?.id, [])
+      assertNotificationRecipients(user == null ? unrestrictedNotificationRecipients() : [user])
+    } else {
+      verifyAll {
+        alarmId == null
+        createdAlarms().isEmpty()
+        queuedNotifications.isEmpty()
+      }
+    }
+
+    where:
+    scope   | targetIds | assignee       | allowed
+    "asset" | null      | "none"         | false
+    "asset" | []        | "none"         | false
+    "asset" | null      | "unrestricted" | false
+    "asset" | []        | "unrestricted" | false
+    "asset" | null      | "restricted"   | false
+    "asset" | []        | "restricted"   | false
+    "realm" | null      | "none"         | true
+    "realm" | []        | "none"         | true
+    "realm" | null      | "unrestricted" | true
+    "realm" | []        | "unrestricted" | true
+    "realm" | null      | "restricted"   | false
+    "realm" | []        | "restricted"   | false
+  }
+
   def "#scope scope rejects a foreign-realm asset before creating the alarm"() {
     when:
     facadeFor(scope).create(newAlarm(), [testAssets.otherRealm.id])
