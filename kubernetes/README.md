@@ -221,12 +221,21 @@ let discovery and browser requests produce different issuers, causing login
 to fail with `Invalid token issuer`. After correcting this setting on an
 existing stack, restart Manager so it refreshes its cached issuer.
 
-`or-stack` also configures Manager's `OR_WEBSERVER_ALLOWED_ORIGINS` with the
-stack's exact public HTTPS origin, including its port. Manager's default CORS
-origins use the hostname without a custom port; browser writes such as asset
+`or-stack` also sets `or.webserver.allowedOrigins`, which the Manager chart maps
+to `OR_WEBSERVER_ALLOWED_ORIGINS`, with the stack's exact public HTTPS origin,
+including its port. Manager's default CORS origins use the hostname without a
+custom port; browser writes such as asset
 creation would otherwise fail with HTTP 403 `CORS origin denied`, even when
 login and page loading work. Each stack allows its own public origin without
 enabling wildcard CORS access.
+
+The Manager chart groups all `OR_WEBSERVER_*` settings under `or.webserver` in
+[`manager/values.yaml`](manager/values.yaml): listener host and port, CORS origins,
+methods and headers, request logging, thread limits, and request size limits.
+Null or empty values omit the corresponding environment variable so Manager
+uses its application default. `listenPort` also sets the container's named HTTP
+port, which the Service target and default health probes use; `service.http.port`
+continues to control the Service's exposed port independently.
 
 ### Namespace preparation for deployment tools
 
@@ -891,6 +900,7 @@ to listen on loopback sockets. Run these commands from the repository root:
 
 ```bash
 bash kubernetes/test/or-setup-test
+bash kubernetes/test/legacy-haproxy-cleanup-test
 bash kubernetes/test/or-stack-test
 python3 kubernetes/test/hostname-reservations-test
 bash kubernetes/test/or-eks-cluster-test
@@ -902,6 +912,7 @@ python3 kubernetes/test/mqtts-readiness-test
 | Test                         | Coverage                                                                                                          |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `or-setup-test`              | Helm chart linting and rendered resources for the supported targets and exposure modes.                           |
+| `legacy-haproxy-cleanup-test` | Legacy EKS HAProxy cleanup deletes retained claims and waits for their volumes before removing the EBS driver.   |
 | `or-stack-test`              | Portable stack commands, values selection, credentials, and lifecycle safeguards.                                 |
 | `hostname-reservations-test` | Hostname ownership, concurrent reservations, and cleanup/recovery using a persistent, atomic Kubernetes API stub. |
 | `or-eks-cluster-test`        | EKS cluster add-on configuration and destruction safeguards.                                                      |
