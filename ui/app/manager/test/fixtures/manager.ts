@@ -519,7 +519,7 @@ export class Manager {
       await this.resetUserPassword(config);
     }
 
-    // Provision assets; assets created by an earlier setup() call stay tracked so cleanUp() still deletes them
+    // Provision assets
     if (assets) {
       for (const asset of assets) {
         await this.createAsset(asset, config);
