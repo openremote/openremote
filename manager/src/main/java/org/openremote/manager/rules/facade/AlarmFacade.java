@@ -109,11 +109,13 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
       return;
     }
 
-    String realm =
-        rulesEngineId
-            .getRealm()
-            .orElseThrow(() -> new IllegalStateException("Realm ruleset must have a realm ID"));
     SentAlarm alarm = alarmService.getAlarm(alarmId);
+    String realm =
+        rulesEngineId.getScope() == GlobalRuleset.class
+            ? alarm.getRealm()
+            : rulesEngineId
+                .getRealm()
+                .orElseThrow(() -> new IllegalStateException("Realm ruleset must have a realm ID"));
     if (!realm.equals(alarm.getRealm())) {
       throw new AlarmService.AlarmAssetLinkRealmMismatchException(
           "Alarm '" + alarmId + "' is not in realm '" + realm + "'");
