@@ -32,7 +32,10 @@ import org.openremote.model.alarm.Alarm
 import org.openremote.model.alarm.SentAlarm
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.notification.EmailNotificationMessage
 import org.openremote.model.notification.Notification
+import org.openremote.model.notification.PushNotificationMessage
+import org.openremote.model.security.ClientRole
 import org.openremote.model.security.User
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -42,7 +45,7 @@ import spock.lang.Specification
 
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE
 
-/** Exercises creation and linking against real asset paths, user roles, user links and alarm persistence. */
+/** Exercises creation, linking and notification recipients against real assets, roles and persistence. */
 class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
 
   private static final String SOURCE_ID = "4242"
@@ -97,6 +100,10 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     testUsers.unrestricted = identityProvider.getUser(keycloakSetup.testuser2Id)
     testUsers.restricted = identityProvider.getUser(keycloakSetup.testuser3Id)
     testUsers.otherRealm = identityProvider.getUser(keycloakSetup.testuser1Id)
+    testUsers.otherAlarmWriter = identityProvider.getUser(keycloakSetup.testuser4Id)
+    testUsers.notificationWriter = keycloakSetup.createUser(
+            realm, "alarm-facade-writer", UniqueIdentifierGenerator.generateId(), "Alarm", "Writer",
+            "alarm-facade-writer@openremote.local", true, [ClientRole.WRITE_ALARMS] as ClientRole[])
     assert testUsers.unrestricted.realm == realm
     assert testUsers.restricted.realm == realm
     assert testUsers.otherRealm.realm != realm
@@ -128,6 +135,9 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
   }
 
   def cleanupSpec() {
+    if (testUsers.notificationWriter != null) {
+      identityService.identityProvider.deleteUser(realm, testUsers.notificationWriter.id)
+    }
     if (assetStorageService != null && !testAssets.isEmpty()) {
       assert assetStorageService.delete(testAssets.values().collect { it.id })
     }
@@ -280,6 +290,102 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
 
     where:
     scope << ["realm", "asset"]
+  }
+
+  def "unassigned HIGH alarm on #operation notifies a restricted user linked to #linkedNames for targets #targetNames: #allowed"() {
+    given:
+    linkNotificationRecipient(linkedNames)
+    def expectedRecipients = unrestrictedNotificationRecipients()
+    if (allowed) {
+      expectedRecipients.add(testUsers.restricted)
+    }
+
+    when:
+    def alarmId = createOrUpdateUnassignedHighAlarm(operation, targetNames)
+
+    then:
+    alarmService.getAlarm(alarmId).assigneeId == null
+    assertNotificationRecipients(expectedRecipients)
+
+    where:
+    [operation, targetNames, linkedNames, allowed] << ["realm create", "asset create", "update"].collectMany { operation ->
+      [
+        [["child"], [], false],
+        [["child"], ["scoped"], false],
+        [["child"], ["sibling"], false],
+        [["child"], ["child"], true],
+        [["child", "grandchild"], ["child"], false],
+        [["grandchild", "child"], ["child"], false],
+        [["child", "grandchild"], ["child", "grandchild"], true],
+        [["child", "child"], ["child"], true]
+      ].collect { row -> [operation] + row }
+    }
+  }
+
+  def "unassigned HIGH alarm with no asset links on #operation notifies only unrestricted users"() {
+    given: "a restricted recipient has an unrelated asset link"
+    linkNotificationRecipient(["child"])
+
+    when:
+    def alarmId = createOrUpdateUnassignedHighAlarm(operation, targetNames)
+
+    then:
+    alarmService.getAssetLinks(alarmId, realm).isEmpty()
+    assertNotificationRecipients(unrestrictedNotificationRecipients())
+
+    where:
+    operation      | targetNames
+    "realm create" | null
+    "realm create" | []
+    "update"       | []
+  }
+
+  def "updates recheck restricted recipient access after an asset link is revoked"() {
+    given:
+    linkNotificationRecipient(["child", "grandchild"])
+    def alarmId = facadeFor("asset").create(newAlarm(null, Alarm.Severity.HIGH), assetIdsFor(["child", "grandchild"]))
+    assertNotificationRecipients(unrestrictedNotificationRecipients() + testUsers.restricted)
+    queuedNotifications.clear()
+    def revokedLink = createdUserLinks.find { it.id.assetId == testAssets.grandchild.id }
+    assetStorageService.deleteUserAssetLinks([revokedLink])
+    createdUserLinks.remove(revokedLink)
+
+    when:
+    def oldAlarm = alarmService.getAlarm(alarmId)
+    def updatedAlarm = alarmService.getAlarm(alarmId)
+    updatedAlarm.content = "Updated after access was revoked"
+    alarmService.updateAlarm(oldAlarm, updatedAlarm)
+
+    then:
+    assertNotificationRecipients(unrestrictedNotificationRecipients())
+  }
+
+  def "automatic recipient filtering preserves the exclusion of a manual alarm's creator"() {
+    given:
+    linkNotificationRecipient(["child"])
+    def alarm = newAlarm(null, Alarm.Severity.HIGH)
+            .setSource(Alarm.Source.MANUAL).setSourceId(testUsers.notificationWriter.id)
+
+    when:
+    alarmService.sendAlarm(alarm, assetIdsFor(["child"]))
+
+    then:
+    assertNotificationRecipients([testUsers.otherAlarmWriter, testUsers.restricted])
+  }
+
+  def "automatic recipient filtering preserves the exclusion of the previous assignee"() {
+    given:
+    linkNotificationRecipient(["child"])
+    def oldAlarm = createExistingAlarm(["child"], testUsers.restricted.id)
+    def updatedAlarm = alarmService.getAlarm(oldAlarm.id)
+    updatedAlarm.assigneeId = null
+    updatedAlarm.severity = Alarm.Severity.HIGH
+
+    when:
+    alarmService.updateAlarm(oldAlarm, updatedAlarm)
+
+    then:
+    assertNotificationRecipients(unrestrictedNotificationRecipients())
   }
 
   def "#scope scope linking targets #targetNames is allowed: #allowed"() {
@@ -499,6 +605,53 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
       ].collect { row ->
         [scope] + row
       }
+    }
+  }
+
+  private void linkNotificationRecipient(List<String> assetNames) {
+    createdUserLinks.addAll(assetNames.collect { name ->
+      new UserAssetLink(realm, testUsers.restricted.id, testAssets[name].id)
+    })
+    if (!createdUserLinks.isEmpty()) {
+      assetStorageService.storeUserAssetLinks(createdUserLinks)
+    }
+  }
+
+  private List<User> unrestrictedNotificationRecipients() {
+    // The other fixture users either lack the alarm role, belong to another realm, or are
+    // restricted and have no links to these new assets. Neither writer needs any asset links.
+    [testUsers.notificationWriter, testUsers.otherAlarmWriter]
+  }
+
+  private Long createOrUpdateUnassignedHighAlarm(String operation, List<String> assetNames) {
+    if (operation == "update") {
+      def oldAlarm = createExistingAlarm(assetNames)
+      assert queuedNotifications.isEmpty()
+      def updatedAlarm = alarmService.getAlarm(oldAlarm.id)
+      updatedAlarm.severity = Alarm.Severity.HIGH
+      alarmService.updateAlarm(oldAlarm, updatedAlarm)
+      return oldAlarm.id
+    }
+    facadeFor(operation == "asset create" ? "asset" : "realm")
+            .create(newAlarm(null, Alarm.Severity.HIGH), assetNames == null ? null : assetIdsFor(assetNames))
+  }
+
+  private void assertNotificationRecipients(List<User> expectedUsers) {
+    assert queuedNotifications.size() == 2
+    def push = queuedNotifications.find { it.message instanceof PushNotificationMessage }
+    def email = queuedNotifications.find { it.message instanceof EmailNotificationMessage }
+    assert push != null
+    assert email != null
+    verifyAll {
+      push.targets.every { it.type == Notification.TargetType.USER }
+      push.targets.collect { it.id }.toSet() == expectedUsers.collect { it.id }.toSet()
+      email.message.to.collect {
+        it.address
+      }.toSet() == expectedUsers.findAll {
+        it.email
+      }.collect {
+        it.email
+      }.toSet()
     }
   }
 
