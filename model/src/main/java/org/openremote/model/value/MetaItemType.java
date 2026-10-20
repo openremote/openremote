@@ -97,8 +97,8 @@ public final class MetaItemType {
       new MetaItemDescriptor<>("storeDataPoints", ValueType.BOOLEAN);
 
   /**
-   * How long to store attribute values in time series database (data older than this will be
-   * automatically purged).
+   * Previously set how long to store attribute values in the time series database (data older than
+   * this would have been automatically purged).
    *
    * @deprecated Per-attribute retention is no longer supported. Purging now uses TimescaleDB
    *     drop_chunks with a global week-based retention period configured via
