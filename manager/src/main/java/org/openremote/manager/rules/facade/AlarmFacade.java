@@ -20,6 +20,7 @@ package org.openremote.manager.rules.facade;
 
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 
+import jakarta.persistence.EntityNotFoundException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
@@ -37,6 +38,8 @@ import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.security.User;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
 
 public class AlarmFacade<T extends Ruleset> extends Alarms {
   private static final Logger LOG = Logger.getLogger(AlarmFacade.class.getName());
@@ -59,11 +62,17 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
 
   @Override
   public Long create(Alarm alarm, List<String> assetIds) {
-    String realm = rulesEngineId.getRealm().orElseThrow();
     List<String> targetIds = assetIds == null ? List.of() : assetIds.stream().distinct().toList();
 
     if (rulesEngineId.getScope() == AssetRuleset.class && targetIds.isEmpty()) {
       LOG.warning("Cannot create an asset-scoped alarm without target assets: " + rulesEngineId);
+      return null;
+    }
+
+    String realm = resolveCreationRealm(alarm, targetIds);
+    if (realm == null) {
+      LOG.warning(
+          "Cannot create a global alarm without a realm or target assets: " + rulesEngineId);
       return null;
     }
 
@@ -79,6 +88,8 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
     Alarm.Source source;
 
     if (rulesEngineId.getScope() == GlobalRuleset.class) {
+      // JSON actions can reuse this definition with targets in another realm on the next execution.
+      alarm = ValueUtil.clone(alarm);
       source = Source.GLOBAL_RULESET;
     } else if (rulesEngineId.getScope() == RealmRuleset.class) {
       source = Source.REALM_RULESET;
@@ -128,6 +139,29 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
     }
 
     alarmService.linkAssets(targetIds, realm, alarmId);
+  }
+
+  private String resolveCreationRealm(Alarm alarm, List<String> targetIds) {
+    if (rulesEngineId.getScope() != GlobalRuleset.class) {
+      return rulesEngineId.getRealm().orElseThrow();
+    }
+    if (!TextUtil.isNullOrEmpty(alarm.getRealm())) {
+      return alarm.getRealm();
+    }
+    if (targetIds.isEmpty()) {
+      return null;
+    }
+
+    String firstAssetId = targetIds.getFirst();
+    if (TextUtil.isNullOrEmpty(firstAssetId)) {
+      throw new IllegalArgumentException("Missing asset ID");
+    }
+    // Creation validates the complete target list against this realm before persisting anything.
+    String realm = assetStorageService.getAssetRealms(List.of(firstAssetId)).get(firstAssetId);
+    if (realm == null) {
+      throw new EntityNotFoundException("Asset '" + firstAssetId + "' does not exist");
+    }
+    return realm;
   }
 
   private boolean areAssetsInScope(List<String> assetIds) {
