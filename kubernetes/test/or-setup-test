@@ -18,6 +18,7 @@ HAPROXY_EXPOSURE_VALUES="$TEST_DIR/../stack/exposures/haproxy/or-setup.yaml"
 HAPROXY_PROXY_VALUES="$TEST_DIR/../stack/exposures/haproxy/proxy.yaml"
 LOCAL_HAPROXY_PROXY_VALUES="$TEST_DIR/../stack/exposures/haproxy/local/proxy.yaml"
 EKS_HAPROXY_PROXY_VALUES="$TEST_DIR/../stack/exposures/haproxy/eks/proxy.yaml"
+LEGACY_EKS_PROXY_VALUES="$PROXY_CHART/values-eks.yaml"
 TEST_CERTIFICATE_ARN="arn:aws:acm:eu-west-1:123456789012:certificate/test-certificate"
 
 fail() {
@@ -327,6 +328,13 @@ fi
 grep -A15 '^kind: Service$' <<< "$rendered_eks_proxy" | \
   grep -F -- 'openremote.io/managed-dns: "true"' >/dev/null || fail \
     "HAProxy Service DNS intent is missing its controller selection label"
+
+rendered_legacy_eks_proxy_pvc="$(helm template proxy "$PROXY_CHART" \
+  --values "$LEGACY_EKS_PROXY_VALUES" --show-only templates/pvc.yaml)"
+grep -F -- 'storageClassName: "openremote-ebs"' <<< "$rendered_legacy_eks_proxy_pvc" >/dev/null || fail \
+  "Legacy EKS HAProxy certificate state does not use openremote-ebs"
+grep -F -- 'helm.sh/resource-policy: keep' <<< "$rendered_legacy_eks_proxy_pvc" >/dev/null || fail \
+  "Legacy EKS HAProxy certificate state is not retained on Helm uninstall"
 
 rendered_external_cert="$(helm template proxy "$PROXY_CHART" \
   --namespace stack-cert \

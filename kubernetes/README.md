@@ -866,6 +866,7 @@ repository root:
 
 ```bash
 bash kubernetes/test/or-setup-test
+bash kubernetes/test/legacy-haproxy-cleanup-test
 bash kubernetes/test/or-stack-test
 python3 kubernetes/test/hostname-reservations-test
 bash kubernetes/test/or-eks-cluster-test
@@ -876,6 +877,7 @@ bash kubernetes/test/aws-profile-test
 | Test                         | Coverage                                                                                                          |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `or-setup-test`              | Helm chart linting and rendered resources for the supported targets and exposure modes.                           |
+| `legacy-haproxy-cleanup-test` | Legacy EKS HAProxy cleanup deletes retained claims and waits for their volumes before removing the EBS driver.   |
 | `or-stack-test`              | Portable stack commands, values selection, credentials, and lifecycle safeguards.                                 |
 | `hostname-reservations-test` | Hostname ownership, concurrent reservations, and cleanup/recovery using a persistent, atomic Kubernetes API stub. |
 | `or-eks-cluster-test`        | EKS cluster add-on configuration and destruction safeguards.                                                      |
