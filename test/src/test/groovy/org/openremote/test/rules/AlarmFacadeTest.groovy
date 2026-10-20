@@ -332,6 +332,206 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     scope << ["realm", "asset"]
   }
 
+  def "global scope creates in #expectedRealm with declared realm #declaredRealm and targets #targetNames"() {
+    given:
+    def targetIds = targetNames == null ? null : assetIdsFor(targetNames)
+    def alarm = newAlarm().setRealm(declaredRealm).setSource(Alarm.Source.ASSET_RULESET)
+
+    when:
+    def alarmId = facadeFor("global").create(alarm, targetIds)
+
+    then:
+    assertCreated(alarmId, "global", null, targetIds ?: [], expectedRealm)
+    queuedNotifications.isEmpty()
+
+    where:
+    declaredRealm | targetNames          | expectedRealm
+    realm         | ["child"]            | realm
+    otherRealm    | ["otherRealm"]       | otherRealm
+    realm         | null                 | realm
+    realm         | []                   | realm
+    otherRealm    | []                   | otherRealm
+    null          | ["child", "sibling"] | realm
+    null          | ["otherRealm"]       | otherRealm
+    null          | ["child", "child"]   | realm
+    ""            | ["child"]            | realm
+  }
+
+  def "global scope rejects conflicting realms for declared realm #declaredRealm and targets #targetNames"() {
+    given:
+    def alarm = newAlarm(null, Alarm.Severity.HIGH).setRealm(declaredRealm)
+
+    when:
+    facadeFor("global").create(alarm, assetIdsFor(targetNames))
+
+    then:
+    thrown(AlarmService.AlarmAssetLinkRealmMismatchException)
+    [realm, otherRealm].every { createdAlarms(it).isEmpty() }
+    queuedNotifications.isEmpty()
+
+    where:
+    declaredRealm | targetNames
+    realm         | ["otherRealm"]
+    otherRealm    | ["child"]
+    realm         | ["child", "otherRealm"]
+    realm         | ["otherRealm", "child"]
+    null          | ["child", "otherRealm"]
+    null          | ["otherRealm", "child"]
+  }
+
+  def "global scope rejects missing realm #declaredRealm and missing targets #targetIds"() {
+    given: "an assignee's realm cannot substitute for an explicit realm or target assets"
+    def alarm = newAlarm(testUsers.unrestricted.id, Alarm.Severity.HIGH).setRealm(declaredRealm)
+
+    when:
+    def alarmId = facadeFor("global").create(alarm, targetIds)
+
+    then:
+    verifyAll {
+      alarmId == null
+      [realm, otherRealm].every { createdAlarms(it).isEmpty() }
+      queuedNotifications.isEmpty()
+    }
+
+    where:
+    declaredRealm | targetIds
+    null          | null
+    null          | []
+    ""            | null
+    ""            | []
+  }
+
+  def "global scope with #realmMode realm assigning #assignee to #targetNames with links #linkedNames is allowed: #allowed"() {
+    given:
+    def user = testUsers[assignee]
+    if (assignee == "restricted") {
+      linkNotificationRecipient(linkedNames)
+    }
+    def targetIds = assetIdsFor(targetNames)
+    def alarm = newAlarm(user.id, Alarm.Severity.HIGH).setRealm(realmMode == "explicit" ? realm : null)
+
+    when:
+    def alarmId = facadeFor("global").create(alarm, targetIds)
+
+    then:
+    if (allowed) {
+      assertCreated(alarmId, "global", user.id, targetIds)
+      assertNotificationRecipients([user])
+    } else {
+      verifyAll {
+        alarmId == null
+        [realm, otherRealm].every { createdAlarms(it).isEmpty() }
+        queuedNotifications.isEmpty()
+      }
+    }
+
+    where:
+    [realmMode, assignee, targetNames, linkedNames, allowed] << ["explicit", "inferred"].collectMany { realmMode ->
+      [
+        ["unrestricted", ["child", "sibling"], [], true],
+        ["restricted", ["child"], ["child"], true],
+        ["restricted", ["child", "child"], ["child"], true],
+        ["restricted", ["child", "grandchild"], ["child", "grandchild"], true],
+        ["restricted", ["child"], [], false],
+        ["restricted", ["child"], ["scoped"], false],
+        ["restricted", ["child", "grandchild"], ["child"], false],
+        ["otherRealm", ["child"], [], false]
+      ].collect { row -> [realmMode] + row }
+    }
+  }
+
+  def "global scope without targets #targetIds assigning #assignee is allowed: #allowed"() {
+    given:
+    def user = testUsers[assignee]
+    if (assignee == "restricted") {
+      linkNotificationRecipient(["scoped"])
+    }
+
+    when:
+    def alarmId = facadeFor("global").create(newAlarm(user.id, Alarm.Severity.HIGH), targetIds)
+
+    then:
+    if (allowed) {
+      assertCreated(alarmId, "global", user.id, [])
+      assertNotificationRecipients([user])
+    } else {
+      verifyAll {
+        alarmId == null
+        [realm, otherRealm].every { createdAlarms(it).isEmpty() }
+        queuedNotifications.isEmpty()
+      }
+    }
+
+    where:
+    targetIds | assignee       | allowed
+    null      | "unrestricted" | true
+    []        | "unrestricted" | true
+    null      | "restricted"   | false
+    []        | "restricted"   | false
+  }
+
+  def "global scope with #realmMode realm rejects a missing assignee"() {
+    given:
+    def alarm = newAlarm(UniqueIdentifierGenerator.generateId(), Alarm.Severity.HIGH)
+            .setRealm(realmMode == "explicit" ? realm : null)
+
+    when:
+    def alarmId = facadeFor("global").create(alarm, assetIdsFor(["child"]))
+
+    then:
+    verifyAll {
+      alarmId == null
+      [realm, otherRealm].every { createdAlarms(it).isEmpty() }
+      queuedNotifications.isEmpty()
+    }
+
+    where:
+    realmMode << ["explicit", "inferred"]
+  }
+
+  def "global scope with #realmMode realm rejects invalid target #invalidTarget before creating or notifying"() {
+    given:
+    def alarm = newAlarm(null, Alarm.Severity.HIGH).setRealm(realmMode == "explicit" ? realm : null)
+    def invalidId = invalidTarget == "missing" ? UniqueIdentifierGenerator.generateId() : invalidTarget
+
+    when:
+    facadeFor("global").create(alarm, [testAssets.child.id, invalidId])
+
+    then:
+    thrown(exceptionType)
+    [realm, otherRealm].every { createdAlarms(it).isEmpty() }
+    queuedNotifications.isEmpty()
+
+    where:
+    [realmMode, invalidTarget, exceptionType] << ["explicit", "inferred"].collectMany { realmMode ->
+      [
+        [null, IllegalArgumentException],
+        ["", IllegalArgumentException],
+        ["missing", EntityNotFoundException]
+      ].collect { row -> [realmMode] + row }
+    }
+  }
+
+  def "global scope infers the realm again when an alarm definition is reused"() {
+    given: "JSON actions can reuse the same alarm definition across executions"
+    def facade = facadeFor("global")
+    def alarm = newAlarm().setRealm(null)
+
+    when:
+    def firstId = facade.create(alarm, assetIdsFor(["child"]))
+
+    then:
+    assertCreated(firstId, "global", null, assetIdsFor(["child"]), realm)
+
+    when: "a later execution targets another realm"
+    def secondId = facade.create(alarm, assetIdsFor(["otherRealm"]))
+
+    then:
+    assertCreated(secondId, "global", null, assetIdsFor(["otherRealm"]), otherRealm)
+    secondId != firstId
+    queuedNotifications.isEmpty()
+  }
+
   def "unassigned HIGH alarm on #operation notifies a restricted user linked to #linkedNames for targets #targetNames: #allowed"() {
     given:
     linkNotificationRecipient(linkedNames)
@@ -765,7 +965,8 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
   }
 
   private AlarmFacade facadeFor(String scope) {
-    def engineId = scope == "asset" ? new RulesEngineId(realm, testAssets.scoped.id) : new RulesEngineId(realm)
+    def engineId = scope == "global" ? new RulesEngineId() :
+            (scope == "asset" ? new RulesEngineId(realm, testAssets.scoped.id) : new RulesEngineId(realm))
     new AlarmFacade(engineId, alarmService, assetStorageService, identityService)
   }
 
@@ -778,17 +979,17 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     alarmService.getAlarms(alarmRealm, null, null, null).findAll { it.title == alarmTitle }
   }
 
-  private void assertCreated(Long alarmId, String scope, String assigneeId, List<String> targetIds) {
+  private void assertCreated(Long alarmId, String scope, String assigneeId, List<String> targetIds, String alarmRealm = realm) {
     assert alarmId != null
-    def alarms = createdAlarms()
+    def alarms = createdAlarms(alarmRealm)
     assert alarms.size() == 1
     def alarm = alarms.first()
     assert alarm.id == alarmId
-    assert alarm.realm == realm
-    assert alarm.source == (scope == "asset" ? Alarm.Source.ASSET_RULESET : Alarm.Source.REALM_RULESET)
+    assert alarm.realm == alarmRealm
+    assert alarm.source == [asset: Alarm.Source.ASSET_RULESET, realm: Alarm.Source.REALM_RULESET, global: Alarm.Source.GLOBAL_RULESET][scope]
     assert alarm.sourceId == SOURCE_ID
     assert alarm.assigneeId == assigneeId
-    def links = alarmService.getAssetLinks(alarmId, realm)
+    def links = alarmService.getAssetLinks(alarmId, alarmRealm)
     assert links.size() == targetIds.toSet().size()
     assert links.collect { it.id.assetId }.toSet() == targetIds.toSet()
   }
