@@ -33,9 +33,6 @@ export class AssetsPage implements BasePage {
 
   /**
    * Navigate to an asset's page, as when opening its URL in a new tab.
-   *
-   * Must be a single awaited navigation: the manager signs in through a full page redirect after
-   * loading, and a second navigation started during that redirect aborts it, leaving the app blank.
    */
   async gotoAssetId(realm: string, id: string, editor = false) {
     await this.page.goto(this.manager.getAppUrl(realm) + `#/assets/${editor}/${id}`);
