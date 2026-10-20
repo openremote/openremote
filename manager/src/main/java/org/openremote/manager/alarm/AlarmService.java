@@ -169,9 +169,10 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
   /**
    * Throws an {@link EntityNotFoundException} if any asset does not exist, or an {@link
-   * AlarmAssetLinkRealmMismatchException} if any asset does not belong to {@code realm}.
+   * AlarmAssetLinkRealmMismatchException} if any asset does not belong to {@code realm}. Callers
+   * are responsible for enforcing realm authorization.
    */
-  protected void validateAssetsInRealm(String realm, Collection<String> assetIds) {
+  public void validateAssetsInRealm(String realm, Collection<String> assetIds) {
     validateAssetIds(assetIds);
     Set<String> uniqueAssetIds = new HashSet<>(assetIds);
     Map<String, String> assetRealms = assetStorageService.getAssetRealms(uniqueAssetIds);

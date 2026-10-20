@@ -51,6 +51,9 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
   AssetStorageService assetStorageService
 
   @Shared
+  ManagerIdentityService identityService
+
+  @Shared
   NotificationService originalNotificationService
 
   @Shared
@@ -74,7 +77,8 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     alarmService = container.getService(AlarmService.class)
     assetStorageService = container.getService(AssetStorageService.class)
     originalNotificationService = container.getService(NotificationService.class)
-    def identityProvider = container.getService(ManagerIdentityService.class).identityProvider
+    identityService = container.getService(ManagerIdentityService.class)
+    def identityProvider = identityService.identityProvider
     def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
     realm = keycloakSetup.realmBuilding.name
     otherRealm = keycloakSetup.realmCity.name
@@ -102,9 +106,8 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     // Capture the synchronous enqueue boundary, so absence checks do not race the notification
     // worker. Nothing from this specification is delivered to email or push providers.
     alarmService.notificationService = Stub(NotificationService) {
-      sendNotificationAsync(_ as Notification, _ as Notification.Source, _ as String) >> {
-        Notification notification, Notification.Source source, String sourceId ->
-          queuedNotifications.add(notification)
+      sendNotificationAsync(_ as Notification, _ as Notification.Source, _ as String) >> { Notification notification, Notification.Source source, String sourceId ->
+        queuedNotifications.add(notification)
       }
     }
   }
@@ -258,6 +261,22 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     }
   }
 
+  def "#scope scope rejects a missing assignee before creating or notifying"() {
+    when:
+    def alarmId = facadeFor(scope).create(
+            newAlarm(UniqueIdentifierGenerator.generateId(), Alarm.Severity.HIGH), [testAssets.child.id])
+
+    then:
+    verifyAll {
+      alarmId == null
+      createdAlarms().isEmpty()
+      queuedNotifications.isEmpty()
+    }
+
+    where:
+    scope << ["realm", "asset"]
+  }
+
   private static List<List> assigneeCases() {
     [
       // Unrestricted users need no links, even when they have links elsewhere.
@@ -267,6 +286,7 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
       // Restricted users require explicit links to every target, not just a scope/ancestor link.
       ["restricted", ["scoped"], ["scoped"], true],
       ["restricted", ["child"], ["child"], true],
+      ["restricted", ["child", "child"], ["child"], true],
       ["restricted", ["child", "grandchild"], ["child", "grandchild"], true],
       ["restricted", ["child"], [], false],
       ["restricted", ["child"], ["scoped"], false],
@@ -282,7 +302,7 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
 
   private AlarmFacade facadeFor(String scope) {
     def engineId = scope == "asset" ? new RulesEngineId(realm, testAssets.scoped.id) : new RulesEngineId(realm)
-    new AlarmFacade(engineId, alarmService)
+    new AlarmFacade(engineId, alarmService, assetStorageService, identityService)
   }
 
   private Alarm newAlarm(String assigneeId = null, Alarm.Severity severity = Alarm.Severity.MEDIUM) {

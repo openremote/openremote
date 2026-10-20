@@ -18,26 +18,90 @@
  */
 package org.openremote.manager.rules.facade;
 
+import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
+
+import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 import org.openremote.manager.alarm.AlarmService;
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.rules.RulesEngineId;
+import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.alarm.Alarm.Source;
 import org.openremote.model.rules.Alarms;
+import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
+import org.openremote.model.security.User;
 
 public class AlarmFacade<T extends Ruleset> extends Alarms {
+  private static final Logger LOG = Logger.getLogger(AlarmFacade.class.getName());
+
   protected final RulesEngineId<T> rulesEngineId;
   protected final AlarmService alarmService;
+  protected final AssetStorageService assetStorageService;
+  protected final ManagerIdentityService identityService;
 
-  public AlarmFacade(RulesEngineId<T> rulesEngineId, AlarmService alarmService) {
+  public AlarmFacade(
+      RulesEngineId<T> rulesEngineId,
+      AlarmService alarmService,
+      AssetStorageService assetStorageService,
+      ManagerIdentityService identityService) {
     this.rulesEngineId = rulesEngineId;
     this.alarmService = alarmService;
+    this.assetStorageService = assetStorageService;
+    this.identityService = identityService;
   }
 
+  @Override
   public Long create(Alarm alarm, List<String> assetIds) {
+    String realm = rulesEngineId.getRealm().orElseThrow();
+    List<String> targetIds = assetIds == null ? List.of() : assetIds.stream().distinct().toList();
+
+    if (!targetIds.isEmpty()) {
+      // Preserve the existing validation errors for missing and foreign-realm assets.
+      alarmService.validateAssetsInRealm(realm, targetIds);
+      if (rulesEngineId.getScope() == AssetRuleset.class) {
+        for (String assetId : targetIds) {
+          if (!FacadeHelper.doesRuleEngineScopeAllowAccess(
+              rulesEngineId, assetId, assetStorageService)) {
+            LOG.warning(
+                "Cannot create alarm for asset outside engine scope: "
+                    + assetId
+                    + ", "
+                    + rulesEngineId);
+            return null;
+          }
+        }
+      }
+    }
+
+    String assigneeId = alarm.getAssigneeId();
+    if (assigneeId != null) {
+      User assignee = identityService.getIdentityProvider().getUser(assigneeId);
+      if (assignee == null || !realm.equals(assignee.getRealm())) {
+        LOG.warning(
+            "Cannot create alarm for missing or foreign-realm assignee: "
+                + assigneeId
+                + ", "
+                + rulesEngineId);
+        return null;
+      }
+      boolean restricted =
+          Arrays.asList(identityService.getIdentityProvider().getUserRealmRoles(realm, assigneeId))
+              .contains(RESTRICTED_USER_REALM_ROLE);
+      if (restricted && !assetStorageService.isUserAssets(assigneeId, targetIds)) {
+        LOG.warning(
+            "Cannot create alarm for restricted assignee without links to all target assets: "
+                + assigneeId
+                + ", "
+                + rulesEngineId);
+        return null;
+      }
+    }
+
     Alarm.Source source;
 
     if (rulesEngineId.getScope() == GlobalRuleset.class) {
@@ -48,10 +112,10 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
       source = Source.ASSET_RULESET;
     }
 
-    alarm.setRealm(rulesEngineId.getRealm().orElseThrow());
+    alarm.setRealm(realm);
     alarm.setSource(source);
 
-    return alarmService.sendAlarm(alarm, assetIds).getId();
+    return alarmService.sendAlarm(alarm, targetIds).getId();
   }
 
   public void linkAssets(List<String> assetIds, Long alarmId) {

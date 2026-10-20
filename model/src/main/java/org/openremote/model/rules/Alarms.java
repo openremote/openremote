@@ -25,6 +25,15 @@ import org.openremote.model.util.TsIgnore;
 /** Facade for sending {@link Alarm}s from rules RHS. */
 @TsIgnore
 public abstract class Alarms {
+  /**
+   * Creates an alarm in the engine's realm for assets within its scope. An assignee is optional;
+   * when provided, the user must belong to that realm. Restricted assignees must have explicit
+   * links to every target asset. The caller must set the alarm's source ID to identify the ruleset.
+   *
+   * @return the created alarm ID, or {@code null} if an asset is outside the engine's asset scope
+   *     or the assignee cannot access the targets
+   * @throws IllegalArgumentException if an asset ID is invalid or belongs to a different realm
+   */
   public abstract Long create(Alarm alarm, List<String> assetIds);
 
   public abstract void linkAssets(List<String> assetIds, Long alarmId);
