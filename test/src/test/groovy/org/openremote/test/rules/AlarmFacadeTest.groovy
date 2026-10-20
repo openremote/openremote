@@ -18,6 +18,9 @@
  */
 package org.openremote.test.rules
 
+import jakarta.persistence.EntityNotFoundException
+import java.time.Instant
+import java.util.concurrent.TimeUnit
 import org.openremote.manager.alarm.AlarmService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.NotificationService
@@ -39,7 +42,7 @@ import spock.lang.Specification
 
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE
 
-/** Exercises creation against real asset paths, user roles, user links and alarm persistence. */
+/** Exercises creation and linking against real asset paths, user roles, user links and alarm persistence. */
 class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
 
   private static final String SOURCE_ID = "4242"
@@ -116,7 +119,9 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     alarmService.notificationService = originalNotificationService
     // Look up by this iteration's unique title, including alarms persisted by a failing rejection
     // test. Do not depend on the facade returning the ID before an assertion or exception fails.
-    createdAlarms().each { alarmService.removeAlarm(it) }
+    [realm, otherRealm].each { alarmRealm ->
+      createdAlarms(alarmRealm).each { alarmService.removeAlarm(it) }
+    }
     if (!createdUserLinks.isEmpty()) {
       assetStorageService.deleteUserAssetLinks(createdUserLinks)
     }
@@ -277,6 +282,226 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     scope << ["realm", "asset"]
   }
 
+  def "#scope scope linking targets #targetNames is allowed: #allowed"() {
+    given: "an alarm already linked to the scope asset"
+    def alarm = createExistingAlarm(["scoped"])
+    def previousLinks = linkTimestamps(alarm)
+    def targetIds = assetIdsFor(targetNames)
+
+    when:
+    facadeFor(scope).linkAssets(targetIds, alarm.id)
+
+    then: "the complete request is accepted or all existing links are preserved"
+    noExceptionThrown()
+    assertLinkState(alarm, allowed ? assetIdsFor(["scoped"]) + targetIds : assetIdsFor(["scoped"]), previousLinks)
+
+    where:
+    scope   | targetNames          | allowed
+    "realm" | ["ancestor"]         | true
+    "realm" | ["sibling"]          | true
+    "realm" | ["unrelated"]        | true
+    "asset" | ["scoped"]           | true
+    "asset" | ["child"]            | true
+    "asset" | ["grandchild"]       | true
+    "asset" | ["ancestor"]         | false
+    "asset" | ["sibling"]          | false
+    "asset" | ["unrelated"]        | false
+    "asset" | ["child", "sibling"] | false
+    "asset" | ["sibling", "child"] | false
+  }
+
+  def "#scope scope linking to an alarm with existing targets #existingNames is allowed: #allowed"() {
+    given: "an alarm whose current links determine its scope"
+    def alarm = createExistingAlarm(existingNames)
+    def previousLinks = linkTimestamps(alarm)
+    def targetIds = assetIdsFor(["grandchild"])
+
+    when: "the requested target is inside the engine's subtree"
+    facadeFor(scope).linkAssets(targetIds, alarm.id)
+
+    then: "every existing link must also be in scope, and asset scope cannot claim an unlinked alarm"
+    noExceptionThrown()
+    assertLinkState(alarm, allowed ? assetIdsFor(existingNames) + targetIds : assetIdsFor(existingNames), previousLinks)
+
+    where:
+    scope   | existingNames         | allowed
+    "realm" | ["ancestor"]          | true
+    "realm" | ["sibling"]           | true
+    "realm" | ["unrelated"]         | true
+    "realm" | ["child", "sibling"]  | true
+    "realm" | []                    | true
+    "asset" | ["scoped"]            | true
+    "asset" | ["child"]             | true
+    "asset" | ["scoped", "child"]   | true
+    "asset" | ["ancestor"]          | false
+    "asset" | ["sibling"]           | false
+    "asset" | ["unrelated"]         | false
+    "asset" | ["child", "sibling"]  | false
+    "asset" | ["sibling", "child"]  | false
+    "asset" | []                    | false
+  }
+
+  def "#scope scope linking #targetNames with #assignee assignee linked to #linkedNames is allowed: #allowed"() {
+    given:
+    def user = testUsers[assignee]
+    linkedNames.each { name ->
+      createdUserLinks.add(new UserAssetLink(realm, user.id, testAssets[name].id))
+    }
+    assetStorageService.storeUserAssetLinks(createdUserLinks)
+    (["scoped"] + targetNames).unique().each { name ->
+      assert assetStorageService.isUserAsset(user.id, testAssets[name].id) == linkedNames.contains(name)
+    }
+    def alarm = createExistingAlarm(["scoped"], user.id)
+    def previousLinks = linkTimestamps(alarm)
+    def targetIds = assetIdsFor(targetNames)
+
+    when:
+    facadeFor(scope).linkAssets(targetIds, alarm.id)
+
+    then: "restricted assignees need access to the union of current and requested targets"
+    noExceptionThrown()
+    assertLinkState(alarm, allowed ? assetIdsFor(["scoped"]) + targetIds : assetIdsFor(["scoped"]), previousLinks)
+
+    where:
+    [scope, assignee, targetNames, linkedNames, allowed] << ["realm", "asset"].collectMany { scope ->
+      linkAssigneeCases().collect { row -> [scope] + row }
+    }
+  }
+
+  def "#scope scope rejects linking foreign-realm assets in #targetNames without changing existing links"() {
+    given:
+    def alarm = createExistingAlarm(["scoped"])
+    def previousLinks = linkTimestamps(alarm)
+
+    when:
+    facadeFor(scope).linkAssets(assetIdsFor(targetNames), alarm.id)
+
+    then:
+    thrown(AlarmService.AlarmAssetLinkRealmMismatchException)
+    assertLinkState(alarm, assetIdsFor(["scoped"]), previousLinks)
+
+    where:
+    [scope, targetNames] << ["realm", "asset"].collectMany { scope ->
+      [["otherRealm"], ["child", "otherRealm"], ["otherRealm", "child"]].collect { targets ->
+        [scope, targets]
+      }
+    }
+  }
+
+  def "#scope scope rejects linking to a foreign-realm alarm without changing its links"() {
+    given:
+    def alarm = createExistingAlarm(["otherRealm"], null, otherRealm)
+    def previousLinks = linkTimestamps(alarm)
+
+    when:
+    facadeFor(scope).linkAssets(assetIdsFor(["child"]), alarm.id)
+
+    then:
+    thrown(AlarmService.AlarmAssetLinkRealmMismatchException)
+    assertLinkState(alarm, assetIdsFor(["otherRealm"]), previousLinks)
+    alarmService.getAssetLinks(alarm.id, realm).isEmpty()
+
+    where:
+    scope << ["realm", "asset"]
+  }
+
+  def "#scope scope linking duplicate or existing targets #targetNames is idempotent"() {
+    given:
+    def alarm = createExistingAlarm(["scoped"])
+    def previousLinks = linkTimestamps(alarm)
+    def targetIds = assetIdsFor(targetNames)
+
+    when:
+    facadeFor(scope).linkAssets(targetIds, alarm.id)
+
+    then: "one link per asset is retained and the original link timestamp is preserved"
+    assertLinkState(alarm, assetIdsFor(["scoped", "child"]), previousLinks)
+
+    when: "the same request is repeated at a later time"
+    def firstLinks = linkTimestamps(alarm)
+    advancePseudoClock(1, TimeUnit.SECONDS)
+    facadeFor(scope).linkAssets(targetIds, alarm.id)
+
+    then:
+    assertLinkState(alarm, assetIdsFor(["scoped", "child"]), firstLinks)
+
+    where:
+    [scope, targetNames] << ["realm", "asset"].collectMany { scope ->
+      [["child", "child"], ["scoped", "child", "child"]].collect { targets -> [scope, targets] }
+    }
+  }
+
+  def "#scope scope linking empty input #targetIds remains a no-op"() {
+    given:
+    def alarm = createExistingAlarm(["scoped"])
+    def previousLinks = linkTimestamps(alarm)
+    def facade = facadeFor(scope)
+
+    when:
+    facade.linkAssets(targetIds, alarm.id)
+    facade.linkAssets(targetIds, null)
+
+    then: "empty requests do not change links or require a valid alarm ID"
+    noExceptionThrown()
+    assertLinkState(alarm, assetIdsFor(["scoped"]), previousLinks)
+
+    where:
+    scope   | targetIds
+    "realm" | null
+    "realm" | []
+    "asset" | null
+    "asset" | []
+  }
+
+  def "#scope scope rejects invalid target #invalidTarget without partially linking"() {
+    given:
+    def alarm = createExistingAlarm(["scoped"])
+    def previousLinks = linkTimestamps(alarm)
+    def invalidId = invalidTarget == "missing" ? UniqueIdentifierGenerator.generateId() : invalidTarget
+
+    when:
+    facadeFor(scope).linkAssets([testAssets.child.id, invalidId], alarm.id)
+
+    then:
+    thrown(exceptionType)
+    assertLinkState(alarm, assetIdsFor(["scoped"]), previousLinks)
+
+    where:
+    [scope, invalidTarget, exceptionType] << ["realm", "asset"].collectMany { scope ->
+      [
+        [null, IllegalArgumentException],
+        ["", IllegalArgumentException],
+        ["missing", EntityNotFoundException]
+      ].collect { row ->
+        [scope] + row
+      }
+    }
+  }
+
+  def "#scope scope retains validation of alarm ID #invalidAlarmId when linking"() {
+    given:
+    def alarm = createExistingAlarm(["scoped"])
+    def previousLinks = linkTimestamps(alarm)
+
+    when:
+    facadeFor(scope).linkAssets(assetIdsFor(["child"]), invalidAlarmId)
+
+    then:
+    thrown(exceptionType)
+    assertLinkState(alarm, assetIdsFor(["scoped"]), previousLinks)
+
+    where:
+    [scope, invalidAlarmId, exceptionType] << ["realm", "asset"].collectMany { scope ->
+      [
+        [null, IllegalArgumentException],
+        [-1L, IllegalArgumentException],
+        [Long.MAX_VALUE, EntityNotFoundException]
+      ].collect { row ->
+        [scope] + row
+      }
+    }
+  }
+
   private static List<List> assigneeCases() {
     [
       // Unrestricted users need no links, even when they have links elsewhere.
@@ -296,6 +521,52 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     ]
   }
 
+  private static List<List> linkAssigneeCases() {
+    [
+      ["unrestricted", ["child", "grandchild"], [], true],
+      ["unrestricted", ["child"], ["unrelated"], true],
+      ["restricted", ["child", "grandchild"], ["scoped", "child", "grandchild"], true],
+      // Access to current targets does not grant access to descendants being added.
+      ["restricted", ["child"], ["scoped"], false],
+      // Access to new targets is insufficient if access to an existing target was revoked.
+      ["restricted", ["child"], ["child"], false],
+      ["restricted", ["child", "grandchild"], ["scoped", "child"], false],
+      ["restricted", ["grandchild", "child"], ["scoped", "child"], false],
+      ["restricted", ["child"], ["sibling"], false],
+      ["restricted", ["scoped", "child", "child"], ["scoped", "child"], true],
+      ["otherRealm", ["child"], [], false]
+    ]
+  }
+
+  private List<String> assetIdsFor(List<String> names) {
+    names.collect { testAssets[it].id }
+  }
+
+  private SentAlarm createExistingAlarm(List<String> assetNames, String assigneeId = null, String alarmRealm = realm) {
+    // Existing alarms may originate from another entry point or predate the facade checks.
+    def alarm = alarmService.sendAlarm(
+            newAlarm(assigneeId).setRealm(alarmRealm).setSource(Alarm.Source.REALM_RULESET), assetIdsFor(assetNames))
+    // Ensure replacing an existing link would produce an observably different timestamp.
+    advancePseudoClock(1, TimeUnit.SECONDS)
+    alarm
+  }
+
+  private Map<String, Instant> linkTimestamps(SentAlarm alarm) {
+    alarmService.getAssetLinks(alarm.id, alarm.realm).collectEntries { link ->
+      [(link.id.assetId): link.createdOn]
+    }
+  }
+
+  private void assertLinkState(SentAlarm alarm, List<String> expectedIds, Map<String, Instant> previousLinks) {
+    def links = alarmService.getAssetLinks(alarm.id, alarm.realm)
+    assert links.size() == expectedIds.toSet().size()
+    assert links.collect { it.id.assetId }.toSet() == expectedIds.toSet()
+    previousLinks.each { assetId, createdOn ->
+      assert links.find { it.id.assetId == assetId }.createdOn == createdOn
+    }
+    assert queuedNotifications.isEmpty()
+  }
+
   private ThingAsset createAsset(String name, String assetRealm, String parentId = null) {
     assetStorageService.merge(new ThingAsset("Alarm facade ${name}").setRealm(assetRealm).setParentId(parentId))
   }
@@ -310,8 +581,8 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
             .setSourceId(SOURCE_ID)
   }
 
-  private List<SentAlarm> createdAlarms() {
-    alarmService.getAlarms(realm, null, null, null).findAll { it.title == alarmTitle }
+  private List<SentAlarm> createdAlarms(String alarmRealm = realm) {
+    alarmService.getAlarms(alarmRealm, null, null, null).findAll { it.title == alarmTitle }
   }
 
   private void assertCreated(Long alarmId, String scope, String assigneeId, List<String> targetIds) {
