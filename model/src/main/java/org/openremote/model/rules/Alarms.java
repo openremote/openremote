@@ -26,12 +26,16 @@ import org.openremote.model.util.TsIgnore;
 @TsIgnore
 public abstract class Alarms {
   /**
-   * Creates an alarm in the engine's realm for assets within its scope. An assignee is optional;
-   * when provided, the user must belong to that realm. Restricted assignees must have explicit
-   * links to every target asset. The caller must set the alarm's source ID to identify the ruleset.
+   * Creates an alarm in the engine's realm for assets within its scope. Asset-scoped engines
+   * require at least one target, and every target must be the scoped asset itself or a descendant.
+   * Realm-scoped engines may omit targets.
    *
-   * @return the created alarm ID, or {@code null} if an asset is outside the engine's asset scope
-   *     or the assignee cannot access the targets
+   * <p>An assignee is optional; when provided, the user must belong to that realm. Restricted
+   * assignees must have explicit links to every target asset. The caller must set the alarm's
+   * source ID to identify the ruleset.
+   *
+   * @return the created alarm ID, or {@code null} if an asset-scoped engine has no targets, an
+   *     asset is outside the engine's asset scope, or the assignee cannot access the targets
    * @throws IllegalArgumentException if an asset ID is invalid or belongs to a different realm
    */
   public abstract Long create(Alarm alarm, List<String> assetIds);

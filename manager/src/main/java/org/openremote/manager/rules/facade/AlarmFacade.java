@@ -62,6 +62,11 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
     String realm = rulesEngineId.getRealm().orElseThrow();
     List<String> targetIds = assetIds == null ? List.of() : assetIds.stream().distinct().toList();
 
+    if (rulesEngineId.getScope() == AssetRuleset.class && targetIds.isEmpty()) {
+      LOG.warning("Cannot create an asset-scoped alarm without target assets: " + rulesEngineId);
+      return null;
+    }
+
     if (!targetIds.isEmpty()) {
       // Preserve the existing validation errors for missing and foreign-realm assets.
       alarmService.validateAssetsInRealm(realm, targetIds);
