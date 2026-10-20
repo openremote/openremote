@@ -96,6 +96,7 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     testAssets.sibling = createAsset("Sibling", realm, testAssets.ancestor.id)
     testAssets.unrelated = createAsset("Unrelated", realm)
     testAssets.otherRealm = createAsset("Other realm", otherRealm)
+    testAssets.otherRealmChild = createAsset("Other realm child", otherRealm, testAssets.otherRealm.id)
 
     testUsers.unrestricted = identityProvider.getUser(keycloakSetup.testuser2Id)
     testUsers.restricted = identityProvider.getUser(keycloakSetup.testuser3Id)
@@ -628,6 +629,92 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     assertNotificationRecipients(unrestrictedNotificationRecipients())
   }
 
+  def "global scope links targets #targetNames using the existing alarm realm #alarmRealm with links #existingNames"() {
+    given:
+    def alarm = createExistingAlarm(existingNames, null, alarmRealm)
+    def previousLinks = linkTimestamps(alarm)
+    def targetIds = assetIdsFor(targetNames)
+
+    when:
+    facadeFor("global").linkAssets(targetIds, alarm.id)
+
+    then: "global engines can link anywhere in the alarm's realm, including an initially unlinked alarm"
+    noExceptionThrown()
+    assertLinkState(alarm, assetIdsFor(existingNames) + targetIds, previousLinks)
+    alarmService.getAlarm(alarm.id).realm == alarmRealm
+
+    where:
+    alarmRealm | existingNames        | targetNames
+    realm      | ["scoped"]           | ["ancestor", "child", "sibling", "unrelated"]
+    realm      | ["child", "sibling"] | ["grandchild"]
+    realm      | []                   | ["child", "sibling"]
+    otherRealm | ["otherRealm"]       | ["otherRealmChild"]
+    otherRealm | []                   | ["otherRealm", "otherRealmChild"]
+  }
+
+  def "global scope rejects targets #targetNames outside the existing alarm realm #alarmRealm with links #existingNames"() {
+    given:
+    def alarm = createExistingAlarm(existingNames, null, alarmRealm)
+    def previousLinks = linkTimestamps(alarm)
+
+    when:
+    facadeFor("global").linkAssets(assetIdsFor(targetNames), alarm.id)
+
+    then: "the alarm's realm is authoritative even when it has no current links"
+    thrown(AlarmService.AlarmAssetLinkRealmMismatchException)
+    assertLinkState(alarm, assetIdsFor(existingNames), previousLinks)
+    alarmService.getAlarm(alarm.id).realm == alarmRealm
+    alarmService.getAssetLinks(alarm.id, alarmRealm == realm ? otherRealm : realm).isEmpty()
+
+    where:
+    alarmRealm | existingNames  | targetNames
+    otherRealm | ["otherRealm"] | ["child"]
+    otherRealm | ["otherRealm"] | ["otherRealmChild", "child"]
+    otherRealm | ["otherRealm"] | ["child", "otherRealmChild"]
+    realm      | []             | ["otherRealm"]
+    otherRealm | []             | ["child"]
+  }
+
+  def "global scope linking an unlinked alarm with #assignee assignee linked to #linkedNames is allowed: #allowed"() {
+    given:
+    def user = testUsers[assignee]
+    if (assignee == "restricted") {
+      linkNotificationRecipient(linkedNames)
+    }
+    def alarm = createExistingAlarm([], user.id)
+    def previousLinks = linkTimestamps(alarm)
+    def targetIds = assetIdsFor(["child", "sibling"])
+
+    when:
+    facadeFor("global").linkAssets(targetIds, alarm.id)
+
+    then:
+    noExceptionThrown()
+    assertLinkState(alarm, allowed ? targetIds : [], previousLinks)
+
+    where:
+    assignee       | linkedNames          | allowed
+    "unrestricted" | []                   | true
+    "restricted"   | ["child", "sibling"] | true
+    "restricted"   | []                   | false
+    "restricted"   | ["child"]            | false
+    "restricted"   | ["ancestor"]         | false
+    "otherRealm"   | []                   | false
+  }
+
+  def "global scope checks the assignee against the existing alarm's realm"() {
+    given: "an unrestricted assignee from a different realm than the alarm and its targets"
+    def alarm = createExistingAlarm(["otherRealm"], testUsers.unrestricted.id, otherRealm)
+    def previousLinks = linkTimestamps(alarm)
+
+    when:
+    facadeFor("global").linkAssets(assetIdsFor(["otherRealmChild"]), alarm.id)
+
+    then:
+    noExceptionThrown()
+    assertLinkState(alarm, assetIdsFor(["otherRealm"]), previousLinks)
+  }
+
   def "#scope scope linking targets #targetNames is allowed: #allowed"() {
     given: "an alarm already linked to the scope asset"
     def alarm = createExistingAlarm(["scoped"])
@@ -709,7 +796,7 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     assertLinkState(alarm, allowed ? assetIdsFor(["scoped"]) + targetIds : assetIdsFor(["scoped"]), previousLinks)
 
     where:
-    [scope, assignee, targetNames, linkedNames, allowed] << ["realm", "asset"].collectMany { scope ->
+    [scope, assignee, targetNames, linkedNames, allowed] << ["realm", "asset", "global"].collectMany { scope ->
       linkAssigneeCases().collect { row -> [scope] + row }
     }
   }
@@ -727,7 +814,7 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     assertLinkState(alarm, assetIdsFor(["scoped"]), previousLinks)
 
     where:
-    [scope, targetNames] << ["realm", "asset"].collectMany { scope ->
+    [scope, targetNames] << ["realm", "asset", "global"].collectMany { scope ->
       [["otherRealm"], ["child", "otherRealm"], ["otherRealm", "child"]].collect { targets ->
         [scope, targets]
       }
@@ -772,7 +859,7 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     assertLinkState(alarm, assetIdsFor(["scoped", "child"]), firstLinks)
 
     where:
-    [scope, targetNames] << ["realm", "asset"].collectMany { scope ->
+    [scope, targetNames] << ["realm", "asset", "global"].collectMany { scope ->
       [["child", "child"], ["scoped", "child", "child"]].collect { targets -> [scope, targets] }
     }
   }
@@ -797,6 +884,8 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     "realm" | []
     "asset" | null
     "asset" | []
+    "global" | null
+    "global" | []
   }
 
   def "#scope scope rejects invalid target #invalidTarget without partially linking"() {
@@ -813,7 +902,7 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     assertLinkState(alarm, assetIdsFor(["scoped"]), previousLinks)
 
     where:
-    [scope, invalidTarget, exceptionType] << ["realm", "asset"].collectMany { scope ->
+    [scope, invalidTarget, exceptionType] << ["realm", "asset", "global"].collectMany { scope ->
       [
         [null, IllegalArgumentException],
         ["", IllegalArgumentException],
@@ -837,7 +926,7 @@ class AlarmFacadeTest extends Specification implements ManagerContainerTrait {
     assertLinkState(alarm, assetIdsFor(["scoped"]), previousLinks)
 
     where:
-    [scope, invalidAlarmId, exceptionType] << ["realm", "asset"].collectMany { scope ->
+    [scope, invalidAlarmId, exceptionType] << ["realm", "asset", "global"].collectMany { scope ->
       [
         [null, IllegalArgumentException],
         [-1L, IllegalArgumentException],
