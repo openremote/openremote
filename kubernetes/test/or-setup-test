@@ -30,6 +30,15 @@ secret_value() {
   awk -v key="$key" '$1 == key ":" { gsub(/"/, "", $2); print $2; exit }'
 }
 
+assert_env_value() {
+  local name="$1"
+  local expected="$2"
+  local actual
+  actual="$(awk -v name="$name" '$1 == "-" && $2 == "name:" && $3 == name {getline; print $2}')"
+  [ "$actual" = "\"$expected\"" ] || fail \
+    "Expected $name to have quoted value '$expected', got '$actual'"
+}
+
 helm lint "$OR_SETUP_CHART" >/dev/null
 helm lint "$MANAGER_CHART" >/dev/null
 helm lint "$KEYCLOAK_CHART" >/dev/null
@@ -123,18 +132,73 @@ grep -F -- 'postgresql-password: "Y2hvc2VuLWRhdGFiYXNl"' <<< "$rendered_explicit
 
 rendered_manager="$(helm template manager "$MANAGER_CHART" --namespace stack-a)"
 
-if grep -F -- '- name: OR_WEBSERVER_ALLOWED_ORIGINS' <<< "$rendered_manager" >/dev/null; then
-  fail "Default Manager chart should retain the application's default CORS configuration"
-fi
+assert_env_value OR_WEBSERVER_LISTEN_HOST 0.0.0.0 <<< "$rendered_manager"
+assert_env_value OR_WEBSERVER_LISTEN_PORT 8080 <<< "$rendered_manager"
+assert_env_value OR_WEBSERVER_DUMP_REQUESTS false <<< "$rendered_manager"
+[ "$(grep -c -- '- name: OR_WEBSERVER_' <<< "$rendered_manager")" -eq 3 ] || fail \
+  "Default Manager chart should omit empty and null web server settings"
+grep -F -- 'containerPort: 8080' <<< "$rendered_manager" >/dev/null || fail \
+  "Default Manager HTTP container port is not 8080"
 
 for origin in https://localhost:8443 https://localhost:9443 https://stack.example.com; do
   rendered_public_manager="$(helm template manager "$MANAGER_CHART" \
-    --namespace stack-a --set-string "or.allowedOrigins=$origin")"
-  rendered_origin="$(awk '/- name: OR_WEBSERVER_ALLOWED_ORIGINS/ {getline; print $2}' \
-    <<< "$rendered_public_manager")"
-  [ "$rendered_origin" = "\"$origin\"" ] || fail \
-    "Manager CORS origin must exactly match the public URL: $origin"
+    --namespace stack-a --set-string "or.webserver.allowedOrigins=$origin")"
+  assert_env_value OR_WEBSERVER_ALLOWED_ORIGINS "$origin" <<< "$rendered_public_manager"
 done
+
+rendered_webserver_manager="$(helm template manager "$MANAGER_CHART" \
+  --namespace stack-a --values - <<'YAML'
+service:
+  http:
+    port: 9090
+or:
+  webserver:
+    listenHost: "::"
+    listenPort: 9080
+    allowedOrigins: "https://stack.example.com,https://localhost:9443"
+    allowedMethods: "GET,POST,OPTIONS"
+    allowedHeaders: "Content-Type,Authorization"
+    exposedHeaders: "X-Request-ID"
+    dumpRequests: true
+    workerThreadsMax: 24
+    ioThreadsMax: 4
+    maxEntitySize: 0
+    multipartMaxEntitySize: 60000000
+YAML
+)"
+
+while read -r name expected; do
+  assert_env_value "$name" "$expected" <<< "$rendered_webserver_manager"
+done <<'ENV'
+OR_WEBSERVER_LISTEN_HOST ::
+OR_WEBSERVER_LISTEN_PORT 9080
+OR_WEBSERVER_ALLOWED_ORIGINS https://stack.example.com,https://localhost:9443
+OR_WEBSERVER_ALLOWED_METHODS GET,POST,OPTIONS
+OR_WEBSERVER_ALLOWED_HEADERS Content-Type,Authorization
+OR_WEBSERVER_EXPOSED_HEADERS X-Request-ID
+OR_WEBSERVER_DUMP_REQUESTS true
+OR_WEBSERVER_WORKER_THREADS_MAX 24
+OR_WEBSERVER_IO_THREADS_MAX 4
+OR_WEBSERVER_MAX_ENTITY_SIZE 0
+OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE 60000000
+ENV
+
+grep -A1 -F -- '- name: http' <<< "$rendered_webserver_manager" | \
+  grep -F -- 'containerPort: 9080' >/dev/null || fail \
+    "Manager's named HTTP port does not follow or.webserver.listenPort"
+grep -A1 -F -- '- port: 9090' <<< "$rendered_webserver_manager" | \
+  grep -F -- 'targetPort: http' >/dev/null || fail \
+    "Manager Service does not route its independent port to the named HTTP port"
+[ "$(grep -c 'port: http' <<< "$rendered_webserver_manager")" -eq 3 ] || fail \
+  "Manager's three default health probes do not use the named HTTP port"
+
+rendered_default_webserver_manager="$(helm template manager "$MANAGER_CHART" \
+  --namespace stack-a --set or.webserver=null)"
+if grep -F -- '- name: OR_WEBSERVER_' <<< "$rendered_default_webserver_manager" >/dev/null; then
+  fail "Null web server settings should retain the application's defaults"
+fi
+grep -F -- 'containerPort: 8080' <<< "$rendered_default_webserver_manager" >/dev/null || fail \
+  "Unset Manager listen port should use the application's default port 8080"
 
 grep -F -- '- name: OR_DB_USERNAME' <<< "$rendered_manager" >/dev/null || fail \
   "Manager does not receive its PostgreSQL username through OR_DB_USERNAME"

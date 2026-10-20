@@ -192,7 +192,7 @@ test_local_public_origins() {
       --target local \
       --https-port "$https_port" >/dev/null
 
-    assert_on_line_before $'helm\tupgrade\t--install\tmanager' $'--set-string\tor.allowedOrigins='"$origin"$'\t'
+    assert_on_line_before $'helm\tupgrade\t--install\tmanager' $'--set-string\tor.webserver.allowedOrigins='"$origin"$'\t'
     assert_on_line_before $'helm\tupgrade\t--install\tmanager' $'--set-string\tor.hostname=localhost\t'
     assert_on_line_before $'helm\tupgrade\t--install\tkeycloak' $'--set-string\tor.hostname='"$origin/auth"$'\t'
   done
@@ -213,7 +213,7 @@ test_local_ingress_apply() {
   assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/or-setup.yaml"
   assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/proxy.yaml"
   assert_contains $'--set-string\tingress.hostname=stack-local-ingress.example.com'
-  assert_on_line_before $'helm\tupgrade\t--install\tmanager' $'--set-string\tor.allowedOrigins=https://stack-local-ingress.example.com\t'
+  assert_on_line_before $'helm\tupgrade\t--install\tmanager' $'--set-string\tor.webserver.allowedOrigins=https://stack-local-ingress.example.com\t'
   assert_on_line_before $'helm\tupgrade\t--install\tkeycloak' $'--set-string\tor.hostname=https://stack-local-ingress.example.com/auth'
   assert_contains $'--set-string\tingress.tls[0].hosts[0]=stack-local-ingress.example.com'
   assert_not_contains 'certificate-arn='
@@ -255,7 +255,7 @@ test_eks_apply() {
   assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/proxy.yaml"
   assert_contains "$KUBERNETES_DIR/stack/exposures/ingress/eks/proxy.yaml"
   assert_contains $'--set-string\tingress.hostname=stack-eks.example.com'
-  assert_on_line_before $'helm\tupgrade\t--install\tmanager' $'--set-string\tor.allowedOrigins=https://stack-eks.example.com\t'
+  assert_on_line_before $'helm\tupgrade\t--install\tmanager' $'--set-string\tor.webserver.allowedOrigins=https://stack-eks.example.com\t'
   assert_on_line_before $'helm\tupgrade\t--install\tkeycloak' $'--set-string\tor.hostname=https://stack-eks.example.com/auth'
   assert_contains $'openremote.io/dns=external-dns'
   assert_contains $'--set\tdns.enabled=true'
@@ -298,7 +298,7 @@ test_eks_none_apply() {
     --exposure none
 
   assert_contains "$KUBERNETES_DIR/stack/exposures/none/or-setup.yaml"
-  assert_not_contains 'or.allowedOrigins='
+  assert_not_contains 'or.webserver.allowedOrigins='
   assert_not_contains $'--set-string\tor.hostname=https://'
   assert_not_contains $'get\tdeployment\taws-load-balancer-controller'
   assert_not_contains $'get\tingressclass\topenremote-alb'

@@ -215,12 +215,21 @@ let discovery and browser requests produce different issuers, causing login
 to fail with `Invalid token issuer`. After correcting this setting on an
 existing stack, restart Manager so it refreshes its cached issuer.
 
-`or-stack` also configures Manager's `OR_WEBSERVER_ALLOWED_ORIGINS` with the
-stack's exact public HTTPS origin, including its port. Manager's default CORS
-origins use the hostname without a custom port; browser writes such as asset
+`or-stack` also sets `or.webserver.allowedOrigins`, which the Manager chart maps
+to `OR_WEBSERVER_ALLOWED_ORIGINS`, with the stack's exact public HTTPS origin,
+including its port. Manager's default CORS origins use the hostname without a
+custom port; browser writes such as asset
 creation would otherwise fail with HTTP 403 `CORS origin denied`, even when
 login and page loading work. Each stack allows its own public origin without
 enabling wildcard CORS access.
+
+The Manager chart groups all `OR_WEBSERVER_*` settings under `or.webserver` in
+[`manager/values.yaml`](manager/values.yaml): listener host and port, CORS origins,
+methods and headers, request logging, thread limits, and request size limits.
+Null or empty values omit the corresponding environment variable so Manager
+uses its application default. `listenPort` also sets the container's named HTTP
+port, which the Service target and default health probes use; `service.http.port`
+continues to control the Service's exposed port independently.
 
 ### Namespace preparation for deployment tools
 

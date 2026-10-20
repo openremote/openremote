@@ -568,7 +568,7 @@ apply_stack() {
     fi
     # Manager's default CORS origins use the hostname without the public port.
     # Allow this stack's exact HTTPS origin so browser writes are not rejected.
-    manager_args+=(--set-string "or.allowedOrigins=$keycloak_hostname")
+    manager_args+=(--set-string "or.webserver.allowedOrigins=$keycloak_hostname")
     keycloak_hostname="$keycloak_hostname/auth"
   fi
 
