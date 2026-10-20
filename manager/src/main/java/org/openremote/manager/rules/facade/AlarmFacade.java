@@ -23,12 +23,14 @@ import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import org.openremote.manager.alarm.AlarmService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.alarm.Alarm.Source;
+import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.rules.Alarms;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
@@ -63,43 +65,10 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
     if (!targetIds.isEmpty()) {
       // Preserve the existing validation errors for missing and foreign-realm assets.
       alarmService.validateAssetsInRealm(realm, targetIds);
-      if (rulesEngineId.getScope() == AssetRuleset.class) {
-        for (String assetId : targetIds) {
-          if (!FacadeHelper.doesRuleEngineScopeAllowAccess(
-              rulesEngineId, assetId, assetStorageService)) {
-            LOG.warning(
-                "Cannot create alarm for asset outside engine scope: "
-                    + assetId
-                    + ", "
-                    + rulesEngineId);
-            return null;
-          }
-        }
-      }
     }
-
-    String assigneeId = alarm.getAssigneeId();
-    if (assigneeId != null) {
-      User assignee = identityService.getIdentityProvider().getUser(assigneeId);
-      if (assignee == null || !realm.equals(assignee.getRealm())) {
-        LOG.warning(
-            "Cannot create alarm for missing or foreign-realm assignee: "
-                + assigneeId
-                + ", "
-                + rulesEngineId);
-        return null;
-      }
-      boolean restricted =
-          Arrays.asList(identityService.getIdentityProvider().getUserRealmRoles(realm, assigneeId))
-              .contains(RESTRICTED_USER_REALM_ROLE);
-      if (restricted && !assetStorageService.isUserAssets(assigneeId, targetIds)) {
-        LOG.warning(
-            "Cannot create alarm for restricted assignee without links to all target assets: "
-                + assigneeId
-                + ", "
-                + rulesEngineId);
-        return null;
-      }
+    if (!areAssetsInScope(targetIds)
+        || !isAssigneeAllowed(realm, alarm.getAssigneeId(), targetIds)) {
+      return null;
     }
 
     Alarm.Source source;
@@ -118,13 +87,81 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
     return alarmService.sendAlarm(alarm, targetIds).getId();
   }
 
+  @Override
   public void linkAssets(List<String> assetIds, Long alarmId) {
-    if (assetIds != null && !assetIds.isEmpty()) {
-      String realmId =
-          rulesEngineId
-              .getRealm()
-              .orElseThrow(() -> new IllegalStateException("Realm ruleset must have a realm ID"));
-      alarmService.linkAssets(assetIds, realmId, alarmId);
+    if (assetIds == null || assetIds.isEmpty()) {
+      return;
     }
+
+    String realm =
+        rulesEngineId
+            .getRealm()
+            .orElseThrow(() -> new IllegalStateException("Realm ruleset must have a realm ID"));
+    SentAlarm alarm = alarmService.getAlarm(alarmId);
+    if (!realm.equals(alarm.getRealm())) {
+      throw new AlarmService.AlarmAssetLinkRealmMismatchException(
+          "Alarm '" + alarmId + "' is not in realm '" + realm + "'");
+    }
+
+    List<String> targetIds = assetIds.stream().distinct().toList();
+    alarmService.validateAssetsInRealm(realm, targetIds);
+    List<String> existingAssetIds =
+        alarmService.getAssetLinks(alarmId, realm).stream()
+            .map(link -> link.getId().getAssetId())
+            .toList();
+    if (rulesEngineId.getScope() == AssetRuleset.class && existingAssetIds.isEmpty()) {
+      LOG.warning(
+          "Cannot establish asset scope for unlinked alarm: " + alarmId + ", " + rulesEngineId);
+      return;
+    }
+
+    List<String> allAssetIds =
+        Stream.concat(existingAssetIds.stream(), targetIds.stream()).distinct().toList();
+    if (!areAssetsInScope(allAssetIds)
+        || !isAssigneeAllowed(realm, alarm.getAssigneeId(), allAssetIds)) {
+      return;
+    }
+
+    alarmService.linkAssets(targetIds, realm, alarmId);
+  }
+
+  private boolean areAssetsInScope(List<String> assetIds) {
+    if (rulesEngineId.getScope() == AssetRuleset.class) {
+      for (String assetId : assetIds) {
+        if (!FacadeHelper.doesRuleEngineScopeAllowAccess(
+            rulesEngineId, assetId, assetStorageService)) {
+          LOG.warning("Alarm asset is outside engine scope: " + assetId + ", " + rulesEngineId);
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  private boolean isAssigneeAllowed(String realm, String assigneeId, List<String> assetIds) {
+    if (assigneeId == null) {
+      return true;
+    }
+    User assignee = identityService.getIdentityProvider().getUser(assigneeId);
+    if (assignee == null || !realm.equals(assignee.getRealm())) {
+      LOG.warning(
+          "Alarm assignee is missing or belongs to another realm: "
+              + assigneeId
+              + ", "
+              + rulesEngineId);
+      return false;
+    }
+    boolean restricted =
+        Arrays.asList(identityService.getIdentityProvider().getUserRealmRoles(realm, assigneeId))
+            .contains(RESTRICTED_USER_REALM_ROLE);
+    if (restricted && !assetStorageService.isUserAssets(assigneeId, assetIds)) {
+      LOG.warning(
+          "Restricted alarm assignee lacks links to all target assets: "
+              + assigneeId
+              + ", "
+              + rulesEngineId);
+      return false;
+    }
+    return true;
   }
 }

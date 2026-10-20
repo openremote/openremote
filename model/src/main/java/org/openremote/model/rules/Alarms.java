@@ -36,5 +36,17 @@ public abstract class Alarms {
    */
   public abstract Long create(Alarm alarm, List<String> assetIds);
 
+  /**
+   * Adds asset links to an alarm in the engine's realm. Asset-scoped engines require at least one
+   * existing link, and all existing and requested assets must be within the engine's subtree.
+   * Assignees must belong to the alarm's realm; restricted assignees must have explicit links to
+   * every existing and requested asset.
+   *
+   * <p>No links are changed if scope or assignee access is denied. Null or empty asset lists are
+   * ignored. Duplicate and existing links are accepted without changing their timestamps.
+   *
+   * @throws IllegalArgumentException if the alarm ID or an asset ID is invalid, or the alarm or a
+   *     requested asset belongs to a different realm
+   */
   public abstract void linkAssets(List<String> assetIds, Long alarmId);
 }
