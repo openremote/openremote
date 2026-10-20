@@ -120,7 +120,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
    */
   protected final Map<String, GatewayConnector> gatewayConnectorMap = new ConcurrentHashMap<>();
 
-  protected final Map<String, String> assetIdGatewayIdMap = new HashMap<>();
+  protected final Map<String, String> assetIdGatewayIdMap = new ConcurrentHashMap<>();
   protected boolean active;
   protected List<String> realmIds = new ArrayList<>();
   protected Map<String, GatewayTunnelInfo> tunnelInfos = new ConcurrentHashMap<>();
