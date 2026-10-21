@@ -213,6 +213,11 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     }
 
     if (targets != null) {
+      if (targets.stream().anyMatch(target -> target.getType() == Notification.TargetType.CUSTOM)) {
+        throw new NotificationProcessingException(
+            NotificationProcessingException.Reason.ERROR_TARGET_MAPPING,
+            "CUSTOM targets are not supported for device push notifications");
+      }
 
       // Filter out console targets
       String[] assetTargets =
