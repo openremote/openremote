@@ -31,6 +31,8 @@ import org.openremote.manager.notification.EmailNotificationHandler
 import org.openremote.manager.notification.LocalizedNotificationHandler
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
+import org.openremote.manager.rules.RulesEngineId
+import org.openremote.manager.rules.facade.NotificationsFacade
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
@@ -760,6 +762,78 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
           [["custom", "valid"], false]
         ].collect { row -> [source, pushTargetType] + row }
       }
+    }
+  }
+
+  def "Global rules facade sends push notifications and stores them in each recipient realm"() {
+    given: "a global notifications facade using the real notification route"
+    def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def notificationService = container.getService(NotificationService.class)
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def pushHandler = container.getService(PushNotificationHandler.class)
+    def facade = new NotificationsFacade(new RulesEngineId(), notificationService)
+    def notificationName = "Global rules push ${UniqueIdentifierGenerator.generateId()}"
+    List<String> deliveredTargetIds = new CopyOnWriteArrayList<>()
+    List<String> createdAssetIds = []
+    def storedNotifications = {
+      notificationService.getNotifications(null, [PushNotificationMessage.TYPE], null, null,
+      null, null, null, Notification.Source.GLOBAL_RULESET, null, false, null, null, null).findAll {
+        it.name == notificationName
+      }
+    }
+
+    and: "only push delivery is intercepted, so no FCM calls are made"
+    PushNotificationHandler capturedPushHandler = Spy(pushHandler)
+    capturedPushHandler.isValid() >> true
+    capturedPushHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String,
+            _ as Notification.Target, _ as AbstractNotificationMessage) >> { id, source, sourceId, target, message ->
+              deliveredTargetIds.add(target.id)
+            }
+    notificationService.notificationHandlerMap.put(PushNotificationMessage.TYPE, capturedPushHandler)
+
+    and: "the notification targets a console in each of two realms"
+    def consoles = [keycloakSetup.realmBuilding.name, keycloakSetup.realmCity.name].collect { realm ->
+      def console = assetStorageService.merge(new ConsoleAsset("${notificationName} ${realm}").setRealm(realm)
+              .setConsoleProvider(PushNotificationMessage.TYPE,
+              new ConsoleProvider("fcm", true, true, true, true, false,
+              [token: "test-${UniqueIdentifierGenerator.generateId()}"])))
+      createdAssetIds.add(console.id)
+      console
+    }
+    def expectedRealms = consoles.collectEntries { [(it.id): it.realm] }
+    def notification = new Notification(notificationName,
+            new PushNotificationMessage().setTitle(notificationName).setTargetType(PushNotificationMessage.TargetType.DEVICE),
+            consoles.collect {
+              new Notification.Target(Notification.TargetType.ASSET, it.id)
+            }, null, null)
+
+    when: "the global rule submits the notification through its facade"
+    facade.send(notification)
+
+    then: "submission succeeds without a realm or asset source ID"
+    noExceptionThrown()
+
+    and: "both recipients receive a notification stored under their own realm"
+    conditions.eventually {
+      assert deliveredTargetIds.size() == expectedRealms.size()
+      assert deliveredTargetIds.toSet() == expectedRealms.keySet()
+      def persisted = storedNotifications()
+      assert persisted.size() == expectedRealms.size()
+      assert persisted.collectEntries { [(it.targetId): it.realm] } == expectedRealms
+      assert persisted.every {
+        it.target == Notification.TargetType.ASSET &&
+                it.source == Notification.Source.GLOBAL_RULESET &&
+                it.sourceId == "" && it.error == null
+      }
+    }
+
+    cleanup:
+    notificationService.notificationHandlerMap.put(PushNotificationMessage.TYPE, pushHandler)
+    storedNotifications().each { notificationService.removeNotification(it.id) }
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
     }
   }
 
