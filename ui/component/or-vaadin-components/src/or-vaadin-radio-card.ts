@@ -98,19 +98,19 @@ registerStyles(
 
 /**
  * A radio button shown as a card with an optional icon, for use in `<or-vaadin-radio-group>` next to or instead
- * of `<vaadin-radio-button>`. The whole card selects the option, and the checked card takes the checked colours.
+ * of `<vaadin-radio-button>`. The whole card selects the option, and the checked card takes the checked colors.
  *
  * @customElement "or-vaadin-radio-card"
- * @slot icon - Icon shown before the label. It takes the card's text colour through `currentColor`.
+ * @slot icon - Icon shown before the label. It takes the card's text color through `currentColor`.
  * @slot label - Label content, laid out by the consumer. Use the `label` attribute instead for plain text.
  * @attr {string} theme - Set to `reverse` to show the radio at the end of the card instead of the start.
  * @fires {CustomEvent} checked-changed - Fired when the `checked` property changes.
  * @cssprop --or-radio-card-background - Card background when not checked.
- * @cssprop --or-radio-card-color - Text and icon colour when not checked.
+ * @cssprop --or-radio-card-color - Text and icon color when not checked.
  * @cssprop --or-radio-card-checked-background - Card background when checked.
- * @cssprop --or-radio-card-checked-color - Text and icon colour, and radio fill, when checked.
+ * @cssprop --or-radio-card-checked-color - Text and icon color, and radio fill, when checked.
  * @cssprop --or-radio-card-radio-color - Radio fill when not checked.
- * @cssprop --or-radio-card-dot-color - Colour of the dot in a checked radio.
+ * @cssprop --or-radio-card-dot-color - Color of the dot in a checked radio.
  * @cssprop --or-radio-card-radio-size - Diameter of the radio.
  * @cssprop --or-radio-card-dot-size - Diameter of the dot in a checked radio.
  * @cssprop --or-radio-card-gap - Space between the radio, icon and label.

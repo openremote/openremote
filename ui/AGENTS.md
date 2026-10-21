@@ -50,10 +50,10 @@ Lumo and `registerStyles` match the element's `static get is()`, while base styl
 
 **Choosing the approach.** Use the first that fits:
 
-1. A documented custom property, for a value such as a colour, size or spacing.
+1. A documented custom property, for a value such as a color, size or spacing.
 2. A `::part()` rule in `ui/component/theme/src/components/or-vaadin-<name>.css`, keyed on the real tag.
 3. A Lumo module in that file, for rules that must live inside the shadow DOM, such as `:host(...)` states, `::slotted()` or internal elements.
-4. A theme variant: a Lumo module scoped by `:host([theme~="<variant>"])`, for one small change to an existing component, such as order, direction or colours. Lumo support for a Vaadin base variant, like `reverse`, keeps the Vaadin name.
+4. A theme variant: a Lumo module scoped by `:host([theme~="<variant>"])`, for one small change to an existing component, such as order, direction or colors. Lumo support for a Vaadin base variant, like `reverse`, keeps the Vaadin name.
 5. A new `or-vaadin-<name>` component when the change touches several of those, needs another slot or template, or changes the semantics, as `or-vaadin-toggle` and `or-vaadin-radio-card` do:
    - Override `static get is()` and call `registerStyles("or-vaadin-<name>", …)` at module top, before the class is defined.
    - Reuse the Lumo look of the parts it keeps by listing their modules for the new tag, and style them through the Vaadin properties those modules read. Without listed modules the Vaadin base styles apply and need out-specifying with `:host(...)`.
