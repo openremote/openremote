@@ -24,6 +24,8 @@ import jakarta.mail.Message
 import jakarta.mail.internet.InternetAddress
 import jakarta.ws.rs.BadRequestException
 import jakarta.ws.rs.WebApplicationException
+import org.apache.camel.builder.NotifyBuilder
+import org.openremote.container.message.MessageBrokerService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.asset.console.ConsoleResourceImpl
@@ -37,6 +39,7 @@ import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.web.ManagerWebService
+import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ConsoleAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.AttributeRef
@@ -834,6 +837,154 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
     storedNotifications().each { notificationService.removeNotification(it.id) }
     if (!createdAssetIds.isEmpty()) {
       assert assetStorageService.delete(createdAssetIds)
+    }
+  }
+
+  def "Asset rules #messageType notification to users #targetNames is allowed: #allowed"() {
+    given: "an asset-scoped facade with real identity, asset and notification services"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def notificationService = container.getService(NotificationService.class)
+    def realm = keycloakSetup.realmBuilding.name
+    def notificationName = "Asset rules users ${UniqueIdentifierGenerator.generateId()}"
+    List<String> createdAssetIds = []
+    List<Map> createdUsers = []
+    List<String> deliveredTargetIds = new CopyOnWriteArrayList<>()
+    List<String> expectedTargetIds = []
+    def storedNotifications = {
+      notificationService.getNotifications(null, [messageType], null, null,
+      null, null, null, Notification.Source.ASSET_RULESET, null, false, null, null, null).findAll {
+        it.name == notificationName
+      }
+    }
+
+    and: "only delivery is intercepted, leaving access checks and target mapping intact"
+    def push = messageType == PushNotificationMessage.TYPE
+    def handler = container.getService(push ? PushNotificationHandler : EmailNotificationHandler)
+    def capturedHandler = Spy(handler)
+    capturedHandler.isValid() >> true
+    capturedHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String,
+            _ as Notification.Target, _ as AbstractNotificationMessage) >> { id, source, sourceId, target, message ->
+              deliveredTargetIds.add(target.id)
+            }
+    notificationService.notificationHandlerMap.put(messageType, capturedHandler)
+
+    and: "the scoped asset has an ancestor, a descendant and an unrelated asset in the same realm"
+    def createAsset = { String name, String parentId ->
+      def asset = assetStorageService.merge(new ThingAsset("${notificationName} ${name}").setRealm(realm).setParentId(parentId))
+      createdAssetIds.add(asset.id)
+      asset
+    }
+    def ancestor = createAsset("ancestor", null)
+    def scopedAsset = createAsset("scope", ancestor.id)
+    def child = createAsset("child", scopedAsset.id)
+    def unrelated = createAsset("unrelated", null)
+    def facade = new NotificationsFacade(new RulesEngineId(realm, scopedAsset.id), notificationService)
+    def scopeLinks = [restrictedScope: scopedAsset.id, restrictedChild: child.id,
+      restrictedAncestor: ancestor.id, restrictedUnrelated: unrelated.id]
+
+    and: "recipients have the specified restricted role and direct asset links"
+    def targets = targetNames.collect { targetName ->
+      def userRealm = targetName == "foreign" ? keycloakSetup.realmCity.name : realm
+      def restricted = targetName.startsWith("restricted")
+      def username = "scoped-notif-${UniqueIdentifierGenerator.generateId()}"
+      def user = identityProvider.createUpdateUser(userRealm,
+              new User().setUsername(username).setEmail("${username}@example.com").setEnabled(true), null, false)
+      createdUsers.add([realm: userRealm, id: user.id])
+      identityProvider.updateUserClientRoles(userRealm, user.id, KEYCLOAK_CLIENT_ID, READ_ASSETS_ROLE, READ_NOTIFICATIONS_ROLE)
+      if (restricted) {
+        identityProvider.updateUserRealmRoles(userRealm, user.id,
+                identityProvider.addUserRealmRoles(userRealm, user.id, RESTRICTED_USER_REALM_ROLE))
+      }
+      assert identityProvider.getUserRealmRoles(userRealm, user.id).contains(RESTRICTED_USER_REALM_ROLE) == restricted
+      if (scopeLinks[targetName] != null) {
+        assetStorageService.storeUserAssetLinks([new UserAssetLink(userRealm, user.id, scopeLinks[targetName])])
+      }
+
+      if (push) {
+        // A linked console enables delivery; it does not grant access to the scoped asset itself.
+        def console = assetStorageService.merge(new ConsoleAsset("${notificationName} ${targetName}")
+                .setRealm(userRealm).setParentId(userRealm == realm ? scopedAsset.id : null)
+                .setConsoleProvider(PushNotificationMessage.TYPE,
+                new ConsoleProvider("fcm", true, true, true, true, false,
+                [token: "test-${UniqueIdentifierGenerator.generateId()}"])))
+        createdAssetIds.add(console.id)
+        assetStorageService.storeUserAssetLinks([new UserAssetLink(userRealm, user.id, console.id)])
+        expectedTargetIds.add(console.id)
+      } else {
+        expectedTargetIds.add(user.id)
+      }
+      new Notification.Target(Notification.TargetType.USER, user.id)
+    }
+    def notificationMessage = push
+            ? new PushNotificationMessage().setTitle(notificationName).setTargetType(PushNotificationMessage.TargetType.DEVICE)
+            : new EmailNotificationMessage().setSubject(notificationName).setText("Asset rule notification")
+    def notification = new Notification(notificationName, notificationMessage, targets, null, null)
+
+    and: "route completion is observed before asserting the absence of side effects"
+    def processed = new NotifyBuilder(container.getService(MessageBrokerService.class).context)
+            .fromRoute("NotificationQueue")
+            .filter { exchange ->
+              exchange.in.getHeader(Notification.HEADER_SOURCE) == Notification.Source.ASSET_RULESET &&
+                      exchange.in.getHeader(Notification.HEADER_SOURCE_ID) == scopedAsset.id
+            }
+            .whenDone(1).create()
+
+    when: "the asset rule sends directly to these users"
+    facade.send(notification)
+
+    then: "the entire request is accepted or rejected before delivery and persistence"
+    noExceptionThrown()
+    assert processed.matches(10, TimeUnit.SECONDS)
+    def persisted = storedNotifications()
+    if (allowed) {
+      verifyAll {
+        deliveredTargetIds.size() == expectedTargetIds.size()
+        deliveredTargetIds.toSet() == expectedTargetIds.toSet()
+        persisted.size() == expectedTargetIds.size()
+        persisted.collect { it.targetId }.toSet() == expectedTargetIds.toSet()
+        persisted.every {
+          it.target == (push ? Notification.TargetType.ASSET : Notification.TargetType.USER) &&
+                  it.realm == realm && it.source == Notification.Source.ASSET_RULESET &&
+                  it.sourceId == scopedAsset.id && it.error == null
+        }
+      }
+    } else {
+      verifyAll {
+        deliveredTargetIds.isEmpty()
+        persisted.isEmpty()
+      }
+    }
+
+    cleanup:
+    processed?.destroy()
+    notificationService.notificationHandlerMap.put(messageType, handler)
+    storedNotifications().each { notificationService.removeNotification(it.id) }
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
+    }
+    createdUsers.each { identityProvider.deleteUser(it.realm, it.id) }
+
+    where:
+    [messageType, targetNames, allowed] << [PushNotificationMessage.TYPE, EmailNotificationMessage.TYPE].collectMany { messageType ->
+      [
+        [["unrestricted"], true],
+        [["restrictedScope"], true],
+        [["unrestricted", "restrictedScope"], true],
+        [["restrictedUnlinked"], false],
+        [["restrictedChild"], false],
+        [["restrictedAncestor"], false],
+        [["restrictedUnrelated"], false],
+        [["foreign"], false],
+        [["unrestricted", "restrictedUnlinked"], false],
+        [["restrictedUnlinked", "unrestricted"], false],
+        [["restrictedScope", "restrictedChild"], false],
+        [["restrictedChild", "restrictedScope"], false],
+        [["unrestricted", "foreign"], false],
+        [["foreign", "unrestricted"], false]
+      ].collect { row -> [messageType] + row }
     }
   }
 
