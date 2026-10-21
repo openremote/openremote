@@ -122,7 +122,7 @@ jobs:
 
   deployment:
     name: Deploy
-    needs: [detect-changes, install-dist, unit-tests, integration-tests]
+    needs: [detect-changes, check-spotless, ui-check-spotless, install-dist, unit-tests, integration-tests]
     if: ${{ !failure() && !cancelled() && needs.detect-changes.outputs.deploys != '' }}
     uses: "./.github/workflows/deployment.yml"
     with:
