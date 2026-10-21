@@ -36,12 +36,14 @@ import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.web.ManagerWebService
 import org.openremote.model.asset.impl.ConsoleAsset
+import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
 import org.openremote.model.notification.*
 import org.openremote.model.security.User
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -664,6 +666,101 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
     cleanup: "the mock is removed"
     notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
+  }
+
+  def "#source device push with mode #pushTargetType and targets #targetNames is allowed: #allowed"() {
+    given: "a real notification route and target mapper with only delivery intercepted"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def notificationService = container.getService(NotificationService.class)
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def pushHandler = container.getService(PushNotificationHandler.class)
+    def realm = keycloakSetup.realmBuilding.name
+    def notificationName = "Custom push target ${UniqueIdentifierGenerator.generateId()}"
+    List<String> deliveredTargetIds = new CopyOnWriteArrayList<>()
+    List<String> createdAssetIds = []
+    def storedNotifications = {
+      notificationService.getNotifications(null, [PushNotificationMessage.TYPE], null, null,
+      null, null, null, source, null, false, null, null, null).findAll {
+        it.name == notificationName
+      }
+    }
+    PushNotificationHandler capturedPushHandler = Spy(pushHandler)
+    capturedPushHandler.isValid() >> true
+    capturedPushHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String,
+            _ as Notification.Target, _ as AbstractNotificationMessage) >> { id, notificationSource, notificationSourceId, target, message ->
+              deliveredTargetIds.add(target.id)
+            }
+    notificationService.notificationHandlerMap.put(PushNotificationMessage.TYPE, capturedPushHandler)
+
+    and: "push consoles inside the rule scope, outside its subtree and in another realm"
+    def scopedAsset = assetStorageService.merge(new ThingAsset(notificationName).setRealm(realm))
+    createdAssetIds.add(scopedAsset.id)
+    def createConsole = { String name, String consoleRealm, String parentId ->
+      def console = assetStorageService.merge(new ConsoleAsset(name).setRealm(consoleRealm).setParentId(parentId)
+              .setConsoleProvider(PushNotificationMessage.TYPE,
+              new ConsoleProvider("fcm", true, true, true, true, false,
+              [token: "test-${UniqueIdentifierGenerator.generateId()}"])))
+      createdAssetIds.add(console.id)
+      console
+    }
+    def allowedConsole = createConsole("${notificationName} allowed", realm, scopedAsset.id)
+    createConsole("${notificationName} unrelated", realm, null)
+    createConsole("${notificationName} foreign", keycloakSetup.realmCity.name, null)
+    def targets = [
+      valid: new Notification.Target(Notification.TargetType.ASSET, allowedConsole.id),
+      custom: new Notification.Target(Notification.TargetType.CUSTOM, "unsupported-device-target")
+    ]
+    def notification = new Notification(notificationName,
+            new PushNotificationMessage().setTitle(notificationName).setTargetType(pushTargetType),
+            targetNames.collect { targets[it] }, null, null)
+    def sourceId = source == Notification.Source.ASSET_RULESET ? scopedAsset.id : realm
+
+    when: "the service receives the same source headers as the rules facade"
+    // Use request/reply on the real queue so all processing has completed before checking absence
+    // of delivery and persistence. No FCM calls are made by the capture above.
+    def result = notificationService.sendNotification(notification, source, sourceId)
+
+    then: "unsupported targets reject the entire request before any delivery or stored record"
+    def persisted = storedNotifications()
+    if (allowed) {
+      verifyAll {
+        result
+        deliveredTargetIds == [allowedConsole.id]
+        persisted.size() == 1
+        persisted[0].target == Notification.TargetType.ASSET
+        persisted[0].targetId == allowedConsole.id
+        persisted[0].realm == realm
+        persisted[0].source == source
+        persisted[0].sourceId == sourceId
+        persisted[0].error == null
+      }
+    } else {
+      verifyAll {
+        !result
+        deliveredTargetIds.isEmpty()
+        persisted.isEmpty()
+      }
+    }
+
+    cleanup:
+    notificationService.notificationHandlerMap.put(PushNotificationMessage.TYPE, pushHandler)
+    storedNotifications().each { notificationService.removeNotification(it.id) }
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
+    }
+
+    where:
+    [source, pushTargetType, targetNames, allowed] << [Notification.Source.REALM_RULESET, Notification.Source.ASSET_RULESET].collectMany { source ->
+      [null, PushNotificationMessage.TargetType.DEVICE].collectMany { pushTargetType ->
+        [
+          [["valid"], true],
+          [["custom"], false],
+          [["valid", "custom"], false],
+          [["custom", "valid"], false]
+        ].collect { row -> [source, pushTargetType] + row }
+      }
+    }
   }
 
   def "Check email notification functionality"() {
