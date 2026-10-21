@@ -40,11 +40,13 @@ The date and time picker wrappers set their `i18n` themselves: the date order, c
 
 **How Vaadin applies styles.** A Vaadin element's shadow root has three layers, later ones winning at equal specificity:
 
-1. Base styles from the class's `static get styles()`, a wrapper's own included. Lumo drops them when it injects, unless the component sets `includeBaseStyles: true` (badge, slider). Components without `LumoInjectionMixin`, such as `vaadin-dialog`, always keep them.
-2. Lumo modules: `@media lumo_<name>` blocks in the theme CSS, listed per tag in `--_lumo-<tag>-inject-modules`. The last declaration of a list wins, so a custom list repeats Lumo's modules.
-3. `registerStyles("<tag>", css\`…\`)` styles. Subclasses inherit them, and registering after the element is defined restyles existing instances with a console warning.
+1. Base styles defined in `static get styles()` of the Vaadin component class or our `or-vaadin-*` classes. The Lumo theme drops these when it injects, unless the component sets `includeBaseStyles: true` (badge, slider). Components without `LumoInjectionMixin`, such as `vaadin-dialog`, always keep them.
+2. Lumo modules defined through `@media lumo_<name>` blocks are injected per tag as listed in `--_lumo-<tag>-inject-modules`. Lumo defines its modules and lists them this way in `@vaadin/vaadin-lumo-styles/components/<name>.css`. The list in our `ui/component/theme/src/components/or-vaadin-<name>.css` overwrites Lumo's list for that tag, so we include Lumo's declared list and include our own `@media lumo_` blocks. `components/index.css` therefore imports our file after every other file that declares a list for the same tag, including through a Lumo import.
+3. Styles registered with ``registerStyles("<tag>", css`…`)`` are added after Lumo to elements whose `is` matches the tag, and are inherited by subclasses. Register them before `customElements.define` runs for that tag, otherwise existing instances are restyled and a console warning is logged. For our own tag that means on module level above the class.
 
 Lumo and `registerStyles` match the element's `static get is()`, while base styles come with the class. From outside, custom properties and `::part()` rules beat the shadow DOM's own rules, and slotted light-DOM children such as native inputs take normal selectors. `test/styling-contract.test.ts` checks the theme and every element the package index exports against these layers.
+
+Base styles and registered styles ship with the component code. Our Lumo module lists, `@media lumo_` blocks and `::part()` rules live in `@openremote/theme`. An app without that theme therefore gets the base styles, or Lumo's default lists if it loads Lumo itself, plus our registered styles. The hard-coded fallbacks below keep our own components usable there.
 
 **Public API.** Projects may rely on what the custom-elements manifest documents: tags, attributes, properties, events, slots, `--or-*` properties and theme variants, plus the documented Vaadin API of thin wrappers. Do not rename or remove those in one step; keep the old name working with a warning for a release. Shadow structure, internal classes, Lumo module names, `--_*` properties and the parts of our own components are internal, and code that depends on Vaadin internals stays in this repo.
 
