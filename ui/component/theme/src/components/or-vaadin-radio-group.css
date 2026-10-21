@@ -18,26 +18,6 @@
  */
 @import "@vaadin/vaadin-lumo-styles/components/radio-group.css";
 
-/* Makes vaadin-radio-button reversible as in:
- * https://github.com/vaadin/web-components/pull/12098
- *
- * See https://github.com/vaadin/web-components/blob/main/packages/field-base/src/styles/checkable-base-styles.js
- */
-@media lumo_radio_button_reverse {
-  :host([theme~="reverse"]) .vaadin-radio-button-container {
-    grid-template-columns: 1fr auto;
-  }
-
-  :host([theme~="reverse"]) ::slotted(label) {
-    grid-column: 1;
-  }
-
-  :host([theme~="reverse"]) [part="radio"],
-  :host([theme~="reverse"]) ::slotted(input) {
-    grid-column: 2;
-  }
-}
-
 or-vaadin-radio-group:has(> or-vaadin-radio-card)::part(group-field) {
   gap: var(--or-radio-card-spacing, var(--lumo-space-xs));
 }
@@ -48,9 +28,6 @@ or-vaadin-radio-group:has(> or-vaadin-radio-card)::part(group-field) {
   --_lumo-vaadin-radio-group-inject-modules:
     lumo_mixins_group-field, lumo_mixins_field-label, lumo_mixins_field-required, lumo_mixins_field-error-message,
     lumo_mixins_field-helper, lumo_components_radio-group, lumo_mixins_field-internal;
-  --_lumo-vaadin-radio-button-inject: 1;
-  --_lumo-vaadin-radio-button-inject-modules:
-    lumo_mixins_checkable-field, lumo_components_radio-button, lumo_radio_button_reverse;
   --_lumo-or-vaadin-radio-card-inject: 1;
   --_lumo-or-vaadin-radio-card-inject-modules: lumo_mixins_checkable-field, lumo_components_radio-button;
 }
