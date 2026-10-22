@@ -289,23 +289,38 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
               case USER ->
                   // Any console assets linked to the target user
                   assetQuery.userIds(targetId);
-              case ASSET ->
+              case ASSET -> {
+                if (rulesRealm == null) {
                   // Any users linked to this asset and then their linked console assets
                   assetQuery.userIds(
                       assetStorageService.findUserAssetLinks(null, null, targetId).stream()
-                          // Check the recipient's scope link before expanding to their consoles.
+                          .map(ual -> ual.getId().getUserId())
+                          .distinct()
+                          .toArray(String[]::new));
+                } else {
+                  // Resolve users in the rule's realm before expanding their consoles.
+                  assetQuery.userIds(
+                      Arrays.stream(
+                              managerIdentityService
+                                  .getIdentityProvider()
+                                  .queryUsers(
+                                      new UserQuery()
+                                          .assets(targetId)
+                                          .realm(new RealmPredicate(rulesRealm))))
                           .filter(
-                              ual ->
+                              user ->
                                   source != Notification.Source.ASSET_RULESET
                                       || NotificationScope.isUserInAssetScope(
-                                          ual.getId().getRealm(),
-                                          ual.getId().getUserId(),
+                                          user.getRealm(),
+                                          user.getId(),
                                           sourceId,
                                           managerIdentityService.getIdentityProvider(),
                                           assetStorageService))
-                          .map(ual -> ual.getId().getUserId())
-                          .collect(Collectors.toSet())
+                          .map(User::getId)
+                          .distinct()
                           .toArray(String[]::new));
+                }
+              }
             }
 
             if (rulesRealm != null) {
