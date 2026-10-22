@@ -200,11 +200,17 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
       List<Notification.Target> targets,
       AbstractNotificationMessage message) {
 
-    // Check if message is going to a topic if so then filter consoles subscribed to that topic
     PushNotificationMessage pushMessage = (PushNotificationMessage) message;
     List<Notification.Target> mappedTargets = new ArrayList<>();
 
     if (pushMessage.getTargetType() == TOPIC || pushMessage.getTargetType() == CONDITION) {
+      // Firebase resolves these audiences, so their realm and asset scope cannot be verified.
+      if (source == Notification.Source.REALM_RULESET
+          || source == Notification.Source.ASSET_RULESET) {
+        throw new NotificationProcessingException(
+            NotificationProcessingException.Reason.INSUFFICIENT_ACCESS,
+            "Realm- and asset-scoped rules cannot send TOPIC or CONDITION push notifications");
+      }
       mappedTargets.add(
           new Notification.Target(
               Notification.TargetType.CUSTOM,
