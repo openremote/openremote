@@ -1477,6 +1477,154 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
     }
   }
 
+  def "#source #messageType expansion from a descendant asset to #userNames with asset email #hasAssetEmail keeps #expectedUserNames"() {
+    given: "real rule notification processing with only delivery intercepted"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def notificationService = container.getService(NotificationService.class)
+    def realm = keycloakSetup.realmBuilding.name
+    def notificationName = "Restricted asset recipients ${UniqueIdentifierGenerator.generateId()}"
+    List<String> createdAssetIds = []
+    List<String> createdUserIds = []
+    List<Notification.Target> deliveredTargets = new CopyOnWriteArrayList<>()
+    def storedNotifications = {
+      notificationService.getNotifications(null, [messageType], null, null,
+      null, null, null, source, null, false, null, null, null).findAll {
+        it.name == notificationName
+      }
+    }
+    def push = messageType == PushNotificationMessage.TYPE
+    def handler = container.getService(push ? PushNotificationHandler : EmailNotificationHandler)
+    def capturedHandler = Spy(handler)
+    capturedHandler.isValid() >> true
+    capturedHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String,
+            _ as Notification.Target, _ as AbstractNotificationMessage) >> { id, notificationSource, notificationSourceId, target, message ->
+              deliveredTargets.add(target)
+            }
+    notificationService.notificationHandlerMap.put(messageType, capturedHandler)
+
+    and: "the notification targets a descendant rather than the engine's scoped asset"
+    def scopedAsset = assetStorageService.merge(new ThingAsset(notificationName).setRealm(realm))
+    createdAssetIds.add(scopedAsset.id)
+    def targetAsset = new ThingAsset("${notificationName} target").setRealm(realm).setParentId(scopedAsset.id)
+    if (hasAssetEmail) {
+      targetAsset.setEmail("asset-${UUID.randomUUID()}@example.com")
+    }
+    targetAsset = assetStorageService.merge(targetAsset)
+    createdAssetIds.add(targetAsset.id)
+
+    and: "all recipients are linked to the target, but only some restricted users are linked to the scope"
+    def userTargets = userNames.collectEntries { userName ->
+      def restricted = userName.startsWith("restricted")
+      def username = "asset-recipient-${UniqueIdentifierGenerator.generateId()}"
+      def user = identityProvider.createUpdateUser(realm,
+              new User().setUsername(username).setEmail("${username}@example.com").setEnabled(true), null, false)
+      createdUserIds.add(user.id)
+      identityProvider.updateUserClientRoles(realm, user.id, KEYCLOAK_CLIENT_ID, READ_ASSETS_ROLE, READ_NOTIFICATIONS_ROLE)
+      if (restricted) {
+        identityProvider.updateUserRealmRoles(realm, user.id,
+                identityProvider.addUserRealmRoles(realm, user.id, RESTRICTED_USER_REALM_ROLE))
+      }
+      assert identityProvider.getUserRealmRoles(realm, user.id).contains(RESTRICTED_USER_REALM_ROLE) == restricted
+      assetStorageService.storeUserAssetLinks([new UserAssetLink(realm, user.id, targetAsset.id)])
+      if (userName == "restrictedScope") {
+        assetStorageService.storeUserAssetLinks([new UserAssetLink(realm, user.id, scopedAsset.id)])
+      }
+      assert assetStorageService.isUserAssets(user.id, [scopedAsset.id]) == (userName == "restrictedScope")
+
+      def deliveryTarget = new Notification.Target(Notification.TargetType.USER, user.id)
+      if (push) {
+        // Every console is in scope; authorization must follow the recipient's own scope link.
+        def console = assetStorageService.merge(new ConsoleAsset("${notificationName} ${userName}")
+                .setRealm(realm).setParentId(targetAsset.id)
+                .setConsoleProvider(PushNotificationMessage.TYPE,
+                new ConsoleProvider("fcm", true, true, true, true, false,
+                [token: "test-${UniqueIdentifierGenerator.generateId()}"])))
+        createdAssetIds.add(console.id)
+        assetStorageService.storeUserAssetLinks([new UserAssetLink(realm, user.id, console.id)])
+        deliveryTarget = new Notification.Target(Notification.TargetType.ASSET, console.id)
+      }
+      [(userName): deliveryTarget]
+    }
+    def expectedTargets = expectedUserNames.collectEntries { userName ->
+      def target = userTargets[userName]
+      [(target.id): target.type]
+    }
+    if (hasAssetEmail) {
+      expectedTargets[targetAsset.id] = Notification.TargetType.ASSET
+    }
+    def notificationMessage = push
+            ? new PushNotificationMessage().setTitle(notificationName).setTargetType(PushNotificationMessage.TargetType.DEVICE)
+            : new EmailNotificationMessage().setSubject(notificationName).setText("Restricted asset recipients")
+    def notification = new Notification(notificationName, notificationMessage,
+            [new Notification.Target(Notification.TargetType.ASSET, targetAsset.id)], null, null)
+
+    and: "a facade for the requested scope and an observer that waits for processing to finish"
+    def engineId = source == Notification.Source.ASSET_RULESET ? new RulesEngineId(realm, scopedAsset.id) : new RulesEngineId(realm)
+    def sourceId = source == Notification.Source.ASSET_RULESET ? scopedAsset.id : realm
+    def facade = new NotificationsFacade(engineId, notificationService)
+    def processed = new NotifyBuilder(container.getService(MessageBrokerService.class).context)
+            .fromRoute("NotificationQueue")
+            .filter { exchange ->
+              exchange.in.getHeader(Notification.HEADER_SOURCE) == source &&
+                      exchange.in.getHeader(Notification.HEADER_SOURCE_ID) == sourceId
+            }
+            .whenDone(1).create()
+
+    when: "the rule sends to the descendant asset and the handler expands its linked users"
+    facade.send(notification)
+
+    then: "only eligible recipients receive notifications and have stored records"
+    noExceptionThrown()
+    assert processed.matches(10, TimeUnit.SECONDS)
+    def persisted = storedNotifications()
+    verifyAll {
+      deliveredTargets.size() == expectedTargets.size()
+      deliveredTargets.collectEntries { [(it.id): it.type] } == expectedTargets
+      persisted.size() == expectedTargets.size()
+      persisted.collectEntries { [(it.targetId): it.target] } == expectedTargets
+      persisted.every {
+        it.realm == realm && it.source == source && it.sourceId == sourceId && it.error == null
+      }
+    }
+
+    cleanup:
+    processed?.destroy()
+    notificationService.notificationHandlerMap.put(messageType, handler)
+    storedNotifications().each { notificationService.removeNotification(it.id) }
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
+    }
+    createdUserIds.each { identityProvider.deleteUser(realm, it) }
+
+    where:
+    [source, messageType, hasAssetEmail, userNames, expectedUserNames] << (
+    [Notification.Source.ASSET_RULESET, Notification.Source.REALM_RULESET].collectMany { source ->
+      [PushNotificationMessage.TYPE, EmailNotificationMessage.TYPE].collectMany { messageType ->
+        [
+          [["unrestricted"], ["unrestricted"]],
+          [["restrictedScope"], ["restrictedScope"]],
+          [["restrictedChild"], []],
+          [["unrestricted", "restrictedChild"], ["unrestricted"]],
+          [["restrictedScope", "restrictedChild"], ["restrictedScope"]]
+        ].collect { row ->
+          [source, messageType, false, row[0], source == Notification.Source.ASSET_RULESET ? row[1] : row[0]]
+        }
+      }
+    } + [
+      [Notification.Source.ASSET_RULESET, EmailNotificationMessage.TYPE, true, ["restrictedChild"], []],
+      [
+        Notification.Source.ASSET_RULESET,
+        EmailNotificationMessage.TYPE,
+        true,
+        ["restrictedScope", "restrictedChild"],
+        ["restrictedScope"]
+      ]
+    ])
+  }
+
   def "Check email notification functionality"() {
 
     List<Message> sentEmails = new CopyOnWriteArrayList<>()
