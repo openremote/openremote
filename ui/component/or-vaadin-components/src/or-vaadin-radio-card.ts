@@ -98,7 +98,7 @@ registerStyles(
 
 /**
  * A radio button shown as a card with an optional icon, for use in `<or-vaadin-radio-group>` next to or instead
- * of `<vaadin-radio-button>`. The whole card selects the option, and the checked card takes the checked colors.
+ * of `<or-vaadin-radio-button>`. The whole card selects the option, and the checked card takes the checked colors.
  *
  * @customElement "or-vaadin-radio-card"
  * @slot icon - Icon shown before the label. It takes the card's text color through `currentColor`.

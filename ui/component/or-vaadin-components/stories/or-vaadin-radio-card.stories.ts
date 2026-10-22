@@ -54,8 +54,7 @@ const meta: Meta = {
   component: tagName,
   args,
   argTypes,
-  render: (storyArgs) =>
-    html`<div style="max-width: 393px;">${template(storyArgs, swatch(appearances[2].swatch))}</div>`,
+  render: (storyArgs) => template(storyArgs, swatch(appearances[2].swatch)),
   excludeStories: /^[a-z].*/,
   parameters: {
     actions: {
@@ -64,7 +63,7 @@ const meta: Meta = {
     docs: {
       subtitle: `<${tagName}>`,
       description:
-        "Radio card is a more mobile-friendly alternative to `<vaadin-radio-button>`. It is a radio button shown as a card, with an optional icon before its label. It is meant for `<or-vaadin-radio-group>`, where it can be used next to or instead of `<vaadin-radio-button>`, and it supports the same states (checked, disabled) and events (`change`, `checked-changed`). The whole card selects the option, and the colors, sizes and spacing are set through `--or-radio-card-*` properties.",
+        "Radio card is a more mobile-friendly alternative to `<or-vaadin-radio-button>`. It is a radio button shown as a card, with an optional icon before its label. It is meant for `<or-vaadin-radio-group>`, where it can be used next to or instead of `<or-vaadin-radio-button>`, and it supports the same states (checked, disabled) and events (`change`, `checked-changed`). The whole card selects the option, and the colors, sizes and spacing are set through `--or-radio-card-*` properties.",
     },
   },
 };

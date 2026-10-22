@@ -30,9 +30,9 @@ setCustomElementsManifest(customElements);
 const { events, args, argTypes, template } = getORStorybookHelpers(tagName);
 
 const radioButtons = html`
-  <vaadin-radio-button label="Email" value="email"></vaadin-radio-button>
-  <vaadin-radio-button label="SMS" value="sms"></vaadin-radio-button>
-  <vaadin-radio-button label="Push" value="push"></vaadin-radio-button>
+  <or-vaadin-radio-button label="Email" value="email"></or-vaadin-radio-button>
+  <or-vaadin-radio-button label="SMS" value="sms"></or-vaadin-radio-button>
+  <or-vaadin-radio-button label="Push" value="push"></or-vaadin-radio-button>
 `;
 
 const meta: Meta = {
@@ -49,7 +49,7 @@ const meta: Meta = {
     docs: {
       subtitle: `<${tagName}>`,
       description:
-        "Radio group lets the user pick exactly one option from a set of `<vaadin-radio-button>` or `<or-vaadin-radio-card>` children. The group holds the selected `value` and provides the label, helper text and validation, and it supports the same states (disabled, readonly, required) and events (`change`, `value-changed`) as the other Vaadin fields.",
+        "Radio group lets the user pick exactly one option from a set of `<or-vaadin-radio-button>` or `<or-vaadin-radio-card>` children. The group holds the selected `value` and provides the label, helper text and validation, and it supports the same states (disabled, readonly, required) and events (`change`, `value-changed`) as the other Vaadin fields.",
     },
   },
 };
