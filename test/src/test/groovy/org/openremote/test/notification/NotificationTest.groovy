@@ -1972,6 +1972,121 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
     notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
   }
 
+  def "#source localized push with #pushTargetType in nl and default #defaultLanguage is allowed: #allowed"() {
+    given: "real scoped notification processing and localization with only push delivery intercepted"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def notificationService = container.getService(NotificationService.class)
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def localizedHandler = container.getService(LocalizedNotificationHandler.class)
+    def pushHandler = container.getService(PushNotificationHandler.class)
+    def realm = keycloakSetup.realmBuilding.name
+    def notificationName = "Localized rule push ${UniqueIdentifierGenerator.generateId()}"
+    List<String> createdAssetIds = []
+    List<Map> deliveredTargets = new CopyOnWriteArrayList<>()
+    def storedNotifications = {
+      notificationService.getNotifications(null, [LocalizedNotificationMessage.TYPE], null, null,
+      null, null, null, source, null, false, null, null, null).findAll {
+        it.name == notificationName
+      }
+    }
+    PushNotificationHandler capturedPushHandler = Spy(pushHandler)
+    capturedPushHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String,
+            _ as Notification.Target, _ as AbstractNotificationMessage) >> { id, notificationSource, notificationSourceId, target, message ->
+              deliveredTargets.add([id: id, source: notificationSource, sourceId: notificationSourceId,
+                target: target.type, targetId: target.id, title: (message as PushNotificationMessage).title,
+                pushTargetType: (message as PushNotificationMessage).targetType])
+            }
+    def previousLocalizedHandler = notificationService.notificationHandlerMap.put(LocalizedNotificationMessage.TYPE, localizedHandler)
+    // The localized handler has its own handler map; keep its validation, mapping and dispatch real.
+    def previousPushHandler = localizedHandler.notificationHandlerMap.put(PushNotificationMessage.TYPE, capturedPushHandler)
+
+    and: "an in-scope console without user links so dispatch uses the notification's default language"
+    def scopedAsset = assetStorageService.merge(new ThingAsset(notificationName).setRealm(realm))
+    createdAssetIds.add(scopedAsset.id)
+    def console = assetStorageService.merge(new ConsoleAsset("${notificationName} console")
+            .setRealm(realm).setParentId(scopedAsset.id)
+            .setConsoleProvider(PushNotificationMessage.TYPE,
+            new ConsoleProvider("fcm", true, true, true, true, false,
+            [token: "test-${UniqueIdentifierGenerator.generateId()}"])))
+    createdAssetIds.add(console.id)
+
+    and: "a valid device message followed by the tested message in another locale"
+    def audience = pushTargetType == PushNotificationMessage.TargetType.TOPIC ? "maintenance" :
+            pushTargetType == PushNotificationMessage.TargetType.CONDITION ? "'maintenance' in topics && 'staff' in topics" : null
+    Map<String, AbstractNotificationMessage> messages = [
+      en: new PushNotificationMessage().setTitle("${notificationName} en").setTargetType(PushNotificationMessage.TargetType.DEVICE),
+      nl: new PushNotificationMessage().setTitle("${notificationName} nl").setTargetType(pushTargetType).setTarget(audience)
+    ]
+    def localizedMessage = new LocalizedNotificationMessage(defaultLanguage, messages)
+    assert localizedHandler.isMessageValid(localizedMessage)
+    def notification = new Notification(notificationName, localizedMessage,
+            [new Notification.Target(Notification.TargetType.ASSET, console.id)], null, null)
+
+    and: "a scoped rules facade and an observer that waits for notification processing to finish"
+    def engineId = source == Notification.Source.ASSET_RULESET ? new RulesEngineId(realm, scopedAsset.id) : new RulesEngineId(realm)
+    def sourceId = source == Notification.Source.ASSET_RULESET ? scopedAsset.id : realm
+    def facade = new NotificationsFacade(engineId, notificationService)
+    def processed = new NotifyBuilder(container.getService(MessageBrokerService.class).context)
+            .fromRoute("NotificationQueue")
+            .filter { exchange ->
+              exchange.in.getHeader(Notification.HEADER_SOURCE) == source &&
+                      exchange.in.getHeader(Notification.HEADER_SOURCE_ID) == sourceId
+            }
+            .whenDone(1).create()
+
+    when: "the rule sends the localized notification"
+    facade.send(notification)
+
+    then: "device messages are localized, while any forbidden locale rejects all delivery and persistence"
+    noExceptionThrown()
+    assert processed.matches(10, TimeUnit.SECONDS)
+    def persisted = storedNotifications()
+    if (allowed) {
+      assert persisted.size() == 1
+      verifyAll {
+        deliveredTargets == [
+          [id: persisted[0].id, source: source, sourceId: sourceId,
+            target: Notification.TargetType.ASSET, targetId: console.id,
+            title: "${notificationName} ${defaultLanguage}".toString(), pushTargetType: PushNotificationMessage.TargetType.DEVICE]
+        ]
+        persisted[0].target == Notification.TargetType.ASSET
+        persisted[0].targetId == console.id
+        persisted[0].realm == realm
+        persisted[0].source == source
+        persisted[0].sourceId == sourceId
+        persisted[0].type == LocalizedNotificationMessage.TYPE
+        persisted[0].error == null
+      }
+    } else {
+      verifyAll {
+        deliveredTargets.isEmpty()
+        persisted.isEmpty()
+      }
+    }
+
+    cleanup:
+    processed?.destroy()
+    localizedHandler.notificationHandlerMap.put(PushNotificationMessage.TYPE, previousPushHandler)
+    notificationService.notificationHandlerMap.put(LocalizedNotificationMessage.TYPE, previousLocalizedHandler)
+    storedNotifications().each { notificationService.removeNotification(it.id) }
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
+    }
+
+    where:
+    [source, pushTargetType, defaultLanguage] << [Notification.Source.REALM_RULESET, Notification.Source.ASSET_RULESET].collectMany { source ->
+      [
+        PushNotificationMessage.TargetType.DEVICE,
+        PushNotificationMessage.TargetType.TOPIC,
+        PushNotificationMessage.TargetType.CONDITION
+      ].collectMany { pushTargetType ->
+        ["en", "nl"].collect { defaultLanguage -> [source, pushTargetType, defaultLanguage] }
+      }
+    }
+    allowed = pushTargetType == PushNotificationMessage.TargetType.DEVICE
+  }
+
   def "Check localized notification functionality"() {
 
     List<String> localizedNotificationIds = new CopyOnWriteArrayList<>()
