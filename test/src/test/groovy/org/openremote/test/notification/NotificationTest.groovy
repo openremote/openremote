@@ -1356,6 +1356,127 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
     ])
   }
 
+  def "#source email to an asset with linked users #userNames and asset email #hasAssetEmail keeps users #expectedUserNames"() {
+    given: "real rule notification processing with only email delivery intercepted"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def notificationService = container.getService(NotificationService.class)
+    def emailHandler = container.getService(EmailNotificationHandler.class)
+    def realm = keycloakSetup.realmBuilding.name
+    def notificationName = "Rule email expansion ${UniqueIdentifierGenerator.generateId()}"
+    List<String> createdAssetIds = []
+    List<Map> createdUsers = []
+    List<Map> deliveredRecipients = new CopyOnWriteArrayList<>()
+    def storedNotifications = {
+      notificationService.getNotifications(null, [EmailNotificationMessage.TYPE], null, null,
+      null, null, null, source, null, false, null, null, null).findAll {
+        it.name == notificationName
+      }
+    }
+    EmailNotificationHandler capturedEmailHandler = Spy(emailHandler)
+    capturedEmailHandler.isValid() >> true
+    capturedEmailHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String,
+            _ as Notification.Target, _ as AbstractNotificationMessage) >> { id, notificationSource, notificationSourceId, target, message ->
+              deliveredRecipients.add([id: target.id, type: target.type,
+                address: (target.data as EmailNotificationMessage.Recipient)?.address])
+            }
+    notificationService.notificationHandlerMap.put(EmailNotificationMessage.TYPE, capturedEmailHandler)
+
+    and: "the target is a descendant asset with an optional email address of its own"
+    def scopedAsset = assetStorageService.merge(new ThingAsset(notificationName).setRealm(realm))
+    createdAssetIds.add(scopedAsset.id)
+    def assetEmail = "asset-${UUID.randomUUID()}@example.com"
+    def targetAsset = new ThingAsset("${notificationName} target").setRealm(realm).setParentId(scopedAsset.id)
+    if (hasAssetEmail) {
+      targetAsset.setEmail(assetEmail)
+    }
+    targetAsset = assetStorageService.merge(targetAsset)
+    createdAssetIds.add(targetAsset.id)
+
+    and: "unrestricted users from the selected realms are linked to the target asset"
+    def users = userNames.collectEntries { userName ->
+      def userRealm = userName == "foreign" ? keycloakSetup.realmCity.name : realm
+      def username = "email-expansion-${UniqueIdentifierGenerator.generateId()}"
+      def user = identityProvider.createUpdateUser(userRealm,
+              new User().setUsername(username).setEmail("${username}@example.com").setEnabled(true), null, false)
+      createdUsers.add([realm: userRealm, id: user.id])
+      identityProvider.updateUserClientRoles(userRealm, user.id, KEYCLOAK_CLIENT_ID, READ_ASSETS_ROLE, READ_NOTIFICATIONS_ROLE)
+      assert !identityProvider.getUserRealmRoles(userRealm, user.id).contains(RESTRICTED_USER_REALM_ROLE)
+      // Seed cross-realm links through storage to exercise filtering of existing data, independently
+      // of the REST checks that prevent creating such links.
+      assetStorageService.storeUserAssetLinks([new UserAssetLink(userRealm, user.id, targetAsset.id)])
+      [(userName): user]
+    }
+    def expectedRecipients = expectedUserNames.collectEntries { userName ->
+      def user = users[userName]
+      [(user.id): [type: Notification.TargetType.USER, address: user.email]]
+    }
+    if (hasAssetEmail) {
+      expectedRecipients[targetAsset.id] = [type: Notification.TargetType.ASSET, address: assetEmail]
+    }
+    def notification = new Notification(notificationName,
+            new EmailNotificationMessage().setSubject(notificationName).setText("Asset recipient expansion"),
+            [new Notification.Target(Notification.TargetType.ASSET, targetAsset.id)], null, null)
+
+    and: "a facade for the requested scope and an observer that waits for processing to finish"
+    def engineId = source == Notification.Source.ASSET_RULESET ? new RulesEngineId(realm, scopedAsset.id) : new RulesEngineId(realm)
+    def sourceId = source == Notification.Source.ASSET_RULESET ? scopedAsset.id : realm
+    def facade = new NotificationsFacade(engineId, notificationService)
+    def processed = new NotifyBuilder(container.getService(MessageBrokerService.class).context)
+            .fromRoute("NotificationQueue")
+            .filter { exchange ->
+              exchange.in.getHeader(Notification.HEADER_SOURCE) == source &&
+                      exchange.in.getHeader(Notification.HEADER_SOURCE_ID) == sourceId
+            }
+            .whenDone(1).create()
+
+    when: "the rule sends an email notification to the asset"
+    facade.send(notification)
+
+    then: "foreign users are filtered while valid users and the asset email retain delivery and stored records"
+    noExceptionThrown()
+    assert processed.matches(10, TimeUnit.SECONDS)
+    def persisted = storedNotifications()
+    verifyAll {
+      deliveredRecipients.size() == expectedRecipients.size()
+      deliveredRecipients.collectEntries {
+        [(it.id): [type: it.type, address: it.address]]
+      } == expectedRecipients
+      persisted.size() == expectedRecipients.size()
+      persisted.collectEntries {
+        [(it.targetId): it.target]
+      } == expectedRecipients.collectEntries { id, recipient ->
+        [(id): recipient.type]
+      }
+      persisted.every {
+        it.realm == realm && it.source == source && it.sourceId == sourceId && it.error == null
+      }
+    }
+
+    cleanup:
+    processed?.destroy()
+    notificationService.notificationHandlerMap.put(EmailNotificationMessage.TYPE, emailHandler)
+    storedNotifications().each { notificationService.removeNotification(it.id) }
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
+    }
+    createdUsers.each { identityProvider.deleteUser(it.realm, it.id) }
+
+    where:
+    [source, hasAssetEmail, userNames, expectedUserNames] << [Notification.Source.REALM_RULESET, Notification.Source.ASSET_RULESET].collectMany { source ->
+      [false, true].collectMany { hasAssetEmail ->
+        [
+          [[], []],
+          [["valid"], ["valid"]],
+          [["foreign"], []],
+          [["valid", "foreign"], ["valid"]]
+        ].collect { row -> [source, hasAssetEmail] + row }
+      }
+    }
+  }
+
   def "Check email notification functionality"() {
 
     List<Message> sentEmails = new CopyOnWriteArrayList<>()
