@@ -56,6 +56,7 @@
     "@vaadin/radio-group": "~25.3.2",
     "@vaadin/select": "~25.3.2",
     "@vaadin/slider": "~25.3.2",
+    "@vaadin/tabs": "~25.3.2",
     "@vaadin/text-area": "~25.3.2",
     "@vaadin/text-field": "~25.3.2",
     "@vaadin/time-picker": "~25.3.2",
