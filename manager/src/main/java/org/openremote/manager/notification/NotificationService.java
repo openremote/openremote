@@ -825,21 +825,24 @@ public class NotificationService extends RouteBuilder implements ContainerServic
               boolean realmMatch;
 
               if (target.getType() == Notification.TargetType.USER) {
+                User[] targetUsers =
+                    identityService
+                        .getIdentityProvider()
+                        .queryUsers(
+                            // Exclude service accounts and system accounts
+                            new UserQuery()
+                                .ids(target.getId())
+                                .serviceUsers(false)
+                                .attributes(
+                                    new UserQuery.AttributeValuePredicate(
+                                        true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE))));
+                if (targetUsers.length == 0) {
+                  throw new NotificationProcessingException(
+                      INSUFFICIENT_ACCESS,
+                      "User targets must exist and must not be service or system accounts");
+                }
                 realmMatch =
-                    Arrays.stream(
-                            identityService
-                                .getIdentityProvider()
-                                .queryUsers(
-                                    // Exclude service accounts and system accounts
-                                    new UserQuery()
-                                        .ids(target.getId())
-                                        .serviceUsers(false)
-                                        .attributes(
-                                            new UserQuery.AttributeValuePredicate(
-                                                true,
-                                                new StringPredicate(
-                                                    User.SYSTEM_ACCOUNT_ATTRIBUTE)))))
-                        .allMatch(user -> realm.equals(user.getRealm()));
+                    Arrays.stream(targetUsers).allMatch(user -> realm.equals(user.getRealm()));
               } else {
                 // Can only send to the same realm as the requester realm
                 realmMatch = realm.equals(target.getId());
