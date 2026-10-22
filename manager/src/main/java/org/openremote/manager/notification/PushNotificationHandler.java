@@ -298,7 +298,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                           .distinct()
                           .toArray(String[]::new));
                 } else {
-                  // Resolve users in the rule's realm before expanding their consoles.
+                  // Resolve regular, non-system users in the rule's realm before expanding their
+                  // consoles.
                   assetQuery.userIds(
                       Arrays.stream(
                               managerIdentityService
@@ -306,7 +307,13 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                                   .queryUsers(
                                       new UserQuery()
                                           .assets(targetId)
-                                          .realm(new RealmPredicate(rulesRealm))))
+                                          .realm(new RealmPredicate(rulesRealm))
+                                          .serviceUsers(false)
+                                          .attributes(
+                                              new UserQuery.AttributeValuePredicate(
+                                                  true,
+                                                  new StringPredicate(
+                                                      User.SYSTEM_ACCOUNT_ATTRIBUTE)))))
                           .filter(
                               user ->
                                   source != Notification.Source.ASSET_RULESET
