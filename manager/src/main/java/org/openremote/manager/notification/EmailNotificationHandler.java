@@ -225,6 +225,8 @@ public class EmailNotificationHandler implements NotificationHandler {
     List<Notification.Target> mappedTargets = new ArrayList<>();
 
     if (targets != null) {
+      String rulesRealm =
+          NotificationScope.resolveRulesRealm(source, sourceId, assetStorageService);
 
       targets.forEach(
           target -> {
@@ -267,6 +269,11 @@ public class EmailNotificationHandler implements NotificationHandler {
 
             // Filter users that don't have disabled email notifications attribute
             if (userQuery != null) {
+              if (rulesRealm != null) {
+                // Stored asset links must not expand the audience beyond the rule's realm.
+                userQuery.realm(new RealmPredicate(rulesRealm));
+              }
+
               // Exclude service accounts, system accounts and accounts with disabled email
               // notifications
               userQuery

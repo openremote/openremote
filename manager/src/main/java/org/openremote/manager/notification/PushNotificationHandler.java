@@ -226,19 +226,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
       }
 
       String rulesRealm =
-          switch (source) {
-            case REALM_RULESET -> sourceId;
-            case ASSET_RULESET -> {
-              Asset<?> scopedAsset = assetStorageService.find(sourceId, false);
-              if (scopedAsset == null) {
-                throw new NotificationProcessingException(
-                    NotificationProcessingException.Reason.INSUFFICIENT_ACCESS,
-                    "Rule's scoped asset does not exist");
-              }
-              yield scopedAsset.getRealm();
-            }
-            default -> null;
-          };
+          NotificationScope.resolveRulesRealm(source, sourceId, assetStorageService);
 
       // Filter out console targets
       String[] assetTargets =
