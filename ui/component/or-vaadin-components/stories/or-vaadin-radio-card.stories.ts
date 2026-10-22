@@ -88,7 +88,7 @@ export const Reverse: Story = {
     },
   },
   render: () => html`
-    <or-vaadin-radio-group theme="vertical" value="system" style="max-width: 393px;">
+    <or-vaadin-radio-group theme="vertical" value="system">
       ${appearances.map(
         (appearance) => html`
           <or-vaadin-radio-card theme="reverse" value=${appearance.value} label=${appearance.title}>
@@ -118,7 +118,7 @@ export const TitleAndDescription: Story = {
       label="Appearance"
       theme="vertical"
       value="system"
-      style="max-width: 393px; --or-radio-card-padding: var(--lumo-space-s) var(--lumo-space-m); --or-radio-card-checked-color: var(--lumo-success-text-color); --or-radio-card-checked-background: var(--lumo-success-color-10pct);"
+      style="--or-radio-card-padding: var(--lumo-space-s) var(--lumo-space-m); --or-radio-card-checked-color: var(--lumo-success-text-color); --or-radio-card-checked-background: var(--lumo-success-color-10pct);"
     >
       ${appearances.map(
         (appearance) => html`
