@@ -1593,6 +1593,125 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
     }
   }
 
+  def "#source push expansion from an asset to #accountTypes keeps accounts #expectedAccountTypes"() {
+    given: "real rule notification processing with only push delivery intercepted"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def notificationService = container.getService(NotificationService.class)
+    def pushHandler = container.getService(PushNotificationHandler.class)
+    def realm = keycloakSetup.realmBuilding.name
+    def notificationName = "Asset push account types ${UniqueIdentifierGenerator.generateId()}"
+    List<String> createdAssetIds = []
+    List<String> createdUserIds = []
+    List<Notification.Target> deliveredTargets = new CopyOnWriteArrayList<>()
+    def storedNotifications = {
+      notificationService.getNotifications(null, [PushNotificationMessage.TYPE], null, null,
+      null, null, null, source, null, false, null, null, null).findAll {
+        it.name == notificationName
+      }
+    }
+    PushNotificationHandler capturedPushHandler = Spy(pushHandler)
+    capturedPushHandler.isValid() >> true
+    capturedPushHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String,
+            _ as Notification.Target, _ as AbstractNotificationMessage) >> { id, notificationSource, notificationSourceId, target, message ->
+              deliveredTargets.add(target)
+            }
+    notificationService.notificationHandlerMap.put(PushNotificationMessage.TYPE, capturedPushHandler)
+
+    and: "the notification targets a descendant asset in the rule's realm"
+    def scopedAsset = assetStorageService.merge(new ThingAsset(notificationName).setRealm(realm))
+    createdAssetIds.add(scopedAsset.id)
+    def targetAsset = assetStorageService.merge(new ThingAsset("${notificationName} target")
+            .setRealm(realm).setParentId(scopedAsset.id))
+    createdAssetIds.add(targetAsset.id)
+
+    and: "the selected account types are linked to the asset and each has its own in-scope console"
+    def consoles = accountTypes.collectEntries { accountType ->
+      def username = "asset-push-account-${UniqueIdentifierGenerator.generateId()}"
+      def user = identityProvider.createUpdateUser(realm,
+              new User().setUsername(username).setEmail("${username}@example.com").setEnabled(true)
+              .setServiceAccount(accountType == "service").setSystemAccount(accountType == "system"), null, false)
+      createdUserIds.add(user.id)
+      identityProvider.updateUserClientRoles(realm, user.id, KEYCLOAK_CLIENT_ID, READ_ASSETS_ROLE, READ_NOTIFICATIONS_ROLE)
+      def storedUser = identityProvider.getUser(user.id)
+      assert storedUser.realm == realm
+      assert storedUser.isServiceAccount() == (accountType == "service")
+      assert storedUser.isSystemAccount() == (accountType == "system")
+      assert !identityProvider.getUserRealmRoles(realm, user.id).contains(RESTRICTED_USER_REALM_ROLE)
+
+      // Realm and asset scope are valid for every console; account eligibility must be checked
+      // before expanding the users into these delivery targets.
+      def console = assetStorageService.merge(new ConsoleAsset("${notificationName} ${accountType}")
+              .setRealm(realm).setParentId(targetAsset.id)
+              .setConsoleProvider(PushNotificationMessage.TYPE,
+              new ConsoleProvider("fcm", true, true, true, true, false,
+              [token: "test-${UniqueIdentifierGenerator.generateId()}"])))
+      createdAssetIds.add(console.id)
+      assetStorageService.storeUserAssetLinks([
+        new UserAssetLink(realm, user.id, targetAsset.id),
+        new UserAssetLink(realm, user.id, console.id)
+      ])
+      [(accountType): console]
+    }
+    def expectedTargets = expectedAccountTypes.collectEntries { accountType ->
+      [(consoles[accountType].id): Notification.TargetType.ASSET]
+    }
+    def notification = new Notification(notificationName,
+            new PushNotificationMessage().setTitle(notificationName).setTargetType(PushNotificationMessage.TargetType.DEVICE),
+            [new Notification.Target(Notification.TargetType.ASSET, targetAsset.id)], null, null)
+
+    and: "a facade for the requested scope and an observer that waits for processing to finish"
+    def engineId = source == Notification.Source.ASSET_RULESET ? new RulesEngineId(realm, scopedAsset.id) : new RulesEngineId(realm)
+    def sourceId = source == Notification.Source.ASSET_RULESET ? scopedAsset.id : realm
+    def facade = new NotificationsFacade(engineId, notificationService)
+    def processed = new NotifyBuilder(container.getService(MessageBrokerService.class).context)
+            .fromRoute("NotificationQueue")
+            .filter { exchange ->
+              exchange.in.getHeader(Notification.HEADER_SOURCE) == source &&
+                      exchange.in.getHeader(Notification.HEADER_SOURCE_ID) == sourceId
+            }
+            .whenDone(1).create()
+
+    when: "the rule sends to the asset and the handler expands its linked accounts"
+    facade.send(notification)
+
+    then: "only regular users' consoles receive notifications and have stored records"
+    noExceptionThrown()
+    assert processed.matches(10, TimeUnit.SECONDS)
+    def persisted = storedNotifications()
+    verifyAll {
+      deliveredTargets.size() == expectedTargets.size()
+      deliveredTargets.collectEntries { [(it.id): it.type] } == expectedTargets
+      persisted.size() == expectedTargets.size()
+      persisted.collectEntries { [(it.targetId): it.target] } == expectedTargets
+      persisted.every {
+        it.realm == realm && it.source == source && it.sourceId == sourceId && it.error == null
+      }
+    }
+
+    cleanup:
+    processed?.destroy()
+    notificationService.notificationHandlerMap.put(PushNotificationMessage.TYPE, pushHandler)
+    storedNotifications().each { notificationService.removeNotification(it.id) }
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
+    }
+    createdUserIds.each { identityProvider.deleteUser(realm, it) }
+
+    where:
+    [source, accountTypes, expectedAccountTypes] << [Notification.Source.REALM_RULESET, Notification.Source.ASSET_RULESET].collectMany { source ->
+      [
+        [["regular"], ["regular"]],
+        [["service"], []],
+        [["system"], []],
+        [["regular", "service"], ["regular"]],
+        [["regular", "system"], ["regular"]]
+      ].collect { row -> [source] + row }
+    }
+  }
+
   def "#source #messageType expansion from a descendant asset to #userNames with asset email #hasAssetEmail keeps #expectedUserNames"() {
     given: "real rule notification processing with only delivery intercepted"
     def container = startContainer(defaultConfig(), defaultServices())
