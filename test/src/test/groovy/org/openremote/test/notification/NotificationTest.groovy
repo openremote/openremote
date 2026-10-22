@@ -768,6 +768,127 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
     }
   }
 
+  def "#source push with mode #pushTargetType and #targetSelection targets is allowed: #allowed"() {
+    given: "the real notification route and push mapper with delivery intercepted"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def notificationService = container.getService(NotificationService.class)
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def pushHandler = container.getService(PushNotificationHandler.class)
+    def realm = keycloakSetup.realmBuilding.name
+    def notificationName = "Scoped push audience ${UniqueIdentifierGenerator.generateId()}"
+    List<Map> deliveredTargets = new CopyOnWriteArrayList<>()
+    List<String> createdAssetIds = []
+    def storedNotifications = {
+      notificationService.getNotifications(null, [PushNotificationMessage.TYPE], null, null,
+      null, null, null, source, null, false, null, null, null).findAll {
+        it.name == notificationName
+      }
+    }
+    PushNotificationHandler capturedPushHandler = Spy(pushHandler)
+    capturedPushHandler.isValid() >> true
+    // Intercept before FCM token lookup: a later delivery failure must not mask missing authorization.
+    capturedPushHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String,
+            _ as Notification.Target, _ as AbstractNotificationMessage) >> { id, notificationSource, notificationSourceId, target, message ->
+              deliveredTargets.add([type: target.type, id: target.id])
+            }
+    notificationService.notificationHandlerMap.put(PushNotificationMessage.TYPE, capturedPushHandler)
+
+    and: "a console that is a valid target for both realm and asset rules"
+    def scopedAsset = assetStorageService.merge(new ThingAsset(notificationName).setRealm(realm))
+    createdAssetIds.add(scopedAsset.id)
+    def console = assetStorageService.merge(new ConsoleAsset("${notificationName} console")
+            .setRealm(realm).setParentId(scopedAsset.id)
+            .setConsoleProvider(PushNotificationMessage.TYPE,
+            new ConsoleProvider("fcm", true, true, true, true, false,
+            [token: "test-${UniqueIdentifierGenerator.generateId()}"])))
+    createdAssetIds.add(console.id)
+    def targets = [
+      absent: null,
+      empty: [],
+      inScope: [new Notification.Target(Notification.TargetType.ASSET, console.id)]
+    ][targetSelection]
+    def audience = pushTargetType == PushNotificationMessage.TargetType.TOPIC ? "maintenance" :
+            pushTargetType == PushNotificationMessage.TargetType.CONDITION ? "'maintenance' in topics && 'staff' in topics" : null
+    def notification = new Notification(notificationName,
+            new PushNotificationMessage().setTitle(notificationName).setTargetType(pushTargetType).setTarget(audience),
+            targets, null, null)
+
+    and: "the appropriate rules facade and a completion observer for its notification route"
+    def engineId = new RulesEngineId()
+    def sourceId = ""
+    if (source == Notification.Source.REALM_RULESET) {
+      engineId = new RulesEngineId(realm)
+      sourceId = realm
+    } else if (source == Notification.Source.ASSET_RULESET) {
+      engineId = new RulesEngineId(realm, scopedAsset.id)
+      sourceId = scopedAsset.id
+    }
+    def facade = new NotificationsFacade(engineId, notificationService)
+    def processed = new NotifyBuilder(container.getService(MessageBrokerService.class).context)
+            .fromRoute("NotificationQueue")
+            .filter { exchange ->
+              exchange.in.getHeader(Notification.HEADER_SOURCE) == source &&
+                      exchange.in.getHeader(Notification.HEADER_SOURCE_ID) == sourceId
+            }
+            .whenDone(1).create()
+
+    when: "the notification is submitted by its source"
+    if (source == Notification.Source.INTERNAL) {
+      notificationService.sendNotificationAsync(notification, source, sourceId)
+    } else {
+      facade.send(notification)
+    }
+
+    then: "scoped topic and condition requests are rejected before persistence or delivery"
+    noExceptionThrown()
+    assert processed.matches(10, TimeUnit.SECONDS)
+    def persisted = storedNotifications()
+    if (allowed) {
+      def expectedType = audience == null ? Notification.TargetType.ASSET : Notification.TargetType.CUSTOM
+      def expectedId = audience == null ? console.id : "${pushTargetType}: ${audience}".toString()
+      verifyAll {
+        deliveredTargets == [[type: expectedType, id: expectedId]]
+        persisted.size() == 1
+        persisted[0].target == expectedType
+        persisted[0].targetId == expectedId
+        persisted[0].realm == (audience == null ? realm : MASTER_REALM)
+        persisted[0].source == source
+        persisted[0].sourceId == sourceId
+        persisted[0].error == null
+      }
+    } else {
+      verifyAll {
+        deliveredTargets.isEmpty()
+        persisted.isEmpty()
+      }
+    }
+
+    cleanup:
+    processed?.destroy()
+    notificationService.notificationHandlerMap.put(PushNotificationMessage.TYPE, pushHandler)
+    storedNotifications().each { notificationService.removeNotification(it.id) }
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
+    }
+
+    where:
+    [source, pushTargetType, targetSelection, allowed] << (
+    [Notification.Source.REALM_RULESET, Notification.Source.ASSET_RULESET].collectMany { source ->
+      [PushNotificationMessage.TargetType.TOPIC, PushNotificationMessage.TargetType.CONDITION].collectMany { pushTargetType ->
+        ["absent", "empty", "inScope"].collect { targetSelection ->
+          [source, pushTargetType, targetSelection, false]
+        }
+      } + [null, PushNotificationMessage.TargetType.DEVICE].collect { pushTargetType ->
+        [source, pushTargetType, "inScope", true]
+      }
+    } + [Notification.Source.GLOBAL_RULESET, Notification.Source.INTERNAL].collectMany { source ->
+      [PushNotificationMessage.TargetType.TOPIC, PushNotificationMessage.TargetType.CONDITION].collect { pushTargetType ->
+        [source, pushTargetType, "absent", true]
+      }
+    })
+  }
+
   def "Global rules facade sends push notifications and stores them in each recipient realm"() {
     given: "a global notifications facade using the real notification route"
     def conditions = new PollingConditions(timeout: 10, delay: 0.2)
