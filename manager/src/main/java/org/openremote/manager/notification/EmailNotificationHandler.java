@@ -291,6 +291,17 @@ public class EmailNotificationHandler implements NotificationHandler {
                       .filter(
                           user ->
                               !user.isSystemAccount() && !TextUtil.isNullOrEmpty(user.getEmail()))
+                      // Filter derived recipients without removing the asset's own email target.
+                      .filter(
+                          user ->
+                              source != Notification.Source.ASSET_RULESET
+                                  || targetType != Notification.TargetType.ASSET
+                                  || NotificationScope.isUserInAssetScope(
+                                      user.getRealm(),
+                                      user.getId(),
+                                      sourceId,
+                                      managerIdentityService.getIdentityProvider(),
+                                      assetStorageService))
                       .map(
                           user -> {
                             Notification.Target emailTarget =

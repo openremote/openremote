@@ -853,14 +853,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requester");
               }
               if (source == ASSET_RULESET && target.getType() == Notification.TargetType.USER) {
-                boolean restrictedRecipient =
-                    Arrays.asList(
-                            identityService
-                                .getIdentityProvider()
-                                .getUserRealmRoles(realm, target.getId()))
-                        .contains(Constants.RESTRICTED_USER_REALM_ROLE);
-                if (restrictedRecipient
-                    && !assetStorageService.isUserAssets(target.getId(), List.of(assetId))) {
+                if (!NotificationScope.isUserInAssetScope(
+                    realm,
+                    target.getId(),
+                    assetId,
+                    identityService.getIdentityProvider(),
+                    assetStorageService)) {
                   throw new NotificationProcessingException(
                       INSUFFICIENT_ACCESS,
                       "Restricted user targets must be directly linked to the rule's scoped asset");

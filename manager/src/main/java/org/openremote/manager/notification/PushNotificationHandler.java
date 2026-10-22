@@ -293,6 +293,16 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                   // Any users linked to this asset and then their linked console assets
                   assetQuery.userIds(
                       assetStorageService.findUserAssetLinks(null, null, targetId).stream()
+                          // Check the recipient's scope link before expanding to their consoles.
+                          .filter(
+                              ual ->
+                                  source != Notification.Source.ASSET_RULESET
+                                      || NotificationScope.isUserInAssetScope(
+                                          ual.getId().getRealm(),
+                                          ual.getId().getUserId(),
+                                          sourceId,
+                                          managerIdentityService.getIdentityProvider(),
+                                          assetStorageService))
                           .map(ual -> ual.getId().getUserId())
                           .collect(Collectors.toSet())
                           .toArray(String[]::new));

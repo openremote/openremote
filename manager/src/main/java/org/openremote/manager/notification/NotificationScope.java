@@ -18,13 +18,34 @@
  */
 package org.openremote.manager.notification;
 
+import java.util.Arrays;
+import java.util.List;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.security.ManagerIdentityProvider;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.notification.Notification;
 
 final class NotificationScope {
 
   private NotificationScope() {}
+
+  /**
+   * Restricted recipients must be directly linked to the scoped asset; unrestricted recipients need
+   * no asset link. The realm must be the recipient's realm. Callers are responsible for enforcing
+   * realm authorization.
+   */
+  static boolean isUserInAssetScope(
+      String realm,
+      String userId,
+      String scopedAssetId,
+      ManagerIdentityProvider identityProvider,
+      AssetStorageService assetStorageService) {
+    boolean restrictedRecipient =
+        Arrays.asList(identityProvider.getUserRealmRoles(realm, userId))
+            .contains(Constants.RESTRICTED_USER_REALM_ROLE);
+    return !restrictedRecipient || assetStorageService.isUserAssets(userId, List.of(scopedAssetId));
+  }
 
   /** Resolves the realm for realm- and asset-scoped rules, or {@code null} for other sources. */
   static String resolveRulesRealm(
