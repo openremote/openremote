@@ -2087,6 +2087,187 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
     allowed = pushTargetType == PushNotificationMessage.TargetType.DEVICE
   }
 
+  def "#source localized #messageType expansion to #userNames keeps #expectedUserNames in their preferred language"() {
+    given: "real rule processing, recipient expansion and localization with only delivery intercepted"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def notificationService = container.getService(NotificationService.class)
+    def localizedHandler = container.getService(LocalizedNotificationHandler.class)
+    def push = messageType == PushNotificationMessage.TYPE
+    def handler = container.getService(push ? PushNotificationHandler : EmailNotificationHandler)
+    def realm = keycloakSetup.realmBuilding.name
+    def foreignRealm = keycloakSetup.realmCity.name
+    def notificationName = "Localized rule recipients ${UniqueIdentifierGenerator.generateId()}"
+    List<String> createdAssetIds = []
+    List<Map> createdUsers = []
+    List<Map> deliveredTargets = new CopyOnWriteArrayList<>()
+    def storedNotifications = {
+      notificationService.getNotifications(null, [LocalizedNotificationMessage.TYPE], null, null,
+      null, null, null, source, null, false, null, null, null).findAll {
+        it.name == notificationName
+      }
+    }
+    def capturedHandler = Spy(handler)
+    capturedHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String,
+            _ as Notification.Target, _ as AbstractNotificationMessage) >> { id, notificationSource, notificationSourceId, target, message ->
+              deliveredTargets.add([id: id, source: notificationSource, sourceId: notificationSourceId,
+                target: target.type, targetId: target.id, messageType: message.type,
+                content: push ? (message as PushNotificationMessage).title : (message as EmailNotificationMessage).subject,
+                address: push ? null : (target.data as EmailNotificationMessage.Recipient).address])
+            }
+    def previousLocalizedHandler = notificationService.notificationHandlerMap.put(LocalizedNotificationMessage.TYPE, localizedHandler)
+    def previousHandler = localizedHandler.notificationHandlerMap.put(messageType, capturedHandler)
+
+    and: "a descendant asset with no email address of its own"
+    def scopedAsset = assetStorageService.merge(new ThingAsset(notificationName).setRealm(realm))
+    createdAssetIds.add(scopedAsset.id)
+    def targetAsset = assetStorageService.merge(new ThingAsset("${notificationName} target")
+            .setRealm(realm).setParentId(scopedAsset.id))
+    createdAssetIds.add(targetAsset.id)
+    def createConsole = { String name, String consoleRealm, String parentId ->
+      def console = assetStorageService.merge(new ConsoleAsset("${notificationName} ${name}")
+              .setRealm(consoleRealm).setParentId(parentId)
+              .setConsoleProvider(PushNotificationMessage.TYPE,
+              new ConsoleProvider("fcm", true, true, true, true, false,
+              [token: "test-${UniqueIdentifierGenerator.generateId()}"])))
+      createdAssetIds.add(console.id)
+      console
+    }
+
+    and: "users with different eligibility and language preferences are linked to the target"
+    def recipients = userNames.collectEntries { userName ->
+      def userRealm = userName == "foreign" ? foreignRealm : realm
+      def restricted = userName.startsWith("restricted")
+      def language = userName == "restrictedScope" ? "en" : "nl"
+      def username = "localized-recipient-${UUID.randomUUID()}"
+      def email = "${username}@example.com".toString()
+      def user = identityProvider.createUpdateUser(userRealm,
+              new User().setUsername(username).setEmail(email).setEnabled(true)
+              .setServiceAccount(userName == "service").setSystemAccount(userName == "system")
+              .setAttribute(User.LOCALE_ATTRIBUTE, language), null, false)
+      createdUsers.add([realm: userRealm, id: user.id])
+      if (userName == "service") {
+        // Keycloak creates service users without the supplied email; give it a usable address so
+        // account exclusion, rather than a missing address, determines eligibility.
+        user = identityProvider.createUpdateUser(userRealm, user.setEmail(email), null, true)
+      }
+      identityProvider.updateUserClientRoles(userRealm, user.id, KEYCLOAK_CLIENT_ID, READ_ASSETS_ROLE, READ_NOTIFICATIONS_ROLE)
+      if (restricted) {
+        identityProvider.updateUserRealmRoles(userRealm, user.id,
+                identityProvider.addUserRealmRoles(userRealm, user.id, RESTRICTED_USER_REALM_ROLE))
+      }
+      def storedUser = identityProvider.getUser(user.id)
+      assert storedUser.realm == userRealm
+      assert storedUser.email == email
+      assert storedUser.isServiceAccount() == (userName == "service")
+      assert storedUser.isSystemAccount() == (userName == "system")
+      assert storedUser.attributeMap[User.LOCALE_ATTRIBUTE] == [language]
+      assert identityProvider.getUserRealmRoles(userRealm, user.id).contains(RESTRICTED_USER_REALM_ROLE) == restricted
+
+      // Storage permits seeding cross-realm links, independently of REST link-creation checks.
+      assetStorageService.storeUserAssetLinks([new UserAssetLink(userRealm, user.id, targetAsset.id)])
+      if (userName == "restrictedScope") {
+        assetStorageService.storeUserAssetLinks([new UserAssetLink(userRealm, user.id, scopedAsset.id)])
+      }
+      assert assetStorageService.isUserAssets(user.id, [scopedAsset.id]) == (userName == "restrictedScope")
+
+      def deliveryTarget = new Notification.Target(Notification.TargetType.USER, user.id)
+      if (push) {
+        def console = createConsole(userName, realm, targetAsset.id)
+        assetStorageService.storeUserAssetLinks([new UserAssetLink(userRealm, user.id, console.id)])
+        deliveryTarget = new Notification.Target(Notification.TargetType.ASSET, console.id)
+        if (userName == "regular") {
+          // An eligible user's foreign console must also stay excluded after locale merging.
+          def foreignConsole = createConsole("foreign console", foreignRealm, null)
+          assetStorageService.storeUserAssetLinks([new UserAssetLink(userRealm, user.id, foreignConsole.id)])
+        }
+      }
+      [(userName): [targetId: deliveryTarget.id, target: deliveryTarget.type,
+          content: "${notificationName} ${language}".toString(), address: push ? null : email]]
+    }
+    def expectedTargets = expectedUserNames.collectEntries { userName ->
+      def recipient = recipients[userName]
+      [(recipient.targetId): [target: recipient.target, content: recipient.content, address: recipient.address]]
+    }
+
+    and: "both languages use the same channel, with English as the fallback"
+    Map<String, AbstractNotificationMessage> messages = ["en", "nl"].collectEntries { language ->
+      def message = push
+              ? new PushNotificationMessage().setTitle("${notificationName} ${language}").setTargetType(PushNotificationMessage.TargetType.DEVICE)
+              : new EmailNotificationMessage().setSubject("${notificationName} ${language}").setText("Localized recipients ${language}")
+      [(language): message]
+    }
+    def localizedMessage = new LocalizedNotificationMessage("en", messages)
+    assert localizedHandler.isMessageValid(localizedMessage)
+    def notification = new Notification(notificationName, localizedMessage,
+            [new Notification.Target(Notification.TargetType.ASSET, targetAsset.id)], null, null)
+    def engineId = source == Notification.Source.ASSET_RULESET ? new RulesEngineId(realm, scopedAsset.id) : new RulesEngineId(realm)
+    def sourceId = source == Notification.Source.ASSET_RULESET ? scopedAsset.id : realm
+    def facade = new NotificationsFacade(engineId, notificationService)
+    def processed = new NotifyBuilder(container.getService(MessageBrokerService.class).context)
+            .fromRoute("NotificationQueue")
+            .filter { exchange ->
+              exchange.in.getHeader(Notification.HEADER_SOURCE) == source &&
+                      exchange.in.getHeader(Notification.HEADER_SOURCE_ID) == sourceId
+            }
+            .whenDone(1).create()
+
+    when: "the rule sends the localized notification to the asset"
+    facade.send(notification)
+
+    then: "eligible recipients receive their preferred language once, and filtered recipients leave no records"
+    noExceptionThrown()
+    assert processed.matches(10, TimeUnit.SECONDS)
+    def persisted = storedNotifications()
+    verifyAll {
+      deliveredTargets.size() == expectedTargets.size()
+      deliveredTargets.collectEntries {
+        [(it.targetId): [target: it.target, content: it.content, address: it.address]]
+      } == expectedTargets
+      deliveredTargets.every {
+        it.source == source && it.sourceId == sourceId && it.messageType == messageType
+      }
+      persisted.size() == expectedTargets.size()
+      persisted.collectEntries {
+        [(it.targetId): it.target]
+      } == expectedTargets.collectEntries { id, recipient ->
+        [(id): recipient.target]
+      }
+      deliveredTargets.collect { it.id }.toSet() == persisted.collect { it.id }.toSet()
+      persisted.every {
+        it.realm == realm && it.source == source && it.sourceId == sourceId &&
+                it.type == LocalizedNotificationMessage.TYPE && it.error == null
+      }
+    }
+
+    cleanup:
+    processed?.destroy()
+    localizedHandler.notificationHandlerMap.put(messageType, previousHandler)
+    notificationService.notificationHandlerMap.put(LocalizedNotificationMessage.TYPE, previousLocalizedHandler)
+    storedNotifications().each { notificationService.removeNotification(it.id) }
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
+    }
+    createdUsers.each { identityProvider.deleteUser(it.realm, it.id) }
+
+    where:
+    [source, messageType, userNames, expectedUserNames] << [Notification.Source.REALM_RULESET, Notification.Source.ASSET_RULESET].collectMany { source ->
+      [PushNotificationMessage.TYPE, EmailNotificationMessage.TYPE].collectMany { messageType ->
+        [
+          [["regular", "restrictedScope"], ["regular", "restrictedScope"]],
+          [["restrictedChild"], source == Notification.Source.ASSET_RULESET ? [] : ["restrictedChild"]],
+          [
+            ["regular", "restrictedScope", "restrictedChild", "foreign", "service", "system"],
+            source == Notification.Source.ASSET_RULESET ? ["regular", "restrictedScope"] : ["regular", "restrictedScope", "restrictedChild"]
+          ],
+          [["foreign", "service", "system"], []]
+        ].collect { row -> [source, messageType] + row }
+      }
+    }
+  }
+
   def "Check localized notification functionality"() {
 
     List<String> localizedNotificationIds = new CopyOnWriteArrayList<>()
