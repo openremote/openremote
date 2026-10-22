@@ -18,14 +18,9 @@
  */
 import { ct, expect } from "./fixtures";
 
-import { OrVaadinTab } from "@openremote/or-vaadin-components/or-vaadin-tab";
 import { OrVaadinTabs } from "@openremote/or-vaadin-components/or-vaadin-tabs";
 
-const tabs = [
-  "<or-vaadin-tab>Status</or-vaadin-tab>",
-  "<or-vaadin-tab>Mode</or-vaadin-tab>",
-  "<or-vaadin-tab>Settings</or-vaadin-tab>",
-];
+const tabs = ["<vaadin-tab>Status</vaadin-tab>", "<vaadin-tab>Mode</vaadin-tab>", "<vaadin-tab>Settings</vaadin-tab>"];
 
 ct("should select the clicked tab", async ({ mount }) => {
   const selected: number[] = [];
@@ -37,7 +32,6 @@ ct("should select the clicked tab", async ({ mount }) => {
         selected.push(detail.value);
       },
     },
-    hooksConfig: { components: [OrVaadinTab] },
   });
 
   await expect(component.getByRole("tab", { selected: true })).toHaveText("Mode");
@@ -48,12 +42,26 @@ ct("should select the clicked tab", async ({ mount }) => {
   await expect.poll(() => selected.at(-1)).toBe(2);
 });
 
+ct("should show the indicator only with the sliding variant", async ({ mount }) => {
+  const component = await mount(OrVaadinTabs, {
+    props: { selected: 0 },
+    slots: { default: tabs },
+  });
+  const indicator = component.locator("#indicator");
+
+  await expect(indicator).toBeHidden();
+
+  await component.evaluate((el) => el.setAttribute("theme", "sliding"));
+
+  await expect(indicator).toBeVisible();
+});
+
 ct("should move the indicator behind the selected tab", async ({ mount }) => {
   const component = await mount(OrVaadinTabs, {
     props: { selected: 0 },
     slots: { default: tabs },
-    hooksConfig: { components: [OrVaadinTab] },
   });
+  await component.evaluate((el) => el.setAttribute("theme", "sliding"));
   const indicator = component.locator("#indicator");
   const settings = component.getByRole("tab", { name: "Settings" });
 
@@ -72,8 +80,25 @@ ct("should hide the indicator when no tab is selected", async ({ mount }) => {
   const component = await mount(OrVaadinTabs, {
     props: { selected: -1 },
     slots: { default: tabs },
-    hooksConfig: { components: [OrVaadinTab] },
   });
+  await component.evaluate((el) => el.setAttribute("theme", "sliding"));
 
   await expect(component.locator("#indicator")).toBeHidden();
+});
+
+ct("should give the tabs equal widths with the equal-width-tabs variant", async ({ mount }) => {
+  const component = await mount(OrVaadinTabs, {
+    props: { selected: 0 },
+    slots: { default: tabs },
+  });
+  await component.evaluate((el) => el.setAttribute("theme", "equal-width-tabs"));
+
+  await expect
+    .poll(async () => {
+      const widths = await component
+        .getByRole("tab")
+        .evaluateAll((elements) => elements.map((el) => Math.round(el.getBoundingClientRect().width)));
+      return new Set(widths).size;
+    })
+    .toBe(1);
 });
