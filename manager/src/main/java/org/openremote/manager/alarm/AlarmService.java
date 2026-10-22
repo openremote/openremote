@@ -169,9 +169,10 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
   /**
    * Throws an {@link EntityNotFoundException} if any asset does not exist, or an {@link
-   * AlarmAssetLinkRealmMismatchException} if any asset does not belong to {@code realm}.
+   * AlarmAssetLinkRealmMismatchException} if any asset does not belong to {@code realm}. Callers
+   * are responsible for enforcing realm authorization.
    */
-  protected void validateAssetsInRealm(String realm, Collection<String> assetIds) {
+  public void validateAssetsInRealm(String realm, Collection<String> assetIds) {
     validateAssetIds(assetIds);
     Set<String> uniqueAssetIds = new HashSet<>(assetIds);
     Map<String, String> assetRealms = assetStorageService.getAssetRealms(uniqueAssetIds);
@@ -235,11 +236,12 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
   /**
    * Sends e-mail and push notifications for an alarm to the alarm assignee. If an assignee is not
-   * set all users having the {@link Constants#READ_ADMIN_ROLE} or {@link
-   * Constants#WRITE_ALARMS_ROLE} are notified.
+   * set, users in the alarm's realm having the {@link Constants#SUPER_USER_REALM_ROLE} or {@link
+   * Constants#WRITE_ALARMS_ROLE} are notified. Restricted users must have explicit links to every
+   * linked asset; they are not notified for alarms without linked assets.
    *
    * @param alarm the alarm to send e-mail and push notifications for
-   * @param excludeUserIds users matching these user IDs will are excluded from the notifications
+   * @param excludeUserIds users matching these user IDs are excluded from the notifications
    */
   protected void sendAssigneeNotification(SentAlarm alarm, Set<String> excludeUserIds) {
     List<User> users = getAlarmNotificationUsers(alarm);
@@ -298,6 +300,17 @@ public class AlarmService extends RouteBuilder implements ContainerService {
               .realmRoles(new StringPredicate(Constants.SUPER_USER_REALM_ROLE))
               .serviceUsers(false);
       users.addAll(Arrays.asList(identityProvider.queryUsers(userQuery)));
+      List<String> assetIds =
+          getAssetLinks(alarm.getId(), alarm.getRealm()).stream()
+              .map(link -> link.getId().getAssetId())
+              .distinct()
+              .toList();
+      // Both notification channels include all linked assets, so partial access is insufficient.
+      users.removeIf(
+          user ->
+              Arrays.asList(identityProvider.getUserRealmRoles(alarm.getRealm(), user.getId()))
+                      .contains(Constants.RESTRICTED_USER_REALM_ROLE)
+                  && !assetStorageService.isUserAssets(user.getId(), assetIds));
     } else {
       users.add(identityProvider.getUser(alarm.getAssigneeId()));
     }
