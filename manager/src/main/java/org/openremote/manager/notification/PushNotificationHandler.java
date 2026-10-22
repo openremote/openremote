@@ -225,6 +225,21 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             "CUSTOM targets are not supported for device push notifications");
       }
 
+      String rulesRealm =
+          switch (source) {
+            case REALM_RULESET -> sourceId;
+            case ASSET_RULESET -> {
+              Asset<?> scopedAsset = assetStorageService.find(sourceId, false);
+              if (scopedAsset == null) {
+                throw new NotificationProcessingException(
+                    NotificationProcessingException.Reason.INSUFFICIENT_ACCESS,
+                    "Rule's scoped asset does not exist");
+              }
+              yield scopedAsset.getRealm();
+            }
+            default -> null;
+          };
+
       // Filter out console targets
       String[] assetTargets =
           targets.stream()
@@ -293,6 +308,12 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                           .map(ual -> ual.getId().getUserId())
                           .collect(Collectors.toSet())
                           .toArray(String[]::new));
+            }
+
+            if (rulesRealm != null) {
+              // Delivery consoles must share the rule's realm, but need not be in its asset
+              // subtree.
+              assetQuery.realm(new RealmPredicate(rulesRealm));
             }
 
             List<String> consoleAssetIds =
