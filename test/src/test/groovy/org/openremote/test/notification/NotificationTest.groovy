@@ -1109,6 +1109,124 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
     }
   }
 
+  def "#source #messageType notification with user targets #targetNames is allowed: #allowed"() {
+    given: "real rule notification processing with only delivery intercepted"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def notificationService = container.getService(NotificationService.class)
+    def realm = keycloakSetup.realmBuilding.name
+    def notificationName = "Missing notification user ${UniqueIdentifierGenerator.generateId()}"
+    List<String> createdAssetIds = []
+    List<String> createdUserIds = []
+    List<String> deliveredTargetIds = new CopyOnWriteArrayList<>()
+    def storedNotifications = {
+      notificationService.getNotifications(null, [messageType], null, null,
+      null, null, null, source, null, false, null, null, null).findAll {
+        it.name == notificationName
+      }
+    }
+    def push = messageType == PushNotificationMessage.TYPE
+    def handler = container.getService(push ? PushNotificationHandler : EmailNotificationHandler)
+    def capturedHandler = Spy(handler)
+    capturedHandler.isValid() >> true
+    capturedHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String,
+            _ as Notification.Target, _ as AbstractNotificationMessage) >> { id, notificationSource, notificationSourceId, target, message ->
+              deliveredTargetIds.add(target.id)
+            }
+    notificationService.notificationHandlerMap.put(messageType, capturedHandler)
+
+    and: "a valid same-realm recipient and a user ID that does not exist"
+    def scopedAsset = assetStorageService.merge(new ThingAsset(notificationName).setRealm(realm))
+    createdAssetIds.add(scopedAsset.id)
+    def username = "missing-notif-${UniqueIdentifierGenerator.generateId()}"
+    def user = identityProvider.createUpdateUser(realm,
+            new User().setUsername(username).setEmail("${username}@example.com").setEnabled(true), null, false)
+    createdUserIds.add(user.id)
+    identityProvider.updateUserClientRoles(realm, user.id, KEYCLOAK_CLIENT_ID, READ_ASSETS_ROLE, READ_NOTIFICATIONS_ROLE)
+    assert !identityProvider.getUserRealmRoles(realm, user.id).contains(RESTRICTED_USER_REALM_ROLE)
+    def missingUserId = UUID.randomUUID().toString()
+    assert identityProvider.getUser(missingUserId) == null
+    def expectedTargetId = user.id
+    if (push) {
+      def console = assetStorageService.merge(new ConsoleAsset("${notificationName} console")
+              .setRealm(realm).setParentId(scopedAsset.id)
+              .setConsoleProvider(PushNotificationMessage.TYPE,
+              new ConsoleProvider("fcm", true, true, true, true, false,
+              [token: "test-${UniqueIdentifierGenerator.generateId()}"])))
+      createdAssetIds.add(console.id)
+      assetStorageService.storeUserAssetLinks([new UserAssetLink(realm, user.id, console.id)])
+      expectedTargetId = console.id
+    }
+    def userIds = [valid: user.id, missing: missingUserId]
+    def notificationMessage = push
+            ? new PushNotificationMessage().setTitle(notificationName).setTargetType(PushNotificationMessage.TargetType.DEVICE)
+            : new EmailNotificationMessage().setSubject(notificationName).setText("Missing recipient test")
+    def notification = new Notification(notificationName, notificationMessage,
+            targetNames.collect {
+              new Notification.Target(Notification.TargetType.USER, userIds[it])
+            }, null, null)
+
+    and: "a facade for the requested scope and an observer that waits for processing to finish"
+    def engineId = source == Notification.Source.ASSET_RULESET ? new RulesEngineId(realm, scopedAsset.id) : new RulesEngineId(realm)
+    def sourceId = source == Notification.Source.ASSET_RULESET ? scopedAsset.id : realm
+    def facade = new NotificationsFacade(engineId, notificationService)
+    def processed = new NotifyBuilder(container.getService(MessageBrokerService.class).context)
+            .fromRoute("NotificationQueue")
+            .filter { exchange ->
+              exchange.in.getHeader(Notification.HEADER_SOURCE) == source &&
+                      exchange.in.getHeader(Notification.HEADER_SOURCE_ID) == sourceId
+            }
+            .whenDone(1).create()
+
+    when: "the rule submits the user targets"
+    facade.send(notification)
+
+    then: "a missing user rejects the whole request before any delivery or stored record"
+    noExceptionThrown()
+    assert processed.matches(10, TimeUnit.SECONDS)
+    def persisted = storedNotifications()
+    if (allowed) {
+      verifyAll {
+        deliveredTargetIds == [expectedTargetId]
+        persisted.size() == 1
+        persisted[0].target == (push ? Notification.TargetType.ASSET : Notification.TargetType.USER)
+        persisted[0].targetId == expectedTargetId
+        persisted[0].realm == realm
+        persisted[0].source == source
+        persisted[0].sourceId == sourceId
+        persisted[0].error == null
+      }
+    } else {
+      verifyAll {
+        deliveredTargetIds.isEmpty()
+        persisted.isEmpty()
+      }
+    }
+
+    cleanup:
+    processed?.destroy()
+    notificationService.notificationHandlerMap.put(messageType, handler)
+    storedNotifications().each { notificationService.removeNotification(it.id) }
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
+    }
+    createdUserIds.each { identityProvider.deleteUser(realm, it) }
+
+    where:
+    [source, messageType, targetNames, allowed] << [Notification.Source.REALM_RULESET, Notification.Source.ASSET_RULESET].collectMany { source ->
+      [PushNotificationMessage.TYPE, EmailNotificationMessage.TYPE].collectMany { messageType ->
+        [
+          [["valid"], true],
+          [["missing"], false],
+          [["valid", "missing"], false],
+          [["missing", "valid"], false]
+        ].collect { row -> [source, messageType] + row }
+      }
+    }
+  }
+
   def "Check email notification functionality"() {
 
     List<Message> sentEmails = new CopyOnWriteArrayList<>()
