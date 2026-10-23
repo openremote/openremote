@@ -35,6 +35,7 @@ import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.Users;
 import org.openremote.model.security.User;
+import org.openremote.model.util.ValueUtil;
 
 /**
  * Restricts rule RHS access to the scope of the engine (a rule in asset scope can not access users
@@ -60,6 +61,13 @@ public class UsersFacade<T extends Ruleset> extends Users {
 
   @Override
   public Stream<String> getResults(UserQuery userQuery) {
+    // Rule targets can reuse the caller's query. Isolate nested predicates as well, since the
+    // facade and identity provider both modify filters during execution.
+    userQuery = ValueUtil.clone(userQuery);
+    if (userQuery == null) {
+      throw new IllegalArgumentException("Unable to copy user query");
+    }
+
     // Do security checks to ensure correct scoping
     // No restriction for global rulesets
     if (RealmRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
@@ -87,15 +95,15 @@ public class UsersFacade<T extends Ruleset> extends Users {
       if (userQuery.pathPredicate == null || userQuery.pathPredicate.path == null) {
         userQuery.pathPredicate = new PathPredicate(assetId);
       } else if (!Arrays.asList(userQuery.pathPredicate.path).contains(assetId)) {
-        // Reused queries must retain caller restrictions without accumulating the scope asset.
+        // Retain caller restrictions without duplicating an already supplied scope asset.
         List<String> path = new ArrayList<>(Arrays.asList(userQuery.pathPredicate.path));
         path.add(assetId);
         userQuery.pathPredicate.path = path.toArray(new String[0]);
       }
     }
 
-    // Queries are reused across rule firings: preserve caller filters and add the full exclusion
-    // only once, rather than accumulating another correlated subquery on each execution.
+    // Preserve caller filters and avoid duplicating a full exclusion already supplied by the
+    // caller.
     UserQuery.AttributeValuePredicate systemAccountExclusion =
         new UserQuery.AttributeValuePredicate(
             true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null);
