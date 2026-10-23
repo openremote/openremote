@@ -152,6 +152,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? "
             + "GROUP BY x ORDER by x ASC";
       case MODE:
+        // Relies on PostgreSQL MODE retaining the first tied value in sort order (ASC: smaller).
         return "SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
@@ -213,6 +214,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? "
             + "GROUP BY x ORDER by x ASC";
       case MODE:
+        // Relies on PostgreSQL MODE retaining the first tied value in sort order (DESC: true).
         return "SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
