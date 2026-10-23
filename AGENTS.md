@@ -47,3 +47,7 @@ Access control belongs in the resource implementation, not in the service. Exten
 ## UI
 
 Frontend conventions live in `ui/AGENTS.md`. Read it before changing anything under `ui/`.
+
+## CI/CD pipeline
+
+Pipeline concepts and conventions live in the [CI/CD pipeline guide](https://docs.openremote.io/docs/developer-guide/ci-cd-pipeline). Read it before changing anything under `.github/` or `.ci_cd/`; the deployment scripts and their variables are covered by `.ci_cd/README.md`.
