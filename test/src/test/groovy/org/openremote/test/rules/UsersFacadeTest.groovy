@@ -27,6 +27,7 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.query.UserQuery
+import org.openremote.model.query.filter.StringPredicate
 import org.openremote.model.security.User
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -107,5 +108,77 @@ class UsersFacadeTest extends Specification implements ManagerContainerTrait {
     "child" | ["sameRealm"] | ["sameRealm"]
     "child" | ["foreignRealm"] | []
     "child" | ["sameRealm", "foreignRealm"] | ["sameRealm"]
+  }
+
+  def "#scope scope querying usernames #queryUserNames returns only regular users #expectedUserNames"() {
+    given: "real identity and asset storage services"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def identityService = container.getService(ManagerIdentityService.class)
+    def identityProvider = identityService.getIdentityProvider()
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def realm = keycloakSetup.realmBuilding.name
+    List<User> createdUsers = []
+    def scopedAsset = assetStorageService.merge(new ThingAsset("Users facade username filtering").setRealm(realm))
+
+    and: "two regular users and a real service account, all within the rule's scope"
+    def users = ["regular", "unmatched", "service"].collectEntries { name ->
+      def user = identityProvider.createUpdateUser(realm,
+              new User().setUsername("users-facade-${UUID.randomUUID()}").setEnabled(true)
+              .setServiceAccount(name == "service"), null, false)
+      createdUsers.add(user)
+      def storedUser = identityProvider.getUser(user.id)
+      assert storedUser.realm == realm
+      assert storedUser.isServiceAccount() == (name == "service")
+      assert !storedUser.isSystemAccount()
+      assetStorageService.storeUserAssetLinks([new UserAssetLink(realm, user.id, scopedAsset.id)])
+      [(name): storedUser]
+    }
+    assert identityProvider.queryUsers(new UserQuery().assets(scopedAsset.id))*.id.toSet() ==
+    users.values().collect { it.id }.toSet()
+
+    and: "a username query which independently matches the intended accounts"
+    def createQuery = {
+      def query = new UserQuery().ids(users.values().collect { it.id } as String[])
+      if (!queryUserNames.isEmpty()) {
+        query.usernames(queryUserNames.collect { name ->
+          def user = users[name]
+          // User.getUsername() omits Keycloak's prefix; username predicates match the stored name.
+          def storedUsername = user.isServiceAccount() ? User.SERVICE_ACCOUNT_PREFIX + user.username : user.username
+          new StringPredicate(storedUsername)
+        } as StringPredicate[])
+      }
+      query
+    }
+    def matchingNames = queryUserNames.isEmpty() ? users.keySet() : queryUserNames
+    assert identityProvider.queryUsers(createQuery())*.id.toSet() ==
+    matchingNames.collect { users[it].id }.toSet()
+
+    def engineId = scope == "global" ? new RulesEngineId() :
+            scope == "realm" ? new RulesEngineId(realm) : new RulesEngineId(realm, scopedAsset.id)
+    def facade = new UsersFacade(engineId, assetStorageService,
+            container.getService(NotificationService.class), identityService)
+
+    when: "the facade applies its account exclusions to the query"
+    def result = facade.getResults(createQuery()).toList()
+
+    then: "service accounts stay excluded and the username filter is respected"
+    result.toSet() == expectedUserNames.collect { users[it].id }.toSet()
+
+    cleanup:
+    if (scopedAsset != null) {
+      assert assetStorageService.delete([scopedAsset.id])
+    }
+    createdUsers.each { identityProvider.deleteUser(it.realm, it.id) }
+
+    where:
+    [scope, queryUserNames, expectedUserNames] << ["global", "realm", "asset"].collectMany { scope ->
+      [
+        [[], ["regular", "unmatched"]],
+        [["regular"], ["regular"]],
+        [["service"], []],
+        [["regular", "service"], ["regular"]]
+      ].collect { row -> [scope] + row }
+    }
   }
 }
