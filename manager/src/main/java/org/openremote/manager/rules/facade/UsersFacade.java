@@ -86,7 +86,8 @@ public class UsersFacade<T extends Ruleset> extends Users {
 
       if (userQuery.pathPredicate == null || userQuery.pathPredicate.path == null) {
         userQuery.pathPredicate = new PathPredicate(assetId);
-      } else {
+      } else if (!Arrays.asList(userQuery.pathPredicate.path).contains(assetId)) {
+        // Reused queries must retain caller restrictions without accumulating the scope asset.
         List<String> path = new ArrayList<>(Arrays.asList(userQuery.pathPredicate.path));
         path.add(assetId);
         userQuery.pathPredicate.path = path.toArray(new String[0]);

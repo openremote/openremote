@@ -24,6 +24,7 @@ import org.openremote.manager.rules.RulesEngineId
 import org.openremote.manager.security.ManagerIdentityProvider
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.model.query.UserQuery
+import org.openremote.model.query.filter.PathPredicate
 import org.openremote.model.query.filter.StringPredicate
 import org.openremote.model.security.User
 import spock.lang.Specification
@@ -102,6 +103,43 @@ class UsersFacadeQueryTest extends Specification {
         ]
       ].collect { row -> [scope] + row }
     }
+  }
+
+  def "Reusing an asset query with #pathCase keeps the scope path bounded"() {
+    given: "an asset-scoped rule retaining its user query across firings"
+    def query = new UserQuery().assetPath(callerPath)
+    List<List<String>> submittedPaths = []
+    def provider = Stub(ManagerIdentityProvider) {
+      queryUsers(_ as UserQuery) >> { UserQuery submitted ->
+        submittedPaths.add(submitted.pathPredicate.path.toList())
+        new User[0]
+      }
+    }
+    def identityService = Stub(ManagerIdentityService) {
+      getIdentityProvider() >> provider
+    }
+    def facade = new UsersFacade(new RulesEngineId("building", "scope-asset"),
+            Stub(AssetStorageService), Stub(NotificationService), identityService)
+
+    when: "the same query is executed repeatedly"
+    100.times { facade.getResults(query).toList() }
+    def pathLengths = submittedPaths.collect { it.size() }.unique()
+
+    then: "every execution retains the caller's path and includes the scope asset only once"
+    submittedPaths.size() == 100
+    pathLengths == [expectedPath.size()]
+    submittedPaths.each { assert it == expectedPath }
+
+    where:
+    pathCase | callerPath | expectedPath
+    "no predicate" | null | ["scope-asset"]
+    "null path values" | new PathPredicate() | ["scope-asset"]
+    "empty path values" | new PathPredicate([] as String[]) | ["scope-asset"]
+    "a descendant filter" | new PathPredicate("child") | ["child", "scope-asset"]
+    "an outside filter" | new PathPredicate("outside") | ["outside", "scope-asset"]
+    "the scope already present" | new PathPredicate("scope-asset") | ["scope-asset"]
+    "the scope at the start" | new PathPredicate("scope-asset", "child") | ["scope-asset", "child"]
+    "the scope at the end" | new PathPredicate("child", "scope-asset") | ["child", "scope-asset"]
   }
 
   private static UserQuery.AttributeValuePredicate department() {
