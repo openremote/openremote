@@ -6,8 +6,8 @@
 #
 # MANUAL TRIGGER
 #
-# The calling workflow provides the following inputs, they override secrets with the same name but not values from
-# the '.ci_cd/env' files:
+# The calling workflow declares the following inputs on its manual trigger and passes them as INPUTS, they override
+# secrets with the same name but not values from the '.ci_cd/env' files:
 #
 # - ENVIRONMENT           - Which environment to deploy, leave empty to only use '.ci_cd/env/.env' and secrets without
 #                           an environment prefix

@@ -50,4 +50,4 @@ Frontend conventions live in `ui/AGENTS.md`. Read it before changing anything un
 
 ## CI/CD pipeline
 
-Pipeline concepts and conventions live in the CI/CD pipeline guide, pending in [openremote/documentation#171](https://github.com/openremote/documentation/pull/171). Read it before changing anything under `.github/` or `.ci_cd/`; the deployment scripts and their variables are covered by `.ci_cd/README.md`.
+Pipeline concepts and conventions live in the [CI/CD pipeline guide](https://docs.openremote.io/docs/developer-guide/ci-cd-pipeline). Read it before changing anything under `.github/` or `.ci_cd/`; the deployment scripts and their variables are covered by `.ci_cd/README.md`.

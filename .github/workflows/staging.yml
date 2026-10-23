@@ -6,8 +6,8 @@
 # - Publishing the packages
 # - Updating dependent repositories to the new version
 #
-# Releases are created by release.yml, which pushes the release tag and then triggers this workflow on that tag, so the
-# 'release' section of '.ci_cd/ci_cd.json' applies (see .ci_cd/README.md for more details).
+# Releases are created by release.yml, which pushes the release tag and then manually triggers this workflow on that
+# tag, so the 'release' section of '.ci_cd/ci_cd.json' applies (see .ci_cd/README.md for more details).
 #
 # This workflow does not deploy, use deploy.yml for manual deployments. Custom projects use custom-staging.yml instead.
 # ---------------------------------------------------------------------------------------------------------------------
