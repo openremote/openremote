@@ -71,7 +71,13 @@ public class UsersFacade<T extends Ruleset> extends Users {
                   .orElseThrow(
                       () -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId)));
     } else if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-      userQuery.realmPredicate = null;
+      // Asset links must not expose users from outside the rule's realm.
+      userQuery.realmPredicate =
+          new RealmPredicate(
+              rulesEngineId
+                  .getRealm()
+                  .orElseThrow(
+                      () -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId)));
       String assetId =
           rulesEngineId
               .getAssetId()
