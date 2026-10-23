@@ -23,7 +23,10 @@ import org.openremote.manager.rules.RulesEngineId
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.LogicGroup
+import org.openremote.model.query.filter.ArrayPredicate
 import org.openremote.model.query.filter.AttributePredicate
+import org.openremote.model.query.filter.NameValuePredicate
+import org.openremote.model.query.filter.NumberPredicate
 import org.openremote.model.query.filter.ParentPredicate
 import org.openremote.model.query.filter.PathPredicate
 import org.openremote.model.query.filter.RealmPredicate
@@ -171,6 +174,40 @@ class AssetsFacadeQueryTest extends Specification {
 
     where:
     scope << ["global", "realm", "asset"]
+  }
+
+  def "Query copies preserve nested attribute paths, empty values and null map entries"() {
+    given:
+    def payload = [empty: [] as Object[], absent: null]
+    def predicate = new AttributePredicate("readings", new ArrayPredicate(payload, 0, null, null, null, false))
+            .path(new NameValuePredicate.Path("measurements"))
+            .meta(new NameValuePredicate("unit", new StringPredicate("celsius")))
+            .previousValue(new NumberPredicate(new BigDecimal("1234567890.123456789")))
+    def query = new AssetQuery().attributes(predicate)
+    List<AssetQuery> submittedQueries = []
+    def storage = Stub(AssetStorageService) {
+      findAll(_ as AssetQuery) >> { AssetQuery submitted ->
+        submittedQueries.add(submitted)
+        []
+      }
+    }
+
+    when:
+    facadeFor(new RulesEngineId(), storage).getResults(query).toList()
+    def copied = submittedQueries[0].attributes.items[0]
+    predicate.path.append("next")
+    predicate.meta[0].value.value = "fahrenheit"
+    payload.empty = ["next"] as Object[]
+    payload.absent = "next"
+    predicate.previousValue.value = 0
+
+    then:
+    copied.path.paths.toList() == ["measurements"]
+    copied.meta[0].value.value == "celsius"
+    copied.value.value.empty.length == 0
+    copied.value.value.containsKey("absent")
+    copied.value.value.absent == null
+    copied.previousValue.value == new BigDecimal("1234567890.123456789")
   }
 
   private AssetsFacade facadeFor(RulesEngineId engine, AssetStorageService storage) {
