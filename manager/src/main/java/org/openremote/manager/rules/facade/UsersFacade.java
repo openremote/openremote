@@ -93,15 +93,27 @@ public class UsersFacade<T extends Ruleset> extends Users {
       }
     }
 
-    // Preserve caller filters and require system-account exclusion as an additional AND condition.
-    UserQuery.AttributeValuePredicate[] attributes =
-        userQuery.attributes == null
-            ? new UserQuery.AttributeValuePredicate[1]
-            : Arrays.copyOf(userQuery.attributes, userQuery.attributes.length + 1);
-    attributes[attributes.length - 1] =
+    // Queries are reused across rule firings: preserve caller filters and add the full exclusion
+    // only once, rather than accumulating another correlated subquery on each execution.
+    UserQuery.AttributeValuePredicate systemAccountExclusion =
         new UserQuery.AttributeValuePredicate(
             true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null);
-    userQuery.attributes(attributes);
+    boolean excludesSystemAccounts =
+        userQuery.attributes != null
+            && Arrays.stream(userQuery.attributes)
+                .anyMatch(
+                    attribute ->
+                        attribute.negated
+                            && attribute.value == null
+                            && systemAccountExclusion.name.equals(attribute.name));
+    if (!excludesSystemAccounts) {
+      UserQuery.AttributeValuePredicate[] attributes =
+          userQuery.attributes == null
+              ? new UserQuery.AttributeValuePredicate[1]
+              : Arrays.copyOf(userQuery.attributes, userQuery.attributes.length + 1);
+      attributes[attributes.length - 1] = systemAccountExclusion;
+      userQuery.attributes(attributes);
+    }
 
     // Prevent service users being retrieved
     userQuery.serviceUsers(false);
