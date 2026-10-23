@@ -35,7 +35,6 @@ import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.Users;
 import org.openremote.model.security.User;
-import org.openremote.model.util.ValueUtil;
 
 /**
  * Restricts rule RHS access to the scope of the engine (a rule in asset scope can not access users
@@ -63,10 +62,10 @@ public class UsersFacade<T extends Ruleset> extends Users {
   public Stream<String> getResults(UserQuery userQuery) {
     // Rule targets can reuse the caller's query. Isolate nested predicates as well, since the
     // facade and identity provider both modify filters during execution.
-    userQuery = ValueUtil.clone(userQuery);
     if (userQuery == null) {
       throw new IllegalArgumentException("Unable to copy user query");
     }
+    userQuery = new UserQuery(userQuery);
 
     // Do security checks to ensure correct scoping
     // No restriction for global rulesets
