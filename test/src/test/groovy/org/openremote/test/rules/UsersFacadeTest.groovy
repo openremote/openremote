@@ -27,6 +27,8 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.query.UserQuery
+import org.openremote.model.query.filter.PathPredicate
+import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.query.filter.StringPredicate
 import org.openremote.model.security.User
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -263,5 +265,104 @@ class UsersFacadeTest extends Specification implements ManagerContainerTrait {
         [[department: "nonexistent"], [], []]
       ].collect { row -> [scope] + row }
     }
+  }
+
+  def "#scope scope with realm #realmFilter, assets #assetNames and path #pathNames returns #expectedUserNames"() {
+    given: "real identity and asset storage services"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def identityService = container.getService(ManagerIdentityService.class)
+    def identityProvider = identityService.getIdentityProvider()
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def realm = keycloakSetup.realmBuilding.name
+    def foreignRealm = keycloakSetup.realmCity.name
+    List<String> createdAssetIds = []
+    List<User> createdUsers = []
+
+    and: "a scoped subtree, a sibling outside it, and an asset in another realm"
+    def createAsset = { String name, String assetRealm, String parentId ->
+      def asset = assetStorageService.merge(new ThingAsset("Users facade boundaries ${name}")
+              .setRealm(assetRealm).setParentId(parentId))
+      createdAssetIds.add(asset.id)
+      asset
+    }
+    def assets = [:]
+    assets.ancestor = createAsset("ancestor", realm, null)
+    assets.scoped = createAsset("scoped", realm, assets.ancestor.id)
+    assets.child = createAsset("child", realm, assets.scoped.id)
+    assets.grandchild = createAsset("grandchild", realm, assets.child.id)
+    assets.outside = createAsset("outside", realm, assets.ancestor.id)
+    assets.foreign = createAsset("foreign", foreignRealm, null)
+    assert assetStorageService.find(assets.grandchild.id, true).path.contains(assets.child.id)
+    assert !assetStorageService.find(assets.outside.id, true).path.contains(assets.scoped.id)
+
+    and: "one regular user linked to each target asset"
+    def users = ["scoped", "child", "grandchild", "outside", "foreign"].collectEntries { name ->
+      def asset = assets[name]
+      def user = identityProvider.createUpdateUser(asset.realm,
+              new User().setUsername("users-facade-${UUID.randomUUID()}").setEnabled(true), null, false)
+      createdUsers.add(user)
+      def storedUser = identityProvider.getUser(user.id)
+      assert storedUser.realm == asset.realm
+      assert !storedUser.isServiceAccount()
+      assert !storedUser.isSystemAccount()
+      assetStorageService.storeUserAssetLinks([new UserAssetLink(asset.realm, user.id, asset.id)])
+      assert identityProvider.queryUsers(new UserQuery().assets(asset.id))*.id == [user.id]
+      [(name): storedUser]
+    }
+
+    and: "a caller query with optional realm, asset and path restrictions"
+    def createQuery = {
+      def query = new UserQuery().ids(users.values().collect { it.id } as String[])
+      if (realmFilter != null) {
+        query.realm(new RealmPredicate(foreignRealm))
+      }
+      if (assetNames != null) {
+        query.assets(assetNames.collect { assets[it].id } as String[])
+      }
+      if (pathNames != null) {
+        query.assetPath(new PathPredicate(pathNames.collect { assets[it].id } as String[]))
+      }
+      query
+    }
+    // Every supplied query matches actual users before the facade enforces its scope.
+    assert identityProvider.queryUsers(createQuery()).length> 0
+    def engineId = scope == "global" ? new RulesEngineId() :
+            scope == "realm" ? new RulesEngineId(realm) : new RulesEngineId(realm, assets.scoped.id)
+    def facade = new UsersFacade(engineId, assetStorageService,
+            container.getService(NotificationService.class), identityService)
+
+    when: "the rule queries users through its facade"
+    def result = facade.getResults(createQuery()).toList()
+
+    then: "the engine scope is enforced while valid narrower filters are retained"
+    result.toSet() == expectedUserNames.collect { users[it].id }.toSet()
+
+    cleanup:
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
+    }
+    createdUsers.each { identityProvider.deleteUser(it.realm, it.id) }
+
+    where:
+    scope | realmFilter | assetNames | pathNames | expectedUserNames
+    "global" | null | null | null | ["scoped", "child", "grandchild", "outside", "foreign"]
+    "global" | "foreign" | null | null | ["foreign"]
+    "realm" | null | null | null | ["scoped", "child", "grandchild", "outside"]
+    "realm" | "foreign" | null | null | ["scoped", "child", "grandchild", "outside"]
+    "realm" | null | ["foreign"] | null | []
+    "asset" | null | null | null | ["scoped", "child", "grandchild"]
+    "asset" | "foreign" | null | null | ["scoped", "child", "grandchild"]
+    "asset" | null | ["scoped"] | null | ["scoped"]
+    "asset" | null | ["child"] | null | ["child"]
+    "asset" | null | ["outside"] | null | []
+    "asset" | null | ["foreign"] | null | []
+    "asset" | null | ["child", "outside", "foreign"] | null | ["child"]
+    "asset" | null | null | ["ancestor"] | ["scoped", "child", "grandchild"]
+    "asset" | null | null | ["outside"] | []
+    "asset" | null | null | ["foreign"] | []
+    "asset" | null | null | ["child"] | ["child", "grandchild"]
+    "asset" | null | null | ["grandchild"] | ["grandchild"]
+    "asset" | null | ["grandchild", "outside"] | ["child"] | ["grandchild"]
   }
 }
