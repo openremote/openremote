@@ -126,7 +126,9 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
         return "WITH interval_data AS ("
             + "SELECT "
             + function
-            + "(cast(? as interval), timestamp) AS x, public.locf(public.last(nullif(value, 'null'::jsonb)::DOUBLE PRECISION, timestamp)) AS numeric_value "
+            + "(cast(? as interval), timestamp) AS x, public.locf(public.last("
+            + NULLABLE_VALUE_SQL
+            + "::DOUBLE PRECISION, timestamp)) AS numeric_value "
             + "FROM "
             + tableName
             + " "
@@ -146,7 +148,9 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
         return "SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
-            + "SUM(cast(nullif(value, 'null'::jsonb) as numeric)) AS total_sum "
+            + "SUM(cast("
+            + NULLABLE_VALUE_SQL
+            + " as numeric)) AS total_sum "
             + "FROM "
             + tableName
             + " "
@@ -157,7 +161,9 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + "  SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
-            + "         cast(nullif(value, 'null'::jsonb) as numeric) AS num_value "
+            + "         cast("
+            + NULLABLE_VALUE_SQL
+            + " as numeric) AS num_value "
             + "  FROM "
             + tableName
             + " "
@@ -179,7 +185,9 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
         return "SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
-            + "PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY cast(nullif(value, 'null'::jsonb) as numeric)) as median_value "
+            + "PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY cast("
+            + NULLABLE_VALUE_SQL
+            + " as numeric)) as median_value "
             + "FROM "
             + tableName
             + " "
@@ -190,16 +198,15 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + function
             + "(cast(? as interval), timestamp) AS x, "
             + this.formula.toString().toLowerCase()
-            + "(cast(nullif(value, 'null'::jsonb) as numeric)) FROM "
+            + "(cast("
+            + NULLABLE_VALUE_SQL
+            + " as numeric)) FROM "
             + tableName
             + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
     }
   }
 
   protected String getSQLQueryForBooleans(String tableName, String function) {
-    // Keep unavailable values null so aggregates ignore them instead of counting them as false.
-    String booleanAsNumber =
-        "CASE cast(nullif(value, 'null'::jsonb) as text)::boolean WHEN true THEN 1 WHEN false THEN 0 ELSE NULL END";
     switch (this.formula) {
       case DIFFERENCE:
         throw new IllegalStateException(
@@ -219,7 +226,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + function
             + "(cast(? as interval), timestamp) AS x, "
             + "SUM("
-            + booleanAsNumber
+            + BOOLEAN_AS_NUMBER_SQL
             + ") AS true_count_sum "
             + "FROM "
             + tableName
@@ -231,7 +238,9 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + "   SELECT "
             + function
             + "(cast(? as interval), timestamp) AS x, "
-            + "          cast(nullif(value, 'null'::jsonb) as text)::boolean AS bool_value "
+            + "          cast("
+            + NULLABLE_VALUE_SQL
+            + " as text)::boolean AS bool_value "
             + "   FROM "
             + tableName
             + " "
@@ -254,7 +263,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + function
             + "(cast(? as interval), timestamp) AS x, "
             + "(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ("
-            + booleanAsNumber
+            + BOOLEAN_AS_NUMBER_SQL
             + ")) >= 0.5)::integer AS median_value "
             + "FROM "
             + tableName
@@ -267,7 +276,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
             + "(cast(? as interval), timestamp) AS x, "
             + this.formula.toString().toLowerCase()
             + "("
-            + booleanAsNumber
+            + BOOLEAN_AS_NUMBER_SQL
             + ") FROM "
             + tableName
             + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
