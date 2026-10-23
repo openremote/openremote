@@ -325,8 +325,14 @@ class UsersFacadeTest extends Specification implements ManagerContainerTrait {
       }
       query
     }
-    // Every supplied query matches actual users before the facade enforces its scope.
-    assert identityProvider.queryUsers(createQuery()).length> 0
+    // An explicit empty asset selection must match nobody, unlike an absent asset filter.
+    // All other cases match seeded users before the facade enforces its scope.
+    def directResults = identityProvider.queryUsers(createQuery())
+    if (assetNames != null && assetNames.isEmpty()) {
+      assert directResults.length == 0
+    } else {
+      assert directResults.length> 0
+    }
     def engineId = scope == "global" ? new RulesEngineId() :
             scope == "realm" ? new RulesEngineId(realm) : new RulesEngineId(realm, assets.scoped.id)
     def facade = new UsersFacade(engineId, assetStorageService,
@@ -347,11 +353,14 @@ class UsersFacadeTest extends Specification implements ManagerContainerTrait {
     where:
     scope | realmFilter | assetNames | pathNames | expectedUserNames
     "global" | null | null | null | ["scoped", "child", "grandchild", "outside", "foreign"]
+    "global" | null | [] | null | []
     "global" | "foreign" | null | null | ["foreign"]
     "realm" | null | null | null | ["scoped", "child", "grandchild", "outside"]
+    "realm" | null | [] | null | []
     "realm" | "foreign" | null | null | ["scoped", "child", "grandchild", "outside"]
     "realm" | null | ["foreign"] | null | []
     "asset" | null | null | null | ["scoped", "child", "grandchild"]
+    "asset" | null | [] | null | []
     "asset" | "foreign" | null | null | ["scoped", "child", "grandchild"]
     "asset" | null | ["scoped"] | null | ["scoped"]
     "asset" | null | ["child"] | null | ["child"]
