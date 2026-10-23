@@ -48,8 +48,6 @@ class AssetDatapointNullQueryTest extends Specification implements ManagerContai
   long start
 
   def setup() {
-    // Match the pseudo clock's UTC zone before JDBC connections capture the JVM time zone.
-    TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
     def container = startContainer(defaultConfig(), defaultServices())
     stopPseudoClock()
     assetStorageService = container.getService(AssetStorageService.class)
