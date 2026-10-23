@@ -1,0 +1,111 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+package org.openremote.test.rules
+
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.notification.NotificationService
+import org.openremote.manager.rules.RulesEngineId
+import org.openremote.manager.rules.facade.UsersFacade
+import org.openremote.manager.security.ManagerIdentityService
+import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.UserAssetLink
+import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.query.UserQuery
+import org.openremote.model.security.User
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.test.ManagerContainerTrait
+import spock.lang.Specification
+
+class UsersFacadeTest extends Specification implements ManagerContainerTrait {
+
+  def "Asset scope querying users linked to #targetName with #linkedUserNames returns #expectedUserNames"() {
+    given: "real identity and asset storage services"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def identityService = container.getService(ManagerIdentityService.class)
+    def identityProvider = identityService.getIdentityProvider()
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def realm = keycloakSetup.realmBuilding.name
+    def foreignRealm = keycloakSetup.realmCity.name
+    List<String> createdAssetIds = []
+    List<User> createdUsers = []
+
+    and: "a scope root, its descendant and an unrelated asset in the same realm"
+    def createAsset = { String name, String parentId ->
+      def asset = assetStorageService.merge(new ThingAsset("Users facade ${name}")
+              .setRealm(realm).setParentId(parentId))
+      createdAssetIds.add(asset.id)
+      asset
+    }
+    def scopedAsset = createAsset("scope", null)
+    def childAsset = createAsset("child", scopedAsset.id)
+    def unrelatedAsset = createAsset("unrelated", null)
+    def targetAsset = targetName == "root" ? scopedAsset : childAsset
+
+    and: "regular users in the rule's realm and another realm"
+    def users = ["sameRealm", "foreignRealm", "outsideSubtree"].collectEntries { name ->
+      def userRealm = name == "foreignRealm" ? foreignRealm : realm
+      def user = identityProvider.createUpdateUser(userRealm,
+              new User().setUsername("users-facade-${UUID.randomUUID()}").setEnabled(true), null, false)
+      createdUsers.add(user)
+      def storedUser = identityProvider.getUser(user.id)
+      assert storedUser.realm == userRealm
+      assert !storedUser.isServiceAccount()
+      assert !storedUser.isSystemAccount()
+      [(name): storedUser]
+    }
+
+    and: "stored links include any foreign user selected by this case"
+    // Storage permits cross-realm links independently of REST link-creation checks.
+    linkedUserNames.each { name ->
+      def user = users[name]
+      assetStorageService.storeUserAssetLinks([new UserAssetLink(user.realm, user.id, targetAsset.id)])
+    }
+    def outsideUser = users.outsideSubtree
+    assetStorageService.storeUserAssetLinks([new UserAssetLink(outsideUser.realm, outsideUser.id, unrelatedAsset.id)])
+    assert identityProvider.queryUsers(new UserQuery().assets(targetAsset.id))*.id.toSet() ==
+    linkedUserNames.collect { users[it].id }.toSet()
+    assert identityProvider.queryUsers(new UserQuery().assets(unrelatedAsset.id))*.id == [outsideUser.id]
+
+    def facade = new UsersFacade(new RulesEngineId(realm, scopedAsset.id), assetStorageService,
+            container.getService(NotificationService.class), identityService)
+    def query = new UserQuery().ids(users.values().collect { it.id } as String[])
+
+    when: "the asset-scoped facade queries all three users"
+    def result = facade.getResults(query).toList()
+
+    then: "only users in the rule's realm linked within its subtree are returned"
+    result.toSet() == expectedUserNames.collect { users[it].id }.toSet()
+
+    cleanup:
+    if (!createdAssetIds.isEmpty()) {
+      assert assetStorageService.delete(createdAssetIds)
+    }
+    createdUsers.each { identityProvider.deleteUser(it.realm, it.id) }
+
+    where:
+    targetName | linkedUserNames | expectedUserNames
+    "root" | ["sameRealm"] | ["sameRealm"]
+    "root" | ["foreignRealm"] | []
+    "root" | ["sameRealm", "foreignRealm"] | ["sameRealm"]
+    "child" | ["sameRealm"] | ["sameRealm"]
+    "child" | ["foreignRealm"] | []
+    "child" | ["sameRealm", "foreignRealm"] | ["sameRealm"]
+  }
+}
