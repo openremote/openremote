@@ -79,4 +79,56 @@ class AssetsFacadeTest extends Specification {
       ].collect { row -> [scope] + row }
     }
   }
+
+  def "#scope scope rejects the whole batch for #rejectedTarget with repeated permitted targets: #repeated"() {
+    given: "the scoped asset lookup excludes a missing or inaccessible target"
+    def root = Stub(ThingAsset) {
+      getId() >> "root"
+      getPath() >> (["root"] as String[])
+    }
+    def child = Stub(ThingAsset) {
+      getId() >> "child"
+    }
+    List<AssetQuery> queries = []
+    def storage = Stub(AssetStorageService) {
+      find("root", true) >> root
+      findAll(_ as AssetQuery) >> { AssetQuery query ->
+        queries.add(query)
+        // Model a partial result from the scoped lookup: only permitted assets were found.
+        [root, child].findAll { query.ids.contains(it.id) }
+      }
+    }
+    def engineId = scope == "global" ? new RulesEngineId() :
+            scope == "realm" ? new RulesEngineId("building") : new RulesEngineId("building", "root")
+    List<AttributeEvent> forwarded = []
+    def facade = new AssetsFacade(engineId, storage, { AttributeEvent event ->
+      forwarded.add(event)
+    })
+    def targetIds = (repeated ? ["root", "child", "root"] : ["root", "child"]) + [rejectedTarget]
+    def events = targetIds.withIndex().collect { String id, int index ->
+      new AttributeEvent(id, "attribute${index}", index)
+    }
+
+    when: "the rejected target is last, after events for permitted assets"
+    facade.dispatch(events as AttributeEvent[])
+
+    then: "the lookup includes every target and retains the engine scope"
+    queries.size() == 1
+    queries[0].ids.toSet() == targetIds.toSet()
+    queries[0].realm?.name == (scope == "global" ? null : "building")
+    queries[0].paths?.collect { it.path.toList() } == (scope == "asset" ? [["root"]] : null)
+
+    and: "no events are forwarded, including those for permitted assets"
+    forwarded.empty
+
+    where:
+    [scope, rejectedTarget, repeated] << [
+      ["global", "missing"],
+      ["realm", "missing"],
+      ["realm", "foreign-realm"],
+      ["asset", "missing"],
+      ["asset", "foreign-realm"],
+      ["asset", "outside-subtree"]
+    ].collectMany { row -> [false, true].collect { repeated -> row + [repeated] } }
+  }
 }
