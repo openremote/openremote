@@ -181,4 +181,87 @@ class UsersFacadeTest extends Specification implements ManagerContainerTrait {
       ].collect { row -> [scope] + row }
     }
   }
+
+  def "#scope scope querying attributes #queryAttributes returns only regular users #expectedUserNames"() {
+    given: "real identity and asset storage services"
+    def container = startContainer(defaultConfig(), defaultServices())
+    def assetStorageService = container.getService(AssetStorageService.class)
+    def identityService = container.getService(ManagerIdentityService.class)
+    def identityProvider = identityService.getIdentityProvider()
+    def keycloakSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+    def realm = keycloakSetup.realmBuilding.name
+    List<User> createdUsers = []
+    def scopedAsset = assetStorageService.merge(new ThingAsset("Users facade attribute filtering").setRealm(realm))
+
+    and: "regular users with different attributes and a system account matching both filters"
+    def userAttributes = [
+      matching: [department: "maintenance", location: "north"],
+      otherDepartment: [department: "operations", location: "north"],
+      otherLocation: [department: "maintenance", location: "south"],
+      system: [department: "maintenance", location: "north"]
+    ]
+    def users = userAttributes.collectEntries { name, attributes ->
+      def newUser = new User().setUsername("users-facade-${UUID.randomUUID()}").setEnabled(true)
+              .setSystemAccount(name == "system")
+      attributes.each { key, value -> newUser.setAttribute(key, value) }
+      def user = identityProvider.createUpdateUser(realm, newUser, null, false)
+      createdUsers.add(user)
+      def storedUser = identityProvider.getUser(user.id)
+      assert storedUser.realm == realm
+      assert !storedUser.isServiceAccount()
+      assert storedUser.isSystemAccount() == (name == "system")
+      attributes.each { key, value -> assert storedUser.attributeMap[key] == [value] }
+      assetStorageService.storeUserAssetLinks([new UserAssetLink(realm, user.id, scopedAsset.id)])
+      [(name): storedUser]
+    }
+    assert identityProvider.queryUsers(new UserQuery().assets(scopedAsset.id))*.id.toSet() ==
+    users.values().collect { it.id }.toSet()
+
+    and: "an attribute query which independently matches the expected regular and system accounts"
+    def createQuery = {
+      def query = new UserQuery().ids(users.values().collect { it.id } as String[])
+      if (!queryAttributes.isEmpty()) {
+        query.attributes(queryAttributes.collect { key, value ->
+          new UserQuery.AttributeValuePredicate(false, new StringPredicate(key), new StringPredicate(value))
+        } as UserQuery.AttributeValuePredicate[])
+      }
+      query
+    }
+    assert identityProvider.queryUsers(createQuery())*.id.toSet() ==
+    rawUserNames.collect { users[it].id }.toSet()
+
+    def engineId = scope == "global" ? new RulesEngineId() :
+            scope == "realm" ? new RulesEngineId(realm) : new RulesEngineId(realm, scopedAsset.id)
+    def facade = new UsersFacade(engineId, assetStorageService,
+            container.getService(NotificationService.class), identityService)
+
+    when: "the facade applies its system-account exclusion to the attribute query"
+    def result = facade.getResults(createQuery()).toList()
+
+    then: "caller filters and system-account exclusion both apply"
+    verifyAll {
+      !result.contains(users.system.id)
+      result.toSet() == expectedUserNames.collect { users[it].id }.toSet()
+    }
+
+    cleanup:
+    if (scopedAsset != null) {
+      assert assetStorageService.delete([scopedAsset.id])
+    }
+    createdUsers.each { identityProvider.deleteUser(it.realm, it.id) }
+
+    where:
+    [scope, queryAttributes, rawUserNames, expectedUserNames] << ["global", "realm", "asset"].collectMany { scope ->
+      [
+        [
+          [:],
+          ["matching", "otherDepartment", "otherLocation", "system"],
+          ["matching", "otherDepartment", "otherLocation"]
+        ],
+        [[department: "maintenance"], ["matching", "otherLocation", "system"], ["matching", "otherLocation"]],
+        [[department: "maintenance", location: "north"], ["matching", "system"], ["matching"]],
+        [[department: "nonexistent"], [], []]
+      ].collect { row -> [scope] + row }
+    }
+  }
 }
